@@ -1,0 +1,33 @@
+{
+  "parser": "babel-eslint",
+
+  "plugins": ["flowtype", "jest", "prettier"],
+
+  "extends": [
+    "airbnb-base",
+    "plugin:flowtype/recommended",
+    "plugin:prettier/recommended"
+  ],
+
+  "rules": {
+    "no-param-reassign": "off",
+    "no-prototype-builtins": "off",
+    "no-void": "off",
+    "no-plusplus": "off",
+    "no-underscore-dangle": "off",
+    "prettier/prettier": "error",
+    "class-methods-use-this": "off",
+    "prefer-destructuring": "warn",
+    "consistent-return": "off",
+    "import/prefer-default-export": "off",
+    "flowtype/space-after-type-colon": "off",
+    "flowtype/generic-spacing": "off",
+    "no-continue": "off",
+    "no-return-assign": "off",
+    "no-sequences": "off"
+  },
+
+  "env": {
+    "jest/globals": true
+  }
+}
