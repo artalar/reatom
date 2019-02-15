@@ -10,13 +10,13 @@ module.exports = {
       __dirname,
       process.env.BABEL_ENV === 'commonjs' ? 'lib' : 'es',
     ),
-    library: 'ups',
+    library: 'template',
     libraryTarget: 'umd',
   },
   module: {
     rules: [
       {
-        test: /\.js/,
+        test: /\.(ts|js)x?$/,
         exclude: /(node_modules)/,
         use: [
           {
