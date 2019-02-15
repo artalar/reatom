@@ -12,7 +12,11 @@ module.exports = {
         },
       },
     ],
-    "@babel/preset-flow"
+    '@babel/preset-flow',
+    '@babel/typescript',
   ],
-  plugins: ['@babel/plugin-proposal-class-properties'],
+  plugins: [
+    '@babel/plugin-proposal-class-properties',
+    '@babel/proposal-object-rest-spread',
+  ],
 };
