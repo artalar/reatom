@@ -19,9 +19,9 @@
     "rebuild:cjs": "npm run clean:cjs & npm run build:cjs",
     "rebuild:es": "npm run clean:es & npm run build:es",
     "test": "jest",
-    "test-dev": "jest --watch",
+    "test:watch": "jest --watch",
     "prettify": "prettier --write \"src/**/*.js\"",
-    "prettify-dev": "onchange '**/*.js' -- prettier --write {{changed}}",
+    "prettify:watch": "onchange '**/*.js' -- prettier --write {{changed}}",
     "ts-check": "tsc --noEmit",
     "ts-check:watch": "npm run ts-check -- --watch",
     "flow": "flow"
