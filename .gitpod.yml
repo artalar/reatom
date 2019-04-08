@@ -1,2 +1,5 @@
 tasks:
   - init: npm install
+  - command: test:watch
+  - command: prettify:watch
+    openMode: split-right
