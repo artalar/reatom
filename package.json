@@ -62,7 +62,7 @@
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
     "rimraf": "^2.6.2",
-    "typescript": "^3.3.3",
+    "typescript": "^3.4.5",
     "webpack": "^4.25.1",
     "webpack-cli": "^3.1.2"
   },
