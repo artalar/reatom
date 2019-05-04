@@ -1,8 +1,8 @@
 {
-  "name": "@artalar/template",
+  "name": "@artalar/redux-steroid",
   "private": false,
   "version": "0.0.1",
-  "description": "library template",
+  "description": "super powers for redux",
   "main": "lib/index.js",
   "module": "es/index.js",
   "scripts": {
@@ -20,8 +20,9 @@
     "rebuild:es": "npm run clean:es & npm run build:es",
     "test": "jest",
     "test:watch": "jest --watch",
-    "prettify": "prettier --write \"src/**/*.js\"",
-    "prettify:watch": "onchange '**/*.js' -- prettier --write {{changed}}",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "prettify": "prettier --write '**/*.(j|t)s'",
+    "prettify:watch": "onchange '**/*.(j|t)s' -- prettier --write {{changed}}",
     "ts-check": "tsc --noEmit",
     "ts-check:watch": "npm run ts-check -- --watch",
     "flow": "flow"
@@ -70,14 +71,15 @@
   "readme": "README.md",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/artalar/template.git"
+    "url": "git+ssh://git@github.com/artalar/redux-steroid.git"
   },
   "bugs": {
-    "url": "https://github.com/artalar/template/issues"
+    "url": "https://github.com/artalar/redux-steroid/issues"
   },
-  "homepage": "https://github.com/artalar/template",
+  "homepage": "https://github.com/artalar/redux-steroid",
   "keywords": [
-    "template"
+    "redux",
+    "redux-steroid"
   ],
   "directories": {
     "lib": "lib"

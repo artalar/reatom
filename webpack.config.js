@@ -10,7 +10,7 @@ module.exports = {
       __dirname,
       process.env.BABEL_ENV === 'commonjs' ? 'lib' : 'es',
     ),
-    library: 'template',
+    library: 'redux-steroid',
     libraryTarget: 'umd',
   },
   module: {
