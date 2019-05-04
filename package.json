@@ -1,7 +1,7 @@
 {
   "name": "@artalar/redux-steroid",
   "private": false,
-  "version": "0.0.1",
+  "version": "1.0.1",
   "description": "super powers for redux",
   "main": "lib/index.js",
   "module": "es/index.js",
