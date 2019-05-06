@@ -26,6 +26,11 @@ super powers for redux
 - No glitches
 - No breaking changes (at all)
 
+## FAQ
+
+- **Why API so strange, it can't be simpler?**
+  > API was designed for bet static types inference (Flow, TS)
+
 ## TODO:
 
 - API for `.doNotTrack()` version of reducer for receive it state, but not subscribe to it
