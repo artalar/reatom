@@ -1,3 +1,5 @@
+import { $Values, $ElementType, SetIntersection } from 'utility-types'
+
 export const VERTEX = Symbol('@@/VERTEX')
 
 export const TYPE = Symbol('@@/TYPE')
@@ -33,13 +35,49 @@ export type ActionCreator<Payload> = {
   [TYPE]: Payload
 }
 
-export type Reducer<State> = {
-  (state: State, action: Action<any>): State
+export type Reducer<State, Dependencies, TT = any> = {
+  (
+    state: {
+      root?: State
+      flat?: any
+      changes?: Ctx['changes']
+    },
+    action: Action<any>,
+  ): {
+    root: State
+    flat: {
+      [key in SetIntersection<
+        $Values<
+          Dependencies extends (
+            | ActionCreator<infer T>
+            | Reducer<infer T, TT[]>)[]
+            ? (ActionCreator<T> | Reducer<T, TT[]>)[]
+            : never
+        >,
+        NodeWithVertex
+      >[typeof VERTEX]['id']]: SetIntersection<
+        $Values<
+          Dependencies extends (
+            | ActionCreator<infer T>
+            | Reducer<infer T, TT[]>)[]
+            ? (ActionCreator<T> | Reducer<T, TT[]>)[]
+            : never
+        >,
+        NodeWithVertex
+      >
+    }
+    changes: Ctx['changes']
+  }
   [VERTEX]: Vertex
   [TYPE]: State
 }
 
-export type NodeWithVertex = ActionCreator<any> | Reducer<any>
+declare var r1: Reducer<number, []>
+declare var r2: Reducer<number, [typeof r1]>
+declare var a1: Action<number>
+var v = r2({}, a1).flat[r1[VERTEX]['id']][TYPE]
+
+export type NodeWithVertex = ActionCreator<any> | Reducer<any, any[]>
 
 export type Ctx = Action<any> & {
   flat: { [key in Id]: any }

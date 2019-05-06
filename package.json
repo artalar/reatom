@@ -83,5 +83,10 @@
   ],
   "directories": {
     "lib": "lib"
+  },
+  "dependencies": {
+    "typepark": "^0.7.0",
+    "typescript-tuple": "^2.2.1",
+    "utility-types": "^3.6.1"
   }
 }

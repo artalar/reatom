@@ -20,7 +20,7 @@ describe('redux-steroid', () => {
       const fullNameMap = jest.fn()
       const displayNameMap = jest.fn()
 
-      const firstNameUpdated = createAction()
+      const firstNameUpdated = createAction<string>()
 
       const firstName = createReducer('firstName', 'John', match => [
         match(firstNameUpdated, (_, name) => name),

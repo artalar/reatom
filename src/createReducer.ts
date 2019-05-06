@@ -14,67 +14,124 @@ import { createAction } from './createAction'
 
 export const initialAction = createAction<'@@/init'>('initialAction')
 
-function match(...a) {
-  const reducer = a.pop()
-  const nodes = a
+// type State = number
+// function _match<Node1Type>(
+//   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+//   reducer: (state: State, payload1: Node1Type) => State,
+// ): {
+//   reducer: (state: State, payload1: Node1Type) => State
+//   nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>]
+// }
+// function _match<Node1Type, Node2Type>(
+//   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+//   dependedReducer1: Reducer<Node2Type>,
+//   reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
+// ): {
+//   reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State
+//   nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
+// }
+// function _match(...a) {
+//   const reducer = a.pop()
+//   const nodes = a
 
-  return { reducer, nodes }
-}
+//   return { reducer, nodes }
+// }
 
-export function createReducer<State>(
+// declare var _match1: typeof _match
+// _match1(initialAction, ((q, w) => 123))
+
+// function f(m: (m: typeof _match) => any): ReturnType<typeof _match>
+
+// var a = f(m => m(initialAction, ((q, w) => 123)))
+
+export function createReducer<State, Dependencies extends ActionCreator<any> | Reducer<any>>(
   name: string,
   initialState: State,
-  matcher: <
-    Node1 extends ActionCreator<any> | Reducer<any>,
-    Node2 extends Reducer<any>
-  >(
-    match:
-      | ((
-          dependedActionOrReducer1: Node1,
-          reducer: (state: State, payload1: Node1[typeof TYPE]) => State,
-        ) => {
-          reducer: (state: State, payload1: Node1[typeof TYPE]) => State
-          nodes: [Node1]
-          1: true
-        })
-      | ((
-          dependedActionOrReducer1: Node1,
-          dependedReducer1: Node2,
-          reducer: (
-            state: State,
-            payload1: Node1[typeof TYPE],
-            payload2: Node2[typeof TYPE],
-          ) => State,
-        ) => {
-          reducer: (
-            state: State,
-            payload1: Node1[typeof TYPE],
-            payload2: Node2[typeof TYPE],
-          ) => State
-          nodes: [Node1, Node2]
-          2: true
-        }),
-  ) => (
-    | {
-        reducer: (state: State, payload1: Node1[typeof TYPE]) => State
-        nodes: [Node1]
-        1: true
-      }
-    | {
-        reducer: (
-          state: State,
-          payload1: Node1[typeof TYPE],
-          payload2: Node2[typeof TYPE],
-        ) => State
-        nodes: [Node1, Node2]
-        2: true
-      })[] = () => [],
-) {
+  matcher: (
+    match: typeof _match,
+  ) => {
+    reducer: Function
+    nodes: Dependencies[]
+  }[] = () => [],
+): Reducer<State> {
+  function _match<Node1Type>(
+    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+    reducer: (state: State, payload1: Node1Type) => State,
+  ): {
+    reducer: (state: State, payload1: Node1Type) => State
+    nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>]
+  }
+  function _match<Node1Type, Node2Type>(
+    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+    dependedReducer1: Reducer<Node2Type>,
+    reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
+  ): {
+    reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State
+    nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
+  }
+  function _match<Node1Type, Node2Type, Node3Type>(
+    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+    dependedReducer1: Reducer<Node2Type>,
+    dependedReducer2: Reducer<Node3Type>,
+    reducer: (
+      state: State,
+      payload1: Node1Type,
+      payload2: Node2Type,
+      payload3: Node3Type,
+    ) => State,
+  ): {
+    reducer: (
+      state: State,
+      payload1: Node1Type,
+      payload2: Node2Type,
+      payload3: Node3Type,
+    ) => State
+    nodes: [
+      ActionCreator<Node1Type> | Reducer<Node1Type>,
+      Reducer<Node2Type>,
+      Reducer<Node3Type>
+    ]
+  }
+  function _match<Node1Type, Node2Type, Node3Type, Node4Type>(
+    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+    dependedReducer1: Reducer<Node2Type>,
+    dependedReducer2: Reducer<Node3Type>,
+    dependedReducer3: Reducer<Node4Type>,
+    reducer: (
+      state: State,
+      payload1: Node1Type,
+      payload2: Node2Type,
+      payload3: Node3Type,
+      payload4: Node4Type,
+    ) => State,
+  ): {
+    reducer: (
+      state: State,
+      payload1: Node1Type,
+      payload2: Node2Type,
+      payload3: Node3Type,
+      payload4: Node4Type,
+    ) => State
+    nodes: [
+      ActionCreator<Node1Type> | Reducer<Node1Type>,
+      Reducer<Node2Type>,
+      Reducer<Node3Type>,
+      Reducer<Node4Type>
+    ]
+  }
+
+  function _match(...a) {
+    const reducer = a.pop()
+    const nodes = a
+
+    return { reducer, nodes }
+  }
+
   const id = createId(name, 'reducer')
 
-  const matchers = matcher(match)
+  const matchers = matcher(_match)
 
-  matchers.unshift(match(initialAction, () => initialState))
+  matchers.unshift(_match(initialAction, () => initialState))
 
   const { deps, depth } = combineVertices(
     matchers.map(matcher => {
@@ -155,3 +212,64 @@ export function createReducer<State>(
 
   return reducer
 }
+
+type MapIds<List extends {}[]> = { [K in keyof List[keyof List]]: List[K] }
+
+function createNode<State>(name: string) {
+  let _initialState: State
+  const matchers = [{ reducer: () => _initialState, nodes: [initialAction] }]
+
+  function _default(
+    initialState: State,
+  ): {
+    _state: State
+    _nodes: (ActionCreator<any> | Reducer<any>)[]
+  } {
+    _initialState = initialState
+    return {} as {
+      _state: State
+      _nodes: (ActionCreator<any> | Reducer<any>)[]
+    }
+  }
+
+  function _case<Node1>(
+    dependedActionOrReducer1: ActionCreator<Node1> | Reducer<Node1>,
+    reducer: (state: State, payload: Node1) => State,
+  ): {
+    case: typeof _case
+    default: typeof _default
+    _state: State
+    _nodes: [Node1]
+  }
+
+  function _case<Node1, Node2>(
+    dependedActionOrReducer1: ActionCreator<Node1> | Reducer<Node1>,
+    dependedReducer2: Reducer<Node2>,
+    reducer: (state: State, payload1: Node1, payload2: Node2) => State,
+  ): {
+    case: typeof _case
+    default: typeof _default
+    _state: State
+    _nodes: [Node1, Node2]
+  }
+
+  function _case(...a) {
+    const reducer = a.pop()
+    const nodes = a
+
+    matchers.push({ reducer, nodes })
+
+    return switcher
+  }
+
+  const switcher = {
+    case: _case,
+    default: _default,
+  }
+
+  return switcher
+}
+
+const a = createNode<number>('test')
+  .case(initialAction, (state, payload) => 123)
+  .default(123)
