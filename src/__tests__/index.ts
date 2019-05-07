@@ -8,6 +8,31 @@ import {
 import { createAction } from '../createAction'
 
 describe('redux-steroid', () => {
+  describe('main api', () => {
+    test('createAction', () => {
+      expect(typeof createAction() === 'function').toBe(true)
+      expect(createAction()()).toEqual({
+        type: expect.stringContaining(''),
+        payload: undefined,
+      })
+      expect(createAction('TeSt')()).toEqual({
+        type: expect.stringContaining('TeSt'),
+        payload: undefined,
+      })
+      expect(createAction('TeSt', () => null)()).toEqual({
+        type: expect.stringContaining('TeSt'),
+        payload: null,
+      })
+      expect(createAction('TeSt', a => a)(null)).toEqual({
+        type: expect.stringContaining('TeSt'),
+        payload: null,
+      })
+      expect(createAction('', null, 'TeSt')()).toEqual({
+        type: 'TeSt',
+        payload: undefined,
+      })
+    })
+  })
   describe('diamond problem', () => {
     test('display name', () => {
       /*
@@ -84,6 +109,30 @@ describe('redux-steroid', () => {
       expect(fullNameMap.mock.calls.length).toBe(3)
       expect(displayNameMap.mock.calls.length).toBe(3)
     })
+    test('few diamonds', () => {
+      const action = createAction<string>()
+
+      const r01Map = jest.fn((state, payload) => state + payload)
+      const r01 = createReducer('r01', '01', handle(action, r01Map))
+      const r02Map = jest.fn((state, payload) => state + payload)
+      const r02 = createReducer('r02', '02', handle(action, r02Map))
+      const r012 = combineReducers({ r01, r02 })
+      const r11Map = jest.fn(state => state.r01)
+      const r11 = map(r012, r11Map)
+      const r12Map = jest.fn(state => state.r02)
+      const r12 = map(r012, r12Map)
+      const r112 = combineReducers({ r11, r12 })
+      const rootMap = jest.fn(_ => _)
+      const root = map(r112, rootMap)
+
+      const state = root(null, action('_'))
+      expect(state.root).toEqual({ r11: '01_', r12: '02_' })
+      expect(r01Map.mock.calls.length).toBe(1)
+      expect(r02Map.mock.calls.length).toBe(1)
+      expect(r11Map.mock.calls.length).toBe(1)
+      expect(r12Map.mock.calls.length).toBe(1)
+      expect(rootMap.mock.calls.length).toBe(1)
+    })
   })
   describe('experiments', () => {
     test('map + combineReducers', () => {
@@ -98,19 +147,21 @@ describe('redux-steroid', () => {
 
       const root = combineReducers({ count, countDoubled })
 
-      expect(
-        getState(count(count(null, increment()), increment()), count),
-      ).toEqual(2)
+      let stateCount = count(null, increment())
+      expect(getState(stateCount, count)).toEqual(1)
 
-      let state = root(null, { type: '', payload: null })
-      expect(getState(state, count)).toEqual(0)
-      expect(getState(state, countDoubled)).toEqual(0)
-      expect(getState(state, root)).toEqual({ count: 0, countDoubled: 0 })
+      stateCount = count(stateCount, increment())
+      expect(getState(stateCount, count)).toEqual(2)
 
-      state = root(state, increment())
-      expect(getState(state, count)).toEqual(1)
-      expect(getState(state, countDoubled)).toEqual(2)
-      expect(getState(state, root)).toEqual({ count: 1, countDoubled: 2 })
+      let stateRoot = root(null, { type: '', payload: null })
+      expect(getState(stateRoot, count)).toEqual(0)
+      expect(getState(stateRoot, countDoubled)).toEqual(0)
+      expect(getState(stateRoot, root)).toEqual({ count: 0, countDoubled: 0 })
+
+      stateRoot = root(stateRoot, increment())
+      expect(getState(stateRoot, count)).toEqual(1)
+      expect(getState(stateRoot, countDoubled)).toEqual(2)
+      expect(getState(stateRoot, root)).toEqual({ count: 1, countDoubled: 2 })
     })
   })
 })

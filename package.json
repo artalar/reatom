@@ -85,6 +85,7 @@
     "lib": "lib"
   },
   "dependencies": {
+    "@types/jest": "^24.0.12",
     "typepark": "^0.7.0",
     "typescript-tuple": "^2.2.1",
     "utility-types": "^3.6.1"
