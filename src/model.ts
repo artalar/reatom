@@ -12,7 +12,7 @@ export const DEPS = Symbol('@@/DEPS')
 export const DEPTH = Symbol('@@/DEPTH')
 export const INITIAL_STATE = Symbol('@@/INITIAL_STATE')
 
-export type IdPrefix = 'action' | 'reducer' | 'combine' | 'type'
+export type IdPrefix = 'action' | 'reducer' | 'combine' | 'type' | 'store'
 export type ActionType = string
 export type Handler = Function // reducer | actionCreator mapper | subscriber
 export type Handlers = Set<Handler>

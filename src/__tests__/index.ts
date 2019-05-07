@@ -1,3 +1,4 @@
+import { createAction } from '../createAction'
 import {
   createReducer,
   handle,
@@ -5,7 +6,7 @@ import {
   map,
   combineReducers,
 } from '../createReducer'
-import { createAction } from '../createAction'
+import { createStore } from '../createStore'
 
 describe('redux-steroid', () => {
   describe('main api', () => {
@@ -31,6 +32,89 @@ describe('redux-steroid', () => {
         type: 'TeSt',
         payload: undefined,
       })
+    })
+    test('createStore', () => {
+      const increment = createAction()
+      const toggle = createAction()
+
+      const count = createReducer(
+        'count',
+        0,
+        handle(increment, state => state + 1),
+      )
+      const countDoubled = map(count, state => state * 2)
+      const toggled = createReducer(
+        'toggled',
+        false,
+        handle(toggle, state => !state),
+      )
+
+      const root = combineReducers({ count, countDoubled, toggled })
+
+      const store = createStore(root)
+
+      expect(store.getState()).toEqual({
+        count: 0,
+        countDoubled: 0,
+        toggled: false,
+      })
+      expect(store.getState(root)).toEqual({
+        count: 0,
+        countDoubled: 0,
+        toggled: false,
+      })
+      expect(store.getState(countDoubled)).toBe(0)
+      expect(store.getState(count)).toBe(0)
+
+      expect(store.getState() !== store.dispatch(increment())).toBe(true)
+      expect(store.getState()).toEqual({
+        count: 1,
+        countDoubled: 2,
+        toggled: false,
+      })
+      expect(store.getState(root)).toEqual({
+        count: 1,
+        countDoubled: 2,
+        toggled: false,
+      })
+      expect(store.getState(countDoubled)).toBe(2)
+      expect(store.getState(count)).toBe(1)
+
+      const subscriberRoot = jest.fn()
+      const subscriberToogled = jest.fn()
+      store.subscribe(subscriberRoot)
+      store.subscribe(subscriberToogled, toggled)
+      expect(subscriberRoot.mock.calls.length).toBe(0)
+      expect(subscriberToogled.mock.calls.length).toBe(0)
+
+      store.dispatch(increment())
+      expect(store.getState()).toEqual({
+        count: 2,
+        countDoubled: 4,
+        toggled: false,
+      })
+      expect(subscriberRoot.mock.calls.length).toBe(1)
+      expect(subscriberRoot.mock.calls[0]).toEqual([
+        { count: 2, countDoubled: 4, toggled: false },
+      ])
+      expect(subscriberToogled.mock.calls.length).toBe(0)
+
+      store.dispatch(toggle())
+      expect(store.getState()).toEqual({
+        count: 2,
+        countDoubled: 4,
+        toggled: true,
+      })
+      expect(subscriberRoot.mock.calls.length).toBe(2)
+      expect(subscriberRoot.mock.calls[1]).toEqual([
+        { count: 2, countDoubled: 4, toggled: true },
+      ])
+      expect(subscriberToogled.mock.calls.length).toBe(1)
+      expect(subscriberToogled.mock.calls[0]).toEqual([true])
+
+      expect(store.getState() === store.dispatch({ type: 'random' })).toBe(true)
+      expect(subscriberRoot.mock.calls.length).toBe(2)
+      expect(subscriberToogled.mock.calls.length).toBe(1)
     })
   })
   describe('diamond problem', () => {

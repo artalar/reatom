@@ -17,7 +17,7 @@ import {
 } from './model'
 import { createAction } from './createAction'
 
-export const NODES = Symbol('@@/NODES')
+const NODES = Symbol('@@/NODES')
 
 const initialAction = createAction<'@@/init'>('initialAction', () => '@@/init')
 const initialActionType = getId(initialAction)
@@ -76,7 +76,7 @@ export function createReducer<State>(
         })
 
         if (hasDependenciesChanged) {
-          const newState = reducer.apply(null, args)
+          const newState = reducer.apply(ctx, args)
           ctx.flatNew[id] = newState
           if (oldState !== newState) ctx.changes.push(id)
         }
