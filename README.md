@@ -1,7 +1,15 @@
 # redux-steroid
 super powers for redux
 
+> ## **WIP**
+
 <!-- <div align="center"><img src="logo.png" alt="template logo" align="center"></div> -->
+
+## Example
+
+[![tr-redux example](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/4w5k42vzw9) Todo-list
+
+> Also see tests
 
 ## Motivation
 
