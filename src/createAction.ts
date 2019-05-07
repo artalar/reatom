@@ -1,4 +1,14 @@
-import { VERTEX, createId, ActionCreator, Action, Ctx } from './shared'
+import {
+  ActionCreator,
+  Action,
+  Ctx,
+  ID,
+  NAME,
+  DEPS,
+  DEPTH,
+  HANDLER,
+  createId,
+} from './model.ts'
 
 export function createAction<T>(
   name: string = 'actionCreator',
@@ -11,14 +21,19 @@ export function createAction<T>(
     ctx.flatNew[id] = ctx.payload
   }
 
-  function actionCreator(payload?: T): Action<T> {
+  function actionCreator(payload?: T): Action<T, typeof name> {
     return {
       type: id,
       payload: mapper(payload),
     }
   }
 
-  actionCreator[VERTEX] = { id, deps, depth, handler }
+  actionCreator.type = id
+  actionCreator[ID] = id
+  actionCreator[NAME] = name
+  actionCreator[DEPS] = deps
+  actionCreator[DEPTH] = depth
+  actionCreator[HANDLER] = handler
 
   return actionCreator
 }

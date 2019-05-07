@@ -1,3 +1,9 @@
-export { createReducer, initialAction } from './createReducer.ts'
+export {
+  createReducer,
+  handle,
+  getState,
+  map,
+  combineReducers,
+} from './createReducer.ts'
 export { createAction } from './createAction.ts'
-export { getId } from './shared'
+export { getName } from './model.ts'
