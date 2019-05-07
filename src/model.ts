@@ -5,68 +5,36 @@ import {
   SetComplement,
   SetDifference,
 } from 'utility-types'
-import { Concat } from 'typescript-tuple'
-
-export type Normalize<
-  ObjectsList extends { [key in Key]: any }[],
-  Key extends string | number | symbol,
-  Ids = $Values<Map<ObjectsList, Key>>
-> = { [K in Ids]: SetIntersection<$Values<ObjectsList>, { [key in Key]: K }> }
-
-export type Map<Obj, Key extends string | number | symbol> = {
-  [Index in keyof Obj]: Obj[Index][Key]
-}
 
 export const ID = Symbol('@@/ID')
 export const NAME = Symbol('@@/NAME')
 export const DEPS = Symbol('@@/DEPS')
-export const DEPS_REDUCERS = Symbol('@@/DEPS_REDUCERS')
 export const DEPTH = Symbol('@@/DEPTH')
-export const HANDLER = Symbol('@@/HANDLER')
 export const INITIAL_STATE = Symbol('@@/INITIAL_STATE')
-export const NODES = Symbol('@@/NODES')
 
 export type IdPrefix = 'action' | 'reducer' | 'combine' | 'type'
-
 export type ActionType = string
-
-export type Handler = Function
-
+export type Handler = Function // reducer | actionCreator mapper | subscriber
 export type Handlers = Set<Handler>
-
 export type HandlersForActions = { [key in number]: Handlers }
-
 export type Dependencies = { [key in ActionType]: HandlersForActions }
-
 export type Node = {
-  // readonly [ID]: unique symbol
-  [NAME]: string
   [ID]: string
+  [NAME]: string
   [DEPS]: Dependencies
   [DEPTH]: number
-  [HANDLER]: Handler
 }
 
 export type Action<Payload = undefined, Type = ActionType> = {
   type: Type
   payload: Payload
 }
+export type ActionCreator<Payload = undefined, Type = ActionType> = Node &
+  ((payload?: Payload) => Action<Payload, Type>)
 
-export type ActionCreator<Payload> = Node & {
-  (payload?: Payload): Action<Payload>
-  type: ActionType
-}
-
-// TODO: infer DEPS_REDUCERS
-export type Reducer<State, Deps> = Node & {
+// TODO: infer state.flat
+export type Reducer<State> = Node & {
   [INITIAL_STATE]: State
-  [DEPS_REDUCERS]: [] // Deps extends []
-  // ? []
-  // : Deps extends [Reducer<infer S, infer D>]
-  // ? Concat<[Reducer<S, D>], D>
-  // : Deps extends [Reducer<infer S1, infer D1>, Reducer<infer S2, infer D2>]
-  // ? Concat<[Reducer<S1, D1>, Reducer<S2, D2>], Concat<D1, D2>>
-  // : []
   (
     state: {
       root?: State
@@ -75,46 +43,37 @@ export type Reducer<State, Deps> = Node & {
     action: Action<any>,
   ): {
     root: State
-    flat: { [key in typeof ID]: any } // Map<
-    //   Normalize<
-    //     Deps extends []
-    //       ? []
-    //       : Deps extends [Reducer<infer S, infer D>]
-    //       ? Concat<[Reducer<S, D>], D>
-    //       : Deps extends [
-    //           Reducer<infer S1, infer D1>,
-    //           Reducer<infer S2, infer D2>
-    //         ]
-    //       ? Concat<[Reducer<S1, D1>, Reducer<S2, D2>], Concat<D2, D2>>
-    //       : [],
-    //     typeof ID
-    //   >,
-    //   typeof INITIAL_STATE
-    // >
+    flat: { [key in typeof ID]: any }
     changes: (typeof ID)[]
   }
 }
 
 export function noop() {}
 
-export function getId(node: Node) {
-  return node[ID]
-}
-
 let i = 0
 export function createId(desctiption = 'empty description', prefix: IdPrefix) {
   return `${desctiption} [${prefix}][${++i}]`
+}
+
+export function getId(node: Node) {
+  return node[ID]
 }
 
 export function getName<N extends Node>(node: N): N[typeof NAME] {
   return node[NAME]
 }
 
-export function combineNodes(
-  nodes: Node[],
-  handler: Handler,
-  id: typeof ID,
-): Node {
+export function combineNodes({
+  nodes,
+  id,
+  name,
+  handler,
+}: {
+  nodes: Node[]
+  id: string
+  name: string
+  handler?: Handler
+}): Node {
   const deps: Dependencies = {}
   let depth = 0
 
@@ -135,45 +94,47 @@ export function combineNodes(
     }
   }
 
-  for (const actionType in deps) {
-    deps[actionType][depth] = new Set([handler])
-  }
-
-  return {
-    [ID]: id,
-    [DEPS]: deps,
-    [DEPTH]: depth,
-    [HANDLER]: handler,
-  }
-}
-
-export function disunitVertices(
-  vertexTarget: Vertex,
-  vertexRemoved: Vertex,
-): Vertex {
-  const deps: Deps = Object.assign({}, vertexTarget.deps)
-  const removedDeps = vertexRemoved.deps
-  const removedDepth = vertexRemoved.depth
-  const removedHandler = vertexRemoved.handler
-
-  for (const actionType in removedDeps) {
-    if (
-      deps[actionType] !== undefined &&
-      deps[actionType][removedDepth] !== undefined
-    ) {
-      deps[actionType] = Object.assign({}, deps[actionType])
-      deps[actionType][removedDepth] = new Set(deps[actionType][removedDepth])
-      deps[actionType][removedDepth].delete(removedHandler)
+  if (handler) {
+    for (const actionType in deps) {
+      deps[actionType][depth] = new Set([handler])
     }
   }
 
   return {
-    id: vertexTarget.id,
-    deps,
-    depth: vertexTarget.depth,
-    handler: vertexTarget.handler,
+    [ID]: id,
+    [NAME]: name,
+    [DEPS]: deps,
+    [DEPTH]: depth,
   }
 }
+
+// export function disunitVertices(
+//   vertexTarget: Vertex,
+//   vertexRemoved: Vertex,
+// ): Vertex {
+//   const deps: Deps = Object.assign({}, vertexTarget.deps)
+//   const removedDeps = vertexRemoved.deps
+//   const removedDepth = vertexRemoved.depth
+//   const removedHandler = vertexRemoved.handler
+
+//   for (const actionType in removedDeps) {
+//     if (
+//       deps[actionType] !== undefined &&
+//       deps[actionType][removedDepth] !== undefined
+//     ) {
+//       deps[actionType] = Object.assign({}, deps[actionType])
+//       deps[actionType][removedDepth] = new Set(deps[actionType][removedDepth])
+//       deps[actionType][removedDepth].delete(removedHandler)
+//     }
+//   }
+
+//   return {
+//     id: vertexTarget.id,
+//     deps,
+//     depth: vertexTarget.depth,
+//     handler: vertexTarget.handler,
+//   }
+// }
 
 export type Ctx = Action<any> & {
   flat: { [key in typeof ID]: any }
@@ -184,26 +145,24 @@ export type Ctx = Action<any> & {
 export type Store<RootReducer> = {
   dispatch: (
     action: Action<any>,
-  ) => RootReducer extends Reducer<infer S, infer D>
-    ? ReturnType<Reducer<S, D>>['root']
+  ) => RootReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>['root']
     : never
   subscribe: <TargetReducer = RootReducer>(
     listener: (
-      state: TargetReducer extends Reducer<infer S, infer D>
-        ? ReturnType<Reducer<S, D>>['root']
+      state: TargetReducer extends Reducer<infer S>
+        ? ReturnType<Reducer<S>>['root']
         : never,
     ) => any,
     target?: TargetReducer,
   ) => () => void
   getState: <TargetReducer = RootReducer>(
     target?: TargetReducer,
-  ) => TargetReducer extends Reducer<infer S, infer D>
-    ? ReturnType<Reducer<S, D>>['root']
+  ) => TargetReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>['root']
     : never
   replaceReducer: <
-    RNew extends RootReducer extends Reducer<infer S, infer D>
-      ? Reducer<S, D>
-      : never
+    RNew extends RootReducer extends Reducer<infer S> ? Reducer<S> : never
   >(
     reducer: RNew,
   ) => Store<RNew>

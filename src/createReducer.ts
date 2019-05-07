@@ -1,4 +1,5 @@
 import {
+  Node,
   Action,
   Reducer,
   ActionCreator,
@@ -7,33 +8,29 @@ import {
   NAME,
   DEPS,
   DEPTH,
-  NODES,
-  HANDLER,
   INITIAL_STATE,
-  DEPS_REDUCERS,
   noop,
   combineNodes,
   createId,
   getName,
-} from './model.ts'
-import { createAction } from './createAction.ts'
+  getId,
+} from './model'
+import { createAction } from './createAction'
+
+export const NODES = Symbol('@@/NODES')
 
 const initialAction = createAction<'@@/init'>('initialAction', () => '@@/init')
+const initialActionType = getId(initialAction)
 
 export function createReducer<State>(
   name: string,
   initialState: State,
-  ..._matchers: {
+  ...handlers: {
     (state: State, ...a: any[]): State
-    [NODES]: any[]
+    [NODES]: Node[]
   }[]
-): Reducer<State, []> {
+): Reducer<State> {
   const id = createId(name, 'reducer')
-
-  var handlers = _matchers as {
-    (state: State, ...a: any[]): State
-    [NODES]: (ActionCreator<any> | Reducer<any, any>)[]
-  }[]
 
   handlers.unshift(
     handle(initialAction, state =>
@@ -41,21 +38,29 @@ export function createReducer<State>(
     ),
   )
 
-  const { [DEPS]: deps, [DEPTH]: depth } = combineNodes(
-    handlers.map(reducer => {
+  const { [DEPS]: deps, [DEPTH]: depth } = combineNodes({
+    id,
+    name,
+    nodes: handlers.map(reducer => {
       const nodes = reducer[NODES]
 
       // TODO: throw?
-      if (nodes === undefined) combineNodes([], noop, id)
+      if (nodes === undefined) {
+        return combineNodes({
+          nodes: [],
+          id,
+          name,
+        })
+      }
 
       // TODO: improve checks
-      const isActionInDeps = nodes[0][DEPS_REDUCERS] === undefined
+      const isActionInDeps = !(INITIAL_STATE in nodes[0])
 
       function handler(ctx: Ctx) {
         const isInit = !(id in ctx.flat)
         const oldState = isInit ? initialState : (ctx.flat[id] as State)
         const args = [oldState]
-        let hasDependenciesChanged = false
+        let hasDependenciesChanged = isActionInDeps || isInit
 
         nodes.forEach(node => {
           const nodeId = node[ID]
@@ -65,25 +70,26 @@ export function createReducer<State>(
           args.push(nodeId in ctx.flatNew ? nodeStateNew : nodeStateOld)
 
           hasDependenciesChanged =
-            isActionInDeps ||
-            (hasDependenciesChanged
-              ? hasDependenciesChanged
-              : // what if `nodeStateNew === undefined`? :hmm:
-                nodeStateNew !== nodeStateOld)
+            hasDependenciesChanged ||
+            // what if `nodeStateNew === undefined`? :hmm:
+            nodeStateNew !== nodeStateOld
         })
 
-        if (hasDependenciesChanged || isInit) {
-          const newState: State = reducer.apply(null, args)
+        if (hasDependenciesChanged) {
+          const newState = reducer.apply(null, args)
           ctx.flatNew[id] = newState
           if (oldState !== newState) ctx.changes.push(id)
         }
       }
 
-      return combineNodes(nodes, handler, id)
+      return combineNodes({
+        id,
+        name,
+        nodes,
+        handler,
+      })
     }),
-    noop,
-    id,
-  )
+  })
 
   function reducer(
     state: {
@@ -100,7 +106,7 @@ export function createReducer<State>(
     let handlersOrdered = deps[type]
 
     if (handlersOrdered === undefined) {
-      type = initialAction.type
+      type = initialActionType
       payload = undefined
       handlersOrdered = deps[type]
     }
@@ -144,15 +150,12 @@ export function createReducer<State>(
   reducer[NAME] = name
   reducer[DEPS] = deps
   reducer[DEPTH] = depth
-  reducer[HANDLER] = noop
   reducer[INITIAL_STATE] = initialState
-  // TODO: add deps reducers for best type infer
-  reducer[DEPS_REDUCERS] = []
 
   return reducer
 }
 
-export function getState<R extends Reducer<any, any>>(
+export function getState<R extends Reducer<any>>(
   state: { flat?: { [key in typeof ID]: any } },
   reducer: R,
 ): R[typeof INITIAL_STATE] {
@@ -162,27 +165,24 @@ export function getState<R extends Reducer<any, any>>(
 }
 
 export function handle<Node1Type, State = any>(
-  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type, any>,
+  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
   reducer: (state: State, payload1: Node1Type) => State,
 ): {
   (state: State, payload1: Node1Type): State
-  [NODES]: [ActionCreator<Node1Type> | Reducer<Node1Type, any>]
+  [NODES]: [ActionCreator<Node1Type> | Reducer<Node1Type>]
 }
 export function handle<Node1Type, Node2Type, State = any>(
-  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type, any>,
-  dependedReducer1: Reducer<Node2Type, any>,
+  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+  dependedReducer1: Reducer<Node2Type>,
   reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
 ): {
   (state: State, payload1: Node1Type, payload2: Node2Type): State
-  [NODES]: [
-    ActionCreator<Node1Type> | Reducer<Node1Type, any>,
-    Reducer<Node2Type, any>
-  ]
+  [NODES]: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
 }
 export function handle<Node1Type, Node2Type, Node3Type, State = any>(
-  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type, any>,
-  dependedReducer1: Reducer<Node2Type, any>,
-  dependedReducer2: Reducer<Node3Type, any>,
+  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
+  dependedReducer1: Reducer<Node2Type>,
+  dependedReducer2: Reducer<Node3Type>,
   reducer: (
     state: State,
     payload1: Node1Type,
@@ -197,9 +197,9 @@ export function handle<Node1Type, Node2Type, Node3Type, State = any>(
     payload3: Node3Type,
   ): State
   [NODES]: [
-    ActionCreator<Node1Type> | Reducer<Node1Type, any>,
-    Reducer<Node2Type, any>,
-    Reducer<Node3Type, any>
+    ActionCreator<Node1Type> | Reducer<Node1Type>,
+    Reducer<Node2Type>,
+    Reducer<Node3Type>
   ]
 }
 
@@ -214,9 +214,9 @@ export function handle(...a) {
 // EXPERIMENTAL
 
 export function map<T, State = any>(
-  target: Reducer<State, any>,
+  target: Reducer<State>,
   reducer: (state: State) => T,
-): Reducer<T, []> {
+): Reducer<T> {
   return createReducer(
     `${getName(target)}/map`,
     target[INITIAL_STATE],
@@ -224,24 +224,19 @@ export function map<T, State = any>(
   )
 }
 
-export function combineReducers<
-  T extends { [key in string]: Reducer<any, any> }
->(
+export function combineReducers<T extends { [key in string]: Reducer<any> }>(
   reducersCollection: T,
-): Reducer<{ [key in keyof T]: T[key][typeof INITIAL_STATE] }, []> {
+): Reducer<{ [key in keyof T]: T[key][typeof INITIAL_STATE] }> {
   const keys = Object.keys(reducersCollection)
   const reducers = keys.map(key => reducersCollection[key])
 
   return createReducer(
-    keys.join(' + '),
+    `{ ${keys.join(', ')} }`,
     {},
     handle.apply(null, [
       ...reducers,
       (oldState, ...values) =>
-        keys.reduce(
-          (acc, key, i) => Object.assign(acc, { [key]: values[i] }),
-          {},
-        ),
+        keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
     ]),
   )
 }

@@ -6,34 +6,35 @@ import {
   NAME,
   DEPS,
   DEPTH,
-  HANDLER,
   createId,
-} from './model.ts'
+} from './model'
 
-export function createAction<T>(
+export function createAction<P>(
   name: string = 'actionCreator',
-  mapper: (a?: any) => T = _ => _,
-): ActionCreator<T> {
-  const id = createId(name, 'action')
+  mapper?: ((a?: any) => P) | null,
+  type: string = createId(name, 'action'),
+): ActionCreator<P> {
   const depth = 0
-  const deps = { [id]: { [depth]: new Set([handler]) } }
+  const deps = { [type]: { [depth]: new Set([handler]) } }
+  mapper = mapper || (_ => _)
   function handler(ctx: Ctx) {
-    ctx.flatNew[id] = ctx.payload
+    ctx.flatNew[type] = ctx.payload
   }
 
-  function actionCreator(payload?: T): Action<T, typeof name> {
+  // FIXME: optional argument must return optional payload
+  function actionCreator(payload?: P): Action<P, typeof type> {
     return {
-      type: id,
+      type: type,
       payload: mapper(payload),
     }
   }
 
-  actionCreator.type = id
-  actionCreator[ID] = id
+  actionCreator[ID] = type
   actionCreator[NAME] = name
   actionCreator[DEPS] = deps
   actionCreator[DEPTH] = depth
-  actionCreator[HANDLER] = handler
 
   return actionCreator
 }
+
+const a = createAction<string>()().payload
