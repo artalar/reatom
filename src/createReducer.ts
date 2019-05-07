@@ -1,154 +1,75 @@
 import {
-  VERTEX,
-  TYPE,
-  createId,
-  Reducer,
-  Vertex,
   Action,
-  Ctx,
-  noop,
+  Reducer,
   ActionCreator,
-  combineVertices,
-} from './shared'
-import { createAction } from './createAction'
+  Ctx,
+  ID,
+  NAME,
+  DEPS,
+  DEPTH,
+  NODES,
+  HANDLER,
+  INITIAL_STATE,
+  DEPS_REDUCERS,
+  noop,
+  combineNodes,
+  createId,
+  getName,
+} from './model.ts'
+import { createAction } from './createAction.ts'
 
-export const initialAction = createAction<'@@/init'>('initialAction')
+const initialAction = createAction<'@@/init'>('initialAction', () => '@@/init')
 
-// type State = number
-// function _match<Node1Type>(
-//   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-//   reducer: (state: State, payload1: Node1Type) => State,
-// ): {
-//   reducer: (state: State, payload1: Node1Type) => State
-//   nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>]
-// }
-// function _match<Node1Type, Node2Type>(
-//   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-//   dependedReducer1: Reducer<Node2Type>,
-//   reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
-// ): {
-//   reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State
-//   nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
-// }
-// function _match(...a) {
-//   const reducer = a.pop()
-//   const nodes = a
-
-//   return { reducer, nodes }
-// }
-
-// declare var _match1: typeof _match
-// _match1(initialAction, ((q, w) => 123))
-
-// function f(m: (m: typeof _match) => any): ReturnType<typeof _match>
-
-// var a = f(m => m(initialAction, ((q, w) => 123)))
-
-export function createReducer<State, Dependencies extends ActionCreator<any> | Reducer<any>>(
+export function createReducer<State>(
   name: string,
   initialState: State,
-  matcher: (
-    match: typeof _match,
-  ) => {
-    reducer: Function
-    nodes: Dependencies[]
-  }[] = () => [],
-): Reducer<State> {
-  function _match<Node1Type>(
-    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-    reducer: (state: State, payload1: Node1Type) => State,
-  ): {
-    reducer: (state: State, payload1: Node1Type) => State
-    nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>]
-  }
-  function _match<Node1Type, Node2Type>(
-    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-    dependedReducer1: Reducer<Node2Type>,
-    reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
-  ): {
-    reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State
-    nodes: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
-  }
-  function _match<Node1Type, Node2Type, Node3Type>(
-    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-    dependedReducer1: Reducer<Node2Type>,
-    dependedReducer2: Reducer<Node3Type>,
-    reducer: (
-      state: State,
-      payload1: Node1Type,
-      payload2: Node2Type,
-      payload3: Node3Type,
-    ) => State,
-  ): {
-    reducer: (
-      state: State,
-      payload1: Node1Type,
-      payload2: Node2Type,
-      payload3: Node3Type,
-    ) => State
-    nodes: [
-      ActionCreator<Node1Type> | Reducer<Node1Type>,
-      Reducer<Node2Type>,
-      Reducer<Node3Type>
-    ]
-  }
-  function _match<Node1Type, Node2Type, Node3Type, Node4Type>(
-    dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-    dependedReducer1: Reducer<Node2Type>,
-    dependedReducer2: Reducer<Node3Type>,
-    dependedReducer3: Reducer<Node4Type>,
-    reducer: (
-      state: State,
-      payload1: Node1Type,
-      payload2: Node2Type,
-      payload3: Node3Type,
-      payload4: Node4Type,
-    ) => State,
-  ): {
-    reducer: (
-      state: State,
-      payload1: Node1Type,
-      payload2: Node2Type,
-      payload3: Node3Type,
-      payload4: Node4Type,
-    ) => State
-    nodes: [
-      ActionCreator<Node1Type> | Reducer<Node1Type>,
-      Reducer<Node2Type>,
-      Reducer<Node3Type>,
-      Reducer<Node4Type>
-    ]
-  }
-
-  function _match(...a) {
-    const reducer = a.pop()
-    const nodes = a
-
-    return { reducer, nodes }
-  }
-
+  ..._matchers: {
+    (state: State, ...a: any[]): State
+    [NODES]: any[]
+  }[]
+): Reducer<State, []> {
   const id = createId(name, 'reducer')
 
-  const matchers = matcher(_match)
+  var handlers = _matchers as {
+    (state: State, ...a: any[]): State
+    [NODES]: (ActionCreator<any> | Reducer<any, any>)[]
+  }[]
 
-  matchers.unshift(_match(initialAction, () => initialState))
+  handlers.unshift(
+    handle(initialAction, state =>
+      state === undefined ? initialState : state,
+    ),
+  )
 
-  const { deps, depth } = combineVertices(
-    matchers.map(matcher => {
-      const { reducer, nodes } = matcher
-      const vertices: Vertex[] = nodes.map(n => n[VERTEX])
+  const { [DEPS]: deps, [DEPTH]: depth } = combineNodes(
+    handlers.map(reducer => {
+      const nodes = reducer[NODES]
+
+      // TODO: throw?
+      if (nodes === undefined) combineNodes([], noop, id)
+
+      // TODO: improve checks
+      const isActionInDeps = nodes[0][DEPS_REDUCERS] === undefined
 
       function handler(ctx: Ctx) {
         const isInit = !(id in ctx.flat)
-        const oldState = isInit ? initialState : ctx.flat[id]
+        const oldState = isInit ? initialState : (ctx.flat[id] as State)
         const args = [oldState]
         let hasDependenciesChanged = false
 
-        vertices.forEach(v => {
-          args.push(v.id in ctx.flatNew ? ctx.flatNew[v.id] : ctx.flat[v.id])
-          hasDependenciesChanged = hasDependenciesChanged
-            ? hasDependenciesChanged
-            : ctx.flatNew[v.id] !== ctx.flat[v.id]
+        nodes.forEach(node => {
+          const nodeId = node[ID]
+          const nodeStateNew = ctx.flatNew[node[ID]]
+          const nodeStateOld = ctx.flat[node[ID]]
+
+          args.push(nodeId in ctx.flatNew ? nodeStateNew : nodeStateOld)
+
+          hasDependenciesChanged =
+            isActionInDeps ||
+            (hasDependenciesChanged
+              ? hasDependenciesChanged
+              : // what if `nodeStateNew === undefined`? :hmm:
+                nodeStateNew !== nodeStateOld)
         })
 
         if (hasDependenciesChanged || isInit) {
@@ -158,7 +79,7 @@ export function createReducer<State, Dependencies extends ActionCreator<any> | R
         }
       }
 
-      return combineVertices(vertices, handler, id)
+      return combineNodes(nodes, handler, id)
     }),
     noop,
     id,
@@ -168,20 +89,23 @@ export function createReducer<State, Dependencies extends ActionCreator<any> | R
     state: {
       root?: State
       flat?: Ctx['flat']
-      changes?: Ctx['changes']
-    },
+    } | null,
     action: Action<any>,
   ): {
-    root?: State
-    flat?: Ctx['flat']
-    changes?: Ctx['changes']
+    root: State
+    flat: Ctx['flat']
+    changes: Ctx['changes']
   } {
-    const { type, payload } = action
-    const handlersOrdered = deps[type]
+    let { type, payload } = action
+    let handlersOrdered = deps[type]
 
-    if (handlersOrdered === undefined) return state
+    if (handlersOrdered === undefined) {
+      type = initialAction.type
+      payload = undefined
+      handlersOrdered = deps[type]
+    }
 
-    const { flat = {} } = state
+    const { flat = {} } = state || {}
     const changes: Ctx['changes'] = []
     const flatNew = {}
     const ctx: Ctx = Object.assign(
@@ -198,78 +122,126 @@ export function createReducer<State, Dependencies extends ActionCreator<any> | R
       if (handlers !== undefined) handlers.forEach(handler => handler(ctx))
     }
 
-    if (ctx.changes.length === 0) return state
+    if (ctx.changes.length === 0) {
+      return {
+        flat,
+        root: flat[id] as State,
+        changes,
+      }
+    }
+
+    delete flatNew[type]
 
     return {
-      // FIXME: without combineReducers user may change child, but not change parent
+      // TODO: without combineReducers user may change child, but not change parent :hmm:
       root: flatNew[id] as State,
       flat: Object.assign({}, flat, flatNew),
       changes,
     }
   }
 
-  reducer[VERTEX] = { id, deps, depth, handler: noop }
+  reducer[ID] = id
+  reducer[NAME] = name
+  reducer[DEPS] = deps
+  reducer[DEPTH] = depth
+  reducer[HANDLER] = noop
+  reducer[INITIAL_STATE] = initialState
+  // TODO: add deps reducers for best type infer
+  reducer[DEPS_REDUCERS] = []
 
   return reducer
 }
 
-type MapIds<List extends {}[]> = { [K in keyof List[keyof List]]: List[K] }
-
-function createNode<State>(name: string) {
-  let _initialState: State
-  const matchers = [{ reducer: () => _initialState, nodes: [initialAction] }]
-
-  function _default(
-    initialState: State,
-  ): {
-    _state: State
-    _nodes: (ActionCreator<any> | Reducer<any>)[]
-  } {
-    _initialState = initialState
-    return {} as {
-      _state: State
-      _nodes: (ActionCreator<any> | Reducer<any>)[]
-    }
-  }
-
-  function _case<Node1>(
-    dependedActionOrReducer1: ActionCreator<Node1> | Reducer<Node1>,
-    reducer: (state: State, payload: Node1) => State,
-  ): {
-    case: typeof _case
-    default: typeof _default
-    _state: State
-    _nodes: [Node1]
-  }
-
-  function _case<Node1, Node2>(
-    dependedActionOrReducer1: ActionCreator<Node1> | Reducer<Node1>,
-    dependedReducer2: Reducer<Node2>,
-    reducer: (state: State, payload1: Node1, payload2: Node2) => State,
-  ): {
-    case: typeof _case
-    default: typeof _default
-    _state: State
-    _nodes: [Node1, Node2]
-  }
-
-  function _case(...a) {
-    const reducer = a.pop()
-    const nodes = a
-
-    matchers.push({ reducer, nodes })
-
-    return switcher
-  }
-
-  const switcher = {
-    case: _case,
-    default: _default,
-  }
-
-  return switcher
+export function getState<R extends Reducer<any, any>>(
+  state: { flat?: { [key in typeof ID]: any } },
+  reducer: R,
+): R[typeof INITIAL_STATE] {
+  const id = reducer[ID]
+  if (id in (state.flat || {})) return state.flat[id]
+  return reducer[INITIAL_STATE]
 }
 
-const a = createNode<number>('test')
-  .case(initialAction, (state, payload) => 123)
-  .default(123)
+export function handle<Node1Type, State = any>(
+  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type, any>,
+  reducer: (state: State, payload1: Node1Type) => State,
+): {
+  (state: State, payload1: Node1Type): State
+  [NODES]: [ActionCreator<Node1Type> | Reducer<Node1Type, any>]
+}
+export function handle<Node1Type, Node2Type, State = any>(
+  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type, any>,
+  dependedReducer1: Reducer<Node2Type, any>,
+  reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
+): {
+  (state: State, payload1: Node1Type, payload2: Node2Type): State
+  [NODES]: [
+    ActionCreator<Node1Type> | Reducer<Node1Type, any>,
+    Reducer<Node2Type, any>
+  ]
+}
+export function handle<Node1Type, Node2Type, Node3Type, State = any>(
+  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type, any>,
+  dependedReducer1: Reducer<Node2Type, any>,
+  dependedReducer2: Reducer<Node3Type, any>,
+  reducer: (
+    state: State,
+    payload1: Node1Type,
+    payload2: Node2Type,
+    payload3: Node3Type,
+  ) => State,
+): {
+  (
+    state: State,
+    payload1: Node1Type,
+    payload2: Node2Type,
+    payload3: Node3Type,
+  ): State
+  [NODES]: [
+    ActionCreator<Node1Type> | Reducer<Node1Type, any>,
+    Reducer<Node2Type, any>,
+    Reducer<Node3Type, any>
+  ]
+}
+
+export function handle(...a) {
+  const reducer = a.pop()
+  const nodes = a
+  reducer[NODES] = nodes
+
+  return reducer
+}
+
+// EXPERIMENTAL
+
+export function map<T, State = any>(
+  target: Reducer<State, any>,
+  reducer: (state: State) => T,
+): Reducer<T, []> {
+  return createReducer(
+    `${getName(target)}/map`,
+    target[INITIAL_STATE],
+    handle(target, (_, state) => reducer(state)),
+  )
+}
+
+export function combineReducers<
+  T extends { [key in string]: Reducer<any, any> }
+>(
+  reducersCollection: T,
+): Reducer<{ [key in keyof T]: T[key][typeof INITIAL_STATE] }, []> {
+  const keys = Object.keys(reducersCollection)
+  const reducers = keys.map(key => reducersCollection[key])
+
+  return createReducer(
+    keys.join(' + '),
+    {},
+    handle.apply(null, [
+      ...reducers,
+      (oldState, ...values) =>
+        keys.reduce(
+          (acc, key, i) => Object.assign(acc, { [key]: values[i] }),
+          {},
+        ),
+    ]),
+  )
+}

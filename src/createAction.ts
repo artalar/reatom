@@ -1,5 +1,14 @@
-import { ActionCreator, Action, Ctx, ID, DEPS, DEPTH, HANDLER } from './model'
-import { createId } from './shared';
+import {
+  ActionCreator,
+  Action,
+  Ctx,
+  ID,
+  NAME,
+  DEPS,
+  DEPTH,
+  HANDLER,
+  createId,
+} from './model.ts'
 
 export function createAction<T>(
   name: string = 'actionCreator',
@@ -19,7 +28,9 @@ export function createAction<T>(
     }
   }
 
+  actionCreator.type = id
   actionCreator[ID] = id
+  actionCreator[NAME] = name
   actionCreator[DEPS] = deps
   actionCreator[DEPTH] = depth
   actionCreator[HANDLER] = handler
