@@ -45,6 +45,7 @@
     "babel-jest": "^24.1.0",
     "babel-loader": "^8.0.4",
     "cross-env": "^5.2.0",
+    "effector": "^0.18.6",
     "enzyme": "^3.8.0",
     "enzyme-adapter-react-16": "^1.7.1",
     "eslint": "^5.9.0",
