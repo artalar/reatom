@@ -87,31 +87,31 @@ describe('redux-steroid', () => {
           (steroidActions[`${prefix}1`] =
             steroidActions[`${prefix}1`] ||
             createAction(`${prefix}1`, null, `${prefix}1`)),
-          (state, value) => [value],
+          (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}2`] =
             steroidActions[`${prefix}2`] ||
             createAction(`${prefix}2`, null, `${prefix}2`)),
-          (state, value) => [value],
+          (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}3`] =
             steroidActions[`${prefix}3`] ||
             createAction(`${prefix}3`, null, `${prefix}3`)),
-          (state, value) => [value],
+          (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}4`] =
             steroidActions[`${prefix}4`] ||
             createAction(`${prefix}4`, null, `${prefix}4`)),
-          (state, value) => [value],
+          (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}5`] =
             steroidActions[`${prefix}5`] ||
             createAction(`${prefix}5`, null, `${prefix}5`)),
-          (state, value) => [value],
+          (state, value) => value,
         ),
       ))
     }
@@ -150,27 +150,27 @@ describe('redux-steroid', () => {
         .on(
           (effectorActions[`${prefix}1`] =
             effectorActions[`${prefix}1`] || effector.createEvent()),
-          (state, value) => [value],
+          (state, value) => value,
         )
         .on(
           (effectorActions[`${prefix}2`] =
             effectorActions[`${prefix}2`] || effector.createEvent()),
-          (state, value) => [value],
+          (state, value) => value,
         )
         .on(
           (effectorActions[`${prefix}3`] =
             effectorActions[`${prefix}3`] || effector.createEvent()),
-          (state, value) => [value],
+          (state, value) => value,
         )
         .on(
           (effectorActions[`${prefix}4`] =
             effectorActions[`${prefix}4`] || effector.createEvent()),
-          (state, value) => [value],
+          (state, value) => value,
         )
         .on(
           (effectorActions[`${prefix}5`] =
             effectorActions[`${prefix}5`] || effector.createEvent()),
-          (state, value) => [value],
+          (state, value) => value,
         ))
     }
 
