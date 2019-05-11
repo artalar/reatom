@@ -44,7 +44,7 @@ export type Reducer<State> = Node & {
   ): {
     root: State
     flat: { [key in typeof ID]: any }
-    changes: (typeof ID)[]
+    changes?: (typeof ID)[]
   }
 }
 
@@ -85,6 +85,7 @@ export function combineNodes({
       if (deps[actionType] === undefined) deps[actionType] = {}
 
       for (const i in nodeDeps[actionType]) {
+        if (nodeDeps[actionType][i] === undefined) continue
         if (deps[actionType][i] === undefined) deps[actionType][i] = new Set()
 
         nodeDeps[actionType][i].forEach(handler =>

@@ -1,72 +1,56 @@
-import { Store, Reducer, Ctx, combineNodes, createId } from './model'
-import { getState, createReducer, handle } from './createReducer'
+import {
+  Store,
+  Reducer,
+  Ctx,
+  noop,
+  createId,
+  getId,
+  combineNodes,
+} from './model'
+import { getState as _getState, createReducer, handle } from './createReducer'
 
-const EXIT_FLAG = Symbol('@@/EXIT_FLAG')
+const subscribersEmpty = {
+  forEach: noop,
+}
 
 export function createStore<R extends Reducer<any>>(
   rootReducer: R,
   preloadedState = null,
 ): Store<R> {
-  let currentReducer = rootReducer
-  let state = currentReducer(preloadedState, {})
+  let state = rootReducer(preloadedState, { type: '', payload: null })
+  const subscribers = {}
 
-  function handler(oldState) {
-    const { changes, flat, flatNew } = this as Ctx
-    if (changes.length === 0) throw EXIT_FLAG
-
-    state = {
-      root: getState({ flat: flatNew }, rootReducer),
-      flat: Object.assign({}, flat, flatNew),
-      changes,
-    }
-
-    return !oldState
-  }
-
-  currentReducer = createReducer(
-    'store',
-    false,
-    handle(currentReducer, handler),
-  )
-
-  function _getState(target = rootReducer) {
-    return getState(state, target)
+  function getState(target = rootReducer) {
+    return _getState(state, target)
   }
 
   function subscribe(listener, target = rootReducer) {
-    currentReducer = createReducer(
-      'subscriber',
-      false,
-      handle(
-        currentReducer,
-        createReducer(
-          'subscriber',
-          false,
-          handle(target, function(oldState) {
-            listener(getState({ flat: this.flatNew }, target))
-            return !oldState
-          }),
-        ),
-        state => !state,
-      ),
-    )
+    const targetId = getId(target)
+    if (subscribers[targetId] === undefined) subscribers[targetId] = new Set()
+    subscribers[targetId].add(listener)
 
-    return () => {}
+    return () => {
+      subscribers[targetId].delete(listener)
+    }
   }
 
   function dispatch(action) {
-    try {
-      currentReducer(state, action)
-      return state.root
-    } catch (e) {
-      if (e === EXIT_FLAG) return state.root
-      throw e
+    const newState = rootReducer(state, action)
+    if (newState !== state) {
+      state = newState
+
+      state.changes.forEach(id =>
+        (subscribers[id] || subscribersEmpty).forEach(listener =>
+          listener(state.flat[id]),
+        ),
+      )
     }
+    return state.root
   }
 
   return {
     subscribe,
-    getState: _getState,
+    getState,
     dispatch,
   }
 }

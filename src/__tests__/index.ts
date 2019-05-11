@@ -211,6 +211,7 @@ describe('redux-steroid', () => {
 
       const state = root(null, action('_'))
       expect(state.root).toEqual({ r11: '01_', r12: '02_' })
+      // `2` if Handlers is not Set
       expect(r01Map.mock.calls.length).toBe(1)
       expect(r02Map.mock.calls.length).toBe(1)
       expect(r11Map.mock.calls.length).toBe(1)

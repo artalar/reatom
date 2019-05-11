@@ -34,6 +34,7 @@ export function createReducer<State>(
 
   handlers.unshift(
     handle(initialAction, state =>
+      // TODO: add to documentation: do not store undefined in state
       state === undefined ? initialState : state,
     ),
   )
@@ -55,19 +56,21 @@ export function createReducer<State>(
 
       // TODO: improve checks
       const isActionInDeps = !(INITIAL_STATE in nodes[0])
+      const argsLength = nodes.length + 1
 
-      function handler(ctx: Ctx) {
-        const isInit = !(id in ctx.flat)
-        const oldState = isInit ? initialState : (ctx.flat[id] as State)
-        const args = [oldState]
+      function handler({ flat, flatNew, changes }: Ctx) {
+        const isInit = !(id in flat)
+        const oldState = isInit ? initialState : (flat[id] as State)
+        const args = new Array(argsLength)
+        args[0] = oldState
         let hasDependenciesChanged = isActionInDeps || isInit
 
-        nodes.forEach(node => {
+        nodes.forEach((node, i) => {
           const nodeId = node[ID]
-          const nodeStateNew = ctx.flatNew[node[ID]]
-          const nodeStateOld = ctx.flat[node[ID]]
+          const nodeStateNew = flatNew[nodeId]
+          const nodeStateOld = flat[nodeId]
 
-          args.push(nodeId in ctx.flatNew ? nodeStateNew : nodeStateOld)
+          args[i + 1] = nodeId in flatNew ? nodeStateNew : nodeStateOld
 
           hasDependenciesChanged =
             hasDependenciesChanged ||
@@ -76,9 +79,9 @@ export function createReducer<State>(
         })
 
         if (hasDependenciesChanged) {
-          const newState = reducer.apply(ctx, args)
-          ctx.flatNew[id] = newState
-          if (oldState !== newState) ctx.changes.push(id)
+          const newState = reducer(...args)
+          flatNew[id] = newState
+          if (oldState !== newState) changes.push(id)
         }
       }
 
@@ -100,7 +103,7 @@ export function createReducer<State>(
   ): {
     root: State
     flat: Ctx['flat']
-    changes: Ctx['changes']
+    changes?: Ctx['changes']
   } {
     let { type, payload } = action
     let handlersOrdered = deps[type]
@@ -128,13 +131,7 @@ export function createReducer<State>(
       if (handlers !== undefined) handlers.forEach(handler => handler(ctx))
     }
 
-    if (ctx.changes.length === 0) {
-      return {
-        flat,
-        root: flat[id] as State,
-        changes,
-      }
-    }
+    if (ctx.changes.length === 0) return state
 
     delete flatNew[type]
 
