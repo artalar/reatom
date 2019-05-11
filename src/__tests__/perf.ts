@@ -4,15 +4,16 @@ import {
   combineReducers as combineReducersRedux,
 } from 'redux'
 import * as effector from 'effector'
-import { createAction } from '../createAction'
 import {
+  createAction,
   createReducer,
   handle,
   getState,
   map,
   combineReducers,
-} from '../createReducer'
-import { createStore } from '../createStore'
+  createStore,
+// replace('es', 'src') // for develop
+} from '../../lib'
 
 describe('redux-steroid', () => {
   describe('perf [55 stores 30 actions]', () => {
@@ -396,7 +397,7 @@ describe('redux-steroid', () => {
     test('dispatch without subscribers [redux]', () => {
       const start = performance.now()
 
-      storeRedux.dispatch({ type: '11', payload: '1' })
+      storeRedux.dispatch({ type: '11', payload: '10' })
 
       console.log(
         'dispatch without subscribers [redux]',
@@ -408,7 +409,7 @@ describe('redux-steroid', () => {
     test('dispatch without subscribers [steroid]', () => {
       const start = performance.now()
 
-      storeSteroid.dispatch({ type: '11', payload: '1' })
+      storeSteroid.dispatch({ type: '11', payload: '10' })
 
       console.log(
         'dispatch without subscribers [steroid]',
@@ -422,7 +423,7 @@ describe('redux-steroid', () => {
     test('dispatch without subscribers [effector]', () => {
       const start = performance.now()
 
-      effectorActions['11']('1')
+      effectorActions['11']('10')
 
       console.log(
         'dispatch without subscribers [effector]',
