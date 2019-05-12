@@ -7,3 +7,4 @@ export {
 } from './createReducer.ts'
 export { createAction } from './createAction.ts'
 export { getName } from './model.ts'
+export { createStore } from './createStore'

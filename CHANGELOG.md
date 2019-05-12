@@ -1,5 +1,5 @@
 <!-- ## 0.0.2 -->
 
-## 0.0.1
+## 1.4.0
 
-Init.
+Add `createStore` - a half compatible **redux**-like API

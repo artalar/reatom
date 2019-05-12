@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('path')
 
 module.exports = {
   mode: 'production',
@@ -12,6 +12,9 @@ module.exports = {
     ),
     library: 'redux-steroid',
     libraryTarget: 'umd',
+  },
+  resolve: {
+    extensions: ['.ts', '.js', '.json'],
   },
   module: {
     rules: [
@@ -29,4 +32,4 @@ module.exports = {
   stats: {
     colors: true,
   },
-};
+}
