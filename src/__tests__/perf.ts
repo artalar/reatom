@@ -1,4 +1,3 @@
-//
 import {
   createStore as createStoreRedux,
   combineReducers as combineReducersRedux,
@@ -12,8 +11,19 @@ import {
   map,
   combineReducers,
   createStore,
-// replace('es', 'src') // for develop
-} from '../../lib'
+  // replace('es', 'src') // for develop
+} from '../../es'
+
+function log(name, target, time) {
+  console.log(name, target, time, 'ms')
+
+  // // use with `tools/showPerfResults.js`
+  // const logData = JSON.parse(fs.readFileSync(path.join(__dirname, 'log.json')))
+  // logData[name] = logData[name] || {}
+  // logData[name][target] = logData[name][target] || []
+  // logData[name][target].push(time)
+  // fs.writeFileSync(path.join(__dirname, 'log.json'), JSON.stringify(logData))
+}
 
 describe('redux-steroid', () => {
   describe('perf [55 stores 30 actions]', () => {
@@ -293,11 +303,7 @@ describe('redux-steroid', () => {
         }),
       )
 
-      console.log(
-        'createStore [redux]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('createStore', '[redux]', (performance.now() - start).toFixed(3))
     })
 
     test('createStore [steroid]', () => {
@@ -318,11 +324,7 @@ describe('redux-steroid', () => {
         }),
       )
 
-      console.log(
-        'createStore [steroid]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('createStore', '[steroid]', (performance.now() - start).toFixed(3))
 
       expect(storeRedux.getState()).toEqual(storeSteroid.getState())
     })
@@ -343,11 +345,7 @@ describe('redux-steroid', () => {
         '10': effectorReducerFabric('10', '10'),
       })
 
-      console.log(
-        'createStore [effector]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('createStore', '[effector]', (performance.now() - start).toFixed(3))
 
       expect(storeSteroid.getState()).toEqual(storeEffector.getState())
     })
@@ -357,10 +355,10 @@ describe('redux-steroid', () => {
 
       storeRedux.dispatch({ type: '11', payload: '1' })
 
-      console.log(
-        'dispatch without subscribers (init) [redux]',
+      log(
+        'dispatch without subscribers (init)',
+        '[redux]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
     })
 
@@ -369,10 +367,10 @@ describe('redux-steroid', () => {
 
       storeSteroid.dispatch({ type: '11', payload: '1' })
 
-      console.log(
-        'dispatch without subscribers (init) [steroid]',
+      log(
+        'dispatch without subscribers (init)',
+        '[steroid]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(reduxSubscribtionsCallsCount).toBe(steroidSubscribtionsCallsCount)
@@ -383,10 +381,10 @@ describe('redux-steroid', () => {
 
       effectorActions['11']('1')
 
-      console.log(
-        'dispatch without subscribers (init) [effector]',
+      log(
+        'dispatch without subscribers (init)',
+        '[effector]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(steroidSubscribtionsCallsCount).toBe(
@@ -399,10 +397,10 @@ describe('redux-steroid', () => {
 
       storeRedux.dispatch({ type: '11', payload: '10' })
 
-      console.log(
-        'dispatch without subscribers [redux]',
+      log(
+        'dispatch without subscribers',
+        '[redux]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
     })
 
@@ -411,10 +409,10 @@ describe('redux-steroid', () => {
 
       storeSteroid.dispatch({ type: '11', payload: '10' })
 
-      console.log(
-        'dispatch without subscribers [steroid]',
+      log(
+        'dispatch without subscribers',
+        '[steroid]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(reduxSubscribtionsCallsCount).toBe(steroidSubscribtionsCallsCount)
@@ -425,10 +423,10 @@ describe('redux-steroid', () => {
 
       effectorActions['11']('10')
 
-      console.log(
-        'dispatch without subscribers [effector]',
+      log(
+        'dispatch without subscribers',
+        '[effector]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(steroidSubscribtionsCallsCount).toBe(
@@ -441,11 +439,7 @@ describe('redux-steroid', () => {
 
       unsubscribersRedux = reduxSubscribeChildren()
 
-      console.log(
-        'subscribe [redux]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('subscribe', '[redux]', (performance.now() - start).toFixed(3))
       // fill selectors cache
       storeRedux.dispatch({ type: '__none' })
     })
@@ -455,11 +449,7 @@ describe('redux-steroid', () => {
 
       unsubscribersSteroid = steroidSubscribeChildren()
 
-      console.log(
-        'subscribe [steroid]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('subscribe', '[steroid]', (performance.now() - start).toFixed(3))
     })
 
     test('subscribe [effector]', () => {
@@ -467,11 +457,7 @@ describe('redux-steroid', () => {
 
       unsubscribersEffector = effectorSubscribeChildren()
 
-      console.log(
-        'subscribe [effector]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('subscribe', '[effector]', (performance.now() - start).toFixed(3))
     })
 
     test('dispatch with many subscriptions [redux]', () => {
@@ -480,10 +466,10 @@ describe('redux-steroid', () => {
 
       storeRedux.dispatch({ type: '11', payload: '1.1' })
 
-      console.log(
-        'dispatch with many subscriptions [redux]',
+      log(
+        'dispatch with many subscriptions',
+        '[redux]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
       expect(reduxSubscribtionsCallsCount).toBe(12)
     })
@@ -494,10 +480,10 @@ describe('redux-steroid', () => {
 
       storeSteroid.dispatch({ type: '11', payload: '1.1' })
 
-      console.log(
-        'dispatch with many subscriptions [steroid]',
+      log(
+        'dispatch with many subscriptions',
+        '[steroid]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(steroidSubscribtionsCallsCount).toBe(12)
@@ -509,10 +495,10 @@ describe('redux-steroid', () => {
 
       effectorActions['11']('1.1')
 
-      console.log(
-        'dispatch with many subscriptions [effector]',
+      log(
+        'dispatch with many subscriptions',
+        '[effector]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(effectorSubscribtionsCallsCount).toBe(12)
@@ -524,10 +510,10 @@ describe('redux-steroid', () => {
 
       storeRedux.dispatch({ type: '101', payload: '1.11' })
 
-      console.log(
-        'dispatch with little subscriptions [redux]',
+      log(
+        'dispatch with little subscriptions',
+        '[redux]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(reduxSubscribtionsCallsCount).toBe(1)
@@ -539,10 +525,10 @@ describe('redux-steroid', () => {
 
       storeSteroid.dispatch({ type: '101', payload: '1.11' })
 
-      console.log(
-        'dispatch with little subscriptions [steroid]',
+      log(
+        'dispatch with little subscriptions',
+        '[steroid]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(steroidSubscribtionsCallsCount).toBe(1)
@@ -554,10 +540,10 @@ describe('redux-steroid', () => {
 
       effectorActions['101']('1.11')
 
-      console.log(
-        'dispatch with little subscriptions [effector]',
+      log(
+        'dispatch with little subscriptions',
+        '[effector]',
         (performance.now() - start).toFixed(3),
-        'ms',
       )
 
       expect(effectorSubscribtionsCallsCount).toBe(1)
@@ -568,11 +554,7 @@ describe('redux-steroid', () => {
 
       unsubscribersRedux.map(f => f())
 
-      console.log(
-        'unsubscribe [redux]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('unsubscribe', '[redux]', (performance.now() - start).toFixed(3))
       // fill selectors cache
       storeRedux.dispatch({ type: '__none' })
     })
@@ -582,11 +564,7 @@ describe('redux-steroid', () => {
 
       unsubscribersSteroid.map(f => f())
 
-      console.log(
-        'unsubscribe [steroid]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('unsubscribe', '[steroid]', (performance.now() - start).toFixed(3))
     })
 
     test('unsubscribe [effector]', () => {
@@ -594,11 +572,7 @@ describe('redux-steroid', () => {
 
       unsubscribersEffector.map(f => f())
 
-      console.log(
-        'unsubscribe [effector]',
-        (performance.now() - start).toFixed(3),
-        'ms',
-      )
+      log('unsubscribe', '[effector]', (performance.now() - start).toFixed(3))
     })
   })
 })
