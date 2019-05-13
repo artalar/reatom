@@ -128,7 +128,8 @@ export function createReducer<State>(
 
     for (let depthCurrent = 0; depthCurrent <= depth; depthCurrent++) {
       const handlers = handlersOrdered[depthCurrent]
-      if (handlers !== undefined) handlers.forEach(handler => handler(ctx))
+      if (handlers === undefined) continue
+      handlers.list.forEach(id => handlers[id].handler(ctx))
     }
 
     if (ctx.changes.length === 0) return state
@@ -153,12 +154,20 @@ export function createReducer<State>(
 }
 
 export function getState<R extends Reducer<any>>(
-  state: { flat?: { [key in typeof ID]: any } },
+  state: { flat?: { [key in string]: any } },
   reducer: R,
 ): R[typeof INITIAL_STATE] {
   const id = reducer[ID]
   if (id in (state.flat || {})) return state.flat[id]
   return reducer[INITIAL_STATE]
+}
+
+export function getDeps<R extends Reducer<any>>(reducer: R): R[typeof DEPS] {
+  return reducer[DEPS]
+}
+
+export function getDepth<R extends Reducer<any>>(reducer: R): R[typeof DEPTH] {
+  return reducer[DEPTH]
 }
 
 export function handle<Node1Type, State = any>(

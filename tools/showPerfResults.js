@@ -8,9 +8,9 @@ const logData = JSON.parse(
 function median(values) {
   if (values.length === 0) return 0
 
-  values.sort(function(a, b) {
-    return a - b
-  })
+  values = values.map(v => +v)
+
+  values.sort((a, b) => a - b)
 
   var half = Math.floor(values.length / 2)
 

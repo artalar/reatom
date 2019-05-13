@@ -1,6 +1,7 @@
 import {
   ActionCreator,
   Action,
+  Dependencies,
   Ctx,
   ID,
   NAME,
@@ -15,7 +16,18 @@ export function createAction<P>(
   type: string = createId(name, 'action'),
 ): ActionCreator<P> {
   const depth = 0
-  const deps = { [type]: { [depth]: new Set([handler]) } }
+  const deps: Dependencies = {
+    [type]: {
+      [depth]: {
+        [type]: {
+          id: type,
+          handler,
+          sets: 1,
+        },
+        list: [type],
+      },
+    },
+  }
   mapper = mapper || (_ => _)
   function handler(ctx: Ctx) {
     ctx.flatNew[type] = ctx.payload

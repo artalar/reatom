@@ -21,6 +21,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "show-perf": "node ./tools/showPerfResults",
     "prettify": "prettier --write '**/*.(j|t)s'",
     "prettify:watch": "onchange '**/*.(j|t)s' -- prettier --write {{changed}}",
     "ts-check": "tsc --noEmit",

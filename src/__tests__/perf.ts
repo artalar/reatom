@@ -1,3 +1,5 @@
+import fs from 'fs'
+import path from 'path'
 import {
   createStore as createStoreRedux,
   combineReducers as combineReducersRedux,
@@ -15,7 +17,7 @@ import {
 } from '../../es'
 
 function log(name, target, time) {
-  console.log(name, target, time, 'ms')
+  // console.log(name, target, time, 'ms')
 
   // // use with `tools/showPerfResults.js`
   // const logData = JSON.parse(fs.readFileSync(path.join(__dirname, 'log.json')))

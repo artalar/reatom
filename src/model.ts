@@ -14,8 +14,10 @@ export const INITIAL_STATE = Symbol('@@/INITIAL_STATE')
 
 export type IdPrefix = 'action' | 'reducer' | 'combine' | 'type' | 'store'
 export type ActionType = string
-export type Handler = Function // reducer | actionCreator mapper | subscriber
-export type Handlers = Set<Handler>
+export type Handler = { id: string; handler: Function; sets: number } // reducer | actionCreator mapper | subscriber
+export type Handlers = {
+  [key in string | 'list']: key extends 'list' ? string[] : Handler
+}
 export type HandlersForActions = { [key in number]: Handlers }
 export type Dependencies = { [key in ActionType]: HandlersForActions }
 export type Node = {
@@ -23,6 +25,130 @@ export type Node = {
   [NAME]: string
   [DEPS]: Dependencies
   [DEPTH]: number
+}
+
+type SetRepeatsItem = { id: string; handler: Function; repeats?: number }
+type SetRepeatsMap = { [key in string]: SetRepeatsItem & { repeats: number } }
+class SetRepeats {
+  _list: string[]
+  _map: SetRepeatsMap
+  constructor(setRepeats?: SetRepeats) {
+    const _list: string[] = (this._list = [])
+    const _map: SetRepeatsMap = (this._map = {})
+    if (setRepeats !== undefined) {
+      const setRepeatsMap = setRepeats._map
+      for (const key in setRepeatsMap) {
+        const { id, handler, repeats } = setRepeatsMap[key]
+        _list.push(id)
+        _map[id] = { id, handler, repeats }
+      }
+    }
+  }
+  add(id: string, handler: Function, repeats: number = 0) {
+    const { _list, _map } = this
+    const handlerDescription = _map[id]
+    if (handlerDescription === undefined) {
+      _map[id] = { id, handler, repeats }
+      _list.push(id)
+    } else {
+      _map[id].repeats++
+    }
+    return this
+  }
+  delete(id: string) {
+    const { _list, _map } = this
+    const handlerDescription = _map[id]
+
+    if (
+      handlerDescription !== undefined &&
+      --handlerDescription.repeats === 0
+    ) {
+      delete _map[id]
+      const index = _list.indexOf(id)
+      // reducers is clear functions, so order is no affect
+      _list[index] = _list[_list.length - 1]
+      _list.pop()
+    }
+    return this
+  }
+  forEach(callback: (handlerDescription: SetRepeatsItem) => any) {
+    const { _list, _map } = this
+    _list.forEach(id => callback(_map[id]))
+    return this
+  }
+}
+
+type SequencesMap = { [key in number]: SetRepeats }
+class Sequences {
+  _map: SequencesMap
+  depth: number
+  constructor() {
+    this._map = {}
+    this.depth = 0
+  }
+  get(index: number) {
+    return this._map[index]
+  }
+  add(index: number, { id, handler, repeats }: SetRepeatsItem) {
+    ;(this._map[index] || (this._map[index] = new SetRepeats())).add(
+      id,
+      handler,
+      repeats,
+    )
+    this.depth = Math.max(this.depth, index + 1)
+    return this
+  }
+  delete(index: number, id: string) {
+    const set = this._map[index]
+    if (set !== undefined) set.delete(id)
+    return this
+  }
+  merge(setOrdered: Sequences) {
+    const { depth: setLength } = setOrdered
+    this.depth = Math.max(this.depth, setLength)
+
+    for (let i = 0; i < setLength; i++) {
+      const set = setOrdered.get(i)
+      if (set !== undefined) {
+        set.forEach(handlerDescription => this.add(i, handlerDescription))
+      }
+    }
+    return this
+  }
+}
+
+class _Node {
+  id: string
+  name: string
+  _list: ActionType[]
+  _map: { [key in ActionType]: Sequences }
+  constructor(id: string, name: string) {
+    this.id = id
+    this.name = name
+    this._list = []
+    this._map = {}
+  }
+  add(actionType: ActionType, index: number, item: SetRepeatsItem) {
+    const { _list, _map } = this
+    let sequences = _map[actionType]
+    if (sequences === undefined) {
+      sequences = _map[actionType] = new Sequences().add(index, item)
+      _list.push(actionType)
+    }
+    sequences.add(index, item)
+    return this
+  }
+  merge(node: _Node) {
+    const { _map } = this
+    const nodeDeps = node._map
+    for (const actionType in node._map) {
+      _map[actionType] = (
+        _map[actionType] || (_map[actionType] = new Sequences())
+      ).merge(nodeDeps[actionType])
+    }
+
+    return this
+  }
 }
 
 export type Action<Payload = undefined, Type = ActionType> = {
@@ -38,13 +164,13 @@ export type Reducer<State> = Node & {
   (
     state: {
       root?: State
-      flat?: { [key in typeof ID]: any }
+      flat?: { [key in string]: any }
     } | null,
     action: Action<any>,
   ): {
     root: State
-    flat: { [key in typeof ID]: any }
-    changes?: (typeof ID)[]
+    flat: { [key in string]: any }
+    changes?: (string)[]
   }
 }
 
@@ -68,36 +194,58 @@ export function combineNodes({
   id,
   name,
   handler,
+  deps = {},
 }: {
   nodes: Node[]
   id: string
   name: string
-  handler?: Handler
+  handler?: Function
+  deps?: Dependencies
 }): Node {
-  const deps: Dependencies = {}
   let depth = 0
 
-  for (let i = 0; i < nodes.length; i++) {
-    const { [DEPS]: nodeDeps, [DEPTH]: nodeDepth } = nodes[i]
+  for (let nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++) {
+    const { [DEPS]: nodeDeps, [DEPTH]: nodeDepth } = nodes[nodeIndex]
     depth = Math.max(depth, nodeDepth + 1)
 
     for (const actionType in nodeDeps) {
-      if (deps[actionType] === undefined) deps[actionType] = {}
+      const nodeActionDeps = nodeDeps[actionType]
+      const actionDeps = deps[actionType] || (deps[actionType] = {})
 
-      for (const i in nodeDeps[actionType]) {
-        if (nodeDeps[actionType][i] === undefined) continue
-        if (deps[actionType][i] === undefined) deps[actionType][i] = new Set()
+      for (let i = 0; i <= nodeDepth; i++) {
+        if (nodeActionDeps[i] === undefined) continue
 
-        nodeDeps[actionType][i].forEach(handler =>
-          deps[actionType][i].add(handler),
-        )
+        const nodeActionDep = nodeActionDeps[i]
+        const actionDep = actionDeps[i] || (actionDeps[i] = { list: [] })
+
+        nodeActionDep.list.forEach(key => {
+          if (actionDep[key] !== undefined) {
+            ;(actionDep[key] as Handler).sets++
+            actionDep[key]
+            return
+          }
+
+          actionDep[key] = {
+            id: key,
+            handler: nodeActionDep[key].handler,
+            sets: 1,
+          }
+          actionDep.list.push(key)
+        })
       }
     }
   }
 
   if (handler) {
     for (const actionType in deps) {
-      deps[actionType][depth] = new Set([handler])
+      deps[actionType][depth] = {
+        [id]: {
+          id: id,
+          handler: handler,
+          sets: 1,
+        },
+        list: [id],
+      }
     }
   }
 
@@ -109,38 +257,37 @@ export function combineNodes({
   }
 }
 
-// export function disunitVertices(
-//   vertexTarget: Vertex,
-//   vertexRemoved: Vertex,
-// ): Vertex {
-//   const deps: Deps = Object.assign({}, vertexTarget.deps)
-//   const removedDeps = vertexRemoved.deps
-//   const removedDepth = vertexRemoved.depth
-//   const removedHandler = vertexRemoved.handler
+export function disunitNode(node: Node, deletedNode: Node) {
+  const nodeDeps = node[DEPS]
+  const { [DEPS]: deletedNodeDeps, [DEPTH]: deletedNodeDepth } = deletedNode
+  console.log(Object.values(nodeDeps).pop())
+  for (const actionType in deletedNodeDeps) {
+    const nodeActionDeps = nodeDeps[actionType]
+    const deletedNodeActionDeps = deletedNodeDeps[actionType]
+    for (let i = 0; i <= deletedNodeDepth; i++) {
+      const deletedNodeHandlers = deletedNodeActionDeps[i]
+      if (deletedNodeHandlers === undefined) continue
 
-//   for (const actionType in removedDeps) {
-//     if (
-//       deps[actionType] !== undefined &&
-//       deps[actionType][removedDepth] !== undefined
-//     ) {
-//       deps[actionType] = Object.assign({}, deps[actionType])
-//       deps[actionType][removedDepth] = new Set(deps[actionType][removedDepth])
-//       deps[actionType][removedDepth].delete(removedHandler)
-//     }
-//   }
+      const nodeHandlers = nodeActionDeps[i]
 
-//   return {
-//     id: vertexTarget.id,
-//     deps,
-//     depth: vertexTarget.depth,
-//     handler: vertexTarget.handler,
-//   }
-// }
+      deletedNodeHandlers.list.forEach(id => {
+        if (--nodeHandlers[id].sets === 0) {
+          delete nodeHandlers[id]
+          const list = nodeHandlers.list
+          const index = list.indexOf(id)
+          list[index] = list[list.length - 1]
+          list.pop()
+        }
+      })
+    }
+  }
+  console.log(Object.values(nodeDeps).pop())
+}
 
 export type Ctx = Action<any> & {
-  flat: { [key in typeof ID]: any }
-  flatNew: { [key in typeof ID]: any }
-  changes: (typeof ID)[]
+  flat: { [key in string]: any }
+  flatNew: { [key in string]: any }
+  changes: string[]
 }
 
 export type Store<RootReducer> = {

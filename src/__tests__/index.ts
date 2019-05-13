@@ -93,6 +93,34 @@ describe('redux-steroid', () => {
         countDoubled: 4,
         toggled: false,
       })
+      expect(store.getStateInternal()).toEqual({
+        changes: [
+          'count [reducer][10]',
+          'count/map [reducer][11]',
+          '{ count, countDoubled, toggled } [reducer][13]',
+          '{ count, countDoubled, toggled }/map [reducer][14]',
+        ],
+        flat: {
+          'count [reducer][10]': 2,
+          'count/map [reducer][11]': 4,
+          'toggled [reducer][12]': false,
+          '{ count, countDoubled, toggled } [reducer][13]': {
+            count: 2,
+            countDoubled: 4,
+            toggled: false,
+          },
+          '{ count, countDoubled, toggled }/map [reducer][14]': {
+            count: 2,
+            countDoubled: 4,
+            toggled: false,
+          },
+        },
+        root: {
+          count: 2,
+          countDoubled: 4,
+          toggled: false,
+        },
+      })
       expect(subscriberRoot.mock.calls.length).toBe(1)
       expect(subscriberRoot.mock.calls[0]).toEqual([
         { count: 2, countDoubled: 4, toggled: false },
@@ -116,8 +144,76 @@ describe('redux-steroid', () => {
       expect(subscriberRoot.mock.calls.length).toBe(2)
       expect(subscriberToogled.mock.calls.length).toBe(1)
     })
+    test('createStore lazy selectors', () => {
+      const subscriberRoot = jest.fn()
+      const subscriberCount1 = jest.fn()
+      const subscriber1Count2 = jest.fn()
+      const subscriber2Count2 = jest.fn()
+      const increment = createAction('increment')
+      const set = createAction<number>('set')
+
+      const count1 = createReducer(
+        'count1',
+        0,
+        handle(increment, state => state + 1),
+      )
+      const count2SetMap = jest.fn((state, payload) => payload)
+      const count2 = createReducer(
+        'count2',
+        0,
+        handle(increment, state => state + 1),
+        handle(set, count2SetMap),
+      )
+
+      const root = combineReducers({ count1 })
+
+      const store = createStore(root)
+
+      store.subscribe(subscriberRoot)
+      store.subscribe(subscriberCount1, count1)
+
+      store.dispatch(increment())
+      expect(subscriberRoot.mock.calls.length).toBe(1)
+      expect(subscriberCount1.mock.calls.length).toBe(1)
+
+      store.dispatch(set(1))
+      expect(subscriberRoot.mock.calls.length).toBe(1)
+      expect(subscriberCount1.mock.calls.length).toBe(1)
+      expect(count2SetMap.mock.calls.length).toBe(0)
+
+      expect(store.getState(count2)).toBe(0)
+      const unsubscribe1Count2 = store.subscribe(subscriber1Count2, count2)
+      const unsubscribe2Count2 = store.subscribe(subscriber2Count2, count2)
+      expect(store.getState(count2)).toBe(0)
+      store.dispatch(increment())
+      expect(store.getState(count2)).toBe(1)
+      expect(subscriberRoot.mock.calls.length).toBe(2)
+      expect(subscriberCount1.mock.calls.length).toBe(2)
+      expect(subscriber1Count2.mock.calls.length).toBe(1)
+      expect(subscriber2Count2.mock.calls.length).toBe(1)
+      expect(count2SetMap.mock.calls.length).toBe(0)
+
+      store.dispatch(set(5))
+      expect(subscriberRoot.mock.calls.length).toBe(2)
+      expect(subscriberCount1.mock.calls.length).toBe(2)
+      expect(subscriber1Count2.mock.calls.length).toBe(2)
+      expect(subscriber1Count2.mock.calls[1][0]).toBe(5)
+      expect(subscriber2Count2.mock.calls.length).toBe(2)
+      expect(count2SetMap.mock.calls.length).toBe(1)
+
+      unsubscribe1Count2()
+      store.dispatch(set(5))
+      expect(subscriber2Count2.mock.calls.length).toBe(3)
+      expect(subscriber1Count2.mock.calls.length).toBe(2)
+      expect(count2SetMap.mock.calls.length).toBe(2)
+
+      unsubscribe2Count2()
+      store.dispatch(set(10))
+      expect(subscriber2Count2.mock.calls.length).toBe(3)
+      expect(count2SetMap.mock.calls.length).toBe(2)
+    })
   })
-  describe('diamond problem', () => {
+  describe('diamond problem (createReducer)', () => {
     test('display name', () => {
       /*
         Short description: `displayName = isFirstNameShort ? fullName : firstName`
