@@ -1,7 +1,7 @@
 {
   "name": "@artalar/redux-steroid",
   "private": false,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "super powers for redux",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -46,7 +46,7 @@
     "babel-jest": "^24.1.0",
     "babel-loader": "^8.0.4",
     "cross-env": "^5.2.0",
-    "effector": "^0.18.7-rc.1",
+    "effector": "^0.18.7",
     "enzyme": "^3.8.0",
     "enzyme-adapter-react-16": "^1.7.1",
     "eslint": "^5.9.0",

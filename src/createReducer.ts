@@ -1,19 +1,13 @@
 import {
-  Node,
   Action,
   Reducer,
   ActionCreator,
   Ctx,
-  ID,
-  NAME,
-  DEPS,
-  DEPTH,
-  INITIAL_STATE,
-  noop,
-  combineNodes,
   createId,
   getName,
   getId,
+  Steroid,
+  Node,
 } from './model'
 import { createAction } from './createAction'
 
@@ -26,73 +20,16 @@ export function createReducer<State>(
   name: string,
   initialState: State,
   ...handlers: {
-    (state: State, ...a: any[]): State
-    [NODES]: Node[]
+    reducer: (state: State, ...a: any[]) => State
+    children: Steroid[]
   }[]
-): Reducer<State> {
+) {
+  if (initialState === undefined) {
+    throw new TypeError("`initialState` can't be undefined")
+  }
+
   const id = createId(name, 'reducer')
-
-  handlers.unshift(
-    handle(initialAction, state =>
-      // TODO: add to documentation: do not store undefined in state
-      state === undefined ? initialState : state,
-    ),
-  )
-
-  const { [DEPS]: deps, [DEPTH]: depth } = combineNodes({
-    id,
-    name,
-    nodes: handlers.map(reducer => {
-      const nodes = reducer[NODES]
-
-      // TODO: throw?
-      if (nodes === undefined) {
-        return combineNodes({
-          nodes: [],
-          id,
-          name,
-        })
-      }
-
-      // TODO: improve checks
-      const isActionInDeps = !(INITIAL_STATE in nodes[0])
-      const argsLength = nodes.length + 1
-
-      function handler({ flat, flatNew, changes }: Ctx) {
-        const isInit = !(id in flat)
-        const oldState = isInit ? initialState : (flat[id] as State)
-        const args = new Array(argsLength)
-        args[0] = oldState
-        let hasDependenciesChanged = isActionInDeps || isInit
-
-        nodes.forEach((node, i) => {
-          const nodeId = node[ID]
-          const nodeStateNew = flatNew[nodeId]
-          const nodeStateOld = flat[nodeId]
-
-          args[i + 1] = nodeId in flatNew ? nodeStateNew : nodeStateOld
-
-          hasDependenciesChanged =
-            hasDependenciesChanged ||
-            // what if `nodeStateNew === undefined`? :hmm:
-            nodeStateNew !== nodeStateOld
-        })
-
-        if (hasDependenciesChanged) {
-          const newState = reducer(...args)
-          flatNew[id] = newState
-          if (oldState !== newState) changes.push(id)
-        }
-      }
-
-      return combineNodes({
-        id,
-        name,
-        nodes,
-        handler,
-      })
-    }),
-  })
+  const _types = {}
 
   function reducer(
     state: {
@@ -106,84 +43,130 @@ export function createReducer<State>(
     changes?: Ctx['changes']
   } {
     let { type, payload } = action
-    let handlersOrdered = deps[type]
 
-    if (handlersOrdered === undefined) {
+    if (_types[type] !== true) {
+      if (state && state.flat && state.flat[id] !== undefined) return state
       type = initialActionType
       payload = undefined
-      handlersOrdered = deps[type]
     }
 
     const { flat = {} } = state || {}
     const changes: Ctx['changes'] = []
     const flatNew = {}
-    const ctx: Ctx = Object.assign(
-      { type, payload },
-      {
-        changes,
-        flat,
-        flatNew,
-      },
-    )
-
-    for (let depthCurrent = 0; depthCurrent <= depth; depthCurrent++) {
-      const handlers = handlersOrdered[depthCurrent]
-      if (handlers === undefined) continue
-      handlers.list.forEach(id => handlers[id].handler(ctx))
+    const ctx: Ctx = {
+      type,
+      payload,
+      changes,
+      flat,
+      flatNew,
+      hasCalculated: {},
     }
 
+    walk(_node, ctx)
     if (ctx.changes.length === 0) return state
 
     delete flatNew[type]
 
     return {
-      // TODO: without combineReducers user may change child, but not change parent :hmm:
       root: flatNew[id] as State,
       flat: Object.assign({}, flat, flatNew),
       changes,
     }
   }
 
-  reducer[ID] = id
-  reducer[NAME] = name
-  reducer[DEPS] = deps
-  reducer[DEPTH] = depth
-  reducer[INITIAL_STATE] = initialState
+  function _node(ctx) {
+    ctx.hasCalculated[id] = true
+  }
+
+  _node._match = (ctx: Ctx) => _types[ctx.type] === true
+  _node._children = []
+
+  reducer._node = _node
+  reducer._id = id
+  reducer._name = name
+  reducer._types = _types
+  reducer._isAction = false
+  reducer._initialState = initialState
+
+  handlers.unshift(handle(initialAction, (state = initialState) => state))
+
+  handlers.forEach(({ reducer, children }) => {
+    const argsLength = children.length
+    const isActionInDeps = children[0]._isAction === true
+    const types = Object.assign({}, ...children.map(({ _types }) => _types))
+
+    function node({ flat, flatNew, changes, hasCalculated }: Ctx) {
+      const isInit = flat[id] === undefined
+      const oldState = isInit ? initialState : (flat[id] as State)
+      const args = new Array(argsLength)
+      args[0] = oldState
+      let hasDependenciesChanged = isActionInDeps || isInit
+
+      children.forEach((steroid, i) => {
+        const steroidId = steroid._id
+        const steroidStateNew = flatNew[steroidId]
+        const steroidStateOld = flat[steroidId]
+
+        args[i + 1] =
+          steroidStateNew === undefined ? steroidStateOld : steroidStateNew
+
+        hasDependenciesChanged =
+          hasDependenciesChanged || steroidStateNew !== steroidStateOld
+      })
+
+      if (hasDependenciesChanged) {
+        const newState = reducer(...args)
+        if (newState === undefined) {
+          throw new TypeError("state can't be undefined")
+        }
+        flatNew[id] = newState
+        if (oldState !== newState || isInit) changes.push(id)
+      }
+    }
+
+    node._match = (ctx: Ctx) =>
+      types[ctx.type] === true && ctx.hasCalculated[id] !== true
+    node._children = children.map(({ _node }) => _node)
+
+    Object.assign(_types, types)
+    _node._children.push(node)
+  })
 
   return reducer
+}
+
+function walk(node: Node, ctx: Ctx) {
+  if (node._match(ctx)) {
+    node._children.forEach(childNode => {
+      walk(childNode, ctx)
+    })
+    node(ctx)
+  }
 }
 
 export function getState<R extends Reducer<any>>(
   state: { flat?: { [key in string]: any } },
   reducer: R,
-): R[typeof INITIAL_STATE] {
-  const id = reducer[ID]
-  if (id in (state.flat || {})) return state.flat[id]
-  return reducer[INITIAL_STATE]
-}
-
-export function getDeps<R extends Reducer<any>>(reducer: R): R[typeof DEPS] {
-  return reducer[DEPS]
-}
-
-export function getDepth<R extends Reducer<any>>(reducer: R): R[typeof DEPTH] {
-  return reducer[DEPTH]
+): R['_initialState'] {
+  const reducerState = (state || { flat: {} }).flat[reducer._id]
+  if (reducerState === undefined) return reducer._initialState
+  return reducerState
 }
 
 export function handle<Node1Type, State = any>(
   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
   reducer: (state: State, payload1: Node1Type) => State,
 ): {
-  (state: State, payload1: Node1Type): State
-  [NODES]: [ActionCreator<Node1Type> | Reducer<Node1Type>]
+  reducer: (state: State, payload1: Node1Type) => State
+  children: [ActionCreator<Node1Type> | Reducer<Node1Type>]
 }
 export function handle<Node1Type, Node2Type, State = any>(
   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
   dependedReducer1: Reducer<Node2Type>,
   reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
 ): {
-  (state: State, payload1: Node1Type, payload2: Node2Type): State
-  [NODES]: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
+  reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State
+  children: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
 }
 export function handle<Node1Type, Node2Type, Node3Type, State = any>(
   dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
@@ -196,13 +179,13 @@ export function handle<Node1Type, Node2Type, Node3Type, State = any>(
     payload3: Node3Type,
   ) => State,
 ): {
-  (
+  reducer: (
     state: State,
     payload1: Node1Type,
     payload2: Node2Type,
     payload3: Node3Type,
-  ): State
-  [NODES]: [
+  ) => State
+  children: [
     ActionCreator<Node1Type> | Reducer<Node1Type>,
     Reducer<Node2Type>,
     Reducer<Node3Type>
@@ -211,10 +194,11 @@ export function handle<Node1Type, Node2Type, Node3Type, State = any>(
 
 export function handle(...a) {
   const reducer = a.pop()
-  const nodes = a
-  reducer[NODES] = nodes
 
-  return reducer
+  return {
+    reducer,
+    children: a,
+  }
 }
 
 // EXPERIMENTAL
@@ -225,7 +209,7 @@ export function map<T, State = any>(
 ): Reducer<T> {
   return createReducer(
     `${getName(target)}/map`,
-    target[INITIAL_STATE],
+    target._initialState,
     handle(target, (_, state) => reducer(state)),
   )
 }
@@ -239,10 +223,12 @@ export function combineReducers<T extends { [key in string]: Reducer<any> }>(
   return createReducer(
     `{ ${keys.join(', ')} }`,
     {},
-    handle.apply(null, [
-      ...reducers,
-      (oldState, ...values) =>
-        keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
-    ]),
+    handle(
+      ...[
+        ...reducers,
+        (oldState, ...values) =>
+          keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
+      ],
+    ),
   )
 }

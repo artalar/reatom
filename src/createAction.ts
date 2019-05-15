@@ -1,39 +1,19 @@
-import {
-  ActionCreator,
-  Action,
-  Dependencies,
-  Ctx,
-  ID,
-  NAME,
-  DEPS,
-  DEPTH,
-  createId,
-} from './model'
+import { ActionCreator, Action, createId } from './model'
 
-export function createAction<P>(
-  name: string = 'actionCreator',
-  mapper?: ((a?: any) => P) | null,
+export function createAction<P, T = any>(
+  name?: string,
+  mapper?: ((a?: T) => P) | null,
   type: string = createId(name, 'action'),
 ): ActionCreator<P> {
-  const depth = 0
-  const deps: Dependencies = {
-    [type]: {
-      [depth]: {
-        [type]: {
-          id: type,
-          handler,
-          sets: 1,
-        },
-        list: [type],
-      },
-    },
-  }
+  name = name || 'actionCreator'
   mapper = mapper || (_ => _)
-  function handler(ctx: Ctx) {
+
+  function node(ctx) {
     ctx.flatNew[type] = ctx.payload
   }
+  node._match = () => true
+  node._children = []
 
-  // FIXME: optional argument must return optional payload
   function actionCreator(payload?: P): Action<P, typeof type> {
     return {
       type: type,
@@ -41,12 +21,11 @@ export function createAction<P>(
     }
   }
 
-  actionCreator[ID] = type
-  actionCreator[NAME] = name
-  actionCreator[DEPS] = deps
-  actionCreator[DEPTH] = depth
+  actionCreator._node = node
+  actionCreator._id = type
+  actionCreator._name = name
+  actionCreator._types = { [type]: true }
+  actionCreator._isAction = true
 
   return actionCreator
 }
-
-const a = createAction<string>()().payload

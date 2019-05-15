@@ -10,7 +10,6 @@ import {
   createReducer,
   handle,
   getState,
-  map,
   combineReducers,
   createStore,
   // replace('es', 'src') // for develop
@@ -18,7 +17,6 @@ import {
 
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
-
   // // use with `tools/showPerfResults.js`
   // const logData = JSON.parse(fs.readFileSync(path.join(__dirname, 'log.json')))
   // logData[name] = logData[name] || {}
