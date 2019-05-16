@@ -37,6 +37,8 @@ export function createReducer<State>(
       flat?: Ctx['flat']
     } | null,
     action: Action<any>,
+    merger = (flat: Object, flatNew: Object) =>
+      Object.assign({}, flat, flatNew),
   ): {
     root: State
     flat: Ctx['flat']
@@ -44,7 +46,11 @@ export function createReducer<State>(
   } {
     let { type, payload } = action
 
-    if (_types[type] !== true) {
+    if (
+      _types[type] !== true &&
+      // can be true for lazy reducer
+      !_node._children.some(n => n._match({ visited: {}, type }))
+    ) {
       if (state && state.flat && state.flat[id] !== undefined) return state
       type = initialActionType
       payload = undefined
@@ -59,7 +65,7 @@ export function createReducer<State>(
       changes,
       flat,
       flatNew,
-      hasCalculated: {},
+      visited: {},
     }
 
     walk(_node, ctx)
@@ -69,16 +75,16 @@ export function createReducer<State>(
 
     return {
       root: flatNew[id] as State,
-      flat: Object.assign({}, flat, flatNew),
+      flat: merger(flat, flatNew),
       changes,
     }
   }
 
   function _node(ctx) {
-    ctx.hasCalculated[id] = true
+    ctx.visited[id] = true
   }
 
-  _node._match = (ctx: Ctx) => _types[ctx.type] === true
+  _node._match = (ctx: Ctx) => ctx.visited[id] !== true
   _node._children = []
 
   reducer._node = _node
@@ -87,7 +93,6 @@ export function createReducer<State>(
   reducer._types = _types
   reducer._isAction = false
   reducer._initialState = initialState
-
   handlers.unshift(handle(initialAction, (state = initialState) => state))
 
   handlers.forEach(({ reducer, children }) => {
@@ -95,7 +100,7 @@ export function createReducer<State>(
     const isActionInDeps = children[0]._isAction === true
     const types = Object.assign({}, ...children.map(({ _types }) => _types))
 
-    function node({ flat, flatNew, changes, hasCalculated }: Ctx) {
+    function node({ flat, flatNew, changes, visited }: Ctx) {
       const isInit = flat[id] === undefined
       const oldState = isInit ? initialState : (flat[id] as State)
       const args = new Array(argsLength)
@@ -124,8 +129,7 @@ export function createReducer<State>(
       }
     }
 
-    node._match = (ctx: Ctx) =>
-      types[ctx.type] === true && ctx.hasCalculated[id] !== true
+    node._match = (ctx: Ctx) => types[ctx.type] === true
     node._children = children.map(({ _node }) => _node)
 
     Object.assign(_types, types)
@@ -201,8 +205,6 @@ export function handle(...a) {
   }
 }
 
-// EXPERIMENTAL
-
 export function map<T, State = any>(
   target: Reducer<State>,
   reducer: (state: State) => T,
@@ -216,19 +218,12 @@ export function map<T, State = any>(
 
 export function combineReducers<T extends { [key in string]: Reducer<any> }>(
   reducersCollection: T,
-): Reducer<{ [key in keyof T]: T[key][typeof INITIAL_STATE] }> {
+): Reducer<{ [key in keyof T]: T[key]['_initialState'] }> {
   const keys = Object.keys(reducersCollection)
   const reducers = keys.map(key => reducersCollection[key])
-
-  return createReducer(
-    `{ ${keys.join(', ')} }`,
-    {},
-    handle(
-      ...[
-        ...reducers,
-        (oldState, ...values) =>
-          keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
-      ],
-    ),
+  reducers.push((oldState, ...values) =>
+    keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
   )
+
+  return createReducer(`{ ${keys.join(', ')} }`, {}, handle(...reducers))
 }

@@ -13,11 +13,11 @@ import {
   combineReducers,
   createStore,
   // replace('es', 'src') // for develop
-} from '../../es'
+} from '../../src'
 
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
-  // // use with `tools/showPerfResults.js`
+  // use with `tools/showPerfResults.js`
   // const logData = JSON.parse(fs.readFileSync(path.join(__dirname, 'log.json')))
   // logData[name] = logData[name] || {}
   // logData[name][target] = logData[name][target] || []
@@ -150,6 +150,7 @@ describe('redux-steroid', () => {
       '10': {},
     }
     const effectorActions = {}
+    const effectorUntrackedEvent = effector.createEvent()
 
     const effectorReducerFabric = (parentId, initialState) => {
       const prefix =
@@ -547,6 +548,51 @@ describe('redux-steroid', () => {
       )
 
       expect(effectorSubscribtionsCallsCount).toBe(1)
+    })
+
+    test('dispatch untracked action [redux]', () => {
+      reduxSubscribtionsCallsCount = 0
+      const start = performance.now()
+
+      storeRedux.dispatch({ type: '', payload: null })
+
+      log(
+        'dispatch untracked action',
+        '[redux]',
+        (performance.now() - start).toFixed(3),
+      )
+
+      expect(reduxSubscribtionsCallsCount).toBe(0)
+    })
+
+    test('dispatch untracked action [steroid]', () => {
+      steroidSubscribtionsCallsCount = 0
+      const start = performance.now()
+
+      storeSteroid.dispatch({ type: '', payload: null })
+
+      log(
+        'dispatch untracked action',
+        '[steroid]',
+        (performance.now() - start).toFixed(3),
+      )
+
+      expect(steroidSubscribtionsCallsCount).toBe(0)
+    })
+
+    test('dispatch untracked action [effector]', () => {
+      effectorSubscribtionsCallsCount = 0
+      const start = performance.now()
+
+      effectorUntrackedEvent(null)
+
+      log(
+        'dispatch untracked action',
+        '[effector]',
+        (performance.now() - start).toFixed(3),
+      )
+
+      expect(effectorSubscribtionsCallsCount).toBe(0)
     })
 
     test('unsubscribe [redux]', () => {

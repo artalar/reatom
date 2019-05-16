@@ -42,7 +42,7 @@ export type Ctx = Action<any> & {
   flat: { [key in string]: any }
   flatNew: { [key in string]: any }
   changes: string[]
-  hasCalculated: { [key in string]: any }
+  visited: { [key in string]: any }
 }
 
 export type Store<RootReducer> = {
@@ -63,6 +63,9 @@ export type Store<RootReducer> = {
     target?: TargetReducer,
   ) => TargetReducer extends Reducer<infer S>
     ? ReturnType<Reducer<S>>['root']
+    : never
+  getStateInternal: () => RootReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>
     : never
   replaceReducer: <
     RNew extends RootReducer extends Reducer<infer S> ? Reducer<S> : never

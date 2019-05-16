@@ -80,11 +80,11 @@ describe('redux-steroid', () => {
       expect(store.getState(countDoubled)).toBe(2)
       expect(store.getState(count)).toBe(1)
 
-      const subscriberRoot = jest.fn()
+      const storeSubscriber = jest.fn()
       const subscriberToogled = jest.fn()
-      store.subscribe(subscriberRoot)
+      store.subscribe(storeSubscriber)
       store.subscribe(subscriberToogled, toggled)
-      expect(subscriberRoot.mock.calls.length).toBe(0)
+      expect(storeSubscriber.mock.calls.length).toBe(0)
       expect(subscriberToogled.mock.calls.length).toBe(0)
 
       store.dispatch(increment())
@@ -121,8 +121,8 @@ describe('redux-steroid', () => {
           toggled: false,
         },
       })
-      expect(subscriberRoot.mock.calls.length).toBe(1)
-      expect(subscriberRoot.mock.calls[0]).toEqual([
+      expect(storeSubscriber.mock.calls.length).toBe(1)
+      expect(storeSubscriber.mock.calls[0]).toEqual([
         { count: 2, countDoubled: 4, toggled: false },
       ])
       expect(subscriberToogled.mock.calls.length).toBe(0)
@@ -133,22 +133,22 @@ describe('redux-steroid', () => {
         countDoubled: 4,
         toggled: true,
       })
-      expect(subscriberRoot.mock.calls.length).toBe(2)
-      expect(subscriberRoot.mock.calls[1]).toEqual([
+      expect(storeSubscriber.mock.calls.length).toBe(2)
+      expect(storeSubscriber.mock.calls[1]).toEqual([
         { count: 2, countDoubled: 4, toggled: true },
       ])
       expect(subscriberToogled.mock.calls.length).toBe(1)
       expect(subscriberToogled.mock.calls[0]).toEqual([true])
 
       expect(store.getState() === store.dispatch({ type: 'random' })).toBe(true)
-      expect(subscriberRoot.mock.calls.length).toBe(2)
+      expect(storeSubscriber.mock.calls.length).toBe(2)
       expect(subscriberToogled.mock.calls.length).toBe(1)
     })
     test('createStore lazy selectors', () => {
-      const subscriberRoot = jest.fn()
+      const storeSubscriber = jest.fn()
       const subscriberCount1 = jest.fn()
-      const subscriber1Count2 = jest.fn()
-      const subscriber2Count2 = jest.fn()
+      const count2Subscriber1 = jest.fn()
+      const count2Subscriber2 = jest.fn()
       const increment = createAction('increment')
       const set = createAction<number>('set')
 
@@ -169,54 +169,55 @@ describe('redux-steroid', () => {
 
       const store = createStore(root)
 
-      store.subscribe(subscriberRoot)
+      store.subscribe(storeSubscriber)
       store.subscribe(subscriberCount1, count1)
 
       store.dispatch(increment())
-      expect(subscriberRoot.mock.calls.length).toBe(1)
+      expect(storeSubscriber.mock.calls.length).toBe(1)
       expect(subscriberCount1.mock.calls.length).toBe(1)
 
       store.dispatch(set(1))
-      expect(subscriberRoot.mock.calls.length).toBe(1)
+      expect(storeSubscriber.mock.calls.length).toBe(1)
       expect(subscriberCount1.mock.calls.length).toBe(1)
       expect(count2SetMap.mock.calls.length).toBe(0)
 
       expect(store.getState(count2)).toBe(0)
-      const unsubscribe1Count2 = store.subscribe(subscriber1Count2, count2)
-      const unsubscribe2Count2 = store.subscribe(subscriber2Count2, count2)
+      const count2Unsubscriber1 = store.subscribe(count2Subscriber1, count2)
+      const count2Unsubscriber2 = store.subscribe(count2Subscriber2, count2)
       expect(store.getState(count2)).toBe(0)
 
-      // TODO:
-      // store.dispatch(increment())
-      // expect(store.getState(count2)).toBe(1)
-      // expect(subscriberRoot.mock.calls.length).toBe(2)
-      // expect(subscriberCount1.mock.calls.length).toBe(2)
-      // expect(subscriber1Count2.mock.calls.length).toBe(1)
-      // expect(subscriber2Count2.mock.calls.length).toBe(1)
-      // expect(count2SetMap.mock.calls.length).toBe(0)
+      store.dispatch(increment())
+      expect(store.getState(count2)).toBe(1)
+      expect(storeSubscriber.mock.calls.length).toBe(2)
+      expect(subscriberCount1.mock.calls.length).toBe(2)
+      expect(count2Subscriber1.mock.calls[0][0]).toBe(1)
+      expect(count2Subscriber2.mock.calls.length).toBe(1)
+      expect(count2SetMap.mock.calls.length).toBe(0)
 
-      // store.dispatch(set(5))
-      // expect(subscriberRoot.mock.calls.length).toBe(2)
-      // expect(subscriberCount1.mock.calls.length).toBe(2)
-      // expect(subscriber1Count2.mock.calls.length).toBe(2)
-      // expect(subscriber1Count2.mock.calls[1][0]).toBe(5)
-      // expect(subscriber2Count2.mock.calls.length).toBe(2)
-      // expect(count2SetMap.mock.calls.length).toBe(1)
+      store.dispatch(set(5))
+      expect(store.getState(count2)).toBe(5)
+      expect(storeSubscriber.mock.calls.length).toBe(2)
+      expect(subscriberCount1.mock.calls.length).toBe(2)
+      expect(count2Subscriber1.mock.calls.length).toBe(2)
+      expect(count2Subscriber1.mock.calls[1][0]).toBe(5)
+      expect(count2Subscriber2.mock.calls.length).toBe(2)
+      expect(count2SetMap.mock.calls.length).toBe(1)
 
-      // unsubscribe1Count2()
-      // store.dispatch(set(5))
-      // expect(subscriber2Count2.mock.calls.length).toBe(3)
-      // expect(subscriber1Count2.mock.calls.length).toBe(2)
-      // expect(count2SetMap.mock.calls.length).toBe(2)
+      count2Unsubscriber1()
+      store.dispatch(set(10))
+      expect(count2SetMap.mock.calls.length).toBe(2)
+      expect(count2Subscriber1.mock.calls.length).toBe(2)
+      expect(count2Subscriber2.mock.calls.length).toBe(3)
 
-      // unsubscribe2Count2()
-      // store.dispatch(set(10))
-      // expect(subscriber2Count2.mock.calls.length).toBe(3)
-      // expect(count2SetMap.mock.calls.length).toBe(2)
+      count2Unsubscriber2()
+      store.dispatch(set(15))
+      expect(count2Subscriber2.mock.calls.length).toBe(3)
+      expect(count2SetMap.mock.calls.length).toBe(2)
     })
   })
   describe('diamond problem (createReducer)', () => {
     test('display name', () => {
+      global.__test = false
       /*
         Short description: `displayName = isFirstNameShort ? fullName : firstName`
         `isFirstNameShort` and `fullName` depends by `firstName`
