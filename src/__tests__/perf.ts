@@ -327,7 +327,7 @@ describe('redux-steroid', () => {
 
       log('createStore', '[steroid]', (performance.now() - start).toFixed(3))
 
-      expect(storeRedux.getState()).toEqual(storeSteroid.getState())
+      expect(storeRedux.getState()).toEqual(storeSteroid.getState().root)
     })
 
     test('createStore [effector]', () => {
@@ -348,7 +348,7 @@ describe('redux-steroid', () => {
 
       log('createStore', '[effector]', (performance.now() - start).toFixed(3))
 
-      expect(storeSteroid.getState()).toEqual(storeEffector.getState())
+      expect(storeSteroid.getState().root).toEqual(storeEffector.getState())
     })
 
     test('dispatch without subscribers (init) [redux]', () => {

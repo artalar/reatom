@@ -13,13 +13,9 @@ export function createStore<R extends Reducer<any>>(
   const initialState = localReducer(preloadedState, { type: '', payload: null })
   let state = initialState
 
-  function getState(target = localReducer) {
+  function getState(target: Reducer<any>) {
+    if (target === undefined) return state
     return _getState(state, target)
-  }
-
-  // FIXME: beter naming
-  function getStateInternal() {
-    return state
   }
 
   // FIXME: add ensureCanMutateNextListeners
@@ -77,6 +73,5 @@ export function createStore<R extends Reducer<any>>(
     subscribe,
     getState,
     dispatch,
-    getStateInternal,
   }
 }

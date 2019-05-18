@@ -53,7 +53,7 @@ describe('redux-steroid', () => {
 
       const store = createStore(root)
 
-      expect(store.getState()).toEqual({
+      expect(store.getState(root)).toEqual({
         count: 0,
         countDoubled: 0,
         toggled: false,
@@ -66,8 +66,8 @@ describe('redux-steroid', () => {
       expect(store.getState(countDoubled)).toBe(0)
       expect(store.getState(count)).toBe(0)
 
-      expect(store.getState() !== store.dispatch(increment())).toBe(true)
-      expect(store.getState()).toEqual({
+      expect(store.getState(root) !== store.dispatch(increment())).toBe(true)
+      expect(store.getState(root)).toEqual({
         count: 1,
         countDoubled: 2,
         toggled: false,
@@ -88,12 +88,12 @@ describe('redux-steroid', () => {
       expect(subscriberToogled.mock.calls.length).toBe(0)
 
       store.dispatch(increment())
-      expect(store.getState()).toEqual({
+      expect(store.getState(root)).toEqual({
         count: 2,
         countDoubled: 4,
         toggled: false,
       })
-      expect(store.getStateInternal()).toEqual({
+      expect(store.getState()).toEqual({
         changes: [
           'count [reducer][9]',
           'count/map [reducer][10]',
@@ -128,7 +128,7 @@ describe('redux-steroid', () => {
       expect(subscriberToogled.mock.calls.length).toBe(0)
 
       store.dispatch(toggle())
-      expect(store.getState()).toEqual({
+      expect(store.getState(root)).toEqual({
         count: 2,
         countDoubled: 4,
         toggled: true,
@@ -140,7 +140,7 @@ describe('redux-steroid', () => {
       expect(subscriberToogled.mock.calls.length).toBe(1)
       expect(subscriberToogled.mock.calls[0]).toEqual([true])
 
-      expect(store.getState() === store.dispatch({ type: 'random' })).toBe(true)
+      expect(store.getState(root) === store.dispatch({ type: 'random' })).toBe(true)
       expect(storeSubscriber.mock.calls.length).toBe(2)
       expect(subscriberToogled.mock.calls.length).toBe(1)
     })
