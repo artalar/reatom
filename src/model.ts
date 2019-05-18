@@ -63,8 +63,7 @@ export type Store<RootReducer> = {
     target?: TargetReducer,
   ) => TargetReducer extends Reducer<infer S>
     ? ReturnType<Reducer<S>>['root']
-    : never
-  getStateInternal: () => RootReducer extends Reducer<infer S>
+    : RootReducer extends Reducer<infer S>
     ? ReturnType<Reducer<S>>
     : never
   replaceReducer: <
@@ -114,4 +113,15 @@ export function getId(node: Steroid) {
 
 export function getName<N extends Steroid>(node: N): N['_name'] {
   return node._name
+}
+
+export function isPlainObject(obj: any) {
+  if (typeof obj !== 'object' || obj === null) return false
+
+  let proto = obj
+  while (Object.getPrototypeOf(proto) !== null) {
+    proto = Object.getPrototypeOf(proto)
+  }
+
+  return Object.getPrototypeOf(obj) === proto
 }

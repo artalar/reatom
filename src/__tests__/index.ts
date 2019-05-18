@@ -162,7 +162,8 @@ describe('redux-steroid', () => {
 
       expect(
         store.getState(root) ===
-          store.dispatch({ type: 'random', payload: null }),
+          (store.dispatch({ type: 'random', payload: null }),
+          store.getState(root)),
       ).toBe(true)
       expect(storeSubscriber.mock.calls.length).toBe(2)
       expect(subscriberToogled.mock.calls.length).toBe(1)

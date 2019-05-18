@@ -2,6 +2,7 @@
 
 - Improve `store.getState()` API (getState without arguments now equal `getStateInternal`)
 - Add `asId` API for strict declaration of ActionTypes and Ids (useful for snapshots)
+- Add middleware to store
 
 ## 1.6.0
 
