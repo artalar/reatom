@@ -1,12 +1,13 @@
-import { createAction } from '../createAction'
 import {
+  createAction,
   createReducer,
   handle,
   getState,
   map,
   combineReducers,
-} from '../createReducer'
-import { createStore } from '../createStore'
+  asId,
+  createStore,
+} from '..'
 
 describe('redux-steroid', () => {
   describe('main api', () => {
@@ -28,28 +29,52 @@ describe('redux-steroid', () => {
         type: expect.stringContaining('TeSt'),
         payload: null,
       })
-      expect(createAction('', null, 'TeSt')()).toEqual({
+      expect(createAction(asId('TeSt'), null)()).toEqual({
         type: 'TeSt',
         payload: undefined,
       })
+    })
+    test('createReducer', () => {
+      const name = Math.random().toFixed(36)
+      const initialState = {}
+      const reducer = createReducer(name, initialState)
+      const state = reducer(null, { type: 'any', payload: null })
+
+      expect(state.root).toBe(initialState)
+      expect(
+        (() => {
+          const keys = Object.keys(state.flat)
+          return keys.length === 1 && keys[0].includes(name)
+        })(),
+      ).toBe(true)
+      expect(
+        createReducer(asId(name), initialState)(null, {
+          type: 'any',
+          payload: null,
+        }).flat,
+      ).toEqual({ [name]: initialState })
     })
     test('createStore', () => {
       const increment = createAction()
       const toggle = createAction()
 
       const count = createReducer(
-        'count',
+        asId('count'),
         0,
         handle(increment, state => state + 1),
       )
-      const countDoubled = map(count, state => state * 2)
+      const countDoubled = map(asId('count/map'), count, state => state * 2)
       const toggled = createReducer(
-        'toggled',
+        asId('toggled'),
         false,
         handle(toggle, state => !state),
       )
 
-      const root = combineReducers({ count, countDoubled, toggled })
+      const root = combineReducers(asId('combine'), {
+        count,
+        countDoubled,
+        toggled,
+      })
 
       const store = createStore(root)
 
@@ -94,22 +119,17 @@ describe('redux-steroid', () => {
         toggled: false,
       })
       expect(store.getState()).toEqual({
-        changes: [
-          'count [reducer][9]',
-          'count/map [reducer][10]',
-          '{ count, countDoubled, toggled } [reducer][12]',
-          '{ count, countDoubled, toggled }/map [reducer][13]',
-        ],
+        changes: ['count', 'count/map', 'combine', 'combine [store]'],
         flat: {
-          'count [reducer][9]': 2,
-          'count/map [reducer][10]': 4,
-          'toggled [reducer][11]': false,
-          '{ count, countDoubled, toggled } [reducer][12]': {
+          count: 2,
+          'count/map': 4,
+          toggled: false,
+          combine: {
             count: 2,
             countDoubled: 4,
             toggled: false,
           },
-          '{ count, countDoubled, toggled }/map [reducer][13]': {
+          'combine [store]': {
             count: 2,
             countDoubled: 4,
             toggled: false,
@@ -140,7 +160,10 @@ describe('redux-steroid', () => {
       expect(subscriberToogled.mock.calls.length).toBe(1)
       expect(subscriberToogled.mock.calls[0]).toEqual([true])
 
-      expect(store.getState(root) === store.dispatch({ type: 'random' })).toBe(true)
+      expect(
+        store.getState(root) ===
+          store.dispatch({ type: 'random', payload: null }),
+      ).toBe(true)
       expect(storeSubscriber.mock.calls.length).toBe(2)
       expect(subscriberToogled.mock.calls.length).toBe(1)
     })
@@ -153,13 +176,13 @@ describe('redux-steroid', () => {
       const set = createAction<number>('set')
 
       const count1 = createReducer(
-        'count1',
+        asId('count1'),
         0,
         handle(increment, state => state + 1),
       )
       const count2SetMap = jest.fn((state, payload) => payload)
       const count2 = createReducer(
-        'count2',
+        asId('count2'),
         0,
         handle(increment, state => state + 1),
         handle(set, count2SetMap),
@@ -217,7 +240,6 @@ describe('redux-steroid', () => {
   })
   describe('diamond problem (createReducer)', () => {
     test('display name', () => {
-      global.__test = false
       /*
         Short description: `displayName = isFirstNameShort ? fullName : firstName`
         `isFirstNameShort` and `fullName` depends by `firstName`
@@ -236,14 +258,14 @@ describe('redux-steroid', () => {
       const firstNameUpdated = createAction<string>()
 
       const firstName = createReducer(
-        'firstName',
+        asId('firstName'),
         'John',
         handle(firstNameUpdated, (_, name) => name),
       )
-      const lastName = createReducer('lastName', 'Doe')
+      const lastName = createReducer(asId('lastName'), 'Doe')
 
       const IsFirstNameShort = createReducer(
-        'IsFirstNameShort',
+        asId('IsFirstNameShort'),
         false,
         handle(firstName, (state, v) => {
           isFirstNameShortMap(v)
@@ -252,7 +274,7 @@ describe('redux-steroid', () => {
       )
 
       const fullName = createReducer(
-        'fullName',
+        asId('fullName'),
         '',
         handle(firstName, lastName, (state, fn, ln) => {
           fullNameMap(fn, ln)
@@ -261,7 +283,7 @@ describe('redux-steroid', () => {
       )
 
       const displayName = createReducer(
-        'displayName',
+        asId('displayName'),
         '',
         handle(
           firstName,
@@ -296,9 +318,9 @@ describe('redux-steroid', () => {
       const action = createAction<string>()
 
       const r01Map = jest.fn((state, payload) => state + payload)
-      const r01 = createReducer('r01', '01', handle(action, r01Map))
+      const r01 = createReducer(asId('r01'), '01', handle(action, r01Map))
       const r02Map = jest.fn((state, payload) => state + payload)
-      const r02 = createReducer('r02', '02', handle(action, r02Map))
+      const r02 = createReducer(asId('r02'), '02', handle(action, r02Map))
       const r012 = combineReducers({ r01, r02 })
       const r11Map = jest.fn(state => state.r01)
       const r11 = map(r012, r11Map)
@@ -323,7 +345,7 @@ describe('redux-steroid', () => {
       const increment = createAction()
 
       const count = createReducer(
-        'count',
+        asId('count'),
         0,
         handle(increment, state => state + 1),
       )

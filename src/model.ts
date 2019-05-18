@@ -1,4 +1,4 @@
-export type IdPrefix = 'action' | 'reducer' | 'combine' | 'type' | 'store'
+export type IdPrefix = 'action' | 'reducer' | 'map' | 'combine' | 'store'
 export type ActionType = string
 
 export type Node = {
@@ -74,9 +74,38 @@ export type Store<RootReducer> = {
   ) => Store<RNew>
 }
 
+export class Description<Id = string, Name = string> {
+  id: Id
+  name: Name
+  constructor(id: Id, name: Name) {
+    this.id = id
+    this.name = name
+  }
+}
 let i = 0
-export function createId(desctiption = 'empty description', prefix: IdPrefix) {
-  return `${desctiption} [${prefix}][${++i}]`
+export function createId(name: string = 'empty name', prefix?: IdPrefix) {
+  return `${name} ${prefix ? `[${prefix}]` : ''}[${++i}]`
+}
+export function asId<T = string>(name: T): Description<T, T> {
+  return new Description(name, name)
+}
+export function getValidDescription<Id = string, Name = string>(
+  name: string,
+  prefix?: IdPrefix,
+): Description<Id, Name>
+export function getValidDescription<Id = string, Name = string>(
+  name: Description<Id, Name>,
+  prefix?: IdPrefix,
+): Description<Id, Name>
+export function getValidDescription(name, prefix) {
+  if (typeof name === 'string') {
+    return new Description(createId(name, prefix), name)
+  } else if (typeof name === 'object' && name instanceof Description) {
+    return name
+  } else {
+    console.log(typeof name)
+    throw new TypeError('Invalid description')
+  }
 }
 
 export function getId(node: Steroid) {

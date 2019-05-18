@@ -1,4 +1,4 @@
-import { Store, Reducer, getId, Action } from './model'
+import { Store, Reducer, getId, Action, asId, getName } from './model'
 import { getState as _getState, map } from './createReducer'
 
 // FIXME: add middleware
@@ -7,8 +7,12 @@ export function createStore<R extends Reducer<any>>(
   preloadedState = null,
 ): Store<R> {
   // clone deps for future mutations
-  // FIXME: remove unnecesary `*/map` node
-  const localReducer = map(rootReducer, state => state)
+  // TODO: remove unnecesary `*/map` node
+  const localReducer = map(
+    asId(getName(rootReducer) + ' [store]'),
+    rootReducer,
+    state => state,
+  )
   const subscribers = {} as { [key in string]: Set<Function> }
   const initialState = localReducer(preloadedState, { type: '', payload: null })
   let state = initialState

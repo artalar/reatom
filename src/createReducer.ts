@@ -8,28 +8,28 @@ import {
   getId,
   Steroid,
   Node,
+  asId,
+  getValidDescription,
+  Description,
 } from './model'
 import { createAction } from './createAction'
-
-const NODES = Symbol('@@/NODES')
 
 const initialAction = createAction<'@@/init'>('initialAction', () => '@@/init')
 const initialActionType = getId(initialAction)
 
 export function createReducer<State>(
-  name: string,
+  name: string | Description,
   initialState: State,
   ...handlers: {
     reducer: (state: State, ...a: any[]) => State
     children: Steroid[]
   }[]
 ) {
+  const _types = {}
+  const { id, name: _name } = getValidDescription(name, 'reducer')
   if (initialState === undefined) {
     throw new TypeError("`initialState` can't be undefined")
   }
-
-  const id = createId(name, 'reducer')
-  const _types = {}
 
   function reducer(
     state: {
@@ -89,7 +89,7 @@ export function createReducer<State>(
 
   reducer._node = _node
   reducer._id = id
-  reducer._name = name
+  reducer._name = _name
   reducer._types = _types
   reducer._isAction = false
   reducer._initialState = initialState
@@ -208,9 +208,26 @@ export function handle(...a) {
 export function map<T, State = any>(
   target: Reducer<State>,
   reducer: (state: State) => T,
-): Reducer<T> {
+): Reducer<T>
+export function map<T, State = any>(
+  id: string | Description,
+  target: Reducer<State>,
+  reducer: (state: State) => T,
+): Reducer<T>
+
+export function map(...a) {
+  let id, target, reducer
+  if (a.length === 2) {
+    id = getValidDescription(getName(a[0]), 'map')
+    target = a[0]
+    reducer = a[1]
+  } else {
+    id = getValidDescription(a[0], 'map')
+    target = a[1]
+    reducer = a[2]
+  }
   return createReducer(
-    `${getName(target)}/map`,
+    id,
     target._initialState,
     handle(target, (_, state) => reducer(state)),
   )
@@ -218,12 +235,24 @@ export function map<T, State = any>(
 
 export function combineReducers<T extends { [key in string]: Reducer<any> }>(
   reducersCollection: T,
-): Reducer<{ [key in keyof T]: T[key]['_initialState'] }> {
+): Reducer<{ [key in keyof T]: T[key]['_initialState'] }>
+export function combineReducers<T extends { [key in string]: Reducer<any> }>(
+  id: string | Description,
+  reducersCollection: T,
+): Reducer<{ [key in keyof T]: T[key]['_initialState'] }>
+
+export function combineReducers(...a) {
+  const withName = a.length === 2
+  const reducersCollection = withName ? a[1] : a[0]
   const keys = Object.keys(reducersCollection)
   const reducers = keys.map(key => reducersCollection[key])
   reducers.push((oldState, ...values) =>
     keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
   )
+  const name = getValidDescription(
+    withName ? a[0] : `{ ${keys.join(', ')} }`,
+    'combine',
+  )
 
-  return createReducer(`{ ${keys.join(', ')} }`, {}, handle(...reducers))
+  return createReducer(name, {}, handle(...reducers))
 }

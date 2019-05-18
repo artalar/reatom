@@ -9,9 +9,9 @@ import {
   createAction,
   createReducer,
   handle,
-  getState,
   combineReducers,
   createStore,
+  asId,
   // replace('es', 'src') // for develop
 } from '../../src'
 
@@ -97,31 +97,31 @@ describe('redux-steroid', () => {
         handle(
           (steroidActions[`${prefix}1`] =
             steroidActions[`${prefix}1`] ||
-            createAction(`${prefix}1`, null, `${prefix}1`)),
+            createAction(asId(`${prefix}1`), null)),
           (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}2`] =
             steroidActions[`${prefix}2`] ||
-            createAction(`${prefix}2`, null, `${prefix}2`)),
+            createAction(asId(`${prefix}2`), null)),
           (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}3`] =
             steroidActions[`${prefix}3`] ||
-            createAction(`${prefix}3`, null, `${prefix}3`)),
+            createAction(asId(`${prefix}3`), null)),
           (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}4`] =
             steroidActions[`${prefix}4`] ||
-            createAction(`${prefix}4`, null, `${prefix}4`)),
+            createAction(asId(`${prefix}4`), null)),
           (state, value) => value,
         ),
         handle(
           (steroidActions[`${prefix}5`] =
             steroidActions[`${prefix}5`] ||
-            createAction(`${prefix}5`, null, `${prefix}5`)),
+            createAction(asId(`${prefix}5`), null)),
           (state, value) => value,
         ),
       ))
