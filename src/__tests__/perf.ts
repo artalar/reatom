@@ -25,7 +25,7 @@ function log(name, target, time) {
   // fs.writeFileSync(path.join(__dirname, 'log.json'), JSON.stringify(logData))
 }
 
-describe('redux-steroid', () => {
+describe('redux-flaxom', () => {
   describe('perf [55 stores 30 actions]', () => {
     // const test = (name, f) => f();
 
@@ -73,8 +73,8 @@ describe('redux-steroid', () => {
         '5': reduxReducerFabric(id, '5'),
       })
 
-    const steroidChildren = {}
-    const steroidNestedChildren = {
+    const flaxomChildren = {}
+    const flaxomNestedChildren = {
       '1': {},
       '2': {},
       '3': {},
@@ -86,54 +86,54 @@ describe('redux-steroid', () => {
       '9': {},
       '10': {},
     }
-    const steroidActions = {}
+    const flaxomActions = {}
 
-    const steroidReducerFabric = (parentId, initialState) => {
+    const flaxomReducerFabric = (parentId, initialState) => {
       const prefix =
         parentId !== '10' && !(parentId % 2) ? parentId - 1 : parentId
-      return (steroidNestedChildren[parentId][initialState] = createReducer(
-        `steroidReducerFabric${parentId + initialState}`,
+      return (flaxomNestedChildren[parentId][initialState] = createReducer(
+        `flaxomReducerFabric${parentId + initialState}`,
         initialState,
         handle(
-          (steroidActions[`${prefix}1`] =
-            steroidActions[`${prefix}1`] ||
+          (flaxomActions[`${prefix}1`] =
+            flaxomActions[`${prefix}1`] ||
             createAction(asId(`${prefix}1`), null)),
           (state, value) => value,
         ),
         handle(
-          (steroidActions[`${prefix}2`] =
-            steroidActions[`${prefix}2`] ||
+          (flaxomActions[`${prefix}2`] =
+            flaxomActions[`${prefix}2`] ||
             createAction(asId(`${prefix}2`), null)),
           (state, value) => value,
         ),
         handle(
-          (steroidActions[`${prefix}3`] =
-            steroidActions[`${prefix}3`] ||
+          (flaxomActions[`${prefix}3`] =
+            flaxomActions[`${prefix}3`] ||
             createAction(asId(`${prefix}3`), null)),
           (state, value) => value,
         ),
         handle(
-          (steroidActions[`${prefix}4`] =
-            steroidActions[`${prefix}4`] ||
+          (flaxomActions[`${prefix}4`] =
+            flaxomActions[`${prefix}4`] ||
             createAction(asId(`${prefix}4`), null)),
           (state, value) => value,
         ),
         handle(
-          (steroidActions[`${prefix}5`] =
-            steroidActions[`${prefix}5`] ||
+          (flaxomActions[`${prefix}5`] =
+            flaxomActions[`${prefix}5`] ||
             createAction(asId(`${prefix}5`), null)),
           (state, value) => value,
         ),
       ))
     }
 
-    const steroidReducerCombineFabric = id =>
-      (steroidChildren[id] = combineReducers({
-        '1': steroidReducerFabric(id, '1'),
-        '2': steroidReducerFabric(id, '2'),
-        '3': steroidReducerFabric(id, '3'),
-        '4': steroidReducerFabric(id, '4'),
-        '5': steroidReducerFabric(id, '5'),
+    const flaxomReducerCombineFabric = id =>
+      (flaxomChildren[id] = combineReducers({
+        '1': flaxomReducerFabric(id, '1'),
+        '2': flaxomReducerFabric(id, '2'),
+        '3': flaxomReducerFabric(id, '3'),
+        '4': flaxomReducerFabric(id, '4'),
+        '5': flaxomReducerFabric(id, '5'),
       }))
 
     const effectorChildren = {}
@@ -197,8 +197,8 @@ describe('redux-steroid', () => {
 
     let storeRedux
     let unsubscribersRedux
-    let storeSteroid
-    let unsubscribersSteroid
+    let storeFlaxom
+    let unsubscribersFlaxom
     let storeEffector
     let unsubscribersEffector
 
@@ -233,25 +233,25 @@ describe('redux-steroid', () => {
         }
       })
 
-    let steroidSubscribtionsCallsCount = 0
-    const steroidSubscribeChildren = () =>
+    let flaxomSubscribtionsCallsCount = 0
+    const flaxomSubscribeChildren = () =>
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(id => {
         if (id === '10') {
-          return storeSteroid.subscribe(
-            () => steroidSubscribtionsCallsCount++,
-            steroidNestedChildren[10][10],
+          return storeFlaxom.subscribe(
+            () => flaxomSubscribtionsCallsCount++,
+            flaxomNestedChildren[10][10],
           )
         }
 
-        const unsubscribe = storeSteroid.subscribe(
-          () => steroidSubscribtionsCallsCount++,
-          steroidChildren[id],
+        const unsubscribe = storeFlaxom.subscribe(
+          () => flaxomSubscribtionsCallsCount++,
+          flaxomChildren[id],
         )
 
         const unsubscribers = ['1', '2', '3', '4', '5'].map(nestedId =>
-          storeSteroid.subscribe(
-            () => steroidSubscribtionsCallsCount++,
-            steroidNestedChildren[id][nestedId],
+          storeFlaxom.subscribe(
+            () => flaxomSubscribtionsCallsCount++,
+            flaxomNestedChildren[id][nestedId],
           ),
         )
 
@@ -307,27 +307,27 @@ describe('redux-steroid', () => {
       log('createStore', '[redux]', (performance.now() - start).toFixed(3))
     })
 
-    test('createStore [steroid]', () => {
+    test('createStore [flaxom]', () => {
       const start = performance.now()
 
-      storeSteroid = createStore(
+      storeFlaxom = createStore(
         combineReducers({
-          '1': steroidReducerCombineFabric('1'),
-          '2': steroidReducerCombineFabric('2'),
-          '3': steroidReducerCombineFabric('3'),
-          '4': steroidReducerCombineFabric('4'),
-          '5': steroidReducerCombineFabric('5'),
-          '6': steroidReducerCombineFabric('6'),
-          '7': steroidReducerCombineFabric('7'),
-          '8': steroidReducerCombineFabric('8'),
-          '9': steroidReducerCombineFabric('9'),
-          '10': steroidReducerFabric('10', '10'),
+          '1': flaxomReducerCombineFabric('1'),
+          '2': flaxomReducerCombineFabric('2'),
+          '3': flaxomReducerCombineFabric('3'),
+          '4': flaxomReducerCombineFabric('4'),
+          '5': flaxomReducerCombineFabric('5'),
+          '6': flaxomReducerCombineFabric('6'),
+          '7': flaxomReducerCombineFabric('7'),
+          '8': flaxomReducerCombineFabric('8'),
+          '9': flaxomReducerCombineFabric('9'),
+          '10': flaxomReducerFabric('10', '10'),
         }),
       )
 
-      log('createStore', '[steroid]', (performance.now() - start).toFixed(3))
+      log('createStore', '[flaxom]', (performance.now() - start).toFixed(3))
 
-      expect(storeRedux.getState()).toEqual(storeSteroid.getState().root)
+      expect(storeRedux.getState()).toEqual(storeFlaxom.getState().root)
     })
 
     test('createStore [effector]', () => {
@@ -348,7 +348,7 @@ describe('redux-steroid', () => {
 
       log('createStore', '[effector]', (performance.now() - start).toFixed(3))
 
-      expect(storeSteroid.getState().root).toEqual(storeEffector.getState())
+      expect(storeFlaxom.getState().root).toEqual(storeEffector.getState())
     })
 
     test('dispatch without subscribers (init) [redux]', () => {
@@ -363,18 +363,18 @@ describe('redux-steroid', () => {
       )
     })
 
-    test('dispatch without subscribers (init) [steroid]', () => {
+    test('dispatch without subscribers (init) [flaxom]', () => {
       const start = performance.now()
 
-      storeSteroid.dispatch({ type: '11', payload: '1' })
+      storeFlaxom.dispatch({ type: '11', payload: '1' })
 
       log(
         'dispatch without subscribers (init)',
-        '[steroid]',
+        '[flaxom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(reduxSubscribtionsCallsCount).toBe(steroidSubscribtionsCallsCount)
+      expect(reduxSubscribtionsCallsCount).toBe(flaxomSubscribtionsCallsCount)
     })
 
     test('dispatch without subscribers (init) [effector]', () => {
@@ -388,7 +388,7 @@ describe('redux-steroid', () => {
         (performance.now() - start).toFixed(3),
       )
 
-      expect(steroidSubscribtionsCallsCount).toBe(
+      expect(flaxomSubscribtionsCallsCount).toBe(
         effectorSubscribtionsCallsCount,
       )
     })
@@ -405,18 +405,18 @@ describe('redux-steroid', () => {
       )
     })
 
-    test('dispatch without subscribers [steroid]', () => {
+    test('dispatch without subscribers [flaxom]', () => {
       const start = performance.now()
 
-      storeSteroid.dispatch({ type: '11', payload: '10' })
+      storeFlaxom.dispatch({ type: '11', payload: '10' })
 
       log(
         'dispatch without subscribers',
-        '[steroid]',
+        '[flaxom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(reduxSubscribtionsCallsCount).toBe(steroidSubscribtionsCallsCount)
+      expect(reduxSubscribtionsCallsCount).toBe(flaxomSubscribtionsCallsCount)
     })
 
     test('dispatch without subscribers [effector]', () => {
@@ -430,7 +430,7 @@ describe('redux-steroid', () => {
         (performance.now() - start).toFixed(3),
       )
 
-      expect(steroidSubscribtionsCallsCount).toBe(
+      expect(flaxomSubscribtionsCallsCount).toBe(
         effectorSubscribtionsCallsCount,
       )
     })
@@ -445,12 +445,12 @@ describe('redux-steroid', () => {
       storeRedux.dispatch({ type: '__none' })
     })
 
-    test('subscribe [steroid]', () => {
+    test('subscribe [flaxom]', () => {
       const start = performance.now()
 
-      unsubscribersSteroid = steroidSubscribeChildren()
+      unsubscribersFlaxom = flaxomSubscribeChildren()
 
-      log('subscribe', '[steroid]', (performance.now() - start).toFixed(3))
+      log('subscribe', '[flaxom]', (performance.now() - start).toFixed(3))
     })
 
     test('subscribe [effector]', () => {
@@ -475,19 +475,19 @@ describe('redux-steroid', () => {
       expect(reduxSubscribtionsCallsCount).toBe(12)
     })
 
-    test('dispatch with many subscriptions [steroid]', () => {
-      steroidSubscribtionsCallsCount = 0
+    test('dispatch with many subscriptions [flaxom]', () => {
+      flaxomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeSteroid.dispatch({ type: '11', payload: '1.1' })
+      storeFlaxom.dispatch({ type: '11', payload: '1.1' })
 
       log(
         'dispatch with many subscriptions',
-        '[steroid]',
+        '[flaxom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(steroidSubscribtionsCallsCount).toBe(12)
+      expect(flaxomSubscribtionsCallsCount).toBe(12)
     })
 
     test('dispatch with many subscriptions [effector]', () => {
@@ -520,19 +520,19 @@ describe('redux-steroid', () => {
       expect(reduxSubscribtionsCallsCount).toBe(1)
     })
 
-    test('dispatch with little subscriptions [steroid]', () => {
-      steroidSubscribtionsCallsCount = 0
+    test('dispatch with little subscriptions [flaxom]', () => {
+      flaxomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeSteroid.dispatch({ type: '101', payload: '1.11' })
+      storeFlaxom.dispatch({ type: '101', payload: '1.11' })
 
       log(
         'dispatch with little subscriptions',
-        '[steroid]',
+        '[flaxom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(steroidSubscribtionsCallsCount).toBe(1)
+      expect(flaxomSubscribtionsCallsCount).toBe(1)
     })
 
     test('dispatch with little subscriptions [effector]', () => {
@@ -565,19 +565,19 @@ describe('redux-steroid', () => {
       expect(reduxSubscribtionsCallsCount).toBe(0)
     })
 
-    test('dispatch untracked action [steroid]', () => {
-      steroidSubscribtionsCallsCount = 0
+    test('dispatch untracked action [flaxom]', () => {
+      flaxomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeSteroid.dispatch({ type: '', payload: null })
+      storeFlaxom.dispatch({ type: '', payload: null })
 
       log(
         'dispatch untracked action',
-        '[steroid]',
+        '[flaxom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(steroidSubscribtionsCallsCount).toBe(0)
+      expect(flaxomSubscribtionsCallsCount).toBe(0)
     })
 
     test('dispatch untracked action [effector]', () => {
@@ -605,12 +605,12 @@ describe('redux-steroid', () => {
       storeRedux.dispatch({ type: '__none' })
     })
 
-    test('unsubscribe [steroid]', () => {
+    test('unsubscribe [flaxom]', () => {
       const start = performance.now()
 
-      unsubscribersSteroid.map(f => f())
+      unsubscribersFlaxom.map(f => f())
 
-      log('unsubscribe', '[steroid]', (performance.now() - start).toFixed(3))
+      log('unsubscribe', '[flaxom]', (performance.now() - start).toFixed(3))
     })
 
     test('unsubscribe [effector]', () => {

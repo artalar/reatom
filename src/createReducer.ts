@@ -6,7 +6,7 @@ import {
   createId,
   getName,
   getId,
-  Steroid,
+  Flaxom,
   Node,
   asId,
   getValidDescription,
@@ -22,7 +22,7 @@ export function createReducer<State>(
   initialState: State,
   ...handlers: {
     reducer: (state: State, ...a: any[]) => State
-    children: Steroid[]
+    children: Flaxom[]
   }[]
 ) {
   const _types = {}
@@ -107,8 +107,8 @@ export function createReducer<State>(
       args[0] = oldState
       let hasDependenciesChanged = isActionInDeps || isInit
 
-      children.forEach((steroid, i) => {
-        const steroidId = steroid._id
+      children.forEach((flaxom, i) => {
+        const steroidId = flaxom._id
         const steroidStateNew = flatNew[steroidId]
         const steroidStateOld = flat[steroidId]
 
@@ -235,11 +235,11 @@ export function map(...a) {
 
 export function combineReducers<T extends { [key in string]: Reducer<any> }>(
   reducersCollection: T,
-): Reducer<{ [key in keyof T]: T[key]['_initialState'] }>
+): Reducer<{ [key in keyof T]: T[key] extends Reducer<infer S> ? S : T[key] }>
 export function combineReducers<T extends { [key in string]: Reducer<any> }>(
   id: string | Description,
   reducersCollection: T,
-): Reducer<{ [key in keyof T]: T[key]['_initialState'] }>
+): Reducer<{ [key in keyof T]: T[key] extends Reducer<infer S> ? S : T[key] }>
 
 export function combineReducers(...a) {
   const withName = a.length === 2

@@ -1,24 +1,28 @@
 // FIXME: replace ACTION to EVENT
-import {
-  Store,
-  Reducer,
-  getId,
-  Action,
-  asId,
-  getName,
-  ActionCreator,
-} from './model'
-import { getState as _getState, map } from './createReducer'
+import { Store, Reducer, getId, Action, asId, getName } from '../../src/model'
+import { getState as _getState, map } from '../../src/createReducer'
 
-const is = {
-  reducer(target: Reducer<any> | any) {
-    // FIXME:
-    return true
-  },
-  event(target: ActionCreator<any> | any) {
-    // FIXME:
-    return false
-  },
+export type Store<RootReducer> = {
+  dispatch: (
+    action: Action<any>,
+  ) => RootReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>['root']
+    : never
+  subscribe: <TargetReducer = RootReducer>(
+    listener: (
+      state: TargetReducer extends Reducer<infer S>
+        ? ReturnType<Reducer<S>>['root']
+        : never,
+    ) => any,
+    target?: TargetReducer,
+  ) => () => void
+  getState: <TargetReducer = RootReducer>(
+    target?: TargetReducer,
+  ) => TargetReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>['root']
+    : RootReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>
+    : never
 }
 
 export function createStore<State>(

@@ -7,7 +7,7 @@ export type Node = {
   _children: Node[]
 }
 
-export type Steroid = {
+export type Flaxom = {
   _node: Node
   _id: string
   _name: string
@@ -19,11 +19,11 @@ export type Action<Payload = undefined, Type = ActionType> = {
   type: Type
   payload: Payload
 }
-export type ActionCreator<Payload = undefined, Type = ActionType> = Steroid &
+export type ActionCreator<Payload = undefined, Type = ActionType> = Flaxom &
   ((payload?: Payload) => Action<Payload, Type>)
 
 // TODO: infer state.flat
-export type Reducer<State> = Steroid & {
+export type Reducer<State> = Flaxom & {
   (
     state: {
       root: State
@@ -107,11 +107,11 @@ export function getValidDescription(name, prefix) {
   }
 }
 
-export function getId(node: Steroid) {
+export function getId(node: Flaxom) {
   return node._id
 }
 
-export function getName<N extends Steroid>(node: N): N['_name'] {
+export function getName<N extends Flaxom>(node: N): N['_name'] {
   return node._name
 }
 

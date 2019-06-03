@@ -9,7 +9,7 @@ import {
   createStore,
 } from '..'
 
-describe('redux-steroid', () => {
+describe('redux-flaxom', () => {
   describe('main api', () => {
     test('createAction', () => {
       expect(typeof createAction() === 'function').toBe(true)

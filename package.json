@@ -1,8 +1,8 @@
 {
-  "name": "@artalar/redux-steroid",
+  "name": "flaxom",
   "private": false,
-  "version": "1.7.0",
-  "description": "super powers for redux",
+  "version": "2.0.0",
+  "description": "event driven state manager with focus on all need",
   "main": "lib/index.js",
   "module": "es/index.js",
   "scripts": {
@@ -75,15 +75,19 @@
   "readme": "README.md",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/artalar/redux-steroid.git"
+    "url": "git+ssh://git@github.com/artalar/flaxom.git"
   },
   "bugs": {
-    "url": "https://github.com/artalar/redux-steroid/issues"
+    "url": "https://github.com/artalar/flaxom/issues"
   },
-  "homepage": "https://github.com/artalar/redux-steroid",
+  "homepage": "https://github.com/artalar/flaxom",
   "keywords": [
+    "state",
+    "store",
+    "flux",
+    "atom",
     "redux",
-    "redux-steroid"
+    "flaxom"
   ],
   "directories": {
     "lib": "lib"

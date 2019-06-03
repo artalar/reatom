@@ -1,19 +1,39 @@
-# redux-steroid
-super powers for redux
+> ## Work In Progress
 
-> ## **WIP**
+# FLAXOM
 
-<!-- <div align="center"><img src="logo.png" alt="template logo" align="center"></div> -->
+<div align="center"><img src="logo.png" alt="blend of one way data flow by global store and decentralizated atoms" align="center"></div>
+
+Event driven state manager with focus on **all** need
+
+- small size (2 KB gziped) and ES5 support
+- simple abstraction and friendly DX with minimum boilerplate
+- scaling (performance) and modular
+- static typed (TS, Flow)
+- easy testing
+- DI (by functional composition)
+- atomic stores and subscribtions
+- usefull debugging, devtools
+- declarative and predictable specification of state shape and state mutation
+- synchronous glitch free (diamond problem)
+- usefull store fabric (locales, SSR)
+- simple integration with other libraries (Observable, etc)
+- awkward for write bad code
+- handy for write good code
 
 ## Example
 
-[![tr-redux example](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/4w5k42vzw9) Todo-list
+### Todo-list
+
+[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/4w5k42vzw9)
 
 > Also see tests
 
 ## Motivation
 
-### Problems
+> Inspired by redux and effector
+
+### Problems (with redux)
 
 - Selectors are not inspectable (have not in devtools)
 - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR
@@ -42,6 +62,4 @@ super powers for redux
 ## TODO:
 
 - API for `.doNotTrack()` version of reducer for receive it state, but not subscribe to it
-- mutable version of combine and disunity vertices (when store in not notifies) for performance reasons
-- delayed combine and disunity vertices for performance reasons
-- friendly API for work with collections
+- friendly API for work with collections (based on lenses?)
