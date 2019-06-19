@@ -63,7 +63,7 @@ describe('redux-flaxom', () => {
         handle(increment, state => state + 1),
       ])
       const countDoubled = map('@count/map', count, state => state * 2)
-      const toggled = createReducer('@toggled', false, handle => 
+      const toggled = createReducer('@toggled', false, handle =>
         handle(toggle, state => !state),
       )
 
@@ -232,6 +232,28 @@ describe('redux-flaxom', () => {
       expect(store.getState(count2)).toBe(0)
       expect(count2Subscriber2.mock.calls.length).toBe(3)
       expect(count2SetMap.mock.calls.length).toBe(2)
+    })
+    test('createStore lazy computed', () => {
+      const storeSubscriber = jest.fn()
+      const increment = createAction('increment')
+
+      const count = createReducer('@count', 0, handle =>
+        handle(increment, state => state + 1),
+      )
+      const countDoubled = map('@countDoubled', count, payload => payload * 2)
+
+      const root = combine({ count })
+
+      const store = createStore(root)
+
+      store.subscribe(storeSubscriber)
+
+      store.dispatch(increment())
+      expect(store.getState(count)).toBe(1)
+      expect(store.getState(countDoubled)).toBe(2)
+
+      store.subscribe(() => {}, countDoubled)
+      expect(store.getState(countDoubled)).toBe(2)
     })
   })
   describe('diamond problem (createReducer)', () => {

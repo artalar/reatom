@@ -1,7 +1,7 @@
 import { Ctx, Node, traverse } from './graph'
 import { Action, ActionCreator, createAction } from './createAction'
 
-const initialAction = createAction('@@/init')
+export const initialAction = createAction('@@/init')
 const initialActionType = initialAction.getType()
 
 export type Reducer<State> = (
@@ -156,10 +156,10 @@ export function createReducer<State, Name extends string = string>(
 }
 
 export function getState<R extends Reducer<any>>(
-  state: { flat?: { [key in string]: any } },
+  state: { flat: { [key in string]: any } },
   reducer: R,
-): R['_initialState'] {
-  const reducerState = (state || { flat: {} }).flat[reducer._node.id]
+): R extends Reducer<infer T> ? T : never {
+  const reducerState = state.flat[reducer._node.id]
   if (reducerState === undefined) return reducer._node.initialState
   return reducerState
 }

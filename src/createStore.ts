@@ -1,6 +1,6 @@
 // FIXME: replace ACTION to EVENT
 import { Action, ActionCreator } from './createAction'
-import { Reducer, getState as _getState, map } from './createReducer'
+import { Reducer, map, initialAction } from './createReducer'
 
 export type Store<RootReducer> = {
   dispatch: (
@@ -51,23 +51,44 @@ export function createStore<State>(
   // TODO: remove unnecesary `*/map` node
   const localReducer = map(reducer, state => state)
   const initialState = localReducer(preloadedState, {
-    type: '@@INIT',
+    type: '@@/init',
     payload: null,
   })
   const expiredIds: string[] = []
   let state = initialState
   let errors: any[] = []
 
+  function actualizeState(immutable = true) {
+    if (expiredIds.length === 0) return
+
+    if (immutable)
+      state = {
+        flat: { ...state.flat },
+        root: state.flat[localReducer._node.id],
+      }
+
+    let id
+    while ((id = expiredIds.pop())) delete state.flat[id]
+  }
+
   function getState(target?: Reducer<any>) {
-    if (target === undefined) return state
+    if (arguments.length === 0) return state
     if (!is.reducer(target)) throw new TypeError('Invalid target')
-    if (
-      initialState.flat[target._node.id] === undefined &&
-      expiredIds.includes(target._node.id)
-    ) {
-      return target._node.initialState
+
+    const targetId = target._node.id
+    const isLazy = initialState.flat[targetId] === undefined
+    if (isLazy) {
+      actualizeState()
+
+      const targetState = state.flat[targetId]
+      const isExist = targetState !== undefined
+      return isExist
+        ? targetState
+        // TODO: improve perf
+        : target(state, initialAction(), () => null).root
     }
-    return _getState(state, target)
+    const result = state.flat[targetId]
+    return result === undefined ? target._node.initialState : result
   }
 
   function subscribe<T>(
@@ -126,19 +147,15 @@ export function createStore<State>(
     }
     try {
       let flatNew = {}
-      const newState = localReducer(state, event, (flat, _flatNew) => {
-        flatNew = _flatNew
-        const flatNewActual = { ...flat, ..._flatNew }
-
-        let id
-        while ((id = expiredIds.pop())) {
-          delete flatNewActual[id]
-        }
-        return flatNewActual
-      })
+      const newState = localReducer(state, event, (flat, _flatNew) => ({
+        ...flat,
+        ...(flatNew = _flatNew),
+      }))
 
       if (newState !== state) {
         state = newState
+
+        actualizeState(false)
 
         for (const id in flatNew) {
           const subscribersById = listenersStore[id]
