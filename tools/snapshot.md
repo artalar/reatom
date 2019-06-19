@@ -1,14 +1,14 @@
 > the more the better
 
-Average from 14 times
+Average from 63 times
 
-|               (index)               | [redux] | [steroid] | [effector] |
-|-------------------------------------|---------|-----------|------------|
-|             createStore             | '100%'  |  '37%'   |   '38%'    |
-| dispatch without subscribers (init) | '100%'  |  '32%'   |   '12%'    |
-|    dispatch without subscribers     | '100%'  |  '47%'   |   '35%'    |
-|              subscribe              |  '62%'  |  '100%'  |   '66%'    |
-|  dispatch with many subscriptions   | '100%'  |  '50%'   |   '35%'    |
-| dispatch with little subscriptions  |  '44%'  |  '40%'   |   '100%'   |
-|      dispatch untracked action      |  '14%'  |  '100%'  |   '77%'    |
-|             unsubscribe             |  '99%'  |  '82%'   |   '100%'   |
+|               (index)               | [redux] | [flaxom] | [effector] |
+|-------------------------------------|---------|----------|------------|
+|             createStore             | '100%'  |  '13%'   |   '31%'    |
+| dispatch without subscribers (init) | '100%'  |  '19%'   |   '14%'    |
+|    dispatch without subscribers     | '100%'  |  '33%'   |   '32%'    |
+|              subscribe              |  '57%'  |  '100%'  |   '17%'    |
+|  dispatch with many subscriptions   | '100%'  |  '77%'   |   '56%'    |
+| dispatch with little subscriptions  |  '40%'  |  '54%'   |   '100%'   |
+|      dispatch untracked action      |  '10%'  |  '84%'   |   '100%'   |
+|             unsubscribe             |  '91%'  |  '96%'   |   '100%'   |

@@ -1,7 +1,7 @@
 {
   "name": "flaxom",
   "private": false,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "event driven state manager with focus on all need",
   "main": "lib/index.js",
   "module": "es/index.js",
@@ -46,7 +46,7 @@
     "babel-jest": "^24.1.0",
     "babel-loader": "^8.0.4",
     "cross-env": "^5.2.0",
-    "effector": "^0.18.7",
+    "effector": "^19.0.0",
     "enzyme": "^3.8.0",
     "enzyme-adapter-react-16": "^1.7.1",
     "eslint": "^5.9.0",

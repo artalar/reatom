@@ -1,32 +1,37 @@
-import {
-  ActionCreator,
-  Action,
-  getValidDescription,
-  Description,
-} from './model'
+import { Node } from './graph'
 
-export function createAction<P, T = any>(
-  name: string | Description = 'actionCreator',
-  mapper?: ((a?: T) => P) | null,
-): ActionCreator<
-  P,
-  // FIXME: infer action type
-  typeof name extends Description<infer Id, infer Name>
-    ? Description<Id, Name>['id']
-    : string
-> {
-  const { id, name: _name } = getValidDescription(name, 'action')
-  mapper = mapper || (_ => _)
+export type Action<T = void, Type extends string = string> = {
+  type: Type
+  payload: T
+}
 
-  if (typeof mapper !== 'function') throw new TypeError('Invalid mapper')
+export type ActionCreator<Payload = void, Name extends string = string> = {
+  (payload: Payload): Action<Payload, Name>
+  getType: () => Name
+}
 
-  function node(ctx) {
-    ctx.flatNew[id] = ctx.payload
-  }
-  node._match = () => true
-  node._children = []
+export declare function createAction<
+  Payload = void,
+  Name extends string = string
+>(name?: Name): ActionCreator<Payload, Name>
+export declare function createAction<
+  Input,
+  Payload,
+  Name extends string = string
+>(name: Name, mapper: (input: Input) => Payload): ActionCreator<Payload, Name>
+export function createAction(name = 'actionCreator', mapper = a => a) {
+  const node = new Node(
+    name,
+    function(ctx) {
+      ctx.flatNew[this.id] = ctx.payload
+    },
+    function(ctx) {
+      return this.deps[ctx.type] === 0
+    },
+  )
+  const { id } = node
 
-  function actionCreator(payload?: P): Action<P, typeof id> {
+  function actionCreator(payload) {
     return {
       type: id,
       payload: mapper(payload),
@@ -34,10 +39,7 @@ export function createAction<P, T = any>(
   }
 
   actionCreator._node = node
-  actionCreator._id = id
-  actionCreator._name = name
-  actionCreator._types = { [id]: true }
-  actionCreator._isAction = true
+  actionCreator.getType = () => id
 
   return actionCreator
 }

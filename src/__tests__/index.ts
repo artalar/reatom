@@ -1,11 +1,9 @@
 import {
   createAction,
   createReducer,
-  handle,
   getState,
   map,
-  combineReducers,
-  asId,
+  combine,
   createStore,
 } from '..'
 
@@ -29,16 +27,16 @@ describe('redux-flaxom', () => {
         type: expect.stringContaining('TeSt'),
         payload: null,
       })
-      expect(createAction(asId('TeSt'), null)()).toEqual({
-        type: 'TeSt',
+      expect(createAction('@TeSt')()).toEqual({
+        type: '@TeSt',
         payload: undefined,
       })
     })
     test('createReducer', () => {
       const name = Math.random().toFixed(36)
       const initialState = {}
-      const reducer = createReducer(name, initialState)
-      const state = reducer(null, { type: 'any', payload: null })
+      const reducer = createReducer(name, initialState, () => {})
+      const state = reducer({ flat: {} }, { type: 'any', payload: null })
 
       expect(state.root).toBe(initialState)
       expect(
@@ -48,29 +46,28 @@ describe('redux-flaxom', () => {
         })(),
       ).toBe(true)
       expect(
-        createReducer(asId(name), initialState)(null, {
-          type: 'any',
-          payload: null,
-        }).flat,
-      ).toEqual({ [name]: initialState })
+        createReducer('@' + name, initialState, () => [])(
+          { flat: {} },
+          {
+            type: 'any',
+            payload: null,
+          },
+        ).flat,
+      ).toEqual({ ['@' + name]: initialState })
     })
     test('createStore', () => {
       const increment = createAction()
       const toggle = createAction()
 
-      const count = createReducer(
-        asId('count'),
-        0,
+      const count = createReducer('@count', 0, handle => [
         handle(increment, state => state + 1),
-      )
-      const countDoubled = map(asId('count/map'), count, state => state * 2)
-      const toggled = createReducer(
-        asId('toggled'),
-        false,
+      ])
+      const countDoubled = map('@count/map', count, state => state * 2)
+      const toggled = createReducer('@toggled', false, handle => 
         handle(toggle, state => !state),
       )
 
-      const root = combineReducers(asId('combine'), {
+      const root = combine('@combine', {
         count,
         countDoubled,
         toggled,
@@ -119,17 +116,16 @@ describe('redux-flaxom', () => {
         toggled: false,
       })
       expect(store.getState()).toEqual({
-        changes: ['count', 'count/map', 'combine', 'combine [store]'],
         flat: {
-          count: 2,
-          'count/map': 4,
-          toggled: false,
-          combine: {
+          '@count': 2,
+          '@count/map [map]': 4,
+          '@toggled': false,
+          '@combine': {
             count: 2,
             countDoubled: 4,
             toggled: false,
           },
-          'combine [store]': {
+          '@combine [map]': {
             count: 2,
             countDoubled: 4,
             toggled: false,
@@ -176,20 +172,16 @@ describe('redux-flaxom', () => {
       const increment = createAction('increment')
       const set = createAction<number>('set')
 
-      const count1 = createReducer(
-        asId('count1'),
-        0,
+      const count1 = createReducer('@count1', 0, handle =>
         handle(increment, state => state + 1),
       )
       const count2SetMap = jest.fn((state, payload) => payload)
-      const count2 = createReducer(
-        asId('count2'),
-        0,
+      const count2 = createReducer('@count2', 0, handle => [
         handle(increment, state => state + 1),
         handle(set, count2SetMap),
-      )
+      ])
 
-      const root = combineReducers({ count1 })
+      const root = combine({ count1 })
 
       const store = createStore(root)
 
@@ -229,12 +221,15 @@ describe('redux-flaxom', () => {
 
       count2Unsubscriber1()
       store.dispatch(set(10))
+      expect(store.getState(count2)).toBe(10)
       expect(count2SetMap.mock.calls.length).toBe(2)
       expect(count2Subscriber1.mock.calls.length).toBe(2)
       expect(count2Subscriber2.mock.calls.length).toBe(3)
 
       count2Unsubscriber2()
+      expect(store.getState(count2)).toBe(0)
       store.dispatch(set(15))
+      expect(store.getState(count2)).toBe(0)
       expect(count2Subscriber2.mock.calls.length).toBe(3)
       expect(count2SetMap.mock.calls.length).toBe(2)
     })
@@ -258,50 +253,46 @@ describe('redux-flaxom', () => {
 
       const firstNameUpdated = createAction<string>()
 
-      const firstName = createReducer(
-        asId('firstName'),
-        'John',
+      const firstName = createReducer('@firstName', 'John', handle =>
         handle(firstNameUpdated, (_, name) => name),
       )
-      const lastName = createReducer(asId('lastName'), 'Doe')
+      const lastName = createReducer('@lastName', 'Doe', () => [])
 
-      const IsFirstNameShort = createReducer(
-        asId('IsFirstNameShort'),
+      const isFirstNameShort = createReducer(
+        '@isFirstNameShort',
         false,
-        handle(firstName, (state, v) => {
-          isFirstNameShortMap(v)
-          return v.length < 10
-        }),
+        handle =>
+          handle(firstName, (state, v) => {
+            isFirstNameShortMap(v)
+            return v.length < 10
+          }),
       )
 
-      const fullName = createReducer(
-        asId('fullName'),
-        '',
-        handle(firstName, lastName, (state, fn, ln) => {
-          fullNameMap(fn, ln)
-          return `${fn} ${ln}`
-        }),
-      )
-
-      const displayName = createReducer(
-        asId('displayName'),
-        '',
+      const fullName = createReducer('@fullName', '', handle =>
         handle(
-          firstName,
-          IsFirstNameShort,
-          fullName,
-          (state, firstName, isFirstNameShort, fullName) => {
+          combine({ firstName, lastName }),
+          (state, { firstName, lastName }) => {
+            fullNameMap(firstName, lastName)
+            return `${firstName} ${lastName}`
+          },
+        ),
+      )
+
+      const displayName = createReducer('@displayName', '', handle =>
+        handle(
+          combine({ firstName, isFirstNameShort, fullName }),
+          (state, { firstName, isFirstNameShort, fullName }) => {
             displayNameMap(firstName, isFirstNameShort, fullName)
             return isFirstNameShort ? fullName : firstName
           },
         ),
       )
 
-      let state = displayName(null, { type: 'any', payload: null })
-      expect(getState(state, displayName)).toBe('John Doe')
+      let state = displayName({ flat: {} }, { type: 'any', payload: null })
       expect(isFirstNameShortMap.mock.calls.length).toBe(1)
       expect(fullNameMap.mock.calls.length).toBe(1)
       expect(displayNameMap.mock.calls.length).toBe(1)
+      expect(getState(state, displayName)).toBe('John Doe')
 
       state = displayName(state, firstNameUpdated('Joseph'))
       expect(getState(state, displayName)).toBe('Joseph Doe')
@@ -319,19 +310,19 @@ describe('redux-flaxom', () => {
       const action = createAction<string>()
 
       const r01Map = jest.fn((state, payload) => state + payload)
-      const r01 = createReducer(asId('r01'), '01', handle(action, r01Map))
+      const r01 = createReducer('@r01', '01', handle => handle(action, r01Map))
       const r02Map = jest.fn((state, payload) => state + payload)
-      const r02 = createReducer(asId('r02'), '02', handle(action, r02Map))
-      const r012 = combineReducers({ r01, r02 })
+      const r02 = createReducer('@r02', '02', handle => handle(action, r02Map))
+      const r012 = combine({ r01, r02 })
       const r11Map = jest.fn(state => state.r01)
       const r11 = map(r012, r11Map)
       const r12Map = jest.fn(state => state.r02)
       const r12 = map(r012, r12Map)
-      const r112 = combineReducers({ r11, r12 })
+      const r112 = combine({ r11, r12 })
       const rootMap = jest.fn(_ => _)
       const root = map(r112, rootMap)
 
-      const state = root(null, action('_'))
+      const state = root({ flat: {} }, action('_'))
       expect(state.root).toEqual({ r11: '01_', r12: '02_' })
       // `2` if Handlers is not Set
       expect(r01Map.mock.calls.length).toBe(1)
@@ -342,25 +333,23 @@ describe('redux-flaxom', () => {
     })
   })
   describe('experiments', () => {
-    test('map + combineReducers', () => {
+    test('map + combine', () => {
       const increment = createAction()
 
-      const count = createReducer(
-        asId('count'),
-        0,
+      const count = createReducer('@count', 0, handle =>
         handle(increment, state => state + 1),
       )
       const countDoubled = map(count, state => state * 2)
 
-      const root = combineReducers({ count, countDoubled })
+      const root = combine({ count, countDoubled })
 
-      let stateCount = count(null, increment())
+      let stateCount = count({ flat: {} }, increment())
       expect(getState(stateCount, count)).toEqual(1)
 
       stateCount = count(stateCount, increment())
       expect(getState(stateCount, count)).toEqual(2)
 
-      let stateRoot = root(null, { type: '', payload: null })
+      let stateRoot = root({ flat: {} }, { type: 'any', payload: null })
       expect(getState(stateRoot, count)).toEqual(0)
       expect(getState(stateRoot, countDoubled)).toEqual(0)
       expect(getState(stateRoot, root)).toEqual({ count: 0, countDoubled: 0 })

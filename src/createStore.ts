@@ -1,14 +1,34 @@
 // FIXME: replace ACTION to EVENT
-import {
-  Store,
-  Reducer,
-  getId,
-  Action,
-  asId,
-  getName,
-  ActionCreator,
-} from './model'
-import { getState as _getState, map } from './createReducer'
+import { Action, ActionCreator } from './createAction'
+import { Reducer, getState as _getState, map } from './createReducer'
+
+export type Store<RootReducer> = {
+  dispatch: (
+    action: Action<any>,
+  ) => RootReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>['root']
+    : never
+  subscribe: <TargetReducer = RootReducer>(
+    listener: (
+      state: TargetReducer extends Reducer<infer S>
+        ? ReturnType<Reducer<S>>['root']
+        : never,
+    ) => any,
+    target?: TargetReducer,
+  ) => () => void
+  getState: <TargetReducer = RootReducer>(
+    target?: TargetReducer,
+  ) => TargetReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>['root']
+    : RootReducer extends Reducer<infer S>
+    ? ReturnType<Reducer<S>>
+    : never
+  replaceReducer: <
+    RNew extends RootReducer extends Reducer<infer S> ? Reducer<S> : never
+  >(
+    reducer: RNew,
+  ) => Store<RNew>
+}
 
 const is = {
   reducer(target: Reducer<any> | any) {
@@ -23,27 +43,30 @@ const is = {
 
 export function createStore<State>(
   reducer: Reducer<State>,
-  preloadedState: State = null,
+  preloadedState: State = { flat: {} },
 ): Store<Reducer<State>> {
   const listenersStore = {} as { [key in string]: Set<Function> }
   const listenersEvents = {} as { [key in string]: Set<Function> }
   // clone deps for future mutations
   // TODO: remove unnecesary `*/map` node
-  const localReducer = map(
-    asId(getName(reducer) + ' [store]'),
-    reducer,
-    state => state,
-  )
+  const localReducer = map(reducer, state => state)
   const initialState = localReducer(preloadedState, {
     type: '@@INIT',
     payload: null,
   })
+  const expiredIds: string[] = []
   let state = initialState
-  let errors = [] as any
+  let errors: any[] = []
 
   function getState(target?: Reducer<any>) {
     if (target === undefined) return state
     if (!is.reducer(target)) throw new TypeError('Invalid target')
+    if (
+      initialState.flat[target._node.id] === undefined &&
+      expiredIds.includes(target._node.id)
+    ) {
+      return target._node.initialState
+    }
     return _getState(state, target)
   }
 
@@ -55,7 +78,7 @@ export function createStore<State>(
   ) {
     if (typeof listener !== 'function') throw new TypeError('Invalid listener')
 
-    const targetId = getId(target)
+    const targetId = target._node.id
 
     if (targetId === null) throw new TypeError('Invalid target')
 
@@ -66,11 +89,7 @@ export function createStore<State>(
     if (listeners[targetId] === undefined) {
       listeners[targetId] = new Set()
       if (!isEvent && state.flat[targetId] === undefined) {
-        const {
-          _types,
-          _node: { _children },
-        } = localReducer
-        _children.push(target._node)
+        localReducer._node.edges.push(target._node)
       }
     }
 
@@ -87,9 +106,10 @@ export function createStore<State>(
         initialState.flat[targetId] === undefined &&
         listeners[targetId].size === 0
       ) {
-        const { _children } = localReducer._node
+        const { edges } = localReducer._node
         delete listeners[targetId]
-        _children.splice(_children.indexOf(target._node), 1)
+        edges.splice(edges.indexOf(target._node), 1)
+        expiredIds.push(targetId)
       }
     }
   }
@@ -105,12 +125,22 @@ export function createStore<State>(
       throw new TypeError('Invalid event')
     }
     try {
-      const newState = localReducer(state, event)
+      let flatNew = {}
+      const newState = localReducer(state, event, (flat, _flatNew) => {
+        flatNew = _flatNew
+        const flatNewActual = { ...flat, ..._flatNew }
+
+        let id
+        while ((id = expiredIds.pop())) {
+          delete flatNewActual[id]
+        }
+        return flatNewActual
+      })
 
       if (newState !== state) {
         state = newState
 
-        state.changes!.forEach((id: string) => {
+        for (const id in flatNew) {
           const subscribersById = listenersStore[id]
           if (subscribersById !== undefined) {
             subscribersById.forEach(listener => {
@@ -122,7 +152,7 @@ export function createStore<State>(
               }
             })
           }
-        })
+        }
       }
     } catch (e) {
       errors.push(e)

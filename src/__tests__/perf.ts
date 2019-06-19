@@ -8,16 +8,14 @@ import * as effector from 'effector'
 import {
   createAction,
   createReducer,
-  handle,
-  combineReducers,
+  combine,
   createStore,
-  asId,
   // replace('es', 'src') // for develop
-} from '../../src'
+} from '../../lib'
 
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
-  // use with `tools/showPerfResults.js`
+  // // use with `tools/showPerfResults.js`
   // const logData = JSON.parse(fs.readFileSync(path.join(__dirname, 'log.json')))
   // logData[name] = logData[name] || {}
   // logData[name][target] = logData[name][target] || []
@@ -26,14 +24,14 @@ function log(name, target, time) {
 }
 
 describe('redux-flaxom', () => {
-  describe('perf [55 stores 30 actions]', () => {
+  describe('perf [~100 stores ~30 actions]', () => {
     // const test = (name, f) => f();
 
     const { performance } = require('perf_hooks')
     const { createSelector } = require('reselect')
 
     const heavyCalculates = () =>
-      new Array(1000).fill(0).map(() => Math.random())
+      new Array(100).fill(0).map(() => Math.random())
 
     const reduxReducerFabric = (parentId, initialState) => {
       const prefix =
@@ -85,6 +83,7 @@ describe('redux-flaxom', () => {
       '8': {},
       '9': {},
       '10': {},
+      '11': {},
     }
     const flaxomActions = {}
 
@@ -94,41 +93,38 @@ describe('redux-flaxom', () => {
       return (flaxomNestedChildren[parentId][initialState] = createReducer(
         `flaxomReducerFabric${parentId + initialState}`,
         initialState,
-        handle(
-          (flaxomActions[`${prefix}1`] =
-            flaxomActions[`${prefix}1`] ||
-            createAction(asId(`${prefix}1`), null)),
-          (state, value) => value,
-        ),
-        handle(
-          (flaxomActions[`${prefix}2`] =
-            flaxomActions[`${prefix}2`] ||
-            createAction(asId(`${prefix}2`), null)),
-          (state, value) => value,
-        ),
-        handle(
-          (flaxomActions[`${prefix}3`] =
-            flaxomActions[`${prefix}3`] ||
-            createAction(asId(`${prefix}3`), null)),
-          (state, value) => value,
-        ),
-        handle(
-          (flaxomActions[`${prefix}4`] =
-            flaxomActions[`${prefix}4`] ||
-            createAction(asId(`${prefix}4`), null)),
-          (state, value) => value,
-        ),
-        handle(
-          (flaxomActions[`${prefix}5`] =
-            flaxomActions[`${prefix}5`] ||
-            createAction(asId(`${prefix}5`), null)),
-          (state, value) => value,
-        ),
+        handle => [
+          handle(
+            (flaxomActions[`${prefix}1`] =
+              flaxomActions[`${prefix}1`] || createAction(`${prefix}1`)),
+            (state, value) => value,
+          ),
+          handle(
+            (flaxomActions[`${prefix}2`] =
+              flaxomActions[`${prefix}2`] || createAction(`${prefix}2`)),
+            (state, value) => value,
+          ),
+          handle(
+            (flaxomActions[`${prefix}3`] =
+              flaxomActions[`${prefix}3`] || createAction(`${prefix}3`)),
+            (state, value) => value,
+          ),
+          handle(
+            (flaxomActions[`${prefix}4`] =
+              flaxomActions[`${prefix}4`] || createAction(`${prefix}4`)),
+            (state, value) => value,
+          ),
+          handle(
+            (flaxomActions[`${prefix}5`] =
+              flaxomActions[`${prefix}5`] || createAction(`${prefix}5`)),
+            (state, value) => value,
+          ),
+        ],
       ))
     }
 
     const flaxomReducerCombineFabric = id =>
-      (flaxomChildren[id] = combineReducers({
+      (flaxomChildren[id] = combine({
         '1': flaxomReducerFabric(id, '1'),
         '2': flaxomReducerFabric(id, '2'),
         '3': flaxomReducerFabric(id, '3'),
@@ -148,6 +144,7 @@ describe('redux-flaxom', () => {
       '8': {},
       '9': {},
       '10': {},
+      '11': {},
     }
     const effectorActions = {}
     const effectorUntrackedEvent = effector.createEvent()
@@ -207,7 +204,7 @@ describe('redux-flaxom', () => {
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(id => {
         const subscriberMap = createSelector(
           state => state[id],
-          () => reduxSubscribtionsCallsCount++,
+          () => (heavyCalculates(), reduxSubscribtionsCallsCount++),
         )
         const unsubscribe = storeRedux.subscribe(() =>
           subscriberMap(storeRedux.getState()),
@@ -220,7 +217,7 @@ describe('redux-flaxom', () => {
         const unsubscribers = ['1', '2', '3', '4', '5'].map(nestedId => {
           const subscriberNestedMap = createSelector(
             state => state[id][nestedId],
-            () => reduxSubscribtionsCallsCount++,
+            () => (heavyCalculates(), reduxSubscribtionsCallsCount++),
           )
           return storeRedux.subscribe(() =>
             subscriberNestedMap(storeRedux.getState()),
@@ -238,19 +235,19 @@ describe('redux-flaxom', () => {
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(id => {
         if (id === '10') {
           return storeFlaxom.subscribe(
-            () => flaxomSubscribtionsCallsCount++,
+            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
             flaxomNestedChildren[10][10],
           )
         }
 
         const unsubscribe = storeFlaxom.subscribe(
-          () => flaxomSubscribtionsCallsCount++,
+          () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
           flaxomChildren[id],
         )
 
         const unsubscribers = ['1', '2', '3', '4', '5'].map(nestedId =>
           storeFlaxom.subscribe(
-            () => flaxomSubscribtionsCallsCount++,
+            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
             flaxomNestedChildren[id][nestedId],
           ),
         )
@@ -266,17 +263,17 @@ describe('redux-flaxom', () => {
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(id => {
         if (id === '10') {
           return effectorNestedChildren[10][10].watch(
-            () => effectorSubscribtionsCallsCount++,
+            () => (heavyCalculates(), effectorSubscribtionsCallsCount++),
           )
         }
 
         const unsubscribe = effectorChildren[id].watch(
-          () => effectorSubscribtionsCallsCount++,
+          () => (heavyCalculates(), effectorSubscribtionsCallsCount++),
         )
 
         const unsubscribers = ['1', '2', '3', '4', '5'].map(nestedId =>
           effectorNestedChildren[id][nestedId].watch(
-            () => effectorSubscribtionsCallsCount++,
+            () => (heavyCalculates(), effectorSubscribtionsCallsCount++),
           ),
         )
 
@@ -301,6 +298,17 @@ describe('redux-flaxom', () => {
           '8': reduxReducerCombineFabric('8'),
           '9': reduxReducerCombineFabric('9'),
           '10': reduxReducerFabric('10', '10'),
+          '11': combineReducersRedux({
+            '1': reduxReducerCombineFabric('1'),
+            '2': reduxReducerCombineFabric('2'),
+            '3': reduxReducerCombineFabric('3'),
+            '4': reduxReducerCombineFabric('4'),
+            '5': reduxReducerCombineFabric('5'),
+            '6': reduxReducerCombineFabric('6'),
+            '7': reduxReducerCombineFabric('7'),
+            '8': reduxReducerCombineFabric('8'),
+            '9': reduxReducerCombineFabric('9'),
+          }),
         }),
       )
 
@@ -311,7 +319,7 @@ describe('redux-flaxom', () => {
       const start = performance.now()
 
       storeFlaxom = createStore(
-        combineReducers({
+        combine({
           '1': flaxomReducerCombineFabric('1'),
           '2': flaxomReducerCombineFabric('2'),
           '3': flaxomReducerCombineFabric('3'),
@@ -322,6 +330,17 @@ describe('redux-flaxom', () => {
           '8': flaxomReducerCombineFabric('8'),
           '9': flaxomReducerCombineFabric('9'),
           '10': flaxomReducerFabric('10', '10'),
+          '11': combine({
+            '1': flaxomReducerCombineFabric('1'),
+            '2': flaxomReducerCombineFabric('2'),
+            '3': flaxomReducerCombineFabric('3'),
+            '4': flaxomReducerCombineFabric('4'),
+            '5': flaxomReducerCombineFabric('5'),
+            '6': flaxomReducerCombineFabric('6'),
+            '7': flaxomReducerCombineFabric('7'),
+            '8': flaxomReducerCombineFabric('8'),
+            '9': flaxomReducerCombineFabric('9'),
+          }),
         }),
       )
 
@@ -344,6 +363,17 @@ describe('redux-flaxom', () => {
         '8': effectorReducerCombineFabric('8'),
         '9': effectorReducerCombineFabric('9'),
         '10': effectorReducerFabric('10', '10'),
+        '11': effector.createStoreObject({
+          '1': effectorReducerCombineFabric('1'),
+          '2': effectorReducerCombineFabric('2'),
+          '3': effectorReducerCombineFabric('3'),
+          '4': effectorReducerCombineFabric('4'),
+          '5': effectorReducerCombineFabric('5'),
+          '6': effectorReducerCombineFabric('6'),
+          '7': effectorReducerCombineFabric('7'),
+          '8': effectorReducerCombineFabric('8'),
+          '9': effectorReducerCombineFabric('9'),
+        }),
       })
 
       log('createStore', '[effector]', (performance.now() - start).toFixed(3))
@@ -366,7 +396,7 @@ describe('redux-flaxom', () => {
     test('dispatch without subscribers (init) [flaxom]', () => {
       const start = performance.now()
 
-      storeFlaxom.dispatch({ type: '11', payload: '1' })
+      storeFlaxom.dispatch(flaxomActions['11']('1'))
 
       log(
         'dispatch without subscribers (init)',
@@ -408,7 +438,7 @@ describe('redux-flaxom', () => {
     test('dispatch without subscribers [flaxom]', () => {
       const start = performance.now()
 
-      storeFlaxom.dispatch({ type: '11', payload: '10' })
+      storeFlaxom.dispatch(flaxomActions['11']('10'))
 
       log(
         'dispatch without subscribers',
@@ -479,7 +509,7 @@ describe('redux-flaxom', () => {
       flaxomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeFlaxom.dispatch({ type: '11', payload: '1.1' })
+      storeFlaxom.dispatch(flaxomActions['11'](1.1))
 
       log(
         'dispatch with many subscriptions',
@@ -524,7 +554,7 @@ describe('redux-flaxom', () => {
       flaxomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeFlaxom.dispatch({ type: '101', payload: '1.11' })
+      storeFlaxom.dispatch(flaxomActions[101]('1.11'))
 
       log(
         'dispatch with little subscriptions',

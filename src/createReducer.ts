@@ -1,208 +1,167 @@
-import {
-  Action,
-  Reducer,
-  ActionCreator,
-  Ctx,
-  createId,
-  getName,
-  getId,
-  Flaxom,
-  Node,
-  asId,
-  getValidDescription,
-  Description,
-} from './model'
-import { createAction } from './createAction'
+import { Ctx, Node, traverse } from './graph'
+import { Action, ActionCreator, createAction } from './createAction'
 
-const initialAction = createAction<'@@/init'>('initialAction', () => '@@/init')
-const initialActionType = getId(initialAction)
+const initialAction = createAction('@@/init')
+const initialActionType = initialAction.getType()
 
-export function createReducer<State>(
-  name: string | Description,
+export type Reducer<State> = (
+  state: { flat: Ctx['flat'] },
+  action: Action<any>,
+) => { root: State; flat: Ctx['flat'] }
+
+export function createReducer<State, Name extends string = string>(
+  name: Name,
   initialState: State,
-  ...handlers: {
-    reducer: (state: State, ...a: any[]) => State
-    children: Flaxom[]
-  }[]
-) {
-  const _types = {}
-  const { id, name: _name } = getValidDescription(name, 'reducer')
+  handlersCollector: (
+    handle: <D extends ActionCreator<any, any> | Reducer<any>>(
+      dependencies: D,
+      reducer: (
+        state: State,
+        payload: D extends ActionCreator<infer T>
+          ? T
+          : D extends Reducer<infer T>
+          ? T
+          : never,
+      ) => State,
+    ) => any,
+  ) => any,
+): Reducer<State> {
   if (initialState === undefined) {
-    throw new TypeError("`initialState` can't be undefined")
+    throw new TypeError('initialState can not be undefined')
+  }
+  if (typeof handlersCollector !== 'function') {
+    throw new TypeError('Invalid handlersCollector')
+  }
+
+  const _node = new Node(
+    name,
+    function(ctx: Ctx) {
+      ctx.visited[this.id] = true
+    },
+    function(ctx: Ctx) {
+      return ctx.visited[this.id] !== true
+    },
+  )
+  const { id } = _node
+
+  _node.initialState = initialState
+  handle(initialAction, (state = initialState) => state)
+  handlersCollector(handle)
+
+  function handle(dependencies, reducer) {
+    if (!dependencies || !(dependencies._node instanceof Node)) {
+      throw new TypeError('Invalid dependencies')
+    }
+    if (typeof reducer !== 'function') {
+      throw new TypeError('Invalid reducer')
+    }
+    const childNode = dependencies._node as Node
+    const childId = childNode.id
+    const childDeps = childNode.deps
+    const childIsAction = typeof dependencies.getType === 'function'
+
+    const node = new Node(
+      id,
+      function({ flat, flatNew }) {
+        const stateNew = flatNew[id]
+        const stateOld = flat[id]
+        const isInit = stateOld === undefined
+        const stateLatest =
+          isInit && stateNew === undefined
+            ? initialState
+            : stateNew === undefined
+            ? stateOld
+            : stateNew
+        const childStateNew = flatNew[childId]
+        const childStateOld = flat[childId]
+        const childStateChanged = childStateNew !== childStateOld
+
+        if (childStateChanged || childIsAction || isInit) {
+          const childState =
+            childStateNew === undefined ? childStateOld : childStateNew
+          const newState = reducer(stateLatest, childState)
+
+          if (newState === undefined) {
+            throw new TypeError("state can't be undefined")
+          }
+
+          if (stateLatest === newState && !isInit) return
+
+          flatNew[id] = newState
+        }
+      },
+      function(ctx: Ctx) {
+        return this.deps[ctx.type] === 0
+      },
+    )
+
+    node.deps = childDeps
+    node.edges.push(childNode)
+    _node.edges.push(node)
+    Object.assign(_node.deps, childDeps)
   }
 
   function reducer(
-    state: {
-      root?: State
-      flat?: Ctx['flat']
-    } | null,
+    state: { flat: Ctx['flat'] },
     action: Action<any>,
-    merger = (flat: Object, flatNew: Object) =>
+    merger: (flat: Object, flatNew: Object) => Object = (flat, flatNew) =>
       Object.assign({}, flat, flatNew),
   ): {
     root: State
     flat: Ctx['flat']
-    changes?: Ctx['changes']
   } {
+    const { flat } = state
     let { type, payload } = action
 
     if (
-      _types[type] !== true &&
+      _node.deps[type] !== 0 &&
       // can be true for lazy reducer
-      !_node._children.some(n => n._match({ visited: {}, type }))
+      !_node.edges.some(n => n.match({ visited: {}, type }))
     ) {
-      if (state && state.flat && state.flat[id] !== undefined) return state
+      if (flat[id] !== undefined) return state
       type = initialActionType
       payload = undefined
     }
 
-    const { flat = {} } = state || {}
-    const changes: Ctx['changes'] = []
     const flatNew = {}
     const ctx: Ctx = {
       type,
       payload,
-      changes,
       flat,
       flatNew,
       visited: {},
     }
 
-    walk(_node, ctx)
-    if (ctx.changes.length === 0) return state
+    traverse(_node, ctx)
 
     delete flatNew[type]
+
+    let changed = false
+    for (let _ in flatNew) {
+      changed = true
+      break
+    }
+
+    if (!changed) return state
 
     return {
       root: flatNew[id] as State,
       flat: merger(flat, flatNew),
-      changes,
     }
   }
-
-  function _node(ctx) {
-    ctx.visited[id] = true
-  }
-
-  _node._match = (ctx: Ctx) => ctx.visited[id] !== true
-  _node._children = []
 
   reducer._node = _node
-  reducer._id = id
-  reducer._name = _name
-  reducer._types = _types
-  reducer._isAction = false
-  reducer._initialState = initialState
-  handlers.unshift(handle(initialAction, (state = initialState) => state))
-
-  handlers.forEach(({ reducer, children }) => {
-    const argsLength = children.length
-    const isActionInDeps = children[0]._isAction === true
-    const types = Object.assign({}, ...children.map(({ _types }) => _types))
-
-    function node({ flat, flatNew, changes, visited }: Ctx) {
-      const isInit = flat[id] === undefined
-      const oldState = isInit ? initialState : (flat[id] as State)
-      const args = new Array(argsLength)
-      args[0] = oldState
-      let hasDependenciesChanged = isActionInDeps || isInit
-
-      children.forEach((flaxom, i) => {
-        const steroidId = flaxom._id
-        const steroidStateNew = flatNew[steroidId]
-        const steroidStateOld = flat[steroidId]
-
-        args[i + 1] =
-          steroidStateNew === undefined ? steroidStateOld : steroidStateNew
-
-        hasDependenciesChanged =
-          hasDependenciesChanged || steroidStateNew !== steroidStateOld
-      })
-
-      if (hasDependenciesChanged) {
-        const newState = reducer(...args)
-        if (newState === undefined) {
-          throw new TypeError("state can't be undefined")
-        }
-        flatNew[id] = newState
-        if (oldState !== newState || isInit) changes.push(id)
-      }
-    }
-
-    node._match = (ctx: Ctx) => types[ctx.type] === true
-    node._children = children.map(({ _node }) => _node)
-
-    Object.assign(_types, types)
-    _node._children.push(node)
-  })
 
   return reducer
-}
-
-function walk(node: Node, ctx: Ctx) {
-  if (node._match(ctx)) {
-    node._children.forEach(childNode => {
-      walk(childNode, ctx)
-    })
-    node(ctx)
-  }
 }
 
 export function getState<R extends Reducer<any>>(
   state: { flat?: { [key in string]: any } },
   reducer: R,
 ): R['_initialState'] {
-  const reducerState = (state || { flat: {} }).flat[reducer._id]
-  if (reducerState === undefined) return reducer._initialState
+  const reducerState = (state || { flat: {} }).flat[reducer._node.id]
+  if (reducerState === undefined) return reducer._node.initialState
   return reducerState
-}
-
-export function handle<Node1Type, State = any>(
-  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-  reducer: (state: State, payload1: Node1Type) => State,
-): {
-  reducer: (state: State, payload1: Node1Type) => State
-  children: [ActionCreator<Node1Type> | Reducer<Node1Type>]
-}
-export function handle<Node1Type, Node2Type, State = any>(
-  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-  dependedReducer1: Reducer<Node2Type>,
-  reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State,
-): {
-  reducer: (state: State, payload1: Node1Type, payload2: Node2Type) => State
-  children: [ActionCreator<Node1Type> | Reducer<Node1Type>, Reducer<Node2Type>]
-}
-export function handle<Node1Type, Node2Type, Node3Type, State = any>(
-  dependedActionOrReducer1: ActionCreator<Node1Type> | Reducer<Node1Type>,
-  dependedReducer1: Reducer<Node2Type>,
-  dependedReducer2: Reducer<Node3Type>,
-  reducer: (
-    state: State,
-    payload1: Node1Type,
-    payload2: Node2Type,
-    payload3: Node3Type,
-  ) => State,
-): {
-  reducer: (
-    state: State,
-    payload1: Node1Type,
-    payload2: Node2Type,
-    payload3: Node3Type,
-  ) => State
-  children: [
-    ActionCreator<Node1Type> | Reducer<Node1Type>,
-    Reducer<Node2Type>,
-    Reducer<Node3Type>
-  ]
-}
-
-export function handle(...a) {
-  const reducer = a.pop()
-
-  return {
-    reducer,
-    children: a,
-  }
 }
 
 export function map<T, State = any>(
@@ -210,7 +169,7 @@ export function map<T, State = any>(
   reducer: (state: State) => T,
 ): Reducer<T>
 export function map<T, State = any>(
-  id: string | Description,
+  id: string,
   target: Reducer<State>,
   reducer: (state: State) => T,
 ): Reducer<T>
@@ -218,41 +177,48 @@ export function map<T, State = any>(
 export function map(...a) {
   let id, target, reducer
   if (a.length === 2) {
-    id = getValidDescription(getName(a[0]), 'map')
+    id = a[0]._node.id + ' [map]'
     target = a[0]
     reducer = a[1]
   } else {
-    id = getValidDescription(a[0], 'map')
+    id = a[0] + ' [map]'
     target = a[1]
     reducer = a[2]
   }
-  return createReducer(
-    id,
-    target._initialState,
-    handle(target, (_, state) => reducer(state)),
+  return createReducer(id, target._node.initialState, h =>
+    h(target, (_, state) => reducer(state)),
   )
 }
 
-export function combineReducers<T extends { [key in string]: Reducer<any> }>(
+export function combine<T extends { [key in string]: Reducer<any> }>(
   reducersCollection: T,
 ): Reducer<{ [key in keyof T]: T[key] extends Reducer<infer S> ? S : T[key] }>
-export function combineReducers<T extends { [key in string]: Reducer<any> }>(
-  id: string | Description,
+export function combine<T extends { [key in string]: Reducer<any> }>(
+  id: string,
   reducersCollection: T,
 ): Reducer<{ [key in keyof T]: T[key] extends Reducer<infer S> ? S : T[key] }>
 
-export function combineReducers(...a) {
+export function combine(...a) {
   const withName = a.length === 2
   const reducersCollection = withName ? a[1] : a[0]
   const keys = Object.keys(reducersCollection)
-  const reducers = keys.map(key => reducersCollection[key])
-  reducers.push((oldState, ...values) =>
-    keys.reduce((acc, key, i) => ((acc[key] = values[i]), acc), {}),
-  )
-  const name = getValidDescription(
-    withName ? a[0] : `{ ${keys.join(', ')} }`,
-    'combine',
-  )
+  const name = withName ? a[0] : `{ ${keys.join(', ')} } [combine]`
 
-  return createReducer(name, {}, handle(...reducers))
+  return createReducer(
+    name,
+    // keys.reduce(
+    //   (acc, key) => (
+    //     (acc[key] = getState({ flat: {} }, reducersCollection[key])), acc
+    //   ),
+    //   {},
+    // ),
+    {},
+    h =>
+      keys.map(key =>
+        h(reducersCollection[key], (state, payload) => ({
+          ...state,
+          [key]: payload,
+        })),
+      ),
+  )
 }

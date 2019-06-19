@@ -63,3 +63,6 @@ typings/
 # Build
 lib/
 es/
+
+# IDE
+.vscode
