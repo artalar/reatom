@@ -46,6 +46,10 @@ Event driven state manager with focus on **all** need
 - Selectors "runtime" oriented, mean if some "feature" use any part of state (by selector) when you will remove that part, you get the error only when you will try to mount your "feature" at runtime (if you have not static typing). Right way - is connect all features staticaly by imports.
 - A part of problems solves by various fabric functions, but without standardization it is harmful
 
+### So why single global state?
+
+Immutable data-structures and single entry point for reading and writing are most debuggable things ever (I think). And it most important, because programmer read and debug code much more than write
+
 ### Goals
 
 - Reducers may depend from other reducers
