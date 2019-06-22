@@ -1,4 +1,5 @@
 // FIXME: replace ACTION to EVENT
+import { Node, getId } from './graph'
 import { Action, ActionCreator } from './createAction'
 import { Reducer, map, initialAction } from './createReducer'
 
@@ -41,41 +42,71 @@ const is = {
   },
 }
 
+function collectDepsIds(node: Node, collection: { [key in string]: true }) {
+  collection[node.id] = true
+  node.edges.forEach(n => collectDepsIds(n, collection))
+}
+
 export function createStore<State>(
   reducer: Reducer<State>,
   preloadedState: State = { flat: {} },
 ): Store<Reducer<State>> {
   const listenersStore = {} as { [key in string]: Set<Function> }
   const listenersEvents = {} as { [key in string]: Set<Function> }
+  const listenersAll: Set<Function> = new Set()
   // clone deps for future mutations
   // TODO: remove unnecesary `*/map` node
-  const localReducer = map(reducer, state => state)
-  const initialState = localReducer(preloadedState, {
-    type: '@@/init',
-    payload: null,
-  })
-  const expiredIds: string[] = []
+  const localReducer = map(`[store]`, reducer, state => state)
+  const localNode = localReducer._node as Node
+  const { edges } = localNode
+  const initialState = localReducer(preloadedState, initialAction())
+  const expiredNodes: Node[] = []
   let state = initialState
+  let isStateCanBeMutating = false
   let errors: any[] = []
 
+  function ensureCanMutateState() {
+    if (isStateCanBeMutating) return
+
+    state = {
+      root: state.root,
+      flat: Object.assign({}, state.flat),
+    }
+    isStateCanBeMutating = true
+  }
+
   function actualizeState(immutable = true) {
-    if (expiredIds.length === 0) return
+    if (expiredNodes.length === 0) return
 
-    if (immutable)
+    if (immutable) {
       state = {
-        flat: { ...state.flat },
-        root: state.flat[localReducer._node.id],
+        flat: Object.assign({}, state.flat),
+        root: state.flat[localNode.id],
       }
+      isStateCanBeMutating = true
+    }
 
-    let id
-    while ((id = expiredIds.pop())) delete state.flat[id]
+    const depsIds = {} as { [key in string]: true }
+    collectDepsIds(localNode, depsIds)
+
+    function deleteEdges({ id, edges }: Node) {
+      if (depsIds[id] === undefined) delete state.flat[id]
+      edges.forEach(deleteEdges)
+    }
+
+    let node
+    while ((node = expiredNodes.pop())) deleteEdges(node)
   }
 
   function getState(target?: Reducer<any>) {
-    if (arguments.length === 0) return state
+    if (arguments.length === 0) {
+      actualizeState()
+      return state
+    }
     if (!is.reducer(target)) throw new TypeError('Invalid target')
 
-    const targetId = target._node.id
+    const targetNode = target._node as Node
+    const targetId = targetNode.id
     const isLazy = initialState.flat[targetId] === undefined
     if (isLazy) {
       actualizeState()
@@ -84,24 +115,28 @@ export function createStore<State>(
       const isExist = targetState !== undefined
       return isExist
         ? targetState
-        // TODO: improve perf
-        : target(state, initialAction(), () => null).root
+        : // TODO: improve perf
+          target(state, initialAction(), () => null).root
     }
     const result = state.flat[targetId]
-    return result === undefined ? target._node.initialState : result
+    return result === undefined ? targetNode.initialState : result
   }
 
   function subscribe<T>(
     listener: (a: T) => any,
     // TODO: subscribe to ALL events? :think:
     // @ts-ignore
-    target: Reducer<T> = localReducer,
+    target?: Reducer<T>,
   ) {
     if (typeof listener !== 'function') throw new TypeError('Invalid listener')
 
-    const targetId = target._node.id
+    if (arguments.length === 1) {
+      listenersAll.add(listener)
+      return () => listenersAll.delete(listener)
+    }
 
-    if (targetId === null) throw new TypeError('Invalid target')
+    const targetNode = target._node as Node
+    const targetId = targetNode.id
 
     const isEvent = is.event(target)
     const listeners = isEvent ? listenersEvents : listenersStore
@@ -110,7 +145,12 @@ export function createStore<State>(
     if (listeners[targetId] === undefined) {
       listeners[targetId] = new Set()
       if (!isEvent && state.flat[targetId] === undefined) {
-        localReducer._node.edges.push(target._node)
+        actualizeState()
+        ensureCanMutateState()
+        target(state, initialAction(), (flat, flatNew) => {
+          Object.assign(state.flat, flatNew)
+        })
+        edges.push(targetNode)
       }
     }
 
@@ -127,10 +167,9 @@ export function createStore<State>(
         initialState.flat[targetId] === undefined &&
         listeners[targetId].size === 0
       ) {
-        const { edges } = localReducer._node
         delete listeners[targetId]
-        edges.splice(edges.indexOf(target._node), 1)
-        expiredIds.push(targetId)
+        edges.splice(edges.indexOf(targetNode), 1)
+        expiredNodes.push(targetNode)
       }
     }
   }
@@ -147,22 +186,24 @@ export function createStore<State>(
     }
     try {
       let flatNew = {}
-      const newState = localReducer(state, event, (flat, _flatNew) => ({
-        ...flat,
-        ...(flatNew = _flatNew),
-      }))
+      const newState = localReducer(state, event, (flat, _flatNew) =>
+        Object.assign({}, flat, (flatNew = _flatNew)),
+      )
 
       if (newState !== state) {
+        const oldFlat = state.flat
         state = newState
 
         actualizeState(false)
 
         for (const id in flatNew) {
+          if (oldFlat[id] === flatNew[id]) continue
+
           const subscribersById = listenersStore[id]
           if (subscribersById !== undefined) {
             subscribersById.forEach(listener => {
               try {
-                listener(state.flat[id])
+                listener(flatNew[id])
               } catch (e) {
                 errors.push(e)
                 console.error(e)
@@ -175,6 +216,7 @@ export function createStore<State>(
       errors.push(e)
       console.error(e)
     }
+
     const subscribersById = listenersEvents[event.type]
     if (subscribersById !== undefined) {
       subscribersById.forEach(listener => {
@@ -186,6 +228,15 @@ export function createStore<State>(
         }
       })
     }
+
+    listenersAll.forEach(listener => {
+      try {
+        listener(state, event)
+      } catch (e) {
+        errors.push(e)
+        console.error(e)
+      }
+    })
     errors = []
   }
 
@@ -200,5 +251,8 @@ export function createStore<State>(
     getState,
     dispatch,
     _getErrors: getErrors,
+    _node: localNode,
   }
 }
+
+export { getId }

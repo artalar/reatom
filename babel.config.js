@@ -3,13 +3,10 @@ module.exports = {
     [
       '@babel/env',
       {
-        targets: {
-          browsers: [
-            process.env.BABEL_ENV === 'commonjs'
-              ? 'ie 11'
-              : 'last 2 Chrome versions',
-          ],
-        },
+        targets:
+          process.env.BABEL_ENV === 'commonjs'
+            ? 'ie 11'
+            : 'last 2 Chrome versions',
       },
     ],
     '@babel/preset-flow',
@@ -19,4 +16,4 @@ module.exports = {
     '@babel/plugin-proposal-class-properties',
     '@babel/proposal-object-rest-spread',
   ],
-};
+}

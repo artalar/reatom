@@ -1,14 +1,14 @@
 > the more the better
 
-Average from 63 times
+Average from 82 times
 
 |               (index)               | [redux] | [flaxom] | [effector] |
 |-------------------------------------|---------|----------|------------|
-|             createStore             | '100%'  |  '13%'   |   '31%'    |
-| dispatch without subscribers (init) | '100%'  |  '19%'   |   '14%'    |
-|    dispatch without subscribers     | '100%'  |  '33%'   |   '32%'    |
-|              subscribe              |  '57%'  |  '100%'  |   '17%'    |
-|  dispatch with many subscriptions   | '100%'  |  '77%'   |   '56%'    |
-| dispatch with little subscriptions  |  '40%'  |  '54%'   |   '100%'   |
-|      dispatch untracked action      |  '10%'  |  '84%'   |   '100%'   |
-|             unsubscribe             |  '91%'  |  '96%'   |   '100%'   |
+|             createStore             | '100%'  |  '12%'   |   '20%'    |
+| dispatch without subscribers (init) | '100%'  |  '25%'   |   '18%'    |
+|    dispatch without subscribers     | '100%'  |  '32%'   |   '21%'    |
+|              subscribe              |  '64%'  |  '100%'  |    '8%'    |
+|  dispatch with many subscriptions   | '100%'  |  '93%'   |   '38%'    |
+| dispatch with little subscriptions  |  '31%'  |  '53%'   |   '100%'   |
+|      dispatch untracked action      |  '8%'   |  '91%'   |   '100%'   |
+|             unsubscribe             |  '98%'  |  '100%'  |   '79%'    |

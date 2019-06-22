@@ -12,10 +12,10 @@ Event driven state manager with focus on **all** need
 - static typed (TS, Flow)
 - easy testing
 - DI (by functional composition)
-- atomic stores and subscribtions
-- usefull debugging, devtools
+- atomic stores (reducers) and subscribtions
+- usefull debugging, devtools (redux support)
 - declarative and predictable specification of state shape and state mutation
-- synchronous glitch free (diamond problem)
+- synchronous glitch free (diamond problem free)
 - usefull store fabric (locales, SSR)
 - simple integration with other libraries (Observable, etc)
 - awkward for write bad code
@@ -25,7 +25,7 @@ Event driven state manager with focus on **all** need
 
 ### Todo-list
 
-[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/4w5k42vzw9)
+[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/flaxom-todo-app-fikvf)
 
 > Also see tests
 

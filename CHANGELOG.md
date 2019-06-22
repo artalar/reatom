@@ -1,3 +1,11 @@
+## 3.0.8
+
+Update readme
+
+## 3.0.0 - 3.0.7
+
+Improve edge-cases for [store] lazy reducers
+
 ## 3.0.0
 
 New API for best static type inference

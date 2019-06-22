@@ -11,7 +11,7 @@ import {
   combine,
   createStore,
   // replace('es', 'src') // for develop
-} from '../'
+} from '../../lib'
 
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')

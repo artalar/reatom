@@ -5,6 +5,7 @@ import {
   map,
   combine,
   createStore,
+  getId,
 } from '..'
 
 describe('redux-flaxom', () => {
@@ -59,15 +60,15 @@ describe('redux-flaxom', () => {
       const increment = createAction()
       const toggle = createAction()
 
-      const count = createReducer('@count', 0, handle => [
+      const count = createReducer('count', 0, handle => [
         handle(increment, state => state + 1),
       ])
-      const countDoubled = map('@count/map', count, state => state * 2)
-      const toggled = createReducer('@toggled', false, handle =>
+      const countDoubled = map('count/map', count, state => state * 2)
+      const toggled = createReducer('toggled', false, handle =>
         handle(toggle, state => !state),
       )
 
-      const root = combine('@combine', {
+      const root = combine('combine', {
         count,
         countDoubled,
         toggled,
@@ -117,15 +118,15 @@ describe('redux-flaxom', () => {
       })
       expect(store.getState()).toEqual({
         flat: {
-          '@count': 2,
-          '@count/map [map]': 4,
-          '@toggled': false,
-          '@combine': {
+          [getId(count)]: 2,
+          [getId(countDoubled)]: 4,
+          [getId(toggled)]: false,
+          [getId(root)]: {
             count: 2,
             countDoubled: 4,
             toggled: false,
           },
-          '@combine [map]': {
+          [getId(store)]: {
             count: 2,
             countDoubled: 4,
             toggled: false,
@@ -138,9 +139,11 @@ describe('redux-flaxom', () => {
         },
       })
       expect(storeSubscriber.mock.calls.length).toBe(1)
-      expect(storeSubscriber.mock.calls[0]).toEqual([
-        { count: 2, countDoubled: 4, toggled: false },
-      ])
+      expect(storeSubscriber.mock.calls[0][0].root).toEqual({
+        count: 2,
+        countDoubled: 4,
+        toggled: false,
+      })
       expect(subscriberToogled.mock.calls.length).toBe(0)
 
       store.dispatch(toggle())
@@ -150,9 +153,11 @@ describe('redux-flaxom', () => {
         toggled: true,
       })
       expect(storeSubscriber.mock.calls.length).toBe(2)
-      expect(storeSubscriber.mock.calls[1]).toEqual([
-        { count: 2, countDoubled: 4, toggled: true },
-      ])
+      expect(storeSubscriber.mock.calls[1][0].root).toEqual({
+        count: 2,
+        countDoubled: 4,
+        toggled: true,
+      })
       expect(subscriberToogled.mock.calls.length).toBe(1)
       expect(subscriberToogled.mock.calls[0]).toEqual([true])
 
@@ -161,7 +166,7 @@ describe('redux-flaxom', () => {
           (store.dispatch({ type: 'random', payload: null }),
           store.getState(root)),
       ).toBe(true)
-      expect(storeSubscriber.mock.calls.length).toBe(2)
+      expect(storeSubscriber.mock.calls.length).toBe(3)
       expect(subscriberToogled.mock.calls.length).toBe(1)
     })
     test('createStore lazy selectors', () => {
@@ -193,7 +198,7 @@ describe('redux-flaxom', () => {
       expect(subscriberCount1.mock.calls.length).toBe(1)
 
       store.dispatch(set(1))
-      expect(storeSubscriber.mock.calls.length).toBe(1)
+      expect(storeSubscriber.mock.calls.length).toBe(2)
       expect(subscriberCount1.mock.calls.length).toBe(1)
       expect(count2SetMap.mock.calls.length).toBe(0)
 
@@ -204,7 +209,7 @@ describe('redux-flaxom', () => {
 
       store.dispatch(increment())
       expect(store.getState(count2)).toBe(1)
-      expect(storeSubscriber.mock.calls.length).toBe(2)
+      expect(storeSubscriber.mock.calls.length).toBe(3)
       expect(subscriberCount1.mock.calls.length).toBe(2)
       expect(count2Subscriber1.mock.calls[0][0]).toBe(1)
       expect(count2Subscriber2.mock.calls.length).toBe(1)
@@ -212,7 +217,7 @@ describe('redux-flaxom', () => {
 
       store.dispatch(set(5))
       expect(store.getState(count2)).toBe(5)
-      expect(storeSubscriber.mock.calls.length).toBe(2)
+      expect(storeSubscriber.mock.calls.length).toBe(4)
       expect(subscriberCount1.mock.calls.length).toBe(2)
       expect(count2Subscriber1.mock.calls.length).toBe(2)
       expect(count2Subscriber1.mock.calls[1][0]).toBe(5)
@@ -221,6 +226,7 @@ describe('redux-flaxom', () => {
 
       count2Unsubscriber1()
       store.dispatch(set(10))
+      expect(storeSubscriber.mock.calls.length).toBe(5)
       expect(store.getState(count2)).toBe(10)
       expect(count2SetMap.mock.calls.length).toBe(2)
       expect(count2Subscriber1.mock.calls.length).toBe(2)
@@ -229,31 +235,41 @@ describe('redux-flaxom', () => {
       count2Unsubscriber2()
       expect(store.getState(count2)).toBe(0)
       store.dispatch(set(15))
+      expect(storeSubscriber.mock.calls.length).toBe(6)
       expect(store.getState(count2)).toBe(0)
       expect(count2Subscriber2.mock.calls.length).toBe(3)
       expect(count2SetMap.mock.calls.length).toBe(2)
     })
     test('createStore lazy computed', () => {
       const storeSubscriber = jest.fn()
-      const increment = createAction('increment')
+      const increment1 = createAction()
+      const increment2 = createAction()
 
-      const count = createReducer('@count', 0, handle =>
-        handle(increment, state => state + 1),
+      const count1 = createReducer('count1', 0, handle =>
+        handle(increment1, state => state + 1),
       )
-      const countDoubled = map('@countDoubled', count, payload => payload * 2)
+      const count1Doubled = map(count1, payload => payload * 2)
+      const count2 = createReducer('count2', 0, handle =>
+        handle(increment2, state => state + 1),
+      )
+      const count2Doubled = map(count2, payload => payload * 2)
 
-      const root = combine({ count })
+      const root = combine({ count1 })
 
       const store = createStore(root)
 
       store.subscribe(storeSubscriber)
 
-      store.dispatch(increment())
-      expect(store.getState(count)).toBe(1)
-      expect(store.getState(countDoubled)).toBe(2)
+      store.dispatch(increment1())
+      expect(store.getState(count1)).toBe(1)
+      expect(store.getState(count1Doubled)).toBe(2)
+      expect(store.getState(count2)).toBe(0)
+      expect(store.getState(count2Doubled)).toBe(0)
 
-      store.subscribe(() => {}, countDoubled)
-      expect(store.getState(countDoubled)).toBe(2)
+      store.subscribe(() => {}, count2Doubled)
+      store.dispatch(increment2())
+      expect(store.getState(count2)).toBe(1)
+      expect(store.getState(count2Doubled)).toBe(2)
     })
   })
   describe('diamond problem (createReducer)', () => {
@@ -344,14 +360,21 @@ describe('redux-flaxom', () => {
       const rootMap = jest.fn(_ => _)
       const root = map(r112, rootMap)
 
-      const state = root({ flat: {} }, action('_'))
+      let state = root({ flat: {} }, action('_'))
       expect(state.root).toEqual({ r11: '01_', r12: '02_' })
-      // `2` if Handlers is not Set
       expect(r01Map.mock.calls.length).toBe(1)
       expect(r02Map.mock.calls.length).toBe(1)
-      expect(r11Map.mock.calls.length).toBe(1)
-      expect(r12Map.mock.calls.length).toBe(1)
-      expect(rootMap.mock.calls.length).toBe(1)
+      expect(r11Map.mock.calls.length).toBe(2)
+      expect(r12Map.mock.calls.length).toBe(2)
+      expect(rootMap.mock.calls.length).toBe(2)
+
+      state = root(state, action('_'))
+      expect(state.root).toEqual({ r11: '01__', r12: '02__' })
+      expect(r01Map.mock.calls.length).toBe(2)
+      expect(r02Map.mock.calls.length).toBe(2)
+      expect(r11Map.mock.calls.length).toBe(3)
+      expect(r12Map.mock.calls.length).toBe(3)
+      expect(rootMap.mock.calls.length).toBe(3)
     })
   })
   describe('experiments', () => {

@@ -19,7 +19,11 @@ export class Node {
   deps: { [id: string]: 0 }
   edges: Node[]
   initialState: undefined
-  constructor(id = 'node', complete: (ctx: Ctx) => any, match: (ctx: Ctx) => any) {
+  constructor(
+    id = 'node',
+    complete: (ctx: Ctx) => any,
+    match: (ctx: Ctx) => any,
+  ) {
     if (typeof id !== 'string' || id.length === 0) {
       throw new TypeError('Invalid id')
     }
@@ -60,4 +64,9 @@ export function traverse(node: Node, ctx: Ctx) {
     // }
     // ctx.line[node.id] = undefined
   }
+}
+
+
+export function getId(unit): string {
+  return unit._node.id
 }

@@ -1,4 +1,4 @@
-import { Ctx, Node, traverse } from './graph'
+import { Ctx, Node, traverse, getId } from './graph'
 import { Action, ActionCreator, createAction } from './createAction'
 
 export const initialAction = createAction('@@/init')
@@ -61,7 +61,7 @@ export function createReducer<State, Name extends string = string>(
     const childIsAction = typeof dependencies.getType === 'function'
 
     const node = new Node(
-      id,
+      `${id} [handler]`,
       function({ flat, flatNew }) {
         const stateNew = flatNew[id]
         const stateOld = flat[id]
@@ -84,8 +84,6 @@ export function createReducer<State, Name extends string = string>(
           if (newState === undefined) {
             throw new TypeError("state can't be undefined")
           }
-
-          if (stateLatest === newState && !isInit) return
 
           flatNew[id] = newState
         }
@@ -111,18 +109,7 @@ export function createReducer<State, Name extends string = string>(
     flat: Ctx['flat']
   } {
     const { flat } = state
-    let { type, payload } = action
-
-    if (
-      _node.deps[type] !== 0 &&
-      // can be true for lazy reducer
-      !_node.edges.some(n => n.match({ visited: {}, type }))
-    ) {
-      if (flat[id] !== undefined) return state
-      type = initialActionType
-      payload = undefined
-    }
-
+    const { type, payload } = action
     const flatNew = {}
     const ctx: Ctx = {
       type,
@@ -132,9 +119,15 @@ export function createReducer<State, Name extends string = string>(
       visited: {},
     }
 
+    if (_node.deps[type] !== 0 && !_node.edges.some(n => n.match(ctx))) {
+      if (flat[id] !== undefined) return state
+      ctx.type = initialActionType
+      ctx.payload = undefined
+    }
+
     traverse(_node, ctx)
 
-    delete flatNew[type]
+    delete flatNew[ctx.type]
 
     let changed = false
     for (let _ in flatNew) {
@@ -159,7 +152,7 @@ export function getState<R extends Reducer<any>>(
   state: { flat: { [key in string]: any } },
   reducer: R,
 ): R extends Reducer<infer T> ? T : never {
-  const reducerState = state.flat[reducer._node.id]
+  const reducerState = state.flat[getId(reducer)]
   if (reducerState === undefined) return reducer._node.initialState
   return reducerState
 }
@@ -174,18 +167,18 @@ export function map<T, State = any>(
   reducer: (state: State) => T,
 ): Reducer<T>
 
-export function map(...a) {
+export function map() {
   let id, target, reducer
-  if (a.length === 2) {
-    id = a[0]._node.id + ' [map]'
-    target = a[0]
-    reducer = a[1]
+  if (arguments.length === 2) {
+    id = getId(arguments[0]) + ' [map]'
+    target = arguments[0]
+    reducer = arguments[1]
   } else {
-    id = a[0] + ' [map]'
-    target = a[1]
-    reducer = a[2]
+    id = arguments[0] + ' [map]'
+    target = arguments[1]
+    reducer = arguments[2]
   }
-  return createReducer(id, target._node.initialState, h =>
+  return createReducer(id, reducer(target._node.initialState), h =>
     h(target, (_, state) => reducer(state)),
   )
 }
@@ -198,27 +191,27 @@ export function combine<T extends { [key in string]: Reducer<any> }>(
   reducersCollection: T,
 ): Reducer<{ [key in keyof T]: T[key] extends Reducer<infer S> ? S : T[key] }>
 
-export function combine(...a) {
-  const withName = a.length === 2
-  const reducersCollection = withName ? a[1] : a[0]
+export function combine() {
+  const withName = arguments.length === 2
+  const reducersCollection = withName ? arguments[1] : arguments[0]
   const keys = Object.keys(reducersCollection)
-  const name = withName ? a[0] : `{ ${keys.join(', ')} } [combine]`
+  const name = withName ? arguments[0] : `{ ${keys.join(', ')} } [combine]`
 
   return createReducer(
     name,
-    // keys.reduce(
-    //   (acc, key) => (
-    //     (acc[key] = getState({ flat: {} }, reducersCollection[key])), acc
-    //   ),
-    //   {},
-    // ),
-    {},
+    keys.reduce(
+      (acc, key) => (
+        (acc[key] = reducersCollection[key]._node.initialState), acc
+      ),
+      {},
+    ),
     h =>
       keys.map(key =>
-        h(reducersCollection[key], (state, payload) => ({
-          ...state,
-          [key]: payload,
-        })),
+        h(reducersCollection[key], (state, payload) =>
+          Object.assign({}, state, {
+            [key]: payload,
+          }),
+        ),
       ),
   )
 }
