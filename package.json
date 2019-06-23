@@ -1,7 +1,7 @@
 {
   "name": "flaxom",
   "private": false,
-  "version": "3.0.8",
+  "version": "3.0.9",
   "description": "event driven state manager with focus on all need",
   "main": "lib/index.js",
   "module": "es/index.js",

@@ -1,3 +1,7 @@
+## 3.0.9
+
+Add warning for production
+
 ## 3.0.8
 
 Update readme
