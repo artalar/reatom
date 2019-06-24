@@ -33,18 +33,31 @@ Event driven state manager with focus on **all** need
 
 > Inspired by redux and effector
 
-### Problems (with redux)
+### Why not [redux](github.com/reduxjs/redux)
 
-- Selectors are not inspectable (have not in devtools)
-- Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR
-- Difficult static type inference
-- Selectors must know about all parents - path to the root. It hard for modular architecture
+- Selectors are not inspectable (is lacking in devtools)
+- Difficult static type inference (because every selector must to know full path to parent state)
+- Hard for modular architecture (because every selector must to know about parent state)
 - Separation of interfaces, to reducers and selectors, complicating build separated domains
-- Selectors - is **manual** API to state. It must be **manualy** memorized - and you always need to think when you need it or not (it one of the reasons of performance problems)
-- Selectors execute at render - error in selector will break render (computed properties must separated from view)
-- classic API reducer is had much boilerplate and [static] type description boilerplate
-- Selectors "runtime" oriented, mean if some "feature" use any part of state (by selector) when you will remove that part, you get the error only when you will try to mount your "feature" at runtime (if you have not static typing). Right way - is connect all features staticaly by imports.
-- A part of problems solves by various fabric functions, but without standardization it is harmful
+- Selectors - is **manual** API to state. It must be **manualy** described and memorized.
+- Selectors execute after state change at subscriptions - error in selector will throw error and is no possibility (ok, all possible, but it is really hard) to restore previous valid state.
+- classic reducer API is had much boilerplate and [static] type description boilerplate
+- Selectors "runtime" oriented, mean if some "feature" use any part of state (by selector) when you will remove that part, you get the error only when you will try to mount your "feature" at runtime (if you have not static typing). One of the solutions - is connect all features statically by imports.
+
+> A part of problems solves by various fabric functions, but without standardization it is harmful
+<!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
+
+### Why not [effector](github.com/zerobias/effector)
+
+- Effector is about *atomic stores* - it statefull approach with problems: 1) probable memory leaks 2) difficult [store] instance reusability (for example concurrencies [problems with SSR](https://github.com/zerobias/effector/issues/114)).
+  > It can be solved, but better way solve it by design of library architecture and API.
+- [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90)
+
+### Why not [MobX](github.com/mobxjs/mobx)
+- Huge bundle size and limitation of modern [ES] environment.
+- Difficult to use with custom data-structures.
+- Runtime semantic and mutable state (is not a better way for debugging).
+- [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) is lack of visual part of code semantic.
 
 ### So why single global state?
 
