@@ -10,7 +10,12 @@
 
 - [Table of content](#Table-of-content)
 - [Goals and features](#Goals-and-features)
+- [Installation](#Installation)
 - [Description](#Description)
+  - [Glossary](#Glossary)
+    - [Atom](#Atom)
+    - [Action](#Action)
+    - [Store](#Store)
 - [Example](#Example)
   - [Todo-list](#Todo-list)
 - [Motivation](#Motivation)
@@ -31,16 +36,61 @@
 - atomic stores (reducers) and subscriptions
 - useful debugging, devtools (redux ecosystem support by adapter)
 - declarative and predictable specification of state shape and state mutation
-- synchronous [glitch](https://staltz.com/rx-glitches-arent-actually-a-problem.html) free (diamond problem)
+- synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free (diamond problem)
 - simple integration with other libraries (Observable, etc)
 - awkward for write bad code
 - handy for write good code
+
+## Installation
+
+```sh
+npm i flaxom
+```
+
+or
+
+```sh
+yarn add flaxom
+```
 
 ## Description
 
 > Inspired by [redux](github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](github.com/zerobias/effector)
 
-Blend of the one way data flow (by [flux](github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work)
+**FLAXOM** is a blend of the one-way data flow (by [flux](github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work)
+
+### Glossary
+
+#### Atom
+
+State**less** instructions for calculate derived state with right order (without [glitches](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx)). Atom reducers must be a pure function thats returns new immutable version of state.
+
+```javascript
+const $count = createAtom(
+  'count',     // name
+  0,           // initial state
+  handle => [  // handlers description
+  //handle(actionCreator, reducer)
+    handle(increment, state => state + 1)
+    handle(add, (state, payload) => state + payload)
+  ]
+)
+const $countDoubled = createAtom(
+  'countDoubled',
+  0,
+  handle => [handle($count, (state, count) => count * 2)]
+)
+// shortcut:
+const $countDoubled = map($count, count => count * 2)
+```
+
+#### Action
+
+Intention to state changing.
+
+#### Store
+
+Communicating state**ful** context between actions and atoms.
 
 ## Example
 
@@ -64,9 +114,8 @@ Blend of the one way data flow (by [flux](github.com/facebook/flux) and global s
 - Selectors execute after state change at subscriptions - error in selector will throw error and is no possibility (ok, all possible, but it is really hard) to restore previous valid state.
 - classic reducer API is had much boilerplate and [static] type description boilerplate.
 - Selectors "runtime" oriented, mean if some "feature" use any part of state (by selector) when you will remove that part, you get the error only when you will try to mount your "feature" at runtime (if you have not static typing). One of the solutions - is connect all features statically by imports.
-<!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
-> A part of problems solves by various fabric functions, but without standardization it is harmful.
-
+  <!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
+  > A part of problems solves by various fabric functions, but without standardization it is harmful.
 
 ### Why not [effector](github.com/zerobias/effector)
 
