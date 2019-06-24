@@ -10,6 +10,11 @@ export type ActionCreator<Payload = void, Name extends string = string> = {
   getType: () => Name
 }
 
+const IS_ACTION = Symbol('@@FLAXOM/IS_ACTION')
+export function geIsAction(target) {
+  return target && target[IS_ACTION] === true
+}
+
 export declare function createAction<
   Payload = void,
   Name extends string = string
@@ -40,6 +45,7 @@ export function createAction(name = 'actionCreator', mapper = a => a) {
 
   actionCreator._node = node
   actionCreator.getType = () => id
+  actionCreator[IS_ACTION] = true
 
   return actionCreator
 }

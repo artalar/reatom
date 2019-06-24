@@ -1,8 +1,8 @@
 {
   "name": "flaxom",
   "private": false,
-  "version": "3.0.9",
-  "description": "event driven state manager with focus on all need",
+  "version": "3.0.10",
+  "description": "State manager with a focus of all needs",
   "main": "lib/index.js",
   "module": "es/index.js",
   "scripts": {
@@ -86,7 +86,13 @@
     "store",
     "flux",
     "atom",
+    "reactive",
+    "reactivity",
     "redux",
+    "effector",
+    "mobx",
+    "state-manager",
+    "state manager",
     "flaxom"
   ],
   "directories": {

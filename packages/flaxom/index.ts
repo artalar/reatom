@@ -1,8 +1,8 @@
 export {
-  createReducer,
+  createAtom,
   getState,
   map,
   combine,
-} from '../../src/createReducer'
+} from '../../src/createAtom'
 export { createAction } from '../../src/createAction'
 export { createStore } from './createStore'

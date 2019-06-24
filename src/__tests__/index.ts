@@ -1,6 +1,6 @@
 import {
   createAction,
-  createReducer,
+  createAtom,
   getState,
   map,
   combine,
@@ -33,11 +33,11 @@ describe('redux-flaxom', () => {
         payload: undefined,
       })
     })
-    test('createReducer', () => {
+    test('createAtom', () => {
       const name = Math.random().toFixed(36)
       const initialState = {}
-      const reducer = createReducer(name, initialState, () => {})
-      const state = reducer({ flat: {} }, { type: 'any', payload: null })
+      const atom = createAtom(name, initialState, () => {})
+      const state = atom({ flat: {} }, { type: 'any', payload: null })
 
       expect(state.root).toBe(initialState)
       expect(
@@ -47,7 +47,7 @@ describe('redux-flaxom', () => {
         })(),
       ).toBe(true)
       expect(
-        createReducer('@' + name, initialState, () => [])(
+        createAtom('@' + name, initialState, () => [])(
           { flat: {} },
           {
             type: 'any',
@@ -60,11 +60,11 @@ describe('redux-flaxom', () => {
       const increment = createAction()
       const toggle = createAction()
 
-      const count = createReducer('count', 0, handle => [
+      const count = createAtom('count', 0, handle => [
         handle(increment, state => state + 1),
       ])
       const countDoubled = map('count/map', count, state => state * 2)
-      const toggled = createReducer('toggled', false, handle =>
+      const toggled = createAtom('toggled', false, handle =>
         handle(toggle, state => !state),
       )
 
@@ -177,11 +177,11 @@ describe('redux-flaxom', () => {
       const increment = createAction('increment')
       const set = createAction<number>('set')
 
-      const count1 = createReducer('@count1', 0, handle =>
+      const count1 = createAtom('@count1', 0, handle =>
         handle(increment, state => state + 1),
       )
       const count2SetMap = jest.fn((state, payload) => payload)
-      const count2 = createReducer('@count2', 0, handle => [
+      const count2 = createAtom('@count2', 0, handle => [
         handle(increment, state => state + 1),
         handle(set, count2SetMap),
       ])
@@ -245,11 +245,11 @@ describe('redux-flaxom', () => {
       const increment1 = createAction()
       const increment2 = createAction()
 
-      const count1 = createReducer('count1', 0, handle =>
+      const count1 = createAtom('count1', 0, handle =>
         handle(increment1, state => state + 1),
       )
       const count1Doubled = map(count1, payload => payload * 2)
-      const count2 = createReducer('count2', 0, handle =>
+      const count2 = createAtom('count2', 0, handle =>
         handle(increment2, state => state + 1),
       )
       const count2Doubled = map(count2, payload => payload * 2)
@@ -272,7 +272,7 @@ describe('redux-flaxom', () => {
       expect(store.getState(count2Doubled)).toBe(2)
     })
   })
-  describe('diamond problem (createReducer)', () => {
+  describe('diamond problem (createAtom)', () => {
     test('display name', () => {
       /*
         Short description: `displayName = isFirstNameShort ? fullName : firstName`
@@ -291,12 +291,12 @@ describe('redux-flaxom', () => {
 
       const firstNameUpdated = createAction<string>()
 
-      const firstName = createReducer('@firstName', 'John', handle =>
+      const firstName = createAtom('@firstName', 'John', handle =>
         handle(firstNameUpdated, (_, name) => name),
       )
-      const lastName = createReducer('@lastName', 'Doe', () => [])
+      const lastName = createAtom('@lastName', 'Doe', () => [])
 
-      const isFirstNameShort = createReducer(
+      const isFirstNameShort = createAtom(
         '@isFirstNameShort',
         false,
         handle =>
@@ -306,7 +306,7 @@ describe('redux-flaxom', () => {
           }),
       )
 
-      const fullName = createReducer('@fullName', '', handle =>
+      const fullName = createAtom('@fullName', '', handle =>
         handle(
           combine({ firstName, lastName }),
           (state, { firstName, lastName }) => {
@@ -316,7 +316,7 @@ describe('redux-flaxom', () => {
         ),
       )
 
-      const displayName = createReducer('@displayName', '', handle =>
+      const displayName = createAtom('@displayName', '', handle =>
         handle(
           combine({ firstName, isFirstNameShort, fullName }),
           (state, { firstName, isFirstNameShort, fullName }) => {
@@ -348,9 +348,9 @@ describe('redux-flaxom', () => {
       const action = createAction<string>()
 
       const r01Map = jest.fn((state, payload) => state + payload)
-      const r01 = createReducer('@r01', '01', handle => handle(action, r01Map))
+      const r01 = createAtom('@r01', '01', handle => handle(action, r01Map))
       const r02Map = jest.fn((state, payload) => state + payload)
-      const r02 = createReducer('@r02', '02', handle => handle(action, r02Map))
+      const r02 = createAtom('@r02', '02', handle => handle(action, r02Map))
       const r012 = combine({ r01, r02 })
       const r11Map = jest.fn(state => state.r01)
       const r11 = map(r012, r11Map)
@@ -381,7 +381,7 @@ describe('redux-flaxom', () => {
     test('map + combine', () => {
       const increment = createAction()
 
-      const count = createReducer('@count', 0, handle =>
+      const count = createAtom('@count', 0, handle =>
         handle(increment, state => state + 1),
       )
       const countDoubled = map(count, state => state * 2)

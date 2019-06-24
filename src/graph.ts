@@ -27,9 +27,6 @@ export class Node {
     if (typeof id !== 'string' || id.length === 0) {
       throw new TypeError('Invalid id')
     }
-    if (typeof complete !== 'function') {
-      throw new TypeError('Invalid complete')
-    }
 
     this.id = id = normalizeId(id)
     this.complete = complete

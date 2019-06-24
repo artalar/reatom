@@ -7,11 +7,11 @@ import {
 import * as effector from 'effector'
 import {
   createAction,
-  createReducer,
+  createAtom,
   combine,
   createStore,
   // replace('es', 'src') // for develop
-} from '../../lib'
+} from '../../src'
 
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
@@ -87,11 +87,11 @@ describe('redux-flaxom', () => {
     }
     const flaxomActions = {}
 
-    const flaxomReducerFabric = (parentId, initialState) => {
+    const flaxomAtomFabric = (parentId, initialState) => {
       const prefix =
         parentId !== '10' && !(parentId % 2) ? parentId - 1 : parentId
-      return (flaxomNestedChildren[parentId][initialState] = createReducer(
-        `flaxomReducerFabric${parentId + initialState}`,
+      return (flaxomNestedChildren[parentId][initialState] = createAtom(
+        `flaxomAtomFabric${parentId + initialState}`,
         initialState,
         handle => [
           handle(
@@ -123,13 +123,13 @@ describe('redux-flaxom', () => {
       ))
     }
 
-    const flaxomReducerCombineFabric = id =>
+    const flaxomAtomCombineFabric = id =>
       (flaxomChildren[id] = combine({
-        '1': flaxomReducerFabric(id, '1'),
-        '2': flaxomReducerFabric(id, '2'),
-        '3': flaxomReducerFabric(id, '3'),
-        '4': flaxomReducerFabric(id, '4'),
-        '5': flaxomReducerFabric(id, '5'),
+        '1': flaxomAtomFabric(id, '1'),
+        '2': flaxomAtomFabric(id, '2'),
+        '3': flaxomAtomFabric(id, '3'),
+        '4': flaxomAtomFabric(id, '4'),
+        '5': flaxomAtomFabric(id, '5'),
       }))
 
     const effectorChildren = {}
@@ -320,26 +320,26 @@ describe('redux-flaxom', () => {
 
       storeFlaxom = createStore(
         combine({
-          '1': flaxomReducerCombineFabric('1'),
-          '2': flaxomReducerCombineFabric('2'),
-          '3': flaxomReducerCombineFabric('3'),
-          '4': flaxomReducerCombineFabric('4'),
-          '5': flaxomReducerCombineFabric('5'),
-          '6': flaxomReducerCombineFabric('6'),
-          '7': flaxomReducerCombineFabric('7'),
-          '8': flaxomReducerCombineFabric('8'),
-          '9': flaxomReducerCombineFabric('9'),
-          '10': flaxomReducerFabric('10', '10'),
+          '1': flaxomAtomCombineFabric('1'),
+          '2': flaxomAtomCombineFabric('2'),
+          '3': flaxomAtomCombineFabric('3'),
+          '4': flaxomAtomCombineFabric('4'),
+          '5': flaxomAtomCombineFabric('5'),
+          '6': flaxomAtomCombineFabric('6'),
+          '7': flaxomAtomCombineFabric('7'),
+          '8': flaxomAtomCombineFabric('8'),
+          '9': flaxomAtomCombineFabric('9'),
+          '10': flaxomAtomFabric('10', '10'),
           '11': combine({
-            '1': flaxomReducerCombineFabric('1'),
-            '2': flaxomReducerCombineFabric('2'),
-            '3': flaxomReducerCombineFabric('3'),
-            '4': flaxomReducerCombineFabric('4'),
-            '5': flaxomReducerCombineFabric('5'),
-            '6': flaxomReducerCombineFabric('6'),
-            '7': flaxomReducerCombineFabric('7'),
-            '8': flaxomReducerCombineFabric('8'),
-            '9': flaxomReducerCombineFabric('9'),
+            '1': flaxomAtomCombineFabric('1'),
+            '2': flaxomAtomCombineFabric('2'),
+            '3': flaxomAtomCombineFabric('3'),
+            '4': flaxomAtomCombineFabric('4'),
+            '5': flaxomAtomCombineFabric('5'),
+            '6': flaxomAtomCombineFabric('6'),
+            '7': flaxomAtomCombineFabric('7'),
+            '8': flaxomAtomCombineFabric('8'),
+            '9': flaxomAtomCombineFabric('9'),
           }),
         }),
       )

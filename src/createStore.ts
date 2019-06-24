@@ -1,45 +1,28 @@
-// FIXME: replace ACTION to EVENT
 import { Node, getId } from './graph'
-import { Action, ActionCreator } from './createAction'
-import { Reducer, map, initialAction } from './createReducer'
+import { Action, ActionCreator, geIsAction } from './createAction'
+import { Atom, map, initialAction, geIsAtom } from './createAtom'
 
-export type Store<RootReducer> = {
+export type Store<RootAtom> = {
   dispatch: (
     action: Action<any>,
-  ) => RootReducer extends Reducer<infer S>
-    ? ReturnType<Reducer<S>>['root']
+  ) => RootAtom extends Atom<infer S>
+    ? ReturnType<Atom<S>>['root']
     : never
-  subscribe: <TargetReducer = RootReducer>(
+  subscribe: <TargetAtom = RootAtom>(
     listener: (
-      state: TargetReducer extends Reducer<infer S>
-        ? ReturnType<Reducer<S>>['root']
+      state: TargetAtom extends Atom<infer S>
+        ? ReturnType<Atom<S>>['root']
         : never,
     ) => any,
-    target?: TargetReducer,
+    target?: TargetAtom,
   ) => () => void
-  getState: <TargetReducer = RootReducer>(
-    target?: TargetReducer,
-  ) => TargetReducer extends Reducer<infer S>
-    ? ReturnType<Reducer<S>>['root']
-    : RootReducer extends Reducer<infer S>
-    ? ReturnType<Reducer<S>>
+  getState: <TargetAtom = RootAtom>(
+    target?: TargetAtom,
+  ) => TargetAtom extends Atom<infer S>
+    ? ReturnType<Atom<S>>['root']
+    : RootAtom extends Atom<infer S>
+    ? ReturnType<Atom<S>>
     : never
-  replaceReducer: <
-    RNew extends RootReducer extends Reducer<infer S> ? Reducer<S> : never
-  >(
-    reducer: RNew,
-  ) => Store<RNew>
-}
-
-const is = {
-  reducer(target: Reducer<any> | any) {
-    // FIXME:
-    return true
-  },
-  event(target: ActionCreator<any> | any) {
-    // FIXME:
-    return false
-  },
 }
 
 function collectDepsIds(node: Node, collection: { [key in string]: true }) {
@@ -48,18 +31,18 @@ function collectDepsIds(node: Node, collection: { [key in string]: true }) {
 }
 
 export function createStore<State>(
-  reducer: Reducer<State>,
+  atom: Atom<State>,
   preloadedState: State = { flat: {} },
-): Store<Reducer<State>> {
+): Store<Atom<State>> {
   const listenersStore = {} as { [key in string]: Set<Function> }
-  const listenersEvents = {} as { [key in string]: Set<Function> }
+  const listenersActions = {} as { [key in string]: Set<Function> }
   const listenersAll: Set<Function> = new Set()
   // clone deps for future mutations
   // TODO: remove unnecesary `*/map` node
-  const localReducer = map(`[store]`, reducer, state => state)
-  const localNode = localReducer._node as Node
+  const localAtom = map(`[store]`, atom, state => state)
+  const localNode = localAtom._node as Node
   const { edges } = localNode
-  const initialState = localReducer(preloadedState, initialAction())
+  const initialState = localAtom(preloadedState, initialAction())
   const expiredNodes: Node[] = []
   let state = initialState
   let isStateCanBeMutating = false
@@ -98,12 +81,12 @@ export function createStore<State>(
     while ((node = expiredNodes.pop())) deleteEdges(node)
   }
 
-  function getState(target?: Reducer<any>) {
-    if (arguments.length === 0) {
+  function getState(target?: Atom<any>) {
+    if (target === undefined) {
       actualizeState()
       return state
     }
-    if (!is.reducer(target)) throw new TypeError('Invalid target')
+    if (!geIsAtom(target)) throw new TypeError('Invalid target')
 
     const targetNode = target._node as Node
     const targetId = targetNode.id
@@ -118,33 +101,33 @@ export function createStore<State>(
         : // TODO: improve perf
           target(state, initialAction(), () => null).root
     }
+    // TODO: remove this check?
     const result = state.flat[targetId]
     return result === undefined ? targetNode.initialState : result
   }
 
   function subscribe<T>(
     listener: (a: T) => any,
-    // TODO: subscribe to ALL events? :think:
     // @ts-ignore
-    target?: Reducer<T>,
+    target?: Atom<T>,
   ) {
     if (typeof listener !== 'function') throw new TypeError('Invalid listener')
 
-    if (arguments.length === 1) {
+    if (target === undefined) {
       listenersAll.add(listener)
       return () => listenersAll.delete(listener)
     }
+    if (!geIsAtom(target)) throw new TypeError('Invalid target')
 
     const targetNode = target._node as Node
     const targetId = targetNode.id
 
-    const isEvent = is.event(target)
-    const listeners = isEvent ? listenersEvents : listenersStore
+    const listeners = listenersStore
     let isSubscribed = true
 
     if (listeners[targetId] === undefined) {
       listeners[targetId] = new Set()
-      if (!isEvent && state.flat[targetId] === undefined) {
+      if (state.flat[targetId] === undefined) {
         actualizeState()
         ensureCanMutateState()
         target(state, initialAction(), (flat, flatNew) => {
@@ -163,7 +146,6 @@ export function createStore<State>(
       listeners[targetId].delete(listener)
 
       if (
-        !isEvent &&
         initialState.flat[targetId] === undefined &&
         listeners[targetId].size === 0
       ) {
@@ -174,19 +156,19 @@ export function createStore<State>(
     }
   }
 
-  function dispatch(event: Action<any>) {
+  function dispatch(action: Action<any>) {
     if (
       !(
-        typeof event === 'object' &&
-        event !== null &&
-        typeof event.type === 'string'
+        typeof action === 'object' &&
+        action !== null &&
+        typeof action.type === 'string'
       )
     ) {
-      throw new TypeError('Invalid event')
+      throw new TypeError('Invalid action')
     }
     try {
       let flatNew = {}
-      const newState = localReducer(state, event, (flat, _flatNew) =>
+      const newState = localAtom(state, action, (flat, _flatNew) =>
         Object.assign({}, flat, (flatNew = _flatNew)),
       )
 
@@ -200,16 +182,16 @@ export function createStore<State>(
           if (oldFlat[id] === flatNew[id]) continue
 
           const subscribersById = listenersStore[id]
-          if (subscribersById !== undefined) {
-            subscribersById.forEach(listener => {
-              try {
-                listener(flatNew[id])
-              } catch (e) {
-                errors.push(e)
-                console.error(e)
-              }
-            })
-          }
+
+          if (subscribersById === undefined) continue
+          subscribersById.forEach(listener => {
+            try {
+              listener(flatNew[id])
+            } catch (e) {
+              errors.push(e)
+              console.error(e)
+            }
+          })
         }
       }
     } catch (e) {
@@ -217,21 +199,9 @@ export function createStore<State>(
       console.error(e)
     }
 
-    const subscribersById = listenersEvents[event.type]
-    if (subscribersById !== undefined) {
-      subscribersById.forEach(listener => {
-        try {
-          listener(event)
-        } catch (e) {
-          errors.push(e)
-          console.error(e)
-        }
-      })
-    }
-
     listenersAll.forEach(listener => {
       try {
-        listener(state, event)
+        listener(state, action)
       } catch (e) {
         errors.push(e)
         console.error(e)
@@ -245,7 +215,7 @@ export function createStore<State>(
     return errors
   }
 
-  // TODO: add `replaceReducer` and `observable`
+  // TODO: add `observable`
   return {
     subscribe,
     getState,
