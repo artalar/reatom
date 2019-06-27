@@ -114,6 +114,7 @@ Communicating state**ful** context between actions and atoms.
 - Selectors execute after state change at subscriptions - error in selector will throw error and is no possibility (ok, all possible, but it is really hard) to restore previous valid state.
 - classic reducer API is had much boilerplate and [static] type description boilerplate.
 - Selectors "runtime" oriented, mean if some "feature" use any part of state (by selector) when you will remove that part, you get the error only when you will try to mount your "feature" at runtime (if you have not static typing). One of the solutions - is connect all features statically by imports.
+- Middleware - is confound pattern that, sometimes unexpected, modify the behavior of store. Reference example: actions for redux-thunk don't logged.
   <!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
   > A part of problems solves by various fabric functions, but without standardization it is harmful.
 
