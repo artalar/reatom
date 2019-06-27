@@ -8,7 +8,7 @@ import {
   getId,
 } from '..'
 
-describe('redux-flaxom', () => {
+describe('flaxom', () => {
   describe('main api', () => {
     test('createAction', () => {
       expect(typeof createAction() === 'function').toBe(true)
