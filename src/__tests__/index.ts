@@ -1,64 +1,60 @@
 import {
-  createAction,
+  createActionCreator,
   createAtom,
+  actionDefault,
   getState,
   map,
   combine,
   createStore,
-  getId,
-} from '..'
+  getNode,
+} from '../index'
 
-describe('redux-flaxom', () => {
+describe('flaxom', () => {
   describe('main api', () => {
-    test('createAction', () => {
-      expect(typeof createAction() === 'function').toBe(true)
-      expect(createAction()()).toEqual({
+    test('createActionCreator', () => {
+      expect(typeof createActionCreator() === 'function').toBe(true)
+      expect(createActionCreator()()).toEqual({
         type: expect.stringContaining(''),
         payload: undefined,
       })
-      expect(createAction('TeSt')()).toEqual({
+      expect(createActionCreator('TeSt')()).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: undefined,
       })
-      expect(createAction('TeSt', () => null)()).toEqual({
+      expect(createActionCreator('TeSt', () => null)()).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: null,
       })
-      expect(createAction('TeSt', a => a)(null)).toEqual({
+      expect(createActionCreator('TeSt', a => a)(null)).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: null,
       })
-      expect(createAction('@TeSt')()).toEqual({
-        type: '@TeSt',
+      expect(createActionCreator(['TeSt'])()).toEqual({
+        type: 'TeSt',
         payload: undefined,
       })
     })
     test('createAtom', () => {
-      const name = Math.random().toFixed(36)
+      const name = '_atomName_'
       const initialState = {}
       const atom = createAtom(name, initialState, () => {})
-      const state = atom({ flat: {} }, { type: 'any', payload: null })
+      const state = atom({}, actionDefault())
 
-      expect(state.root).toBe(initialState)
+      expect(getState(state, atom)).toBe(initialState)
       expect(
         (() => {
-          const keys = Object.keys(state.flat)
+          const keys = Object.keys(state.defaultDomain)
           return keys.length === 1 && keys[0].includes(name)
         })(),
       ).toBe(true)
       expect(
-        createAtom('@' + name, initialState, () => [])(
-          { flat: {} },
-          {
-            type: 'any',
-            payload: null,
-          },
-        ).flat,
-      ).toEqual({ ['@' + name]: initialState })
+        createAtom(['@', name], initialState, () => {})({}, actionDefault()),
+      ).toEqual({ '@': { [name]: initialState } })
     })
     test('createStore', () => {
-      const increment = createAction()
-      const toggle = createAction()
+      const incrementMapper = jest.fn(a => a)
+      const increment = createActionCreator('increment', incrementMapper)
+      const toggle = createActionCreator()
 
       const count = createAtom('count', 0, handle => [
         handle(increment, state => state + 1),
@@ -89,7 +85,12 @@ describe('redux-flaxom', () => {
       expect(store.getState(countDoubled)).toBe(0)
       expect(store.getState(count)).toBe(0)
 
-      expect(store.getState(root) !== store.dispatch(increment())).toBe(true)
+      expect(incrementMapper).toBeCalledTimes(0)
+      expect(
+        store.getState(root) !==
+          (store.dispatch(increment()), store.getState(root)),
+      ).toBe(true)
+      expect(incrementMapper).toBeCalledTimes(1)
       expect(store.getState(root)).toEqual({
         count: 1,
         countDoubled: 2,
@@ -106,7 +107,7 @@ describe('redux-flaxom', () => {
       const storeSubscriber = jest.fn()
       const subscriberToogled = jest.fn()
       store.subscribe(storeSubscriber)
-      store.subscribe(subscriberToogled, toggled)
+      store.subscribe(toggled, subscriberToogled)
       expect(storeSubscriber.mock.calls.length).toBe(0)
       expect(subscriberToogled.mock.calls.length).toBe(0)
 
@@ -117,33 +118,19 @@ describe('redux-flaxom', () => {
         toggled: false,
       })
       expect(store.getState()).toEqual({
-        flat: {
-          [getId(count)]: 2,
-          [getId(countDoubled)]: 4,
-          [getId(toggled)]: false,
-          [getId(root)]: {
+        defaultDomain: {
+          [getNode(count).name]: 2,
+          [getNode(countDoubled).name]: 4,
+          [getNode(toggled).name]: false,
+          [getNode(root).name]: {
             count: 2,
             countDoubled: 4,
             toggled: false,
           },
-          [getId(store)]: {
-            count: 2,
-            countDoubled: 4,
-            toggled: false,
-          },
-        },
-        root: {
-          count: 2,
-          countDoubled: 4,
-          toggled: false,
         },
       })
       expect(storeSubscriber.mock.calls.length).toBe(1)
-      expect(storeSubscriber.mock.calls[0][0].root).toEqual({
-        count: 2,
-        countDoubled: 4,
-        toggled: false,
-      })
+      expect(storeSubscriber.mock.calls[0][0]).toEqual(increment())
       expect(subscriberToogled.mock.calls.length).toBe(0)
 
       store.dispatch(toggle())
@@ -153,13 +140,9 @@ describe('redux-flaxom', () => {
         toggled: true,
       })
       expect(storeSubscriber.mock.calls.length).toBe(2)
-      expect(storeSubscriber.mock.calls[1][0].root).toEqual({
-        count: 2,
-        countDoubled: 4,
-        toggled: true,
-      })
+      expect(storeSubscriber.mock.calls[1][0]).toEqual(toggle())
       expect(subscriberToogled.mock.calls.length).toBe(1)
-      expect(subscriberToogled.mock.calls[0]).toEqual([true])
+      expect(subscriberToogled.mock.calls[0][0]).toBe(true)
 
       expect(
         store.getState(root) ===
@@ -174,8 +157,8 @@ describe('redux-flaxom', () => {
       const subscriberCount1 = jest.fn()
       const count2Subscriber1 = jest.fn()
       const count2Subscriber2 = jest.fn()
-      const increment = createAction('increment')
-      const set = createAction<number>('set')
+      const increment = createActionCreator('increment')
+      const set = createActionCreator<number>('set')
 
       const count1 = createAtom('@count1', 0, handle =>
         handle(increment, state => state + 1),
@@ -191,7 +174,7 @@ describe('redux-flaxom', () => {
       const store = createStore(root)
 
       store.subscribe(storeSubscriber)
-      store.subscribe(subscriberCount1, count1)
+      store.subscribe(count1, subscriberCount1)
 
       store.dispatch(increment())
       expect(storeSubscriber.mock.calls.length).toBe(1)
@@ -203,8 +186,8 @@ describe('redux-flaxom', () => {
       expect(count2SetMap.mock.calls.length).toBe(0)
 
       expect(store.getState(count2)).toBe(0)
-      const count2Unsubscriber1 = store.subscribe(count2Subscriber1, count2)
-      const count2Unsubscriber2 = store.subscribe(count2Subscriber2, count2)
+      const count2Unsubscriber1 = store.subscribe(count2, count2Subscriber1)
+      const count2Unsubscriber2 = store.subscribe(count2, count2Subscriber2)
       expect(store.getState(count2)).toBe(0)
 
       store.dispatch(increment())
@@ -242,8 +225,8 @@ describe('redux-flaxom', () => {
     })
     test('createStore lazy computed', () => {
       const storeSubscriber = jest.fn()
-      const increment1 = createAction()
-      const increment2 = createAction()
+      const increment1 = createActionCreator()
+      const increment2 = createActionCreator()
 
       const count1 = createAtom('count1', 0, handle =>
         handle(increment1, state => state + 1),
@@ -266,7 +249,7 @@ describe('redux-flaxom', () => {
       expect(store.getState(count2)).toBe(0)
       expect(store.getState(count2Doubled)).toBe(0)
 
-      store.subscribe(() => {}, count2Doubled)
+      store.subscribe(count2Doubled, () => {})
       store.dispatch(increment2())
       expect(store.getState(count2)).toBe(1)
       expect(store.getState(count2Doubled)).toBe(2)
@@ -289,21 +272,18 @@ describe('redux-flaxom', () => {
       const fullNameMap = jest.fn()
       const displayNameMap = jest.fn()
 
-      const firstNameUpdated = createAction<string>()
+      const firstNameUpdated = createActionCreator<string>()
 
       const firstName = createAtom('@firstName', 'John', handle =>
         handle(firstNameUpdated, (_, name) => name),
       )
       const lastName = createAtom('@lastName', 'Doe', () => [])
 
-      const isFirstNameShort = createAtom(
-        '@isFirstNameShort',
-        false,
-        handle =>
-          handle(firstName, (state, v) => {
-            isFirstNameShortMap(v)
-            return v.length < 10
-          }),
+      const isFirstNameShort = createAtom('@isFirstNameShort', false, handle =>
+        handle(firstName, (state, v) => {
+          isFirstNameShortMap(v)
+          return v.length < 10
+        }),
       )
 
       const fullName = createAtom('@fullName', '', handle =>
@@ -326,7 +306,7 @@ describe('redux-flaxom', () => {
         ),
       )
 
-      let state = displayName({ flat: {} }, { type: 'any', payload: null })
+      let state = displayName({}, actionDefault())
       expect(isFirstNameShortMap.mock.calls.length).toBe(1)
       expect(fullNameMap.mock.calls.length).toBe(1)
       expect(displayNameMap.mock.calls.length).toBe(1)
@@ -345,7 +325,7 @@ describe('redux-flaxom', () => {
       expect(displayNameMap.mock.calls.length).toBe(3)
     })
     test('few diamonds', () => {
-      const action = createAction<string>()
+      const action = createActionCreator<string>()
 
       const r01Map = jest.fn((state, payload) => state + payload)
       const r01 = createAtom('@r01', '01', handle => handle(action, r01Map))
@@ -360,8 +340,9 @@ describe('redux-flaxom', () => {
       const rootMap = jest.fn(_ => _)
       const root = map(r112, rootMap)
 
-      let state = root({ flat: {} }, action('_'))
-      expect(state.root).toEqual({ r11: '01_', r12: '02_' })
+      let state = root({}, actionDefault())
+      state = root(state, action('_'))
+      expect(getState(state, root)).toEqual({ r11: '01_', r12: '02_' })
       expect(r01Map.mock.calls.length).toBe(1)
       expect(r02Map.mock.calls.length).toBe(1)
       expect(r11Map.mock.calls.length).toBe(2)
@@ -369,7 +350,7 @@ describe('redux-flaxom', () => {
       expect(rootMap.mock.calls.length).toBe(2)
 
       state = root(state, action('_'))
-      expect(state.root).toEqual({ r11: '01__', r12: '02__' })
+      expect(getState(state, root)).toEqual({ r11: '01__', r12: '02__' })
       expect(r01Map.mock.calls.length).toBe(2)
       expect(r02Map.mock.calls.length).toBe(2)
       expect(r11Map.mock.calls.length).toBe(3)
@@ -379,7 +360,7 @@ describe('redux-flaxom', () => {
   })
   describe('experiments', () => {
     test('map + combine', () => {
-      const increment = createAction()
+      const increment = createActionCreator()
 
       const count = createAtom('@count', 0, handle =>
         handle(increment, state => state + 1),
@@ -388,21 +369,23 @@ describe('redux-flaxom', () => {
 
       const root = combine({ count, countDoubled })
 
-      let stateCount = count({ flat: {} }, increment())
-      expect(getState(stateCount, count)).toEqual(1)
+      let countState = count({}, actionDefault())
+      countState = count(countState, increment())
+      expect(getState(countState, count)).toEqual(1)
 
-      stateCount = count(stateCount, increment())
-      expect(getState(stateCount, count)).toEqual(2)
+      countState = count(countState, increment())
+      expect(getState(countState, count)).toEqual(2)
 
-      let stateRoot = root({ flat: {} }, { type: 'any', payload: null })
-      expect(getState(stateRoot, count)).toEqual(0)
-      expect(getState(stateRoot, countDoubled)).toEqual(0)
-      expect(getState(stateRoot, root)).toEqual({ count: 0, countDoubled: 0 })
+      let rootState = root({}, actionDefault())
+      rootState = root(rootState, { type: 'any', payload: null })
+      expect(getState(rootState, count)).toEqual(0)
+      expect(getState(rootState, countDoubled)).toEqual(0)
+      expect(getState(rootState, root)).toEqual({ count: 0, countDoubled: 0 })
 
-      stateRoot = root(stateRoot, increment())
-      expect(getState(stateRoot, count)).toEqual(1)
-      expect(getState(stateRoot, countDoubled)).toEqual(2)
-      expect(getState(stateRoot, root)).toEqual({ count: 1, countDoubled: 2 })
+      rootState = root(rootState, increment())
+      expect(getState(rootState, count)).toEqual(1)
+      expect(getState(rootState, countDoubled)).toEqual(2)
+      expect(getState(rootState, root)).toEqual({ count: 1, countDoubled: 2 })
     })
   })
 })

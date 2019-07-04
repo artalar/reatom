@@ -6,12 +6,12 @@ import {
 } from 'redux'
 import * as effector from 'effector'
 import {
-  createAction,
+  createActionCreator,
   createAtom,
   combine,
   createStore,
   // replace('es', 'src') // for develop
-} from '../../src'
+} from '../../src/index'
 
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
@@ -96,27 +96,27 @@ describe('redux-flaxom', () => {
         handle => [
           handle(
             (flaxomActions[`${prefix}1`] =
-              flaxomActions[`${prefix}1`] || createAction(`${prefix}1`)),
+              flaxomActions[`${prefix}1`] || createActionCreator(`${prefix}1`)),
             (state, value) => value,
           ),
           handle(
             (flaxomActions[`${prefix}2`] =
-              flaxomActions[`${prefix}2`] || createAction(`${prefix}2`)),
+              flaxomActions[`${prefix}2`] || createActionCreator(`${prefix}2`)),
             (state, value) => value,
           ),
           handle(
             (flaxomActions[`${prefix}3`] =
-              flaxomActions[`${prefix}3`] || createAction(`${prefix}3`)),
+              flaxomActions[`${prefix}3`] || createActionCreator(`${prefix}3`)),
             (state, value) => value,
           ),
           handle(
             (flaxomActions[`${prefix}4`] =
-              flaxomActions[`${prefix}4`] || createAction(`${prefix}4`)),
+              flaxomActions[`${prefix}4`] || createActionCreator(`${prefix}4`)),
             (state, value) => value,
           ),
           handle(
             (flaxomActions[`${prefix}5`] =
-              flaxomActions[`${prefix}5`] || createAction(`${prefix}5`)),
+              flaxomActions[`${prefix}5`] || createActionCreator(`${prefix}5`)),
             (state, value) => value,
           ),
         ],
@@ -235,20 +235,20 @@ describe('redux-flaxom', () => {
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(id => {
         if (id === '10') {
           return storeFlaxom.subscribe(
-            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
             flaxomNestedChildren[10][10],
+            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
           )
         }
 
         const unsubscribe = storeFlaxom.subscribe(
-          () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
           flaxomChildren[id],
+          () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
         )
 
         const unsubscribers = ['1', '2', '3', '4', '5'].map(nestedId =>
           storeFlaxom.subscribe(
-            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
             flaxomNestedChildren[id][nestedId],
+            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
           ),
         )
 
@@ -319,7 +319,7 @@ describe('redux-flaxom', () => {
       const start = performance.now()
 
       storeFlaxom = createStore(
-        combine({
+        combine(['_', 'root'], {
           '1': flaxomAtomCombineFabric('1'),
           '2': flaxomAtomCombineFabric('2'),
           '3': flaxomAtomCombineFabric('3'),
@@ -346,7 +346,7 @@ describe('redux-flaxom', () => {
 
       log('createStore', '[flaxom]', (performance.now() - start).toFixed(3))
 
-      expect(storeRedux.getState()).toEqual(storeFlaxom.getState().root)
+      expect(storeRedux.getState()).toEqual(storeFlaxom.getState()._.root)
     })
 
     test('createStore [effector]', () => {
@@ -378,7 +378,7 @@ describe('redux-flaxom', () => {
 
       log('createStore', '[effector]', (performance.now() - start).toFixed(3))
 
-      expect(storeFlaxom.getState().root).toEqual(storeEffector.getState())
+      expect(storeFlaxom.getState()._.root).toEqual(storeEffector.getState())
     })
 
     test('dispatch without subscribers (init) [redux]', () => {

@@ -1,4 +1,58 @@
+Do not follow this tests (it may be biased), it is only for library author
+
 > the more the better
+
+### v4
+
+Average from 24 times
+
+```js
+var a = {
+  "createStore": {
+    "[redux]": "100%",
+    "[flaxom]": "39%",
+    "[effector]": "40%"
+  },
+  "dispatch without subscribers (init)": {
+    "[redux]": "100%",
+    "[flaxom]": "38%",
+    "[effector]": "11%"
+  },
+  "dispatch without subscribers": {
+    "[redux]": "100%",
+    "[flaxom]": "42%",
+    "[effector]": "24%"
+  },
+  "subscribe": {
+    "[redux]": "64%",
+    "[flaxom]": "100%",
+    "[effector]": "17%" 
+  },
+  "dispatch with many subscriptions": {
+    "[redux]": "100%",
+    "[flaxom]": "84%",
+    "[effector]": "42%"
+  },
+  "dispatch with little subscriptions": {
+    "[redux]": "36%",
+    "[flaxom]": "48%",
+    "[effector]": "100%"
+  },
+  "dispatch untracked action": {
+    "[redux]": "11%",
+    "[flaxom]": "100%",
+    "[effector]": "82%"
+  },
+  "unsubscribe": {
+    "[redux]": "96%",
+    "[flaxom]": "92%",
+    "[effector]": "100%"
+  }
+};
+
+```
+
+### v3
 
 Average from 82 times
 

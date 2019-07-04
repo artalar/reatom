@@ -48,4 +48,4 @@ const displayData = Object.entries(logData).reduce(
 )
 
 console.log('\n', 'Average from', times, 'times')
-console.table(displayData)
+console.log(displayData)
