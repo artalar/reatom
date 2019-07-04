@@ -1,23 +1,20 @@
 {
   "name": "flaxom",
   "private": false,
-  "version": "3.0.10",
+  "version": "4.0.0-rc1",
   "description": "State manager with a focus of all needs",
-  "main": "lib/index.js",
-  "module": "es/index.js",
+  "source": "src/index.ts",
+  "main": "build/index.js",
+  "umd:main": "build/index.umd.js",
+  "module": "build/index.mjs",
+  "unpkg": "build/index.umd.js",
+  "types": "build/src/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "postpublish": "npm run clean",
-    "build": "npm run clean && npm run build:cjs && npm run build:es",
-    "build:cjs": "cross-env BABEL_ENV=commonjs webpack",
-    "build:es": "webpack",
-    "build:ts": "tsc --emitDeclarationOnly",
-    "clean": "npm run clean:es && npm run clean:cjs",
-    "clean:cjs": "rimraf lib/",
-    "clean:es": "rimraf es/",
-    "rebuild": "npm run rebuild:es && npm run rebuild:cjs",
-    "rebuild:cjs": "npm run clean:cjs & npm run build:cjs",
-    "rebuild:es": "npm run clean:es & npm run build:es",
+    "build": "microbundle",
+    "clean": "rimraf build/",
+    "rebuild": "npm run clean && npm run build",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
@@ -28,9 +25,7 @@
     "ts-check:watch": "npm run ts-check -- --watch",
     "flow": "flow"
   },
-  "peerDependencies": {
-    "react": "16.x"
-  },
+  "peerDependencies": {},
   "devDependencies": {
     "@babel/cli": "^7.1.5",
     "@babel/core": "^7.1.6",
@@ -41,12 +36,13 @@
     "@babel/preset-flow": "^7.0.0",
     "@babel/preset-react": "^7.0.0",
     "@babel/preset-typescript": "^7.1.0",
+    "@types/jest": "^24.0.15",
     "babel-core": "^7.0.0-bridge.0",
     "babel-eslint": "^10.0.1",
     "babel-jest": "^24.1.0",
     "babel-loader": "^8.0.4",
     "cross-env": "^5.2.0",
-    "effector": "^19.0.0",
+    "effector": "^19.1.0",
     "enzyme": "^3.8.0",
     "enzyme-adapter-react-16": "^1.7.1",
     "eslint": "^5.9.0",
@@ -58,10 +54,11 @@
     "eslint-plugin-prettier": "^3.0.0",
     "flow-bin": "^0.93.0",
     "jest": "^24.1.0",
+    "microbundle": "^0.11.0",
     "onchange": "^5.2.0",
     "peer-deps-externals-webpack-plugin": "^1.0.4",
     "prettier": "^1.17.0",
-    "react": "^16.6.3",
+    "react": "^16.8.6",
     "react-dom": "^16.6.3",
     "redux": "^4.0.1",
     "reselect": "^4.0.0",
@@ -97,11 +94,5 @@
   ],
   "directories": {
     "lib": "lib"
-  },
-  "dependencies": {
-    "@types/jest": "^24.0.12",
-    "typepark": "^0.7.0",
-    "typescript-tuple": "^2.2.1",
-    "utility-types": "^3.6.1"
   }
 }

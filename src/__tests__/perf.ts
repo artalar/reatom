@@ -11,10 +11,10 @@ import {
   combine,
   createStore,
   // replace('es', 'src') // for develop
-} from '../../src'
+} from '../../src/index'
 
 function log(name, target, time) {
-  console.log(name, target, time, 'ms')
+  // console.log(name, target, time, 'ms')
   // // use with `tools/showPerfResults.js`
   // const logData = JSON.parse(fs.readFileSync(path.join(__dirname, 'log.json')))
   // logData[name] = logData[name] || {}
