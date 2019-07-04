@@ -4,7 +4,7 @@ console.warn('FLAXOM still work in progress, do not use it in production')
 
 type ActionType = string
 type ActionTypesDictionary = { [key in ActionType]: true }
-type DependenciesDictionary = { [key in NodeId]: true }
+type DependenciesDictionary = { [key in NodeId]: Node }
 
 type NodeId = string
 type Node = {
@@ -87,7 +87,7 @@ function createCtx(
       let domainStateNew = stateNew[domain]
       if (domainStateNew === undefined)
         domainStateNew = stateNew[domain] =
-          domainState === undefined ? {} : Object.assign({}, domainState)
+          domainState === undefined ? {} : { ...domainState }
 
       domainStateNew[name] = value
       statePlain[id] = value
@@ -116,15 +116,15 @@ export function createActionCreator<Input = void, Payload = Input>(
 
   safetyFunc(mapper, 'mapper')
 
-  const ACActionTypes = { [type]: true as const }
   const ACNode: Node = {
     id: type,
     domain: type,
     name: type,
-    actionTypes: ACActionTypes,
-    dependencies: ACActionTypes,
+    actionTypes: { [type]: true as const },
+    dependencies: {},
     stackWorker: noop,
   }
+  ACNode.dependencies[type] = ACNode
 
   function actionCreator(
     payload?: Input,
@@ -218,7 +218,7 @@ export function createAtom<State>(
       "Can't define dependencies after atom initialization",
     )
 
-    let depNode: Node
+    let depNode!: Node
     throwIf(!dep || !(depNode = dep[NODE]), 'Invalid dependency')
 
     const {
@@ -226,7 +226,7 @@ export function createAtom<State>(
       actionTypes: depActionTypes,
       dependencies: depDependencies,
       stackWorker: depStackWorker,
-    } = depNode!
+    } = depNode
     // @ts-ignore
     const isDepActionCreator = getIsAction(dep)
 
@@ -235,8 +235,9 @@ export function createAtom<State>(
 
     Object.assign(atomActionTypes, depActionTypes)
     Object.assign(atomDependencies, depDependencies)
-    atomDependencies[depId] = true
+    atomDependencies[depId] = depNode
 
+    // FIXME: remove
     function invalidateDeps(ctx: Ctx) {
       ctx.stack.push(depStackWorker)
     }
@@ -289,7 +290,7 @@ export function createAtom<State>(
 
     walk(ctx)
 
-    return ctx.isChanged ? Object.assign({}, state, ctx.stateNew) : state
+    return ctx.isChanged ? { ...state, ...ctx.stateNew } : state
   }
 
   // @ts-ignore
@@ -371,11 +372,7 @@ export function combine<T extends { [key in string]: Atom<any> }>(
 
   return createAtom(name, {}, reduce =>
     keys.map(key =>
-      reduce(shape[key], (state, payload) =>
-        Object.assign({}, state, {
-          [key]: payload,
-        }),
-      ),
+      reduce(shape[key], (state, payload) => ({ ...state, [key]: payload })),
     ),
   )
 }
@@ -402,40 +399,39 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
   const listenersStore = {} as { [key in string]: Function[] }
   const listenersActions: Function[] = []
   const atomNode = atom[NODE]
-  const atomNodeDeps = atomNode.dependencies
-  const depsCounter: { [key in string]: number } = {}
+  const atomDeps = atomNode.dependencies
+  const atomDepsCounters: { [key in string]: number } = {}
+  for (const id in atomDeps) atomDepsCounters[id] = 1
 
   const newStack: Stack = []
-  let isDepsCounterActual = true
   let stack: Stack = [atomNode.stackWorker]
-  let state: Ctx['state']
 
-  for (const key in atomNodeDeps) depsCounter[key] = 1
-
-  const ctx = createCtx(preloadedState, actionDefault(), [atomNode.stackWorker])
-
-  walk(ctx)
-
-  const initialStatePlain = ctx.statePlain
-  state = ctx.stateNew
+  let { stateNew: state, statePlain: initialStatePlain } = walk(
+    createCtx(preloadedState, actionDefault(), [atomNode.stackWorker]),
+  )
+  let stateLastSnapshot = state
 
   function actualizeState() {
     if (newStack.length > 0) {
-      const ctx = createCtx(state, actionDefault(), newStack)
+      const { isChanged, stateNew } = walk(
+        createCtx(state, actionDefault(), newStack),
+      )
 
-      walk(ctx)
-
-      if (ctx.isChanged) state = Object.assign({}, state, ctx.stateNew)
+      if (isChanged) state = { ...state, ...stateNew }
     }
-    if (!isDepsCounterActual) {
-      for (const key in depsCounter)
-        if (depsCounter[key] === 0) {
-          delete depsCounter[key]
-          const [domain, name] = key.split(idSeparator)
-          state = Object.assign({}, state)
-          state[domain] = Object.assign({}, state[domain])
-          delete state[domain][name]
-        }
+  }
+
+  function incrementDeps(key: string) {
+    atomDepsCounters[key] = (atomDepsCounters[key] || 0) + 1
+  }
+
+  function decrementDeps({ id, domain, name }: Node) {
+    if (--atomDepsCounters[id] === 0) {
+      delete atomDepsCounters[id]
+      if (stateLastSnapshot === state) state = { ...state }
+      if (stateLastSnapshot[domain] === stateLastSnapshot[domain])
+        state[domain] = { ...state[domain] }
+      delete state[domain][name]
     }
   }
 
@@ -449,15 +445,10 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     const targetState = getState(state, target)
     if (targetState !== undefined) return targetState
 
-    const ctx = createCtx(state, actionDefault(), [target[NODE].stackWorker])
+    const targetNode = target[NODE]
 
-    walk(createCtx(state, actionDefault(), [target[NODE].stackWorker]))
-
-    return getState(
-      walk(createCtx(state, actionDefault(), [target[NODE].stackWorker]))
-        .stateNew,
-      target,
-    )
+    return walk(createCtx(state, actionDefault(), [targetNode.stackWorker]))
+      .statePlain[targetNode.id]
   }
 
   // @ts-ignore
@@ -476,12 +467,12 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
       }
     }
 
-    const target = safetyFunc(a[0], 'listener')
-    listener = a[1]
-    let targetNode = (target as Atom<any>)[NODE]
-
+    const target = a[0] as Atom<any>
     throwIf(!getIsAtom(target), 'Target is not Atom')
+    const targetNode = target[NODE]
+    listener = safetyFunc(a[1], 'listener')
 
+    // TODO: destructuring
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
     const targetDeps = targetNode.dependencies
@@ -492,11 +483,8 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
       if (isLazy) {
         newStack.push(targetStackWorker)
         stack.push(targetStackWorker)
-        depsCounter[targetId] =
-          depsCounter[targetId] === undefined ? 1 : depsCounter[targetId] + 1
-        for (const key in targetDeps)
-          depsCounter[key] =
-            depsCounter[key] === undefined ? 1 : depsCounter[key] + 1
+        incrementDeps(targetId)
+        for (const key in targetDeps) incrementDeps(key)
       }
     }
 
@@ -508,15 +496,12 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
 
         const _listeners = listenersStore[targetId]
         _listeners.splice(_listeners.indexOf(listener), 1)
-        if (isLazy) {
-          depsCounter[targetId]--
-          for (const key in targetDeps) depsCounter[key]--
-          isDepsCounterActual = false
-          if (_listeners.length === 0) {
-            stack.splice(stack.indexOf(targetStackWorker), 1)
-            if (~newStack.indexOf(targetStackWorker))
-              newStack.splice(newStack.indexOf(targetStackWorker), 1)
-          }
+        if (isLazy && _listeners.length === 0) {
+          decrementDeps(targetNode)
+          for (const key in targetDeps) decrementDeps(targetDeps[key])
+          stack.splice(stack.indexOf(targetStackWorker), 1)
+          if (~newStack.indexOf(targetStackWorker))
+            newStack.splice(newStack.indexOf(targetStackWorker), 1)
         }
       }
     }
@@ -537,7 +522,7 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     walk(ctx)
 
     if (ctx.isChanged) {
-      state = Object.assign({}, state, ctx.stateNew)
+      stateLastSnapshot = state = { ...state, ...ctx.stateNew }
 
       for (const key in ctx.statePlain) {
         const listeners = listenersStore[key]
