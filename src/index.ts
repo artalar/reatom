@@ -361,7 +361,7 @@ export function combine<
   name: string,
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine(name, shape) {
+export function combine(name: any, shape: any) {
   let keys: string[]
   if (arguments.length === 1) {
     // @ts-ignore
@@ -376,7 +376,7 @@ export function combine(name, shape) {
   return createAtom(name, isArray ? [] : {}, reduce =>
     keys.map(key =>
       reduce(shape[key], (state, payload) => {
-        const newState = isArray ? (state as any[]).slice(0) : { ...state }
+        const newState: any = isArray ? (state as any[]).slice(0) : { ...state }
         newState[key] = payload
         return newState
       }),
