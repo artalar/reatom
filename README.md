@@ -57,7 +57,7 @@ yarn add flaxom
 
 > Inspired by [redux](github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](github.com/zerobias/effector)
 
-**FLAXOM** is a blend of the one-way data flow (by [flux](github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work)
+**FLAXOM** is a blend of the one-way data flow (by [flux](github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
 
 ### Glossary
 
@@ -103,6 +103,15 @@ Communicating state**ful** context between actions and atoms.
 > Also see tests
 
 ## Motivation
+
+### State management Zen
+
+<!-- https://en.wikipedia.org/wiki/Zen_of_Python -->
+
+Guiding principles of state manager:
+
+- The model of state must be determined
+- The changes of state must be determined
 
 ### Why not [redux](github.com/reduxjs/redux)
 
