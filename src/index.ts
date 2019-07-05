@@ -26,7 +26,7 @@ function generateId() {
 }
 function noop() {}
 
-type ActionCreator<Input = void, Payload = Input> = {
+export type ActionCreator<Input = void, Payload = Input> = {
   (input: Input): Action<Payload>
   getType: () => string
   [NODE]: Node
@@ -95,7 +95,7 @@ function createCtx(
   }
 }
 
-type Action<Payload, Type extends string = string> = {
+export type Action<Payload, Type extends string = string> = {
   type: Type
   payload: Payload
 }

@@ -1,4 +1,5 @@
 import {
+  Action,
   createActionCreator,
   createAtom,
   map,
@@ -30,7 +31,7 @@ test('simple counter', () => {
   expect(counterState).toBe(2)
 })
 
-test('combined counter', () => {
+test('derived (computed) atoms', () => {
   const increment = createActionCreator()
   const counter = createAtom(0, reduce => [
     reduce(increment, state => state + 1),
@@ -49,14 +50,14 @@ test('combined counter', () => {
   })
 })
 
-test('async counter', async () => {
+test('side effects', async () => {
   const doSideEffect = createActionCreator()
   const increment = createActionCreator()
   const counter = createAtom(0, reduce => [
     reduce(increment, state => state + 1),
   ])
 
-  const sideEffect = async action => {
+  const sideEffect = async (action: Action<any>) => {
     if (action.type === doSideEffect.getType()) {
       await delay(1000)
       store.dispatch(increment())

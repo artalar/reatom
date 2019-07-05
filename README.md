@@ -53,6 +53,18 @@ or
 yarn add flaxom
 ```
 
+## Usage
+
+```javascript
+import {
+  createActionCreator,
+  createAtom,
+  map,
+  combine,
+  createStore,
+} from 'flaxom'
+```
+
 ## Description
 
 > Inspired by [redux](github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](github.com/zerobias/effector)
@@ -66,22 +78,22 @@ yarn add flaxom
 State**less** instructions for calculate derived state with right order (without [glitches](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx)). Atom reducers must be a pure function thats returns new immutable version of state.
 
 ```javascript
-const $count = createAtom(
-  'count',     // name
+const count = createAtom(
+  'count',     // name (optional!)
   0,           // initial state
-  handle => [  // handlers description
-  //handle(actionCreator, reducer)
-    handle(increment, state => state + 1)
-    handle(add, (state, payload) => state + payload)
+  reduce => [  // reducers description
+  //reduce(actionCreator, reducer)
+    reduce(increment, state => state + 1)
+    reduce(add, (state, payload) => state + payload)
   ]
 )
 const $countDoubled = createAtom(
   'countDoubled',
   0,
-  handle => [handle($count, (state, count) => count * 2)]
+  reduce => [reduce(count, (state, count) => count * 2)]
 )
 // shortcut:
-const $countDoubled = map($count, count => count * 2)
+const countDoubled = map(count, count => count * 2)
 ```
 
 #### Action
@@ -93,6 +105,90 @@ Intention to state changing.
 Communicating state**ful** context between actions and atoms.
 
 ## Example
+
+### [Counters](src/__tests__/examples/counter.ts) (tests)
+
+<details>
+<summary>Simple counter</summary>
+
+```js
+test('simple counter', () => {
+  const increment = createActionCreator()
+  const counter = createAtom(
+    // initial state
+    0,
+    // callback for creating
+    // list of dependencies and their transformations
+    reduce => [reduce(increment, state => state + 1)],
+  )
+
+  const store = createStore(counter)
+  let counterState = store.getState(counter)
+  expect(counterState).toBe(0)
+
+  store.dispatch(increment())
+  store.dispatch(increment())
+  counterState = store.getState(counter)
+  expect(counterState).toBe(2)
+})
+```
+</details>
+
+<details>
+<summary>Derived (computed) atoms</summary>
+
+```js
+test('derived (computed) atoms', () => {
+  const increment = createActionCreator()
+  const counter = createAtom(0, reduce => [
+    reduce(increment, state => state + 1),
+  ])
+  const counterDoubled = map(counter, value => value * 2)
+  const countersShape = combine({ counter, counterDoubled })
+
+  const store = createStore(countersShape)
+
+  store.dispatch(increment())
+  expect(store.getState(counter)).toBe(1)
+  expect(store.getState(counterDoubled)).toBe(2)
+  expect(store.getState(countersShape)).toEqual({
+    counter: 1,
+    counterDoubled: 2,
+  })
+})
+```
+</details>
+
+<details>
+<summary>Side effects</summary>
+
+```js
+test('side effects', async () => {
+  const doSideEffect = createActionCreator()
+  const increment = createActionCreator()
+  const counter = createAtom(0, reduce => [
+    reduce(increment, state => state + 1),
+  ])
+
+  const sideEffect = async action => {
+    if (action.type === doSideEffect.getType()) {
+      await delay(1000)
+      store.dispatch(increment())
+    }
+  }
+
+  const store = createStore(counter)
+  store.subscribe(sideEffect)
+
+  store.dispatch(doSideEffect())
+  expect(store.getState(counter)).toBe(0)
+  // `store.dispatch(increment())` from `sideEffect`
+  await delay(1000)
+  expect(store.getState(counter)).toBe(1)
+})
+```
+</details>
+
 
 ### Todo-list
 
