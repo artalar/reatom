@@ -350,17 +350,18 @@ export function map(name, target, mapper) {
 }
 
 // @ts-ignore
-export function combine<T extends { [key in string]: Atom<any> }>(
+export function combine<
+  T extends { [key in string]: Atom<any> } | TupleOfAtoms
+>(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<T extends { [key in string]: Atom<any> }>(
+export function combine<
+  T extends { [key in string]: Atom<any> } | TupleOfAtoms
+>(
   name: string,
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<T extends { [key in string]: Atom<any> }>(
-  name: string,
-  shape: T,
-): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }> {
+export function combine(name, shape) {
   let keys: string[]
   if (arguments.length === 1) {
     // @ts-ignore
@@ -368,11 +369,17 @@ export function combine<T extends { [key in string]: Atom<any> }>(
     name = `{ ${(keys = Object.keys(shape)).join()} }`
   }
 
-  keys = keys = Object.keys(shape)
+  keys = keys! || Object.keys(shape)
 
-  return createAtom(name, {}, reduce =>
+  const isArray = Array.isArray(shape)
+
+  return createAtom(name, isArray ? [] : {}, reduce =>
     keys.map(key =>
-      reduce(shape[key], (state, payload) => ({ ...state, [key]: payload })),
+      reduce(shape[key], (state, payload) => {
+        const newState = isArray ? (state as any[]).slice(0) : { ...state }
+        newState[key] = payload
+        return newState
+      }),
     ),
   )
 }
@@ -387,7 +394,7 @@ declare function storeSubscribe<TargetAtom extends Atom<any>>(
   listener: (state: TargetAtom extends Atom<infer S> ? S : never) => any,
 ): () => void
 declare function storeSubscribe(
-  listener: (state: StateBasic) => any,
+  listener: (action: Action<any>) => any,
 ): () => void
 export type Store = {
   dispatch: (action: Action<any>) => void
@@ -538,3 +545,22 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
 
   return { getState: _getState, subscribe, dispatch }
 }
+
+// prettier-ignore
+type TupleOfAtoms =
+  [Atom<any>] 
+| [Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
+| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>]

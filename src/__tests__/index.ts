@@ -358,7 +358,7 @@ describe('flaxom', () => {
       expect(rootMap.mock.calls.length).toBe(3)
     })
   })
-  describe('experiments', () => {
+  describe('derived state', () => {
     test('map + combine', () => {
       const increment = createActionCreator()
 
@@ -386,6 +386,21 @@ describe('flaxom', () => {
       expect(getState(rootState, count)).toEqual(1)
       expect(getState(rootState, countDoubled)).toEqual(2)
       expect(getState(rootState, root)).toEqual({ count: 1, countDoubled: 2 })
+    })
+    test('combine array', () => {
+      const increment = createActionCreator()
+      const count = createAtom('@count', 0, handle =>
+        handle(increment, state => state + 1),
+      )
+      const countDoubled = map(count, state => state * 2)
+
+      const root = combine([count, countDoubled])
+
+      let state = root({}, actionDefault())
+      expect(getState(state, root)).toEqual([0, 0])
+
+      state = root(state, increment())
+      expect(getState(state, root)).toEqual([1, 2])
     })
   })
 })
