@@ -107,4 +107,4 @@ test('side effects', async () => {
 
 Next:
 
-> - <a href="/#/FAQ">FAQ</a>
+> - <a href="https://artalar.github.io/flaxom/#/faq">FAQ</a>

@@ -67,5 +67,5 @@ Communicating state**ful** context between actions and atoms.
 
 Next:
 
-> - <a href="/#/Examples">Examples</a>
-> - <a href="/#/FAQ">FAQ</a>
+> - <a href="https://artalar.github.io/flaxom/#/examples">Examples</a>
+> - <a href="https://artalar.github.io/flaxom/#/faq">FAQ</a>

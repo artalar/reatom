@@ -74,6 +74,6 @@ Guiding principles of state manager:
 
 Next:
 
-> - <a href="https://artalar.github.io/#/Glossary">Glossary</a>
-> - <a href="https://artalar.github.io/#/Examples">Examples</a>
-> - <a href="https://artalar.github.io/#/FAQ">FAQ</a>
+> - <a href="https://artalar.github.io/flaxom/#/glossary">Glossary</a>
+> - <a href="https://artalar.github.io/flaxom/#/examples">Examples</a>
+> - <a href="https://artalar.github.io/flaxom/#/faq">FAQ</a>
