@@ -42,6 +42,7 @@
     "babel-jest": "^24.1.0",
     "babel-loader": "^8.0.4",
     "cross-env": "^5.2.0",
+    "docsify-cli": "^4.3.0",
     "effector": "^19.1.0",
     "enzyme": "^3.8.0",
     "enzyme-adapter-react-16": "^1.7.1",

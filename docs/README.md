@@ -1,6 +1,6 @@
 # FLAXOM (_work in progress_)
 
-<div align="center"><img src="docs/logo.png" alt="FLAXOM logo" align="center"></div>
+<div align="center"><img src="logo.png" alt="FLAXOM logo" align="center"></div>
 
 > State manager with a focus of **all** needs
 
@@ -28,7 +28,7 @@
 
 ## Motivation
 
-<!--
+<!-- 
 
 ### State management Zen
 
@@ -58,9 +58,9 @@ Guiding principles of state manager:
 ### Why not [effector](https://github.com/zerobias/effector)
 
 - Effector is about _atomic **stores**_ - it statefull approach with problems:
-  - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
-  - difficult [store] instance reusability (for example, concurrences problems with SSR).
-    > It can be solved, but better way solve it by design of library architecture and API.
+    - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
+    - difficult [store] instance reusability (for example, concurrences problems with SSR).
+  > It can be solved, but better way solve it by design of library architecture and API.
 - [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90).
 
 ### Why not [MobX](https://github.com/mobxjs/mobx)
