@@ -78,7 +78,7 @@
   "bugs": {
     "url": "https://github.com/artalar/flaxom/issues"
   },
-  "homepage": "https://github.com/artalar/flaxom",
+  "homepage": "https://artalar.github.io/flaxom",
   "keywords": [
     "state",
     "store",
