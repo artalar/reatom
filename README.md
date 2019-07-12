@@ -61,11 +61,13 @@ Guiding principles of state manager:
   - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
   - difficult [store] instance reusability (for example, concurrences problems with SSR).
     > It can be solved, but better way solve it by design of library architecture and API.
+- Asynchronous and probably cyclic dependencies specification
 - [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90).
 
 ### Why not [MobX](https://github.com/mobxjs/mobx)
 
 - Huge bundle size and limitation of modern [ES] environment.
+- Hard to separate _model_ and _view_.
 - Runtime semantic and mutable state (is not a better way for debugging).
 - [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) is lack of visual part of code semantic.
 - Maybe difficult to use with custom data-structures.
