@@ -4,6 +4,11 @@
 
 > State manager with a focus of **all** needs
 
+![npm](https://img.shields.io/npm/v/flaxom?style=flat-square)
+![npm type definitions](https://img.shields.io/npm/types/flaxom?style=flat-square)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/flaxom?style=flat-square)
+![GitHub](https://img.shields.io/github/license/artalar/flaxom?style=flat-square)
+
 ## Goals and features
 
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
