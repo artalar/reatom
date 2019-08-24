@@ -11,6 +11,8 @@
   > API was designed for bet static types inference (Flow, TS)
 - **Why single global state**
   > Immutable data-structures and single entry point for reading and writing are most predictable and debuggable things ever ([I](https://github.com/artalar) think). And it most important, because programmer read and debug code much more than write.
+- **Why packages is in the scope?**
+  > `npm ERR! 403 Forbidden - PUT https://registry.npmjs.org/reatom - Package name too similar to existing packages; try renaming your package to '@artalar/reatom' and publishing with 'npm publish --access=public' instead` https://www.npmjs.com/package/awful-name-thanks-npm#wtf-is-wrong-with-the-package-name
 
 ## TODO
 
