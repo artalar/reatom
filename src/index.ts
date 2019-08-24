@@ -1,5 +1,3 @@
-console.warn('REAtom is move to another package is name "reatom"')
-
 type ActionType = string
 type ActionTypesDictionary = { [key in ActionType]: true }
 type NodeId = string
