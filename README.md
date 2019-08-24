@@ -7,7 +7,7 @@
 ![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
 ![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)
-![GitHub](https://img.shields.io/github/license/artalar/@reatom/core?style=flat-square)
+![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
 ## Goals and features
 
