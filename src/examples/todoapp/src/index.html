@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>React starter app</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <style>
+      * {
+        font-family: 'Roboto Mono', monospace;
+      }
+      .todo-app {
+        font-family: sans-serif;
+      }
+
+      /** add todo **/
+      .add-todo {
+        margin-left: 0.5rem;
+      }
+
+      /** todo list **/
+      .todo-list {
+        margin-top: 1rem;
+        text-align: left;
+        list-style: none;
+      }
+
+      /** todo item **/
+      .todo-item {
+        font-family: monospace;
+        cursor: pointer;
+        line-height: 1.5;
+      }
+      .todo-item__text--completed {
+        text-decoration: line-through;
+        color: lightgray;
+      }
+
+      /** visibility filters **/
+      .filter {
+        padding: 0.3rem 0;
+        margin: 0 0.3rem;
+        cursor: pointer;
+      }
+      .filter--active {
+        border-bottom: 1px solid black;
+      }
+    </style>
+    <div id="app"></div>
+    <script src="public.js"></script>
+  </body>
+</html>

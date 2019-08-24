@@ -1,0 +1,34 @@
+{
+  "name": "flaxom-todo-app",
+  "version": "1.0.0",
+  "description": "A todo list app with React-Redux and redux-steroid (with normalized store shape).",
+  "keywords": [],
+  "main": "src/index.js",
+  "scripts": {
+    "start": "parcel src/index.html"
+  },
+  "dependencies": {
+    "classnames": "2.2.6",
+    "flaxom": "^4.0.0-rc4",
+    "react": "16.9.0",
+    "react-dom": "16.9.0",
+    "redux": "4.0.4",
+    "redux-devtools-extension": "2.13.8",
+    "redux-logger": "3.0.6"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

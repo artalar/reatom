@@ -1,3 +1,5 @@
+// TODO: move to examples
+
 import {
   Action,
   createActionCreator,
@@ -5,9 +7,8 @@ import {
   map,
   combine,
   createStore,
-  getNode,
   // } from 'flaxom'
-} from '../../index'
+} from '../index'
 
 const delay = (ms = 1000) => new Promise(r => setTimeout(r, ms))
 
