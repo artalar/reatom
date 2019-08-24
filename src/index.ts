@@ -147,9 +147,6 @@ export function createActionCreator<Input = void, Payload = Input>(
 
 // initiate action
 export const actionDefault = createActionCreator('@@FLAXOM/default')
-export const replaceStateAction = createActionCreator<StateBasic>(
-  '@@FLAXOM/replace',
-)
 const actionDefaultType = actionDefault.getType()
 
 // @ts-ignore
@@ -258,9 +255,6 @@ export function createAtom<State>(
   }
 
   reduce(actionDefault, (state = initialState) => state)
-  reduce(replaceStateAction, (state, globalState) =>
-    getState(globalState, atom as Atom<State>),
-  )
   handle(reduce)
   initialPhase = false
 
@@ -547,11 +541,7 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     listenersActions.forEach(cb => cb(action))
   }
 
-  function replaceState(stateNew: StateBasic) {
-    dispatch(replaceStateAction(stateNew))
-  }
-
-  return { getState: _getState, subscribe, dispatch, replaceState }
+  return { getState: _getState, subscribe, dispatch }
 }
 
 // prettier-ignore

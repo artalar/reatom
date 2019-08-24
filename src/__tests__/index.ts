@@ -292,32 +292,6 @@ describe('flaxom', () => {
       expect(store.getState(count)).toBe(4)
       expect(store.getState().countDoubled).toEqual({ countDoubled: 8 })
     })
-    test('createStore replaceState', () => {
-      const increment1 = createActionCreator()
-      const increment2 = createActionCreator()
-
-      const count1 = createAtom(0, r => r(increment1, state => state + 1))
-      const count2 = createAtom(0, r => r(increment2, state => state + 1))
-      const counts = combine({ count1, count2 })
-      const store = createStore(counts)
-
-      store.dispatch(increment1())
-      store.dispatch(increment2())
-      store.dispatch(increment2())
-
-      expect(store.getState(counts)).toEqual({ count1: 1, count2: 2 })
-
-      const state = store.getState()
-
-      store.dispatch(increment1())
-      store.dispatch(increment2())
-      expect(store.getState(counts)).toEqual({ count1: 2, count2: 3 })
-
-      store.replaceState(state)
-      expect(store.getState(counts)).toEqual({ count1: 1, count2: 2 })
-      expect(store.getState(count1)).toBe(1)
-      expect(store.getState(count2)).toBe(2)
-    })
   })
   describe('derived state', () => {
     test('map + combine', () => {
