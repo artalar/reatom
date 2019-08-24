@@ -1,4 +1,4 @@
-// github.com/artalar/flaxom
+// github.com/artalar/reatom
 
 import React from 'react'
 

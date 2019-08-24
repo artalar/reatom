@@ -1,9 +1,9 @@
 ## Installation
 
 ```sh
-npm i flaxom
+npm i reatom
 # or
-yarn add flaxom
+yarn add reatom
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ import {
   map,
   combine,
   createStore,
-} from 'flaxom'
+} from 'reatom'
 ```
 
 ## Examples
@@ -101,10 +101,10 @@ test('side effects', async () => {
 
 > Beware, it is _enterprise_-like example with feature-driven structure, normalization and other not _entry_ abstractions. Simpler examples will be added later
 
-[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/flaxom-todo-app-fikvf)
+[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-todo-app-fikvf)
 
 ---
 
 Next:
 
-> - <a href="https://artalar.github.io/flaxom/#/faq">FAQ</a>
+> - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>

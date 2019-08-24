@@ -10,42 +10,42 @@ Average from 24 times
 var a = {
   "createStore": {
     "[redux]": "100%",
-    "[flaxom]": "39%",
+    "[reatom]": "39%",
     "[effector]": "40%"
   },
   "dispatch without subscribers (init)": {
     "[redux]": "100%",
-    "[flaxom]": "38%",
+    "[reatom]": "38%",
     "[effector]": "11%"
   },
   "dispatch without subscribers": {
     "[redux]": "100%",
-    "[flaxom]": "42%",
+    "[reatom]": "42%",
     "[effector]": "24%"
   },
   "subscribe": {
     "[redux]": "64%",
-    "[flaxom]": "100%",
+    "[reatom]": "100%",
     "[effector]": "17%" 
   },
   "dispatch with many subscriptions": {
     "[redux]": "100%",
-    "[flaxom]": "84%",
+    "[reatom]": "84%",
     "[effector]": "42%"
   },
   "dispatch with little subscriptions": {
     "[redux]": "36%",
-    "[flaxom]": "48%",
+    "[reatom]": "48%",
     "[effector]": "100%"
   },
   "dispatch untracked action": {
     "[redux]": "11%",
-    "[flaxom]": "100%",
+    "[reatom]": "100%",
     "[effector]": "82%"
   },
   "unsubscribe": {
     "[redux]": "96%",
-    "[flaxom]": "92%",
+    "[reatom]": "92%",
     "[effector]": "100%"
   }
 };
@@ -56,7 +56,7 @@ var a = {
 
 Average from 82 times
 
-|               (index)               | [redux] | [flaxom] | [effector] |
+|               (index)               | [redux] | [reatom] | [effector] |
 |-------------------------------------|---------|----------|------------|
 |             createStore             | '100%'  |  '12%'   |   '20%'    |
 | dispatch without subscribers (init) | '100%'  |  '25%'   |   '18%'    |

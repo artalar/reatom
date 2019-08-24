@@ -23,7 +23,7 @@ function log(name, target, time) {
   // fs.writeFileSync(path.join(__dirname, 'log.json'), JSON.stringify(logData))
 }
 
-describe('redux-flaxom', () => {
+describe('redux-reatom', () => {
   describe('perf [~100 stores ~30 actions]', () => {
     // const test = (name, f) => f();
 
@@ -71,8 +71,8 @@ describe('redux-flaxom', () => {
         '5': reduxReducerFabric(id, '5'),
       })
 
-    const flaxomChildren = {}
-    const flaxomNestedChildren = {
+    const reatomChildren = {}
+    const reatomNestedChildren = {
       '1': {},
       '2': {},
       '3': {},
@@ -85,51 +85,51 @@ describe('redux-flaxom', () => {
       '10': {},
       '11': {},
     }
-    const flaxomActions = {}
+    const reatomActions = {}
 
-    const flaxomAtomFabric = (parentId, initialState) => {
+    const reatomAtomFabric = (parentId, initialState) => {
       const prefix =
         parentId !== '10' && !(parentId % 2) ? parentId - 1 : parentId
-      return (flaxomNestedChildren[parentId][initialState] = createAtom(
-        `flaxomAtomFabric${parentId + initialState}`,
+      return (reatomNestedChildren[parentId][initialState] = createAtom(
+        `reatomAtomFabric${parentId + initialState}`,
         initialState,
         handle => [
           handle(
-            (flaxomActions[`${prefix}1`] =
-              flaxomActions[`${prefix}1`] || createActionCreator(`${prefix}1`)),
+            (reatomActions[`${prefix}1`] =
+              reatomActions[`${prefix}1`] || createActionCreator(`${prefix}1`)),
             (state, value) => value,
           ),
           handle(
-            (flaxomActions[`${prefix}2`] =
-              flaxomActions[`${prefix}2`] || createActionCreator(`${prefix}2`)),
+            (reatomActions[`${prefix}2`] =
+              reatomActions[`${prefix}2`] || createActionCreator(`${prefix}2`)),
             (state, value) => value,
           ),
           handle(
-            (flaxomActions[`${prefix}3`] =
-              flaxomActions[`${prefix}3`] || createActionCreator(`${prefix}3`)),
+            (reatomActions[`${prefix}3`] =
+              reatomActions[`${prefix}3`] || createActionCreator(`${prefix}3`)),
             (state, value) => value,
           ),
           handle(
-            (flaxomActions[`${prefix}4`] =
-              flaxomActions[`${prefix}4`] || createActionCreator(`${prefix}4`)),
+            (reatomActions[`${prefix}4`] =
+              reatomActions[`${prefix}4`] || createActionCreator(`${prefix}4`)),
             (state, value) => value,
           ),
           handle(
-            (flaxomActions[`${prefix}5`] =
-              flaxomActions[`${prefix}5`] || createActionCreator(`${prefix}5`)),
+            (reatomActions[`${prefix}5`] =
+              reatomActions[`${prefix}5`] || createActionCreator(`${prefix}5`)),
             (state, value) => value,
           ),
         ],
       ))
     }
 
-    const flaxomAtomCombineFabric = id =>
-      (flaxomChildren[id] = combine({
-        '1': flaxomAtomFabric(id, '1'),
-        '2': flaxomAtomFabric(id, '2'),
-        '3': flaxomAtomFabric(id, '3'),
-        '4': flaxomAtomFabric(id, '4'),
-        '5': flaxomAtomFabric(id, '5'),
+    const reatomAtomCombineFabric = id =>
+      (reatomChildren[id] = combine({
+        '1': reatomAtomFabric(id, '1'),
+        '2': reatomAtomFabric(id, '2'),
+        '3': reatomAtomFabric(id, '3'),
+        '4': reatomAtomFabric(id, '4'),
+        '5': reatomAtomFabric(id, '5'),
       }))
 
     const effectorChildren = {}
@@ -194,8 +194,8 @@ describe('redux-flaxom', () => {
 
     let storeRedux
     let unsubscribersRedux
-    let storeFlaxom
-    let unsubscribersFlaxom
+    let storeReatom
+    let unsubscribersReatom
     let storeEffector
     let unsubscribersEffector
 
@@ -230,25 +230,25 @@ describe('redux-flaxom', () => {
         }
       })
 
-    let flaxomSubscribtionsCallsCount = 0
-    const flaxomSubscribeChildren = () =>
+    let reatomSubscribtionsCallsCount = 0
+    const reatomSubscribeChildren = () =>
       ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'].map(id => {
         if (id === '10') {
-          return storeFlaxom.subscribe(
-            flaxomNestedChildren[10][10],
-            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
+          return storeReatom.subscribe(
+            reatomNestedChildren[10][10],
+            () => (heavyCalculates(), reatomSubscribtionsCallsCount++),
           )
         }
 
-        const unsubscribe = storeFlaxom.subscribe(
-          flaxomChildren[id],
-          () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
+        const unsubscribe = storeReatom.subscribe(
+          reatomChildren[id],
+          () => (heavyCalculates(), reatomSubscribtionsCallsCount++),
         )
 
         const unsubscribers = ['1', '2', '3', '4', '5'].map(nestedId =>
-          storeFlaxom.subscribe(
-            flaxomNestedChildren[id][nestedId],
-            () => (heavyCalculates(), flaxomSubscribtionsCallsCount++),
+          storeReatom.subscribe(
+            reatomNestedChildren[id][nestedId],
+            () => (heavyCalculates(), reatomSubscribtionsCallsCount++),
           ),
         )
 
@@ -315,38 +315,38 @@ describe('redux-flaxom', () => {
       log('createStore', '[redux]', (performance.now() - start).toFixed(3))
     })
 
-    test('createStore [flaxom]', () => {
+    test('createStore [reatom]', () => {
       const start = performance.now()
 
-      storeFlaxom = createStore(
+      storeReatom = createStore(
         combine(['_', 'root'], {
-          '1': flaxomAtomCombineFabric('1'),
-          '2': flaxomAtomCombineFabric('2'),
-          '3': flaxomAtomCombineFabric('3'),
-          '4': flaxomAtomCombineFabric('4'),
-          '5': flaxomAtomCombineFabric('5'),
-          '6': flaxomAtomCombineFabric('6'),
-          '7': flaxomAtomCombineFabric('7'),
-          '8': flaxomAtomCombineFabric('8'),
-          '9': flaxomAtomCombineFabric('9'),
-          '10': flaxomAtomFabric('10', '10'),
+          '1': reatomAtomCombineFabric('1'),
+          '2': reatomAtomCombineFabric('2'),
+          '3': reatomAtomCombineFabric('3'),
+          '4': reatomAtomCombineFabric('4'),
+          '5': reatomAtomCombineFabric('5'),
+          '6': reatomAtomCombineFabric('6'),
+          '7': reatomAtomCombineFabric('7'),
+          '8': reatomAtomCombineFabric('8'),
+          '9': reatomAtomCombineFabric('9'),
+          '10': reatomAtomFabric('10', '10'),
           '11': combine({
-            '1': flaxomAtomCombineFabric('1'),
-            '2': flaxomAtomCombineFabric('2'),
-            '3': flaxomAtomCombineFabric('3'),
-            '4': flaxomAtomCombineFabric('4'),
-            '5': flaxomAtomCombineFabric('5'),
-            '6': flaxomAtomCombineFabric('6'),
-            '7': flaxomAtomCombineFabric('7'),
-            '8': flaxomAtomCombineFabric('8'),
-            '9': flaxomAtomCombineFabric('9'),
+            '1': reatomAtomCombineFabric('1'),
+            '2': reatomAtomCombineFabric('2'),
+            '3': reatomAtomCombineFabric('3'),
+            '4': reatomAtomCombineFabric('4'),
+            '5': reatomAtomCombineFabric('5'),
+            '6': reatomAtomCombineFabric('6'),
+            '7': reatomAtomCombineFabric('7'),
+            '8': reatomAtomCombineFabric('8'),
+            '9': reatomAtomCombineFabric('9'),
           }),
         }),
       )
 
-      log('createStore', '[flaxom]', (performance.now() - start).toFixed(3))
+      log('createStore', '[reatom]', (performance.now() - start).toFixed(3))
 
-      expect(storeRedux.getState()).toEqual(storeFlaxom.getState()._.root)
+      expect(storeRedux.getState()).toEqual(storeReatom.getState()._.root)
     })
 
     test('createStore [effector]', () => {
@@ -378,7 +378,7 @@ describe('redux-flaxom', () => {
 
       log('createStore', '[effector]', (performance.now() - start).toFixed(3))
 
-      expect(storeFlaxom.getState()._.root).toEqual(storeEffector.getState())
+      expect(storeReatom.getState()._.root).toEqual(storeEffector.getState())
     })
 
     test('dispatch without subscribers (init) [redux]', () => {
@@ -393,18 +393,18 @@ describe('redux-flaxom', () => {
       )
     })
 
-    test('dispatch without subscribers (init) [flaxom]', () => {
+    test('dispatch without subscribers (init) [reatom]', () => {
       const start = performance.now()
 
-      storeFlaxom.dispatch(flaxomActions['11']('1'))
+      storeReatom.dispatch(reatomActions['11']('1'))
 
       log(
         'dispatch without subscribers (init)',
-        '[flaxom]',
+        '[reatom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(reduxSubscribtionsCallsCount).toBe(flaxomSubscribtionsCallsCount)
+      expect(reduxSubscribtionsCallsCount).toBe(reatomSubscribtionsCallsCount)
     })
 
     test('dispatch without subscribers (init) [effector]', () => {
@@ -418,7 +418,7 @@ describe('redux-flaxom', () => {
         (performance.now() - start).toFixed(3),
       )
 
-      expect(flaxomSubscribtionsCallsCount).toBe(
+      expect(reatomSubscribtionsCallsCount).toBe(
         effectorSubscribtionsCallsCount,
       )
     })
@@ -435,18 +435,18 @@ describe('redux-flaxom', () => {
       )
     })
 
-    test('dispatch without subscribers [flaxom]', () => {
+    test('dispatch without subscribers [reatom]', () => {
       const start = performance.now()
 
-      storeFlaxom.dispatch(flaxomActions['11']('10'))
+      storeReatom.dispatch(reatomActions['11']('10'))
 
       log(
         'dispatch without subscribers',
-        '[flaxom]',
+        '[reatom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(reduxSubscribtionsCallsCount).toBe(flaxomSubscribtionsCallsCount)
+      expect(reduxSubscribtionsCallsCount).toBe(reatomSubscribtionsCallsCount)
     })
 
     test('dispatch without subscribers [effector]', () => {
@@ -460,7 +460,7 @@ describe('redux-flaxom', () => {
         (performance.now() - start).toFixed(3),
       )
 
-      expect(flaxomSubscribtionsCallsCount).toBe(
+      expect(reatomSubscribtionsCallsCount).toBe(
         effectorSubscribtionsCallsCount,
       )
     })
@@ -475,12 +475,12 @@ describe('redux-flaxom', () => {
       storeRedux.dispatch({ type: '__none' })
     })
 
-    test('subscribe [flaxom]', () => {
+    test('subscribe [reatom]', () => {
       const start = performance.now()
 
-      unsubscribersFlaxom = flaxomSubscribeChildren()
+      unsubscribersReatom = reatomSubscribeChildren()
 
-      log('subscribe', '[flaxom]', (performance.now() - start).toFixed(3))
+      log('subscribe', '[reatom]', (performance.now() - start).toFixed(3))
     })
 
     test('subscribe [effector]', () => {
@@ -505,19 +505,19 @@ describe('redux-flaxom', () => {
       expect(reduxSubscribtionsCallsCount).toBe(12)
     })
 
-    test('dispatch with many subscriptions [flaxom]', () => {
-      flaxomSubscribtionsCallsCount = 0
+    test('dispatch with many subscriptions [reatom]', () => {
+      reatomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeFlaxom.dispatch(flaxomActions['11'](1.1))
+      storeReatom.dispatch(reatomActions['11'](1.1))
 
       log(
         'dispatch with many subscriptions',
-        '[flaxom]',
+        '[reatom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(flaxomSubscribtionsCallsCount).toBe(12)
+      expect(reatomSubscribtionsCallsCount).toBe(12)
     })
 
     test('dispatch with many subscriptions [effector]', () => {
@@ -550,19 +550,19 @@ describe('redux-flaxom', () => {
       expect(reduxSubscribtionsCallsCount).toBe(1)
     })
 
-    test('dispatch with little subscriptions [flaxom]', () => {
-      flaxomSubscribtionsCallsCount = 0
+    test('dispatch with little subscriptions [reatom]', () => {
+      reatomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeFlaxom.dispatch(flaxomActions[101]('1.11'))
+      storeReatom.dispatch(reatomActions[101]('1.11'))
 
       log(
         'dispatch with little subscriptions',
-        '[flaxom]',
+        '[reatom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(flaxomSubscribtionsCallsCount).toBe(1)
+      expect(reatomSubscribtionsCallsCount).toBe(1)
     })
 
     test('dispatch with little subscriptions [effector]', () => {
@@ -595,19 +595,19 @@ describe('redux-flaxom', () => {
       expect(reduxSubscribtionsCallsCount).toBe(0)
     })
 
-    test('dispatch untracked action [flaxom]', () => {
-      flaxomSubscribtionsCallsCount = 0
+    test('dispatch untracked action [reatom]', () => {
+      reatomSubscribtionsCallsCount = 0
       const start = performance.now()
 
-      storeFlaxom.dispatch({ type: '', payload: null })
+      storeReatom.dispatch({ type: '', payload: null })
 
       log(
         'dispatch untracked action',
-        '[flaxom]',
+        '[reatom]',
         (performance.now() - start).toFixed(3),
       )
 
-      expect(flaxomSubscribtionsCallsCount).toBe(0)
+      expect(reatomSubscribtionsCallsCount).toBe(0)
     })
 
     test('dispatch untracked action [effector]', () => {
@@ -635,12 +635,12 @@ describe('redux-flaxom', () => {
       storeRedux.dispatch({ type: '__none' })
     })
 
-    test('unsubscribe [flaxom]', () => {
+    test('unsubscribe [reatom]', () => {
       const start = performance.now()
 
-      unsubscribersFlaxom.map(f => f())
+      unsubscribersReatom.map(f => f())
 
-      log('unsubscribe', '[flaxom]', (performance.now() - start).toFixed(3))
+      log('unsubscribe', '[reatom]', (performance.now() - start).toFixed(3))
     })
 
     test('unsubscribe [effector]', () => {

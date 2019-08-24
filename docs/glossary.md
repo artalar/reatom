@@ -1,9 +1,9 @@
 ## Installation
 
 ```sh
-npm i flaxom
+npm i reatom
 # or
-yarn add flaxom
+yarn add reatom
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ import {
   map,
   combine,
   createStore,
-} from 'flaxom'
+} from 'reatom'
 ```
 
 ## Glossary
@@ -67,5 +67,5 @@ Communicating state**ful** context between actions and atoms.
 
 Next:
 
-> - <a href="https://artalar.github.io/flaxom/#/examples">Examples</a>
-> - <a href="https://artalar.github.io/flaxom/#/faq">FAQ</a>
+> - <a href="https://artalar.github.io/reatom/#/examples">Examples</a>
+> - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>

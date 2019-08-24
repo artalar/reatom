@@ -1,5 +1,5 @@
 import React from 'react'
-import { createActionCreator, createAtom } from 'flaxom'
+import { createActionCreator, createAtom } from 'reatom'
 
 import { useAtom, useDispatch } from '../../shared'
 

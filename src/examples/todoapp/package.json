@@ -1,7 +1,7 @@
 {
-  "name": "flaxom-todo-app",
+  "name": "reatom-todo-app",
   "version": "1.0.0",
-  "description": "A todo list app with React-Redux and redux-steroid (with normalized store shape).",
+  "description": "A todo list app with React-Redux and redux-reatom (with normalized store shape).",
   "keywords": [],
   "main": "src/index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "classnames": "2.2.6",
-    "flaxom": "^4.0.0-rc4",
+    "reatom": "^4.0.0-rc4",
     "react": "16.9.0",
     "react-dom": "16.9.0",
     "redux": "4.0.4",

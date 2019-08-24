@@ -3,7 +3,7 @@ import {
   createAtom as _createAtom,
   map as _map,
   combine as _combine,
-} from 'flaxom'
+} from 'reatom'
 
 export { createActionCreator }
 

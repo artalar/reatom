@@ -1,13 +1,13 @@
-# FLAXOM (_work in progress_)
+# REAtom (_work in progress_)
 
 <div align="center"><img src="logo.svg" alt="reatom logo" align="center"></div>
 
 > State manager with a focus of **all** needs
 
-![npm](https://img.shields.io/npm/v/flaxom?style=flat-square)
-![npm type definitions](https://img.shields.io/npm/types/flaxom?style=flat-square)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/flaxom?style=flat-square)
-![GitHub](https://img.shields.io/github/license/artalar/flaxom?style=flat-square)
+![npm](https://img.shields.io/npm/v/reatom?style=flat-square)
+![npm type definitions](https://img.shields.io/npm/types/reatom?style=flat-square)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/reatom?style=flat-square)
+![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
 ## Goals and features
 
@@ -15,12 +15,12 @@
 - ❗️ **static typed**: best type inference
 - ⚡ **performance**: light tiny updates in huge state
 - 📦 **modular**: reusable instances (SSR)
-- 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=flaxom) gzipped
+- 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=reatom) gzipped
 - 🧪 **testing**: simple mocking
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
 - 👴 **ES5 support** (by polyfills)
-- synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/flaxom/blob/master/src/__tests__/diamond.ts)
+- synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/src/__tests__/diamond.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward for write bad code
 - handy for write good codeÍ
@@ -29,7 +29,7 @@
 
 > Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
 
-**FLAXOM** is a blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
+**REAtom** is a blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
 
 ## Motivation
 
@@ -83,6 +83,6 @@ Guiding principles of state manager:
 
 Next:
 
-> - <a href="https://artalar.github.io/flaxom/#/glossary">Glossary</a>
-> - <a href="https://artalar.github.io/flaxom/#/examples">Examples</a>
-> - <a href="https://artalar.github.io/flaxom/#/faq">FAQ</a>
+> - <a href="https://artalar.github.io/reatom/#/glossary">Glossary</a>
+> - <a href="https://artalar.github.io/reatom/#/examples">Examples</a>
+> - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>

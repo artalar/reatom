@@ -9,7 +9,7 @@ import {
   getNode,
 } from '../index'
 
-describe('flaxom', () => {
+describe('reatom', () => {
   describe('main api', () => {
     test('createActionCreator', () => {
       expect(typeof createActionCreator() === 'function').toBe(true)

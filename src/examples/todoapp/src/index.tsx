@@ -1,8 +1,8 @@
-// github.com/artalar/flaxom
+// github.com/artalar/reatom
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { createStore, createAtom } from 'flaxom'
+import { createStore, createAtom } from 'reatom'
 
 import { Root, context } from './root'
 

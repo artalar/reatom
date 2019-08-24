@@ -8,7 +8,7 @@ import React, {
 } from 'react'
 
 // ---------------------------------------
-// this code will moved to `flaxom-react`
+// this code will moved to `reatom-react`
 // ---------------------------------------
 
 export const context = createContext(null)

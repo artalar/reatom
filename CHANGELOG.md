@@ -1,3 +1,7 @@
+## 1.0.0
+
+> new name: REAtom!
+
 ## 4.0.0
 
 Core improvements and bugs fixes...

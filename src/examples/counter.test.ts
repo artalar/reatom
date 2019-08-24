@@ -7,7 +7,7 @@ import {
   map,
   combine,
   createStore,
-  // } from 'flaxom'
+  // } from 'reatom'
 } from '../index'
 
 const delay = (ms = 1000) => new Promise(r => setTimeout(r, ms))

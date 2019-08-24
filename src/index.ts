@@ -1,4 +1,4 @@
-console.warn('FLAXOM is move to another package is name "reatom"')
+console.warn('REAtom is move to another package is name "reatom"')
 
 type ActionType = string
 type ActionTypesDictionary = { [key in ActionType]: true }
@@ -13,7 +13,7 @@ type Node = {
 }
 type DependenciesDictionary = { [key in NodeId]: Node }
 
-const NODE = Symbol('@@FLAXOM/NODE')
+const NODE = Symbol('@@REAtom/NODE')
 const defaultDomain = 'defaultDomain'
 const assign = Object.assign
 
@@ -146,7 +146,7 @@ export function createActionCreator<Input = void, Payload = Input>(
 }
 
 // initiate action
-export const actionDefault = createActionCreator('@@FLAXOM/default')
+export const actionDefault = createActionCreator('@@REAtom/default')
 const actionDefaultType = actionDefault.getType()
 
 // @ts-ignore
