@@ -1,6 +1,6 @@
 # FLAXOM (_work in progress_)
 
-<div align="center"><img src="logo.png" alt="FLAXOM logo" align="center"></div>
+<div align="center"><img src="logo.svg" alt="reatom logo" align="center"></div>
 
 > State manager with a focus of **all** needs
 
