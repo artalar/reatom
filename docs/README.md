@@ -58,17 +58,21 @@ Guiding principles of state manager:
 ### Why not [effector](https://github.com/zerobias/effector)
 
 - Effector is about _atomic **stores**_ - it statefull approach with problems:
-    - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
-    - difficult [store] instance reusability (for example, concurrences problems with SSR).
-  > It can be solved, but better way solve it by design of library architecture and API.
-- [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90).
+  - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
+  - difficult [store] instance reusability (for example, concurrences problems with SSR)
+    > It can be solved, but better way solve it by design of library architecture and API
+- Asynchronous and probably cyclic dependencies specification
+- The [weight](https://bundlephobia.com/result?p=effector@20.1.2) can be smaller but it does not
+- [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90)
 
 ### Why not [MobX](https://github.com/mobxjs/mobx)
 
-- Huge bundle size and limitation of modern [ES] environment.
+- Huge bundle size, unstandardized foreground syntax (decorators), ES5 limitations
+- Doesn't move to separate _model_ and _view_.
 - Runtime semantic and mutable state (is not a better way for debugging).
 - [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) is lack of visual part of code semantic.
-- Maybe difficult to use with custom data-structures.
+- Is not simple under the hood and it need to consider when choose algorithms for word with data-structure
+- [And others...](https://mobx.js.org/best/pitfalls.html)
 
 ---
 
