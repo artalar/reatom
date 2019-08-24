@@ -254,6 +254,70 @@ describe('flaxom', () => {
       expect(store.getState(count2)).toBe(1)
       expect(store.getState(count2Doubled)).toBe(2)
     })
+    test('createStore lazy resubscribes', () => {
+      const storeSubscriber = jest.fn()
+      const countDoubledSubscriber = jest.fn()
+      const increment = createActionCreator()
+
+      const count = createAtom('count', 0, handle =>
+        handle(increment, state => state + 1),
+      )
+      const countDoubled = map(
+        ['countDoubled', 'countDoubled'],
+        count,
+        payload => payload * 2,
+      )
+      const root = combine({ count })
+
+      const store = createStore(root)
+
+      store.subscribe(storeSubscriber)
+
+      store.dispatch(increment())
+      expect(store.getState(count)).toBe(1)
+      expect(store.getState().countDoubled).toBe(undefined)
+
+      let unsubscriber = store.subscribe(countDoubled, () => {})
+      store.dispatch(increment())
+      expect(store.getState(count)).toBe(2)
+      expect(store.getState().countDoubled).toEqual({ countDoubled: 4 })
+
+      unsubscriber()
+      store.dispatch(increment())
+      expect(store.getState(count)).toBe(3)
+      expect(store.getState().countDoubled).toEqual({})
+
+      unsubscriber = store.subscribe(countDoubled, () => {})
+      store.dispatch(increment())
+      expect(store.getState(count)).toBe(4)
+      expect(store.getState().countDoubled).toEqual({ countDoubled: 8 })
+    })
+    test('createStore replaceState', () => {
+      const increment1 = createActionCreator()
+      const increment2 = createActionCreator()
+
+      const count1 = createAtom(0, r => r(increment1, state => state + 1))
+      const count2 = createAtom(0, r => r(increment2, state => state + 1))
+      const counts = combine({ count1, count2 })
+      const store = createStore(counts)
+
+      store.dispatch(increment1())
+      store.dispatch(increment2())
+      store.dispatch(increment2())
+
+      expect(store.getState(counts)).toEqual({ count1: 1, count2: 2 })
+
+      const state = store.getState()
+
+      store.dispatch(increment1())
+      store.dispatch(increment2())
+      expect(store.getState(counts)).toEqual({ count1: 2, count2: 3 })
+
+      store.replaceState(state)
+      expect(store.getState(counts)).toEqual({ count1: 1, count2: 2 })
+      expect(store.getState(count1)).toBe(1)
+      expect(store.getState(count2)).toBe(2)
+    })
   })
   describe('derived state', () => {
     test('map + combine', () => {

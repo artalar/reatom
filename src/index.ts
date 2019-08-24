@@ -1,11 +1,7 @@
 console.warn('FLAXOM still work in progress, do not use it in production')
 
-/** TODO: remove `@ts-ignore` */
-
 type ActionType = string
 type ActionTypesDictionary = { [key in ActionType]: true }
-type DependenciesDictionary = { [key in NodeId]: Node }
-
 type NodeId = string
 type Node = {
   id: NodeId
@@ -15,10 +11,11 @@ type Node = {
   dependencies: DependenciesDictionary
   stackWorker: (ctx: Ctx) => any
 }
+type DependenciesDictionary = { [key in NodeId]: Node }
 
 const NODE = Symbol('@@FLAXOM/NODE')
 const defaultDomain = 'defaultDomain'
-const idSeparator = ' / '
+const assign = Object.assign
 
 let id = 0
 function generateId() {
@@ -87,7 +84,7 @@ function createCtx(
       let domainStateNew = stateNew[domain]
       if (domainStateNew === undefined)
         domainStateNew = stateNew[domain] =
-          domainState === undefined ? {} : { ...domainState }
+          domainState === undefined ? {} : assign({}, domainState)
 
       domainStateNew[name] = value
       statePlain[id] = value
@@ -150,6 +147,9 @@ export function createActionCreator<Input = void, Payload = Input>(
 
 // initiate action
 export const actionDefault = createActionCreator('@@FLAXOM/default')
+export const replaceStateAction = createActionCreator<StateBasic>(
+  '@@FLAXOM/replace',
+)
 const actionDefaultType = actionDefault.getType()
 
 // @ts-ignore
@@ -159,7 +159,7 @@ export declare function createAtom<State>(
   handle: (
     reduce: <T>(
       dependency: Unit<T>,
-      reducer: (state: State, value: T) => State,
+      reducer: (state: State, value: T) => State | undefined,
     ) => void,
   ) => any,
 ): Atom<State>
@@ -169,7 +169,7 @@ export declare function createAtom<State>(
   handle: (
     reduce: <T>(
       dependency: Unit<T>,
-      reducer: (state: State, value: T) => State,
+      reducer: (state: State, value: T) => State | undefined,
     ) => void,
   ) => any,
 ): Atom<State>
@@ -179,7 +179,7 @@ export function createAtom<State>(
   handle: (
     reduce: <T>(
       dependency: Unit<T>,
-      reducer: (state: State, value: T) => State,
+      reducer: (state: State, value: T) => State | undefined,
     ) => void,
   ) => any,
 ): Atom<State> {
@@ -197,11 +197,11 @@ export function createAtom<State>(
   if (Array.isArray(name)) {
     atomDomain = safetyStr(name[0], 'domain')
     atomName = safetyStr(name[1], 'name')
-    atomId = name.join(idSeparator)
+    atomId = name.join(' / ')
   } else {
     atomDomain = defaultDomain
     atomName = `${safetyStr(name, 'name')} [${generateId()}]`
-    atomId = [atomDomain, atomName].join(idSeparator)
+    atomId = [atomDomain, atomName].join(' / ')
   }
 
   const atomActionTypes: ActionTypesDictionary = {}
@@ -211,7 +211,7 @@ export function createAtom<State>(
 
   function reduce<T>(
     dep: Unit<T>,
-    reducer: (state: State, payload: T) => State,
+    reducer: (state: State, payload: T) => State | undefined,
   ) {
     throwIf(
       !initialPhase,
@@ -233,40 +233,34 @@ export function createAtom<State>(
     throwIf(depDependencies[atomId], 'One of dependencies has the equal id')
     safetyFunc(reducer, 'reducer')
 
-    Object.assign(atomActionTypes, depActionTypes)
-    Object.assign(atomDependencies, depDependencies)
+    assign(atomActionTypes, depActionTypes)
+    assign(atomDependencies, depDependencies)
     atomDependencies[depId] = depNode
 
-    // FIXME: remove
-    function invalidateDeps(ctx: Ctx) {
-      ctx.stack.push(depStackWorker)
-    }
     function update(ctx: Ctx) {
       const { statePlain, state, payload, type } = ctx
       if (isDepActionCreator || statePlain[depId] !== undefined) {
         const depState = isDepActionCreator ? payload : statePlain[depId]
         let atomStateOld = statePlain[atomId]
-        if (atomStateOld === undefined) {
-          atomStateOld = (state[atomDomain] || {})[atomName]
-        }
+        if (atomStateOld === undefined)
+          atomStateOld = getState(state, atom as Atom<State>)
 
         const atomState = reducer(atomStateOld, depState)
 
-        throwIf(atomState === undefined, "State can't be undefined")
-
-        if (atomState !== atomStateOld || type === actionDefaultType) {
-          // TODO: add subscribers
-          ctx.write(atomNode, (statePlain[atomId] = atomState))
-        }
+        if (atomState !== atomStateOld || type === actionDefaultType)
+          ctx.write(atomNode, atomState)
       }
     }
 
     atomStack.push(ctx => {
-      if (depActionTypes[ctx.type]) ctx.stack.push(update, invalidateDeps)
+      if (depActionTypes[ctx.type]) ctx.stack.push(update, depStackWorker)
     })
   }
 
   reduce(actionDefault, (state = initialState) => state)
+  reduce(replaceStateAction, (state, globalState) =>
+    getState(globalState, atom as Atom<State>),
+  )
   handle(reduce)
   initialPhase = false
 
@@ -290,7 +284,7 @@ export function createAtom<State>(
 
     walk(ctx)
 
-    return ctx.isChanged ? { ...state, ...ctx.stateNew } : state
+    return ctx.isChanged ? assign({}, state, ctx.stateNew) : state
   }
 
   // @ts-ignore
@@ -376,7 +370,9 @@ export function combine(name: any, shape: any) {
   return createAtom(name, isArray ? [] : {}, reduce =>
     keys.map(key =>
       reduce(shape[key], (state, payload) => {
-        const newState: any = isArray ? (state as any[]).slice(0) : { ...state }
+        const newState: any = isArray
+          ? (state as any[]).slice(0)
+          : assign({}, state)
         newState[key] = payload
         return newState
       }),
@@ -400,8 +396,12 @@ export type Store = {
   dispatch: (action: Action<any>) => void
   subscribe: typeof storeSubscribe
   getState: typeof storeGetState
+  replaceState: (stateNew: StateBasic) => void
 }
 
+// TODO: try to use ES6 Map's instead of plain object
+// for prevent using `delete` operator
+// (need perf tests)
 export function createStore(atom: Atom<any>, preloadedState = {}): Store {
   const listenersStore = {} as { [key in string]: Function[] }
   const listenersActions: Function[] = []
@@ -424,7 +424,7 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
         createCtx(state, actionDefault(), newStack),
       )
 
-      if (isChanged) state = { ...state, ...stateNew }
+      if (isChanged) state = assign({}, state, stateNew)
     }
   }
 
@@ -435,9 +435,9 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
   function decrementDeps({ id, domain, name }: Node) {
     if (--atomDepsCounters[id] === 0) {
       delete atomDepsCounters[id]
-      if (stateLastSnapshot === state) state = { ...state }
-      if (stateLastSnapshot[domain] === stateLastSnapshot[domain])
-        state[domain] = { ...state[domain] }
+      if (stateLastSnapshot === state) state = assign({}, state)
+      if (stateLastSnapshot[domain] === state[domain])
+        state[domain] = assign({}, state[domain])
       delete state[domain][name]
     }
   }
@@ -479,7 +479,6 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     const targetNode = target[NODE]
     listener = safetyFunc(a[1], 'listener')
 
-    // TODO: destructuring
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
     const targetDeps = targetNode.dependencies
@@ -503,12 +502,17 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
 
         const _listeners = listenersStore[targetId]
         _listeners.splice(_listeners.indexOf(listener), 1)
+
         if (isLazy && _listeners.length === 0) {
+          delete listenersStore[targetId]
+
           decrementDeps(targetNode)
           for (const key in targetDeps) decrementDeps(targetDeps[key])
+
           stack.splice(stack.indexOf(targetStackWorker), 1)
-          if (~newStack.indexOf(targetStackWorker))
-            newStack.splice(newStack.indexOf(targetStackWorker), 1)
+
+          const targetInNewStack = newStack.indexOf(targetStackWorker)
+          if (targetInNewStack !== -1) newStack.splice(targetInNewStack, 1)
         }
       }
     }
@@ -524,17 +528,17 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
 
     actualizeState()
 
-    const ctx = createCtx(state, action, stack.slice(0))
+    const { isChanged, stateNew, statePlain } = walk(
+      createCtx(state, action, stack.slice(0)),
+    )
 
-    walk(ctx)
+    if (isChanged) {
+      stateLastSnapshot = state = assign({}, state, stateNew)
 
-    if (ctx.isChanged) {
-      stateLastSnapshot = state = { ...state, ...ctx.stateNew }
-
-      for (const key in ctx.statePlain) {
+      for (const key in statePlain) {
         const listeners = listenersStore[key]
         if (listeners) {
-          const atomState = ctx.statePlain[key]
+          const atomState = statePlain[key]
           listeners.forEach(cb => cb(atomState))
         }
       }
@@ -543,24 +547,28 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     listenersActions.forEach(cb => cb(action))
   }
 
-  return { getState: _getState, subscribe, dispatch }
+  function replaceState(stateNew: StateBasic) {
+    dispatch(replaceStateAction(stateNew))
+  }
+
+  return { getState: _getState, subscribe, dispatch, replaceState }
 }
 
 // prettier-ignore
 type TupleOfAtoms =
-  [Atom<any>] 
-| [Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>] 
-| [Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>, Atom<any>]
+  [Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
+| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
