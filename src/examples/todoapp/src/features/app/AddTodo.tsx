@@ -1,10 +1,10 @@
 import React from 'react'
 
 import { useAtom, useDispatch } from '../../shared'
-import { createActionCreator, createAtom, addTodo } from './domain'
+import { declareAction, declareAtom, addTodo } from './domain'
 
-export const onChange = createActionCreator('onChange', e => e.target.value)
-export const $input = createAtom('input', '', reduce => [
+export const onChange = declareAction('onChange', e => e.target.value)
+export const $input = declareAtom('input', '', reduce => [
   reduce(onChange, (state, value) => value),
   reduce(addTodo, () => ''),
 ])

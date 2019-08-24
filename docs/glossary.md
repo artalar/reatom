@@ -10,8 +10,8 @@ yarn add @reatom/core
 
 ```javascript
 import {
-  createActionCreator,
-  createAtom,
+  declareAction,
+  declareAtom,
   map,
   combine,
   createStore,
@@ -25,11 +25,11 @@ import {
 [Action](https://github.com/redux-utilities/flux-standard-action) is intention to state changing.
 
 ```javascript
-const increment = createActionCreator(
+const increment = declareAction(
   'increment', // (optional!) name
   mapper, // (optional?) mapper for transform payload
 )
-const add = createActionCreator()
+const add = declareAction()
 ```
 
 ### Atom
@@ -41,7 +41,7 @@ Atom reducers may depend from `actionCreator` or other `atom` and must be a pure
 > [\*](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) The term "atom" is borrowed from [Clojure](http://clojure.org/reference/atoms) and comes from the idea that one only performs ["atomic"](https://en.wikipedia.org/wiki/Read-modify-write), or [race-condition](https://en.wikipedia.org/wiki/Race_condition) free, operations on individual atoms.
 
 ```javascript
-const count = createAtom(
+const count = declareAtom(
   'count',     // name (optional!)
   0,           // initial state
   reduce => [  // reducers definitions
@@ -51,7 +51,7 @@ const count = createAtom(
     reduce(add, (state, payload) => state + payload)
   ]
 )
-const countDoubled = createAtom(
+const countDoubled = declareAtom(
   0,
   reduce => [reduce(count, (state, count) => count * 2)]
 )

@@ -2,13 +2,13 @@ import React from 'react'
 import cx from 'classnames'
 
 import { useAtom, useDispatch } from '../../shared'
-import { VISIBILITY_FILTERS, createActionCreator, createAtom } from './domain'
+import { VISIBILITY_FILTERS, declareAction, declareAtom } from './domain'
 
 const filtersList = Object.keys(VISIBILITY_FILTERS)
 
-export const setFilter = createActionCreator('setFilter')
+export const setFilter = declareAction('setFilter')
 
-export const $visibilityFilter = createAtom(
+export const $visibilityFilter = declareAtom(
   'visibilityFilter', // name
   VISIBILITY_FILTERS.ALL, // initial state
   reduce => reduce(setFilter, (state, filter) => filter),

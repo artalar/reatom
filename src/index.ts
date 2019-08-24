@@ -101,7 +101,7 @@ function getIsAction(target: any) {
   return target && target[NODE] && typeof target.getType === 'function'
 }
 
-export function createActionCreator<Input = void, Payload = Input>(
+export function declareAction<Input = void, Payload = Input>(
   type: string | [string] = 'action',
   // @ts-ignore
   mapper: (input: Input) => Payload = input => input,
@@ -146,11 +146,11 @@ export function createActionCreator<Input = void, Payload = Input>(
 }
 
 // initiate action
-export const actionDefault = createActionCreator('@@REAtom/default')
+export const actionDefault = declareAction('@@REAtom/default')
 const actionDefaultType = actionDefault.getType()
 
 // @ts-ignore
-export declare function createAtom<State>(
+export declare function declareAtom<State>(
   name: string | [string, string],
   initialState: State,
   handle: (
@@ -161,7 +161,7 @@ export declare function createAtom<State>(
   ) => any,
 ): Atom<State>
 // @ts-ignore
-export declare function createAtom<State>(
+export declare function declareAtom<State>(
   initialState: State,
   handle: (
     reduce: <T>(
@@ -170,7 +170,7 @@ export declare function createAtom<State>(
     ) => void,
   ) => any,
 ): Atom<State>
-export function createAtom<State>(
+export function declareAtom<State>(
   name: string | [string, string],
   initialState: State,
   handle: (
@@ -329,7 +329,7 @@ export function map(name, target, mapper) {
   }
   safetyFunc(mapper, 'mapper')
 
-  return createAtom(
+  return declareAtom(
     name,
     // FIXME: initialState for `map` :thinking:
     null,
@@ -361,7 +361,7 @@ export function combine(name: any, shape: any) {
 
   const isArray = Array.isArray(shape)
 
-  return createAtom(name, isArray ? [] : {}, reduce =>
+  return declareAtom(name, isArray ? [] : {}, reduce =>
     keys.map(key =>
       reduce(shape[key], (state, payload) => {
         const newState: any = isArray

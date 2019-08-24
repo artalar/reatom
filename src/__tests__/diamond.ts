@@ -1,13 +1,13 @@
 import {
-  createActionCreator,
-  createAtom,
+  declareAction,
+  declareAtom,
   actionDefault,
   getState,
   map,
   combine,
 } from '../index'
 
-describe('diamond problem (createAtom)', () => {
+describe('diamond problem (declareAtom)', () => {
   test('display name', () => {
     /*
       Short description: `displayName = isFirstNameShort ? fullName : firstName`
@@ -24,21 +24,21 @@ describe('diamond problem (createAtom)', () => {
     const fullNameMap = jest.fn()
     const displayNameMap = jest.fn()
 
-    const firstNameUpdated = createActionCreator<string>()
+    const firstNameUpdated = declareAction<string>()
 
-    const firstName = createAtom('@firstName', 'John', handle =>
+    const firstName = declareAtom('@firstName', 'John', handle =>
       handle(firstNameUpdated, (_, name) => name),
     )
-    const lastName = createAtom('@lastName', 'Doe', () => [])
+    const lastName = declareAtom('@lastName', 'Doe', () => [])
 
-    const isFirstNameShort = createAtom('@isFirstNameShort', false, handle =>
+    const isFirstNameShort = declareAtom('@isFirstNameShort', false, handle =>
       handle(firstName, (state, v) => {
         isFirstNameShortMap(v)
         return v.length < 10
       }),
     )
 
-    const fullName = createAtom('@fullName', '', handle =>
+    const fullName = declareAtom('@fullName', '', handle =>
       handle(
         combine({ firstName, lastName }),
         (state, { firstName, lastName }) => {
@@ -48,7 +48,7 @@ describe('diamond problem (createAtom)', () => {
       ),
     )
 
-    const displayName = createAtom('@displayName', '', handle =>
+    const displayName = declareAtom('@displayName', '', handle =>
       handle(
         combine({ firstName, isFirstNameShort, fullName }),
         (state, { firstName, isFirstNameShort, fullName }) => {
@@ -77,12 +77,12 @@ describe('diamond problem (createAtom)', () => {
     expect(displayNameMap.mock.calls.length).toBe(3)
   })
   test('few diamonds', () => {
-    const action = createActionCreator<string>()
+    const action = declareAction<string>()
 
     const r01Map = jest.fn((state, payload) => state + payload)
-    const r01 = createAtom('@r01', '01', handle => handle(action, r01Map))
+    const r01 = declareAtom('@r01', '01', handle => handle(action, r01Map))
     const r02Map = jest.fn((state, payload) => state + payload)
-    const r02 = createAtom('@r02', '02', handle => handle(action, r02Map))
+    const r02 = declareAtom('@r02', '02', handle => handle(action, r02Map))
     const r012 = combine({ r01, r02 })
     const r11Map = jest.fn(state => state.r01)
     const r11 = map(r012, r11Map)
