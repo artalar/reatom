@@ -66,4 +66,9 @@ lib/
 es/
 
 # IDE
-.vscode
+.vscode/
+
+#
+.DS_Store
+dist/
+.cache/

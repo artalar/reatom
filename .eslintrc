@@ -1,11 +1,10 @@
 {
   "parser": "babel-eslint",
 
-  "plugins": ["flowtype", "jest", "prettier"],
+  "plugins": ["jest", "prettier"],
 
   "extends": [
     "airbnb-base",
-    "plugin:flowtype/recommended",
     "plugin:prettier/recommended"
   ],
 
@@ -20,11 +19,10 @@
     "prefer-destructuring": "warn",
     "consistent-return": "off",
     "import/prefer-default-export": "off",
-    "flowtype/space-after-type-colon": "off",
-    "flowtype/generic-spacing": "off",
     "no-continue": "off",
     "no-return-assign": "off",
-    "no-sequences": "off"
+    "no-sequences": "off",
+    "no-unused-vars": "warn"
   },
 
   "env": {
