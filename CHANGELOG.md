@@ -1,3 +1,9 @@
+## 4.0.0
+
+Core improvements and bugs fixes...
+
+(!) Move to **REAtom** package (!)
+
 ## 3.0.10
 
 Improve API naming

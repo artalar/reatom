@@ -1,7 +1,7 @@
 {
   "name": "flaxom",
   "private": false,
-  "version": "4.0.0-rc4",
+  "version": "4.0.1",
   "description": "State manager with a focus of all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -93,7 +93,17 @@
     "state manager",
     "flaxom"
   ],
+  "files": [
+    "/README.md",
+    "/LICENSE.md",
+    "/package.json",
+    "/src/index.ts",
+    "/build",
+    "/docs"
+  ],
   "directories": {
-    "lib": "lib"
+    "lib": "src",
+    "man": "docs",
+    "doc": "docs"
   }
 }
