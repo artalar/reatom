@@ -1,9 +1,9 @@
 ## Installation
 
 ```sh
-npm i reatom
+npm i @reatom/core
 # or
-yarn add reatom
+yarn add @reatom/core
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ import {
   map,
   combine,
   createStore,
-} from 'reatom'
+} from '@reatom/core'
 ```
 
 ## Glossary

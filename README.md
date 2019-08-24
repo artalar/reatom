@@ -4,10 +4,10 @@
 
 > State manager with a focus of **all** needs
 
-![npm](https://img.shields.io/npm/v/reatom?style=flat-square)
-![npm type definitions](https://img.shields.io/npm/types/reatom?style=flat-square)
-![npm bundle size](https://img.shields.io/bundlephobia/minzip/reatom?style=flat-square)
-![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
+![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)
+![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)
+![GitHub](https://img.shields.io/github/license/artalar/@reatom/core?style=flat-square)
 
 ## Goals and features
 
@@ -15,7 +15,7 @@
 - ❗️ **static typed**: best type inference
 - ⚡ **performance**: light tiny updates in huge state
 - 📦 **modular**: reusable instances (SSR)
-- 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=reatom) gzipped
+- 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=@reatom/core) gzipped
 - 🧪 **testing**: simple mocking
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
