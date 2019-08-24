@@ -1,4 +1,4 @@
-console.warn('FLAXOM still work in progress, do not use it in production')
+console.warn('FLAXOM is move to another package is name "reatom"')
 
 type ActionType = string
 type ActionTypesDictionary = { [key in ActionType]: true }
@@ -390,7 +390,6 @@ export type Store = {
   dispatch: (action: Action<any>) => void
   subscribe: typeof storeSubscribe
   getState: typeof storeGetState
-  replaceState: (stateNew: StateBasic) => void
 }
 
 // TODO: try to use ES6 Map's instead of plain object
