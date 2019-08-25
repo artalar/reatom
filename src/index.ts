@@ -346,7 +346,7 @@ export function combine<
 export function combine<
   T extends { [key in string]: Atom<any> } | TupleOfAtoms
 >(
-  name: string,
+  name: string | [string, string],
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine(name: any, shape: any) {
@@ -410,6 +410,7 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     createCtx(preloadedState, actionDefault(), [atomNode.stackWorker]),
   )
   let stateLastSnapshot = state
+  state = assign({}, preloadedState, state)
 
   function actualizeState() {
     if (newStack.length > 0) {
