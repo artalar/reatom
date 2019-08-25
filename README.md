@@ -1,8 +1,10 @@
-# REAtom (_work in progress_)
+<div align="center"><br/><img src="docs/logo.svg" alt="reatom logo" align="center"><br/><br/></div>
 
-<div align="center"><br/><img src="docs/logo.svg" alt="REAtom logo" align="center"><br/><br/></div>
 
-> State manager with a focus of **all** needs
+ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
+
+> **IMPORTANT!** Current state is **Work In Progress**.
+> We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
 
 ![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
