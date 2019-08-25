@@ -10,8 +10,8 @@ yarn add @reatom/core
 
 ```javascript
 import {
-  createActionCreator,
-  createAtom,
+  declareAction,
+  declareAtom,
   map,
   combine,
   createStore,
@@ -26,8 +26,8 @@ import {
 
 ```js
 test('simple counter', () => {
-  const increment = createActionCreator()
-  const counter = createAtom(
+  const increment = declareAction()
+  const counter = declareAtom(
     // initial state
     0,
     // callback for creating
@@ -50,8 +50,8 @@ test('simple counter', () => {
 
 ```js
 test('derived (computed) atoms', () => {
-  const increment = createActionCreator()
-  const counter = createAtom(0, reduce => [
+  const increment = declareAction()
+  const counter = declareAtom(0, reduce => [
     reduce(increment, state => state + 1),
   ])
   const counterDoubled = map(counter, value => value * 2)
@@ -73,9 +73,9 @@ test('derived (computed) atoms', () => {
 
 ```js
 test('side effects', async () => {
-  const doSideEffect = createActionCreator()
-  const increment = createActionCreator()
-  const counter = createAtom(0, reduce => [
+  const doSideEffect = declareAction()
+  const increment = declareAction()
+  const counter = declareAtom(0, reduce => [
     reduce(increment, state => state + 1),
   ])
 

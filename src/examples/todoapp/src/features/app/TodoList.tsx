@@ -3,7 +3,7 @@ import React from 'react'
 import { useAtom } from '../../shared'
 import {
   VISIBILITY_FILTERS,
-  createAtom,
+  declareAtom,
   combine,
   $todosIds,
   $todosCompleted,
@@ -11,7 +11,7 @@ import {
 import { $visibilityFilter } from './VisibilityFilters'
 import { Todo } from './Todo'
 
-export const $todosIdsVisible = createAtom(
+export const $todosIdsVisible = declareAtom(
   'todosIdsVisible', // name
   [], // initial state
   reduce =>

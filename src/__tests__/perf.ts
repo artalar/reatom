@@ -6,8 +6,8 @@ import {
 } from 'redux'
 import * as effector from 'effector'
 import {
-  createActionCreator,
-  createAtom,
+  declareAction,
+  declareAtom,
   combine,
   createStore,
   // replace('es', 'src') // for develop
@@ -90,33 +90,33 @@ describe('redux-reatom', () => {
     const reatomAtomFabric = (parentId, initialState) => {
       const prefix =
         parentId !== '10' && !(parentId % 2) ? parentId - 1 : parentId
-      return (reatomNestedChildren[parentId][initialState] = createAtom(
+      return (reatomNestedChildren[parentId][initialState] = declareAtom(
         `reatomAtomFabric${parentId + initialState}`,
         initialState,
         handle => [
           handle(
             (reatomActions[`${prefix}1`] =
-              reatomActions[`${prefix}1`] || createActionCreator(`${prefix}1`)),
+              reatomActions[`${prefix}1`] || declareAction(`${prefix}1`)),
             (state, value) => value,
           ),
           handle(
             (reatomActions[`${prefix}2`] =
-              reatomActions[`${prefix}2`] || createActionCreator(`${prefix}2`)),
+              reatomActions[`${prefix}2`] || declareAction(`${prefix}2`)),
             (state, value) => value,
           ),
           handle(
             (reatomActions[`${prefix}3`] =
-              reatomActions[`${prefix}3`] || createActionCreator(`${prefix}3`)),
+              reatomActions[`${prefix}3`] || declareAction(`${prefix}3`)),
             (state, value) => value,
           ),
           handle(
             (reatomActions[`${prefix}4`] =
-              reatomActions[`${prefix}4`] || createActionCreator(`${prefix}4`)),
+              reatomActions[`${prefix}4`] || declareAction(`${prefix}4`)),
             (state, value) => value,
           ),
           handle(
             (reatomActions[`${prefix}5`] =
-              reatomActions[`${prefix}5`] || createActionCreator(`${prefix}5`)),
+              reatomActions[`${prefix}5`] || declareAction(`${prefix}5`)),
             (state, value) => value,
           ),
         ],
