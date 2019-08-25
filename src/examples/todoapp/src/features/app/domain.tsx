@@ -1,16 +1,16 @@
 import {
-  createActionCreator,
-  createAtom as _createAtom,
+  declareAction,
+  declareAtom as _declareAtom,
   map as _map,
   combine as _combine,
 } from 'reatom'
 
-export { createActionCreator }
+export { declareAction }
 
-export function createAtom(name, initialState, handler) {
+export function declareAtom(name, initialState, handler) {
   return arguments.length === 3
-    ? _createAtom(['app', name], initialState, handler)
-    : _createAtom(name, initialState)
+    ? _declareAtom(['app', name], initialState, handler)
+    : _declareAtom(name, initialState)
 }
 export function map(name, target, mapper) {
   return arguments.length === 3
@@ -30,26 +30,26 @@ export const VISIBILITY_FILTERS = {
 }
 
 let nextTodoId = 0
-export const addTodo = createActionCreator('addTodo', content => ({
+export const addTodo = declareAction('addTodo', content => ({
   id: ++nextTodoId,
   content,
 }))
-export const toggleTodo = createActionCreator('toggleTodo')
+export const toggleTodo = declareAction('toggleTodo')
 
-export const $todosIds = createAtom(
+export const $todosIds = declareAtom(
   'todosIds', // name
   [], // initial state
   reduce => reduce(addTodo, (state, { id }) => [...state, id]),
 )
 
-export const $todosContent = createAtom(
+export const $todosContent = declareAtom(
   'todosContent', // name
   {}, // initial state
   reduce =>
     reduce(addTodo, (state, { id, content }) => ({ ...state, [id]: content })),
 )
 
-export const $todosCompleted = createAtom(
+export const $todosCompleted = declareAtom(
   'todosCompleted', // name
   {}, // initial state
   reduce => [

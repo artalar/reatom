@@ -2,8 +2,8 @@
 
 import {
   Action,
-  createActionCreator,
-  createAtom,
+  declareAction,
+  declareAtom,
   map,
   combine,
   createStore,
@@ -13,8 +13,8 @@ import {
 const delay = (ms = 1000) => new Promise(r => setTimeout(r, ms))
 
 test('simple counter', () => {
-  const increment = createActionCreator()
-  const counter = createAtom(
+  const increment = declareAction()
+  const counter = declareAtom(
     // initial state
     0,
     // callback for creating
@@ -33,8 +33,8 @@ test('simple counter', () => {
 })
 
 test('derived (computed) atoms', () => {
-  const increment = createActionCreator()
-  const counter = createAtom(0, reduce => [
+  const increment = declareAction()
+  const counter = declareAtom(0, reduce => [
     reduce(increment, state => state + 1),
   ])
   const counterDoubled = map(counter, value => value * 2)
@@ -52,9 +52,9 @@ test('derived (computed) atoms', () => {
 })
 
 test('side effects', async () => {
-  const doSideEffect = createActionCreator()
-  const increment = createActionCreator()
-  const counter = createAtom(0, reduce => [
+  const doSideEffect = declareAction()
+  const increment = declareAction()
+  const counter = declareAtom(0, reduce => [
     reduce(increment, state => state + 1),
   ])
 

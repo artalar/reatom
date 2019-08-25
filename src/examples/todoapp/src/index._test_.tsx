@@ -3,7 +3,7 @@ import '@testing-library/jest-dom/extend-expect'
 import React from 'react'
 import { act } from 'react-dom/test-utils'
 import { render, fireEvent } from '@testing-library/react'
-import { createStore, createAtom } from 'reatom'
+import { createStore, declareAtom } from 'reatom'
 import { Root, context } from './root'
 import { $isAuth } from './features/auth/index'
 import {
@@ -18,7 +18,7 @@ const { Provider } = context
 
 describe('todoapp', () => {
   const store = createStore(
-    createAtom('static atom only for store creation', null, () => {}),
+    declareAtom('static atom only for store creation', null, () => {}),
   )
   test('mount', async () => {
     const shadowDOM = render(

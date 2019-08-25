@@ -1,6 +1,6 @@
 import {
-  createActionCreator,
-  createAtom,
+  declareAction,
+  declareAtom,
   actionDefault,
   getState,
   map,
@@ -11,33 +11,33 @@ import {
 
 describe('reatom', () => {
   describe('main api', () => {
-    test('createActionCreator', () => {
-      expect(typeof createActionCreator() === 'function').toBe(true)
-      expect(createActionCreator()()).toEqual({
+    test('declareAction', () => {
+      expect(typeof declareAction() === 'function').toBe(true)
+      expect(declareAction()()).toEqual({
         type: expect.stringContaining(''),
         payload: undefined,
       })
-      expect(createActionCreator('TeSt')()).toEqual({
+      expect(declareAction('TeSt')()).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: undefined,
       })
-      expect(createActionCreator('TeSt', () => null)()).toEqual({
+      expect(declareAction('TeSt', () => null)()).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: null,
       })
-      expect(createActionCreator('TeSt', a => a)(null)).toEqual({
+      expect(declareAction('TeSt', a => a)(null)).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: null,
       })
-      expect(createActionCreator(['TeSt'])()).toEqual({
+      expect(declareAction(['TeSt'])()).toEqual({
         type: 'TeSt',
         payload: undefined,
       })
     })
-    test('createAtom', () => {
+    test('declareAtom', () => {
       const name = '_atomName_'
       const initialState = {}
-      const atom = createAtom(name, initialState, () => {})
+      const atom = declareAtom(name, initialState, () => {})
       const state = atom({}, actionDefault())
 
       expect(getState(state, atom)).toBe(initialState)
@@ -48,19 +48,19 @@ describe('reatom', () => {
         })(),
       ).toBe(true)
       expect(
-        createAtom(['@', name], initialState, () => {})({}, actionDefault()),
+        declareAtom(['@', name], initialState, () => {})({}, actionDefault()),
       ).toEqual({ '@': { [name]: initialState } })
     })
     test('createStore', () => {
       const incrementMapper = jest.fn(a => a)
-      const increment = createActionCreator('increment', incrementMapper)
-      const toggle = createActionCreator()
+      const increment = declareAction('increment', incrementMapper)
+      const toggle = declareAction()
 
-      const count = createAtom('count', 0, handle => [
+      const count = declareAtom('count', 0, handle => [
         handle(increment, state => state + 1),
       ])
       const countDoubled = map('count/map', count, state => state * 2)
-      const toggled = createAtom('toggled', false, handle =>
+      const toggled = declareAtom('toggled', false, handle =>
         handle(toggle, state => !state),
       )
 
@@ -157,14 +157,14 @@ describe('reatom', () => {
       const subscriberCount1 = jest.fn()
       const count2Subscriber1 = jest.fn()
       const count2Subscriber2 = jest.fn()
-      const increment = createActionCreator('increment')
-      const set = createActionCreator<number>('set')
+      const increment = declareAction('increment')
+      const set = declareAction<number>('set')
 
-      const count1 = createAtom('@count1', 0, handle =>
+      const count1 = declareAtom('@count1', 0, handle =>
         handle(increment, state => state + 1),
       )
       const count2SetMap = jest.fn((state, payload) => payload)
-      const count2 = createAtom('@count2', 0, handle => [
+      const count2 = declareAtom('@count2', 0, handle => [
         handle(increment, state => state + 1),
         handle(set, count2SetMap),
       ])
@@ -225,14 +225,14 @@ describe('reatom', () => {
     })
     test('createStore lazy computed', () => {
       const storeSubscriber = jest.fn()
-      const increment1 = createActionCreator()
-      const increment2 = createActionCreator()
+      const increment1 = declareAction()
+      const increment2 = declareAction()
 
-      const count1 = createAtom('count1', 0, handle =>
+      const count1 = declareAtom('count1', 0, handle =>
         handle(increment1, state => state + 1),
       )
       const count1Doubled = map(count1, payload => payload * 2)
-      const count2 = createAtom('count2', 0, handle =>
+      const count2 = declareAtom('count2', 0, handle =>
         handle(increment2, state => state + 1),
       )
       const count2Doubled = map(count2, payload => payload * 2)
@@ -257,9 +257,9 @@ describe('reatom', () => {
     test('createStore lazy resubscribes', () => {
       const storeSubscriber = jest.fn()
       const countDoubledSubscriber = jest.fn()
-      const increment = createActionCreator()
+      const increment = declareAction()
 
-      const count = createAtom('count', 0, handle =>
+      const count = declareAtom('count', 0, handle =>
         handle(increment, state => state + 1),
       )
       const countDoubled = map(
@@ -295,9 +295,9 @@ describe('reatom', () => {
   })
   describe('derived state', () => {
     test('map + combine', () => {
-      const increment = createActionCreator()
+      const increment = declareAction()
 
-      const count = createAtom('@count', 0, handle =>
+      const count = declareAtom('@count', 0, handle =>
         handle(increment, state => state + 1),
       )
       const countDoubled = map(count, state => state * 2)
@@ -323,8 +323,8 @@ describe('reatom', () => {
       expect(getState(rootState, root)).toEqual({ count: 1, countDoubled: 2 })
     })
     test('combine array', () => {
-      const increment = createActionCreator()
-      const count = createAtom('@count', 0, handle =>
+      const increment = declareAction()
+      const count = declareAtom('@count', 0, handle =>
         handle(increment, state => state + 1),
       )
       const countDoubled = map(count, state => state * 2)

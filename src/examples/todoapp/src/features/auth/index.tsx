@@ -1,10 +1,10 @@
 import React from 'react'
-import { createActionCreator, createAtom } from 'reatom'
+import { declareAction, declareAtom } from 'reatom'
 
 import { useAtom, useDispatch } from '../../shared'
 
-export const onSubmit = createActionCreator('onSubmit', e => e.preventDefault())
-export const $isAuth = createAtom(['auth', 'isAuth'], false, reduce => [
+export const onSubmit = declareAction('onSubmit', e => e.preventDefault())
+export const $isAuth = declareAtom(['auth', 'isAuth'], false, reduce => [
   reduce(onSubmit, () => true),
 ])
 
