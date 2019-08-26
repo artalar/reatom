@@ -1,4 +1,4 @@
-console.warn('REAtom is move to another package is name "reatom"')
+console.warn('REAtom still work in progress, do not use it in production')
 
 type ActionType = string
 type ActionTypesDictionary = { [key in ActionType]: true }
