@@ -529,20 +529,18 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     if (isChanged) {
       stateLastSnapshot = state = assign({}, state, stateNew)
 
-      for (const key in statePlain) {
-        const listeners = listenersStore[key]
-        if (listeners) {
-          const atomState = statePlain[key]
-          for (let i = 0; i < listeners.length; i++) listeners[i](atomState)
-        }
-      }
+      for (const key in statePlain)
+        callFromList(listenersStore[key] || [], statePlain[key])
     }
 
-    for (let i = 0; i < listenersActions.length; i++)
-      listenersActions[i](action)
+    callFromList(listenersActions, action)
   }
 
   return { getState: _getState, subscribe, dispatch }
+}
+
+function callFromList(list: Function[], arg: any, i = -1) {
+  while (++i < list.length) list[i](arg)
 }
 
 // prettier-ignore
