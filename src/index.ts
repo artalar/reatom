@@ -17,6 +17,9 @@ const NODE = Symbol('@@REAtom/NODE')
 const defaultDomain = 'defaultDomain'
 const assign = Object.assign
 
+// NOTE: For better uglify
+let UNDEFINED: undefined;
+
 let id = 0
 function generateId() {
   return ++id
@@ -82,9 +85,9 @@ function createCtx(
       this.isChanged = true
       const domainState = state[domain]
       let domainStateNew = stateNew[domain]
-      if (domainStateNew === undefined)
+      if (domainStateNew === UNDEFINED)
         domainStateNew = stateNew[domain] =
-          domainState === undefined ? {} : assign({}, domainState)
+          domainState === UNDEFINED ? {} : assign({}, domainState)
 
       domainStateNew[name] = value
       statePlain[id] = value
@@ -187,7 +190,7 @@ export function declareAtom<State>(
     initialState = name
     name = 'reducer'
   }
-  throwIf(initialState === undefined, "Initial state can't be undefined")
+  throwIf(initialState === UNDEFINED, "Initial state can't be undefined")
 
   let atomDomain: string, atomName: string, atomId: string
 
@@ -236,10 +239,10 @@ export function declareAtom<State>(
 
     function update(ctx: Ctx) {
       const { statePlain, state, payload, type } = ctx
-      if (isDepActionCreator || statePlain[depId] !== undefined) {
+      if (isDepActionCreator || statePlain[depId] !== UNDEFINED) {
         const depState = isDepActionCreator ? payload : statePlain[depId]
         let atomStateOld = statePlain[atomId]
-        if (atomStateOld === undefined)
+        if (atomStateOld === UNDEFINED)
           atomStateOld = getState(state, atom as Atom<State>)
 
         const atomState = reducer(atomStateOld, depState)
@@ -439,12 +442,12 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
   function _getState(target?: Atom<any>) {
     actualizeState()
 
-    if (target === undefined) return state
+    if (target === UNDEFINED) return state
 
     throwIf(!getIsAtom(target), 'Invalid target')
 
     const targetState = getState(state, target)
-    if (targetState !== undefined) return targetState
+    if (targetState !== UNDEFINED) return targetState
 
     const targetNode = target[NODE]
 
@@ -476,9 +479,9 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
     const targetDeps = targetNode.dependencies
-    const isLazy = initialStatePlain[targetId] === undefined
+    const isLazy = initialStatePlain[targetId] === UNDEFINED
 
-    if (listenersStore[targetId] === undefined) {
+    if (listenersStore[targetId] === UNDEFINED) {
       listenersStore[targetId] = []
       if (isLazy) {
         newStack.push(targetStackWorker)
