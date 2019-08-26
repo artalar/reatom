@@ -1,6 +1,10 @@
 ## 1.0.0
 
-> new name: REAtom!
+`flaxom` -> `reatom`
+
+`createAction` -> `declareAction`
+
+`createAtom` -> `declareAtom`
 
 ## 4.0.0
 
