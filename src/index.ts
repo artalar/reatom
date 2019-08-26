@@ -533,12 +533,13 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
         const listeners = listenersStore[key]
         if (listeners) {
           const atomState = statePlain[key]
-          listeners.forEach(cb => cb(atomState))
+          for (let i = 0; i < listeners.length; i++) listeners[i](atomState)
         }
       }
     }
 
-    listenersActions.forEach(cb => cb(action))
+    for (let i = 0; i < listenersActions.length; i++)
+      listenersActions[i](action)
   }
 
   return { getState: _getState, subscribe, dispatch }
