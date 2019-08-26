@@ -25,7 +25,7 @@ ReAtom is **declarative** and **reactive** state manager, designed for both simp
 - synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/src/__tests__/diamond.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward for write bad code
-- handy for write good codeÍ
+- handy for write good code
 
 ## Description
 
