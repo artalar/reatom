@@ -533,15 +533,19 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
         const listeners = listenersStore[key]
         if (listeners) {
           const atomState = statePlain[key]
-          listeners.forEach(cb => cb(atomState))
+          callEachFuncWithArg(listeners, atomState)
         }
       }
     }
 
-    listenersActions.forEach(cb => cb(action))
+    callEachFuncWithArg(listenersActions, action)
   }
 
   return { getState: _getState, subscribe, dispatch }
+}
+
+function callEachFuncWithArg(fns: Function[], arg: any) {
+  for (let i = 0; i < fns.length; i++) fns[i](arg)
 }
 
 // prettier-ignore
