@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+
+    - uses: actions/checkout@v1
+
+    - name: use node
+      uses: actions/setup-node@v1
+      with:
+        version: 10
+
+    - name: install deps
+      run: npm i
+
+    - name: tests
+      run: npm run test
+
+    - name: size limit
+      run: echo "not implemented"
