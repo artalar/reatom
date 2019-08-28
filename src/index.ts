@@ -274,11 +274,11 @@ export function declareAtom<State>(
   }
 
   function atom(state: Ctx['state'], action: { type: string; payload: any }) {
-    const ctx = createCtx(state, action, [atomNode.stackWorker])
+    const { isChanged, stateNew } = walk(
+      createCtx(state, action, [atomNode.stackWorker]),
+    )
 
-    walk(ctx)
-
-    return ctx.isChanged ? assign({}, state, ctx.stateNew) : state
+    return isChanged ? assign({}, state, stateNew) : state
   }
 
   // @ts-ignore
