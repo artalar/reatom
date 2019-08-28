@@ -2,8 +2,17 @@ import Benchmark from 'benchmark'
 import * as RA from './reatom';
 import * as RE from './redux'
 
+let reatomStore = RA.initializeStore();
+let reduxStore = RE.initializeStore();
 const results: string[] = []
-const suite = new Benchmark.Suite
+
+const suite = new Benchmark.Suite('Todo', {
+  onCycle: function() {
+    reatomStore = RA.initializeStore();
+    reduxStore = RE.initializeStore();
+  }
+})
+
 const times = (len: number, fn: (index: number) => void) => {
   for(var i=0; i<len; i++) fn(i)
 }
@@ -11,7 +20,8 @@ const times = (len: number, fn: (index: number) => void) => {
 [10, 100].forEach(count => [1, 10, 50].forEach(subscribersCount => {
   ['ALL', 'COMPLETED', 'ACTIVE'].forEach((filter: any) => {
     suite.add(`(${subscribersCount}) ${count} todos | ${filter} [reatom]`, () => {
-      const store = RA.initializeStore();
+      const store = reatomStore;
+
       store.dispatch(RA.setVisibilityFilter(filter));
 
       times(subscribersCount, () => store.subscribe(RA.TodosContent, () => {}))
@@ -21,7 +31,8 @@ const times = (len: number, fn: (index: number) => void) => {
     })
 
     suite.add(`(${subscribersCount}) ${count} todos | ${filter} [redux]`, () => {
-      const store = RE.initializeStore();
+      const store = reduxStore;
+
       store.dispatch(RE.setVisibilityFilter(filter));
 
       times(subscribersCount, () => store.subscribe(() => RE.getVisibleTodos(store.getState(), filter)))
