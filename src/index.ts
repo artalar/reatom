@@ -338,12 +338,13 @@ export function map(name, target, mapper) {
 }
 
 // @ts-ignore
-export function combine<
+export declare function combine<
   T extends { [key in string]: Atom<any> } | TupleOfAtoms
 >(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<
+// @ts-ignore
+export declare function combine<
   T extends { [key in string]: Atom<any> } | TupleOfAtoms
 >(
   name: string | [string, string],
@@ -561,3 +562,39 @@ type TupleOfAtoms =
 | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
 | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
 | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+
+// prettier-ignore
+type TupleOfAtomsValues<Atoms extends any[]> =
+  Atoms extends [Atom<infer T1>]
+  ? [T1]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>]
+  ? [T1, T2]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>]
+  ? [T1, T2, T3]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>]
+  ? [T1, T2, T3, T4]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>]
+  ? [T1, T2, T3, T4, T5]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>]
+  ? [T1, T2, T3, T4, T5, T6]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>]
+  ? [T1, T2, T3, T4, T5, T6, T7]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>, Atom<infer T11>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>, Atom<infer T11>, Atom<infer T12>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>, Atom<infer T11>, Atom<infer T12>, Atom<infer T13>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>, Atom<infer T11>, Atom<infer T12>, Atom<infer T13>, Atom<infer T14>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>, Atom<infer T11>, Atom<infer T12>, Atom<infer T13>, Atom<infer T14>, Atom<infer T15>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15]
+  : Atoms extends [Atom<infer T1>, Atom<infer T2>, Atom<infer T3>, Atom<infer T4>, Atom<infer T5>, Atom<infer T6>, Atom<infer T7>, Atom<infer T8>, Atom<infer T9>, Atom<infer T10>, Atom<infer T11>, Atom<infer T12>, Atom<infer T13>, Atom<infer T14>, Atom<infer T15>, Atom<infer T16>]
+  ? [T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16]
+  : unknown

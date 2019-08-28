@@ -1,8 +1,10 @@
 {
-    "extends": "../../tsconfig.json",
-    "compilerOptions": {
-        "target": "esnext",
-        "module": "commonjs",
-        "declaration": false
-    }
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "declaration": false,
+    "noImplicitAny": false,
+    "allowJs": true
+  }
 }
