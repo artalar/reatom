@@ -286,7 +286,6 @@ describe('reatom', () => {
     })
     test('createStore lazy resubscribes', () => {
       const storeSubscriber = jest.fn()
-      const countDoubledSubscriber = jest.fn()
       const increment = declareAction()
 
       const count = declareAtom('count', 0, handle =>
