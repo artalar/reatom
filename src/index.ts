@@ -395,6 +395,9 @@ export type Store = {
   getState: typeof storeGetState
 }
 
+// Use for async operations and compose dispatch calls in one function
+export type Service<T = any> = (store: Store) => (input: T) => void
+
 // TODO: try to use ES6 Map's instead of plain object
 // for prevent using `delete` operator
 // (need perf tests)
