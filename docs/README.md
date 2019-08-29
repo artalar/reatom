@@ -18,6 +18,7 @@ ReAtom is **declarative** and **reactive** state manager, designed for both simp
 - ⚡ **performance**: light tiny updates in huge state
 - 📦 **modular**: reusable instances (SSR)
 - 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=@reatom/core) gzipped
+- 🍴 **lazy**: solution for code splitting out of the box
 - 🧪 **testing**: simple mocking
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
