@@ -1,0 +1,23 @@
+{
+  "name": "@reatom/react",
+  "version": "1.0.0-rc1",
+  "description": "React bindings for @reatom/core",
+  "main": "index.js",
+  "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
+  "repository": "https://github.com/artalar/reatom",
+  "license": "MIT",
+  "typings": "react.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "build",
+    "core.d.ts"
+  ],
+  "dependencies": {
+    "@reatom/core": "^1.0.0"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0"
+  }
+}
