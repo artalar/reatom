@@ -19,7 +19,7 @@
     "test:watch": "jest --watch",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "bench": "npm run rebuild && npm run bench:now && npm run clean",
-    "bench:now": "ts-node -P src/benchmark/tsconfig.json src/benchmark/todoapp/index.ts",
+    "bench:now": "ts-node -P src/benchmark/tsconfig.json src/benchmark/todoapp",
     "show-perf": "node ./tools/showPerfResults",
     "prettify": "prettier --write '**/*.(j|t)s'",
     "prettify:watch": "onchange '**/*.(j|t)s' -- prettier --write {{changed}}",

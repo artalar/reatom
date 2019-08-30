@@ -4,50 +4,42 @@ import {
   createStore,
   map,
   combine,
-  // change to 'src' for static types
-} from '../../../bench/'
+  // TODO: build
+} from '../../../src'
 
-type Dictionary<T> = { [key: string]: T }
-type Todo = {
-  id: number
-  text: string
+export type Addresses = {
+  ids: string[]
+  cities: Record<string, string>
+  streets: Record<string, string>
+  houses: Record<string, number>
 }
-type FilterType = 'COMPLETED' | 'ACTIVE' | 'ALL'
 
-export const addTodo = declareAction<Todo>()
-export const setVisibilityFilter = declareAction<FilterType>()
-export const toggleTodo = declareAction<number>()
+export const fetchAddressesDone = declareAction<Addresses>()
+// export const changeCite = declareAction...
+// export const changeStreet = declareAction...
+export const changeHouse = declareAction<{
+  id: string
+  value: number
+}>()
 
-export const Todos = declareAtom<Dictionary<Todo>>({}, reduce => [
-  reduce(addTodo, (state, payload) => ({ ...state, [payload.id]: payload })),
+export const AddressesIdsList = declareAtom<Addresses['ids']>([], reduce => [
+  reduce(fetchAddressesDone, (state, { ids }) => ids),
+])
+export const Cities = declareAtom<Addresses['cities']>({}, reduce => [
+  reduce(fetchAddressesDone, (state, { cities }) => cities),
+])
+export const Streets = declareAtom<Addresses['streets']>({}, reduce => [
+  reduce(fetchAddressesDone, (state, { streets }) => streets),
+])
+export const Houses = declareAtom<Addresses['houses']>({}, reduce => [
+  reduce(fetchAddressesDone, (state, { houses }) => houses),
+  reduce(changeHouse, (state, { id, value }) => ({ ...state, [id]: value })),
 ])
 
-export const CompletedTodos = declareAtom<Dictionary<Boolean>>({}, reduce => [
-  reduce(toggleTodo, (state, payload) => ({
-    ...state,
-    [payload]: !state[payload],
-  })),
-])
+const Root = combine([AddressesIdsList, Cities, Streets, Houses])
 
-export const VisibilityFilter = declareAtom<FilterType>('ALL', reduce => [
-  reduce(setVisibilityFilter, (state, payload) => payload),
-])
+export const declareCitiesCell = id => map(Cities, cities => cities[id])
+export const declareStreetsCell = id => map(Streets, streets => streets[id])
+export const declareHousesCell = id => map(Houses, houses => houses[id])
 
-export const TodosContent = map(
-  combine([Todos, VisibilityFilter, CompletedTodos]),
-  ([todos, filter, completed]) =>
-    Object.keys(todos)
-      .filter(
-        key =>
-          ({
-            COMPLETED: !!completed[key],
-            ACTIVE: !completed[key],
-            ALL: true,
-          }[filter]),
-      )
-      .map(key => todos[key]),
-)
-
-export const initializeStore = () => {
-  return createStore(combine([Todos, VisibilityFilter, TodosContent]))
-}
+export const initializeStore = () => createStore(Root)

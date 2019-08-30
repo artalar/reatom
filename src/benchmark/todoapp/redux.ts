@@ -1,76 +1,94 @@
-import { combineReducers, createStore } from 'redux'
+import { Reducer, combineReducers, createStore } from 'redux'
+import { createSelector } from 'reselect'
 
-// @ts-ignore
-export const addTodo = payload => ({
-  type: 'ADD_TODO',
+type ReducerType<R> = R extends Reducer<infer T> ? T : never
+export type Addresses = {
+  ids: string[]
+  cities: Record<string, string>
+  streets: Record<string, string>
+  houses: Record<string, number>
+}
+
+export const fetchAddressesDone = (payload: Addresses) => ({
+  type: 'FETCH_ADDRESSES_DONE' as const,
+  payload,
+})
+// export const changeCite = (payload) =>...
+// export const changeStreet = (payload) =>...
+export const changeHouse = (payload: { id: string; value: number }) => ({
+  type: 'CHANGE_HOUSE' as const,
   payload,
 })
 
-// @ts-ignore
-export const setVisibilityFilter = filter => ({
-  type: 'SET_VISIBILITY_FILTER',
-  payload: { filter },
+type Actions =
+  | ReturnType<typeof fetchAddressesDone>
+  | ReturnType<typeof changeHouse>
+
+export const addressesIdsListReducer = (
+  state: Addresses['ids'] = [],
+  action: Actions,
+): Addresses['ids'] => {
+  if (action.type === 'FETCH_ADDRESSES_DONE') return action.payload.ids
+  return state
+}
+export const citiesReducer = (
+  state: Addresses['cities'] = {},
+  action: Actions,
+): Addresses['cities'] => {
+  if (action.type === 'FETCH_ADDRESSES_DONE') return action.payload.cities
+  return state
+}
+export const streetsReducer = (
+  state: Addresses['streets'] = {},
+  action: Actions,
+): Addresses['streets'] => {
+  if (action.type === 'FETCH_ADDRESSES_DONE') return action.payload.streets
+  return state
+}
+export const housesReducer = (
+  state: Addresses['houses'] = {},
+  action: Actions,
+): Addresses['houses'] => {
+  if (action.type === 'FETCH_ADDRESSES_DONE') return action.payload.houses
+  if (action.type === 'CHANGE_HOUSE')
+    return { ...state, [action.payload.id]: action.payload.value }
+  return state
+}
+
+const root = combineReducers({
+  addressesIdsList: addressesIdsListReducer,
+  cities: citiesReducer,
+  streets: streetsReducer,
+  houses: housesReducer,
 })
 
-// @ts-ignore
-export const toggleTodo = id => ({ type: 'TOGGLE_TODO', payload: { id } })
+type RootState = ReducerType<typeof root>
 
-export const VisibilityFilters = {
-  ALL: 'ALL',
-  COMPLETED: 'COMPLETED',
-  ACTIVE: 'ACTIVE',
-}
-
-// @ts-ignore
-const todos = (state = {}, action) => {
-  switch (action.type) {
-    case 'ADD_TODO':
-      return { ...state, [action.payload.id]: action.payload }
-    default:
-      return state
-  }
-}
-
-// @ts-ignore
-const completedTodos = (state = {}, action) => {
-  switch (action.type) {
-    case 'TOGGLE_TODO':
-      // @ts-ignore
-      return { ...state, [action.payload.id]: !state[action.payload.id] }
-    default:
-      return state
-  }
-}
-
-// @ts-ignore
-const visibilityFilter = (state = VisibilityFilters.ALL, action) => {
-  switch (action.type) {
-    case 'SET_VISIBILITY_FILTER':
-      return action.payload.filter
-    default:
-      return state
-  }
-}
-
-// @ts-ignore
-export const getVisibleTodos = (storeState, filter) =>
-  Object.keys(storeState.todos)
-    .filter(
-      key =>
-        ({
-          [VisibilityFilters.COMPLETED]: !!storeState.completedTodos[key],
-          [VisibilityFilters.ACTIVE]: !storeState.completedTodos[key],
-          [VisibilityFilters.ALL]: true,
-        }[filter]),
-    )
-    .map(key => storeState.todos[key])
-
-export const initializeStore = () =>
-  createStore(
-    combineReducers({
-      // @ts-ignore
-      todos,
-      completedTodos,
-      visibilityFilter,
-    }),
+export const createSelectorCitiesCell = (id, cb: () => any) =>
+  createSelector(
+    createSelector(
+      (state: RootState) => state.cities,
+      value => value[id],
+    ),
+    cb,
   )
+
+export const createSelectorStreetsCell = (id, cb: () => any) =>
+  createSelector(
+    createSelector(
+      (state: RootState) => state.streets,
+      value => value[id],
+    ),
+    cb,
+  )
+
+export const createSelectorHousesCell = (id, cb: () => any) =>
+  createSelector(
+    createSelector(
+      (state: RootState) => state.houses,
+      value => value[id],
+    ),
+    cb,
+  )
+
+export const initializeStore = () => createStore(root)

@@ -5,6 +5,7 @@
     "module": "commonjs",
     "declaration": false,
     "noImplicitAny": false,
-    "allowJs": true
+    "allowJs": true,
+    "noEmit": true,
   }
 }
