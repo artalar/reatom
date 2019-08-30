@@ -1,1 +1,3 @@
-export * from './todoapp'
+import { displayResult } from './lists'
+
+displayResult()

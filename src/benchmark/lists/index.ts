@@ -174,10 +174,12 @@ const displayData = Object.entries(logResult).reduce(
   {},
 )
 
-console.log('\n', 'Average from', ITEMS, 'items;', 100, 'times ')
-console.log(displayData)
+export const displayResult = () => {
+  console.log('\n', 'Average from', ITEMS, 'items;', 100, 'times ')
+  console.log(displayData)
+}
 
-// Average from 100 items; 100 times 
+// Average from 100 items; 100 times
 // { '[redux]  create store:': '0.021ms',
 //   '[redux]  dispatch unknown action [1]:': '0.006ms',
 //   '[redux]  set 100 items:': '0.004ms',
