@@ -1,0 +1,59 @@
+{
+  "name": "@reatom/react",
+  "version": "0.1.0",
+  "description": "React bindings for @reatom/core",
+  "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
+  "repository": "https://github.com/artalar/reatom",
+  "license": "MIT",
+  "source": "src/index.ts",
+  "main": "build/index.js",
+  "umd:main": "build/index.umd.js",
+  "module": "build/index.mjs",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "prepublishOnly": "npm run rebuild && npm run test",
+    "postpublish": "npm run clean",
+    "build": "../../node_modules/.bin/microbundle --external=react,@reatom/core",
+    "clean": "../../node_modules/.bin/rimraf build/",
+    "rebuild": "npm run clean && npm run build",
+    "test": "../../node_modules/.bin/jest",
+    "test:watch": "../../node_modules/.bin/jest --watch",
+    "test:debug": "node --inspect-brk ../../node_modules/.bin/jest --runInBand",
+    "prettify": "../../node_modules/.bin/prettier --write '**/*.ts'",
+    "prettify:watch": "onchange '**/*.(j|t)s' -- prettier --write {{changed}}",
+    "ts-check": "tsc --noEmit",
+    "ts-check:watch": "npm run ts-check -- --watch",
+    "update": "npx npm-check-updates -u"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0",
+    "@reatom/core": "^1.0.0"
+  },
+  "keywords": [
+    "state",
+    "store",
+    "flux",
+    "atom",
+    "reactive",
+    "reactivity",
+    "redux",
+    "effector",
+    "mobx",
+    "state-manager",
+    "state manager",
+    "reatom",
+    "react",
+    "hooks"
+  ],
+  "files": [
+    "/README.md",
+    "/package.json",
+    "/index.ts",
+    "/build"
+  ],
+  "devDependencies": {
+    "react": "^16.8.0",
+    "@reatom/core": "^1.0.0"
+  }
+}
