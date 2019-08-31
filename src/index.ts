@@ -1,94 +1,74 @@
 console.warn('REAtom still work in progress, do not use it in production')
 
-type ActionType = string
-type ActionTypesDictionary = { [key in ActionType]: true }
 type NodeId = string
+
+type ActionType = string
+type ActionTypesDictionary = Record<ActionType, true>
 type Node = {
   id: NodeId
-  domain: string
-  name: string
   actionTypes: ActionTypesDictionary
+  // TODO: try to remove it
   dependencies: DependenciesDictionary
   stackWorker: (ctx: Ctx) => any
 }
-type DependenciesDictionary = { [key in NodeId]: Node }
+type DependenciesDictionary = Record<NodeId, Node>
+type State = Record<string, any>
 
 const NODE = Symbol('@@REAtom/NODE')
-const defaultDomain = 'defaultDomain'
 const assign = Object.assign
 
-let id = 0
-function generateId() {
-  return ++id
-}
 function noop() {}
 
-export type ActionCreator<Input = void, Payload = Input> = {
-  (input: Input): Action<Payload>
+export type ActionCreator<Payload = undefined, Type extends string = string> = {
   getType: () => string
   [NODE]: Node
-}
+} & (Payload extends undefined
+  ? () => Action<Payload, Type>
+  : (payload: Payload) => Action<Payload, Type>)
+
 type Atom<T> = {
-  (state: StateBasic, action: Action<any>): StateBasic
+  (state: State, action: Action<any>): State
   [NODE]: Node
 }
 
-type Unit<T = unknown> = (ActionCreator<any, T>) | (Atom<T>)
+type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
 
 function throwIf(predicate: boolean | any, msg: string) {
   // TODO: add link to docs with full description
   if (predicate) throw new Error(msg)
 }
-
 function safetyStr(str: any, name: string): string {
-  throwIf(typeof str !== 'string' || str.length === 0, `Invalid ${name}`)
+  throwIf(typeof str !== 'string' || str.length === 0, 'Invalid ' + name)
   return str
 }
 function safetyFunc(func: any, name: string): Function {
-  throwIf(typeof func !== 'function', `Invalid ${name}`)
+  throwIf(typeof func !== 'function', 'Invalid ' + name)
   return func
 }
+let id = 0
+function nameToId(name: unknown) {
+  return Array.isArray(name)
+    ? safetyStr(name[0], 'name')
+    : safetyStr(name, 'name') + ' #' + ++id
+}
 
-type StateBasic = { [key in string]: { [key in string]: any } }
 type StackWorker = (ctx: Ctx) => any
 type Stack = StackWorker[]
-type Ctx = {
-  state: StateBasic
+
+class Ctx {
+  state: State
+  stateNew: State
   type: string
   payload: any
   stack: Stack
-  stateNew: StateBasic
-  statePlain: { [key in string]: any }
-  visited: { [key in string]: true }
-  isChanged: boolean
-  write: (node: Node, value: any) => void
-}
-function createCtx(
-  state: StateBasic,
-  { type, payload }: Action<any>,
-  stack: Stack,
-): Ctx {
-  return {
-    state,
-    type,
-    payload,
-    stack,
-    stateNew: {},
-    statePlain: {},
-    visited: {},
-    isChanged: false,
-    write({ domain, name, id }: Node, value: any) {
-      const { stateNew, statePlain } = this
-      this.isChanged = true
-      const domainState = state[domain]
-      let domainStateNew = stateNew[domain]
-      if (domainStateNew === undefined)
-        domainStateNew = stateNew[domain] =
-          domainState === undefined ? {} : assign({}, domainState)
-
-      domainStateNew[name] = value
-      statePlain[id] = value
-    },
+  changedIds: NodeId[]
+  constructor(state: State, { type, payload }: Action<any>, stack: Stack) {
+    this.state = state
+    this.stateNew = {}
+    this.type = type
+    this.payload = payload
+    this.stack = stack
+    this.changedIds = []
   }
 }
 
@@ -97,83 +77,66 @@ export type Action<Payload, Type extends string = string> = {
   payload: Payload
 }
 
-function getIsAction(target: any) {
+function getIsAction(target: any): target is ActionCreator<any> {
   return target && target[NODE] && typeof target.getType === 'function'
 }
 
-export function declareAction<Input = void, Payload = Input>(
-  type: string | [string] = 'action',
-  // @ts-ignore
-  mapper: (input: Input) => Payload = input => input,
-  // FIXME: any
-): ActionCreator<Input, Payload> {
-  type = Array.isArray(type)
-    ? safetyStr(type[0], 'type')
-    : `${safetyStr(type, 'type')} [${generateId()}]`
-
-  safetyFunc(mapper, 'mapper')
+export function declareAction<
+  Payload = undefined,
+  Type extends string = string
+>(name: string | [Type] = 'action'): ActionCreator<Payload, Type> {
+  const id = nameToId(name)
 
   const ACNode: Node = {
-    id: type,
-    domain: type,
-    name: type,
-    actionTypes: { [type]: true as const },
+    id,
+    actionTypes: { [id]: true as const },
     dependencies: {},
     stackWorker: noop,
   }
-  ACNode.dependencies[type] = ACNode
 
-  function actionCreator(
-    payload?: Input,
-  ): {
-    type: string
-    payload: Payload
-  } {
+  function actionCreator(payload?: Payload) {
     return {
-      // @ts-ignore
-      type,
-      // @ts-ignore
-      payload: mapper(payload),
+      type: id,
+      payload,
     }
   }
 
   // @ts-ignore
   actionCreator[NODE] = ACNode
-  actionCreator.getType = () => type
+  actionCreator.getType = () => id
 
   // @ts-ignore
   return actionCreator
 }
 
-// initiate action
-export const actionDefault = declareAction('@@REAtom/default')
-const actionDefaultType = actionDefault.getType()
+// action for set initialState of each atom to global state
+export const actionDefault = declareAction(['@@REAtom/default'])
 
 // @ts-ignore
 export declare function declareAtom<State>(
-  name: string | [string, string],
+  name: string | [string],
   initialState: State,
-  handle: (
+  dependencyMatcher: (
     reduce: <T>(
       dependency: Unit<T>,
-      reducer: (state: State, value: T) => State | undefined,
+      reducer: (state: State, value: T) => State,
     ) => void,
   ) => any,
 ): Atom<State>
 // @ts-ignore
 export declare function declareAtom<State>(
   initialState: State,
-  handle: (
+  dependencyMatcher: (
     reduce: <T>(
       dependency: Unit<T>,
-      reducer: (state: State, value: T) => State | undefined,
+      reducer: (state: State, value: T) => State,
     ) => void,
   ) => any,
 ): Atom<State>
 export function declareAtom<State>(
-  name: string | [string, string],
+  name: string | [string],
   initialState: State,
-  handle: (
+  dependencyMatcher: (
     reduce: <T>(
       dependency: Unit<T>,
       reducer: (state: State, value: T) => State | undefined,
@@ -182,24 +145,14 @@ export function declareAtom<State>(
 ): Atom<State> {
   if (arguments.length === 2) {
     // @ts-ignore
-    handle = initialState
+    dependencyMatcher = initialState
     // @ts-ignore
     initialState = name
     name = 'reducer'
   }
   throwIf(initialState === undefined, "Initial state can't be undefined")
 
-  let atomDomain: string, atomName: string, atomId: string
-
-  if (Array.isArray(name)) {
-    atomDomain = safetyStr(name[0], 'domain')
-    atomName = safetyStr(name[1], 'name')
-    atomId = name.join(' / ')
-  } else {
-    atomDomain = defaultDomain
-    atomName = `${safetyStr(name, 'name')} [${generateId()}]`
-    atomId = [atomDomain, atomName].join(' / ')
-  }
+  const atomId = nameToId(name)
 
   const atomActionTypes: ActionTypesDictionary = {}
   const atomDependencies: DependenciesDictionary = {}
@@ -217,6 +170,7 @@ export function declareAtom<State>(
 
     let depNode!: Node
     throwIf(!dep || !(depNode = dep[NODE]), 'Invalid dependency')
+    safetyFunc(reducer, 'reducer')
 
     const {
       id: depId,
@@ -224,61 +178,72 @@ export function declareAtom<State>(
       dependencies: depDependencies,
       stackWorker: depStackWorker,
     } = depNode
-    // @ts-ignore
+
     const isDepActionCreator = getIsAction(dep)
 
     throwIf(depDependencies[atomId], 'One of dependencies has the equal id')
-    safetyFunc(reducer, 'reducer')
 
     assign(atomActionTypes, depActionTypes)
     assign(atomDependencies, depDependencies)
     atomDependencies[depId] = depNode
 
     function update(ctx: Ctx) {
-      const { statePlain, state, payload, type } = ctx
-      if (isDepActionCreator || statePlain[depId] !== undefined) {
-        const depState = isDepActionCreator ? payload : statePlain[depId]
-        let atomStateOld = statePlain[atomId]
-        if (atomStateOld === undefined)
-          atomStateOld = getState(state, atom as Atom<State>)
+      const { state, stateNew, payload } = ctx
+      const atomStateSnapshot = state[atomId]
+      // first `walk` of lazy (dynamically added by subscription) atom
+      const isAtomLazy = atomStateSnapshot === undefined
+      const atomStatePreviousReducer = stateNew[atomId]
+      // it is mean atom has more than one dependencies
+      // that depended from dispatched action
+      // and one of the atom reducers already processed
+      const hasAtomNewState = atomStatePreviousReducer !== undefined
+      const atomState = hasAtomNewState
+        ? atomStatePreviousReducer
+        : atomStateSnapshot
 
-        const atomState = reducer(atomStateOld, depState)
+      const depStateSnapshot = state[depId]
+      const depStateNew = stateNew[depId]
+      const isDepChanged = depStateNew !== undefined
+      const depState = isDepChanged ? depStateNew : depStateSnapshot
+      const depValue = isDepActionCreator ? payload : depState
 
-        if (atomState !== atomStateOld || type === actionDefaultType)
-          ctx.write(atomNode, atomState)
+      if (isDepActionCreator || isDepChanged || isAtomLazy) {
+        const atomStateNew = reducer(atomState, depValue)
+
+        throwIf(atomStateNew === undefined, "State can't be undefined")
+
+        if (atomStateNew !== atomState) {
+          ctx.stateNew[atomId] = atomStateNew
+          if (!hasAtomNewState) ctx.changedIds.push(atomId)
+        }
       }
     }
 
-    atomStack.push(ctx => {
-      if (depActionTypes[ctx.type]) ctx.stack.push(update, depStackWorker)
-    })
+    atomStack.push(
+      ctx => depActionTypes[ctx.type] && ctx.stack.push(update, depStackWorker),
+    )
   }
 
   reduce(actionDefault, (state = initialState) => state)
-  handle(reduce)
-  initialPhase = false
-
-  atomStack.push((ctx: Ctx) => (ctx.visited[atomId] = true))
+  dependencyMatcher(reduce)
   atomStack.reverse()
+
+  const stackWorker = (ctx: Ctx) =>
+    atomActionTypes[ctx.type] &&
+    ctx.stateNew[atomId] === undefined &&
+    ctx.stack.push(...atomStack)
 
   const atomNode: Node = {
     id: atomId,
-    domain: atomDomain,
-    name: atomName,
     actionTypes: atomActionTypes,
     dependencies: atomDependencies,
-    stackWorker: ctx => {
-      if (atomActionTypes[ctx.type] && !ctx.visited[atomId])
-        ctx.stack.push(...atomStack)
-    },
+    stackWorker,
   }
 
   function atom(state: Ctx['state'], action: { type: string; payload: any }) {
-    const { isChanged, stateNew } = walk(
-      createCtx(state, action, [atomNode.stackWorker]),
-    )
+    const { changedIds, stateNew } = walk(new Ctx(state, action, [stackWorker]))
 
-    return isChanged ? assign({}, state, stateNew) : state
+    return changedIds.length > 0 ? assign({}, state, stateNew) : state
   }
 
   // @ts-ignore
@@ -289,16 +254,15 @@ export function declareAtom<State>(
 }
 
 function getIsAtom(target: any) {
-  return target && target[NODE] && !getIsAction(target)
-}
-
-export function getState<T>(state: StateBasic, atom: Atom<T>): T | undefined {
-  const atomNode = atom[NODE]
-  return (state[atomNode.domain] || {})[atomNode.name]
+  return !getIsAction(target) && target && target[NODE]
 }
 
 export function getNode(target: Unit): Node {
   return target[NODE]
+}
+
+export function getState<T>(state: State, atom: Atom<T>): T | undefined {
+  return state[atom[NODE].id]
 }
 
 function walk(ctx: Ctx) {
@@ -316,7 +280,7 @@ export declare function map<T, _T = unknown>(
 ): Atom<T>
 // @ts-ignore
 export declare function map<T, _T = unknown>(
-  name: string | [string, string],
+  name: string | [string],
   atom: Atom<_T>,
   mapper: (dependedAtomState: _T) => T,
 ): Atom<T>
@@ -325,7 +289,7 @@ export function map(name, target, mapper) {
   if (arguments.length === 2) {
     mapper = target
     target = name
-    name = `${(target[NODE] as Node).name} [map]`
+    name = (target[NODE] as Node).id + ' [map]'
   }
   safetyFunc(mapper, 'mapper')
 
@@ -347,7 +311,7 @@ export declare function combine<
 export declare function combine<
   T extends { [key in string]: Atom<any> } | TupleOfAtoms
 >(
-  name: string | [string, string],
+  name: string | [string],
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine(name: any, shape: any) {
@@ -355,7 +319,7 @@ export function combine(name: any, shape: any) {
   if (arguments.length === 1) {
     // @ts-ignore
     shape = name
-    name = `{ ${(keys = Object.keys(shape)).join()} }`
+    name = '{' + (keys = Object.keys(shape)).join() + '}'
   }
 
   keys = keys! || Object.keys(shape)
@@ -378,7 +342,7 @@ export function combine(name: any, shape: any) {
 declare function storeGetState<TargetAtom extends Atom<any>>(
   target: TargetAtom,
 ): TargetAtom extends Atom<infer S> ? S : never
-declare function storeGetState(): StateBasic
+declare function storeGetState(): State
 
 declare function storeSubscribe<TargetAtom extends Atom<any>>(
   target: TargetAtom,
@@ -407,40 +371,32 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
   const newStack: Stack = []
   let stack: Stack = [atomNode.stackWorker]
 
-  let { stateNew: state, statePlain: initialStatePlain } = walk(
-    createCtx(preloadedState, actionDefault(), [atomNode.stackWorker]),
-  )
-  let stateLastSnapshot = state
-  state = assign({}, preloadedState, state)
+  const initialState = walk(
+    new Ctx(preloadedState, actionDefault(), [atomNode.stackWorker]),
+  ).stateNew
+  // preloadedState needed to save data of lazy atoms
+  const state = assign({}, preloadedState, initialState)
 
   function actualizeState() {
-    if (newStack.length > 0) {
-      const { isChanged, stateNew } = walk(
-        createCtx(state, actionDefault(), newStack),
-      )
-
-      if (isChanged) state = assign({}, state, stateNew)
-    }
+    if (newStack.length > 0)
+      assign(state, walk(new Ctx(state, actionDefault(), newStack)).stateNew)
   }
 
   function incrementDeps(key: string) {
     atomDepsCounters[key] = (atomDepsCounters[key] || 0) + 1
   }
 
-  function decrementDeps({ id, domain, name }: Node) {
+  function decrementDeps(id: NodeId) {
     if (--atomDepsCounters[id] === 0) {
       delete atomDepsCounters[id]
-      if (stateLastSnapshot === state) state = assign({}, state)
-      if (stateLastSnapshot[domain] === state[domain])
-        state[domain] = assign({}, state[domain])
-      delete state[domain][name]
+      delete state[id]
     }
   }
 
   function _getState(target?: Atom<any>) {
     actualizeState()
 
-    if (target === undefined) return state
+    if (target === undefined) return assign({}, state)
 
     throwIf(!getIsAtom(target), 'Invalid target')
 
@@ -449,17 +405,19 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
 
     const targetNode = target[NODE]
 
-    return walk(createCtx(state, actionDefault(), [targetNode.stackWorker]))
-      .statePlain[targetNode.id]
+    return getState(
+      walk(new Ctx(state, actionDefault(), [targetNode.stackWorker])).stateNew,
+      target,
+    )
   }
 
   // @ts-ignore
   function subscribe(...a) {
+    const isSubscriptionToAtom = a.length === 2
+    const listener = safetyFunc(a[+isSubscriptionToAtom], 'listener')
     let isSubscribed = true
-    let listener: Function
 
-    if (a.length === 1) {
-      listener = safetyFunc(a[0], 'listener')
+    if (!isSubscriptionToAtom) {
       listenersActions.push(listener)
       return () => {
         if (isSubscribed) {
@@ -472,12 +430,10 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
     const target = a[0] as Atom<any>
     throwIf(!getIsAtom(target), 'Target is not Atom')
     const targetNode = target[NODE]
-    listener = safetyFunc(a[1], 'listener')
-
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
     const targetDeps = targetNode.dependencies
-    const isLazy = initialStatePlain[targetId] === undefined
+    const isLazy = initialState[targetId] === undefined
 
     if (listenersStore[targetId] === undefined) {
       listenersStore[targetId] = []
@@ -501,8 +457,8 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
         if (isLazy && _listeners.length === 0) {
           delete listenersStore[targetId]
 
-          decrementDeps(targetNode)
-          for (const key in targetDeps) decrementDeps(targetDeps[key])
+          decrementDeps(targetId)
+          for (const key in targetDeps) decrementDeps(targetDeps[key].id)
 
           stack.splice(stack.indexOf(targetStackWorker), 1)
 
@@ -523,15 +479,17 @@ export function createStore(atom: Atom<any>, preloadedState = {}): Store {
 
     actualizeState()
 
-    const { isChanged, stateNew, statePlain } = walk(
-      createCtx(state, action, stack.slice(0)),
+    const { changedIds, stateNew } = walk(
+      new Ctx(state, action, stack.slice(0)),
     )
 
-    if (isChanged) {
-      stateLastSnapshot = state = assign({}, state, stateNew)
+    if (changedIds.length > 0) {
+      assign(state, stateNew)
 
-      for (const key in statePlain)
-        callFromList(listenersStore[key] || [], statePlain[key])
+      for (let i = 0; i < changedIds.length; i++) {
+        const id = changedIds[i]
+        callFromList(listenersStore[id] || [], stateNew[id])
+      }
     }
 
     callFromList(listenersActions, action)

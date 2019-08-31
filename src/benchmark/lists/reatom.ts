@@ -1,11 +1,9 @@
-import {
-  declareAtom,
-  declareAction,
-  createStore,
-  map,
-  combine,
-  // TODO: build
-} from '../../../src'
+import * as reatomSource from '../../../src/index'
+import * as reatomBuild from '../../../build'
+
+const reatom = reatomBuild as typeof reatomSource
+
+const { declareAtom, declareAction, createStore, map, combine } = reatom
 
 export type Addresses = {
   ids: string[]
@@ -38,8 +36,11 @@ export const Houses = declareAtom<Addresses['houses']>({}, reduce => [
 
 const Root = combine([AddressesIdsList, Cities, Streets, Houses])
 
-export const declareCitiesCell = id => map(Cities, cities => cities[id])
-export const declareStreetsCell = id => map(Streets, streets => streets[id])
-export const declareHousesCell = id => map(Houses, houses => houses[id])
+export const declareCitiesCell = (id: string) =>
+  map(Cities, cities => cities[id])
+export const declareStreetsCell = (id: string) =>
+  map(Streets, streets => streets[id])
+export const declareHousesCell = (id: string) =>
+  map(Houses, houses => houses[id])
 
 export const initializeStore = () => createStore(Root)

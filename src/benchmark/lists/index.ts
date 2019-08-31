@@ -5,6 +5,7 @@ import * as RE from './redux'
 const ITEMS = 100
 const logResult: Record<string, number[]> = {}
 
+function noop() {}
 function repeat(fn: (index: number) => void, times = ITEMS) {
   for (let i = 0; i < times; i++) fn(i)
 }
@@ -27,32 +28,32 @@ const suites = [
     initializeStore: RE.initializeStore,
     fetchAddressesDone: RE.fetchAddressesDone,
     subscribe(store, id, logList: number[]) {
-      let isFirstCallSkippedCitiesCell = false
-      const selectorCitiesCell = RE.createSelectorCitiesCell(id, () => {
-        if (isFirstCallSkippedCitiesCell) {
-          logList.push(Math.random())
-        } else isFirstCallSkippedCitiesCell = true
-        return 0
-      })
+      let citiesCellCallback = noop
+      const selectorCitiesCell = RE.createSelectorCitiesCell(id, () =>
+        citiesCellCallback(),
+      )
       store.subscribe(() => selectorCitiesCell(store.getState()))
+      // fill the cache
+      selectorCitiesCell(store.getState())
+      citiesCellCallback = () => logList.push(Math.random())
 
-      let isFirstCallSkippedStreetsCell = false
-      const selectorStreetsCell = RE.createSelectorStreetsCell(id, () => {
-        if (isFirstCallSkippedStreetsCell) {
-          logList.push(Math.random())
-        } else isFirstCallSkippedStreetsCell = true
-        return 0
-      })
+      let streetsCellCallback = noop
+      const selectorStreetsCell = RE.createSelectorStreetsCell(id, () =>
+        streetsCellCallback(),
+      )
       store.subscribe(() => selectorStreetsCell(store.getState()))
+      // fill the cache
+      selectorStreetsCell(store.getState())
+      streetsCellCallback = () => logList.push(Math.random())
 
-      let isFirstCallSkippedHousesCell = false
-      const selectorHousesCell = RE.createSelectorHousesCell(id, () => {
-        if (isFirstCallSkippedHousesCell) {
-          logList.push(Math.random())
-        } else isFirstCallSkippedHousesCell = true
-        return 0
-      })
+      let housesCellCallback = noop
+      const selectorHousesCell = RE.createSelectorHousesCell(id, () =>
+        housesCellCallback(),
+      )
       store.subscribe(() => selectorHousesCell(store.getState()))
+      // fill the cache
+      selectorHousesCell(store.getState())
+      housesCellCallback = () => logList.push(Math.random())
     },
     changeHouse: RE.changeHouse,
   },
@@ -183,24 +184,50 @@ export const displayResult = () => {
 // { '[redux]  create store:': '0.021ms',
 //   '[redux]  dispatch unknown action [1]:': '0.006ms',
 //   '[redux]  set 100 items:': '0.004ms',
-//   '[redux]  subscribe to 150 items [1]:': '0.242ms',
-//   '[redux]  dispatch unknown action [2]:': '0.147ms',
-//   '[redux]  dispatch unknown action [3]:': '0.020ms',
-//   '[redux]  change one item [1]:': '0.105ms',
-//   '[redux]  subscribe to 150 items [2]:': '0.240ms',
-//   '[redux]  dispatch unknown action [4]:': '0.173ms',
+//   '[redux]  subscribe to 150 items [1]:': '0.384ms',
+//   '[redux]  dispatch unknown action [2]:': '0.027ms',
+//   '[redux]  dispatch unknown action [3]:': '0.017ms',
+//   '[redux]  change one item [1]:': '0.120ms',
+//   '[redux]  subscribe to 150 items [2]:': '0.356ms',
+//   '[redux]  dispatch unknown action [4]:': '0.040ms',
 //   '[redux]  dispatch unknown action [5]:': '0.030ms',
-//   '[redux]  change one item [2]:': '0.263ms',
-//   '[redux]  change step by step 100 items:': '25.564ms',
-//   '[reatom] create store:': '0.065ms',
-//   '[reatom] dispatch unknown action [1]:': '0.004ms',
-//   '[reatom] set 100 items:': '0.023ms',
-//   '[reatom] subscribe to 150 items [1]:': '1.026ms',
-//   '[reatom] dispatch unknown action [2]:': '0.742ms',
-//   '[reatom] dispatch unknown action [3]:': '0.016ms',
-//   '[reatom] change one item [1]:': '0.266ms',
-//   '[reatom] subscribe to 150 items [2]:': '0.980ms',
-//   '[reatom] dispatch unknown action [4]:': '0.832ms',
-//   '[reatom] dispatch unknown action [5]:': '0.036ms',
-//   '[reatom] change one item [2]:': '0.424ms',
-//   '[reatom] change step by step 100 items:': '41.185ms',
+//   '[redux]  change one item [2]:': '0.205ms',
+//   '[redux]  change step by step 100 items:': '23.804ms',
+//   '[reatom] create store:': '0.042ms',
+//   '[reatom] dispatch unknown action [1]:': '0.003ms',
+//   '[reatom] set 100 items:': '0.011ms',
+//   '[reatom] subscribe to 150 items [1]:': '0.646ms',
+//   '[reatom] dispatch unknown action [2]:': '0.578ms',
+//   '[reatom] dispatch unknown action [3]:': '0.014ms',
+//   '[reatom] change one item [1]:': '0.102ms',
+//   '[reatom] subscribe to 150 items [2]:': '0.597ms',
+//   '[reatom] dispatch unknown action [4]:': '0.575ms',
+//   '[reatom] dispatch unknown action [5]:': '0.020ms',
+//   '[reatom] change one item [2]:': '0.146ms',
+//   '[reatom] change step by step 100 items:': '21.522ms',
+
+// Average from 300 items; 100 times
+// { '[redux]  create store:': '0.028ms',
+//   '[redux]  dispatch unknown action [1]:': '0.005ms',
+//   '[redux]  set 300 items:': '0.003ms',
+//   '[redux]  subscribe to 450 items [1]:': '1.050ms',
+//   '[redux]  dispatch unknown action [2]:': '0.068ms',
+//   '[redux]  dispatch unknown action [3]:': '0.056ms',
+//   '[redux]  change one item [1]:': '0.503ms',
+//   '[redux]  subscribe to 450 items [2]:': '1.075ms',
+//   '[redux]  dispatch unknown action [4]:': '0.172ms',
+//   '[redux]  dispatch unknown action [5]:': '0.072ms',
+//   '[redux]  change one item [2]:': '0.869ms',
+//   '[redux]  change step by step 300 items:': '257.943ms',
+//   '[reatom] create store:': '0.061ms',
+//   '[reatom] dispatch unknown action [1]:': '0.003ms',
+//   '[reatom] set 300 items:': '0.018ms',
+//   '[reatom] subscribe to 450 items [1]:': '2.057ms',
+//   '[reatom] dispatch unknown action [2]:': '1.567ms',
+//   '[reatom] dispatch unknown action [3]:': '0.041ms',
+//   '[reatom] change one item [1]:': '0.379ms',
+//   '[reatom] subscribe to 450 items [2]:': '1.741ms',
+//   '[reatom] dispatch unknown action [4]:': '1.742ms',
+//   '[reatom] dispatch unknown action [5]:': '0.107ms',
+//   '[reatom] change one item [2]:': '0.558ms',
+//   '[reatom] change step by step 300 items:': '154.580ms',
