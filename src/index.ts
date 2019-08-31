@@ -112,6 +112,9 @@ export function declareAction<
 // action for set initialState of each atom to global state
 export const actionDefault = declareAction(['@@REAtom/default'])
 
+// for create nullable store
+const defaultAtom = declareAtom(0, () => 0)
+
 // @ts-ignore
 export declare function declareAtom<State>(
   name: string | [string],
@@ -360,10 +363,10 @@ export type Store = {
 // TODO: try to use ES6 Map's instead of plain object
 // for prevent using `delete` operator
 // (need perf tests)
-export function createStore(atom: Atom<any>, preloadedState = {}): Store {
+export function createStore(atom: Atom<any> | null, preloadedState = {}): Store {
   const listenersStore = {} as { [key in string]: Function[] }
   const listenersActions: Function[] = []
-  const atomNode = atom[NODE]
+  const atomNode = getNode(atom || defaultAtom)
   const atomDeps = atomNode.dependencies
   const atomDepsCounters: { [key in string]: number } = {}
   for (const id in atomDeps) atomDepsCounters[id] = 1

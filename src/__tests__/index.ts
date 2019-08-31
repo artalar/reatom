@@ -273,7 +273,6 @@ describe('reatom', () => {
     })
     test('createStore lazy resubscribes', () => {
       const storeSubscriber = jest.fn()
-      const countDoubledSubscriber = jest.fn()
       const increment = declareAction()
 
       const count = declareAtom('count', 0, handle =>
@@ -304,6 +303,22 @@ describe('reatom', () => {
       store.dispatch(increment())
       expect(store.getState(count)).toBe(4)
       expect(store.getState().countDoubled).toBe(8)
+    })
+    test('createStore with nullable atom', () => {
+      const increment = declareAction()
+      const countStatic = declareAtom(['countStatic'], 0, handle =>
+        handle(increment, state => state + 1),
+      )
+
+      const store = createStore(null, { countStatic: 10 })
+      store.dispatch(increment())
+
+      expect(store.getState(countStatic)).toBe(10)
+
+      store.subscribe(countStatic, () => {})
+      store.dispatch(increment())
+
+      expect(store.getState(countStatic)).toBe(11)
     })
     test('createStore preloaded state', () => {
       const increment = declareAction()
