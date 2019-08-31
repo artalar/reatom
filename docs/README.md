@@ -1,4 +1,4 @@
-<div align="center"><img src="logo.svg" alt="reatom logo" align="center"></div>
+<div align="center"><img src="logos/logo.png" alt="reatom logo" align="center"></div>
 
 
 ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
