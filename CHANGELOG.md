@@ -1,3 +1,7 @@
+## 1.0.0-rc6
+
+Rewrite core, remove domains as unnecessary (now).
+
 ## 1.0.0
 
 `flaxom` -> `reatom`

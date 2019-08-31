@@ -195,6 +195,7 @@ describe('redux-reatom', () => {
     let storeRedux
     let unsubscribersRedux
     let storeReatom
+    let reatomRootAtom
     let unsubscribersReatom
     let storeEffector
     let unsubscribersEffector
@@ -319,7 +320,7 @@ describe('redux-reatom', () => {
       const start = performance.now()
 
       storeReatom = createStore(
-        combine(['_', 'root'], {
+        (reatomRootAtom = combine({
           '1': reatomAtomCombineFabric('1'),
           '2': reatomAtomCombineFabric('2'),
           '3': reatomAtomCombineFabric('3'),
@@ -341,12 +342,14 @@ describe('redux-reatom', () => {
             '8': reatomAtomCombineFabric('8'),
             '9': reatomAtomCombineFabric('9'),
           }),
-        }),
+        })),
       )
 
       log('createStore', '[reatom]', (performance.now() - start).toFixed(3))
 
-      expect(storeRedux.getState()).toEqual(storeReatom.getState()._.root)
+      expect(storeRedux.getState()).toEqual(
+        storeReatom.getState(reatomRootAtom),
+      )
     })
 
     test('createStore [effector]', () => {
@@ -378,7 +381,9 @@ describe('redux-reatom', () => {
 
       log('createStore', '[effector]', (performance.now() - start).toFixed(3))
 
-      expect(storeReatom.getState()._.root).toEqual(storeEffector.getState())
+      expect(storeReatom.getState(reatomRootAtom)).toEqual(
+        storeEffector.getState(),
+      )
     })
 
     test('dispatch without subscribers (init) [redux]', () => {
