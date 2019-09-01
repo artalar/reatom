@@ -26,7 +26,7 @@ export type ActionCreator<Payload = undefined, Type extends string = string> = {
   ? () => Action<Payload, Type>
   : (payload: Payload) => Action<Payload, Type>)
 
-type Atom<T> = {
+export type Atom<T> = {
   (state: State, action: Action<any>): State
   [NODE]: Node
 }
