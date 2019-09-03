@@ -67,4 +67,4 @@ typings/
 .DS_Store
 dist/
 .cache/
-/build/
+build/
