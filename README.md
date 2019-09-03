@@ -1,5 +1,6 @@
-<div align="center"><br/><img src="docs/logos/logo.png" alt="reatom logo" align="center"><br/><br/></div>
+# REAtom
 
+<div align="center"><br/><img src="docs/logos/logo.png" alt="reatom logo" align="center"><br/><br/></div>
 
 ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
 
@@ -16,8 +17,8 @@ ReAtom is **declarative** and **reactive** state manager, designed for both simp
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
 - ❗️ **static typed**: best type inference
 - ⚡ **performance**: light tiny updates in huge state
-- 📦 **modular**: reusable instances (SSR)
 - 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=@reatom/core) gzipped
+- 📦 **modular**: reusable instances (SSR)
 - 🧪 **testing**: simple mocking
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
@@ -69,8 +70,10 @@ Guiding principles of state manager:
   - difficult [store] instance reusability (for example, concurrences problems with SSR)
     > It can be solved, but better way solve it by design of library architecture and API
 - Asynchronous and probably cyclic dependencies specification
-- The [weight](https://bundlephobia.com/result?p=effector@20.1.2) can be smaller but it does not
+- The [weight](https://bundlephobia.com/result?p=effector@20.1.2) can be smaller
+  > The part of API is treeshakable
 - [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90)
+- Effector's stores is not lazy: if store haven't subscribers it will recalculate at each depended update anyway.
 
 ### Why not [MobX](https://github.com/mobxjs/mobx)
 
