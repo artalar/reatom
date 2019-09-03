@@ -4,7 +4,7 @@ import React from 'react'
 import { act } from 'react-dom/test-utils'
 import { render, fireEvent } from '@testing-library/react'
 import { createStore, declareAtom } from 'reatom'
-import { Root, context } from './root'
+import { Root, context } from './Root'
 import { $isAuth } from './features/auth/index'
 import {
   VISIBILITY_FILTERS,

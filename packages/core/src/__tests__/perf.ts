@@ -11,8 +11,9 @@ import {
   combine,
   createStore,
   // replace('es', 'src') // for develop
-} from '../../src/index'
+} from '../index'
 
+// @ts-ignore
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
   // // use with `tools/showPerfResults.js`

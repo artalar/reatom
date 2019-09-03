@@ -1,3 +1,8 @@
+<div align="center">
+<br/>
+<img src="../../docs/logos/logo.png" alt="reatom logo" align="center">
+</div>
+
 # @reatom/react
 
 Package for bindings [ReAtom](https://github.com/artalar/reatom) store with React
@@ -7,6 +12,11 @@ Package for bindings [ReAtom](https://github.com/artalar/reatom) store with Reac
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
+
+> ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
+
+
+> **IMPORTANT!** Current state is **Work In Progress**. We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
 
 ## Install
 

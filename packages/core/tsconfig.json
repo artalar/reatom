@@ -4,5 +4,5 @@
     "moduleResolution": "node",
     "rootDir": "./src",
   },
-  "exclude": ["./src/__tests__"]
+  "exclude": ["./src/benchmark", "./src/__tests__"]
 }

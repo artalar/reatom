@@ -9,7 +9,7 @@ import {
   getNode,
 } from '../index'
 
-describe('reatom', () => {
+describe('@reatom/core', () => {
   describe('main api', () => {
     test('declareAction', () => {
       expect(typeof declareAction() === 'function').toBe(true)

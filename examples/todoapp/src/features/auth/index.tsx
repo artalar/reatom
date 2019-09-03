@@ -1,5 +1,5 @@
 import React from 'react'
-import { declareAction, declareAtom } from 'reatom'
+import { declareAction, declareAtom } from '@reatom/core'
 
 import { useAtom, useDispatch } from '../../shared'
 
