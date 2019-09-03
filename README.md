@@ -1,16 +1,20 @@
-# REAtom
-
-<div align="center"><br/><img src="docs/logos/logo.png" alt="reatom logo" align="center"><br/><br/></div>
-
-ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
-
-> **IMPORTANT!** Current state is **Work In Progress**.
-> We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
+<div align="center">
+<br/>
+<img src="docs/logos/logo.png" alt="reatom logo" align="center">
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
+
+<br>
+<br>
+</div>
+
+ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
+
+> **IMPORTANT!** Current state is **Work In Progress**.
+> We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
 
 ## Goals and features
 
