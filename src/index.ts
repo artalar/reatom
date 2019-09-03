@@ -35,7 +35,7 @@ type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
 
 function throwIf(predicate: boolean | any, msg: string) {
   // TODO: add link to docs with full description
-  if (predicate) throw new Error(msg)
+  if (predicate) throw new Error('[reatom] ' + msg)
 }
 function safetyStr(str: any, name: string): string {
   throwIf(typeof str !== 'string' || str.length === 0, 'Invalid ' + name)
@@ -151,16 +151,21 @@ export function declareAtom<State>(
     dependencyMatcher = initialState
     // @ts-ignore
     initialState = name
-    name = 'reducer'
+    name = 'atom'
   }
 
   const atomId = nameToId(name)
 
-  throwIf(initialState === undefined, "Atom \"" + atomId + "\". Initial state can't be undefined")
+  throwIf(
+    initialState === undefined,
+    'Atom "' + atomId + '". Initial state can\'t be undefined',
+  )
 
   const atomActionTypes: ActionTypesDictionary = {}
   const atomDependencies: DependenciesDictionary = {}
   const atomStack: Stack = []
+  // start from `0` for missing `actionDefault`
+  let dependencePosition = 0
   let initialPhase = true
 
   function reduce<T>(
@@ -172,6 +177,7 @@ export function declareAtom<State>(
       "Can't define dependencies after atom initialization",
     )
 
+    const position = dependencePosition++
     let depNode!: Node
     throwIf(!dep || !(depNode = dep[NODE]), 'Invalid dependency')
     safetyFunc(reducer, 'reducer')
@@ -214,7 +220,16 @@ export function declareAtom<State>(
       if (isDepActionCreator || isDepChanged || isAtomLazy) {
         const atomStateNew = reducer(atomState, depValue)
 
-        throwIf(atomStateNew === undefined, "Atom \"" + atomId + "\". State can't be undefined")
+        throwIf(
+          atomStateNew === undefined,
+          'Invalid state. Reducer №' +
+            position +
+            ' in ' +
+            '"' +
+            atomId +
+            '"' +
+            ' atom returns undefined',
+        )
 
         if (atomStateNew !== atomState) {
           ctx.stateNew[atomId] = atomStateNew
@@ -364,7 +379,10 @@ export type Store = {
 // TODO: try to use ES6 Map's instead of plain object
 // for prevent using `delete` operator
 // (need perf tests)
-export function createStore(atom: Atom<any> | null, preloadedState = {}): Store {
+export function createStore(
+  atom: Atom<any> | null,
+  preloadedState = {},
+): Store {
   const listenersStore = {} as { [key in string]: Function[] }
   const listenersActions: Function[] = []
   const atomNode = getNode(atom || defaultAtom)
