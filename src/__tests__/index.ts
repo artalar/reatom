@@ -71,6 +71,20 @@ describe('reatom', () => {
         [getNode(atomRoot).id]: ['_1', '_2'],
       })
     })
+    test('throw error if declareAtom called with undefined initial state', () => {
+      const run = () => declareAtom(['test'], undefined, reduce => [])
+
+      expect(run).toThrowError(`Atom "test". Initial state can't be undefined`)
+    })
+    test('throw error if atom produced undefined value', () => {
+      const action = declareAction()
+      const testAtom = declareAtom<any>(['test'], {}, reduce => [
+        reduce(action, () => undefined)
+      ])
+      const run = () => testAtom({}, action())
+
+      expect(run).toThrowError(`Atom "test". State can't be undefined`)
+    })
     test('createStore', () => {
       const increment = declareAction('increment')
       const toggle = declareAction()

@@ -153,9 +153,10 @@ export function declareAtom<State>(
     initialState = name
     name = 'reducer'
   }
-  throwIf(initialState === undefined, "Initial state can't be undefined")
 
   const atomId = nameToId(name)
+
+  throwIf(initialState === undefined, "Atom \"" + atomId + "\". Initial state can't be undefined")
 
   const atomActionTypes: ActionTypesDictionary = {}
   const atomDependencies: DependenciesDictionary = {}
@@ -213,7 +214,7 @@ export function declareAtom<State>(
       if (isDepActionCreator || isDepChanged || isAtomLazy) {
         const atomStateNew = reducer(atomState, depValue)
 
-        throwIf(atomStateNew === undefined, "State can't be undefined")
+        throwIf(atomStateNew === undefined, "Atom \"" + atomId + "\". State can't be undefined")
 
         if (atomStateNew !== atomState) {
           ctx.stateNew[atomId] = atomStateNew
