@@ -1,14 +1,14 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "1.0.0-rc8",
+  "version": "1.0.0-rc9",
   "description": "State manager with a focus of all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
   "umd:main": "build/index.umd.js",
   "module": "build/index.mjs",
   "unpkg": "build/index.umd.js",
-  "types": "build/src/index.d.ts",
+  "types": "build/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "postpublish": "npm run clean",
@@ -85,6 +85,8 @@
   },
   "homepage": "https://artalar.github.io/reatom",
   "keywords": [
+    "reatom",
+    "@reatom",
     "state",
     "store",
     "flux",
@@ -95,8 +97,7 @@
     "effector",
     "mobx",
     "state-manager",
-    "state manager",
-    "reatom"
+    "state manager"
   ],
   "files": [
     "/README.md",
