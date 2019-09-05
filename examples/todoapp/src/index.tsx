@@ -2,9 +2,9 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { createStore, declareAtom } from 'reatom'
+import { createStore, declareAtom } from '@reatom/core'
 
-import { Root, context } from './root'
+import { Root, context } from './Root'
 
 const { Provider } = context
 const store = createStore(

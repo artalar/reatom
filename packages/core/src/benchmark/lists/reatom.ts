@@ -1,7 +1,4 @@
-import * as reatomSource from '../../../src/index'
-import * as reatomBuild from '../../../build'
-
-const reatom = reatomBuild as typeof reatomSource
+import * as reatom from '../../../build'
 
 const { declareAtom, declareAction, createStore, map, combine } = reatom
 

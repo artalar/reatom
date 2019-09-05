@@ -3,7 +3,7 @@ import {
   declareAtom as _declareAtom,
   map as _map,
   combine as _combine,
-} from 'reatom'
+} from '@reatom/core'
 
 export { declareAction }
 
