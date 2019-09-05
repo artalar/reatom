@@ -21,8 +21,8 @@
     "bench": "npm run rebuild && npm run bench:now && npm run clean",
     "bench:now": "ts-node -P src/benchmark/tsconfig.json src/benchmark",
     "show-perf": "node ./tools/showPerfResults",
-    "prettify": "prettier --write '**/*.(j|t)s'",
-    "prettify:watch": "onchange '**/*.(j|t)s' -- prettier --write {{changed}}",
+    "prettify": "prettier --write '**/*.{j,t}s'",
+    "prettify:watch": "onchange '**/*.{j,t}s' -- prettier --write {{changed}}",
     "ts-check": "tsc --noEmit",
     "ts-check:watch": "npm run ts-check -- --watch",
     "update": "npx npm-check-updates -u"
