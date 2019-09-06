@@ -16,6 +16,7 @@ export const changeHouse = declareAction<{
   id: string
   value: number
 }>()
+export const changeInput = declareAction<string>()
 
 export const AddressesIdsList = declareAtom<Addresses['ids']>([], reduce => [
   reduce(fetchAddressesDone, (state, { ids }) => ids),
@@ -30,8 +31,11 @@ export const Houses = declareAtom<Addresses['houses']>({}, reduce => [
   reduce(fetchAddressesDone, (state, { houses }) => houses),
   reduce(changeHouse, (state, { id, value }) => ({ ...state, [id]: value })),
 ])
+export const Input = declareAtom('', reduce => [
+  reduce(changeInput, (state, input) => input),
+])
 
-const Root = combine([AddressesIdsList, Cities, Streets, Houses])
+const Root = combine([AddressesIdsList, Cities, Streets, Houses, Input])
 
 export const declareCitiesCell = (id: string) =>
   map(Cities, cities => cities[id])

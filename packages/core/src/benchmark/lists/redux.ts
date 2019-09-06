@@ -19,10 +19,15 @@ export const changeHouse = (payload: { id: string; value: number }) => ({
   type: 'CHANGE_HOUSE' as const,
   payload,
 })
+export const changeInput = (payload: string) => ({
+  type: 'CHANGE_INPUT' as const,
+  payload,
+})
 
 type Actions =
   | ReturnType<typeof fetchAddressesDone>
   | ReturnType<typeof changeHouse>
+  | ReturnType<typeof changeInput>
 
 export const addressesIdsListReducer = (
   state: Addresses['ids'] = [],
@@ -54,12 +59,20 @@ export const housesReducer = (
     return { ...state, [action.payload.id]: action.payload.value }
   return state
 }
+export const inputReducer = (
+  state = '',
+  action: Actions,
+): string => {
+  if (action.type === 'CHANGE_INPUT') return action.payload
+  return state
+}
 
 const root = combineReducers({
   addressesIdsList: addressesIdsListReducer,
   cities: citiesReducer,
   streets: streetsReducer,
   houses: housesReducer,
+  input: inputReducer,
 })
 
 type RootState = ReducerType<typeof root>
@@ -88,6 +101,11 @@ export const createSelectorHousesCell = (id, cb: () => any) =>
       (state: RootState) => state.houses,
       value => value[id],
     ),
+    cb,
+  )
+export const createSelectorInput = (cb: () => any) =>
+  createSelector(
+    (state: RootState) => state.input,
     cb,
   )
 
