@@ -1,23 +1,19 @@
 console.warn('REAtom still work in progress, do not use it in production')
 
-type NodeId = string
-
-type ActionType = string
-type ActionTypesDictionary = Record<ActionType, true>
+type Dictionary<T> = { [key: string]: T }
 type Node = {
-  id: NodeId
-  actionTypes: ActionTypesDictionary
+  id: string
+  actionTypes: Dictionary<true>
   // TODO: try to remove it
-  dependencies: DependenciesDictionary
+  dependencies: Dictionary<Node>
   stackWorker: (ctx: Ctx) => any
 }
-type DependenciesDictionary = Record<NodeId, Node>
-type State = Record<string, any>
+type State = Dictionary<any>
 
 const NODE = Symbol('@@REAtom/NODE')
 const assign = Object.assign
 
-function noop() {}
+function noop() { }
 
 export type ActionCreator<Payload = undefined, Type extends string = string> = {
   getType: () => string
@@ -31,7 +27,7 @@ export type Atom<T> = {
   [NODE]: Node
 }
 
-type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
+type Unit<T = unknown> = ActionCreator<T> | Atom<T>
 
 function throwIf(predicate: boolean | any, msg: string) {
   // TODO: add link to docs with full description
@@ -61,7 +57,7 @@ class Ctx {
   type: string
   payload: any
   stack: Stack
-  changedIds: NodeId[]
+  changedIds: string[]
   constructor(state: State, { type, payload }: Action<any>, stack: Stack) {
     this.state = state
     this.stateNew = {}
@@ -89,7 +85,7 @@ export function declareAction<
 
   const ACNode: Node = {
     id,
-    actionTypes: { [id]: true as const },
+    actionTypes: { [id]: true },
     dependencies: {},
     stackWorker: noop,
   }
@@ -142,7 +138,7 @@ export function declareAtom<State>(
   dependencyMatcher: (
     reduce: <T>(
       dependency: Unit<T>,
-      reducer: (state: State, value: T) => State | undefined,
+      reducer: (state: State, value: T) => State,
     ) => void,
   ) => any,
 ): Atom<State> {
@@ -161,8 +157,8 @@ export function declareAtom<State>(
     'Atom "' + atomId + '". Initial state can\'t be undefined',
   )
 
-  const atomActionTypes: ActionTypesDictionary = {}
-  const atomDependencies: DependenciesDictionary = {}
+  const atomActionTypes: Dictionary<true> = {}
+  const atomDependencies: Dictionary<Node> = {}
   const atomStack: Stack = []
   // start from `0` for missing `actionDefault`
   let dependencePosition = 0
@@ -170,7 +166,7 @@ export function declareAtom<State>(
 
   function reduce<T>(
     dep: Unit<T>,
-    reducer: (state: State, payload: T) => State | undefined,
+    reducer: (state: State, payload: T) => State,
   ) {
     throwIf(
       !initialPhase,
@@ -223,12 +219,12 @@ export function declareAtom<State>(
         throwIf(
           atomStateNew === undefined,
           'Invalid state. Reducer №' +
-            position +
-            ' in ' +
-            '"' +
-            atomId +
-            '"' +
-            ' atom returns undefined',
+          position +
+          ' in ' +
+          '"' +
+          atomId +
+          '"' +
+          ' atom returns undefined',
         )
 
         if (atomStateNew !== atomState) {
@@ -259,7 +255,7 @@ export function declareAtom<State>(
     stackWorker,
   }
 
-  function atom(state: Ctx['state'], action: { type: string; payload: any }) {
+  function atom(state: State, action: { type: string; payload: any }) {
     const { changedIds, stateNew } = walk(new Ctx(state, action, [stackWorker]))
 
     return changedIds.length > 0 ? assign({}, state, stateNew) : state
@@ -322,13 +318,13 @@ export function map(name, target, mapper) {
 
 // @ts-ignore
 export declare function combine<
-  T extends { [key in string]: Atom<any> } | TupleOfAtoms
+  T extends Dictionary<Atom<any>> | TupleOfAtoms
 >(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 // @ts-ignore
 export declare function combine<
-  T extends { [key in string]: Atom<any> } | TupleOfAtoms
+  T extends Dictionary<Atom<any>> | TupleOfAtoms
 >(
   name: string | [string],
   shape: T,
@@ -380,14 +376,14 @@ export type Store = {
 // for prevent using `delete` operator
 // (need perf tests)
 export function createStore(
-  atom: Atom<any> | null,
+  atom?: Atom<any>,
   preloadedState = {},
 ): Store {
-  const listenersStore = {} as { [key in string]: Function[] }
+  const listenersStore = {} as Dictionary<Function[]>
   const listenersActions: Function[] = []
   const atomNode = getNode(atom || defaultAtom)
   const atomDeps = atomNode.dependencies
-  const atomDepsCounters: { [key in string]: number } = {}
+  const atomDepsCounters: Dictionary<number> = {}
   for (const id in atomDeps) atomDepsCounters[id] = 1
 
   const newStack: Stack = []
@@ -408,7 +404,7 @@ export function createStore(
     atomDepsCounters[key] = (atomDepsCounters[key] || 0) + 1
   }
 
-  function decrementDeps(id: NodeId) {
+  function decrementDeps(id: string) {
     if (--atomDepsCounters[id] === 0) {
       delete atomDepsCounters[id]
       delete state[id]
@@ -494,8 +490,8 @@ export function createStore(
   function dispatch(action: Action<any>) {
     throwIf(
       typeof action !== 'object' ||
-        action === null ||
-        typeof action.type !== 'string',
+      action === null ||
+      typeof action.type !== 'string',
       'Invalid action',
     )
 
@@ -526,19 +522,19 @@ function callFromList(list: Function[], arg: any, i = -1) {
 
 // prettier-ignore
 type TupleOfAtoms =
-  [Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>] 
-| [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  [Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
