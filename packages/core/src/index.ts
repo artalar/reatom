@@ -20,12 +20,12 @@ const assign = Object.assign
 
 function noop() { }
 
-export type ActionCreator<Payload = undefined, Type extends string = string> = {
+export type ActionCreator<TPayload = undefined, TType extends string = string> = {
   getType: () => string
   [NODE]: Node
-} & (Payload extends undefined
-  ? () => Action<Payload, Type>
-  : (payload: Payload) => Action<Payload, Type>)
+} & (TPayload extends undefined
+  ? () => Action<TPayload, TType>
+  : (payload: TPayload) => Action<TPayload, TType>)
 
 export type Atom<T> = {
   (state: State, action: Action<any>): State
@@ -73,9 +73,9 @@ class Ctx {
   }
 }
 
-export type Action<Payload, Type extends string = string> = {
-  type: Type
-  payload: Payload
+export type Action<TPayload, TType extends string = string> = {
+  type: TType
+  payload: TPayload
 }
 
 function getIsAction(target: any): target is ActionCreator<any> {
@@ -83,9 +83,9 @@ function getIsAction(target: any): target is ActionCreator<any> {
 }
 
 export function declareAction<
-  Payload = undefined,
-  Type extends string = string
->(name: string | [Type] = 'action'): ActionCreator<Payload, Type> {
+  TPayload = undefined,
+  TType extends string = string
+>(name: string | [TType] = 'action'): ActionCreator<TPayload, TType> {
   const id = nameToId(name)
 
   const ACNode: Node = {
@@ -95,7 +95,7 @@ export function declareAction<
     stackWorker: noop,
   }
 
-  function actionCreator(payload?: Payload) {
+  function actionCreator(payload?: TPayload) {
     return {
       type: id,
       payload,
@@ -350,14 +350,14 @@ export function combine(name: any, shape: any) {
   )
 }
 
-declare function storeGetState<TargetAtom extends Atom<any>>(
-  target: TargetAtom,
-): TargetAtom extends Atom<infer S> ? S : never
+declare function storeGetState<TTargetAtom extends Atom<any>>(
+  target: TTargetAtom,
+): TTargetAtom extends Atom<infer S> ? S : never
 declare function storeGetState(): State
 
-declare function storeSubscribe<TargetAtom extends Atom<any>>(
-  target: TargetAtom,
-  listener: (state: TargetAtom extends Atom<infer S> ? S : never) => any,
+declare function storeSubscribe<TTargetAtom extends Atom<any>>(
+  target: TTargetAtom,
+  listener: (state: TTargetAtom extends Atom<infer S> ? S : never) => any,
 ): () => void
 declare function storeSubscribe(
   listener: (action: Action<any>) => any,
