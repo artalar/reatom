@@ -6,9 +6,14 @@ type Node = {
   actionTypes: Dictionary<true>
   // TODO: try to remove it
   dependencies: Dictionary<Node>
-  stackWorker: (ctx: Ctx) => any
+  stackWorker: StackWorker
 }
 type State = Dictionary<any>
+
+type ReduceFunction<TState> = <T>(
+  dependency: Unit<T>,
+  reducer: (state: TState, value: T) => TState,
+) => void
 
 const NODE = Symbol('@@REAtom/NODE')
 const assign = Object.assign
@@ -112,36 +117,27 @@ export const actionDefault = declareAction(['@@REAtom/default'])
 const defaultAtom = declareAtom(0, () => 0)
 
 // @ts-ignore
-export declare function declareAtom<State>(
+export declare function declareAtom<TState>(
   name: string | [string],
-  initialState: State,
+  initialState: TState,
   dependencyMatcher: (
-    reduce: <T>(
-      dependency: Unit<T>,
-      reducer: (state: State, value: T) => State,
-    ) => void,
+    reduce: ReduceFunction<TState>,
   ) => any,
-): Atom<State>
+): Atom<TState>
 // @ts-ignore
-export declare function declareAtom<State>(
-  initialState: State,
+export declare function declareAtom<TState>(
+  initialState: TState,
   dependencyMatcher: (
-    reduce: <T>(
-      dependency: Unit<T>,
-      reducer: (state: State, value: T) => State,
-    ) => void,
+    reduce: ReduceFunction<TState>,
   ) => any,
-): Atom<State>
-export function declareAtom<State>(
+): Atom<TState>
+export function declareAtom<TState>(
   name: string | [string],
-  initialState: State,
+  initialState: TState,
   dependencyMatcher: (
-    reduce: <T>(
-      dependency: Unit<T>,
-      reducer: (state: State, value: T) => State,
-    ) => void,
+    reduce: ReduceFunction<TState>,
   ) => any,
-): Atom<State> {
+): Atom<TState> {
   if (arguments.length === 2) {
     // @ts-ignore
     dependencyMatcher = initialState
@@ -166,7 +162,7 @@ export function declareAtom<State>(
 
   function reduce<T>(
     dep: Unit<T>,
-    reducer: (state: State, payload: T) => State,
+    reducer: (state: TState, payload: T) => TState,
   ) {
     throwIf(
       !initialPhase,
@@ -255,7 +251,7 @@ export function declareAtom<State>(
     stackWorker,
   }
 
-  function atom(state: State, action: { type: string; payload: any }) {
+  function atom(state: TState, action: { type: string; payload: any }) {
     const { changedIds, stateNew } = walk(new Ctx(state, action, [stackWorker]))
 
     return changedIds.length > 0 ? assign({}, state, stateNew) : state
