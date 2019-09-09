@@ -6,6 +6,7 @@ type ActionType = string
 type ActionTypesDictionary = Record<ActionType, true>
 type Node = {
   id: NodeId
+  kind: 'action' | 'atom'
   actionTypes: ActionTypesDictionary
   // TODO: try to remove it
   dependencies: DependenciesDictionary
@@ -31,7 +32,7 @@ export type Atom<T> = {
   [NODE]: Node
 }
 
-type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
+export type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
 
 function throwIf(predicate: boolean | any, msg: string) {
   // TODO: add link to docs with full description
@@ -77,10 +78,6 @@ export type Action<Payload, Type extends string = string> = {
   payload: Payload
 }
 
-function getIsAction(target: any): target is ActionCreator<any> {
-  return target && target[NODE] && typeof target.getType === 'function'
-}
-
 export function declareAction<
   Payload = undefined,
   Type extends string = string
@@ -89,6 +86,7 @@ export function declareAction<
 
   const ACNode: Node = {
     id,
+    kind: 'action',
     actionTypes: { [id]: true as const },
     dependencies: {},
     stackWorker: noop,
@@ -178,8 +176,8 @@ export function declareAtom<State>(
     )
 
     const position = dependencePosition++
-    let depNode!: Node
-    throwIf(!dep || !(depNode = dep[NODE]), 'Invalid dependency')
+    const depNode = dep && getNode(dep as any)
+    throwIf(!depNode, 'Invalid dependency')
     safetyFunc(reducer, 'reducer')
 
     const {
@@ -254,6 +252,7 @@ export function declareAtom<State>(
 
   const atomNode: Node = {
     id: atomId,
+    kind: 'atom',
     actionTypes: atomActionTypes,
     dependencies: atomDependencies,
     stackWorker,
@@ -272,12 +271,21 @@ export function declareAtom<State>(
   return atom
 }
 
-function getIsAtom(target: any) {
-  return !getIsAction(target) && target && target[NODE]
+export function getNode(target: Unit) {
+  return target[NODE]
 }
 
-export function getNode(target: Unit): Node {
-  return target[NODE]
+function getKind(target: unknown): string {
+  // @ts-ignore
+  return (target && target[NODE] && target[NODE].kind) || ''
+}
+
+export function getIsAtom<T>(target: unknown): target is Atom<T> {
+  return getKind(target) === 'atom'
+}
+
+export function getIsAction(target: unknown): target is ActionCreator {
+  return getKind(target) === 'action'
 }
 
 export function getState<T>(state: State, atom: Atom<T>): T | undefined {
@@ -308,7 +316,7 @@ export function map(name, target, mapper) {
   if (arguments.length === 2) {
     mapper = target
     target = name
-    name = (target[NODE] as Node).id + ' [map]'
+    name = getNode(target).id + ' [map]'
   }
   safetyFunc(mapper, 'mapper')
 
@@ -425,7 +433,7 @@ export function createStore(
     const targetState = getState(state, target)
     if (targetState !== undefined) return targetState
 
-    const targetNode = target[NODE]
+    const targetNode = getNode(target)
 
     return getState(
       walk(new Ctx(state, actionDefault(), [targetNode.stackWorker])).stateNew,
@@ -451,7 +459,7 @@ export function createStore(
 
     const target = a[0] as Atom<any>
     throwIf(!getIsAtom(target), 'Target is not Atom')
-    const targetNode = target[NODE]
+    const targetNode = getNode(target)
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
     const targetDeps = targetNode.dependencies

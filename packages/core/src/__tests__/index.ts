@@ -1,4 +1,5 @@
 import {
+  Unit,
   declareAction,
   declareAtom,
   actionDefault,
@@ -7,10 +8,30 @@ import {
   combine,
   createStore,
   getNode,
+  getIsAction,
+  getIsAtom,
 } from '../index'
+
+function noop() {}
 
 describe('@reatom/core', () => {
   describe('main api', () => {
+    test('getIsAction', () => {
+      // @ts-ignore
+      expect(getIsAction()).toBe(false)
+      expect(getIsAction(null)).toBe(false)
+      expect(getIsAction({})).toBe(false)
+      expect(getIsAction(declareAction())).toBe(true)
+      expect(getIsAction(declareAtom(0, noop))).toBe(false)
+    })
+    test('getIsAtom', () => {
+      // @ts-ignore
+      expect(getIsAtom()).toBe(false)
+      expect(getIsAtom(null)).toBe(false)
+      expect(getIsAtom({})).toBe(false)
+      expect(getIsAtom(declareAtom(0, noop))).toBe(true)
+      expect(getIsAtom(declareAction())).toBe(false)
+    })
     test('declareAction', () => {
       expect(typeof declareAction() === 'function').toBe(true)
       expect(declareAction()()).toEqual({
@@ -84,7 +105,7 @@ describe('@reatom/core', () => {
       expect(() =>
         declareAtom({}, r => r(action, () => undefined as any))({}, action()),
       ).toThrowError(
-        '[reatom] Invalid state. Reducer №1 in "atom #10" atom returns undefined',
+        '[reatom] Invalid state. Reducer №1 in "atom #14" atom returns undefined',
       )
 
       expect(() =>

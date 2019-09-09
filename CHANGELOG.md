@@ -1,3 +1,7 @@
+## 1.0.0-rc10
+
+Add `getIsAction` and `getIsAtom` to public API
+
 ## 1.0.0-rc6
 
 Rewrite core, remove domains as unnecessary (now).
