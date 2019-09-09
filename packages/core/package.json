@@ -28,7 +28,7 @@
     "update": "npx npm-check-updates -u"
   },
   "devDependencies": {
-    "cross-env": "^5.2.0",
+    "cross-env": "^5.2.1",
     "effector": "^20.1.2",
     "redux": "^4.0.4",
     "reselect": "^4.0.0",
