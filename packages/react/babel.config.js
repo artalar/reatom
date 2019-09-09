@@ -1,5 +1,5 @@
 const config = {
-  presets: ['@babel/typescript'],
+  presets: ['@babel/typescript', '@babel/preset-react'],
   plugins: ['@babel/plugin-proposal-class-properties'],
 }
 
