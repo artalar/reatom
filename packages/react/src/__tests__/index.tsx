@@ -10,7 +10,8 @@ const increment = declareAction()
 const countAtom = declareAtom(0, on => on(increment, state => state + 1))
 
 function Counter() {
-  return useAtom(countAtom)
+  useAtom(countAtom)
+  return null
 }
 
 describe('@reatom/react', () => {
