@@ -33,20 +33,23 @@ export type Atom<T> = {
 
 type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
 
-function throwIf(predicate: boolean | any, msg: string) {
+function throwError(error: string) {
   // TODO: add link to docs with full description
-  if (predicate) throw new Error('[reatom] ' + msg)
+  throw new Error('[reatom] ' + error)
 }
-function safetyStr(str: any, name: string): string {
-  throwIf(typeof str !== 'string' || str.length === 0, 'Invalid ' + name)
+function safetyStr(str: string, name: string): string {
+  if (typeof str !== 'string' || str.length === 0)
+    throwError(`Invalid ${name}`)
   return str
 }
-function safetyFunc(func: any, name: string): Function {
-  throwIf(typeof func !== 'function', 'Invalid ' + name)
+function safetyFunc<T extends Function>(func: T, name: string): T {
+  if (typeof func !== 'function') {
+    throwError(`Invalid ${name}`)
+  }
   return func
 }
 let id = 0
-function nameToId(name: unknown) {
+function nameToId(name: Array<string> | string) {
   return Array.isArray(name)
     ? safetyStr(name[0], 'name')
     : safetyStr(name, 'name') + ' #' + ++id
@@ -156,9 +159,8 @@ export function declareAtom<State>(
 
   const atomId = nameToId(name)
 
-  throwIf(
-    initialState === undefined,
-    'Atom "' + atomId + '". Initial state can\'t be undefined',
+  initialState === undefined && throwError(
+    `Atom "${atomId}". Initial state can't be undefined`
   )
 
   const atomActionTypes: ActionTypesDictionary = {}
@@ -172,14 +174,13 @@ export function declareAtom<State>(
     dep: Unit<T>,
     reducer: (state: State, payload: T) => State | undefined,
   ) {
-    throwIf(
-      !initialPhase,
-      "Can't define dependencies after atom initialization",
+    !initialPhase && throwError(
+      'Can\'t define dependencies after atom initialization'
     )
 
     const position = dependencePosition++
     let depNode!: Node
-    throwIf(!dep || !(depNode = dep[NODE]), 'Invalid dependency')
+    (!dep || !(depNode = dep[NODE])) && throwError('Invalid dependency')
     safetyFunc(reducer, 'reducer')
 
     const {
@@ -191,7 +192,7 @@ export function declareAtom<State>(
 
     const isDepActionCreator = getIsAction(dep)
 
-    throwIf(depDependencies[atomId], 'One of dependencies has the equal id')
+    depDependencies[atomId] && throwError('One of dependencies has the equal id')
 
     assign(atomActionTypes, depActionTypes)
     assign(atomDependencies, depDependencies)
@@ -220,15 +221,8 @@ export function declareAtom<State>(
       if (isDepActionCreator || isDepChanged || isAtomLazy) {
         const atomStateNew = reducer(atomState, depValue)
 
-        throwIf(
-          atomStateNew === undefined,
-          'Invalid state. Reducer №' +
-            position +
-            ' in ' +
-            '"' +
-            atomId +
-            '"' +
-            ' atom returns undefined',
+        atomStateNew === undefined && throwError(
+          `Invalid state. Reducer № ${position} in "${atomId}" atom returns undefined`,
         )
 
         if (atomStateNew !== atomState) {
@@ -420,7 +414,7 @@ export function createStore(
 
     if (target === undefined) return assign({}, state)
 
-    throwIf(!getIsAtom(target), 'Invalid target')
+    !getIsAtom(target) && throwError('Invalid target')
 
     const targetState = getState(state, target)
     if (targetState !== undefined) return targetState
@@ -450,7 +444,7 @@ export function createStore(
     }
 
     const target = a[0] as Atom<any>
-    throwIf(!getIsAtom(target), 'Target is not Atom')
+    !getIsAtom(target) && throwError('Target is not Atom')
     const targetNode = target[NODE]
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
@@ -492,12 +486,9 @@ export function createStore(
   }
 
   function dispatch(action: Action<any>) {
-    throwIf(
-      typeof action !== 'object' ||
-        action === null ||
-        typeof action.type !== 'string',
-      'Invalid action',
-    )
+    (typeof action !== 'object' ||
+      action === null ||
+      typeof action.type !== 'string') && throwError('Invalid action')
 
     actualizeState()
 

@@ -84,7 +84,7 @@ describe('@reatom/core', () => {
       expect(() =>
         declareAtom({}, r => r(action, () => undefined as any))({}, action()),
       ).toThrowError(
-        '[reatom] Invalid state. Reducer №1 in "atom #10" atom returns undefined',
+        '[reatom] Invalid state. Reducer № 1 in "atom #10" atom returns undefined',
       )
 
       expect(() =>
@@ -93,7 +93,7 @@ describe('@reatom/core', () => {
           action(),
         ),
       ).toThrowError(
-        '[reatom] Invalid state. Reducer №1 in "test" atom returns undefined',
+        '[reatom] Invalid state. Reducer № 1 in "test" atom returns undefined',
       )
 
       expect(() =>
@@ -102,7 +102,7 @@ describe('@reatom/core', () => {
           r(action, () => undefined as any),
         ])({}, action()),
       ).toThrowError(
-        '[reatom] Invalid state. Reducer №2 in "test" atom returns undefined',
+        '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
       )
     })
     test('createStore', () => {
