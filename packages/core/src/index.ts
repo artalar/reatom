@@ -1,9 +1,8 @@
 console.warn('REAtom still work in progress, do not use it in production')
 
-type NodeId = string
-
 type ActionType = string
 type ActionTypesDictionary = Record<ActionType, true>
+type NodeId = string
 type Node = {
   id: NodeId
   kind: 'action' | 'atom'
@@ -13,7 +12,7 @@ type Node = {
   stackWorker: (ctx: Ctx) => any
 }
 type DependenciesDictionary = Record<NodeId, Node>
-type State = Record<string, any>
+type State = Record<NodeId, any>
 
 const NODE = Symbol('@@REAtom/NODE')
 const assign = Object.assign
@@ -43,13 +42,11 @@ function safetyStr(str: string, name: string): string {
   return str
 }
 function safetyFunc<T extends Function>(func: T, name: string): T {
-  if (typeof func !== 'function') {
-    throwError(`Invalid ${name}`)
-  }
+  if (typeof func !== 'function') throwError(`Invalid ${name}`)
   return func
 }
 let id = 0
-function nameToId(name: Array<string> | string) {
+function nameToId(name: string | [string]): NodeId {
   return Array.isArray(name)
     ? safetyStr(name[0], 'name')
     : safetyStr(name, 'name') + ' #' + ++id
@@ -61,7 +58,7 @@ type Stack = StackWorker[]
 class Ctx {
   state: State
   stateNew: State
-  type: string
+  type: ActionType
   payload: any
   stack: Stack
   changedIds: NodeId[]
@@ -75,21 +72,21 @@ class Ctx {
   }
 }
 
-export type Action<Payload, Type extends string = string> = {
+export type Action<Payload, Type extends ActionType = string> = {
   type: Type
   payload: Payload
 }
 
 export function declareAction<
   Payload = undefined,
-  Type extends string = string
+  Type extends ActionType = string
 >(name: string | [Type] = 'action'): ActionCreator<Payload, Type> {
   const id = nameToId(name)
 
   const ACNode: Node = {
     id,
     kind: 'action',
-    actionTypes: { [id]: true as const },
+    actionTypes: { [id as ActionType]: true as const },
     dependencies: {},
     stackWorker: noop,
   }
@@ -117,7 +114,7 @@ const defaultAtom = declareAtom(0, () => 0)
 
 // @ts-ignore
 export declare function declareAtom<State>(
-  name: string | [string],
+  name: string | [NodeId],
   initialState: State,
   dependencyMatcher: (
     reduce: <T>(
@@ -137,7 +134,7 @@ export declare function declareAtom<State>(
   ) => any,
 ): Atom<State>
 export function declareAtom<State>(
-  name: string | [string],
+  name: string | [NodeId],
   initialState: State,
   dependencyMatcher: (
     reduce: <T>(
@@ -156,7 +153,7 @@ export function declareAtom<State>(
 
   const atomId = nameToId(name)
 
-  initialState === undefined &&
+  if (initialState === undefined)
     throwError(`Atom "${atomId}". Initial state can't be undefined`)
 
   const atomActionTypes: ActionTypesDictionary = {}
@@ -170,12 +167,12 @@ export function declareAtom<State>(
     dep: Unit<T>,
     reducer: (state: State, payload: T) => State | undefined,
   ) {
-    !initialPhase &&
+    if (!initialPhase)
       throwError("Can't define dependencies after atom initialization")
 
     const position = dependencePosition++
     const depNode = dep && getNode(dep as any)
-    !depNode && throwError('Invalid dependency')
+    if (!depNode) throwError('Invalid dependency')
     safetyFunc(reducer, 'reducer')
 
     const {
@@ -187,7 +184,7 @@ export function declareAtom<State>(
 
     const isDepActionCreator = getIsAction(dep)
 
-    depDependencies[atomId] &&
+    if (depDependencies[atomId])
       throwError('One of dependencies has the equal id')
 
     assign(atomActionTypes, depActionTypes)
@@ -217,7 +214,7 @@ export function declareAtom<State>(
       if (isDepActionCreator || isDepChanged || isAtomLazy) {
         const atomStateNew = reducer(atomState, depValue)
 
-        atomStateNew === undefined &&
+        if (atomStateNew === undefined)
           throwError(
             `Invalid state. Reducer № ${position} in "${atomId}" atom returns undefined`,
           )
@@ -251,7 +248,10 @@ export function declareAtom<State>(
     stackWorker,
   }
 
-  function atom(state: Ctx['state'], action: { type: string; payload: any }) {
+  function atom(
+    state: Ctx['state'],
+    action: { type: ActionType; payload: any },
+  ) {
     const { changedIds, stateNew } = walk(new Ctx(state, action, [stackWorker]))
 
     return changedIds.length > 0 ? assign({}, state, stateNew) : state
@@ -300,7 +300,7 @@ export declare function map<T, _T = unknown>(
 ): Atom<T>
 // @ts-ignore
 export declare function map<T, _T = unknown>(
-  name: string | [string],
+  name: string | [NodeId],
   atom: Atom<_T>,
   mapper: (dependedAtomState: _T) => T,
 ): Atom<T>
@@ -331,7 +331,7 @@ export declare function combine<
 export declare function combine<
   T extends { [key in string]: Atom<any> } | TupleOfAtoms
 >(
-  name: string | [string],
+  name: string | [NodeId],
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine(name: any, shape: any) {
@@ -359,14 +359,12 @@ export function combine(name: any, shape: any) {
   )
 }
 
-declare function storeGetState<TargetAtom extends Atom<any>>(
-  target: TargetAtom,
-): TargetAtom extends Atom<infer S> ? S : never
+declare function storeGetState<T>(target: Atom<T>): T
 declare function storeGetState(): State
 
-declare function storeSubscribe<TargetAtom extends Atom<any>>(
-  target: TargetAtom,
-  listener: (state: TargetAtom extends Atom<infer S> ? S : never) => any,
+declare function storeSubscribe<T>(
+  target: Atom<T>,
+  listener: (state: T) => any,
 ): () => void
 declare function storeSubscribe(
   listener: (action: Action<any>) => any,
@@ -384,11 +382,11 @@ export function createStore(
   atom: Atom<any> | null,
   preloadedState = {},
 ): Store {
-  const listenersStore = {} as { [key in string]: Function[] }
+  const listenersStore = {} as { [key in NodeId]: Function[] }
   const listenersActions: Function[] = []
   const atomNode = getNode(atom || defaultAtom)
   const atomDeps = atomNode.dependencies
-  const atomDepsCounters: { [key in string]: number } = {}
+  const atomDepsCounters: { [key in NodeId]: number } = {}
   for (const id in atomDeps) atomDepsCounters[id] = 1
 
   const newStack: Stack = []
@@ -405,7 +403,7 @@ export function createStore(
       assign(state, walk(new Ctx(state, actionDefault(), newStack)).stateNew)
   }
 
-  function incrementDeps(key: string) {
+  function incrementDeps(key: NodeId) {
     atomDepsCounters[key] = (atomDepsCounters[key] || 0) + 1
   }
 
@@ -419,9 +417,10 @@ export function createStore(
   function _getState(target?: Atom<any>) {
     actualizeState()
 
+    // TODO: try to cache `assign`
     if (target === undefined) return assign({}, state)
 
-    !getIsAtom(target) && throwError('Invalid target')
+    if (!getIsAtom(target)) throwError('Invalid target')
 
     const targetState = getState(state, target)
     if (targetState !== undefined) return targetState
@@ -451,7 +450,7 @@ export function createStore(
     }
 
     const target = a[0] as Atom<any>
-    !getIsAtom(target) && throwError('Target is not Atom')
+    if (!getIsAtom(target)) throwError('Target is not Atom')
     const targetNode = getNode(target)
     const targetId = targetNode.id
     const targetStackWorker = targetNode.stackWorker
@@ -516,7 +515,12 @@ export function createStore(
     callFromList(listenersActions, action)
   }
 
-  return { getState: _getState, subscribe, dispatch }
+  return {
+    // @ts-ignore
+    getState: _getState,
+    subscribe,
+    dispatch,
+  }
 }
 
 function callFromList(list: Function[], arg: any, i = -1) {
