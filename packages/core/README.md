@@ -49,7 +49,7 @@ const increment = declareAction()
 
 /**
  * Step 2.
- * Declare atoms (reducers)
+ * Declare atoms (like reducers or models)
  */
 const Counter = declareAtom(0, on => [
   on(increment, state => state + 1),
@@ -61,7 +61,7 @@ const CountersShape = combine({ Counter, CounterDoubled })
  * Step 3.
  * Create store entry point
  */
-const store = createStore(countersShape)
+const store = createStore(CountersShape)
 
 /**
  * Step 4.
