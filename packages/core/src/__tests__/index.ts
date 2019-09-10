@@ -1,16 +1,15 @@
 import {
-  Unit,
   declareAction,
   declareAtom,
-  actionDefault,
   getState,
   map,
   combine,
   createStore,
-  getNode,
+  getTree,
   getIsAction,
   getIsAtom,
 } from '../index'
+import { initAction } from '../declareAtom'
 
 function noop() {}
 
@@ -55,7 +54,7 @@ describe('@reatom/core', () => {
       const name = '_atomName_'
       const initialState = {}
       const atom = declareAtom(name, initialState, () => {})
-      const state = atom({}, actionDefault())
+      const state = atom({}, initAction)
 
       expect(getState(state, atom)).toBe(initialState)
       expect(
@@ -64,9 +63,9 @@ describe('@reatom/core', () => {
           return keys.length === 1 && keys[0].includes(name)
         })(),
       ).toBe(true)
-      expect(
-        declareAtom([name], initialState, () => {})({}, actionDefault()),
-      ).toEqual({ [name]: initialState })
+      expect(declareAtom([name], initialState, () => {})()).toEqual({
+        [name]: initialState,
+      })
     })
     test('declareAtom', () => {
       const addUnderscore = declareAction()
@@ -78,18 +77,18 @@ describe('@reatom/core', () => {
       ])
       const atomRoot = combine([atom1, atom2])
 
-      let state = atomRoot({}, actionDefault())
+      let state = atomRoot()
       expect(state).toEqual({
         name1: '1',
         name2: '2',
-        [getNode(atomRoot).id]: ['1', '2'],
+        [getTree(atomRoot).id]: ['1', '2'],
       })
 
       state = atomRoot(state, addUnderscore())
       expect(state).toEqual({
         name1: '_1',
         name2: '_2',
-        [getNode(atomRoot).id]: ['_1', '_2'],
+        [getTree(atomRoot).id]: ['_1', '_2'],
       })
     })
     test('throw error if declareAtom called with undefined initial state', () => {
@@ -105,7 +104,7 @@ describe('@reatom/core', () => {
       expect(() =>
         declareAtom({}, r => r(action, () => undefined as any))({}, action()),
       ).toThrowError(
-        '[reatom] Invalid state. Reducer № 1 in "atom #14" atom returns undefined',
+        '[reatom] Invalid state. Reducer № 1 in "atom [14]" atom returns undefined',
       )
 
       expect(() =>
@@ -190,10 +189,10 @@ describe('@reatom/core', () => {
         toggled: false,
       })
       expect(store.getState()).toEqual({
-        [getNode(count).id]: 2,
-        [getNode(countDoubled).id]: 4,
-        [getNode(toggled).id]: false,
-        [getNode(root).id]: {
+        [getTree(count).id]: 2,
+        [getTree(countDoubled).id]: 4,
+        [getTree(toggled).id]: false,
+        [getTree(root).id]: {
           count: 2,
           countDoubled: 4,
           toggled: false,
@@ -235,9 +234,7 @@ describe('@reatom/core', () => {
       )
       const count2SetMap = jest.fn((state, payload) => payload)
       const count2 = declareAtom(0, handle => [
-        handle(increment, state => {
-          return state + 1
-        }),
+        handle(increment, state => state + 1),
         handle(set, count2SetMap),
       ])
 
@@ -420,14 +417,14 @@ describe('@reatom/core', () => {
 
       const root = combine({ count, countDoubled })
 
-      let countState = count({}, actionDefault())
+      let countState = count()
       countState = count(countState, increment())
       expect(getState(countState, count)).toEqual(1)
 
       countState = count(countState, increment())
       expect(getState(countState, count)).toEqual(2)
 
-      let rootState = root({}, actionDefault())
+      let rootState = root()
       rootState = root(rootState, { type: 'any', payload: null })
       expect(getState(rootState, count)).toEqual(0)
       expect(getState(rootState, countDoubled)).toEqual(0)
@@ -447,7 +444,7 @@ describe('@reatom/core', () => {
 
       const root = combine([count, countDoubled])
 
-      let state = root({}, actionDefault())
+      let state = root()
       expect(getState(state, root)).toEqual([0, 0])
 
       state = root(state, increment())

@@ -1,11 +1,4 @@
-import {
-  declareAction,
-  declareAtom,
-  actionDefault,
-  getState,
-  map,
-  combine,
-} from '../index'
+import { declareAction, declareAtom, getState, map, combine } from '../index'
 
 describe('diamond problem (declareAtom)', () => {
   test('display name', () => {
@@ -58,7 +51,7 @@ describe('diamond problem (declareAtom)', () => {
       ),
     )
 
-    let state = displayName({}, actionDefault())
+    let state = displayName()
     expect(isFirstNameShortMap.mock.calls.length).toBe(1)
     expect(fullNameMap.mock.calls.length).toBe(1)
     expect(displayNameMap.mock.calls.length).toBe(1)
@@ -92,7 +85,7 @@ describe('diamond problem (declareAtom)', () => {
     const rootMap = jest.fn(_ => _)
     const root = map(r112, rootMap)
 
-    let state = root({}, actionDefault())
+    let state = root()
     state = root(state, action('_'))
     expect(getState(state, root)).toEqual({ r11: '01_', r12: '02_' })
     expect(r01Map.mock.calls.length).toBe(1)
