@@ -7,5 +7,14 @@
   "npmClient": "npm",
   "npmClientArgs": [
     "--no-package-lock"
-  ]
+  ],
+  "command": {
+    "publish": {
+      "allowBranch": "master",
+      "conventionalCommits": true,
+      "conventionalGraduate": true,
+      "ignoreChanges": ["*.md", "**/test/**"],
+      "message": "chore(release): publish"
+    }
+  }
 }
