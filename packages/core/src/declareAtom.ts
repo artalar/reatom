@@ -14,7 +14,7 @@ import { Action, declareAction, ActionType } from './declareAction'
 const DEPS = Symbol('@@Reatom/DEPS')
 
 // action for set initialState of each atom to global state
-const _initAction = declareAction(['@@REAtom/init'])
+const _initAction = declareAction(['@@ReAtom/init'])
 export const initAction = _initAction()
 
 export type Atom<T> = {

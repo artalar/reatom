@@ -1,6 +1,6 @@
 ## FAQ
 
-- **REAtom is infinitely perfect?**
+- **ReAtom is infinitely perfect?**
   > Definitely **nope**! Basic limitations are:
   > - impossible to create cyclic dependencies
   > - immutable data-structures as memory overhead
