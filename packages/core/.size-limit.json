@@ -1,0 +1,7 @@
+[
+  {
+    "path": "build/index.js",
+    "webpack": false,
+    "limit": "2000 B"
+  }
+]
