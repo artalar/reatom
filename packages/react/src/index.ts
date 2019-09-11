@@ -8,7 +8,7 @@ import {
   MutableRefObject,
 } from 'react'
 
-import { Store, Atom, ActionCreator, getIsAtom } from '@reatom/core'
+import { Store, Atom, ActionCreator, getIsAtom, Unit } from '@reatom/core'
 
 function noop() {}
 
@@ -51,7 +51,7 @@ export function useAtom<T>(
   }, [])
 
   if (!atomRef.current) {
-    atomRef.current = getIsAtom(atom)
+    atomRef.current = getIsAtom(atom as Unit<T>)
       ? (atom as Atom<T>)
       : (atom as () => Atom<T>)()
     unsubscribeRef.current = store.subscribe(

@@ -1,24 +1,17 @@
-import { Leaf, Tree } from './kernel'
+import { Leaf, Action, Tree } from './kernel'
 import { TREE, noop, nameToId } from './shared'
 
-export type ActionType = Leaf
-
-export type Action<Payload, Type extends ActionType = string> = {
-  type: Type
-  payload: Payload
-}
-
-export type ActionCreator<Payload = undefined, Type extends string = string> = {
+export type ActionCreator<Payload = undefined, TType extends Leaf = Leaf> = {
   getType: () => string
   [TREE]: Tree
 } & (Payload extends undefined
-  ? () => Action<Payload, Type>
-  : (payload: Payload) => Action<Payload, Type>)
+  ? () => Action<Payload, TType>
+  : (payload: Payload) => Action<Payload, TType>)
 
 export function declareAction<
   Payload = undefined,
-  Type extends ActionType = string
->(name: string | [Type] = 'action'): ActionCreator<Payload, Type> {
+  TType extends Leaf = Leaf
+>(name: string | [TType] = 'action'): ActionCreator<Payload, TType> {
   const id = nameToId(name)
 
   const ACTree = new Tree(id, true)

@@ -1,18 +1,12 @@
-import { Leaf, Tree, State, TreeId, Ctx, createCtx } from './kernel'
+import { Tree, State, TreeId, createCtx, Action } from './kernel'
 import {
-  TREE,
-  noop,
-  nameToId,
-  Unit,
   throwError,
   getTree,
   safetyFunc,
-  getIsAction,
   assign,
   getIsAtom,
 } from './shared'
-import { Action, declareAction, ActionType } from './declareAction'
-import { Atom, declareAtom, initAction, map, getState } from './declareAtom'
+import { Atom, declareAtom, initAction, getState } from './declareAtom'
 
 // for create nullable store
 const defaultAtom = declareAtom(0, () => 0)
@@ -117,7 +111,7 @@ export function createStore(
   }
 
   function dispatch(action: Action<any>) {
-    ;(typeof action !== 'object' ||
+    (typeof action !== 'object' ||
       action === null ||
       typeof action.type !== 'string') &&
       throwError('Invalid action')
@@ -125,13 +119,13 @@ export function createStore(
     const ctx = createCtx(state, action)
     storeTree.forEach(action.type, ctx)
 
-    const { changedIds, stateNew } = ctx
+    const { changedTreeIds, stateNew } = ctx
 
-    if (changedIds.length > 0) {
+    if (changedTreeIds.length > 0) {
       assign(state, stateNew)
 
-      for (let i = 0; i < changedIds.length; i++) {
-        const id = changedIds[i]
+      for (let i = 0; i < changedTreeIds.length; i++) {
+        const id = changedTreeIds[i]
         callFromList(listenersStore.get(id) || [], stateNew[id])
       }
     }

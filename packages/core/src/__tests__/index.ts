@@ -8,10 +8,11 @@ import {
   getTree,
   getIsAction,
   getIsAtom,
+  Unit
 } from '../index'
 import { initAction } from '../declareAtom'
 
-function noop() {}
+function noop() { }
 
 describe('@reatom/core', () => {
   describe('main api', () => {
@@ -19,7 +20,7 @@ describe('@reatom/core', () => {
       // @ts-ignore
       expect(getIsAction()).toBe(false)
       expect(getIsAction(null)).toBe(false)
-      expect(getIsAction({})).toBe(false)
+      expect(getIsAction({} as Unit<unknown>)).toBe(false)
       expect(getIsAction(declareAction())).toBe(true)
       expect(getIsAction(declareAtom(0, noop))).toBe(false)
     })
@@ -27,7 +28,7 @@ describe('@reatom/core', () => {
       // @ts-ignore
       expect(getIsAtom()).toBe(false)
       expect(getIsAtom(null)).toBe(false)
-      expect(getIsAtom({})).toBe(false)
+      expect(getIsAtom({} as Unit<unknown>)).toBe(false)
       expect(getIsAtom(declareAtom(0, noop))).toBe(true)
       expect(getIsAtom(declareAction())).toBe(false)
     })
@@ -53,7 +54,7 @@ describe('@reatom/core', () => {
     test('declareAtom', () => {
       const name = '_atomName_'
       const initialState = {}
-      const atom = declareAtom(name, initialState, () => {})
+      const atom = declareAtom(name, initialState, () => { })
       const state = atom({}, initAction)
 
       expect(getState(state, atom)).toBe(initialState)
@@ -63,7 +64,7 @@ describe('@reatom/core', () => {
           return keys.length === 1 && keys[0].includes(name)
         })(),
       ).toBe(true)
-      expect(declareAtom([name], initialState, () => {})()).toEqual({
+      expect(declareAtom([name], initialState, () => { })()).toEqual({
         [name]: initialState,
       })
     })
@@ -160,7 +161,7 @@ describe('@reatom/core', () => {
 
       expect(
         store.getState(root) !==
-          (store.dispatch(increment()), store.getState(root)),
+        (store.dispatch(increment()), store.getState(root)),
       ).toBe(true)
       expect(store.getState(root)).toEqual({
         count: 1,
@@ -215,7 +216,7 @@ describe('@reatom/core', () => {
 
       expect(
         store.getState(root) ===
-          (store.dispatch({ type: 'random', payload: null }),
+        (store.dispatch({ type: 'random', payload: null }),
           store.getState(root)),
       ).toBe(true)
       expect(storeSubscriber.mock.calls.length).toBe(3)
@@ -318,7 +319,7 @@ describe('@reatom/core', () => {
       expect(store.getState(count2)).toBe(0)
       expect(store.getState(count2Doubled)).toBe(0)
 
-      store.subscribe(count2Doubled, () => {})
+      store.subscribe(count2Doubled, () => { })
       store.dispatch(increment2())
       expect(store.getState(count2)).toBe(1)
       expect(store.getState(count2Doubled)).toBe(2)
@@ -341,7 +342,7 @@ describe('@reatom/core', () => {
       expect(store.getState(count)).toBe(1)
       expect(store.getState().countDoubled).toBe(undefined)
 
-      let unsubscriber = store.subscribe(countDoubled, () => {})
+      let unsubscriber = store.subscribe(countDoubled, () => { })
       store.dispatch(increment())
       expect(store.getState(count)).toBe(2)
       expect(store.getState().countDoubled).toBe(4)
@@ -351,7 +352,7 @@ describe('@reatom/core', () => {
       expect(store.getState(count)).toBe(3)
       expect(store.getState().countDoubled).toBe(undefined)
 
-      unsubscriber = store.subscribe(countDoubled, () => {})
+      unsubscriber = store.subscribe(countDoubled, () => { })
       store.dispatch(increment())
       expect(store.getState(count)).toBe(4)
       expect(store.getState().countDoubled).toBe(8)
@@ -367,7 +368,7 @@ describe('@reatom/core', () => {
 
       expect(store.getState(countStatic)).toBe(10)
 
-      store.subscribe(countStatic, () => {})
+      store.subscribe(countStatic, () => { })
       store.dispatch(increment())
 
       expect(store.getState(countStatic)).toBe(11)
