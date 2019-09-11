@@ -26,4 +26,4 @@ jobs:
       run: npm run test
 
     - name: size limit
-      run: echo "not implemented"
+      run: npm run size
