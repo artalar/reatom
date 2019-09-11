@@ -2,6 +2,6 @@
   {
     "path": "build/index.js",
     "webpack": false,
-    "limit": "2000 B"
+    "limit": "2600 B"
   }
 ]
