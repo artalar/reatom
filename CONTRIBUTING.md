@@ -1,76 +1,99 @@
 # Contributing
+[ReAtom](https://github.com/artalar/reatom) is open source state manager for small and complex applications. 
 
-Code style and development conventions
+If you want to contribute to improving the library, use the following instructions to create changes:
 
-## Comments
+- [Creating an issue](#creating-an-issue)
+- [Sending a Pull Request](#sending-a-pull-request)
 
-- `TODO:` - proposal for rectification
-- `FIXME:` - need to do ASAP
+> **Note:** Languages other than English are not normally used in issue or commits descriptions.
 
-> Please, use exactly `TODO:` and `FIXME:` prefix notation for correct [highlight](https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight).
+## Creating an issue
 
-### Tags
+If you found a bug or want to make an improvement in the library please check whether the same issue already exists in the [list of issues](https://github.com/artalar/reatom/issues). If you don't find the issue there, [create a new one](https://github.com/artalar/reatom/issues/new) including a description of the problem.
 
-> TODO: add linter
 
-"Tag" - is related to commit's types part of comment for feature improvements
+## Sending a Pull Request
+1. Fork the repository.
+2. Clone the fork.
 
-- **`test/add`**: need to add tests
-- **`doc/fix`**: need to fix documentation
-- **`deps/del`**: need to delete legacy dependencies
+    ```bash
+    $ git clone git@github.com:<username>/reatom.git
+    ```
 
-#### Examples
+3. Add the main repository for the `reatom` library as a remote repository with the name "upstream".
 
-- `// FIXME: type/add: prop-types`
-- `// TODO: style/mod: replace by flex-box`
+    ```bash
+    $ cd reatom
+    $ git remote add upstream git@github.com:artalar/reatom.git
+    ```
+4. Install dependencies for development.
+    ```bash
+    $ npm i
+    ```
 
-### Commit's naming
+5. Fetch the latest changes.
 
-> TODO: add linter
+    ```bash
+    $ git fetch upstream
+    ```
 
-```js
-const commitMessage = `${featureName}.${subFeatureName}/${techType}/${changeType}: ${issueNumber} ${description}`;
+6. Create a `feature-branch` that includes the number of the [created issue](#creating-an-issue).
+
+    ```bash
+    $ git checkout upstream/master
+    $ git checkout -b issue-<issue number>
+    ```
+
+7. Make changes.
+8. Record the changes according to [conventional rules](#commit-rules).
+
+    ```bash
+    $ git commit -m "<type>[optional scope]: <description>"
+    ```
+
+9. Fetch the latest changes.
+
+    ```bash
+    $ git pull --rebase upstream master
+    ```
+    > **Note:** Repeat this step before every change you make, to be sure that you are working with code that contains the latest updates.
+
+10. Send the changes to GitHub.
+
+    ```bash
+    $ git push -u origin issue-<issue number>
+    ```
+    > **Note**: It is desirable to use **interactive rebase** (`git rebase upstream/master -i`) for cleanup commits list before sending a Pull Request
+
+11. Send a [Pull Request](https://github.com/artalar/reatom/compare) based on the branch created.
+12. Link the Pull Request and issue with [keyword](https://help.github.com/en/articles/closing-issues-using-keywords) in the comment. Example: `fix #74`
+13. Wait for a decision about accepting the changes.
+
+
+## Commit rules
+Record the changes made by making comments in accordance with [Conventional Commits](https://conventionalcommits.org).
+```
+<type>[optional scope]: <description>
 ```
 
-#### Examples
+### Allowed `<type>`
+- **chore** - maintain
+- **ci** - ci configuration
+- **feat** - new feature
+- **fix** - bug fix
+- **docs** - documentation
+- **style** - formatting, missing semi colons, …
+- **test** - when adding missing tests
+- **perf** - performance improvements
+- **revert** - rollback changes
+- **refactor** - reorganization without breaking changes and new features
 
-- `auth/feat/add: #1 restore page`
-- `auth.restore/style/fix: #2 mobile view`
-- `auth/deps/mod: #3 replace redux by mobx`
+### Allowed `<scope>`
+Directory name from `/packages/<scope>`
 
-#### Tech types
-
-- **feat** - some user feature
-- **logic** - business logic of user feature
-- **style** - view (UI) of user feature
-- **util** - utility functions and services
-- **type** - types definition
-- **test** - tests for functional
-- **doc** - description and specification
-- **example** - storybook, docz, etc
-- **deps** - third party dependency changes (replaces, forks, API improves)
-- **perf** - performance changes
-- **pretty** - prettify formating, white-space, missing semi-colons, etc
-- **config**: changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm), configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)
-
-#### Change types
-
-- **add** - new functional
-- **mod** - modifying functional **with** behavior changes
-- **fix** - correcting functional **without** behavior changes (refactor, iterface updates)
-- **del** - delete functional
-
-### Branch's naming
-
-> TODO: add linter
-
-> wait for https://github.com/isaacs/github/issues/1125
-
-```js
-const branchName = `i${issueNumber}/${shortDescription}`;
-```
-
-#### Examples
-
-- `i1/auth`
-- `i5/doc`
+### Style for `<description>`
+- only English language
+- Use imperative, present tense:  `change` not `changed` nor `changes`
+- don't capitalize first letter
+- no dot (`.`) at the end
