@@ -8,6 +8,7 @@ import {
   safetyFunc,
   getIsAction,
   assign,
+  Dictionary,
 } from './shared'
 import { declareAction } from './declareAction'
 
@@ -158,15 +159,15 @@ export function getState<T>(state: State, atom: Atom<T>): T | undefined {
 }
 
 // @ts-ignore
-export declare function map<T, _T = unknown>(
-  atom: Atom<_T>,
-  mapper: (dependedAtomState: _T) => T,
+export declare function map<T, U = unknown>(
+  atom: Atom<U>,
+  mapper: (dependedAtomState: U) => T,
 ): Atom<T>
 // @ts-ignore
-export declare function map<T, _T = unknown>(
+export declare function map<T, U = unknown>(
   name: string | [TreeId],
-  atom: Atom<_T>,
-  mapper: (dependedAtomState: _T) => T,
+  atom: Atom<U>,
+  mapper: (dependedAtomState: U) => T,
 ): Atom<T>
 // @ts-ignore
 export function map(name, target, mapper) {
@@ -188,17 +189,17 @@ export function map(name, target, mapper) {
 
 // @ts-ignore
 export declare function combine<
-  T extends { [key in string]: Atom<any> } | TupleOfAtoms
+  T extends Dictionary<Atom<any>> | TupleOfAtoms
 >(
   shape: T,
-): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
+): Atom<{ [P in keyof T]: T[P] extends Atom<infer S> ? S : never }>
 // @ts-ignore
 export declare function combine<
-  T extends { [key in string]: Atom<any> } | TupleOfAtoms
+  T extends Dictionary<Atom<any>> | TupleOfAtoms
 >(
   name: string | [TreeId],
   shape: T,
-): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
+): Atom<{ [P in keyof T]: T[P] extends Atom<infer S> ? S : never }>
 export function combine(name: any, shape: any) {
   let keys: string[]
   if (arguments.length === 1) {

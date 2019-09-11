@@ -2,6 +2,7 @@ import { Tree, TreeId, Leaf } from './kernel'
 import { ActionCreator } from './declareAction'
 import { Atom } from './declareAtom'
 
+export type Dictionary<TValue> = { [key: string]: TValue }
 export type Unit<T> = ActionCreator<T> | Atom<T>
 
 export const TREE = Symbol('@@Reatom/TREE')
