@@ -8,7 +8,9 @@
     "build": "lerna run build",
     "test": "lerna run test",
     "prettify": "prettier --write '**/*.{j,t}s'",
-    "prettify:watch": "onchange '**/*.{j,t}s' -- prettier --write {{changed}}"
+    "prettify:watch": "onchange '**/*.{j,t}s' -- prettier --write {{changed}}", 
+    "publish": "lerna publish",
+    "publish:next": "lerna publish --canary --preid next --dist-tag next --no-git-tag-version"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.5",
