@@ -15,6 +15,8 @@ ReAtom is **declarative** and **reactive** state manager, designed for both simp
 
 > **IMPORTANT!** Current state is **Work In Progress**. We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
 
+> **v1.0.0 schedule**: end of September 2019
+
 ## Packages
 | Package | Version | Size
 --------|---------|----
