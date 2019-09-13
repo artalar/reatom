@@ -1,0 +1,43 @@
+{
+  "name": "@reatom/babel-plugin",
+  "private": false,
+  "version": "0.1.0",
+  "description": "Compile-time preprocessing for reatom",
+  "repository": "https://github.com/artalar/reatom",
+  "files": [
+    "README.md",
+    "babel-plugin.js"
+  ],
+  "keywords": [
+    "reatom",
+    "babel-plugin"
+  ],
+  "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar"
+    },
+    {
+      "name": "Wroud",
+      "email": "wrouds@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "readme": "README.md",
+  "devDependencies": {
+    "babel-plugin-tester": "^7.0.1",
+    "jest": "^24.9.0"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/jest test/"
+  },
+  "bugs": "https://github.com/artalar/reatom/issues",
+  "homepage": "https://artalar.github.io/reatom",
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {}
+}
