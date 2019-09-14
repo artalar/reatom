@@ -80,7 +80,7 @@ test("side effects", async () => {
     on(setValue, (state, payload) => payload),
   ])
   const store = createStore(valueAtom)
-  const valueSubscriber = jest.valueSubscriber()
+  const valueSubscriber = jest.fn()
   store.subscribe(valueAtom, valueSubscriber)
 
   store.dispatch(setValue(10))
