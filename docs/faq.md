@@ -5,7 +5,9 @@
   > - impossible to create cyclic dependencies
   > - If at during the dispatching process any reducer throw an error, all accumulated new state is not apply (from previous reducers of current dispatch)
   > - necessarily of normalization and memory overhead as using immutable data-structures
-  > - the necessity of global store and `.dispatch` method to make _atoms_ work.
+  > - the necessity of global store and `.dispatch` method to make _atoms_ work
+  > - initializations of an atom take a 2-5x more capacity than `reselect.createSelector`. it doesn't really affect the real performance, moreover, the performance of reaction (dispatch) is 2-10*Nx mutch better, then redux
+  > - "React zombie children" is the problem for all framework-agnostic state-managers and for Reatom too. You can just avoid it by using in your dynamic atoms the optional chaining or a something similar.
   >
   > All those limitations used intentionally to solve other, more critical, problems.
 - **Why API so strange, it can't be simpler?**
