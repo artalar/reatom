@@ -37,7 +37,8 @@ ReAtom is **declarative** and **reactive** state manager, designed for both simp
 - 🧪 **testing**: simple mocking
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
-- 👴 **ES5 support** (by polyfills)
+- 👴 **ES5 support**: by polyfills
+- 🧯 **reliable**: predictable exeptions flow
 - synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/src/__tests__/diamond.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward for write bad code
@@ -94,7 +95,7 @@ Guiding principles of state manager:
 - Doesn't move to separate _model_ and _view_.
 - Runtime semantic and mutable state (is not a better way for debugging).
 - [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) is lack of visual part of code semantic.
-- Is not simple under the hood and it need to consider when choose algorithms for word with data-structure
+- Is not simple under the hood and [it need to consider when choose algorithms for work with data-structure](https://twitter.com/art_al_ar/status/1162769896025075719)
 - [And others...](https://mobx.js.org/best/pitfalls.html)
 
 ---
