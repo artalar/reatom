@@ -72,29 +72,36 @@ test('derived (computed) atoms', () => {
 ### Side effects
 
 ```js
-test('side effects', async () => {
-  const doSideEffect = declareAction()
-  const increment = declareAction()
-  const counter = declareAtom(0, on => [
-    on(increment, state => state + 1),
-  ])
+test("side effects", async () => {
+  const setValue = declareAction();
+  let lastCallId = 0;
+  const setValueConcurrent = declareAction(async (action, store) => {
+    const incrementCallId = lastCallId++;
+    await delay(1000);
+    if (incrementCallId === lastCallId) store.dispatch(setValue());
+  });
+  const valueAtom = declareAtom(0, on => [
+    on(setValue, (state, payload) => payload)
+  ]);
 
-  const sideEffect = async action => {
-    if (action.type === doSideEffect.getType()) {
-      await delay(1000)
-      store.dispatch(increment())
-    }
-  }
+  const store = createStore(valueAtom);
 
-  const store = createStore(counter)
-  store.subscribe(sideEffect)
+  store.dispatch(setValue(1));
+  expect(store.getState(valueAtom)).toBe(1);
 
-  store.dispatch(doSideEffect())
-  expect(store.getState(counter)).toBe(0)
-  // `store.dispatch(increment())` from `sideEffect`
-  await delay(1000)
-  expect(store.getState(counter)).toBe(1)
-})
+  store.dispatch(setValueConcurrent(2));
+  expect(store.getState(valueAtom)).toBe(1);
+  await delay(1000);
+  expect(store.getState(valueAtom)).toBe(2);
+
+  store.dispatch(setValueConcurrent(3));
+  store.dispatch(setValueConcurrent(4));
+  store.dispatch(setValueConcurrent(5));
+  expect(store.getState(valueAtom)).toBe(2);
+  await delay(1000);
+  expect(store.getState(valueAtom)).toBe(5);
+});
+
 ```
 
 ### Todo-list
