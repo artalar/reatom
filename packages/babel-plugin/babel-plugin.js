@@ -91,8 +91,11 @@ function pushNameToArgs(path, nameNodeId, t, name) {
       }
       break
     case definions.declareAction:
-      if (args.length === 0) {
-        args.push(t.stringLiteral(displayName))
+      if (
+        args.length === 0 ||
+        (args[0].type !== 'StringLiteral' && args[0].type !== 'ArrayExpression')
+      ) {
+        args.unshift(t.stringLiteral(displayName))
       }
       break
     case definions.combine:
