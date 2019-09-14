@@ -69,33 +69,37 @@ test("derived (computed) atoms", () => {
 
 ```js
 test("side effects", async () => {
-  const setValue = declareAction();
-  let lastCallId = 0;
-  const setValueConcurrent = declareAction(async (action, store) => {
-    const incrementCallId = lastCallId++;
-    await delay(1000);
-    if (incrementCallId === lastCallId) store.dispatch(setValue());
-  });
+  const setValue = declareAction()
+  let lastCallId = 0
+  const setValueConcurrent = declareAction(async (payload, store) => {
+    const incrementCallId = ++lastCallId
+    await delay()
+    if (incrementCallId === lastCallId) store.dispatch(setValue(payload))
+  })
   const valueAtom = declareAtom(0, on => [
-    on(setValue, (state, payload) => payload)
-  ]);
+    on(setValue, (state, payload) => payload),
+  ])
+  const store = createStore(valueAtom)
+  const valueSubscriber = jest.valueSubscriber()
+  store.subscribe(valueAtom, valueSubscriber)
 
-  const store = createStore(valueAtom);
+  store.dispatch(setValue(10))
+  expect(valueSubscriber).toBeCalledTimes(1)
+  expect(valueSubscriber).toBeCalledWith(10)
 
-  store.dispatch(setValue(1));
-  expect(store.getState(valueAtom)).toBe(1);
+  store.dispatch(setValueConcurrent(20))
+  expect(valueSubscriber).toBeCalledTimes(1)
+  await delay()
+  expect(valueSubscriber).toBeCalledTimes(2)
+  expect(valueSubscriber).toBeCalledWith(20)
 
-  store.dispatch(setValueConcurrent(2));
-  expect(store.getState(valueAtom)).toBe(1);
-  await delay(1000);
-  expect(store.getState(valueAtom)).toBe(2);
-
-  store.dispatch(setValueConcurrent(3));
-  store.dispatch(setValueConcurrent(4));
-  store.dispatch(setValueConcurrent(5));
-  expect(store.getState(valueAtom)).toBe(2);
-  await delay(1000);
-  expect(store.getState(valueAtom)).toBe(5);
+  store.dispatch(setValueConcurrent(30))
+  store.dispatch(setValueConcurrent(40))
+  store.dispatch(setValueConcurrent(50))
+  expect(valueSubscriber).toBeCalledTimes(2)
+  await delay()
+  expect(valueSubscriber).toBeCalledTimes(3)
+  expect(valueSubscriber).toBeCalledWith(50)
 });
 
 ```
