@@ -125,7 +125,7 @@ export function createStore(
     const ctx = createCtx(state, action)
     storeTree.forEach(action.type, ctx)
 
-    const { changedIds, stateNew } = ctx
+    const { changedIds, stateNew, payload } = ctx
 
     if (changedIds.length > 0) {
       assign(state, stateNew)
@@ -136,16 +136,18 @@ export function createStore(
       }
     }
 
+    ;(action.reactions || []).forEach(r => r(payload, store as any))
     callFromList(listenersActions, action)
   }
 
-  return {
-    // @ts-ignore
+  const store = {
     getState: _getState,
-    // @ts-ignore
     subscribe,
     dispatch,
   }
+
+  // @ts-ignore
+  return store
 }
 
 function callFromList(list: Function[], arg: any, i = -1) {

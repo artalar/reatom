@@ -36,18 +36,22 @@ describe('@reatom/core', () => {
       expect(declareAction()()).toEqual({
         type: expect.stringContaining(''),
         payload: undefined,
+        reactions: [],
       })
       expect(declareAction('TeSt')()).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: undefined,
+        reactions: [],
       })
       expect(declareAction<null>('TeSt')(null)).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: null,
+        reactions: [],
       })
       expect(declareAction(['TeSt'])()).toEqual({
         type: 'TeSt',
         payload: undefined,
+        reactions: [],
       })
     })
     test('declareAtom', () => {
@@ -405,6 +409,40 @@ describe('@reatom/core', () => {
       expect(storeWithPreloadedState.getState(staticCount)).toBe(1)
       expect(storeWithPreloadedState.getState(dynamicCount)).toBe(2)
     })
+  })
+
+  test('declareAction reactions', async () => {
+    const delay = () => new Promise(r => setTimeout(r, 10))
+    const setValue = declareAction<number>()
+    let lastCallId = 0
+    const setValueConcurrent = declareAction<number>(async (payload, store) => {
+      const incrementCallId = ++lastCallId
+      await delay()
+      if (incrementCallId === lastCallId) store.dispatch(setValue(payload))
+    })
+    const valueAtom = declareAtom(0, on => [
+      on(setValue, (state, payload) => payload),
+    ])
+    const store = createStore(valueAtom)
+    store.dispatch(setValue(1))
+    expect(store.getState(valueAtom)).toBe(1)
+    store.dispatch(setValueConcurrent(2))
+    expect(store.getState(valueAtom)).toBe(1)
+    await delay()
+    expect(store.getState(valueAtom)).toBe(2)
+    store.dispatch(setValueConcurrent(3))
+    store.dispatch(setValueConcurrent(4))
+    store.dispatch(setValueConcurrent(5))
+    expect(store.getState(valueAtom)).toBe(2)
+    await delay()
+    expect(store.getState(valueAtom)).toBe(5)
+
+    // ---
+
+    const fn = jest.fn()
+    const action = declareAction('!', fn)
+    store.dispatch(action(0))
+    expect(fn).toBeCalledTimes(1)
   })
   describe('derived state', () => {
     test('map + combine', () => {
