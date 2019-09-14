@@ -103,7 +103,7 @@ console.log(workflowIntention())
 
 #### Action type
 
-If you want to specify exact action type (from other library) you can paste it at first argument by a tuple of one item (string).
+If you want to specify exact action type (from other library) you can paste it at first argument by a array of one item (tuple) - string.
 
 ```js
 const routAtom = declareAtom(
@@ -119,8 +119,8 @@ const routAtom = declareAtom(
 ```js
 const fetchUserDone = declareAction()
 const fetchUser = declareAction(
-  name, // optional
-  (store, payload) => fetch('/user', payload)
+  name, // or type - optional
+  (payload, store) => fetch('/user', payload)
     .then(response => store.dispatch(fetchUserDone(response)))
 )
 
@@ -131,6 +131,8 @@ store.dispatch(fetchUser(userId))
 ### Atom
 
 Atom\* is state**less** instructions for calculate derived state with right order (without [glitches](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx)).
+
+> For redux users: **atom - is a thing that works concomitantly like reducer and like selector.**
 
 Atom reducers may depend from declared action or other atom and must be a pure function thats returns new immutable version of state. If reducer return old state - depended atoms and subscribers will not triggered.
 
