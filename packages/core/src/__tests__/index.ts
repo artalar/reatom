@@ -36,18 +36,22 @@ describe('@reatom/core', () => {
       expect(declareAction()()).toEqual({
         type: expect.stringContaining(''),
         payload: undefined,
+        reactions: [],
       })
       expect(declareAction('TeSt')()).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: undefined,
+        reactions: [],
       })
       expect(declareAction<null>('TeSt')(null)).toEqual({
         type: expect.stringContaining('TeSt'),
         payload: null,
+        reactions: [],
       })
       expect(declareAction(['TeSt'])()).toEqual({
         type: 'TeSt',
         payload: undefined,
+        reactions: [],
       })
     })
     test('declareAtom', () => {
@@ -405,6 +409,48 @@ describe('@reatom/core', () => {
       expect(storeWithPreloadedState.getState(staticCount)).toBe(1)
       expect(storeWithPreloadedState.getState(dynamicCount)).toBe(2)
     })
+  })
+
+  test('declareAction reactions', async () => {
+    const delay = () => new Promise(r => setTimeout(r, 10))
+    const setValue = declareAction<number>()
+    let lastCallId = 0
+    const setValueConcurrent = declareAction<number>(async (payload, store) => {
+      const incrementCallId = ++lastCallId
+      await delay()
+      if (incrementCallId === lastCallId) store.dispatch(setValue(payload))
+    })
+    const valueAtom = declareAtom(0, on => [
+      on(setValue, (state, payload) => payload),
+    ])
+    const store = createStore(valueAtom)
+    const valueSubscriber = jest.fn()
+    store.subscribe(valueAtom, valueSubscriber)
+
+    store.dispatch(setValue(10))
+    expect(valueSubscriber).toBeCalledTimes(1)
+    expect(valueSubscriber).toBeCalledWith(10)
+
+    store.dispatch(setValueConcurrent(20))
+    expect(valueSubscriber).toBeCalledTimes(1)
+    await delay()
+    expect(valueSubscriber).toBeCalledTimes(2)
+    expect(valueSubscriber).toBeCalledWith(20)
+
+    store.dispatch(setValueConcurrent(30))
+    store.dispatch(setValueConcurrent(40))
+    store.dispatch(setValueConcurrent(50))
+    expect(valueSubscriber).toBeCalledTimes(2)
+    await delay()
+    expect(valueSubscriber).toBeCalledTimes(3)
+    expect(valueSubscriber).toBeCalledWith(50)
+
+    // ---
+
+    const fn = jest.fn()
+    const action = declareAction('!', fn)
+    store.dispatch(action(0))
+    expect(fn).toBeCalledTimes(1)
   })
   describe('derived state', () => {
     test('map + combine', () => {
