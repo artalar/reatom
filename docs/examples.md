@@ -27,7 +27,7 @@ import {
 ```js
 test('simple counter', () => {
   const increment = declareAction()
-  const counter = declareAtom(
+  const counterAtom = declareAtom(
     // initial state
     0,
     // callback for creating
@@ -35,13 +35,13 @@ test('simple counter', () => {
     on => [on(increment, state => state + 1)],
   )
 
-  const store = createStore(counter)
-  let counterState = store.getState(counter)
+  const store = createStore(counterAtom)
+  let counterState = store.getState(counterAtom)
   expect(counterState).toBe(0)
 
   store.dispatch(increment())
   store.dispatch(increment())
-  counterState = store.getState(counter)
+  counterState = store.getState(counterAtom)
   expect(counterState).toBe(2)
 })
 ```
@@ -49,24 +49,20 @@ test('simple counter', () => {
 ### Derived (computed) atoms
 
 ```js
-test('derived (computed) atoms', () => {
-  const increment = declareAction()
-  const counter = declareAtom(0, on => [
-    on(increment, state => state + 1),
-  ])
-  const counterDoubled = map(counter, value => value * 2)
-  const countersShape = combine({ counter, counterDoubled })
+test("derived (computed) atoms", () => {
+  const increment = declareAction();
+  const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)]);
+  const counterDoubledAtom = map(counterAtom, value => value * 2);
+  const countersShapeAtom = combine([counterAtom, counterDoubledAtom]);
 
-  const store = createStore(countersShape)
+  const store = createStore(countersShapeAtom);
 
-  store.dispatch(increment())
-  expect(store.getState(counter)).toBe(1)
-  expect(store.getState(counterDoubled)).toBe(2)
-  expect(store.getState(countersShape)).toEqual({
-    counter: 1,
-    counterDoubled: 2,
-  })
-})
+  store.dispatch(increment());
+  expect(store.getState(counterAtom)).toBe(1);
+  expect(store.getState(counterDoubledAtom)).toBe(2);
+  expect(store.getState(countersShapeAtom)).toEqual([1, 2]);
+});
+
 ```
 
 ### Side effects
