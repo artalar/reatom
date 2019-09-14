@@ -27,21 +27,21 @@ import {
 ```js
 test('simple counter', () => {
   const increment = declareAction()
-  const counter = declareAtom(
+  const counterAtom = declareAtom(
     // initial state
     0,
     // callback for creating
     // list of dependencies and their transformations
-    reduce => [reduce(increment, state => state + 1)],
+    on => [on(increment, state => state + 1)],
   )
 
-  const store = createStore(counter)
-  let counterState = store.getState(counter)
+  const store = createStore(counterAtom)
+  let counterState = store.getState(counterAtom)
   expect(counterState).toBe(0)
 
   store.dispatch(increment())
   store.dispatch(increment())
-  counterState = store.getState(counter)
+  counterState = store.getState(counterAtom)
   expect(counterState).toBe(2)
 })
 ```
@@ -49,52 +49,59 @@ test('simple counter', () => {
 ### Derived (computed) atoms
 
 ```js
-test('derived (computed) atoms', () => {
-  const increment = declareAction()
-  const counter = declareAtom(0, reduce => [
-    reduce(increment, state => state + 1),
-  ])
-  const counterDoubled = map(counter, value => value * 2)
-  const countersShape = combine({ counter, counterDoubled })
+test("derived (computed) atoms", () => {
+  const increment = declareAction();
+  const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)]);
+  const counterDoubledAtom = map(counterAtom, value => value * 2);
+  const countersShapeAtom = combine([counterAtom, counterDoubledAtom]);
 
-  const store = createStore(countersShape)
+  const store = createStore(countersShapeAtom);
 
-  store.dispatch(increment())
-  expect(store.getState(counter)).toBe(1)
-  expect(store.getState(counterDoubled)).toBe(2)
-  expect(store.getState(countersShape)).toEqual({
-    counter: 1,
-    counterDoubled: 2,
-  })
-})
+  store.dispatch(increment());
+  expect(store.getState(counterAtom)).toBe(1);
+  expect(store.getState(counterDoubledAtom)).toBe(2);
+  expect(store.getState(countersShapeAtom)).toEqual([1, 2]);
+});
+
 ```
 
 ### Side effects
 
 ```js
-test('side effects', async () => {
-  const doSideEffect = declareAction()
-  const increment = declareAction()
-  const counter = declareAtom(0, reduce => [
-    reduce(increment, state => state + 1),
+test("side effects", async () => {
+  const setValue = declareAction()
+  let lastCallId = 0
+  const setValueConcurrent = declareAction(async (payload, store) => {
+    const incrementCallId = ++lastCallId
+    await delay()
+    if (incrementCallId === lastCallId) store.dispatch(setValue(payload))
+  })
+  const valueAtom = declareAtom(0, on => [
+    on(setValue, (state, payload) => payload),
   ])
+  const store = createStore(valueAtom)
+  const valueSubscriber = jest.fn()
+  store.subscribe(valueAtom, valueSubscriber)
 
-  const sideEffect = async action => {
-    if (action.type === doSideEffect.getType()) {
-      await delay(1000)
-      store.dispatch(increment())
-    }
-  }
+  store.dispatch(setValue(10))
+  expect(valueSubscriber).toBeCalledTimes(1)
+  expect(valueSubscriber).toBeCalledWith(10)
 
-  const store = createStore(counter)
-  store.subscribe(sideEffect)
+  store.dispatch(setValueConcurrent(20))
+  expect(valueSubscriber).toBeCalledTimes(1)
+  await delay()
+  expect(valueSubscriber).toBeCalledTimes(2)
+  expect(valueSubscriber).toBeCalledWith(20)
 
-  store.dispatch(doSideEffect())
-  expect(store.getState(counter)).toBe(0)
-  // `store.dispatch(increment())` from `sideEffect`
-  await delay(1000)
-  expect(store.getState(counter)).toBe(1)
-})
+  store.dispatch(setValueConcurrent(30))
+  store.dispatch(setValueConcurrent(40))
+  store.dispatch(setValueConcurrent(50))
+  expect(valueSubscriber).toBeCalledTimes(2)
+  await delay()
+  expect(valueSubscriber).toBeCalledTimes(3)
+  expect(valueSubscriber).toBeCalledWith(50)
+});
+
 ```
 
 ### Todo-list
