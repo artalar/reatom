@@ -424,18 +424,26 @@ describe('@reatom/core', () => {
       on(setValue, (state, payload) => payload),
     ])
     const store = createStore(valueAtom)
-    store.dispatch(setValue(1))
-    expect(store.getState(valueAtom)).toBe(1)
-    store.dispatch(setValueConcurrent(2))
-    expect(store.getState(valueAtom)).toBe(1)
+    const valueSubscriber = jest.fn()
+    store.subscribe(valueAtom, valueSubscriber)
+
+    store.dispatch(setValue(10))
+    expect(valueSubscriber).toBeCalledTimes(1)
+    expect(valueSubscriber).toBeCalledWith(10)
+
+    store.dispatch(setValueConcurrent(20))
+    expect(valueSubscriber).toBeCalledTimes(1)
     await delay()
-    expect(store.getState(valueAtom)).toBe(2)
-    store.dispatch(setValueConcurrent(3))
-    store.dispatch(setValueConcurrent(4))
-    store.dispatch(setValueConcurrent(5))
-    expect(store.getState(valueAtom)).toBe(2)
+    expect(valueSubscriber).toBeCalledTimes(2)
+    expect(valueSubscriber).toBeCalledWith(20)
+
+    store.dispatch(setValueConcurrent(30))
+    store.dispatch(setValueConcurrent(40))
+    store.dispatch(setValueConcurrent(50))
+    expect(valueSubscriber).toBeCalledTimes(2)
     await delay()
-    expect(store.getState(valueAtom)).toBe(5)
+    expect(valueSubscriber).toBeCalledTimes(3)
+    expect(valueSubscriber).toBeCalledWith(50)
 
     // ---
 
