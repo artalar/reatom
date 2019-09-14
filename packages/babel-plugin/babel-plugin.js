@@ -10,10 +10,11 @@ const definions = {
 module.exports = function(babel) {
   const { types: t } = babel
 
-  const importedNames = new Map()
-
   const plugin = {
     name: '@reatom/babel-plugin',
+    pre() {
+      this.importedNames = new Map()
+    },
     visitor: {
       ImportDeclaration(path) {
         const {
@@ -29,7 +30,7 @@ module.exports = function(babel) {
           const importedName = s.imported.name
           const localName = s.local.name
           if (definions.names.includes(importedName)) {
-            importedNames.set(localName, importedName)
+            this.importedNames.set(localName, importedName)
           }
         }
       },
@@ -37,8 +38,8 @@ module.exports = function(babel) {
         if (!t.isIdentifier(path.node.callee)) {
           return
         }
-        if (importedNames.has(path.node.callee.name)) {
-          const name = importedNames.get(path.node.callee.name)
+        if (this.importedNames.has(path.node.callee.name)) {
+          const name = this.importedNames.get(path.node.callee.name)
           const id = findCandidateNameForExpression(path)
           if (id) {
             pushNameToArgs(path, id, t, name)
