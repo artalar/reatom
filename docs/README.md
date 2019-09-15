@@ -98,6 +98,15 @@ Guiding principles of state manager:
 - Is not simple under the hood and [it need to consider when choose algorithms for work with data-structure](https://twitter.com/art_al_ar/status/1162769896025075719)
 - [And others...](https://mobx.js.org/best/pitfalls.html)
 
+## Live demos
+
+### Simple performance test
+> 10K nodes, 100 changes per tick
+
+  - [Reatom](https://csb-porhw-kjmu0vhtt.now.sh#100)
+  - [MobX](https://csb-u4626-9pqkywdv1.now.sh)
+  - [Effector](https://csb-xdutj-5hdafmm5e.now.sh)
+
 ---
 
 Next:
