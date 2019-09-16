@@ -37,7 +37,7 @@ export function nameToId(name: string | [string]): TreeId {
 }
 
 export function setNameToId(gen: GenId) {
-  _nameToId = gen
+  _nameToId = safetyFunc(gen, 'gen')
 }
 
 export function throwError(error: string) {
@@ -48,7 +48,7 @@ export function safetyStr(str: string, name: string): string {
   if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)
   return str
 }
-export function safetyFunc(func: unknown, name: string) {
+export function safetyFunc<T extends Function>(func: T, name: string): T {
   if (typeof func !== 'function') throwError(`Invalid ${name}`)
-  return func as Function
+  return func
 }
