@@ -18,7 +18,7 @@ Rewrite core, remove domains as unnecessary (now).
 
 Core improvements and bugs fixes...
 
-(!) Move to **ReAtom** package (!)
+(!) Move to **Reatom** package (!)
 
 ## 3.0.10
 

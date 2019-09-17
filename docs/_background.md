@@ -1,4 +1,4 @@
-> **This is a draft of russian talk about ReAtom prerequisites and motivation. Lately, I hope, it will be translating to english.**
+> **This is a draft of russian talk about Reatom prerequisites and motivation. Lately, I hope, it will be translating to english.**
 
 # Что стоит стейт-менеджер построить
 
@@ -22,7 +22,7 @@
 
 > Всякие "мелочи": документация, примеры, ведение проекта, маркетинг.
 
-Будет много отсылок к [ReAtom](https://github.com/artalar/reatom), как успешному результату.
+Будет много отсылок к [Reatom](https://github.com/artalar/reatom), как успешному результату.
 
 ## Контент
 
