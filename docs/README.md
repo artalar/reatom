@@ -40,6 +40,57 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 - awkward for write bad code
 - handy for write good code
 
+## Installation
+
+```sh
+npm i @reatom/core
+# or
+yarn add @reatom/core
+```
+
+## Usage
+[Open in CodeSandbox](https://codesandbox.io/s/reatom-intro-jlepp)
+
+```js
+import {
+  declareAction,
+  declareAtom,
+  map,
+  combine,
+  createStore,
+} from '@reatom/core'
+
+/** Actions */
+const increment = declareAction()
+const add = declareAction()
+
+/** Atoms */
+const countAtom = declareAtom(1, on => [
+  on(increment, state => state + 1),
+  on(add, (state, payload) => state + payload),
+])
+const isOddAtom = map(countAtom, count => Boolean(count % 2))
+const rootAtom = combine({ count: countAtom, isOdd: isOddAtom })
+
+/** Store */
+const store = createStore(rootAtom)
+
+store.subscribe(countAtom, count => console.log('count: ', count))
+store.subscribe(isOddAtom, isOdd => console.log('isOdd: ', isOdd))
+
+store.dispatch(increment())
+// count: 2
+// isOdd: true
+
+store.dispatch(add(4))
+// count: 6
+// isOdd: false
+
+store.dispatch(add(2))
+// count: 8
+// here `isOdd` subscriber will not be called because its value is not changes
+```
+
 ## Packages
 | Package | Version | Size
 --------|---------|----
