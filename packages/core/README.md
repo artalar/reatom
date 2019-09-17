@@ -1,6 +1,6 @@
 <div align="center">
 <br/>
-<img src="../../docs/logos/logo.png" alt="reatom logo" align="center">
+<img src="https://artalar.github.io/reatom/logos/logo.png" alt="reatom logo" align="center">
 </div>
 
 # @reatom/core
