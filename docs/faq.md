@@ -1,7 +1,7 @@
 ## FAQ
 
-- **REAtom is infinitely perfect?**
-  > Definitely **nope**! REAtom is build on top of [SSoT](https://en.wikipedia.org/wiki/Single_source_of_truth) idea and try to strictly follow it to ensure reliability. Therefore is preferred immutable global state and other limitations:
+- **Reatom is infinitely perfect?**
+  > Definitely **nope**! Reatom is build on top of [SSoT](https://en.wikipedia.org/wiki/Single_source_of_truth) idea and try to strictly follow it to ensure reliability. Therefore is preferred immutable global state and other limitations:
   > - impossible to create cyclic dependencies
   > - If at during the dispatching process any reducer throw an error, all accumulated new state is not apply (from previous reducers of current dispatch)
   > - necessarily of normalization and memory overhead as using immutable data-structures
