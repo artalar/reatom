@@ -4,12 +4,12 @@ describe('@reatom/core', () => {
   describe('createStore Redux compatible tests', () => {
     test('supports multiple subscriptions', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
       const listenerA = jest.fn()
       const listenerB = jest.fn()
 
-      let unsubscribeA = store.subscribe(listenerA)
+      let unsubscribeA = store.subscribe(atom, listenerA)
       store.dispatch(action())
       expect(listenerA.mock.calls.length).toBe(1)
       expect(listenerB.mock.calls.length).toBe(0)
@@ -18,7 +18,7 @@ describe('@reatom/core', () => {
       expect(listenerA.mock.calls.length).toBe(2)
       expect(listenerB.mock.calls.length).toBe(0)
 
-      const unsubscribeB = store.subscribe(listenerB)
+      const unsubscribeB = store.subscribe(atom, listenerB)
       expect(listenerA.mock.calls.length).toBe(2)
       expect(listenerB.mock.calls.length).toBe(0)
 
@@ -42,7 +42,7 @@ describe('@reatom/core', () => {
       expect(listenerA.mock.calls.length).toBe(3)
       expect(listenerB.mock.calls.length).toBe(2)
 
-      unsubscribeA = store.subscribe(listenerA)
+      unsubscribeA = store.subscribe(atom, listenerA)
       expect(listenerA.mock.calls.length).toBe(3)
       expect(listenerB.mock.calls.length).toBe(2)
 
@@ -52,13 +52,13 @@ describe('@reatom/core', () => {
     })
     test('only removes listener once when unsubscribe is called', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
       const listenerA = jest.fn()
       const listenerB = jest.fn()
 
-      const unsubscribeA = store.subscribe(listenerA)
-      store.subscribe(listenerB)
+      const unsubscribeA = store.subscribe(atom, listenerA)
+      store.subscribe(atom, listenerB)
 
       unsubscribeA()
       unsubscribeA()
@@ -69,12 +69,12 @@ describe('@reatom/core', () => {
     })
     test('only removes relevant listener when unsubscribe is called', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
       const listener = jest.fn()
 
-      store.subscribe(listener)
-      const unsubscribeSecond = store.subscribe(listener)
+      store.subscribe(atom, listener)
+      const unsubscribeSecond = store.subscribe(atom, listener)
 
       unsubscribeSecond()
       unsubscribeSecond()
@@ -84,18 +84,18 @@ describe('@reatom/core', () => {
     })
     test('supports removing a subscription within a subscription', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
       const listenerA = jest.fn()
       const listenerB = jest.fn()
       const listenerC = jest.fn()
 
-      store.subscribe(listenerA)
-      const unSubB = store.subscribe(() => {
+      store.subscribe(atom, listenerA)
+      const unSubB = store.subscribe(atom, () => {
         listenerB()
         unSubB()
       })
-      store.subscribe(listenerC)
+      store.subscribe(atom, listenerC)
 
       store.dispatch(action())
       store.dispatch(action())
@@ -106,7 +106,7 @@ describe('@reatom/core', () => {
     })
     test('notifies all subscribers about current dispatch regardless if any of them gets unsubscribed in the process', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
 
       const unsubscribeHandles: any[] = []
@@ -117,14 +117,14 @@ describe('@reatom/core', () => {
       const listener2 = jest.fn()
       const listener3 = jest.fn()
 
-      unsubscribeHandles.push(store.subscribe(() => listener1()))
+      unsubscribeHandles.push(store.subscribe(atom, () => listener1()))
       unsubscribeHandles.push(
-        store.subscribe(() => {
+        store.subscribe(atom, () => {
           listener2()
           doUnsubscribeAll()
         }),
       )
-      unsubscribeHandles.push(store.subscribe(() => listener3()))
+      unsubscribeHandles.push(store.subscribe(atom, () => listener3()))
 
       store.dispatch(action())
       expect(listener1.mock.calls.length).toBe(1)
@@ -138,7 +138,7 @@ describe('@reatom/core', () => {
     })
     test('notifies only subscribers active at the moment of current dispatch', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
 
       const listener1 = jest.fn()
@@ -149,12 +149,12 @@ describe('@reatom/core', () => {
       const maybeAddThirdListener = () => {
         if (!listener3Added) {
           listener3Added = true
-          store.subscribe(() => listener3())
+          store.subscribe(atom, () => listener3())
         }
       }
 
-      store.subscribe(() => listener1())
-      store.subscribe(() => {
+      store.subscribe(atom, () => listener1())
+      store.subscribe(atom, () => {
         listener2()
         maybeAddThirdListener()
       })
@@ -171,24 +171,25 @@ describe('@reatom/core', () => {
     })
     test('uses the last snapshot of subscribers during nested dispatch', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, () => {})
+      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
 
-      const listener1 = jest.fn()
-      const listener2 = jest.fn()
-      const listener3 = jest.fn()
-      const listener4 = jest.fn()
+      const listener1 = jest.fn(() => console.log("listener1"))
+      const listener2 = jest.fn(() => console.log("listener2"))
+      const listener3 = jest.fn(() => console.log("listener3"))
+      const listener4 = jest.fn(() => console.log("listener4"))
 
       let unsubscribe4: any
-      const unsubscribe1 = store.subscribe(() => {
+      const unsubscribe1 = store.subscribe(atom, () => {
         listener1()
+        console.log('once');
         expect(listener1.mock.calls.length).toBe(1)
         expect(listener2.mock.calls.length).toBe(0)
         expect(listener3.mock.calls.length).toBe(0)
         expect(listener4.mock.calls.length).toBe(0)
 
         unsubscribe1()
-        unsubscribe4 = store.subscribe(listener4)
+        unsubscribe4 = store.subscribe(atom, listener4)
         store.dispatch(action())
 
         expect(listener1.mock.calls.length).toBe(1)
@@ -196,8 +197,8 @@ describe('@reatom/core', () => {
         expect(listener3.mock.calls.length).toBe(1)
         expect(listener4.mock.calls.length).toBe(1)
       })
-      store.subscribe(listener2)
-      store.subscribe(listener3)
+      store.subscribe(atom, listener2)
+      store.subscribe(atom, listener3)
 
       store.dispatch(action())
       expect(listener1.mock.calls.length).toBe(1)
@@ -218,7 +219,7 @@ describe('@reatom/core', () => {
         on(action, (state, payload) => [...state, payload]),
       ])
       const store = createStore(todoList)
-      store.subscribe(() => {
+      store.subscribe(todoList, () => {
         expect(store.getState(todoList)).toEqual([
           {
             id: 1,
