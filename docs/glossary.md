@@ -22,7 +22,7 @@ console.log(add(123))
 // { type: 'action #1', payload: 123 }
 ```
 
-### Action name
+### Action type
 
 If you want to describe action name at the type (for debugging) you can paste it at first argument by a string.
 
@@ -33,19 +33,13 @@ console.log(workflowIntention())
 // { type: 'my workflow name #1', payload: undefined }
 ```
 
-### Action type
-
 If you want to specify exact action type (from other library) you can paste it at first argument by a array of one item (tuple) - string.
 
 ```js
 const locationChange = declareAction(['@@router/LOCATION_CHANGE'])
 
-const routAtom = declareAtom(
-  {},
-  on => [
-    on(locationChange, (state, payload) => payload),
-  ]
-)
+console.log(workflowIntention())
+// { type: '@@router/LOCATION_CHANGE', payload: undefined }
 ```
 
 ### Action reactions
