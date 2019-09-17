@@ -1,28 +1,6 @@
-## Installation
+> **This is examples from [tests](https://github.com/artalar/reatom/blob/master/examples/counter.test.ts)**
 
-```sh
-npm i @reatom/core
-# or
-yarn add @reatom/core
-```
-
-## Usage
-
-```javascript
-import {
-  declareAction,
-  declareAtom,
-  map,
-  combine,
-  createStore,
-} from '@reatom/core'
-```
-
-## Examples
-
-> **[Tests](src/__tests__/examples/counter.ts)**
-
-### Simple counter
+## Simple counter
 
 ```js
 test('simple counter', () => {
@@ -46,7 +24,7 @@ test('simple counter', () => {
 })
 ```
 
-### Derived (computed) atoms
+## Derived (computed) atoms
 
 ```js
 test("derived (computed) atoms", () => {
@@ -65,7 +43,7 @@ test("derived (computed) atoms", () => {
 
 ```
 
-### Side effects
+## Side effects
 
 ```js
 test("side effects", async () => {
@@ -104,7 +82,7 @@ test("side effects", async () => {
 
 ```
 
-### Todo-list
+## Todo-list
 
 > Beware, it is _enterprise_-like example with feature-driven structure, normalization and other not _entry_ abstractions. Simpler examples will be added later
 
