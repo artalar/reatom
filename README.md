@@ -11,17 +11,16 @@
 <br>
 </div>
 
-ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
+## Description
 
-> **IMPORTANT!** Current state is **Work In Progress**. We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
+ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications. He is blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
+
+> Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
+
+> **IMPORTANT!** Current state is **Work In Progress**.
+> We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
 
 > **v1.0.0 schedule**: end of September 2019
-
-## Packages
-| Package | Version | Size
---------|---------|----
-| [`@reatom/core`](packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
-| [`@reatom/react`](packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
 
 ## Goals and features
 
@@ -41,11 +40,12 @@ ReAtom is **declarative** and **reactive** state manager, designed for both simp
 - awkward for write bad code
 - handy for write good code
 
-## Description
+## Packages
+| Package | Version | Size
+--------|---------|----
+| [`@reatom/core`](packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
+| [`@reatom/react`](packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
 
-> Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
-
-**ReAtom** is a blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
 
 ## Motivation
 
