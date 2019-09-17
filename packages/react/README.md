@@ -5,7 +5,7 @@
 
 # @reatom/react
 
-Package for bindings [ReAtom](https://github.com/artalar/reatom) store with React
+Package for bindings [Reatom](https://github.com/artalar/reatom) store with React
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/react?style=flat-square)
@@ -13,7 +13,7 @@ Package for bindings [ReAtom](https://github.com/artalar/reatom) store with Reac
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
 
-> ReAtom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
+> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
 
 
 > **IMPORTANT!** Current state is **Work In Progress**. We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API

@@ -1,5 +1,5 @@
 # Contributing
-[ReAtom](https://github.com/artalar/reatom) is open source state manager for small and complex applications. 
+[Reatom](https://github.com/artalar/reatom) is open source state manager for small and complex applications. 
 
 If you want to contribute to improving the library, use the following instructions to create changes:
 
