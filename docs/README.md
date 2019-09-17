@@ -11,16 +11,18 @@
 <br/>
 </div>
 
-## Description
-
-Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. He is blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
-
-> Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
+Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. 
 
 > **IMPORTANT!** Current state is **Work In Progress**.
 > We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
 
 > **v1.0.0 schedule**: end of September 2019
+
+## Description
+
+Reatom is blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
+
+> Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
 
 ## Goals and features
 
