@@ -14,23 +14,23 @@ import {
 import { Action, declareAction, ActionType } from './declareAction'
 import { Atom, declareAtom, initAction, map, getState } from './declareAtom'
 
+type DispatchFunction = (action: Action<any>) => any
+type SubscribeFunction = {
+  <T>(target: Atom<T>, listener: (state: T) => any): () => void
+  (listener: DispatchFunction): () => void
+}
+type GetStateFunction = {
+  <T>(target: Atom<T>): T
+  (): State
+}
+
 // for create nullable store
 const defaultAtom = declareAtom(0, () => 0)
 
-declare function storeGetState<T>(target: Atom<T>): T
-declare function storeGetState(): State
-
-declare function storeSubscribe<T>(
-  target: Atom<T>,
-  listener: (state: T) => any,
-): () => void
-declare function storeSubscribe(
-  listener: (action: Action<any>) => any,
-): () => void
 export type Store = {
-  dispatch: (action: Action<any>) => void
-  subscribe: typeof storeSubscribe
-  getState: typeof storeGetState
+  dispatch: DispatchFunction
+  subscribe: SubscribeFunction
+  getState: GetStateFunction
 }
 
 // TODO: try to use ES6 Map's instead of plain object
@@ -40,9 +40,9 @@ export function createStore(
   atom: Atom<any> | null,
   preloadedState = {},
 ): Store {
-  const listenersStore = new Map<TreeId, Function[]>()
-  let listenersActions: Function[] = []
-  let nextListenersActions: Function[] = listenersActions
+  const atomsListeners = new Map<TreeId, Function[]>()
+  let actionsListeners: Function[] = []
+  let nextActionsListiners: Function[] = actionsListeners
   // const storeAtom = map('store', atom || defaultAtom, value => value)
   const storeTree = new Tree('store')
   storeTree.union(getTree(atom || defaultAtom)!)
@@ -53,8 +53,8 @@ export function createStore(
   const state = assign({}, preloadedState || {}, ctx.stateNew)
 
   function ensureCanMutateNextListeners() {
-    if (nextListenersActions === listenersActions) {
-      nextListenersActions = listenersActions.slice()
+    if (nextActionsListiners === actionsListeners) {
+      nextActionsListiners = actionsListeners.slice()
     }
   }
 
@@ -74,19 +74,25 @@ export function createStore(
   }
 
   // @ts-ignore
-  function subscribe(target, cb) {
-    const isActionSubscription = cb === undefined
-    const listener = safetyFunc(isActionSubscription ? target : cb, 'listener')
+  function subscribe<T>(
+    target: Atom<T> | DispatchFunction,
+    subscriber: (state: T) => any,
+  ): () => void {
+    const isActionSubscription = subscriber === undefined
+    const listener = safetyFunc(
+      isActionSubscription ? target : subscriber,
+      'listener',
+    )
     let isSubscribed = true
 
     if (isActionSubscription) {
       ensureCanMutateNextListeners()
-      nextListenersActions.push(listener)
+      nextActionsListiners.push(listener)
       return () => {
         if (isSubscribed) {
           isSubscribed = false
           ensureCanMutateNextListeners()
-          nextListenersActions.splice(nextListenersActions.indexOf(listener), 1)
+          nextActionsListiners.splice(nextActionsListiners.indexOf(listener), 1)
         }
       }
     }
@@ -96,8 +102,8 @@ export function createStore(
     const targetId = targetTree.id
     const isLazy = !initialAtoms.has(targetId)
 
-    if (!listenersStore.has(targetId)) {
-      listenersStore.set(targetId, [])
+    if (!atomsListeners.has(targetId)) {
+      atomsListeners.set(targetId, [])
       if (isLazy) {
         storeTree.union(targetTree)
         const ctx = createCtx(state, initAction)
@@ -106,17 +112,17 @@ export function createStore(
       }
     }
 
-    listenersStore.get(targetId)!.push(listener)
+    atomsListeners.get(targetId)!.push(listener)
 
     return () => {
       if (isSubscribed) {
         isSubscribed = false
 
-        const _listeners = listenersStore.get(targetId)!
+        const _listeners = atomsListeners.get(targetId)!
         _listeners.splice(_listeners.indexOf(listener), 1)
 
         if (isLazy && _listeners.length === 0) {
-          listenersStore.delete(targetId)
+          atomsListeners.delete(targetId)
           storeTree.disunion(targetTree)
           // FIXME: dependencies is not clearing
           delete state[targetId]
@@ -141,12 +147,12 @@ export function createStore(
 
       for (let i = 0; i < changedIds.length; i++) {
         const id = changedIds[i]
-        callFromList(listenersStore.get(id) || [], stateNew[id])
+        callFromList(atomsListeners.get(id) || [], stateNew[id])
       }
     }
 
     ;(action.reactions || []).forEach(r => r(payload, store as any))
-    callFromList((listenersActions = nextListenersActions), action)
+    callFromList((actionsListeners = nextActionsListiners), action)
   }
 
   const store = {
