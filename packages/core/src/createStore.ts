@@ -41,7 +41,8 @@ export function createStore(
   preloadedState = {},
 ): Store {
   const listenersStore = new Map<TreeId, Function[]>()
-  const listenersActions: Function[] = []
+  let listenersActions: Function[] = []
+  let nextListenersActions: Function[] = listenersActions
   // const storeAtom = map('store', atom || defaultAtom, value => value)
   const storeTree = new Tree('store')
   storeTree.union(getTree(atom || defaultAtom)!)
@@ -50,6 +51,12 @@ export function createStore(
   const initialAtoms = new Set(Object.keys(ctx.stateNew))
   // preloadedState needed to save data of lazy atoms
   const state = assign({}, preloadedState || {}, ctx.stateNew)
+
+  function ensureCanMutateNextListeners() {
+    if (nextListenersActions === listenersActions) {
+      nextListenersActions = listenersActions.slice()
+    }
+  }
 
   function _getState(target?: Atom<any>) {
     // TODO: try to cache `assign`
@@ -73,11 +80,13 @@ export function createStore(
     let isSubscribed = true
 
     if (isActionSubscription) {
-      listenersActions.push(listener)
+      ensureCanMutateNextListeners()
+      nextListenersActions.push(listener)
       return () => {
         if (isSubscribed) {
           isSubscribed = false
-          listenersActions.splice(listenersActions.indexOf(listener), 1)
+          ensureCanMutateNextListeners()
+          nextListenersActions.splice(nextListenersActions.indexOf(listener), 1)
         }
       }
     }
@@ -137,7 +146,7 @@ export function createStore(
     }
 
     ;(action.reactions || []).forEach(r => r(payload, store as any))
-    callFromList(listenersActions, action)
+    callFromList((listenersActions = nextListenersActions), action)
   }
 
   const store = {
