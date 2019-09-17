@@ -1,4 +1,6 @@
-* [Introduction](/)
-* [Glossary](/glossary.md)
+- Getting started
+  * [Introduction](/)
+  * [Glossary](/glossary.md)
+
 * [Examples](/examples.md)
 * [FAQ](/faq.md)

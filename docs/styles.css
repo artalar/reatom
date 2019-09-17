@@ -2,9 +2,8 @@
   --theme-color: #141134
 }
 
-.app-name {
-  padding: 0 1rem;
-  box-sizing: border-box;
+.app-name img {
+  max-width: 200px;
 }
 
 .markdown-section code  {
