@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logos/logo.png" alt="reatom logo" align="center">
+<img src="https://artalar.github.io/reatom/logos/logo.png" alt="reatom logo" align="center">
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
@@ -43,8 +43,8 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 ## Packages
 | Package | Version | Size
 --------|---------|----
-| [`@reatom/core`](../packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
-| [`@reatom/react`](../packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
+| [`@reatom/core`](https://github.com/artalar/reatom/tree/master/packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
+| [`@reatom/react`](https://github.com/artalar/reatom/tree/master/packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
 
 ## Motivation
 
@@ -61,7 +61,8 @@ Guiding principles of state manager:
 
 -->
 
-### Why not [redux](https://github.com/reduxjs/redux)
+### Why not Redux
+[link to repository](https://github.com/reduxjs/redux)
 
 - Selectors are not inspectable (is lacking in devtools).
 - Difficult static type inference (because every selector must to know full path to parent state).
@@ -75,7 +76,8 @@ Guiding principles of state manager:
   <!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
   > A part of problems solves by various fabric functions, but without standardization it is harmful.
 
-### Why not [effector](https://github.com/zerobias/effector)
+### Why not Effector
+[link to repository](https://github.com/zerobias/effector)
 
 - Effector is about _atomic **stores**_ - it statefull approach with problems:
   - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
@@ -85,7 +87,8 @@ Guiding principles of state manager:
 - The [weight](https://bundlephobia.com/result?p=effector@20.1.2) can be smaller but it does not
 - [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90)
 
-### Why not [MobX](https://github.com/mobxjs/mobx)
+### Why not MobX
+[link to repository](https://github.com/mobxjs/mobx)
 
 - Huge bundle size, unstandardized foreground syntax (decorators), ES5 limitations
 - Doesn't move to separate _model_ and _view_.
