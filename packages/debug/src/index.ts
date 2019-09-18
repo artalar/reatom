@@ -1,1 +1,1 @@
-export { genIdFromLine } from './genIdFromLine';
+export { genIdFromLine } from './genIdFromLine'
