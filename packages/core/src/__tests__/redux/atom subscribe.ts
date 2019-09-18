@@ -174,15 +174,14 @@ describe('@reatom/core', () => {
       const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
       const store = createStore(atom)
 
-      const listener1 = jest.fn(() => console.log("listener1"))
-      const listener2 = jest.fn(() => console.log("listener2"))
-      const listener3 = jest.fn(() => console.log("listener3"))
-      const listener4 = jest.fn(() => console.log("listener4"))
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
+      const listener4 = jest.fn()
 
       let unsubscribe4: any
       const unsubscribe1 = store.subscribe(atom, () => {
         listener1()
-        console.log('once');
         expect(listener1.mock.calls.length).toBe(1)
         expect(listener2.mock.calls.length).toBe(0)
         expect(listener3.mock.calls.length).toBe(0)

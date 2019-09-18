@@ -40,7 +40,8 @@ export function createStore(
   atom: Atom<any> | null,
   preloadedState = {},
 ): Store {
-  const atomsListeners = new Map<TreeId, Function[]>()
+  let atomsListeners = new Map<TreeId, Function[]>()
+  let nextAtomsListeners = atomsListeners
   let actionsListeners: Function[] = []
   let nextActionsListiners: Function[] = actionsListeners
   // const storeAtom = map('store', atom || defaultAtom, value => value)
@@ -55,6 +56,15 @@ export function createStore(
   function ensureCanMutateNextListeners() {
     if (nextActionsListiners === actionsListeners) {
       nextActionsListiners = actionsListeners.slice()
+    }
+  }
+
+  function ensureCanMutateNextAtomsListeners() {
+    if (nextAtomsListeners === atomsListeners) {
+      nextAtomsListeners = new Map<TreeId, Function[]>()
+      for (const [key, value] of atomsListeners) {
+        nextAtomsListeners.set(key, [...value])
+      }
     }
   }
 
@@ -102,8 +112,9 @@ export function createStore(
     const targetId = targetTree.id
     const isLazy = !initialAtoms.has(targetId)
 
-    if (!atomsListeners.has(targetId)) {
-      atomsListeners.set(targetId, [])
+    ensureCanMutateNextAtomsListeners()
+    if (!nextAtomsListeners.has(targetId)) {
+      nextAtomsListeners.set(targetId, [])
       if (isLazy) {
         storeTree.union(targetTree)
         const ctx = createCtx(state, initAction)
@@ -112,17 +123,18 @@ export function createStore(
       }
     }
 
-    atomsListeners.get(targetId)!.push(listener)
+    nextAtomsListeners.get(targetId)!.push(listener)
 
     return () => {
       if (isSubscribed) {
         isSubscribed = false
 
-        const _listeners = atomsListeners.get(targetId)!
+        ensureCanMutateNextAtomsListeners()
+        const _listeners = nextAtomsListeners.get(targetId)!
         _listeners.splice(_listeners.indexOf(listener), 1)
 
         if (isLazy && _listeners.length === 0) {
-          atomsListeners.delete(targetId)
+          nextAtomsListeners.delete(targetId)
           storeTree.disunion(targetTree)
           // FIXME: dependencies is not clearing
           delete state[targetId]
@@ -144,7 +156,7 @@ export function createStore(
 
     if (changedIds.length > 0) {
       assign(state, stateNew)
-
+      atomsListeners = nextAtomsListeners
       for (let i = 0; i < changedIds.length; i++) {
         const id = changedIds[i]
         callFromList(atomsListeners.get(id) || [], stateNew[id])
