@@ -22,8 +22,7 @@
     "prettify:watch": "cross-env fixme=fixme../../node_modules/.bin/onchange '**/*.{j,t}s' -- prettier --write {{changed}}",
     "ts-check": "cross-env fixme=fixme ../../node_modules/.bin/tsc --noEmit",
     "ts-check:watch": "npm run ts-check -- --watch",
-    "update": "npx npm-check-updates -u",
-    "size": "size-limit"
+    "update": "npx npm-check-updates -u"
   },
   "author": "artalar",
   "maintainers": [
@@ -61,7 +60,6 @@
     ]
   },
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^2.1.4",
     "cross-env": "^5.2.1",
     "ts-node": "^8.3.0"
   },
