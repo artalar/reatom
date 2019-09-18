@@ -1,9 +1,15 @@
-import { nameToIdDefault, TreeId } from '@reatom/core'
+import { TreeId } from '@reatom/core'
 
 interface ITrace {
   file: string | null
   name: string | null
   line: number | null
+  column: number | null
+}
+
+interface IGenConfiguration {
+  useFullPath: boolean
+  pathMaxDeep: number
 }
 
 class StackTrace extends Error {
@@ -23,6 +29,7 @@ class StackTrace extends Error {
         file: t.getFileName(),
         name: t.getFunctionName(),
         line: t.getLineNumber(),
+        column: t.getColumnNumber(),
       }))
     }
     const save = Error.prepareStackTrace
@@ -32,15 +39,28 @@ class StackTrace extends Error {
   }
 }
 
+let configuration: IGenConfiguration = {
+  useFullPath: false,
+  pathMaxDeep: 3,
+}
+
 export function genIdFromLine(name: string | [string]): TreeId {
   const {
     stackTraces: [, , , trace],
   } = new StackTrace()
-  const id = nameToIdDefault(name)
+  const id = Array.isArray(name) ? name[0] : name
   if (trace && trace.file && trace.line) {
     const withoutBackSlashes = trace.file.replace(/\\/g, '/')
-    const file = withoutBackSlashes.match(/((?:\/).*?){1,3}$/)![1]
-    return `${id}[${file}#${trace.line}]`
+    const file = configuration.useFullPath
+      ? withoutBackSlashes
+      : withoutBackSlashes.match(
+          `(?:\/[^\/]*){1,${configuration.pathMaxDeep}}$`,
+        )
+    return `${id} [${file}:${trace.line}:${trace.column}]`
   }
   return id
+}
+
+export function configureGenIdFromLine(config: Partial<IGenConfiguration>) {
+  configuration = { ...configuration, ...config }
 }
