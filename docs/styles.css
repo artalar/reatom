@@ -1,3 +1,44 @@
 :root {
   --theme-color: #141134
 }
+
+.app-name img {
+  max-width: 200px;
+}
+
+.markdown-section code  {
+  font-size: inherit;
+}
+
+.markdown-section a {
+  font-weight: inherit;
+}
+
+.markdown-section pre {
+  box-shadow: 0 0 10px #ccc;
+  background: none;
+  padding: 0 1rem;
+}
+
+.markdown-section pre > code {
+  font-size: 1em;
+  line-height: 1.4;
+  background: inherit;
+  padding: 1rem 0;
+  color: var(--theme-color);
+}
+
+.markdown-section code,
+.token.function, .token.keyword {
+  color: #3c699e;
+}
+
+h3 .anchor {
+  font-weight: normal;
+}
+
+.token.number,
+.token.boolean,
+.token.string {
+  color: #c76b29;
+}
