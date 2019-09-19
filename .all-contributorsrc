@@ -17,6 +17,23 @@
         "plugin",
         "tool"
       ]
+    },
+    {
+      "login": "belozer",
+      "name": "Sergey Belozyorcev",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/1655916?v=4",
+      "profile": "https://vk.com/belozyorcev",
+      "contributions": [
+        "code",
+        "ideas",
+        "test",
+        "tool",
+        "tutorial",
+        "review",
+        "design",
+        "example",
+        "blog"
+      ]
     }
   ],
   "projectName": "reatom",
