@@ -18,12 +18,6 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 
 > **v1.0.0 schedule**: end of September 2019
 
-## Description
-
-Reatom is blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
-
-> Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
-
 ## Goals and features
 
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
@@ -41,6 +35,21 @@ Reatom is blend of the one-way data flow (by [flux](https://github.com/facebook/
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward for write bad code
 - handy for write good code
+
+## Description
+
+Reatom is blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
+
+> Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
+
+
+Data flow diagram:
+
+<div align="center">
+
+![reatom data flow](https://artalar.github.io/reatom/flow.svg)
+
+</div>
 
 ## Installation
 
