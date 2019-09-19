@@ -14,7 +14,7 @@ describe('@reatom/debug', () => {
       }
       mySexyFunctionWhereImDeclaredMySexyAtomsAndActions()
     })
-    test('configureGenIdFromLine', () => {
+    test('configureGenIdFromLine maxDeep', () => {
       function mySexyFunctionWhereImDeclaredMySexyAtomsAndActions() {
         setNameToId(genIdFromLine)
         configureGenIdFromLine({
@@ -29,6 +29,38 @@ describe('@reatom/debug', () => {
         expect(getTree(atom).id).toBe(
           'dd [/packages/debug/test/index.ts:27:44]',
         )
+      }
+      mySexyFunctionWhereImDeclaredMySexyAtomsAndActions()
+    })
+    test('configureGenIdFromLine showColumn', () => {
+      function mySexyFunctionWhereImDeclaredMySexyAtomsAndActions() {
+        setNameToId(genIdFromLine)
+        configureGenIdFromLine({
+          showColumn: false,
+        })
+        const action = declareAction('pep')
+        const atom = declareAtom('dd', 0, () => {})
+
+        expect(action.getType()).toBe(
+          'pep [/debug/test/index.ts:40]',
+        )
+        expect(getTree(atom).id).toBe(
+          'dd [/debug/test/index.ts:41]',
+        )
+      }
+      mySexyFunctionWhereImDeclaredMySexyAtomsAndActions()
+    })
+    test('configureGenIdFromLine fullPath', () => {
+      function mySexyFunctionWhereImDeclaredMySexyAtomsAndActions() {
+        setNameToId(genIdFromLine)
+        configureGenIdFromLine({
+          useFullPath: true,
+        })
+        const action = declareAction('pep')
+        const atom = declareAtom('dd', 0, () => {})
+
+        expect(action.getType().includes('/packages/debug/test/index.ts:54:48')).toBe(true)
+        expect(getTree(atom).id.includes('/packages/debug/test/index.ts:55:44')).toBe(true)
       }
       mySexyFunctionWhereImDeclaredMySexyAtomsAndActions()
     })
