@@ -1,9 +1,9 @@
-# @reatom/bebug
+# @reatom/debug
 
 ## Install
 
 ```sh
-npm install @reatom/bebug
+npm install @reatom/debug
 # OR
-yarn add @reatom/bebug
+yarn add @reatom/debug
 ```
