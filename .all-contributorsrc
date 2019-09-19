@@ -1,4 +1,27 @@
 {
-  "files": ["docs/README.md"],
-  "contributors": []
+  "files": [
+    "docs/README.md"
+  ],
+  "contributors": [
+    {
+      "login": "Wroud",
+      "name": "Alexey",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/811729?v=4",
+      "profile": "https://github.com/Wroud",
+      "contributions": [
+        "code",
+        "ideas",
+        "infra",
+        "test",
+        "platform",
+        "plugin",
+        "tool"
+      ]
+    }
+  ],
+  "projectName": "reatom",
+  "projectOwner": "artalar",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "contributorsPerLine": 7
 }
