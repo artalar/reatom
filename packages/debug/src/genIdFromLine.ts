@@ -46,37 +46,38 @@ const configurationDefault: GenConfiguration = {
   showColumn: true,
 }
 
-let configuration = configurationDefault
-
-export function genIdFromLine(name: string | [string]): TreeId {
-  const {
-    stackTraces: [, , , trace],
-  } = new StackTraceParcer()
-
-  if (!trace || !trace.file) {
-    return nameToIdDefault(name)
+export function genIdFromLine(
+  config: Partial<GenConfiguration> = configurationDefault,
+) {
+  const { useFullPath, pathMaxDeep, showColumn } = {
+    ...configurationDefault,
+    ...config,
   }
 
-  const extractName = Array.isArray(name) ? name[0] : name
-  const withoutBackSlashes = trace.file.replace(/\\/g, '/')
-  const { useFullPath, pathMaxDeep, showColumn } = configuration
-  const file = useFullPath
-    ? withoutBackSlashes
-    : withoutBackSlashes.match(
-      `(?:\/[^\/]*){1,${pathMaxDeep}}$`,
-    )
+  function genIdFromLine(name: string | [string]): TreeId {
+    const {
+      stackTraces: [, , , trace],
+    } = new StackTraceParcer()
 
-  let id = `${extractName} [${file}:${trace.line}`
+    if (!trace || !trace.file) {
+      return nameToIdDefault(name)
+    }
 
-  if (showColumn) {
-    id += `:${trace.column}]`
-  } else {
-    id += ']'
+    const extractName = Array.isArray(name) ? name[0] : name
+    const withoutBackSlashes = trace.file.replace(/\\/g, '/')
+    const file = useFullPath
+      ? withoutBackSlashes
+      : withoutBackSlashes.match(`(?:\/[^\/]*){1,${pathMaxDeep}}$`)
+
+    let id = `${extractName} [${file}:${trace.line}`
+
+    if (showColumn) {
+      id += `:${trace.column}]`
+    } else {
+      id += ']'
+    }
+
+    return id
   }
-
-  return id
-}
-
-export function configureGenIdFromLine(config: Partial<GenConfiguration>) {
-  configuration = { ...configurationDefault, ...config }
+  return genIdFromLine
 }
