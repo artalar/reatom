@@ -68,38 +68,34 @@ import {
   declareAtom,
   map,
   combine,
-  createStore,
-} from '@reatom/core'
+  createStore
+} from "@reatom/core";
 
 /** Actions */
-const increment = declareAction()
-const add = declareAction()
+const increment = declareAction();
+const add = declareAction();
 
 /** Atoms */
 const countAtom = declareAtom(1, on => [
   on(increment, state => state + 1),
-  on(add, (state, payload) => state + payload),
-])
-const isOddAtom = map(countAtom, count => Boolean(count % 2))
-const rootAtom = combine({ count: countAtom, isOdd: isOddAtom })
+  on(add, (state, payload) => state + payload)
+]);
+const isOddAtom = map(countAtom, count => Boolean(count % 2));
+const rootAtom = combine({ count: countAtom, isOdd: isOddAtom });
 
 /** Store */
-const store = createStore(rootAtom)
+const store = createStore(rootAtom);
 
-store.subscribe(countAtom, count => console.log('count: ', count))
-store.subscribe(isOddAtom, isOdd => console.log('isOdd: ', isOdd))
+store.subscribe(countAtom, count => console.log("count: ", count));
+store.subscribe(isOddAtom, isOdd => console.log("isOdd: ", isOdd));
 
-store.dispatch(increment())
+store.dispatch(increment());
 // count: 2
-// isOdd: true
-
-store.dispatch(add(4))
-// count: 6
 // isOdd: false
 
-store.dispatch(add(2))
-// count: 8
-// here `isOdd` subscriber will not be called because its value is not changes
+store.dispatch(add(2));
+// count: 4
+// `isOdd` subscriber will not be called because its value is not changes
 ```
 
 ## Packages
