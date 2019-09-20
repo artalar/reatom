@@ -1,6 +1,6 @@
 <div align="center">
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.png)](https://artalar.github.io/reatom)
+[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)

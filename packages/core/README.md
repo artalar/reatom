@@ -1,7 +1,7 @@
 <div align="center">
 <br/>
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.png)](https://artalar.github.io/reatom)
+[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
 
 </div>
 
