@@ -1,20 +1,20 @@
 import { TreeId, nameToIdDefault } from '@reatom/core'
 
-interface ITrace {
+type Trace = {
   file: string | null
   name: string | null
   line: number | null
   column: number | null
 }
 
-interface IGenConfiguration {
+type GenConfiguration = {
   useFullPath: boolean
   pathMaxDeep: number
   showColumn: boolean
 }
 
 class StackTraceParcer extends Error {
-  stackTraces: ITrace[]
+  stackTraces: Trace[]
   constructor(error?: string) {
     super(error)
     this.stackTraces = []
@@ -25,7 +25,7 @@ class StackTraceParcer extends Error {
     function prepareStackTrace(
       err: Error,
       stackTraces: NodeJS.CallSite[],
-    ): ITrace[] {
+    ): Trace[] {
       return stackTraces.map(t => ({
         file: t.getFileName(),
         name: t.getFunctionName(),
@@ -35,15 +35,15 @@ class StackTraceParcer extends Error {
     }
     const save = Error.prepareStackTrace
     Error.prepareStackTrace = prepareStackTrace
-    this.stackTraces = ((this.stack as any) as ITrace[]) || []
+    this.stackTraces = ((this.stack as any) as Trace[]) || []
     Error.prepareStackTrace = save
   }
 }
 
-const configurationDefault: IGenConfiguration = {
+const configurationDefault: GenConfiguration = {
   useFullPath: false,
   pathMaxDeep: 3,
-  showColumn: true
+  showColumn: true,
 }
 
 let configuration = configurationDefault
@@ -77,6 +77,6 @@ export function genIdFromLine(name: string | [string]): TreeId {
   return id
 }
 
-export function configureGenIdFromLine(config: Partial<IGenConfiguration>) {
+export function configureGenIdFromLine(config: Partial<GenConfiguration>) {
   configuration = { ...configurationDefault, ...config }
 }
