@@ -48,7 +48,7 @@ export function safetyStr(str: string, name: string): string {
   if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)
   return str
 }
-export function safetyFunc<T extends Function>(func: T, name: string): T {
+export function safetyFunc<T extends Function>(func: T | undefined, name: string): T {
   if (typeof func !== 'function') throwError(`Invalid ${name}`)
-  return func
+  return func as T
 }
