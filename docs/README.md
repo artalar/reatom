@@ -91,14 +91,10 @@ store.subscribe(isOddAtom, isOdd => console.log('isOdd: ', isOdd))
 
 store.dispatch(increment())
 // count: 2
-// isOdd: true
-
-store.dispatch(add(4))
-// count: 6
 // isOdd: false
 
 store.dispatch(add(2))
-// count: 8
+// count: 4
 // here `isOdd` subscriber will not be called because its value is not changes
 ```
 
