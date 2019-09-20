@@ -3,7 +3,7 @@ import { ActionCreator } from './declareAction'
 import { Atom } from './declareAtom'
 
 export type GenId = (name: string | [string]) => TreeId
-export type Unit<T = unknown> = (ActionCreator<T>) | (Atom<T>)
+export type Unit<T> = ActionCreator<T> | Atom<T>
 
 export const TREE = Symbol('@@Reatom/TREE')
 
@@ -11,7 +11,7 @@ export function noop() {}
 
 export const assign = Object.assign
 
-export function getTree(thing: Unit): Tree {
+export function getTree(thing: any): Tree {
   return thing && thing[TREE]
 }
 
@@ -48,7 +48,7 @@ export function safetyStr(str: string, name: string): string {
   if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)
   return str
 }
-export function safetyFunc<T extends Function>(func: T, name: string): T {
+export function safetyFunc<T extends Function>(func: T | undefined, name: string): T {
   if (typeof func !== 'function') throwError(`Invalid ${name}`)
-  return func
+  return func as T
 }
