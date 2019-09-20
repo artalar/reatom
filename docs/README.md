@@ -47,7 +47,7 @@ Data flow diagram:
 
 <div align="center">
 
-![reatom data flow](https://artalar.github.io/reatom/flow.svg)
+![reatom data flow](https://artalar.github.io/reatom/flow.png)
 
 </div>
 
