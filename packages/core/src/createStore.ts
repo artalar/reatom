@@ -59,12 +59,12 @@ export function createStore(
     }
   }
 
-  function ensureCanMutateNextAtomsListeners() {
+  function ensureCanMutateNextAtomsListeners(treeId: TreeId) {
     if (nextAtomsListeners === atomsListeners) {
       nextAtomsListeners = new Map<TreeId, Function[]>()
-      for (const [key, value] of atomsListeners) {
-        nextAtomsListeners.set(key, [...value])
-      }
+      atomsListeners.forEach((value, key) =>
+        nextAtomsListeners.set(key, treeId === key ? value.slice() : value),
+      )
     }
   }
 
@@ -83,10 +83,9 @@ export function createStore(
     return getState(ctx.stateNew, target)
   }
 
-  // @ts-ignore
   function subscribe<T>(
     target: Atom<T> | DispatchFunction,
-    subscriber: (state: T) => any,
+    subscriber?: (state: T) => any,
   ): () => void {
     const isActionSubscription = subscriber === undefined
     const listener = safetyFunc(
@@ -112,7 +111,7 @@ export function createStore(
     const targetId = targetTree.id
     const isLazy = !initialAtoms.has(targetId)
 
-    ensureCanMutateNextAtomsListeners()
+    ensureCanMutateNextAtomsListeners(targetId)
     if (!nextAtomsListeners.has(targetId)) {
       nextAtomsListeners.set(targetId, [])
       if (isLazy) {
@@ -129,7 +128,7 @@ export function createStore(
       if (isSubscribed) {
         isSubscribed = false
 
-        ensureCanMutateNextAtomsListeners()
+        ensureCanMutateNextAtomsListeners(targetId)
         const _listeners = nextAtomsListeners.get(targetId)!
         _listeners.splice(_listeners.indexOf(listener), 1)
 

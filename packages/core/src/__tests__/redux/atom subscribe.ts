@@ -229,41 +229,5 @@ describe('@reatom/core', () => {
       })
       store.dispatch(action({ id: 1, text: 'Hello' }))
     })
-    // test('does not leak private listeners array', done => {
-    //   const action = declareAction<any>();
-    //   const todoList = declareAtom<any[]>('text', [], on => [
-    //     on(
-    //       action,
-    //       (state, payload) => [...state, payload]),
-    //   ])
-    //   const store = createStore(todoList)
-    //   store.subscribe(function() {
-    //     //@ts-ignore
-    //     expect(this).toBe(undefined)
-    //     done()
-    //   })
-    //   store.dispatch(action({ id: 1, text: 'Hello' }))
-    // })
-    // test('throws if listener is not a function', done => {
-    //   const action = declareAction<any>();
-    //   const todoList = declareAtom<any[]>('text', [], on => [
-    //     on(
-    //       action,
-    //       (state, payload) => [...state, payload]),
-    //   ])
-    //   const store = createStore(todoList)
-
-    //     //@ts-ignore
-    //   expect(() => store.subscribe(undefined)).toThrow()
-
-    //     //@ts-ignore
-    //   expect(() => store.subscribe('')).toThrow()
-
-    //     //@ts-ignore
-    //   expect(() => store.subscribe(null)).toThrow()
-
-    //     //@ts-ignore
-    //   expect(() => store.subscribe(undefined)).toThrow()
-    // })
   })
 })
