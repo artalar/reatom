@@ -2,6 +2,7 @@ import { Tree, TreeId } from './kernel'
 import { ActionCreator } from './declareAction'
 import { Atom } from './declareAtom'
 
+export { TreeId }
 export type GenId = (name: string | [string]) => TreeId
 export type Unit<T> = ActionCreator<T> | Atom<T>
 
@@ -48,7 +49,10 @@ export function safetyStr(str: string, name: string): string {
   if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)
   return str
 }
-export function safetyFunc<T extends Function>(func: T | undefined, name: string): T {
+export function safetyFunc<T extends Function>(
+  func: T | undefined,
+  name: string,
+): T {
   if (typeof func !== 'function') throwError(`Invalid ${name}`)
   return func as T
 }
