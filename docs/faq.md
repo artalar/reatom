@@ -1,4 +1,4 @@
-## FAQ
+# FAQ
 
 - **Is reatom infinitely perfect?**
   > Definitely **no**! Reatom is built on top of [SSoT](https://en.wikipedia.org/wiki/Single_source_of_truth) idea and attempts to strictly follow it to ensure reliability. Therefore it prefers immutable global state and other limitations:
