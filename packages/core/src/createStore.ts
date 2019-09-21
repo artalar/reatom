@@ -133,9 +133,11 @@ export function createStore(
   }
 
   function dispatch(action: Action<any>) {
-    ;(typeof action !== 'object' ||
+    if (
+      typeof action !== 'object' ||
       action === null ||
-      typeof action.type !== 'string') &&
+      typeof action.type !== 'string'
+    )
       throwError('Invalid action')
 
     const ctx = createCtx(state, action)

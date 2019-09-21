@@ -9,7 +9,7 @@ import {
   getIsAction,
   assign,
 } from './shared'
-import { Action, declareAction, ActionType } from './declareAction'
+import { Action, declareAction } from './declareAction'
 
 const DEPS = Symbol('@@Reatom/DEPS')
 
@@ -60,7 +60,7 @@ export function declareAtom<TState>(
 
   function reduce<T>(
     dep: Unit,
-    reducer: (state: TState, payload: T) => TState | undefined,
+    reducer: (state: TState, payload: T) => TState,
   ) {
     if (!initialPhase)
       throwError("Can't define dependencies after atom initialization")
