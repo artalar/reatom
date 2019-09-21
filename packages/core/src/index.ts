@@ -3,6 +3,7 @@ export * from './declareAtom'
 export * from './createStore'
 export {
   GenId,
+  TreeId,
   Unit,
   getTree,
   getIsAtom,
