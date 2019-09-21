@@ -1,18 +1,7 @@
-import { Leaf, Tree, State, TreeId, Ctx, createCtx } from './kernel'
-import {
-  TREE,
-  noop,
-  nameToId,
-  Unit,
-  throwError,
-  getTree,
-  safetyFunc,
-  getIsAction,
-  assign,
-  getIsAtom,
-} from './shared'
-import { Action, declareAction, ActionType } from './declareAction'
-import { Atom, declareAtom, initAction, map, getState } from './declareAtom'
+import { Tree, State, TreeId, createCtx } from './kernel'
+import { throwError, getTree, safetyFunc, assign, getIsAtom } from './shared'
+import { Action } from './declareAction'
+import { Atom, declareAtom, initAction, getState } from './declareAtom'
 
 type DispatchFunction = (action: Action<any>) => any
 type SubscribeFunction = {
@@ -20,7 +9,7 @@ type SubscribeFunction = {
   (listener: DispatchFunction): () => void
 }
 type GetStateFunction = {
-  <T>(target: Atom<T>): T
+  <T>(target: Atom<T>): T | undefined
   (): State
 }
 
@@ -51,7 +40,7 @@ export function createStore(
   storeTree.forEach(initAction.type, ctx)
   const initialAtoms = new Set(Object.keys(ctx.stateNew))
   // preloadedState needed to save data of lazy atoms
-  const state = assign({}, preloadedState || {}, ctx.stateNew)
+  const state = assign({}, preloadedState || {}, ctx.stateNew) as State
 
   function ensureCanMutateNextListeners() {
     if (nextActionsListiners === actionsListeners) {
@@ -68,19 +57,20 @@ export function createStore(
     }
   }
 
-  function _getState(target?: Atom<any>) {
+  function _getState(): State
+  function _getState<T>(target?: Atom<T>): State | T | undefined {
     // TODO: try to cache `assign`
-    if (target === undefined) return assign({}, state)
+    if (target === undefined) return assign({}, state) as State
 
     if (!getIsAtom(target)) throwError('Invalid target')
 
-    const targetState = getState(state, target)
+    const targetState = getState<T>(state, target)
     if (targetState !== undefined) return targetState
 
     const ctx = createCtx(state, initAction)
     getTree(target)!.forEach(initAction.type, ctx)
 
-    return getState(ctx.stateNew, target)
+    return getState<T>(ctx.stateNew, target)
   }
 
   function subscribe<T>(
@@ -107,7 +97,7 @@ export function createStore(
     }
 
     if (!getIsAtom(target)) throwError('Subscription target is not Atom')
-    const targetTree = getTree(target)
+    const targetTree = getTree(target as Atom<T>)
     const targetId = targetTree.id
     const isLazy = !initialAtoms.has(targetId)
 
@@ -172,7 +162,6 @@ export function createStore(
     dispatch,
   }
 
-  // @ts-ignore
   return store
 }
 

@@ -1,5 +1,5 @@
 import { Leaf, Tree } from './kernel'
-import { TREE, noop, nameToId } from './shared'
+import { TREE, noop, nameToId, Unit } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
@@ -14,10 +14,10 @@ export type Action<Payload, Type extends ActionType = string> = {
 
 export type ActionCreator<Payload = undefined, Type extends string = string> = {
   getType: () => string
-  [TREE]: Tree
-} & (Payload extends undefined
-  ? () => Action<Payload, Type>
-  : (payload: Payload) => Action<Payload, Type>)
+} & Unit &
+  (Payload extends undefined
+    ? () => Action<Payload, Type>
+    : (payload: Payload) => Action<Payload, Type>)
 
 export function declareAction<
   Payload = undefined,

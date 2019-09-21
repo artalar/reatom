@@ -1,18 +1,17 @@
 import { Tree, TreeId } from './kernel'
-import { ActionCreator } from './declareAction'
 import { Atom } from './declareAtom'
 
 export { TreeId }
 export type GenId = (name: string | [string]) => TreeId
-export type Unit<T> = ActionCreator<T> | Atom<T>
-
 export const TREE = Symbol('@@Reatom/TREE')
+
+export type Unit = { [TREE]: Tree }
 
 export function noop() {}
 
 export const assign = Object.assign
 
-export function getTree(thing: any): Tree {
+export function getTree(thing: Unit): Tree {
   return thing && thing[TREE]
 }
 
