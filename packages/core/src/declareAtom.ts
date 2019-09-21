@@ -142,7 +142,7 @@ export function declareAtom<TState>(
   return atom
 }
 
-export function getState<T>(state: State, atom: Atom<T>): T | undefined {
+export function getState<T>(state: State, atom: Atom<T>): T {
   return state[atom[TREE].id]
 }
 

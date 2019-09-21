@@ -9,7 +9,7 @@ type SubscribeFunction = {
   (listener: DispatchFunction): () => void
 }
 type GetStateFunction = {
-  <T>(target: Atom<T>): T | undefined
+  <T>(target: Atom<T>): T
   (): State
 }
 
@@ -58,7 +58,7 @@ export function createStore(
   }
 
   function _getState(): State
-  function _getState<T>(target?: Atom<T>): State | T | undefined {
+  function _getState<T>(target?: Atom<T>): State | T {
     // TODO: try to cache `assign`
     if (target === undefined) return assign({}, state) as State
 
