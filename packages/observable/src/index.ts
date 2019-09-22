@@ -75,6 +75,11 @@ export class Observable<T> implements Observable<T> {
         if (isClosed) return
         isClosed = true
         unsubscribe()
+        if (typeof observer !== 'function' && observer.complete) {
+          observer.complete()
+        } else if (onComplete) {
+          onComplete()
+        }
       },
     }
 

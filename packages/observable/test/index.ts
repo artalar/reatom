@@ -48,12 +48,14 @@ describe('@reatom/observable', () => {
       const store = createStore(atom)
 
       const fn = jest.fn()
+      const fn1 = jest.fn()
 
-      const subscription = observe(store).subscribe(fn)
+      const subscription = observe(store).subscribe(fn, undefined, fn1)
 
       const act = action()
       store.dispatch(act)
 
+      expect(fn1.mock.calls.length).toBe(0)
       expect(fn.mock.calls.length).toBe(1)
       expect(fn.mock.calls[0][0]).toBe(act)
       expect(subscription.closed).toBe(false)
@@ -61,6 +63,7 @@ describe('@reatom/observable', () => {
       subscription.unsubscribe()
       store.dispatch(act)
 
+      expect(fn1.mock.calls.length).toBe(1)
       expect(fn.mock.calls.length).toBe(1)
       expect(subscription.closed).toBe(true)
     })
@@ -102,12 +105,14 @@ describe('@reatom/observable', () => {
       const store = createStore(atom)
 
       const fn = jest.fn()
+      const fn1 = jest.fn()
 
-      const subscription = observe(store, atom).subscribe(fn)
+      const subscription = observe(store, atom).subscribe(fn, undefined, fn1)
 
       const act = action()
       store.dispatch(act)
 
+      expect(fn1.mock.calls.length).toBe(0)
       expect(fn.mock.calls.length).toBe(1)
       expect(fn.mock.calls[0][0]).toBe(1)
       expect(subscription.closed).toBe(false)
@@ -115,6 +120,7 @@ describe('@reatom/observable', () => {
       subscription.unsubscribe()
       store.dispatch(act)
 
+      expect(fn1.mock.calls.length).toBe(1)
       expect(fn.mock.calls.length).toBe(1)
       expect(subscription.closed).toBe(true)
     })
