@@ -2,6 +2,15 @@ import { observe } from '../src/'
 import { declareAtom, declareAction, createStore } from '@reatom/core'
 
 describe('@reatom/observable', () => {
+  test('Symbol.observable', () => {
+    const action = declareAction()
+    const atom = declareAtom(0, on => [on(action, () => 1)])
+    const store = createStore(atom)
+
+    const observable = observe(store, atom)
+
+    expect(observable[Symbol.observable]()).toBe(observable)
+  })
   describe('observe store', () => {
     test('subscribe function', () => {
       const action = declareAction()
