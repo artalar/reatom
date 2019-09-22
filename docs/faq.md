@@ -22,6 +22,31 @@
 
 > Reatom uses immutable data structures (see above) for tracking changes in every reducer call, but as every subscription is direct to each Atom, the library **is not needed of memoization**. This allows it to scale in terms of performance much better than redux (for many subscriptions or frequently updates).
 
+## Why declare*?
+
+> Atoms cannot exist outside the context of Store. To interact with the world, an atom must be connected to the store. Declaration describes all possible cases of reactions to actions in one place, but not creates instance of atom.
+>
+> Ok. Why not use short name like **atom**?
+>
+> 1. **Meaning**: `declareAtom` creates `model` of Atom. Instance of atom creates inside of Store;
+> 2. **Visual part**: using accent in code for primary entities. `declareAtom` creates primary entity, `map` and `combine` creates secondary enities derived from primary
+> 3. **Readability**: `atom` says nothing about declaration of logic inside
+>
+> Ok. Why not use short name like **Atom**?
+> 1. **Visual part**: in a large amount of code, the main entities are lost
+> 2. **Consistency**: all library api uses `camelCase`, but `Atom` is `PascalCase`
+> 3. **Readability**: `Atom` says nothing about declaration of logic inside
+
+> Action is [flux standard action](https://github.com/redux-utilities/), **declareAction** creates functions for creates this objects.
+> 
+> Ok. Why not use short name like **action**?
+> 1. **Collisions**: the ambiguity of the code. 
+> 2. **Visual part**: this is one of primary parts of the business logic declaration
+>
+> Ok. Why not use short name like **Action**?
+> 1. **Collisions**: the ambiguity of the code.
+> 2. **Meaning**: `declareAction` creates `Actions` (functions for creates `actions`)
+
 <!--
 ## **Why packages is in the scope?**
 > `npm ERR! 403 Forbidden - PUT https://registry.npmjs.org/reatom - Package name too similar to existing packages; try renaming your package to '@artalar/reatom' and publishing with 'npm publish --access=public' instead` https://www.npmjs.com/package/awful-name-thanks-npm#wtf-is-wrong-with-the-package-name
