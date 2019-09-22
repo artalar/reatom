@@ -1,6 +1,7 @@
 - Getting started
   * [Introduction](/)
   * [Glossary](/glossary.md)
+  * [FAQ](/faq.md)
 
 * [Examples](/examples.md)
-* [FAQ](/faq.md)
+* [Contributing](/CONTRIBUTING.md)

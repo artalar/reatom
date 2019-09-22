@@ -1,5 +1,7 @@
 :root {
-  --theme-color: #141134
+  --theme-color: #141134;
+  --color-link: #106ebc;
+  --color-link-hover: #f00;
 }
 
 .app-name img {
@@ -12,6 +14,13 @@
 
 .markdown-section a {
   font-weight: inherit;
+  text-decoration: none;
+  color: var(--color-link);
+  transition: .1s
+}
+
+.markdown-section a:hover {
+  color: var(--color-link-hover);
 }
 
 .markdown-section pre {
