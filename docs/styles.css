@@ -51,3 +51,16 @@ h3 .anchor {
 .token.string {
   color: #c76b29;
 }
+
+.stars {
+  padding: 20px 15px 40px;
+  border-top: 1px solid rgba(0,0,0,.07);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.stars__button {
+  margin-top: 5px;
+}
