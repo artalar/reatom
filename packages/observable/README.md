@@ -1,5 +1,7 @@
 # @reatom/observable
 
+Creates Observable for Reatom Store or Atom.
+
 ## Install
 
 ```sh

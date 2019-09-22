@@ -1,7 +1,7 @@
 {
   "name": "@reatom/observable",
   "private": false,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Reactive observer for reatom",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -63,9 +63,10 @@
   },
   "devDependencies": {
     "cross-env": "^5.2.1",
-    "ts-node": "^8.3.0"
+    "ts-node": "^8.3.0",
+    "@reatom/core": "^1.0.0-rc15"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/core": "^1.0.0-rc15"
   }
 }
