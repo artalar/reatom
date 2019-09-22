@@ -27,24 +27,24 @@ export type Store = {
 // (need perf tests)
 export function createStore(
   atom: Atom<any> | null,
-  preloadedState = {},
+  initState = {},
 ): Store {
   let atomsListeners = new Map<TreeId, Function[]>()
   let nextAtomsListeners = atomsListeners
   let actionsListeners: Function[] = []
-  let nextActionsListiners: Function[] = actionsListeners
+  let nextActionsListeners: Function[] = actionsListeners
   // const storeAtom = map('store', atom || defaultAtom, value => value)
   const storeTree = new Tree('store')
   storeTree.union(getTree(atom || defaultAtom)!)
-  const ctx = createCtx(preloadedState || {}, initAction)
+  const ctx = createCtx(initState || {}, initAction)
   storeTree.forEach(initAction.type, ctx)
   const initialAtoms = new Set(Object.keys(ctx.stateNew))
   // preloadedState needed to save data of lazy atoms
-  const state = assign({}, preloadedState || {}, ctx.stateNew) as State
+  const state = assign({}, initState || {}, ctx.stateNew) as State
 
   function ensureCanMutateNextListeners() {
-    if (nextActionsListiners === actionsListeners) {
-      nextActionsListiners = actionsListeners.slice()
+    if (nextActionsListeners === actionsListeners) {
+      nextActionsListeners = actionsListeners.slice()
     }
   }
 
@@ -86,12 +86,12 @@ export function createStore(
 
     if (isActionSubscription) {
       ensureCanMutateNextListeners()
-      nextActionsListiners.push(listener)
+      nextActionsListeners.push(listener)
       return () => {
         if (isSubscribed) {
           isSubscribed = false
           ensureCanMutateNextListeners()
-          nextActionsListiners.splice(nextActionsListiners.indexOf(listener), 1)
+          nextActionsListeners.splice(nextActionsListeners.indexOf(listener), 1)
         }
       }
     }
@@ -155,7 +155,7 @@ export function createStore(
     }
 
     ;(action.reactions || []).forEach(r => r(payload, store as any))
-    callFromList((actionsListeners = nextActionsListiners), action)
+    callFromList((actionsListeners = nextActionsListeners), action)
   }
 
   const store = {
