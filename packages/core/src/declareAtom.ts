@@ -17,6 +17,7 @@ const DEPS = Symbol('@@Reatom/DEPS')
 const _initAction = declareAction(['@@Reatom/init'])
 export const initAction = _initAction()
 
+type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
   on: <T>(dependency: Unit, reducer: Reducer<TState, T>) => void,
@@ -58,10 +59,7 @@ export function declareAtom<TState>(
   if (initialState === undefined)
     throwError(`Atom "${_id}". Initial state can't be undefined`)
 
-  function reduce<T>(
-    dep: Unit,
-    reducer: (state: TState, payload: T) => TState,
-  ) {
+  function reduce<T>(dep: Unit, reducer: Reducer<TState, T>) {
     if (!initialPhase)
       throwError("Can't define dependencies after atom initialization")
 
@@ -176,14 +174,14 @@ export function map<T, _T = unknown>(
   )
 }
 
-export function combine<T extends { [key: string]: Atom<any> } | TupleOfAtoms>(
+export function combine<T extends AtomsMap | TupleOfAtoms>(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<T extends { [key: string]: Atom<any> } | TupleOfAtoms>(
+export function combine<T extends AtomsMap | TupleOfAtoms>(
   name: string | [TreeId],
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<T extends { [key: string]: Atom<any> } | TupleOfAtoms>(
+export function combine<T extends AtomsMap | TupleOfAtoms>(
   name: string | [TreeId] | T,
   shape?: T,
 ) {
