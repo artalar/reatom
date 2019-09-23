@@ -77,7 +77,7 @@ const countAtom = declareAtom(
   on => [      // reducers definitions
   //on(dependedDeclaredActionOrAtom, reducer)
   //reducer: (oldState, dependedValues) => newState
-    on(increment, state => state + 1)
+    on(increment, state => state + 1),
     on(add, (state, payload) => state + payload)
   ]
 )
