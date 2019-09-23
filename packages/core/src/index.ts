@@ -1,4 +1,13 @@
 export * from './declareAction'
 export * from './declareAtom'
 export * from './createStore'
-export { Unit, getTree, getIsAtom, getIsAction } from './shared'
+export {
+  GenId,
+  TreeId,
+  Unit,
+  getTree,
+  getIsAtom,
+  getIsAction,
+  nameToIdDefault,
+  setNameToId,
+} from './shared'

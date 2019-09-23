@@ -8,8 +8,8 @@
     "build": "lerna run build",
     "test": "lerna run test",
     "size": "lerna run size",
-    "prettify": "prettier --write '**/*.{j,t}s'",
-    "prettify:watch": "onchange '**/*.{j,t}s' -- prettier --write {{changed}}"
+    "prettify": "prettier --write **/*.{j,t}s !**/babel-plugin/test/**",
+    "prettify:watch": "onchange **/*.{j,t}s !**/babel-plugin/test/** -- prettier --write {{changed}}"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.5",
@@ -27,7 +27,7 @@
     "babel-eslint": "^10.0.3",
     "babel-jest": "^24.9.0",
     "babel-loader": "^8.0.6",
-    "cross-env": "^5.2.0",
+    "cross-env": "^5.2.1",
     "docsify-cli": "^4.3.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb-base": "^14.0.0",

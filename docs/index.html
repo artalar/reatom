@@ -13,6 +13,8 @@
       content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
     />
     <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css" />
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="icon" type="image/svg+xml" href="logos/logo-icon.png">
   </head>
   <body>
     <style>
@@ -23,11 +25,13 @@
     <div id="app">Please wait...</div>
     <script>
       window.$docsify = {
-        name: 'ReAtom',
-        repo: 'ssh://git@github.com/artalar/reatom',
+        name: 'Reatom',
+        repo: 'https://github.com/artalar/reatom',
+        logo: '/logos/logo.svg',
         loadSidebar: true,
         subMaxLevel: 2,
-        loadNavbar: true
+        loadNavbar: true,
+        auto2top: true
       }
     </script>
     <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
