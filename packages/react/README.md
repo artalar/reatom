@@ -105,9 +105,9 @@ export const Counter = () => {
   return (
     <div>
       <h1>{greeting}</h1>
-      <button key='decrement'>-</button>
+      <button key='decrement' onClick={doDecrement}>-</button>
       {count}
-      <button key='increment'>+</button>
+      <button key='increment' onClick={doIncrement}>+</button>
     </div>
   )
 }
