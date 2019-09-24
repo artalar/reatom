@@ -84,6 +84,8 @@ http://www.typescriptlang.org/play/index.html#code/C4TwDgpgBAsgPAaQDRQGoD4oF4oG1
 
 ### Exceptions [control] flow
 
+<!-- - Event VS action -->
+
 ```
 Коллеги, помните мы обсуждали вчера ситуацию про менеджмент состояния:
 
