@@ -11,6 +11,8 @@ store.dispatch(increment())
 const stateNew = myAtom(stateOld, increment())
 ```
 
+> **NOTE**. About declareAction see FAQ: [why declare*](/faq?id=why-declare)
+
 ### Action payload
 
 Declared action is a function that accept payload by first argument and return object (action to store dispatcher) with shape: `{ type, payload }`.
@@ -75,7 +77,7 @@ const countAtom = declareAtom(
   on => [      // reducers definitions
   //on(dependedDeclaredActionOrAtom, reducer)
   //reducer: (oldState, dependedValues) => newState
-    on(increment, state => state + 1)
+    on(increment, state => state + 1),
     on(add, (state, payload) => state + payload)
   ]
 )
@@ -86,6 +88,7 @@ const countDoubledAtom = declareAtom(
 // shortcut:
 // const countDoubledAtom = map(count, count => count * 2)
 ```
+> **NOTE**. About declareAtom see FAQ: [why declare*](/faq?id=why-declare)
 
 ## Store
 
