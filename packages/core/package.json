@@ -9,6 +9,7 @@
   "module": "build/index.es.js",
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
+  "sideEffects": false,
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "postpublish": "npm run clean",
