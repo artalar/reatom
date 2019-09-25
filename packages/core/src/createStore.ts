@@ -154,7 +154,7 @@ export function createStore(
       }
     }
 
-    ;(action.reactions || []).forEach(r => r(payload, store as any))
+    ;(action.reactions || []).forEach(r => r(payload, store))
     callFromList((actionsListeners = nextActionsListeners), action)
   }
 

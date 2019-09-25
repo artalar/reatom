@@ -64,7 +64,7 @@ export function declareAtom<TState>(
       throwError("Can't define dependencies after atom initialization")
 
     const position = dependencePosition++
-    const depTree = getTree(dep as any)!
+    const depTree = getTree(dep)!
     if (!depTree) throwError('Invalid dependency')
     const depId = depTree.id
     safetyFunc(reducer, 'reducer')

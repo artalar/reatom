@@ -27,7 +27,7 @@ export function declareAction<
   ...reactions: Reaction<Payload>[]
 ): ActionCreator<Payload, Type> {
   if (typeof name === 'function') {
-    reactions.unshift(name as any)
+    reactions.unshift(name)
     name = 'action'
   }
   const id = nameToId(name)
