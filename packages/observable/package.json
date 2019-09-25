@@ -68,5 +68,8 @@
   },
   "peerDependencies": {
     "@reatom/core": "^1.0.0-rc15"
+  },
+  "dependencies": {
+    "symbol-observable": "^1.2.0"
   }
 }

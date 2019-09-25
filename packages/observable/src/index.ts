@@ -1,4 +1,5 @@
 import { Store, Atom, Action } from '@reatom/core'
+import Symbol_observable from 'symbol-observable';
 
 export type ActionOrValue<T> = T extends undefined ? Action<any, string> : T
 
@@ -90,7 +91,7 @@ export class Observable<T> implements Observable<T> {
     return subscription
   }
 
-  [Symbol.observable]() {
+  [Symbol_observable]() {
     return this
   }
 }
