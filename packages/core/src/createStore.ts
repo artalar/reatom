@@ -70,7 +70,7 @@ export function createStore(
     const ctx = createCtx(state, initAction)
     getTree(target)!.forEach(initAction.type, ctx)
 
-    return getState<T>(ctx.stateNew, target)
+    return getState(ctx.stateNew, target)
   }
 
   function subscribe<T>(
