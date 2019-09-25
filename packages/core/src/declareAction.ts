@@ -9,7 +9,7 @@ export type Reaction<T> = (payload: T, store: Store) => any
 export type Action<Payload, Type extends ActionType = string> = {
   type: Type
   payload: Payload
-  reactions: Reaction<Payload>[]
+  reactions?: Reaction<Payload>[]
 }
 
 export type ActionCreator<Payload = undefined, Type extends string = string> = {

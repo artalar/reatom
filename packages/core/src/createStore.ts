@@ -77,22 +77,17 @@ export function createStore(
     target: Atom<T> | DispatchFunction,
     subscriber?: (state: T) => any,
   ): () => void {
-    const isActionSubscription = subscriber === undefined
-    const listener = safetyFunc(
-      isActionSubscription ? target : subscriber,
-      'listener',
-    )
+    const listener = safetyFunc(subscriber || target, 'listener')
     let isSubscribed = true
 
-    if (isActionSubscription) {
+    if (subscriber === undefined) {
       ensureCanMutateNextListeners()
       nextActionsListeners.push(listener)
       return () => {
-        if (isSubscribed) {
-          isSubscribed = false
-          ensureCanMutateNextListeners()
-          nextActionsListeners.splice(nextActionsListeners.indexOf(listener), 1)
-        }
+        if (!isSubscribed) return
+        isSubscribed = false
+        ensureCanMutateNextListeners()
+        nextActionsListeners.splice(nextActionsListeners.indexOf(listener), 1)
       }
     }
 
@@ -115,19 +110,18 @@ export function createStore(
     nextAtomsListeners.get(targetId)!.push(listener)
 
     return () => {
-      if (isSubscribed) {
-        isSubscribed = false
+      if (!isSubscribed) return
+      isSubscribed = false
 
-        ensureCanMutateNextAtomsListeners(targetId)
-        const _listeners = nextAtomsListeners.get(targetId)!
-        _listeners.splice(_listeners.indexOf(listener), 1)
+      ensureCanMutateNextAtomsListeners(targetId)
+      const _listeners = nextAtomsListeners.get(targetId)!
+      _listeners.splice(_listeners.indexOf(listener), 1)
 
-        if (isLazy && _listeners.length === 0) {
-          nextAtomsListeners.delete(targetId)
-          storeTree.disunion(targetTree)
-          // FIXME: dependencies is not clearing
-          delete state[targetId]
-        }
+      if (isLazy && _listeners.length === 0) {
+        nextAtomsListeners.delete(targetId)
+        storeTree.disunion(targetTree)
+        // FIXME: dependencies is not clearing
+        delete state[targetId]
       }
     }
   }

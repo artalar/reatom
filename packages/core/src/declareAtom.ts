@@ -23,10 +23,10 @@ type DependencyMatcher<TState> = (
   on: <T>(dependency: Unit, reducer: Reducer<TState, T>) => void,
 ) => any
 
-export type Atom<T> = {
+export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): State
   [DEPS]: TreeId[]
-} & Unit
+}
 
 export function declareAtom<TState>(
   initialState: TState,
