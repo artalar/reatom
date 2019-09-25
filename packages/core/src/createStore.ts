@@ -26,7 +26,7 @@ export type Store = {
 // for prevent using `delete` operator
 // (need perf tests)
 export function createStore(
-  atom: Atom<any> | null,
+  atom: Atom<any> = defaultAtom,
   initState = {},
 ): Store {
   let atomsListeners = new Map<TreeId, Function[]>()
@@ -35,12 +35,12 @@ export function createStore(
   let nextActionsListeners: Function[] = actionsListeners
   // const storeAtom = map('store', atom || defaultAtom, value => value)
   const storeTree = new Tree('store')
-  storeTree.union(getTree(atom || defaultAtom)!)
-  const ctx = createCtx(initState || {}, initAction)
+  storeTree.union(getTree(atom)!)
+  const ctx = createCtx(initState, initAction)
   storeTree.forEach(initAction.type, ctx)
   const initialAtoms = new Set(Object.keys(ctx.stateNew))
   // preloadedState needed to save data of lazy atoms
-  const state = assign({}, initState || {}, ctx.stateNew) as State
+  const state = assign({}, initState, ctx.stateNew) as State
 
   function ensureCanMutateNextListeners() {
     if (nextActionsListeners === actionsListeners) {
