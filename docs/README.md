@@ -31,7 +31,7 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
 - 👴 **ES5 support**: by polyfills
 - 🧯 **reliable**: predictable exeptions flow
-- synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/src/__tests__/diamond.ts)
+- synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/packages/core/src/__tests__/diamond.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward for write bad code
 - handy for write good code
