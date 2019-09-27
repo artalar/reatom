@@ -366,7 +366,7 @@ describe('@reatom/core', () => {
         handle(increment, state => state + 1),
       )
 
-      const store = createStore(undefined, { countStatic: 10 })
+      const store = createStore({ countStatic: 10 })
       store.dispatch(increment())
 
       expect(store.getState(countStatic)).toBe(10)
@@ -375,6 +375,10 @@ describe('@reatom/core', () => {
       store.dispatch(increment())
 
       expect(store.getState(countStatic)).toBe(11)
+    })
+    test('createStore with undefined atom and state', () => {
+      const store = createStore()
+      expect(store.getState()['atom [1]']).toBe(0)
     })
     test('createStore preloaded state', () => {
       const increment = declareAction()

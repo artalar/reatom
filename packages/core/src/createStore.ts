@@ -22,20 +22,31 @@ export type Store = {
   getState: GetStateFunction
 }
 
+export function createStore(
+  initState?: State,
+): Store;
+export function createStore(
+  atom: Atom<any>,
+  initState?: State,
+): Store;
 // TODO: try to use ES6 Map's instead of plain object
 // for prevent using `delete` operator
 // (need perf tests)
 export function createStore(
-  atom: Atom<any> = defaultAtom,
-  initState = {},
+  atom: Atom<any> | State = defaultAtom,
+  initState: State = {},
 ): Store {
+  if (!getIsAtom(atom)) {
+    initState = atom;
+    atom = defaultAtom;
+  }
   let atomsListeners = new Map<TreeId, Function[]>()
   let nextAtomsListeners = atomsListeners
   let actionsListeners: Function[] = []
   let nextActionsListeners: Function[] = actionsListeners
   // const storeAtom = map('store', atom || defaultAtom, value => value)
   const storeTree = new Tree('store')
-  storeTree.union(getTree(atom)!)
+  storeTree.union(getTree(atom as Atom<any>)!)
   const ctx = createCtx(initState, initAction)
   storeTree.forEach(initAction.type, ctx)
   const initialAtoms = new Set(Object.keys(ctx.stateNew))
@@ -148,7 +159,7 @@ export function createStore(
       }
     }
 
-    ;(action.reactions || []).forEach(r => r(payload, store))
+    ; (action.reactions || []).forEach(r => r(payload, store))
     callFromList((actionsListeners = nextActionsListeners), action)
   }
 
