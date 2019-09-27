@@ -74,7 +74,7 @@ export function useAtom<TI, TO = TI>(
     stateRef.current = getRelativeState()
   }
 
-  stateRef.current = useMemo(getRelativeState, deps)
+  stateRef.current = getRelativeState()
 
   useEffect(() => {
     if (mountStatusRef.current === lifeCycleStatus.initNotActual)
