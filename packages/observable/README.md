@@ -9,7 +9,7 @@ npm install @reatom/observable
 # OR
 yarn add @reatom/observable
 ```
-## Ussage
+## Usage
 
 ```js
 import { observe } from '@reatom/observable'
