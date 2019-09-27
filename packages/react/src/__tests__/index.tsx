@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect } from 'react'
 import { renderHook } from '@testing-library/react-hooks'
 import { render } from '@testing-library/react'
 import { act } from 'react-test-renderer'
@@ -109,14 +109,17 @@ describe('@reatom/react', () => {
 
     test('does not rerender if atom value is not changing', () => {
       const store = createStore(countAtom, { count: 10 })
-      const { result } = renderHook(() => useAtom(countAtom, () => null, []), {
+      const render = jest.fn()
+      const useTest = () => {
+        render()
+        useAtom(countAtom, () => null, [])
+      }
+      renderHook(() => useTest(), {
         wrapper: props => <Provider {...props} store={store} />,
       })
 
-      expect(result.current).toBe(10)
-
       act(() => store.dispatch(increment()))
-      expect(result.current).toBe(10)
+      expect(render).toBeCalledTimes(1)
     })
 
     test('unsubscribes from store after unmount', () => {
