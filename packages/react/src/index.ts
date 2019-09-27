@@ -6,6 +6,7 @@ import {
   useContext,
   useCallback,
   MutableRefObject,
+  useMemo,
 } from 'react'
 
 import { Store, Atom, ActionCreator, ActionType, Action } from '@reatom/core'
@@ -19,15 +20,6 @@ function useForceUpdate() {
   return useRef(() => update(v => v + 1)).current
 }
 
-function useUnsubscribe(ref: MutableRefObject<Function>) {
-  useEffect(
-    () => () => {
-      ref.current()
-    },
-    [ref.current],
-  )
-}
-
 const lifeCycleStatus = {
   initActual: 'initActual',
   initNotActual: 'initNotActual',
@@ -39,41 +31,59 @@ const lifeCycleStatus = {
  * @param isUpdatesNotNeeded usefully for mount lazy atoms, but not subscribe to it updates
  * @returns atom value
  */
-export function useAtom<T>(atom: Atom<T>, isUpdatesNotNeeded = false): T {
-  const atomRef = useRef<Atom<T>>()
-  const stateRef = useRef<T>()
-  const unsubscribeRef = useRef<Function>()
-  const isMountRef = useRef<keyof typeof lifeCycleStatus>(
+export function useAtom<T>(atom: Atom<T>): T
+export function useAtom<TI, TO = TI>(
+  atom: Atom<TI>,
+  mapper: (atomValue: TI) => TO,
+  deps: any[],
+): TO
+export function useAtom<TI, TO = TI>(
+  atom: Atom<TI>,
+  mapper: (atomValue: TI) => TO = (atomValue: TI) =>
+    (atomValue as unknown) as TO,
+  deps: any[] = [],
+): TO {
+  const atomRef = useRef<Atom<TI>>()
+  const mapperRef = useRef(mapper)
+  mapperRef.current = mapper
+  const stateRef = useRef<TO>()
+  const unsubscribeRef = useRef<Function>(noop)
+  const mountStatusRef = useRef<keyof typeof lifeCycleStatus>(
     lifeCycleStatus.initActual,
   )
   const store = useContext(context) as Store
   const forceUpdate = useForceUpdate()
+  function getRelativeState() {
+    return mapperRef.current(store.getState(atomRef.current!))
+  }
 
   if (!store) throw new TypeError('[reatom] The provider is not defined')
 
-  useEffect(() => {
-    if (isMountRef.current === lifeCycleStatus.initNotActual) forceUpdate()
-    isMountRef.current = lifeCycleStatus.mounted
-  }, [])
-
   if (atomRef.current !== atom) {
     atomRef.current = atom
-    unsubscribeRef.current = store.subscribe(
-      atomRef.current,
-      isUpdatesNotNeeded
-        ? noop
-        : (state: any) => {
-            stateRef.current = state
-            if (isMountRef.current === lifeCycleStatus.mounted) forceUpdate()
-            else isMountRef.current = lifeCycleStatus.initNotActual
-          },
-    )
-    stateRef.current = store.getState(atomRef.current)
+    unsubscribeRef.current()
+    unsubscribeRef.current = store.subscribe(atomRef.current, (state: any) => {
+      const newState = mapperRef.current(state)
+      const isStateChanged = newState !== stateRef.current
+      if (isStateChanged) {
+        stateRef.current = newState
+        if (mountStatusRef.current === lifeCycleStatus.mounted) forceUpdate()
+        else mountStatusRef.current = lifeCycleStatus.initNotActual
+      }
+    })
+    stateRef.current = getRelativeState()
   }
 
-  useUnsubscribe(unsubscribeRef as MutableRefObject<Function>)
+  stateRef.current = useMemo(getRelativeState, deps)
 
-  return stateRef.current as T
+  useEffect(() => {
+    if (mountStatusRef.current === lifeCycleStatus.initNotActual)
+      stateRef.current = getRelativeState()
+    mountStatusRef.current = lifeCycleStatus.mounted
+    return () => unsubscribeRef.current()
+  }, [])
+
+  return stateRef.current as TO
 }
 
 type ActionBindedInferArguments<Payload> = Payload extends undefined
