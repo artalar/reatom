@@ -20,7 +20,10 @@ export const initAction = _initAction()
 type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
-  on: <T>(dependency: Unit | ActionCreator<T>, reducer: Reducer<TState, T>) => void,
+  handler: <T>(
+    dependency: Unit | ActionCreator<T>,
+    reducer: Reducer<TState, T>,
+  ) => void,
 ) => any
 
 export interface Atom<T> extends Unit {
@@ -59,7 +62,10 @@ export function declareAtom<TState>(
   if (initialState === undefined)
     throwError(`Atom "${_id}". Initial state can't be undefined`)
 
-  function reduce<T>(dep: Unit | ActionCreator<T>, reducer: Reducer<TState, T>) {
+  function handler<T>(
+    dep: Unit | ActionCreator<T>,
+    reducer: Reducer<TState, T>,
+  ) {
     if (!initialPhase)
       throwError("Can't define dependencies after atom initialization")
 
@@ -118,8 +124,8 @@ export function declareAtom<TState>(
     }
   }
 
-  reduce(_initAction, (state = initialState as TState) => state)
-  dependencyMatcher(reduce)
+  handler(_initAction, (state = initialState as TState) => state)
+  dependencyMatcher(handler)
 
   function atom(state: State = {}, action: Action<any> = initAction) {
     const ctx = createCtx(state, action)
@@ -169,7 +175,7 @@ export function map<T, _T = unknown>(
     // FIXME: initialState for `map` :thinking:
     null,
     //@ts-ignore
-    reduce => reduce(target as Atom<_T>, (state, payload) => mapper(payload)),
+    handle => handle(target as Atom<_T>, (state, payload) => mapper(payload)),
   )
 }
 
