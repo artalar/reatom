@@ -1,13 +1,8 @@
 import React, { useMemo } from 'react'
 import { renderHook } from '@testing-library/react-hooks'
+import { render } from '@testing-library/react'
 import { act } from 'react-test-renderer'
-import {
-  declareAction,
-  declareAtom,
-  createStore,
-  Store,
-  map,
-} from '@reatom/core'
+import { declareAction, declareAtom, createStore, Store } from '@reatom/core'
 import { context, useAtom, useAction } from '../index'
 
 const increment = declareAction()
@@ -24,12 +19,14 @@ function Provider(props: { store: Store; children?: any }) {
 }
 
 describe('@reatom/react', () => {
-  test('throw Error if provider is not set', () => {
-    const { result } = renderHook(() => useAtom(countAtom))
-    expect(result.error).toEqual(Error('[reatom] The provider is not defined'))
-  })
-
   describe('useAtom', () => {
+    test('throw Error if provider is not set', () => {
+      const { result } = renderHook(() => useAtom(countAtom))
+      expect(result.error).toEqual(
+        Error('[reatom] The provider is not defined'),
+      )
+    })
+
     test('returns atom state', () => {
       const store = createStore(countAtom)
 
@@ -39,7 +36,7 @@ describe('@reatom/react', () => {
       expect(result.current).toBe(0)
     })
 
-    test('one subscribe call for multiple renders', () => {
+    test('subscribe once only at mount', () => {
       const store = createStore(null)
       const subscriber = jest.fn()
       store.subscribe = subscriber
@@ -47,15 +44,19 @@ describe('@reatom/react', () => {
         wrapper: props => <Provider {...props} store={store} />,
       })
 
+      expect(subscriber).toBeCalledTimes(1)
+
       rerender()
       expect(subscriber).toBeCalledTimes(1)
     })
 
-    test('updates state after store change', () => {
+    test('updates state after store change', async () => {
       const store = createStore(countAtom, { count: 10 })
       const { result } = renderHook(() => useAtom(countAtom), {
         wrapper: props => <Provider {...props} store={store} />,
       })
+
+      expect(result.current).toBe(10)
 
       act(() => store.dispatch(increment()))
       expect(result.current).toBe(11)
@@ -68,11 +69,7 @@ describe('@reatom/react', () => {
       const store = createStore(countAtom, { count: 10 })
       const { result, rerender } = renderHook(
         ({ multiplier }) =>
-          useAtom(
-            useMemo(() => map(countAtom, count => count * multiplier), [
-              multiplier,
-            ]),
-          ),
+          useAtom(countAtom, count => count * multiplier, [multiplier]),
         {
           initialProps: { multiplier: 2 },
           wrapper: props => <Provider {...props} store={store} />,
@@ -94,11 +91,7 @@ describe('@reatom/react', () => {
 
       const { rerender } = renderHook(
         ({ multiplier }) =>
-          useAtom(
-            useMemo(() => map(countAtom, count => count * multiplier), [
-              multiplier,
-            ]),
-          ),
+          useAtom(countAtom, count => count * multiplier, [multiplier]),
         {
           initialProps: { multiplier: 2 },
           wrapper: props => <Provider {...props} store={store} />,
@@ -114,9 +107,9 @@ describe('@reatom/react', () => {
       expect(subscriber).toBeCalledTimes(2)
     })
 
-    test('does not update state if flag "isUpdatesNotNeeded" is set', () => {
+    test('does not rerender if atom value is not changing', () => {
       const store = createStore(countAtom, { count: 10 })
-      const { result } = renderHook(() => useAtom(countAtom, true), {
+      const { result } = renderHook(() => useAtom(countAtom, () => null, []), {
         wrapper: props => <Provider {...props} store={store} />,
       })
 
@@ -133,7 +126,7 @@ describe('@reatom/react', () => {
       // @ts-ignore
       store.subscribe = atom => _subscribe(atom, subscriber)
 
-      const { unmount } = renderHook(() => useAtom(countAtom, true), {
+      const { unmount } = renderHook(() => useAtom(countAtom, () => null, []), {
         wrapper: props => <Provider {...props} store={store} />,
       })
 
