@@ -360,13 +360,13 @@ describe('@reatom/core', () => {
       expect(store.getState(count)).toBe(4)
       expect(store.getState().countDoubled).toBe(8)
     })
-    test('createStore with nullable atom', () => {
+    test('createStore with undefined atom', () => {
       const increment = declareAction()
       const countStatic = declareAtom(['countStatic'], 0, handle =>
         handle(increment, state => state + 1),
       )
 
-      const store = createStore(null, { countStatic: 10 })
+      const store = createStore(undefined, { countStatic: 10 })
       store.dispatch(increment())
 
       expect(store.getState(countStatic)).toBe(10)

@@ -59,10 +59,7 @@ export const housesReducer = (
     return { ...state, [action.payload.id]: action.payload.value }
   return state
 }
-export const inputReducer = (
-  state = '',
-  action: Actions,
-): string => {
+export const inputReducer = (state = '', action: Actions): string => {
   if (action.type === 'CHANGE_INPUT') return action.payload
   return state
 }

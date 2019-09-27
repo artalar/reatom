@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "moduleResolution": "node",
-    "rootDir": "./src",
+    "rootDir": "./src"
   },
   "exclude": ["./src/benchmark", "./src/__tests__"]
 }
