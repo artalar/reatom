@@ -496,5 +496,20 @@ describe('@reatom/core', () => {
       state = root(state, increment())
       expect(getState(state, root)).toEqual([1, 2])
     })
+    test('should checks atoms with equal ids', () => {
+      const update = declareAction()
+
+      const aAtom = declareAtom(0, on =>
+        on(update, (state, payload) => payload),
+      )
+
+      const bAtom = map(aAtom, a => a * 2)
+      const cAtom = map(combine([aAtom, bAtom]), ([a, b]) => a + b)
+
+      expect(() => combine([aAtom, cAtom, bAtom])).not.toThrow()
+      expect(() =>
+        combine([map(['aAtom'], aAtom, v => v), map(['aAtom'], aAtom, v => v)]),
+      ).toThrowError('[reatom] One of dependencies has the equal id')
+    })
   })
 })
