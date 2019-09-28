@@ -95,7 +95,7 @@ store.dispatch(increment())
 
 store.dispatch(add(2))
 // count: 4
-// here `isOdd` subscriber will not be called because its value is not changes
+// here `isOdd` subscriber will not be called because its value is not changed
 ```
 
 ## Packages
