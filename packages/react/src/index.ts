@@ -108,6 +108,10 @@ type ActionBinded<Fn extends Function> = Fn extends ActionCreator<
   ? ActionBindedInferArguments<Payload>
   : never
 
+/**
+ * @param cb actionCreator (may return void for preventing dispatch)
+ * @param deps
+ */
 export function useAction<Fn extends Function>(
   cb: Fn,
   deps: any[] = [],

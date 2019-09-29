@@ -27,15 +27,15 @@ yarn add @reatom/react
 npm i @reatom/react
 ```
 
-> `@reatom/react` is depend and work with `@reatom/core`
+> `@reatom/react` is depend and work with `@reatom/core`.
 
 ## Hooks Api
 
 ### useAtom
 
-Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state)
+Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state).
 
-#### Basic
+#### Basic (useAtom)
 
 ```ts
 const atomValue = useAtom(atom)
@@ -55,17 +55,37 @@ const atomValue = useAtom(atom, () => null, [])
 
 ### useAction
 
-Binds action with dispatch to the store provided in the context
+Binds action with dispatch to the store provided in the context.
+
+#### Basic (useAction)
 
 ```ts
 const handleDoSome = useAction(doSome)
-// or
+```
+
+#### Prepare payload for dispatch
+
+```ts
 const handleDoSome = useAction(value => doSome({ id: props.id, value }), [props.id])
-``` 
+```
+
+#### Conditional dispatch
+
+If action creator don't return an action dispatch not calling.
+
+```ts
+const handleDoSome = useAction(
+  payload => {
+    if (condition) return doSome(payload)
+  },
+  []
+)
+```
 
 ## Usage
 
 ### Step 1. Create store
+
 ```jsx
 // App
 
