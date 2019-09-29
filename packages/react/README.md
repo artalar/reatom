@@ -60,7 +60,7 @@ Binds action with dispatch to the store provided in the context
 ```ts
 const handleDoSome = useAction(doSome)
 // or
-const handleDoSome = useAction(value => myAction({ id: props.id, value }), [props.id])
+const handleDoSome = useAction(value => doSome({ id: props.id, value }), [props.id])
 ``` 
 
 ## Usage

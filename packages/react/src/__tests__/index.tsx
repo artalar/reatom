@@ -118,8 +118,22 @@ describe('@reatom/react', () => {
         wrapper: props => <Provider {...props} store={store} />,
       })
 
+      expect(render).toBeCalledTimes(1)
       act(() => store.dispatch(increment()))
       expect(render).toBeCalledTimes(1)
+    })
+
+    test('does not recalculate selector on rerender if deps is not changing', () => {
+      const store = createStore(countAtom, { count: 10 })
+      const selector = jest.fn(v => v)
+      const { rerender } = renderHook(() => useAtom(countAtom, selector, []), {
+        wrapper: props => <Provider {...props} store={store} />,
+      })
+
+      expect(selector).toBeCalledTimes(1)
+
+      rerender()
+      expect(selector).toBeCalledTimes(1)
     })
 
     test('unsubscribes from store after unmount', () => {
@@ -144,6 +158,14 @@ describe('@reatom/react', () => {
   })
 
   describe('useAction', () => {
+    test('throw Error if provider is not set', () => {
+      // @ts-ignore
+      const { result } = renderHook(() => useAtom())
+      expect(result.error).toEqual(
+        Error('[reatom] The provider is not defined'),
+      )
+    })
+
     test('returns binded action to dispatch', () => {
       const store = createStore(countAtom)
       const { result } = renderHook(() => useAction(increment), {

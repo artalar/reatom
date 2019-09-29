@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "1.0.0-rc5",
+  "version": "1.0.0-rc6",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
