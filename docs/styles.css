@@ -52,10 +52,20 @@ h3 .anchor {
   color: #c76b29;
 }
 
+.sidebar .sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: absolute;
+  top: 120px;
+  bottom: 0;
+  width: 100%;
+  padding-bottom: 0;
+}
+
 .stars {
   padding: 20px 15px 40px;
   border-top: 1px solid rgba(0,0,0,.07);
-  position: absolute;
   bottom: 0;
   width: 100%;
   box-sizing: border-box;
