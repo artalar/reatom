@@ -1,7 +1,7 @@
 {
   "name": "@reatom/debug",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.0-rc1",
   "description": "Debug tools for reatom",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -60,11 +60,11 @@
     ]
   },
   "devDependencies": {
-    "cross-env": "^5.2.1",
-    "ts-node": "^8.3.0",
-    "@reatom/core": "^1.0.0-rc15"
+    "cross-env": "^6.0.2",
+    "ts-node": "^8.4.1",
+    "@reatom/core": "^1.0.0-rc17"
   },
   "peerDependencies": {
-    "@reatom/core": "^1.0.0-rc15"
+    "@reatom/core": "^1.0.0-rc17"
   }
 }
