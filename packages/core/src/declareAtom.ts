@@ -28,7 +28,7 @@ type DependencyMatcher<TState> = (
 
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): State
-  [DEPS]: TreeId[]
+  [DEPS]: Set<TreeId>
 }
 
 export function declareAtom<TState>(
@@ -53,14 +53,14 @@ export function declareAtom<TState>(
 
   const _id = nameToId(name as string | [TreeId])
 
+  if (initialState === undefined)
+    throwError(`Atom "${_id}". Initial state can't be undefined`)
+
   const _tree = new Tree(_id)
   const _deps = new Set<TreeId>()
   // start from `0` for missing `actionDefault`
   let dependencePosition = 0
   let initialPhase = true
-
-  if (initialState === undefined)
-    throwError(`Atom "${_id}". Initial state can't be undefined`)
 
   function handler<T>(
     dep: Unit | ActionCreator<T>,
@@ -69,22 +69,16 @@ export function declareAtom<TState>(
     if (!initialPhase)
       throwError("Can't define dependencies after atom initialization")
 
+    safetyFunc(reducer, 'reducer')
+
     const position = dependencePosition++
     const depTree = getTree(dep as Unit)!
     if (!depTree) throwError('Invalid dependency')
     const depId = depTree.id
-    safetyFunc(reducer, 'reducer')
 
     const isDepActionCreator = getIsAction(dep)
 
     _tree.union(depTree)
-
-    if (isDepActionCreator) _tree.addFn(update, depId)
-    else {
-      if (_deps.has(depId)) throwError('One of dependencies has the equal id')
-      _deps.add(depId)
-      depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
-    }
 
     function update({ state, stateNew, payload, changedIds, type }: Ctx) {
       const atomStateSnapshot = state[_id]
@@ -116,32 +110,35 @@ export function declareAtom<TState>(
             `Invalid state. Reducer № ${position} in "${_id}" atom returns undefined`,
           )
 
-        if (atomStateNew !== atomState) {
-          stateNew[_id] = atomStateNew
-          if (!hasAtomNewState) changedIds.push(_id)
-        }
+        if (atomStateNew !== atomState && !hasAtomNewState) changedIds.push(_id)
+        stateNew[_id] = atomStateNew
       }
     }
+
+    if (isDepActionCreator) return _tree.addFn(update, depId)
+    if (_deps.has(depId)) throwError('One of dependencies has the equal id')
+    _deps.add(depId)
+    depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
   }
 
   handler(_initAction, (state = initialState as TState) => state)
   dependencyMatcher(handler)
 
-  function atom(state: State = {}, action: Action<any> = initAction) {
+  const atom = function atom(
+    state: State = {},
+    action: Action<any> = initAction,
+  ) {
     const ctx = createCtx(state, action)
     _tree.forEach(action.type, ctx)
 
     const { changedIds, stateNew } = ctx
 
     return changedIds.length > 0 ? assign({}, state, stateNew) : state
-  }
+  } as Atom<TState>
 
-  // @ts-ignore
   atom[TREE] = _tree
-  // @ts-ignore
   atom[DEPS] = _deps
 
-  // @ts-ignore
   return atom
 }
 
@@ -149,33 +146,34 @@ export function getState<T>(state: State, atom: Atom<T>): T | undefined {
   return state[atom[TREE].id]
 }
 
-export function map<T, _T = unknown>(
-  atom: Atom<_T>,
-  mapper: (dependedAtomState: _T) => T,
+export function map<T, TSource = unknown>(
+  source: Atom<TSource>,
+  mapper: (dependedAtomState: TSource) => T,
 ): Atom<T>
-export function map<T, _T = unknown>(
+export function map<T, TSource = unknown>(
   name: string | [TreeId],
-  atom: Atom<_T>,
-  mapper: (dependedAtomState: _T) => T,
+  source: Atom<TSource>,
+  mapper: (dependedAtomState: TSource) => T,
 ): Atom<T>
-export function map<T, _T = unknown>(
-  name: string | [TreeId] | Atom<_T>,
-  target: ((dependedAtomState: _T) => T) | Atom<_T>,
-  mapper?: (dependedAtomState: _T) => T,
+export function map<T, TSource = unknown>(
+  name: string | [TreeId] | Atom<TSource>,
+  source: ((dependedAtomState: TSource) => T) | Atom<TSource>,
+  mapper?: (dependedAtomState: TSource) => T,
 ) {
   if (!mapper) {
-    mapper = target as (dependedAtomState: _T) => T
-    target = name as Atom<_T>
-    name = getTree(target).id + ' [map]'
+    mapper = source as (dependedAtomState: TSource) => T
+    source = name as Atom<TSource>
+    name = getTree(source).id + ' [map]'
   }
   safetyFunc(mapper, 'mapper')
 
-  return declareAtom(
+  return declareAtom<T>(
     name as string | [TreeId],
     // FIXME: initialState for `map` :thinking:
-    null,
-    //@ts-ignore
-    handle => handle(target as Atom<_T>, (state, payload) => mapper(payload)),
+    null as any,
+    handle =>
+      //@ts-ignore
+      handle(source as Atom<TSource>, (state, payload) => mapper(payload)),
   )
 }
 
@@ -201,7 +199,7 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
   const isArray = Array.isArray(shape)
 
   return declareAtom(name as string | [TreeId], isArray ? [] : {}, reduce =>
-    keys.map(key =>
+    keys.forEach(key =>
       //@ts-ignore
       reduce(shape[key], (state, payload) => {
         const newState: any = isArray
