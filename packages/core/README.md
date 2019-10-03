@@ -17,8 +17,8 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 
 > Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
 
-
-> **IMPORTANT!** Current state is **Work In Progress**. We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
+> **IMPORTANT!** Current state is **Work In Progress**.
+> At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
 
 > **v1.0.0 schedule**: end of September 2019
 
@@ -59,7 +59,7 @@ const Counter = declareAtom(0, on => [
   on(increment, state => state + 1),
 ])
 const CounterDoubled = map(Counter, value => value * 2)
-const CountersShape = combine({ Counter, CounterDoubled })
+const CountersShape = combine({ counter: Counter, counterDoubled: CounterDoubled })
 
 /**
  * Step 3.
@@ -79,5 +79,5 @@ store.dispatch(increment())
  */
 store.getState(Counter) // ➜ 1
 store.getState(CounterDoubled) // ➜ 2
-store.getState(CountersShape) // ➜ { counter: 1, counterDobled: 2 }
+store.getState(CountersShape) // ➜ { counter: 1, counterDoubled: 2 }
 ```

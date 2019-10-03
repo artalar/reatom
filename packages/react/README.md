@@ -15,7 +15,8 @@ Package for bindings [Reatom](https://github.com/artalar/reatom) store with Reac
 
 > Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
 
-> **IMPORTANT!** Current state is **Work In Progress**. We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
+> **IMPORTANT!** Current state is **Work In Progress**.
+> At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
 
 > **v1.0.0 schedule**: end of September 2019
 
