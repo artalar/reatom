@@ -1,18 +1,9 @@
-<div align="center">
-<br/>
-
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
-
-</div>
-
 # @reatom/debug
 
 Package of Reatom for generating dynamic names with contain source path 
 
 [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug) 
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
-
-[Open in docs](https://artalar.github.io/reatom/#/reatom-debug)
 
 ## Install
 
@@ -47,3 +38,6 @@ const action = declareAction('myAction')
 const atom = declareAtom('myAtom', 0, () => {}) 
 // myAtom [/src/folder/index.js:5]
 ```
+---
+
+[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/debug)

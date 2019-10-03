@@ -1,27 +1,9 @@
-<div align="center">
-<br/>
-
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
-
-</div>
-
 # @reatom/react
 
-Package for bindings [Reatom](https://github.com/artalar/reatom) store with React
+Package for bindings Reatom store with React
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
-![npm type definitions](https://img.shields.io/npm/types/@reatom/react?style=flat-square)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
-![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
-
-[Open in docs](https://artalar.github.io/reatom/#/reatom-react)
-
-> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
-
-> **IMPORTANT!** Current state is **Work In Progress**.
-> At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
-
-> **v1.0.0 schedule**: end of September 2019
 
 ## Install
 
@@ -33,7 +15,7 @@ or
 yarn add @reatom/react
 ```
 
-> `@reatom/react` is depend and work with `@reatom/core`.
+> NOTE. **@reatom/react** is depend and work with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
 ## Hooks Api
 
@@ -72,7 +54,10 @@ const handleDoSome = useAction(doSome)
 #### Prepare payload for dispatch
 
 ```ts
-const handleDoSome = useAction(value => doSome({ id: props.id, value }), [props.id])
+const handleDoSome = useAction(value => doSome({ 
+  id: props.id, 
+  value 
+}), [props.id])
 ```
 
 #### Conditional dispatch
@@ -80,12 +65,9 @@ const handleDoSome = useAction(value => doSome({ id: props.id, value }), [props.
 If action creator don't return an action dispatch not calling.
 
 ```ts
-const handleDoSome = useAction(
-  payload => {
+const handleDoSome = useAction(payload => {
     if (condition) return doSome(payload)
-  },
-  []
-)
+}, [])
 ```
 
 ## Usage
@@ -141,3 +123,6 @@ export const Form = () => {
   )
 }
 ```
+---
+
+[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/react)

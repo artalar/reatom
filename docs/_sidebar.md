@@ -3,6 +3,13 @@
   * [Glossary](/glossary.md)
   * [FAQ](/faq.md)
 
+- Packages
+  * [@reatom/core](/reatom-core.md)
+  * [@reatom/react](/reatom-react.md)
+  * [@reatom/observable](/reatom-observable.md)
+  * [@reatom/babel-plugin](/reatom-babel-plugin.md)
+  * [@reatom/debug](/reatom-debug.md)
+
 * [Examples](/examples.md)
 * [Contributing](/CONTRIBUTING.md)
 
