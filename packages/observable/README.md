@@ -10,6 +10,7 @@ npm install @reatom/observable
 yarn add @reatom/observable
 ```
 ## Usage
+### Store observer
 
 ```js
 import { observe } from '@reatom/observable'
@@ -32,12 +33,24 @@ const subscription = observableStore.subscribe({
 })
 
 subscription.unsubscribe() // unsubscribes
+```
 
-const observableAction = observe(store, action)
+### Atom observer
+```js
+import { observe } from '@reatom/observable'
+import { declareAtom, declareAction, createStore } from '@reatom/core'
 
-observableStore.subscribe(state => console.log(state))
+const action = declareAction()
+const atom = declareAtom(0, on => [
+  on(action, () => 1)
+])
+const store = createStore(atom)
+
+const observableAtom = observe(store, atom)
+
+observableAtom.subscribe(state => console.log(state))
 // or
-const subscription = observableStore.subscribe({
+const subscription = observableAtom.subscribe({
   next(state) {
     console.log(state)
   }
