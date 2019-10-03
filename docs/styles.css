@@ -37,7 +37,11 @@
   color: var(--theme-color);
 }
 
-.markdown-section code,
+.markdown-section code {
+  font-weight: normal;
+  color: #000;
+}
+
 .token.function, .token.keyword {
   color: #3c699e;
 }
