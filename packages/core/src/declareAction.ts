@@ -1,14 +1,14 @@
-import { Leaf, Tree } from './kernel'
+import { Leaf, Tree, BaseAction } from './kernel'
 import { TREE, noop, nameToId, Unit } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
-
 export type Reaction<T> = (payload: T, store: Store) => any
 
-export type Action<Payload, Type extends ActionType = string> = {
+export type Action<Payload, Type extends ActionType = string> = BaseAction<
+  Payload
+> & {
   type: Type
-  payload: Payload
   reactions?: Reaction<Payload>[]
 }
 
@@ -35,18 +35,16 @@ export function declareAction<
   const ACTree = new Tree(id, true)
   ACTree.addFn(noop, id)
 
-  function actionCreator(payload?: Payload) {
+  const actionCreator = function actionCreator(payload?: Payload) {
     return {
       type: id,
       payload,
       reactions,
     }
-  }
+  } as ActionCreator<Payload, Type>
 
-  // @ts-ignore
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id
 
-  // @ts-ignore
   return actionCreator
 }

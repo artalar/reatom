@@ -5,10 +5,7 @@ export type State = Record<TreeId, any>
 export type Fn = (ctx: Ctx) => any
 export type Ctx = ReturnType<typeof createCtx>
 export type BaseAction<T = any> = { type: Leaf; payload: any }
-export function createCtx(
-  state: State,
-  { type, payload }: BaseAction,
-) {
+export function createCtx(state: State, { type, payload }: BaseAction) {
   return {
     state,
     stateNew: {} as State,
