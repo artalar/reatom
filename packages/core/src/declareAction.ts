@@ -24,13 +24,23 @@ export type PayloadActionCreator<
   Type extends string = string
 > = BaseActionCreator & ((payload: Payload) => Action<Payload, Type>)
 
-export function declareAction<Type extends ActionType = string>(
-  name?: string | [Type] | Reaction<undefined>,
+export function declareAction(
+  name?: string | Reaction<undefined>,
+  ...reactions: Reaction<undefined>[]
+): ActionCreator<string>
+
+export function declareAction<Type extends ActionType>(
+  name: [Type],
   ...reactions: Reaction<undefined>[]
 ): ActionCreator<Type>
 
-export function declareAction<Payload, Type extends ActionType = string>(
-  name?: string | [Type] | Reaction<Payload>,
+export function declareAction<Payload>(
+  name?: string | Reaction<Payload>,
+  ...reactions: Reaction<Payload>[]
+): PayloadActionCreator<Payload, string>
+
+export function declareAction<Payload, Type extends ActionType>(
+  name: [Type],
   ...reactions: Reaction<Payload>[]
 ): PayloadActionCreator<Payload, Type>
 

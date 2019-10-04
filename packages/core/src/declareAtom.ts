@@ -9,11 +9,7 @@ import {
   getIsAction,
   assign,
 } from './shared'
-import {
-  Action,
-  declareAction,
-  PayloadActionCreator,
-} from './declareAction'
+import { Action, declareAction, PayloadActionCreator } from './declareAction'
 
 const DEPS = Symbol('@@Reatom/DEPS')
 
