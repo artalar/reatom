@@ -21,7 +21,7 @@ Package for bindings [Reatom](https://github.com/artalar/reatom) store with Reac
 > **IMPORTANT!** Current state is **Work In Progress**.
 > At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
 
-> **v1.0.0 schedule**: end of September 2019
+> **v1.0.0 schedule**: October 2019
 
 ## Install
 
