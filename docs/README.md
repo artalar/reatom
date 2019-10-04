@@ -14,15 +14,15 @@
 Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. 
 
 > **IMPORTANT!** Current state is **Work In Progress**.
-> We do not recommend to use in production at the moment, but... We look forward to your feedback and suggestions to improve the API
+> At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
 
 > **v1.0.0 schedule**: end of September 2019
 
 ## Goals and features
 
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
-- ❗️ **static typed**: best type inference
-- ⚡ **performance**: light tiny updates in huge state
+- ❗️ **static typed**: best type inferences
+- ⚡ **performance**: performant updates for partial state chagnes
 - 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=@reatom/core) gzipped
 - 📦 **modular**: reusable instances (SSR)
 - 🍴 **lazy**: solution for code splitting out of the box
@@ -30,15 +30,15 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
 - 👴 **ES5 support**: by polyfills
-- 🧯 **reliable**: predictable exeptions flow
+- 🧯 **reliable**: predictable flow exeptions
 - synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/packages/core/src/__tests__/diamond.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
-- awkward for write bad code
-- handy for write good code
+- awkward to write bad code
+- easy to write good code
 
 ## Description
 
-Reatom is blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
+Reatom is a blend of the one-way data flow (by [flux](https://github.com/facebook/flux) and global store) and decentralized [atoms](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) for [deterministic](https://en.wikipedia.org/wiki/Deterministic_algorithm) and flexible description of state and its changes.
 
 > Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
 
@@ -114,45 +114,45 @@ store.dispatch(add(2))
 
 Guiding principles of state manager:
 
-- The model of state must be determined
-- The changes of state must be determined
+- State model must be determined
+- State changes must be determined
 
 -->
 
 ### Why not Redux
 [link to repository](https://github.com/reduxjs/redux)
 
-- Selectors are not inspectable (is lacking in devtools).
-- Difficult static type inference (because every selector must to know full path to parent state).
-- Hard for modular architecture (because every selector must to know about parent state).
-- Separation of interfaces, to reducers and selectors, complicating build separated domains.
-- Selectors - is **manual** API to state. It must be **manualy** described and memorized.
-- Selectors execute after state change at subscriptions - error in selector will throw error and is no possibility (ok, all possible, but it is really hard) to restore previous valid state.
-- classic reducer API is had much boilerplate and [static] type description boilerplate.
-- Selectors "runtime" oriented, mean if some "feature" use any part of state (by selector) when you will remove that part, you get the error only when you will try to mount your "feature" at runtime (if you have not static typing). One of the solutions - is connect all features statically by imports.
-- Middleware - is confound pattern that, sometimes unexpected, modify the behavior of store. Reference example: actions for redux-thunk don't logged.
+- Selectors are not inspectable (lacking in devtools).
+- Difficult static type inference (every selector must to know full path to parent state).
+- Hard for modular architecture (every selector must to know about parent state).
+- Separation of interfaces, for reducers and selectors, complicates to build separated domains.
+- Selectors - is API **manual** for state. They must be **manualy** described and memorized.
+- Selectors execute after state change at subscriptions - error in selector will throw error and is not possibile (ok, all possible, but it is really hard) to restore previous valid state.
+- classic reducer API and [static] type descriptions have a lot of boilerplate.
+- Selectors are "runtime" oriented, if a "feature" uses any part of the state (by selector), when you remove this part, you will get an error only when mounting your "feature" at runtime (if you do not have static typing). One solution is to connect all features statically by imports.
+- Middleware - is confound pattern that, sometimes unexpectedly, modifies the behavior of the store. Reference example: actions for redux-thunk do not log.
   <!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
-  > A part of problems solves by various fabric functions, but without standardization it is harmful.
+  > Some problems can be solved by various fabric functions and third party libriaries. This makes it diffcuilt to resuse solutions across multiple projects.
 
 ### Why not Effector
 [link to repository](https://github.com/zerobias/effector)
 
-- Effector is about _atomic **stores**_ - it statefull approach with problems:
+- Effector is about _atomic **stores**_ - it uses stateful approach that has certain problems:
   - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
-  - difficult [store] instance reusability (for example, concurrences problems with SSR)
-    > It can be solved, but better way solve it by design of library architecture and API
+  - difficult [store] instance reusability (concurrence problems with SSR)
+    > It can be solved, but a better way to solve it by design of library architecture and API
 - Asynchronous and probably cyclic dependencies specification
-- The [weight](https://bundlephobia.com/result?p=effector@20.1.2) can be smaller but it does not
-- [Throw in reducer is not cancel computation of other reducers](https://github.com/zerobias/effector/issues/90)
+- The [size](https://bundlephobia.com/result?p=effector@20.1.2)
+- [Throw in reducer does not cancel the computations in other reducers](https://github.com/zerobias/effector/issues/90)
 
 ### Why not MobX
 [link to repository](https://github.com/mobxjs/mobx)
 
-- Huge bundle size, unstandardized foreground syntax (decorators), ES5 limitations
+- Large bundle size, unstandardized syntax (decorators), ES5 limitations.
 - Doesn't move to separate _model_ and _view_.
-- Runtime semantic and mutable state (is not a better way for debugging).
-- [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) is lack of visual part of code semantic.
-- Is not simple under the hood and [it need to consider when choose algorithms for work with data-structure](https://twitter.com/art_al_ar/status/1162769896025075719)
+- Runtime semantic and mutable state (difficult to debug).
+- [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) lacks a visual part of code semantic.
+- It is complicated under the hood and [it can be complicated when one has to work with complex data-structures](https://twitter.com/art_al_ar/status/1162769896025075719)
 - [And others...](https://mobx.js.org/best/pitfalls.html)
 
 ---
