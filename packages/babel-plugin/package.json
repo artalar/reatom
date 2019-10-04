@@ -1,10 +1,11 @@
 {
   "name": "@reatom/babel-plugin",
   "private": false,
-  "version": "1.0.0-rc2",
+  "version": "1.0.0-rc3",
   "description": "Compile-time preprocessing for reatom",
   "repository": "https://github.com/artalar/reatom",
   "files": [
+    "index.js",
     "README.md",
     "babel-plugin.js"
   ],
