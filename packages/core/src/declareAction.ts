@@ -12,12 +12,27 @@ export type Action<Payload, Type extends ActionType = string> = BaseAction<
   reactions?: Reaction<Payload>[]
 }
 
-export type ActionCreator<Payload = undefined, Type extends string = string> = {
+export type BaseActionCreator = {
   getType: () => string
-} & Unit &
-  (Payload extends undefined
-    ? () => Action<Payload, Type>
-    : (payload: Payload) => Action<Payload, Type>)
+} & Unit
+
+export type ActionCreator<Type extends string = string> = BaseActionCreator &
+  (() => Action<undefined, Type>)
+
+export type PayloadActionCreator<
+  Payload,
+  Type extends string = string
+> = BaseActionCreator & ((payload: Payload) => Action<Payload, Type>)
+
+export function declareAction<Type extends ActionType = string>(
+  name?: string | [Type] | Reaction<undefined>,
+  ...reactions: Reaction<undefined>[]
+): ActionCreator<Type>
+
+export function declareAction<Payload, Type extends ActionType = string>(
+  name?: string | [Type] | Reaction<Payload>,
+  ...reactions: Reaction<Payload>[]
+): PayloadActionCreator<Payload, Type>
 
 export function declareAction<
   Payload = undefined,
@@ -25,7 +40,7 @@ export function declareAction<
 >(
   name: string | [Type] | Reaction<Payload> = 'action',
   ...reactions: Reaction<Payload>[]
-): ActionCreator<Payload, Type> {
+): ActionCreator<Type> | PayloadActionCreator<Payload, Type> {
   if (typeof name === 'function') {
     reactions.unshift(name)
     name = 'action'
@@ -41,7 +56,7 @@ export function declareAction<
       payload,
       reactions,
     }
-  } as ActionCreator<Payload, Type>
+  } as (ActionCreator<Type> | PayloadActionCreator<Payload, Type>)
 
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id

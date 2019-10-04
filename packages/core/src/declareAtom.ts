@@ -9,7 +9,11 @@ import {
   getIsAction,
   assign,
 } from './shared'
-import { Action, declareAction, ActionCreator } from './declareAction'
+import {
+  Action,
+  declareAction,
+  PayloadActionCreator,
+} from './declareAction'
 
 const DEPS = Symbol('@@Reatom/DEPS')
 
@@ -21,7 +25,7 @@ type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
   handler: <T>(
-    dependency: Unit | ActionCreator<T>,
+    dependency: Unit | PayloadActionCreator<T>,
     reducer: Reducer<TState, T>,
   ) => void,
 ) => any
@@ -63,7 +67,7 @@ export function declareAtom<TState>(
   let initialPhase = true
 
   function handler<T>(
-    dep: Unit | ActionCreator<T>,
+    dep: Unit | PayloadActionCreator<T>,
     reducer: Reducer<TState, T>,
   ) {
     if (!initialPhase)

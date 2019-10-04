@@ -452,7 +452,7 @@ describe('@reatom/core', () => {
     // ---
 
     const fn = jest.fn()
-    const action = declareAction('!', fn)
+    const action = declareAction<number>('!', fn)
     store.dispatch(action(0))
     expect(fn).toBeCalledTimes(1)
   })
@@ -501,7 +501,7 @@ describe('@reatom/core', () => {
       expect(getState(state, root)).toEqual([1, 2])
     })
     test('should checks atoms with equal ids', () => {
-      const update = declareAction()
+      const update = declareAction<number>()
 
       const aAtom = declareAtom(0, on =>
         on(update, (state, payload) => payload),
