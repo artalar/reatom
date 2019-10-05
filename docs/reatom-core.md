@@ -1,28 +1,9 @@
-<div align="center">
-<br/>
-
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
-
-</div>
-
 # @reatom/core
 
-Core package of [Reatom](https://github.com/artalar/reatom) state manager. 
+Core package of Reatom state manager. 
 
-[![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
-![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
+[![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) 
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
-![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
-
-[Open in docs](https://artalar.github.io/reatom/#/reatom-core)
-
-> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
-
-> **IMPORTANT!** Current state is **Work In Progress**.
-> At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
-
-> **v1.0.0 schedule**: October 2019
-
 
 ## Install
 
@@ -37,7 +18,6 @@ yarn add @reatom/core
 ## Usage
 
 [Open in CodeSandbox](https://codesandbox.io/s/reatomcore-demo-28t3d)
-
 ```js
 import {
   declareAction,
@@ -91,3 +71,7 @@ console.log(store.getState(counterDoubledAtom))
 console.log(store.getState(countersShapeAtom))
 // ➜ { counter: 1, counterDoubled: 2 }
 ```
+
+---
+
+[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/core)

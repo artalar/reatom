@@ -1,14 +1,8 @@
-<div align="center">
-<br/>
-
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
-
-</div>
-
 # @reatom/babel-plugin
-[![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) 
 
-[Open in docs](https://artalar.github.io/reatom/#/reatom-babel-plugin)
+Babel plugin for automaticly insert variable name to declarations of atoms or actions
+
+[![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) 
 
 ## Install
 
@@ -51,3 +45,7 @@ const myAtom = declareAtom('myAtom', {}, () => [])
 const mySelector = map('mySelector', myAtom, atomState => atomState)
 const myCombine = combine('myCombine', [myAtom, mySelector])
 ```
+
+---
+
+[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/babel-plugin)

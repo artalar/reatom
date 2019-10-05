@@ -16,7 +16,7 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 > **IMPORTANT!** Current state is **Work In Progress**.
 > At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
 
-> **v1.0.0 schedule**: end of September 2019
+> **v1.0.0 schedule**: October 2019
 
 ## Goals and features
 
@@ -55,7 +55,9 @@ Data flow diagram:
 
 ```sh
 npm i @reatom/core
-# or
+```
+or
+```sh
 yarn add @reatom/core
 ```
 
@@ -101,8 +103,11 @@ store.dispatch(add(2))
 ## Packages
 | Package | Version | Size
 --------|---------|----
-| [`@reatom/core`](https://github.com/artalar/reatom/tree/master/packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
-| [`@reatom/react`](https://github.com/artalar/reatom/tree/master/packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
+| [`@reatom/core`](https://artalar.github.io/reatom/#/reatom-core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
+| [`@reatom/react`](https://artalar.github.io/reatom/#/reatom-react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
+| [`@reatom/observable`](https://artalar.github.io/reatom/#/reatom-observable) | [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
+| [`@reatom/babel-plugin`](https://artalar.github.io/reatom/#/reatom-babel-plugin) | [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) | -
+| [`@reatom/debug`](https://artalar.github.io/reatom/#/reatom-debug) | [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
 
 ## Motivation
 

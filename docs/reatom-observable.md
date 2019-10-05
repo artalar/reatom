@@ -1,19 +1,9 @@
-<div align="center">
-<br/>
-
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
-
-</div>
-
-
 # @reatom/observable
 
 Package of Reatom for creating observers of atoms or stores
 
 [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) 
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
-
-[Open in docs](https://artalar.github.io/reatom/#/reatom-observable)
 
 ## Install
 
@@ -78,3 +68,7 @@ const subscription = observableAtom.subscribe({
   }
 })
 ```
+
+---
+
+[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/observable)
