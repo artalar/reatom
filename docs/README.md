@@ -111,6 +111,10 @@ store.dispatch(add(2))
 
 ## Motivation
 
+> **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating a Reatom. 
+> 
+> *There is no perfect library in the world.*
+
 <!-- 
 
 ### State management Zen
