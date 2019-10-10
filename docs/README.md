@@ -198,19 +198,17 @@ Next:
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
+<!-- prettier-ignore -->
 <table>
   <tr>
     <td align="center"><a href="https://github.com/artalar"><img src="https://avatars0.githubusercontent.com/u/27290320?v=4" width="100px;" alt="Arutyunyan Artyom"/><br /><sub><b>Arutyunyan Artyom</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=artalar" title="Code">💻</a> <a href="#ideas-artalar" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/artalar/reatom/commits?author=artalar" title="Tests">⚠️</a> <a href="#infra-artalar" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#tutorial-artalar" title="Tutorials">✅</a> <a href="#review-artalar" title="Reviewed Pull Requests">👀</a> <a href="#example-artalar" title="Examples">💡</a> <a href="https://github.com/artalar/reatom/commits?author=artalar" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/belozer"><img src="https://avatars1.githubusercontent.com/u/1655916?v=4" width="100px;" alt="Sergey Belozyorcev"/><br /><sub><b>Sergey Belozyorcev</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=belozer" title="Code">💻</a> <a href="#ideas-belozer" title="Ideas, Planning, & Feedback">🤔</a> <a href="https://github.com/artalar/reatom/commits?author=belozer" title="Tests">⚠️</a> <a href="#infra-belozer" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#tutorial-belozer" title="Tutorials">✅</a> <a href="#review-belozer" title="Reviewed Pull Requests">👀</a> <a href="#design-belozer" title="Design">🎨</a> <a href="#example-belozer" title="Examples">💡</a> <a href="https://github.com/artalar/reatom/commits?author=belozer" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/Wroud"><img src="https://avatars2.githubusercontent.com/u/811729?v=4" width="100px;" alt="Alexey"/><br /><sub><b>Alexey</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=Wroud" title="Code">💻</a> <a href="#ideas-Wroud" title="Ideas, Planning, & Feedback">🤔</a> <a href="#infra-Wroud" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="https://github.com/artalar/reatom/commits?author=Wroud" title="Tests">⚠️</a> <a href="#platform-Wroud" title="Packaging/porting to new platform">📦</a> <a href="#plugin-Wroud" title="Plugin/utility libraries">🔌</a> <a href="#tool-Wroud" title="Tools">🔧</a></td>
     <td align="center"><a href="https://github.com/antonk52"><img src="https://avatars1.githubusercontent.com/u/5817809?v=4" width="100px;" alt="Anton"/><br /><sub><b>Anton</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=antonk52" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/atassis"><img src="https://avatars2.githubusercontent.com/u/5769345?v=4" width="100px;" alt="Taymuraz Kaytmazov"/><br /><sub><b>Taymuraz Kaytmazov</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=atassis" title="Documentation">📖</a></td>
   </tr>
 </table>
 
-<!-- markdownlint-enable -->
-<!-- prettier-ignore-end -->
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
