@@ -111,6 +111,8 @@ store.dispatch(add(2))
 
 ## Motivation
 
+> **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom. 
+
 <!-- 
 
 ### State management Zen
@@ -142,11 +144,34 @@ Guiding principles of state manager:
 ### Why not Effector
 [link to repository](https://github.com/zerobias/effector)
 
-- Effector is about _atomic **stores**_ - it uses stateful approach that has certain problems:
-  - probable [memory leaks](https://youtu.be/fbtElWjOXV0?t=1432)
+- Effector is about atomic **stores** — it uses stateful approach that has certain problems:
+  - probable memory leaks
+    > Like any other observable libraries
   - difficult [store] instance reusability (concurrence problems with SSR)
     > It can be solved, but a better way to solve it by design of library architecture and API
 - Asynchronous and probably cyclic dependencies specification
+  <details>
+  <summary>show example</summary>
+
+  ```js
+  const store = createStore(0)
+  store.watch(console.log)
+
+  const event = createEvent()
+  store.on(event, (state, payload) => payload)
+
+  event(1000)
+  // console.log: 1000
+
+  // In any time and in any project part
+  const otherEvent = createEvent()
+  store.on(otherEvent, (state, payload) => payload)
+
+  otherEvent(2000)
+  // console.log: 2000
+  ```
+  </details>
+
 - The [size](https://bundlephobia.com/result?p=effector@20.1.2)
 - [Throw in reducer does not cancel the computations in other reducers](https://github.com/zerobias/effector/issues/90)
 
