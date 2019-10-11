@@ -7,6 +7,11 @@ const definions = {
   names: ['declareAtom', 'declareAction', 'map', 'combine'],
 }
 
+/*
+  Inspired with zerobias/effector
+  Thanks @zerobias and @goodmind for implementation example
+  https://www.npmjs.com/package/effector
+*/
 module.exports = function(babel) {
   const { types: t } = babel
 
@@ -21,7 +26,7 @@ module.exports = function(babel) {
           source: { value: source },
           specifiers,
         } = path.node
-        if (source != definions.source) {
+        if (source !== definions.source) {
           return
         }
         for (let i = 0; i < specifiers.length; i++) {
@@ -51,21 +56,20 @@ module.exports = function(babel) {
   return plugin
 }
 
-// https://github.com/zerobias/effector/blob/1d51ccc59df2de6965a75e4b9c9ea2e8dd572fd8/src/babel/babel-plugin.js#L209
 function findCandidateNameForExpression(path) {
   let id
-  path.find(path => {
-    if (path.isAssignmentExpression()) {
-      id = path.node.left
-    } else if (path.isObjectProperty()) {
-      id = path.node.key
-    } else if (path.isVariableDeclarator()) {
-      id = path.node.id
-    } else if (path.isStatement()) {
+  path.find(subPath => {
+    if (subPath.isAssignmentExpression()) {
+      id = subPath.node.left
+    } else if (subPath.isObjectProperty()) {
+      id = subPath.node.key
+    } else if (subPath.isVariableDeclarator()) {
+      id = subPath.node.id
+    } else if (subPath.isStatement()) {
       return true
     }
 
-    if (id) return true
+    return id || false
   })
   return id
 }
@@ -76,7 +80,7 @@ function pushNameToArgs(path, nameNodeId, t, name) {
   if (!displayName) {
     return
   }
-  const callExp = path.find(path => path.isCallExpression())
+  const callExp = path.find(subPath => subPath.isCallExpression())
 
   if (!callExp) {
     return
@@ -84,6 +88,7 @@ function pushNameToArgs(path, nameNodeId, t, name) {
   const {
     node: { arguments: args },
   } = callExp
+
   switch (name) {
     case definions.map:
     case definions.declareAtom:
@@ -103,6 +108,8 @@ function pushNameToArgs(path, nameNodeId, t, name) {
       if (args.length === 1) {
         args.unshift(t.stringLiteral(displayName))
       }
+      break
+    default:
       break
   }
 }
