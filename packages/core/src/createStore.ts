@@ -120,7 +120,7 @@ export function createStore(
       if (isLazy && _listeners.length === 0) {
         nextAtomsListeners.delete(targetId)
         storeTree.disunion(targetTree)
-        // FIXME: dependencies is not clearing
+        // FIXME: dependencies are not clearing
         delete state[targetId]
       }
     }
