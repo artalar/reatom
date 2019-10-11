@@ -9,7 +9,7 @@ jobs:
   test:
 
     runs-on: ubuntu-latest
-    
+
     steps:
 
     - uses: actions/checkout@v1
@@ -17,7 +17,7 @@ jobs:
     - name: use node
       uses: actions/setup-node@v1
       with:
-        version: 10
+        node-version: 10
 
     - name: install deps
       run: npm i
