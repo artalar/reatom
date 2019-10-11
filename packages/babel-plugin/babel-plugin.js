@@ -7,6 +7,11 @@ const definions = {
   names: ['declareAtom', 'declareAction', 'map', 'combine'],
 }
 
+/*
+  Inspired with zerobias/effector
+  Thanks @zerobias and @goodmind for implementation example
+  https://www.npmjs.com/package/effector
+*/
 module.exports = function(babel) {
   const { types: t } = babel
 
