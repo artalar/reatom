@@ -106,23 +106,17 @@ describe('@reatom/core', () => {
       const action = declareAction()
 
       expect(() =>
-        declareAtom({}, r => r(action, () => undefined as any))({}, action()),
-      ).toThrowError(
-        '[reatom] Invalid state. Reducer № 1 in "atom [14]" atom returns undefined',
-      )
-
-      expect(() =>
-        declareAtom(['test'], {}, r => r(action, () => undefined as any))(
+        declareAtom(['myAtom'], {}, r => r(action, () => undefined as any))(
           {},
           action(),
         ),
       ).toThrowError(
-        '[reatom] Invalid state. Reducer № 1 in "test" atom returns undefined',
+        '[reatom] Invalid state. Reducer № 1 in "myAtom" atom returns undefined',
       )
 
       expect(() =>
-        declareAtom(['test'], {}, r => [
-          r(declareAction(), () => 0 as any),
+        declareAtom(['test'], 0, r => [
+          r(declareAction(), () => 0),
           r(action, () => undefined as any),
         ])({}, action()),
       ).toThrowError(
@@ -378,7 +372,7 @@ describe('@reatom/core', () => {
     })
     test('createStore with undefined atom and state', () => {
       const store = createStore()
-      expect(store.getState()['atom [1]']).toBe(0)
+      expect(store.getState()).toEqual({})
     })
     test('createStore preloaded state', () => {
       const increment = declareAction()
