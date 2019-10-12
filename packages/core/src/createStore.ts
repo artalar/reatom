@@ -22,20 +22,26 @@ export type Store = {
   getState: GetStateFunction
 }
 
+export function createStore(initState?: State): Store
+export function createStore(atom: Atom<any>, initState?: State): Store
 // TODO: try to use ES6 Map's instead of plain object
 // for prevent using `delete` operator
 // (need perf tests)
 export function createStore(
-  atom: Atom<any> = defaultAtom,
-  initState = {},
+  atom: Atom<any> | State = defaultAtom,
+  initState: State = {},
 ): Store {
-  let atomsListeners = new Map<TreeId, Function[]>()
-  let nextAtomsListeners = atomsListeners
+  if (!getIsAtom(atom)) {
+    initState = atom
+    atom = defaultAtom
+  }
+  let atomsListeners: Map<TreeId, Function[]> = new Map<TreeId, Function[]>()
+  let nextAtomsListeners: Map<TreeId, Function[]> = atomsListeners
   let actionsListeners: Function[] = []
   let nextActionsListeners: Function[] = actionsListeners
   // const storeAtom = map('store', atom || defaultAtom, value => value)
   const storeTree = new Tree('store')
-  storeTree.union(getTree(atom)!)
+  storeTree.union(getTree(atom as Atom<any>)!)
   const ctx = createCtx(initState, initAction)
   storeTree.forEach(initAction.type, ctx)
   const initialAtoms = new Set(Object.keys(ctx.stateNew))
@@ -50,7 +56,7 @@ export function createStore(
 
   function ensureCanMutateNextAtomsListeners(treeId: TreeId) {
     if (nextAtomsListeners === atomsListeners) {
-      nextAtomsListeners = new Map<TreeId, Function[]>()
+      nextAtomsListeners = new Map()
       atomsListeners.forEach((value, key) =>
         nextAtomsListeners.set(key, treeId === key ? value.slice() : value),
       )
@@ -73,6 +79,11 @@ export function createStore(
     return getState(ctx.stateNew, target)
   }
 
+  function subscribe(subscriber: DispatchFunction): () => void
+  function subscribe<T>(
+    target: Atom<T>,
+    subscriber: (state: T) => any,
+  ): () => void
   function subscribe<T>(
     target: Atom<T> | DispatchFunction,
     subscriber?: (state: T) => any,

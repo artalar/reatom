@@ -1,23 +1,48 @@
-import { Leaf, Tree } from './kernel'
+import { Leaf, Tree, BaseAction } from './kernel'
 import { TREE, noop, nameToId, Unit } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
-
 export type Reaction<T> = (payload: T, store: Store) => any
 
-export type Action<Payload, Type extends ActionType = string> = {
+export type Action<Payload, Type extends ActionType = string> = BaseAction<
+  Payload
+> & {
   type: Type
-  payload: Payload
   reactions?: Reaction<Payload>[]
 }
 
-export type ActionCreator<Payload = undefined, Type extends string = string> = {
+export type BaseActionCreator = {
   getType: () => string
-} & Unit &
-  (Payload extends undefined
-    ? () => Action<Payload, Type>
-    : (payload: Payload) => Action<Payload, Type>)
+} & Unit
+
+export type ActionCreator<Type extends string = string> = BaseActionCreator &
+  (() => Action<undefined, Type>)
+
+export type PayloadActionCreator<
+  Payload,
+  Type extends string = string
+> = BaseActionCreator & ((payload: Payload) => Action<Payload, Type>)
+
+export function declareAction(
+  name?: string | Reaction<undefined>,
+  ...reactions: Reaction<undefined>[]
+): ActionCreator<string>
+
+export function declareAction<Type extends ActionType>(
+  name: [Type],
+  ...reactions: Reaction<undefined>[]
+): ActionCreator<Type>
+
+export function declareAction<Payload>(
+  name?: string | Reaction<Payload>,
+  ...reactions: Reaction<Payload>[]
+): PayloadActionCreator<Payload, string>
+
+export function declareAction<Payload, Type extends ActionType>(
+  name: [Type],
+  ...reactions: Reaction<Payload>[]
+): PayloadActionCreator<Payload, Type>
 
 export function declareAction<
   Payload = undefined,
@@ -25,7 +50,7 @@ export function declareAction<
 >(
   name: string | [Type] | Reaction<Payload> = 'action',
   ...reactions: Reaction<Payload>[]
-): ActionCreator<Payload, Type> {
+): ActionCreator<Type> | PayloadActionCreator<Payload, Type> {
   if (typeof name === 'function') {
     reactions.unshift(name)
     name = 'action'
@@ -35,18 +60,16 @@ export function declareAction<
   const ACTree = new Tree(id, true)
   ACTree.addFn(noop, id)
 
-  function actionCreator(payload?: Payload) {
+  const actionCreator = function actionCreator(payload?: Payload) {
     return {
       type: id,
       payload,
       reactions,
     }
-  }
+  } as (ActionCreator<Type> | PayloadActionCreator<Payload, Type>)
 
-  // @ts-ignore
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id
 
-  // @ts-ignore
   return actionCreator
 }
