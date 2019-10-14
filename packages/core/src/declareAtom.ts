@@ -20,7 +20,7 @@ export const initAction = _initAction()
 type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
-  handler: <T>(
+  on: <T>(
     dependency: Unit | PayloadActionCreator<T>,
     reducer: Reducer<TState, T>,
   ) => void,
@@ -62,7 +62,7 @@ export function declareAtom<TState>(
   let dependencePosition = 0
   let initialPhase = true
 
-  function handler<T>(
+  function on<T>(
     dep: Unit | PayloadActionCreator<T>,
     reducer: Reducer<TState, T>,
   ) {
@@ -121,8 +121,8 @@ export function declareAtom<TState>(
     depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
   }
 
-  handler(_initAction, (state = initialState as TState) => state)
-  dependencyMatcher(handler)
+  on(_initAction, (state = initialState as TState) => state)
+  dependencyMatcher(on)
 
   const atom = function atom(
     state: State = {},

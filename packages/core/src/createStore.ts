@@ -1,12 +1,19 @@
 import { Tree, State, TreeId, createCtx } from './kernel'
-import { throwError, getTree, safetyFunc, assign, getIsAtom } from './shared'
+import {
+  throwError,
+  getTree,
+  safetyFunc,
+  assign,
+  getIsAtom,
+  getIsAction,
+} from './shared'
 import { Action } from './declareAction'
 import { Atom, initAction, getState } from './declareAtom'
 
-type DispatchFunction = (action: Action<any>) => any
+type ActionsSubscriber = (action: Action<any>) => any
 type SubscribeFunction = {
   <T>(target: Atom<T>, listener: (state: T) => any): () => void
-  (listener: DispatchFunction): () => void
+  (listener: ActionsSubscriber): () => void
 }
 type GetStateFunction = {
   <T>(target: Atom<T>): T
@@ -14,7 +21,7 @@ type GetStateFunction = {
 }
 
 export type Store = {
-  dispatch: DispatchFunction
+  dispatch: ActionsSubscriber
   subscribe: SubscribeFunction
   getState: GetStateFunction
 }
@@ -82,19 +89,22 @@ export function createStore(
     return getState(ctx.stateNew, target)
   }
 
-  function subscribe(subscriber: DispatchFunction): () => void
+  function subscribe(subscriber: ActionsSubscriber): () => void
   function subscribe<T>(
     target: Atom<T>,
     subscriber: (state: T) => any,
   ): () => void
   function subscribe<T>(
-    target: Atom<T> | DispatchFunction,
+    target: Atom<T> | ActionsSubscriber,
     subscriber?: (state: T) => any,
   ): () => void {
     const listener = safetyFunc(subscriber || target, 'listener')
     let isSubscribed = true
 
     if (subscriber === undefined) {
+      if (getIsAtom(listener) || getIsAction(listener))
+        throwError('Invalid listener')
+
       ensureCanMutateNextListeners()
       nextActionsListeners.push(listener)
       return () => {

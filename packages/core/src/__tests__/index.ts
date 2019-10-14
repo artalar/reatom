@@ -54,74 +54,95 @@ describe('@reatom/core', () => {
         reactions: [],
       })
     })
-    test('declareAtom', () => {
-      const name = '_atomName_'
-      const initialState = {}
-      const atom = declareAtom(name, initialState, () => {})
-      const state = atom({}, initAction)
+    describe('declareAtom', () => {
+      test('basics', () => {
+        const name = '_atomName_'
+        const initialState = {}
+        const atom = declareAtom(name, initialState, () => {})
+        const state = atom({}, initAction)
 
-      expect(getState(state, atom)).toBe(initialState)
-      expect(
-        (() => {
-          const keys = Object.keys(state)
-          return keys.length === 1 && keys[0].includes(name)
-        })(),
-      ).toBe(true)
-      expect(declareAtom([name], initialState, () => {})()).toEqual({
-        [name]: initialState,
+        expect(getState(state, atom)).toBe(initialState)
+        expect(
+          (() => {
+            const keys = Object.keys(state)
+            return keys.length === 1 && keys[0].includes(name)
+          })(),
+        ).toBe(true)
+        expect(declareAtom([name], initialState, () => {})()).toEqual({
+          [name]: initialState,
+        })
       })
-    })
-    test('declareAtom', () => {
-      const addUnderscore = declareAction()
-      const atom1 = declareAtom(['name1'], '1', reduce => [
-        reduce(addUnderscore, state => `_${state}`),
-      ])
-      const atom2 = declareAtom(['name2'], '2', reduce => [
-        reduce(addUnderscore, state => `_${state}`),
-      ])
-      const atomRoot = combine([atom1, atom2])
+      test('strict uid', () => {
+        const addUnderscore = declareAction()
+        const atom1 = declareAtom(['name1'], '1', reduce => [
+          reduce(addUnderscore, state => `_${state}`),
+        ])
+        const atom2 = declareAtom(['name2'], '2', reduce => [
+          reduce(addUnderscore, state => `_${state}`),
+        ])
+        const atomRoot = combine([atom1, atom2])
 
-      let state = atomRoot()
-      expect(state).toEqual({
-        name1: '1',
-        name2: '2',
-        [getTree(atomRoot).id]: ['1', '2'],
+        let state = atomRoot()
+        expect(state).toEqual({
+          name1: '1',
+          name2: '2',
+          [getTree(atomRoot).id]: ['1', '2'],
+        })
+
+        state = atomRoot(state, addUnderscore())
+        expect(state).toEqual({
+          name1: '_1',
+          name2: '_2',
+          [getTree(atomRoot).id]: ['_1', '_2'],
+        })
       })
+      test('throw error if declareAtom called with undefined initial state', () => {
+        const run = () => declareAtom(['test'], undefined, reduce => [])
 
-      state = atomRoot(state, addUnderscore())
-      expect(state).toEqual({
-        name1: '_1',
-        name2: '_2',
-        [getTree(atomRoot).id]: ['_1', '_2'],
+        expect(run).toThrowError(
+          `[reatom] Atom "test". Initial state can't be undefined`,
+        )
       })
-    })
-    test('throw error if declareAtom called with undefined initial state', () => {
-      const run = () => declareAtom(['test'], undefined, reduce => [])
+      test('throw error if atom produced undefined value', () => {
+        const action = declareAction()
 
-      expect(run).toThrowError(
-        `[reatom] Atom "test". Initial state can't be undefined`,
-      )
-    })
-    test('throw error if atom produced undefined value', () => {
-      const action = declareAction()
+        expect(() =>
+          declareAtom(['myAtom'], {}, r => r(action, () => undefined as any))(
+            {},
+            action(),
+          ),
+        ).toThrowError(
+          '[reatom] Invalid state. Reducer № 1 in "myAtom" atom returns undefined',
+        )
 
-      expect(() =>
-        declareAtom(['myAtom'], {}, r => r(action, () => undefined as any))(
-          {},
-          action(),
-        ),
-      ).toThrowError(
-        '[reatom] Invalid state. Reducer № 1 in "myAtom" atom returns undefined',
-      )
+        expect(() =>
+          declareAtom(['test'], 0, r => [
+            r(declareAction(), () => 0),
+            r(action, () => undefined as any),
+          ])({}, action()),
+        ).toThrowError(
+          '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
+        )
+      })
+      test('reducers collisions', () => {
+        const increment = declareAction()
 
-      expect(() =>
-        declareAtom(['test'], 0, r => [
-          r(declareAction(), () => 0),
-          r(action, () => undefined as any),
-        ])({}, action()),
-      ).toThrowError(
-        '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
-      )
+        const counter = declareAtom(0, on => [
+          on(increment, state => state + 1),
+          on(increment, state => state + 1),
+          on(increment, state => state + 1),
+        ])
+
+        const store = createStore(counter)
+        const sideEffect = jest.fn()
+        store.subscribe(counter, sideEffect)
+
+        expect(sideEffect).toBeCalledTimes(0)
+
+        store.dispatch(increment())
+        expect(sideEffect).toBeCalledTimes(1)
+        expect(sideEffect).toBeCalledWith(3)
+      })
     })
     test('createStore', () => {
       const increment = declareAction('increment')
