@@ -191,7 +191,7 @@ Telegram
 - [@reatom_ru](https://t.me/reatom_ru) — russian
 
 ## Mass media
-- [Ratom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
+- [Reatom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
 
 ---
 
