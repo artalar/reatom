@@ -14,7 +14,7 @@ or
 yarn add @reatom/babel-plugin --dev
 ```
 
-> NOTE. **@reatom/babel-plugin** is depend and work with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/babel-plugin** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
 ## Usage
 
