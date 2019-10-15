@@ -25,7 +25,7 @@ yarn add @reatom/babel-plugin --dev
 ## Usage
 
 ### Step 1.
-Add plugin via .babelrc or babel-loader.
+Add the plugin via .babelrc or babel-loader.
 
 ```json
 {
@@ -42,7 +42,7 @@ const myAtom = declareAtom({}, () => [])
 const mySelector = map(myAtom, atomState => atomState)
 const myCombine = combine([myAtom, mySelector])
 ```
-Will converted to:
+Will be converted to:
 ```js
 import { declateAction, declareAtom, map, combine } from '@reatom/core' 
 
