@@ -172,7 +172,7 @@ Guiding principles of state manager:
   ```
   </details>
 
-- The [size](https://bundlephobia.com/result?p=effector@20.1.2)
+- The [size](https://bundlephobia.com/result?p=effector@20.4.0)
 - [Throw in reducer does not cancel the computations in other reducers](https://github.com/zerobias/effector/issues/90)
 
 ### Why not MobX
