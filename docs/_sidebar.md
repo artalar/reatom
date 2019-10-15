@@ -10,6 +10,9 @@
   * [@reatom/babel-plugin](/reatom-babel-plugin.md)
   * [@reatom/debug](/reatom-debug.md)
 
+- Guides
+  * [Migration from Redux](/guides/migration-from-redux.md)
+
 * [Examples](/examples.md)
 * [Contributing](/CONTRIBUTING.md)
 
