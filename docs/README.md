@@ -185,11 +185,15 @@ Guiding principles of state manager:
 - It is complicated under the hood and [it can be complicated when one has to work with complex data-structures](https://twitter.com/art_al_ar/status/1162769896025075719)
 - [And others...](https://mobx.js.org/best/pitfalls.html)
 
----
+## Community
+Telegram
+- [@reatom_en](https://t.me/reatom_en) — english
+- [@reatom_ru](https://t.me/reatom_ru) — russian
 
 ## Mass media
 - [Ratom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
 
+---
 
 Next:
 
