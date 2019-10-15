@@ -30,7 +30,7 @@ Reatom is **declarative** and **reactive** state manager, designed for both simp
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 🔮 **deterministic**: declarative and predictable specification of state shape and its mutations
 - 👴 **ES5 support**: by polyfills
-- 🧯 **reliable**: predictable flow exeptions
+- 🧯 **reliable**: predictable flow exceptions
 - synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/packages/core/src/__tests__/diamond.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward to write bad code
@@ -130,16 +130,16 @@ Guiding principles of state manager:
 [link to repository](https://github.com/reduxjs/redux)
 
 - Selectors are not inspectable (lacking in devtools).
-- Difficult static type inference (every selector must to know full path to parent state).
-- Hard for modular architecture (every selector must to know about parent state).
-- Separation of interfaces, for reducers and selectors, complicates to build separated domains.
-- Selectors - is API **manual** for state. They must be **manualy** described and memorized.
-- Selectors execute after state change at subscriptions - error in selector will throw error and is not possibile (ok, all possible, but it is really hard) to restore previous valid state.
-- classic reducer API and [static] type descriptions have a lot of boilerplate.
-- Selectors are "runtime" oriented, if a "feature" uses any part of the state (by selector), when you remove this part, you will get an error only when mounting your "feature" at runtime (if you do not have static typing). One solution is to connect all features statically by imports.
-- Middleware - is confound pattern that, sometimes unexpectedly, modifies the behavior of the store. Reference example: actions for redux-thunk do not log.
-  <!-- - Memorized selectors is extra computations by default, but it is defenetly unnecessary in SSR -->
-  > Some problems can be solved by various fabric functions and third party libriaries. This makes it diffcuilt to resuse solutions across multiple projects.
+- Difficult static type inference (every selector must know the full path to parent state).
+- Hard for modular architecture (every selector must know about parent state).
+- Separation of interfaces (reducers and selectors) complicates the prototyping of separated domains.
+- Selectors - **manual** API for state. They must be **manually** described and memoized.
+- Selectors are executed after state change at subscriptions - error in selector will throw an error. Also it is not possible (possible, but really hard) to restore the previous valid state.
+- Classic reducer API and [static] type descriptions have a lot of boilerplate.
+- Selectors are "runtime" oriented; if a "feature" uses any part of the state (by selector) and later you remove this part, you will get an error only when mounting your "feature" at runtime (if you do not have static typing). The single solution is to connect all features statically by imports.
+- Middleware is a confusing pattern that can unexpectedly modify the behavior of the store. For example, actions for redux-thunk do not log.
+  <!-- - Memorized selectors do extra computations by default, but it is definitely unnecessary in SSR -->
+  > Some problems can be solved by various fabric functions and third party libriaries. This makes it diffcuilt to reuse solutions across multiple projects.
 
 ### Why not Effector
 [link to repository](https://github.com/zerobias/effector)
@@ -147,8 +147,8 @@ Guiding principles of state manager:
 - Effector is about atomic **stores** — it uses stateful approach that has certain problems:
   - probable memory leaks
     > Like any other observable libraries
-  - difficult [store] instance reusability (concurrence problems with SSR)
-    > It can be solved, but a better way to solve it by design of library architecture and API
+  - difficult [store] instance reusability (concurrency problems with SSR)
+    > It can be solved, but it is better to solve it by design of a library architecture and API
 - Asynchronous and probably cyclic dependencies specification
   <details>
   <summary>show example</summary>
