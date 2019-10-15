@@ -25,7 +25,7 @@ or
 yarn add @reatom/observable
 ```
 
-> NOTE. **@reatom/observable** is depend and work with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/observable** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
 ## Usage
 

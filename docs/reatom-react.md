@@ -15,7 +15,7 @@ or
 yarn add @reatom/react
 ```
 
-> NOTE. **@reatom/react** is depend and work with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/react** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
 ## Hooks Api
 

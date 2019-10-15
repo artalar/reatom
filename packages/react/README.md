@@ -33,7 +33,7 @@ or
 yarn add @reatom/react
 ```
 
-> `@reatom/react` is depend and work with `@reatom/core`.
+> `@reatom/react` depends on and works with `@reatom/core`.
 
 ## Hooks Api
 
