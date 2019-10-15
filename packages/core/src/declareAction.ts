@@ -48,7 +48,7 @@ export function declareAction<
   Payload = undefined,
   Type extends ActionType = string
 >(
-  name: string | [Type] | Reaction<Payload> = 'action',
+  name: string | [Type] | Reaction<Payload>,
   ...reactions: Reaction<Payload>[]
 ): ActionCreator<Type> | PayloadActionCreator<Payload, Type> {
   if (typeof name === 'function') {
