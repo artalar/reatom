@@ -25,7 +25,7 @@ export type PayloadActionCreator<
 > = BaseActionCreator & ((payload: Payload) => Action<Payload, Type>)
 
 export function declareAction(
-  name?: string | Reaction<undefined>,
+  name: string | Reaction<undefined>,
   ...reactions: Reaction<undefined>[]
 ): ActionCreator<string>
 
@@ -35,7 +35,7 @@ export function declareAction<Type extends ActionType>(
 ): ActionCreator<Type>
 
 export function declareAction<Payload>(
-  name?: string | Reaction<Payload>,
+  name: string | Reaction<Payload>,
   ...reactions: Reaction<Payload>[]
 ): PayloadActionCreator<Payload, string>
 
