@@ -187,6 +187,10 @@ Guiding principles of state manager:
 
 ---
 
+## Mass media
+- [Ratom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
+
+
 Next:
 
 > - <a href="https://artalar.github.io/reatom/#/glossary">Glossary</a>
