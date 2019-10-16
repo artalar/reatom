@@ -275,6 +275,7 @@ store.dispatch(function(dispatch) {
 ```
 
 **Reatom**
+
 ```js
 import { createStore, declareAction } from '@reatom/core'
 
@@ -297,10 +298,11 @@ const incrementAsync = declareAction(({ dispatch }) => {
 
 store.dispatch(incrementAsync())
 ```
-## redux-saga
-Transferring logic from sagas to effects can be very painful, but redux-saga can work with any external state management library. Just use runSaga. Redux-saga uses a [pattern](redux-saga.js.org/docs/api/#takepattern) to determine the needed action
+
+Changing logic from sagas to effects could be painful. Redux-saga allows us to work with any external state management library through `runSaga`. Redux-saga uses [pattern](redux-saga.js.org/docs/api/#takepattern) to determine which action is needed
 
 **Redux**
+
 ```js
 import { createStore, applyMiddleware } from 'redux'
 import createSagaMiddleware from 'redux-saga'
@@ -327,6 +329,7 @@ store.dispatch({ type: 'INCREMENT_ASYNC' })
 **Reatom**
 
 Usage with explicit action type
+
 ```js
 import { createStore, declareAction } from '@reatom/core'
 import { runSaga } from 'redux-saga'
@@ -356,20 +359,14 @@ runSaga(options, watchIncrementAsyncSaga)
 store.dispatch({ type: 'INCREMENT_ASYNC' })
 ```
 
-Or use the action creator. To do this, you need to use a small wrapper
+Or use the action creator. To do this, just use `getType()` method
+
 ```js
-import { createStore, declareAction as createActionCreator } from '@reatom/core'
+import { createStore, declareAction } from '@reatom/core'
 import { runSaga } from 'redux-saga'
 import { put, takeEvery, delay } from 'redux-saga/effects'
 
 const store = createStore()
-
-function declareAction(...args) {
-  const actionCreator = createActionCreator(...args)
-  actionCreator.toString = actionCreator.getType
-
-  return actionCreator
-}
 
 const increment = declareAction()
 const incrementAsync = declareAction()
@@ -380,7 +377,7 @@ export function* incrementAsyncSaga() {
 }
 
 export function* watchIncrementAsyncSaga() {
-  yield takeEvery(incrementAsync, incrementAsyncSaga)
+  yield takeEvery(incrementAsync.getType(), incrementAsyncSaga)
 }
 
 const options = {
@@ -394,6 +391,7 @@ store.dispatch(incrementAsync())
 ```
 
 ## Async reducers
+
 Reatom has a built in solution for lazy connections of atoms.
 
 **Redux**
