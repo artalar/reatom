@@ -383,7 +383,7 @@ export function* watchIncrementAsyncSaga() {
 const options = {
   dispatch: store.dispatch,
   getState: store.getState,
-  chanel: eventChannel(emit => store.subscribe(emit)),
+  channel: eventChannel(emit => store.subscribe(emit)),
 }
 
 runSaga(options, watchIncrementAsyncSaga)
