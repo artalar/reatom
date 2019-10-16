@@ -194,7 +194,7 @@ unsubscribe()
 Subscribing to the atoms
 
 ```js
-const unsubscribe = store.subscribe(visisbleTodosAtom, todosState => {
+const unsubscribe = store.subscribe(visibleTodosAtom, todosState => {
   // Will be called after update atom state
   // ...do something
 })
@@ -363,7 +363,7 @@ Or use the action creator. To do this, just use `getType()` method
 
 ```js
 import { createStore, declareAction } from '@reatom/core'
-import { runSaga } from 'redux-saga'
+import { runSaga, eventChannel } from 'redux-saga'
 import { put, takeEvery, delay } from 'redux-saga/effects'
 
 const store = createStore()
@@ -383,6 +383,7 @@ export function* watchIncrementAsyncSaga() {
 const options = {
   dispatch: store.dispatch,
   getState: store.getState,
+  chanel: eventChannel(emit => store.subscribe(emit)),
 }
 
 runSaga(options, watchIncrementAsyncSaga)
