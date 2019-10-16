@@ -217,6 +217,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://www.linkedin.com/in/илья-рябчинский-678a78188"><img src="https://avatars1.githubusercontent.com/u/20639767?v=4" width="100px;" alt="Ilya"/><br /><sub><b>Ilya</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=ilyaryabchinski" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/MunGell"><img src="https://avatars2.githubusercontent.com/u/812976?v=4" width="100px;" alt="Shmavon Gazanchyan"/><br /><sub><b>Shmavon Gazanchyan</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=MunGell" title="Documentation">📖</a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://github.com/godested"><img src="https://avatars2.githubusercontent.com/u/22772547?v=4" width="100px;" alt="Ilya Zaitsev"/><br /><sub><b>Ilya Zaitsev</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=godested" title="Documentation">📖</a></td>
+  </tr>
 </table>
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
