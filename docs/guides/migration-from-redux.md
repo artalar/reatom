@@ -16,7 +16,7 @@ const ADD_TODO = 'ADD_TODO'
 function addTodo(text) {
   return {
     type: ADD_TODO,
-    payalod: text,
+    payload: text,
   }
 }
 ```
@@ -297,7 +297,7 @@ const incrementAsync = declareAction(({ dispatch }) => {
 
 store.dispatch(incrementAsync())
 ```
-
+## redux-saga
 Transferring logic from sagas to effects can be very painful, but redux-saga can work with any external state management library. Just use runSaga. Redux-saga uses a [pattern](redux-saga.js.org/docs/api/#takepattern) to determine the needed action
 
 **Redux**
