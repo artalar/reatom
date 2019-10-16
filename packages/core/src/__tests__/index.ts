@@ -54,91 +54,106 @@ describe('@reatom/core', () => {
         reactions: [],
       })
     })
-    test('declareAtom', () => {
-      const name = '_atomName_'
-      const initialState = {}
-      const atom = declareAtom(name, initialState, () => {})
-      const state = atom({}, initAction)
+    describe('declareAtom', () => {
+      test('basics', () => {
+        const name = '_atomName_'
+        const initialState = {}
+        const atom = declareAtom(name, initialState, () => {})
+        const state = atom({}, initAction)
 
-      expect(getState(state, atom)).toBe(initialState)
-      expect(
-        (() => {
-          const keys = Object.keys(state)
-          return keys.length === 1 && keys[0].includes(name)
-        })(),
-      ).toBe(true)
-      expect(declareAtom([name], initialState, () => {})()).toEqual({
-        [name]: initialState,
+        expect(getState(state, atom)).toBe(initialState)
+        expect(
+          (() => {
+            const keys = Object.keys(state)
+            return keys.length === 1 && keys[0].includes(name)
+          })(),
+        ).toBe(true)
+        expect(declareAtom([name], initialState, () => {})()).toEqual({
+          [name]: initialState,
+        })
       })
-    })
-    test('declareAtom', () => {
-      const addUnderscore = declareAction()
-      const atom1 = declareAtom(['name1'], '1', reduce => [
-        reduce(addUnderscore, state => `_${state}`),
-      ])
-      const atom2 = declareAtom(['name2'], '2', reduce => [
-        reduce(addUnderscore, state => `_${state}`),
-      ])
-      const atomRoot = combine([atom1, atom2])
+      test('strict uid', () => {
+        const addUnderscore = declareAction()
+        const atom1 = declareAtom(['name1'], '1', on => [
+          on(addUnderscore, state => `_${state}`),
+        ])
+        const atom2 = declareAtom(['name2'], '2', on => [
+          on(addUnderscore, state => `_${state}`),
+        ])
+        const atomRoot = combine([atom1, atom2])
 
-      let state = atomRoot()
-      expect(state).toEqual({
-        name1: '1',
-        name2: '2',
-        [getTree(atomRoot).id]: ['1', '2'],
+        let state = atomRoot()
+        expect(state).toEqual({
+          name1: '1',
+          name2: '2',
+          [getTree(atomRoot).id]: ['1', '2'],
+        })
+
+        state = atomRoot(state, addUnderscore())
+        expect(state).toEqual({
+          name1: '_1',
+          name2: '_2',
+          [getTree(atomRoot).id]: ['_1', '_2'],
+        })
       })
+      test('throw error if declareAtom called with undefined initial state', () => {
+        const run = () => declareAtom(['test'], undefined, on => [])
 
-      state = atomRoot(state, addUnderscore())
-      expect(state).toEqual({
-        name1: '_1',
-        name2: '_2',
-        [getTree(atomRoot).id]: ['_1', '_2'],
+        expect(run).toThrowError(
+          `[reatom] Atom "test". Initial state can't be undefined`,
+        )
       })
-    })
-    test('throw error if declareAtom called with undefined initial state', () => {
-      const run = () => declareAtom(['test'], undefined, reduce => [])
+      test('throw error if atom produced undefined value', () => {
+        const action = declareAction()
 
-      expect(run).toThrowError(
-        `[reatom] Atom "test". Initial state can't be undefined`,
-      )
-    })
-    test('throw error if atom produced undefined value', () => {
-      const action = declareAction()
+        expect(() =>
+          declareAtom(['myAtom'], {}, on => on(action, () => undefined as any))(
+            {},
+            action(),
+          ),
+        ).toThrowError(
+          '[reatom] Invalid state. Reducer № 1 in "myAtom" atom returns undefined',
+        )
 
-      expect(() =>
-        declareAtom({}, r => r(action, () => undefined as any))({}, action()),
-      ).toThrowError(
-        '[reatom] Invalid state. Reducer № 1 in "atom [14]" atom returns undefined',
-      )
+        expect(() =>
+          declareAtom(['test'], 0, on => [
+            on(declareAction(), () => 0),
+            on(action, () => undefined as any),
+          ])({}, action()),
+        ).toThrowError(
+          '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
+        )
+      })
+      test('reducers collisions', () => {
+        const increment = declareAction()
 
-      expect(() =>
-        declareAtom(['test'], {}, r => r(action, () => undefined as any))(
-          {},
-          action(),
-        ),
-      ).toThrowError(
-        '[reatom] Invalid state. Reducer № 1 in "test" atom returns undefined',
-      )
+        const counter = declareAtom(0, on => [
+          on(increment, state => state + 1),
+          on(increment, state => state + 1),
+          on(increment, state => state + 1),
+        ])
 
-      expect(() =>
-        declareAtom(['test'], {}, r => [
-          r(declareAction(), () => 0 as any),
-          r(action, () => undefined as any),
-        ])({}, action()),
-      ).toThrowError(
-        '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
-      )
+        const store = createStore(counter)
+        const sideEffect = jest.fn()
+        store.subscribe(counter, sideEffect)
+
+        expect(sideEffect).toBeCalledTimes(0)
+
+        store.dispatch(increment())
+        expect(sideEffect).toBeCalledTimes(1)
+        expect(sideEffect).toBeCalledWith(3)
+      })
     })
     test('createStore', () => {
       const increment = declareAction('increment')
       const toggle = declareAction()
 
-      const count = declareAtom('count', 0, handle => [
-        handle(increment, state => state + 1),
+      const count = declareAtom('count', 0, on => [
+        on(increment, state => state + 1),
       ])
       const countDoubled = map('count/map', count, state => state * 2)
-      const toggled = declareAtom('toggled', false, handle =>
-        handle(toggle, state => !state),
+      const toggled = declareAtom('toggled', false, on =>
+        on(toggle, state => !state),
       )
 
       const root = combine('combine', {
@@ -233,13 +248,13 @@ describe('@reatom/core', () => {
       const increment = declareAction('increment')
       const set = declareAction<number>('set')
 
-      const count1 = declareAtom(0, handle =>
-        handle(increment, state => state + 1),
+      const count1 = declareAtom(0, on =>
+        on(increment, state => state + 1),
       )
       const count2SetMap = jest.fn((state, payload) => payload)
-      const count2 = declareAtom(0, handle => [
-        handle(increment, state => state + 1),
-        handle(set, count2SetMap),
+      const count2 = declareAtom(0, on => [
+        on(increment, state => state + 1),
+        on(set, count2SetMap),
       ])
 
       const root = combine({ count1 })
@@ -301,12 +316,12 @@ describe('@reatom/core', () => {
       const increment1 = declareAction()
       const increment2 = declareAction()
 
-      const count1 = declareAtom(0, handle =>
-        handle(increment1, state => state + 1),
+      const count1 = declareAtom(0, on =>
+        on(increment1, state => state + 1),
       )
       const count1Doubled = map(count1, payload => payload * 2)
-      const count2 = declareAtom(0, handle =>
-        handle(increment2, state => state + 1),
+      const count2 = declareAtom(0, on =>
+        on(increment2, state => state + 1),
       )
       const count2Doubled = map(count2, payload => payload * 2)
 
@@ -331,8 +346,8 @@ describe('@reatom/core', () => {
       const storeSubscriber = jest.fn()
       const increment = declareAction()
 
-      const count = declareAtom('count', 0, handle =>
-        handle(increment, state => state + 1),
+      const count = declareAtom('count', 0, on =>
+        on(increment, state => state + 1),
       )
       const countDoubled = map(['countDoubled'], count, payload => payload * 2)
       const root = combine({ count })
@@ -362,8 +377,8 @@ describe('@reatom/core', () => {
     })
     test('createStore with undefined atom', () => {
       const increment = declareAction()
-      const countStatic = declareAtom(['countStatic'], 0, handle =>
-        handle(increment, state => state + 1),
+      const countStatic = declareAtom(['countStatic'], 0, on =>
+        on(increment, state => state + 1),
       )
 
       const store = createStore({ countStatic: 10 })
@@ -378,16 +393,16 @@ describe('@reatom/core', () => {
     })
     test('createStore with undefined atom and state', () => {
       const store = createStore()
-      expect(store.getState()['atom [1]']).toBe(0)
+      expect(store.getState()).toEqual({})
     })
     test('createStore preloaded state', () => {
       const increment = declareAction()
 
-      const staticCount = declareAtom(['staticCount'], 0, handle =>
-        handle(increment, state => state + 1),
+      const staticCount = declareAtom(['staticCount'], 0, on =>
+        on(increment, state => state + 1),
       )
-      const dynamicCount = declareAtom(['dynamicCount'], 0, handle =>
-        handle(increment, state => state + 1),
+      const dynamicCount = declareAtom(['dynamicCount'], 0, on =>
+        on(increment, state => state + 1),
       )
       const root = combine(['staticRoot'], { staticCount })
 
@@ -416,7 +431,7 @@ describe('@reatom/core', () => {
   })
 
   test('declareAction reactions', async () => {
-    const delay = () => new Promise(r => setTimeout(r, 10))
+    const delay = () => new Promise(on => setTimeout(on, 10))
     const setValue = declareAction<number>()
     let lastCallId = 0
     const setValueConcurrent = declareAction<number>(async (payload, store) => {
@@ -460,8 +475,8 @@ describe('@reatom/core', () => {
     test('map + combine', () => {
       const increment = declareAction()
 
-      const count = declareAtom('@count', 0, handle =>
-        handle(increment, state => state + 1),
+      const count = declareAtom('@count', 0, on =>
+        on(increment, state => state + 1),
       )
       const countDoubled = map(count, state => state * 2)
 
@@ -487,8 +502,8 @@ describe('@reatom/core', () => {
     })
     test('combine array', () => {
       const increment = declareAction()
-      const count = declareAtom('@count', 0, handle =>
-        handle(increment, state => state + 1),
+      const count = declareAtom('@count', 0, on =>
+        on(increment, state => state + 1),
       )
       const countDoubled = map(count, state => state * 2)
 

@@ -1,23 +1,27 @@
 import { Tree, State, TreeId, createCtx } from './kernel'
-import { throwError, getTree, safetyFunc, assign, getIsAtom } from './shared'
+import {
+  throwError,
+  getTree,
+  safetyFunc,
+  assign,
+  getIsAtom,
+  getIsAction,
+} from './shared'
 import { Action } from './declareAction'
-import { Atom, declareAtom, initAction, getState } from './declareAtom'
+import { Atom, initAction, getState } from './declareAtom'
 
-type DispatchFunction = (action: Action<any>) => any
+type ActionsSubscriber = (action: Action<any>) => any
 type SubscribeFunction = {
   <T>(target: Atom<T>, listener: (state: T) => any): () => void
-  (listener: DispatchFunction): () => void
+  (listener: ActionsSubscriber): () => void
 }
 type GetStateFunction = {
   <T>(target: Atom<T>): T
   (): State
 }
 
-// for create nullable store
-const defaultAtom = declareAtom(0, () => 0)
-
 export type Store = {
-  dispatch: DispatchFunction
+  dispatch: ActionsSubscriber
   subscribe: SubscribeFunction
   getState: GetStateFunction
 }
@@ -28,25 +32,31 @@ export function createStore(atom: Atom<any>, initState?: State): Store
 // for prevent using `delete` operator
 // (need perf tests)
 export function createStore(
-  atom: Atom<any> | State = defaultAtom,
-  initState: State = {},
+  atom?: Atom<any> | State,
+  initState?: State,
 ): Store {
-  if (!getIsAtom(atom)) {
-    initState = atom
-    atom = defaultAtom
-  }
   let atomsListeners: Map<TreeId, Function[]> = new Map<TreeId, Function[]>()
   let nextAtomsListeners: Map<TreeId, Function[]> = atomsListeners
   let actionsListeners: Function[] = []
   let nextActionsListeners: Function[] = actionsListeners
-  // const storeAtom = map('store', atom || defaultAtom, value => value)
+  let initialAtoms = new Set<TreeId>()
+  const state: State = {}
   const storeTree = new Tree('store')
-  storeTree.union(getTree(atom as Atom<any>)!)
-  const ctx = createCtx(initState, initAction)
-  storeTree.forEach(initAction.type, ctx)
-  const initialAtoms = new Set(Object.keys(ctx.stateNew))
-  // preloadedState needed to save data of lazy atoms
-  const state = assign({}, initState, ctx.stateNew) as State
+  if (atom !== undefined) {
+    if (typeof atom === 'object' && initState === undefined) assign(state, atom)
+    else {
+      if (!getIsAtom(atom)) throwError('Invalid atom')
+      if (typeof initState === 'object' && initState !== null)
+        assign(state, initState)
+      else if (initState !== undefined) throwError('Invalid initial state')
+
+      storeTree.union(getTree(atom as Atom<any>))
+      const ctx = createCtx(state, initAction)
+      storeTree.forEach(initAction.type, ctx)
+      assign(state, ctx.stateNew)
+      initialAtoms = new Set(Object.keys(ctx.stateNew))
+    }
+  }
 
   function ensureCanMutateNextListeners() {
     if (nextActionsListeners === actionsListeners) {
@@ -79,19 +89,22 @@ export function createStore(
     return getState(ctx.stateNew, target)
   }
 
-  function subscribe(subscriber: DispatchFunction): () => void
+  function subscribe(subscriber: ActionsSubscriber): () => void
   function subscribe<T>(
     target: Atom<T>,
     subscriber: (state: T) => any,
   ): () => void
   function subscribe<T>(
-    target: Atom<T> | DispatchFunction,
+    target: Atom<T> | ActionsSubscriber,
     subscriber?: (state: T) => any,
   ): () => void {
     const listener = safetyFunc(subscriber || target, 'listener')
     let isSubscribed = true
 
     if (subscriber === undefined) {
+      if (getIsAtom(listener) || getIsAction(listener))
+        throwError('Invalid listener')
+
       ensureCanMutateNextListeners()
       nextActionsListeners.push(listener)
       return () => {
