@@ -65,7 +65,7 @@
   "files": [
     "/README.md",
     "/package.json",
-    "/src/index.ts",
+    "/src",
     "/build"
   ]
 }
