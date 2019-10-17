@@ -97,3 +97,12 @@ Directory name from `/packages/<scope>`
 - Use imperative, present tense:  `change` not `changed` nor `changes`
 - don't capitalize first letter
 - no dot (`.`) at the end
+
+### Example commit messages
+
+```
+chore: update release schedule
+docs: fix typo in readme file
+fix(core): add check for atoms with equal ids
+docs(react): update redux migration guide
+```
