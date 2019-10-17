@@ -201,6 +201,7 @@ Next:
 > - <a href="https://artalar.github.io/reatom/#/glossary">Glossary</a>
 > - <a href="https://artalar.github.io/reatom/#/examples">Examples</a>
 > - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>
+> - <a href="https://artalar.github.io/reatom/#/contributing">Contributing</a>
 
 ## Contributors ✨
 

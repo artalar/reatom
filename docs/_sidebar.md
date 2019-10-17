@@ -2,6 +2,7 @@
   * [Introduction](/)
   * [Glossary](/glossary.md)
   * [FAQ](/faq.md)
+  * [Contributing](/contributing.md)
 
 - Packages
   * [@reatom/core](/reatom-core.md)
@@ -14,7 +15,6 @@
   * [Migration from Redux](/guides/migration-from-redux.md)
 
 * [Examples](/examples.md)
-* [Contributing](/CONTRIBUTING.md)
 
 <div class='stars'>
 
