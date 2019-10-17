@@ -192,6 +192,7 @@ Telegram
 
 ## Mass media
 - [Reatom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
+- [Reatom vs MobX. Part 2](https://soundcloud.com/5minreact/062-reatom-vs-mobx) (5minreact, russian podcast)
 
 ---
 
