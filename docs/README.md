@@ -186,6 +186,8 @@ Guiding principles of state manager:
 - [And others...](https://mobx.js.org/best/pitfalls.html)
 
 ## Community
+Follow us on Twitter [@reatomjs](https://twitter.com/reatomjs)
+
 Telegram
 - [@reatom_en](https://t.me/reatom_en) — english
 - [@reatom_ru](https://t.me/reatom_ru) — russian
