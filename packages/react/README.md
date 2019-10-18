@@ -14,7 +14,7 @@ Package for bindings [Reatom](https://github.com/artalar/reatom) store with Reac
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
-[Open in docs](https://artalar.github.io/reatom/#/reatom-react)
+[Open in docs](https://artalar.github.io/reatom/#/packages/reatom-react)
 
 > Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
 
