@@ -249,6 +249,8 @@ store.dispatch({
 
 In Redux world your you need to use special libraries ([redux-thunk](github.com/reduxjs/redux-thunk) or [redux-saga](https://github.com/redux-saga/redux-saga)) for creating async actions. In Reatom world you don't need to use it. This role is played by [reactions](/glossary?id=action-reactions).
 
+### for `redux-thunk` users
+
 **Redux**
 
 ```js
@@ -299,6 +301,7 @@ const incrementAsync = declareAction(({ dispatch }) => {
 store.dispatch(incrementAsync())
 ```
 
+### for `redux-saga` users
 Changing logic from sagas to effects could be painful. Redux-saga allows us to work with any external state management library through `runSaga`. Redux-saga uses [pattern](redux-saga.js.org/docs/api/#takepattern) to determine which action is needed
 
 **Redux**
