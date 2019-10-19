@@ -1,4 +1,4 @@
-import * as reatom from '../../../build'
+import * as reatom from '../../build'
 
 const { declareAtom, declareAction, createStore, map, combine } = reatom
 

@@ -1,5 +1,5 @@
-import { declareAction, declareAtom, setNameToId, getTree } from '../index'
-import { nameToId } from '../shared'
+import { declareAction, declareAtom, setNameToId, getTree } from '../src/index'
+import { nameToId } from '../src/shared'
 
 describe('@reatom/core', () => {
   describe('shared', () => {

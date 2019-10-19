@@ -20,7 +20,7 @@
     "test:watch": "cross-env fixme=fixme ../../node_modules/.bin/jest --watch",
     "test:debug": "node --inspect-brk ../../node_modules/.bin/jest --runInBand",
     "bench": "npm run rebuild && npm run bench:now && npm run clean",
-    "bench:now": "cross-env fixme=fixme ../../node_modules/.bin/ts-node -P src/benchmark/tsconfig.json src/benchmark",
+    "bench:now": "cross-env fixme=fixme ../../node_modules/.bin/ts-node -P benchmark/tsconfig.json benchmark",
     "show-perf": "node ./tools/showPerfResults",
     "prettify": "cross-env fixme=fixme ../../node_modules/.bin/prettier --write '**/*.ts'",
     "prettify:watch": "cross-env fixme=fixme../../node_modules/.bin/onchange '**/*.{j,t}s' -- prettier --write {{changed}}",

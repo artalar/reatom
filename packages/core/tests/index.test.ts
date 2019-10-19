@@ -8,8 +8,8 @@ import {
   getTree,
   getIsAction,
   getIsAtom,
-} from '../index'
-import { initAction } from '../declareAtom'
+} from '../src/index'
+import { initAction } from '../src/declareAtom'
 
 function noop() {}
 
