@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react-hooks'
 import { render } from '@testing-library/react'
 import { act } from 'react-test-renderer'
 import { declareAction, declareAtom, createStore, Store } from '@reatom/core'
-import { context, useAtom, useAction } from '../index'
+import { context, useAtom, useAction } from '../src/index'
 
 const increment = declareAction()
 const add = declareAction<number>()

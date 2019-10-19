@@ -20,7 +20,7 @@
     "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core",
     "clean": "cross-env fixme=fixme ../../node_modules/.bin/rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "cross-env fixme=fixme ../../node_modules/.bin/jest src/__tests__/*",
+    "test": "cross-env fixme=fixme ../../node_modules/.bin/jest tests/*",
     "test:watch": "cross-env fixme=fixme ../../node_modules/.bin/jest --watch",
     "test:debug": "node --inspect-brk ../../node_modules/.bin/jest --runInBand",
     "prettify": "cross-env fixme=fixme ../../node_modules/.bin/prettier --write '**/*.ts'",
