@@ -11,7 +11,7 @@ import {
   combine,
   createStore,
   // replace('es', 'src') // for develop
-} from '../index'
+} from '../src/index'
 
 // @ts-ignore
 function log(name, target, time) {

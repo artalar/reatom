@@ -1,4 +1,4 @@
-import { declareAction, declareAtom, createStore } from '../../index'
+import { declareAction, declareAtom, createStore } from '../../src/index'
 
 describe('@reatom/core', () => {
   describe('createStore Redux compatible tests', () => {
