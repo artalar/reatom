@@ -21,13 +21,13 @@ type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
   on: <T>(
-    dependency: Unit | PayloadActionCreator<T>,
+    dependency: Atom<T> | PayloadActionCreator<T>,
     reducer: Reducer<TState, T>,
   ) => void,
 ) => any
 
 export interface Atom<T> extends Unit {
-  (state?: State, action?: Action<any>): State
+  (state?: State, action?: Action<any>): Record<string, T | any>
   [DEPS]: Set<TreeId>
 }
 
