@@ -11,7 +11,7 @@
 <br/>
 </div>
 
-Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. 
+Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
 
 > **IMPORTANT!** Current state is **Work In Progress**.
 > At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
@@ -47,7 +47,8 @@ Data flow diagram:
 
 <div align="center">
 
-![reatom data flow](https://artalar.github.io/reatom/flow.svg)
+<!-- ![reatom data flow](https://artalar.github.io/reatom/flow.svg) -->
+![reatom data flow](./flow_animated.svg)
 
 </div>
 
@@ -111,9 +112,9 @@ store.dispatch(add(2))
 
 ## Motivation
 
-> **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom. 
+> **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom.
 
-<!-- 
+<!--
 
 ### State management Zen
 
