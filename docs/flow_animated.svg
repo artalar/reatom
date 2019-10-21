@@ -4,7 +4,7 @@
 .animation {
     animation-iteration-count: infinite;
     animation-direction: normal;
-    animation-duration: 7s;
+    animation-duration: 16s;
     animation-timing-function: ease-in-out;
 }
 .line_action_1,
@@ -60,57 +60,99 @@
     animation-name: activateAtom3;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
 @keyframes action1 {
     from { opacity: 0 }
-    5% { opacity: 1 }
-    20% { opacity: 1 }
+    5%, 50% { opacity: 1 }
+
+    55%, 60% { opacity: 0 }
+
+    65% { opacity: 1 }
+    70% { opacity: 0 }
 }
 
 @keyframes action2 {
     from { opacity: 0 }
-    25% { opacity: 0 }
-    40% { opacity: 1 }
+    5%, 50% { opacity: 1 }
+
+    55%, 65% { opacity: 0 }
+
+    70% { opacity: 1 }
+    75% { opacity: 0 }
 }
 
 @keyframes action3 {
     from { opacity: 0 }
-    45% { opacity: 0 }
-    60% { opacity: 1 }
+    5%, 50% { opacity: 1 }
+
+    55%, 70% { opacity: 0 }
+
+    75% { opacity: 1 }
+    80% { opacity: 0 }
 }
 
 @keyframes activateAtom1 {
-    from, 45% { stroke: #141134; fill: rgba(0,0,0,0); }
-    50%, 70% { stroke: #1F7600; fill: #1F7600; }
+    /** Static */
+    from { stroke: #141134; fill: rgba(0,0,0,0); }
+    5%, 50% { stroke: #1F7600; fill: #1F7600; }
+
+    /** Prepare */
+    55%, 72% { stroke: #141134; fill: rgba(0,0,0,0); }
+
+    /** Activate */
+    77% { stroke: #1F7600; fill: #1F7600; }
+
+    /** Deactivate */
+    82% { stroke: #141134; fill: rgba(0,0,0,0); }
 }
 
 @keyframes activateAtom2 {
-    from, 50% { stroke: #141134; fill: rgba(0,0,0,0); }
-    55%, 75% { stroke: #1F7600; fill: #1F7600; }
+    /** Static */
+    from { stroke: #141134; fill: rgba(0,0,0,0); }
+    5%, 50% { stroke: #1F7600; fill: #1F7600; }
+
+    /** Prepare */
+    55%, 74% { stroke: #141134; fill: rgba(0,0,0,0); }
+
+    /** Activate */
+    79% { stroke: #1F7600; fill: #1F7600; }
+
+    /** Deactivate */
+    84% { stroke: #141134; fill: rgba(0,0,0,0); }
 }
 
 @keyframes activateAtom3 {
-    from, 55% { stroke: #141134; fill: rgba(0,0,0,0); }
-    60%, 90% { stroke: #1F7600; fill: #1F7600; }
+    /** Static */
+    from { stroke: #141134; fill: rgba(0,0,0,0); }
+    5%, 50% { stroke: #1F7600; fill: #1F7600; }
+
+    /** Prepare */
+    55%, 76% { stroke: #141134; fill: rgba(0,0,0,0); }
+
+    /** Activate */
+    81% { stroke: #1F7600; fill: #1F7600; }
+
+    /** Deactivate */
+    86% { stroke: #141134; fill: rgba(0,0,0,0); }
 }
 
 @keyframes subscribe1 {
     from { opacity: 0 }
-    65% { opacity: 0 }
+    5%, 50% { opacity: 1 }
+
+    55%, 75% { opacity: 0 }
+
     80% { opacity: 1 }
-    95% { opacity: 0 }
-    to { opacity: 0 }
+    85% { opacity: 0 }
 }
 
 @keyframes subscribe2 {
     from { opacity: 0 }
-    80% { opacity: 0 }
-    90% { opacity: 1 }
-    to { opacity: 0 }
+    5%, 50% { opacity: 1 }
+
+    55%, 80% { opacity: 0 }
+
+    85% { opacity: 1 }
+    90% { opacity: 0 }
 }
 
 </style>
