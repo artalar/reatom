@@ -357,7 +357,7 @@ store.dispatch({ type: LOG_COUNTER }); // 1
 
 **Reatom**
 
-[Open in CodeSandbox](hhttps://codesandbox.io/s/reatom-redux-saga-5pq0e)
+[Open in CodeSandbox](https://codesandbox.io/s/reatom-redux-saga-5pq0e)
 
 ```js
 import { declareAction, declareAtom, createStore } from "@reatom/core";
