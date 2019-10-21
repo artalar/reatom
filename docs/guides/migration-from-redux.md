@@ -307,91 +307,108 @@ Changing logic from sagas to effects could be painful. Redux-saga allows us to w
 **Redux**
 
 ```js
-import { createStore, applyMiddleware } from 'redux'
+import { combineReducers, applyMiddleware, createStore } from 'redux'
 import createSagaMiddleware from 'redux-saga'
-import { put, takeEvery, delay } from 'redux-saga/effects'
+import { take, select } from 'redux-saga/effects';
 
+/**
+ * main code
+ */
+const INCREMENT = 'INCREMENT';
+const LOG_COUNTER = 'LOG_COUNTER';
+
+const counterReducer = (state = 0, action) => {
+  switch(action.type) {
+    case INCREMENT: return state + 1;
+    default: return state;
+  }
+}
+const counterSelector = state => state.counter
+
+function* logCounterSaga() {
+  while (true) {
+    yield take(LOG_COUNTER);
+
+    const counter = yield select(counterSelector);
+
+    console.log("counter: ", counter);
+  }
+}
+
+/**
+ * initialization code
+ */
 const sagaMiddleware = createSagaMiddleware()
+const store = createStore(
+  combineReducers({ counter: counterReducer }),
+  applyMiddleware(sagaMiddleware),
+)
+sagaMiddleware.run(logCounterSaga);
 
-const store = createStore(reducer, applyMiddleware(sagaMiddleware))
+/**
+ * dispatch
+ */
+store.dispatch({ type: LOG_COUNTER }); // 0
 
-export function* incrementAsyncSaga() {
-  yield delay(1000)
-  yield put({ type: 'INCREMENT' })
-}
+store.dispatch({ type: INCREMENT });
 
-export function* watchIncrementAsyncSaga() {
-  yield takeEvery('INCREMENT_ASYNC', incrementAsyncSaga)
-}
-
-sagaMiddleware.run(watchIncrementAsyncSaga)
-
-store.dispatch({ type: 'INCREMENT_ASYNC' })
+store.dispatch({ type: LOG_COUNTER }); // 1
 ```
 
 **Reatom**
 
-Usage with explicit action type
+[Open in CodeSandbox](hhttps://codesandbox.io/s/reatom-redux-saga-5pq0e)
 
 ```js
-import { createStore, declareAction } from '@reatom/core'
-import { runSaga } from 'redux-saga'
-import { put, takeEvery, delay } from 'redux-saga/effects'
+import { declareAction, declareAtom, createStore } from "@reatom/core";
+import { runSaga, stdChannel } from "redux-saga";
+import { take, select } from "redux-saga/effects";
 
-const store = createStore()
+/**
+ * helper effect
+ */
+const selectAtom = atom => select(getState => getState(atom));
 
-const increment = declareAction(['INCREMENT'])
-const decrement = declareAction(['INCREMENT_ASYNC'])
+/**
+ * main code
+ */
+const increment = declareAction();
+const logCounter = declareAction();
 
-export function* incrementAsync() {
-  yield delay(1000)
-  yield put({ type: 'INCREMENT' })
+const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)]);
+
+function* logCounterSaga() {
+  while (true) {
+    yield take(logCounter.getType());
+
+    const counter = yield selectAtom(counterAtom);
+
+    console.log("counter: ", counter);
+  }
 }
 
-export function* watchIncrementAsyncSaga() {
-  yield takeEvery('INCREMENT_ASYNC', incrementAsync)
-}
-
+/**
+ * initialization code
+ */
+const store = createStore(counterAtom);
 const options = {
   dispatch: store.dispatch,
-  getState: store.getState,
-}
+  getState: () => store.getState,
+  channel: stdChannel()
+};
+store.subscribe(options.channel.put);
 
-runSaga(options, watchIncrementAsyncSaga)
+runSaga(options, logCounterSaga);
 
-store.dispatch({ type: 'INCREMENT_ASYNC' })
-```
+/**
+ * dispatch
+ */
+store.dispatch(logCounter()); // 0
 
-Or use the action creator. To do this, just use `getType()` method
+store.dispatch(increment());
 
-```js
-import { createStore, declareAction } from '@reatom/core'
-import { runSaga, eventChannel } from 'redux-saga'
-import { put, takeEvery, delay } from 'redux-saga/effects'
+store.dispatch(logCounter()); // 1
 
-const store = createStore()
-
-const increment = declareAction()
-const incrementAsync = declareAction()
-
-export function* incrementAsyncSaga() {
-  yield delay(1000)
-  yield put(increment())
-}
-
-export function* watchIncrementAsyncSaga() {
-  yield takeEvery(incrementAsync.getType(), incrementAsyncSaga)
-}
-
-const options = {
-  dispatch: store.dispatch,
-  getState: store.getState,
-  channel: eventChannel(emit => store.subscribe(emit)),
-}
-
-runSaga(options, watchIncrementAsyncSaga)
-
-store.dispatch(incrementAsync())
 ```
 
 ## Async reducers
