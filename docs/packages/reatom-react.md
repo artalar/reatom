@@ -23,17 +23,19 @@ yarn add @reatom/react
 
 Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state).
 
-#### Basic (useAtom)
+#### Retrieve atom state from the store
 
 ```ts
 const atomValue = useAtom(atom)
 ```
 
-#### Depended value by selector
+#### Retrieve atom state and apply dynamic selector
 
 ```ts
 const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
 ```
+
+Note that you need to pass any dependency variables as a third argument, this will make sure state selector is re-applied and derived value is recalculated on any dependency changes.
 
 #### Mount without subscription (for subscribing atoms to actions)
 
@@ -43,7 +45,7 @@ const atomValue = useAtom(atom, () => null, [])
 
 ### useAction
 
-Binds action with dispatch to the store provided in the context.
+Binds action and dispatch to the store provided in the context.
 
 #### Basic (useAction)
 
@@ -54,15 +56,15 @@ const handleDoSome = useAction(doSome)
 #### Prepare payload for dispatch
 
 ```ts
-const handleDoSome = useAction(value => doSome({ 
-  id: props.id, 
-  value 
+const handleDoSome = useAction(value => doSome({
+  id: props.id,
+  value
 }), [props.id])
 ```
 
 #### Conditional dispatch
 
-If action creator don't return an action dispatch not calling.
+Dispatch is not called if action creator doesn't return an action.
 
 ```ts
 const handleDoSome = useAction(payload => {
@@ -85,7 +87,7 @@ import { Form } from './components/Form'
 import './App.css';
 
 export const App = () => {
-  // create statefull context for atoms execution
+  // create stateful context for atoms execution
   const store = createStore();
 
   return (
@@ -98,7 +100,7 @@ export const App = () => {
 }
 ```
 
-### Step 2. Use in component
+### Step 2. Use in components
 
 ```jsx
 // components/Form
