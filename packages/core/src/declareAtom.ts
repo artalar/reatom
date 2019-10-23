@@ -1,34 +1,47 @@
-import { Tree, State, TreeId, Ctx, createCtx } from './kernel'
 import {
-  TREE,
-  nameToId,
+  Id,
   Unit,
+  StateCtx,
+  NODE_KEY,
+  KIND_KEY,
+  KIND,
+  Ctx,
+  Node,
+  nameToId,
   throwError,
-  getTree,
+  getNode,
   safetyFunc,
+  safetyStr,
   getIsAction,
   assign,
+  getIsAtom,
+  getIsName,
+  Name,
+  getIsFn,
 } from './shared'
-import { Action, declareAction, PayloadActionCreator } from './declareAction'
+import { ActionBase, ActionCreator, declareAction } from './declareAction'
 
-const DEPS = Symbol('@@Reatom/DEPS')
-
-// action for set initialState of each atom to global state
+// action for set initialState of each atom to global context state
 const _initAction = declareAction(['@@Reatom/init'])
 export const initAction = _initAction()
 
-type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
-  on: <T>(
-    dependency: Unit | PayloadActionCreator<T>,
-    reducer: Reducer<TState, T>,
+  on: <Dep extends Unit<any>>(
+    dependency: Dep,
+    reducer: Dep extends ActionCreator<infer T> | Atom<infer T>
+      ? Reducer<TState, T>
+      : never,
   ) => void,
-) => any
+) => void[]
 
-export interface Atom<T> extends Unit {
-  (state?: State, action?: Action<any>): State
-  [DEPS]: Set<TreeId>
+export type Atom<TState> = Unit<'atom'> & {
+  (state?: StateCtx, action?: ActionBase<any>): Record<string, TState | any>
+  getState<T = TState>(
+    dependedAtom?: Atom<T>,
+    state?: StateCtx,
+    action?: ActionBase,
+  ): T | undefined
 }
 
 export function declareAtom<TState>(
@@ -36,12 +49,24 @@ export function declareAtom<TState>(
   dependencyMatcher: DependencyMatcher<TState>,
 ): Atom<TState>
 export function declareAtom<TState>(
-  name: string | [TreeId],
+  name: string | [Id],
   initialState: TState,
   dependencyMatcher: DependencyMatcher<TState>,
 ): Atom<TState>
+/**
+ * Atoms is stateless reducer function that my used as selector in an store.
+ * Atom may depend from action or from other atom - with that you can scale it how you want.
+ * @param name(string | [id]) optional name or id (string) for predictable snapshots and debugging
+ * @param initialState can not be undefined
+ * @param dependencyMatcher callback for describe dependencies handlers
+ * @example
+ * const valueAtom = declareAtom(0, on => [
+ *   on(addAction, (state, payload) => state + payload),
+ *   on(dependedAtom, (state, dependedValue) => state * dependedValue),
+ * ])
+ */
 export function declareAtom<TState>(
-  name: string | [TreeId] | TState,
+  name: string | [Id] | TState,
   initialState: TState | DependencyMatcher<TState>,
   dependencyMatcher?: DependencyMatcher<TState>,
 ): Atom<TState> {
@@ -51,166 +76,122 @@ export function declareAtom<TState>(
     name = 'atom'
   }
 
-  const _id = nameToId(name as string | [TreeId])
+  const selfId = nameToId(name as string | [Id])
 
   if (initialState === undefined)
-    throwError(`Atom "${_id}". Initial state can't be undefined`)
+    throwError(`initial state (undefined) in atom "${selfId}"`)
 
-  const _tree = new Tree(_id)
-  const _deps = new Set<TreeId>()
-  // start from `0` for missing `actionDefault`
+  const selfNode = new Node(selfId)
+  const selfDeps = selfNode.deps
+  const selfDepsAll = selfNode.depsAll
+  const selfUpdates = selfNode.updates
   let dependencePosition = 0
   let initialPhase = true
 
-  function on<T>(
-    dep: Unit | PayloadActionCreator<T>,
-    reducer: Reducer<TState, T>,
-  ) {
+  function on<T>(dep: Unit<any>, reducer: Reducer<TState, T>) {
     if (!initialPhase)
-      throwError("Can't define dependencies after atom initialization")
-
-    safetyFunc(reducer, 'reducer')
+      throwError(`"on" handler calls after initialization in atom "${selfId}"`)
 
     const position = dependencePosition++
-    const depTree = getTree(dep as Unit)!
-    if (!depTree) throwError('Invalid dependency')
-    const depId = depTree.id
 
+    safetyFunc(reducer, 'atom reducer №' + position)
+
+    const depNode = getNode(dep)
+    if (!depNode) throwError('atom dependency №' + position)
+    const depId = depNode.id
     const isDepActionCreator = getIsAction(dep)
 
-    _tree.union(depTree)
+    depNode.depsAll.forEach(
+      id => !selfDepsAll.includes(id) && selfDepsAll.push(id),
+    )
+    selfDepsAll.push(depId)
+    selfDeps.push(depNode)
 
-    function update({ state, stateNew, payload, changedIds, type }: Ctx) {
-      const atomStateSnapshot = state[_id]
-      // first `walk` of lazy (dynamically added by subscription) atom
-      const isAtomLazy = atomStateSnapshot === undefined
+    selfUpdates.push(({ state, stateNew, payload, changedIds, type }: Ctx) => {
+      if (!depNode.depsAll.includes(type)) return
 
-      if (!isAtomLazy && type === initAction.type) return
+      const atomStateSnapshot = state[selfId]
+      const isFirstWalk = atomStateSnapshot === undefined
 
-      const atomStatePreviousReducer = stateNew[_id]
+      if (!isFirstWalk && type === initAction.type) return
+
+      const atomStatePreviousReducer = stateNew[selfId]
       // it is mean atom has more than one dependencies
       // that depended from dispatched action
       // and one of the atom reducers already processed
       const hasAtomNewState = atomStatePreviousReducer !== undefined
-      const atomState = hasAtomNewState
+      const atomState = (hasAtomNewState
         ? atomStatePreviousReducer
-        : atomStateSnapshot
+        : atomStateSnapshot) as TState
 
       const depStateSnapshot = state[depId]
       const depStateNew = stateNew[depId]
       const isDepChanged = depStateNew !== undefined
       const depState = isDepChanged ? depStateNew : depStateSnapshot
-      const depValue = isDepActionCreator ? payload : depState
+      const depValue = (isDepActionCreator ? payload : depState) as T
 
-      if (isDepActionCreator || isDepChanged || isAtomLazy) {
+      if (atomState === undefined && type !== initAction.type)
+        throwError('dispatch with undefined state')
+      if (isDepActionCreator || isDepChanged || isFirstWalk) {
         const atomStateNew = reducer(atomState, depValue)
 
         if (atomStateNew === undefined)
           throwError(
-            `Invalid state. Reducer № ${position} in "${_id}" atom returns undefined`,
+            `(undefined) state in reducer № ${position} in atom "${selfId}"`,
           )
 
-        if (atomStateNew !== atomState && !hasAtomNewState) changedIds.push(_id)
-        stateNew[_id] = atomStateNew
+        if (atomStateNew !== atomState && !hasAtomNewState)
+          changedIds.push(selfId)
+        stateNew[selfId] = atomStateNew
       }
-    }
-
-    if (isDepActionCreator) return _tree.addFn(update, depId)
-    if (_deps.has(depId)) throwError('One of dependencies has the equal id')
-    _deps.add(depId)
-    depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
+    })
   }
 
-  on(_initAction, (state = initialState as TState) => state)
+  on(_initAction, (state = initialState as TState) => {
+    return state
+  })
   dependencyMatcher(on)
 
-  const atom = function atom(
-    state: State = {},
-    action: Action<any> = initAction,
-  ) {
-    const ctx = createCtx(state, action)
-    _tree.forEach(action.type, ctx)
+  // TODO: refactoring types
+  // @ts-ignore
+  const atom: Atom<TState> = (
+    state: StateCtx = {},
+    action: ActionBase<any> = initAction,
+  ) => {
+    const ctx = new Ctx(state, action)
+    walk(selfNode, ctx)
 
     const { changedIds, stateNew } = ctx
 
     return changedIds.length > 0 ? assign({}, state, stateNew) : state
-  } as Atom<TState>
+  }
 
-  atom[TREE] = _tree
-  atom[DEPS] = _deps
+  atom[NODE_KEY] = selfNode
+  atom[KIND_KEY] = KIND.atom
+  atom.getState = <T = TState>(
+    // @ts-ignore
+    dependedAtom: Atom<T> = atom,
+    state: StateCtx = {},
+    action: ActionBase = initAction,
+  ): T | undefined => {
+    return getState(atom(state, action), dependedAtom)
+  }
 
   return atom
 }
 
-export function getState<T>(state: State, atom: Atom<T>): T | undefined {
-  return state[atom[TREE].id]
-}
-
-export function map<T, TSource = unknown>(
-  source: Atom<TSource>,
-  mapper: (dependedAtomState: TSource) => T,
-): Atom<T>
-export function map<T, TSource = unknown>(
-  name: string | [TreeId],
-  source: Atom<TSource>,
-  mapper: (dependedAtomState: TSource) => T,
-): Atom<T>
-export function map<T, TSource = unknown>(
-  name: string | [TreeId] | Atom<TSource>,
-  source: ((dependedAtomState: TSource) => T) | Atom<TSource>,
-  mapper?: (dependedAtomState: TSource) => T,
-) {
-  if (!mapper) {
-    mapper = source as (dependedAtomState: TSource) => T
-    source = name as Atom<TSource>
-    name = getTree(source).id + ' [map]'
+function walk(node: Node, ctx: Ctx) {
+  if (node.depsAll.includes(ctx.type) && ctx.stateNew[node.id] === undefined) {
+    node.deps.forEach(childNode => walk(childNode, ctx))
+    node.updates.forEach(update => update(ctx))
   }
-  safetyFunc(mapper, 'mapper')
-
-  return declareAtom<T>(
-    name as string | [TreeId],
-    // FIXME: initialState for `map` :thinking:
-    null as any,
-    handle =>
-      //@ts-ignore
-      handle(source as Atom<TSource>, (state, payload) => mapper(payload)),
-  )
 }
 
-export function combine<T extends AtomsMap | TupleOfAtoms>(
-  shape: T,
-): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<T extends AtomsMap | TupleOfAtoms>(
-  name: string | [TreeId],
-  shape: T,
-): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
-export function combine<T extends AtomsMap | TupleOfAtoms>(
-  name: string | [TreeId] | T,
-  shape?: T,
-) {
-  let keys: (string | number)[]
-  if (!shape) {
-    shape = name as T
-    name = '{' + (keys = Object.keys(shape)).join() + '}'
-  }
-
-  keys = keys! || Object.keys(shape)
-
-  const isArray = Array.isArray(shape)
-
-  return declareAtom(name as string | [TreeId], isArray ? [] : {}, reduce =>
-    keys.forEach(key =>
-      //@ts-ignore
-      reduce(shape[key], (state, payload) => {
-        const newState: any = isArray
-          ? (state as any[]).slice(0)
-          : assign({}, state)
-        newState[key] = payload
-        return newState
-      }),
-    ),
-  )
+export function getState<T>(state: StateCtx, atom: Atom<T>): T | undefined {
+  return state[atom[NODE_KEY].id] as T | undefined
 }
+
+type AtomsMap = { [key in string]: Atom<unknown> }
 
 // prettier-ignore
 type TupleOfAtoms =
@@ -230,3 +211,103 @@ type TupleOfAtoms =
   | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
   | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
   | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
+
+type CombineInputCollection = AtomsMap | TupleOfAtoms | Atom<unknown>[]
+type CombineInput = Atom<unknown> | CombineInputCollection
+
+type CombineOutput<Input extends CombineInput> = Input extends Atom<infer T>
+  ? T
+  : { [K in keyof Input]: Input[K] extends Atom<infer S> ? S : never }
+type CombineOutputAtom<Input extends CombineInput> = Atom<CombineOutput<Input>>
+
+function _map(name: Name, source: Atom<unknown>, mapper: (a: any) => any) {
+  return declareAtom(
+    name,
+    // FIXME: initialState for `map` :thinking:
+    null as unknown,
+    on => [on(source, (state, payload) => mapper(payload))],
+  )
+}
+
+function _combine(name: Name, shape: CombineInputCollection) {
+  const keys = Object.keys(shape) // '{' + Object.keys(shape).join() + '}'
+
+  const isArray = Array.isArray(shape)
+  const copy = isArray
+    ? (state: any) => state.slice(0)
+    : (state: any) => assign({}, state)
+
+  return declareAtom(name, isArray ? [] : {}, on =>
+    keys.map(key =>
+      on((shape as any)[key], (state, payload) => {
+        const stateNew = copy(state)
+        stateNew[key] = payload
+        return stateNew
+      }),
+    ),
+  )
+}
+
+function getIsCombineInputCollection(
+  thing: unknown,
+): thing is CombineInputCollection {
+  return (
+    typeof thing === 'object' &&
+    thing !== null &&
+    (!Array.isArray(thing) || thing.length > 0)
+  )
+}
+
+export function combine<Input extends CombineInputCollection>(
+  input: Input,
+): CombineOutputAtom<Input>
+export function combine<Input extends CombineInputCollection>(
+  name: string | [Id],
+  input: Input,
+): CombineOutputAtom<Input>
+export function combine<Input extends CombineInput, Output>(
+  input: Input,
+  mapper: (dependedState: CombineOutput<Input>) => Output,
+): Atom<Output>
+export function combine<Input extends CombineInput, Output>(
+  name: string | [Id],
+  input: Input,
+  mapper: (dependedState: CombineOutput<Input>) => Output,
+): Atom<Output>
+export function combine<Input extends CombineInput, Output>(
+  name: string | [Id] | Input,
+  input?: Input | ((dependedState: CombineOutput<Input>) => Output),
+  mapper: (dependedState: CombineOutput<Input>) => Output = v => v as any,
+) {
+  const argsLength = arguments.length
+  if (argsLength === 1 && getIsCombineInputCollection(name)) {
+    return _combine('combine', name)
+  }
+  if (
+    argsLength === 2 &&
+    getIsName(name) &&
+    getIsCombineInputCollection(input)
+  ) {
+    return _combine(name, input)
+  }
+  if (argsLength === 2 && getIsFn(input)) {
+    if (getIsCombineInputCollection(name)) {
+      return _map('combine', _combine('combine', name), input)
+    }
+    if (getIsAtom(name)) {
+      return _map('combine', name, input)
+    }
+  }
+  if (argsLength === 3 && getIsName(name) && getIsFn(mapper)) {
+    if (getIsCombineInputCollection(input)) {
+      return _map('combine', _combine('combine', input), mapper)
+    }
+    if (getIsAtom(input)) {
+      return _map('combine', input, mapper)
+    }
+  }
+
+  throwError('combine arguments')
+}
+
+export const map = combine

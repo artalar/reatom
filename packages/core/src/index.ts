@@ -3,9 +3,9 @@ export * from './declareAtom'
 export * from './createStore'
 export {
   GenId,
-  TreeId,
+  Id,
   Unit,
-  getTree,
+  getNode,
   getIsAtom,
   getIsAction,
   nameToIdDefault,

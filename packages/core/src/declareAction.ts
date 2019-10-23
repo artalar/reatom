@@ -1,74 +1,96 @@
-import { Leaf, Tree, BaseAction } from './kernel'
-import { TREE, noop, nameToId, Unit } from './shared'
+import {
+  Id,
+  Unit,
+  KIND_KEY,
+  NODE_KEY,
+  KIND,
+  Node,
+  nameToId,
+  Name,
+  getIsFn,
+} from './shared'
 import { Store } from './createStore'
 
-export type ActionType = Leaf
-export type Reaction<T> = (payload: T, store: Store) => any
-
-export type Action<Payload, Type extends ActionType = string> = BaseAction<
-  Payload
-> & {
+export type ActionType = Id
+export type ActionBase<Payload = any, Type extends ActionType = string> = {
   type: Type
-  reactions?: Reaction<Payload>[]
+  payload: Payload
+}
+export type Reaction<T> = (payload: T, store: Store) => any
+export type Action<Payload, Type extends ActionType = string> = ActionBase<
+  Payload,
+  Type
+> & {
+  reactions: Reaction<Payload>[]
 }
 
-export type BaseActionCreator = {
+export type ActionCreator<Payload, Type extends ActionType = string> = Unit<
+  'action'
+> & {
   getType: () => string
-} & Unit
+  // tuple here required to fix type inference https://github.com/artalar/reatom/issues/192
+} & ([Payload] extends [undefined]
+    ? (() => Action<undefined, Type>)
+    : (payload: Payload) => Action<Payload, Type>)
 
-export type ActionCreator<Type extends string = string> = BaseActionCreator &
-  (() => Action<undefined, Type>)
-
-export type PayloadActionCreator<
-  Payload,
-  Type extends string = string
-> = BaseActionCreator & ((payload: Payload) => Action<Payload, Type>)
-
-export function declareAction(
-  name?: string | Reaction<undefined>,
-  ...reactions: Reaction<undefined>[]
-): ActionCreator<string>
-
-export function declareAction<Type extends ActionType>(
-  name: [Type],
-  ...reactions: Reaction<undefined>[]
-): ActionCreator<Type>
-
-export function declareAction<Payload>(
-  name?: string | Reaction<Payload>,
+export function declareAction<Payload = undefined>(
+  name?: Name | Reaction<Payload>,
   ...reactions: Reaction<Payload>[]
-): PayloadActionCreator<Payload, string>
-
-export function declareAction<Payload, Type extends ActionType>(
-  name: [Type],
-  ...reactions: Reaction<Payload>[]
-): PayloadActionCreator<Payload, Type>
+): ActionCreator<Payload>
 
 export function declareAction<
   Payload = undefined,
   Type extends ActionType = string
->(
+>(type: [Type], ...reactions: Reaction<Payload>[]): ActionCreator<Payload, Type>
+
+/**
+ * @param name(string | [id]) optional name or id (string)
+ * @param ...reactions((payload, store) => void) store call reactions at end of dispatch
+ * (after state updates and subscriptions calls)
+ * @returns action creator for Flux-standard action
+ * (+ 'reactions' fields with reactions array).
+ * The type may be generated automatically, based on name
+ * or taken strictly from first tuple element
+ * @example
+ * const add = declareAction()
+ * add(42) // { type: 'action [1]', payload: 42, reactions: [] }
+ *
+ * const increment = declareAction('increment')
+ * increment() // { type: 'increment [2]', payload: undefined, reactions: [] }
+ *
+ * const router = declareAction(['REDUX_ACTION']) // usefully for subscribing
+ * router() // { type: 'REDUX_ACTION', payload: undefined, reactions: [] }
+ *
+ * const fetchUser = declareAction(
+ *   'fetchUser',
+ *   (id, store) => fetch(`/user/${id}`)
+ *     .then(user => store.dispatch(fetchUserDone(user)))
+ *     .catch(user => store.dispatch(fetchUserFail(user)))
+ * )
+ * fetchUser(42) // { type: 'fetchUser [3]', payload: 42, reactions: [Function] }
+ */
+export function declareAction<Payload, Type extends ActionType>(
   name: string | [Type] | Reaction<Payload> = 'action',
   ...reactions: Reaction<Payload>[]
-): ActionCreator<Type> | PayloadActionCreator<Payload, Type> {
-  if (typeof name === 'function') {
+): ActionCreator<Payload, Type> {
+  if (getIsFn(name)) {
     reactions.unshift(name)
     name = 'action'
   }
   const id = nameToId(name)
+  const node = new Node(id)
+  node.depsAll.push(id)
 
-  const ACTree = new Tree(id, true)
-  ACTree.addFn(noop, id)
+  // TODO: refactoring types
+  // @ts-ignore
+  const actionCreator: ActionCreator<Payload, Type> = (payload?: Payload) => ({
+    type: id,
+    payload,
+    reactions,
+  })
 
-  const actionCreator = function actionCreator(payload?: Payload) {
-    return {
-      type: id,
-      payload,
-      reactions,
-    }
-  } as (ActionCreator<Type> | PayloadActionCreator<Payload, Type>)
-
-  actionCreator[TREE] = ACTree
+  actionCreator[NODE_KEY] = node
+  actionCreator[KIND_KEY] = KIND.action
   actionCreator.getType = () => id
 
   return actionCreator
