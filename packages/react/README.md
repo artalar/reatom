@@ -7,7 +7,7 @@
 
 # @reatom/react
 
-Package for bindings [Reatom](https://github.com/artalar/reatom) store with React
+React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/react?style=flat-square)
@@ -108,9 +108,9 @@ export const App = () => {
 
   return (
     <div className='App'>
-      <context.Provide value={store}>
+      <context.Provider value={store}>
         <Form />
-      </context.Provide>
+      </context.Provider>
     </div>
   );
 }
@@ -135,7 +135,7 @@ export const Form = () => {
 
   return (
     <form>
-      <label forId="name">Enter your name</label>
+      <label htmlFor="name">Enter your name</label>
       <input id="name" value={name} onChange={handleChangeName}/>
     </form>
   )
