@@ -1,6 +1,6 @@
 # @reatom/react
 
-Package for bindings Reatom store with React
+Package for binding Reatom store with React
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
@@ -15,13 +15,13 @@ or
 yarn add @reatom/react
 ```
 
-> NOTE. **@reatom/react** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE: **@reatom/react** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
 ## Hooks Api
 
 ### useAtom
 
-Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state).
+Connects the atom to the store provided in context and returns the state of the atom from the store (or default atom state).
 
 #### Retrieve atom state from the store
 
@@ -35,7 +35,7 @@ const atomValue = useAtom(atom)
 const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
 ```
 
-Note that you need to pass any dependency variables as a third argument, this will make sure state selector is re-applied and derived value is recalculated on any dependency changes.
+> NOTE: You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
 
 #### Mount without subscription (for subscribing atoms to actions)
 
@@ -92,9 +92,9 @@ export const App = () => {
 
   return (
     <div className='App'>
-      <context.Provide value={store}>
+      <context.Provider value={store}>
         <Form />
-      </context.Provide>
+      </context.Provider>
     </div>
   );
 }
@@ -119,7 +119,7 @@ export const Form = () => {
 
   return (
     <form>
-      <label forId="name">Enter your name</label>
+      <label htmlFor="name">Enter your name</label>
       <input id="name" value={name} onChange={handleChangeName}/>
     </form>
   )
