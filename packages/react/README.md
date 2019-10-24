@@ -108,9 +108,9 @@ export const App = () => {
 
   return (
     <div className='App'>
-      <context.Provide value={store}>
+      <context.Provider value={store}>
         <Form />
-      </context.Provide>
+      </context.Provider>
     </div>
   );
 }
@@ -135,7 +135,7 @@ export const Form = () => {
 
   return (
     <form>
-      <label forId="name">Enter your name</label>
+      <label htmlFor="name">Enter your name</label>
       <input id="name" value={name} onChange={handleChangeName}/>
     </form>
   )

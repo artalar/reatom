@@ -15,7 +15,7 @@ or
 yarn add @reatom/react
 ```
 
-> NOTE: **@reatom/react** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/react** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
 ## Hooks Api
 
@@ -35,7 +35,7 @@ const atomValue = useAtom(atom)
 const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
 ```
 
-> NOTE: You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
+> NOTE. You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
 
 #### Mount without subscription (for subscribing atoms to actions)
 
