@@ -1,6 +1,6 @@
 # @reatom/react
 
-Package for binding Reatom store with React
+React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)

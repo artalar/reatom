@@ -7,7 +7,7 @@
 
 # @reatom/react
 
-Package for bindings [Reatom](https://github.com/artalar/reatom) store with React
+React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/react?style=flat-square)
