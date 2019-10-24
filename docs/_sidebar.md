@@ -12,6 +12,7 @@
   * [@reatom/debug](/packages/reatom-debug.md)
 
 - Guides
+  * [File Structure](/guides/file-structure.md)
   * [Migration from Redux](/guides/migration-from-redux.md)
 
 * [Examples](/examples.md)
