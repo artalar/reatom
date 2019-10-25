@@ -9,7 +9,13 @@ import {
   useMemo,
 } from 'react'
 
-import { Store, Atom, ActionCreator, ActionType, Action } from '@reatom/core'
+import {
+  Store,
+  Atom,
+  ActionCreator,
+  PayloadActionCreator,
+  Action,
+} from '@reatom/core'
 
 function noop() {}
 
@@ -96,26 +102,38 @@ export function useAtom<TI, TO = TI>(
   return stateRef.current as TO
 }
 
-type ActionBindedInferArguments<Payload> = Payload extends undefined
-  ? () => void
-  : (payload: Payload) => void
-type ActionBinded<Fn extends Function> = Fn extends ActionCreator<
-  infer Payload,
-  any
->
-  ? ActionBindedInferArguments<Payload>
-  : Fn extends (...a: any[]) => Action<infer Payload> | undefined
-  ? ActionBindedInferArguments<Payload>
-  : never
+type Payload<
+  PAC extends PayloadActionCreator<any>
+> = PAC extends PayloadActionCreator<infer T> ? T : never
+type PayloadCb<T> = (payload: T) => Action<T> | void
 
 /**
  * @param cb actionCreator (may return void for preventing dispatch)
  * @param deps
  */
-export function useAction<Fn extends Function>(
-  cb: Fn,
+export function useAction<AC extends ActionCreator>(
+  cb: AC,
+  deps?: any[],
+): () => void
+export function useAction<PAC extends PayloadActionCreator<any>>(
+  cb: PAC,
+  deps?: any[],
+): (payload: Payload<PAC>) => void
+export function useAction(
+  cb: () => Action<any> | void,
+  deps?: any[],
+): () => void
+export function useAction<T>(
+  cb: (a: T) => Action<any> | void,
+  deps?: any[],
+): (payload: T) => void
+export function useAction(
+  cb:
+    | ActionCreator
+    | PayloadActionCreator<any>
+    | ((a?: any) => Action<any> | void),
   deps: any[] = [],
-): ActionBinded<Fn> {
+): (a?: any) => void {
   const store = useContext(context)
 
   if (!store) throw new Error('[reatom] The provider is not defined')
@@ -123,9 +141,32 @@ export function useAction<Fn extends Function>(
     throw new TypeError('[reatom] `useAction` argument must be a function')
   }
 
-  // @ts-ignore
-  return useCallback((payload: T) => {
+  return useCallback(payload => {
     const action = cb(payload)
     if (action) store.dispatch(action)
   }, deps)
 }
+
+// TODO: TS tests
+
+// const a = declareAction()
+// const ap = declareAction<0>()
+
+// const test1 = useAction(a)
+// const test2 = useAction(() => a())
+// const test3 = useAction(ap)
+// const test4 = useAction(() => ap(0))
+// const test5 = useAction<0>((v) => ap(v))
+// const test6 = useAction<0>((v) => a())
+// const test7 = useAction(() => {
+//   if (Math.random()) {
+//     return ap(0)
+//   }
+//   if (Math.random()) {
+//     return a()
+//   }
+//   if (Math.random()) {
+//     // error
+//     return 123
+//   }
+// })
