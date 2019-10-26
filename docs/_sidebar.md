@@ -13,7 +13,9 @@
 
 - Guides
   * [File Structure](/guides/file-structure.md)
+  * [Code Splitting](/guides/code-splitting.md)
   * [Migration from Redux](/guides/migration-from-redux.md)
+  * [Code splitting](/guides/code-splitting.md)
 
 * [Examples](/examples.md)
 
