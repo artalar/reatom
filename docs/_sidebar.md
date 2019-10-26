@@ -15,6 +15,7 @@
   * [Naming Conventions](/guides/naming-conventions.md)
   * [File Structure](/guides/file-structure.md)
   * [Code Splitting](/guides/code-splitting.md)
+  * [Server Side Rendering](/guides/server-side-rendering.md)
   * [Migration from Redux](/guides/migration-from-redux.md)
 
 * [Examples](/examples.md)
