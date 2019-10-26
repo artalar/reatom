@@ -12,10 +12,10 @@
   * [@reatom/debug](/packages/reatom-debug.md)
 
 - Guides
+  * [Naming Conventions](/guides/naming-conventions.md)
   * [File Structure](/guides/file-structure.md)
   * [Code Splitting](/guides/code-splitting.md)
   * [Migration from Redux](/guides/migration-from-redux.md)
-  * [Code splitting](/guides/code-splitting.md)
 
 * [Examples](/examples.md)
 
