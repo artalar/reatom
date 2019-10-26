@@ -13,6 +13,7 @@
 
 - Guides
   * [Migration from Redux](/guides/migration-from-redux.md)
+  * [Code splitting](/guides/code-splitting.md)
 
 * [Examples](/examples.md)
 
