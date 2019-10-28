@@ -2,10 +2,10 @@ import {
   createContext,
   useEffect,
   useRef,
-  useState,
+  useReducer,
   useContext,
   useCallback,
-  MutableRefObject,
+  Reducer,
   useMemo,
 } from 'react'
 
@@ -22,8 +22,8 @@ function noop() {}
 export const context = createContext<Store | null>(null)
 
 function useForceUpdate() {
-  const update = useState(0)[1]
-  return useRef(() => update(v => v + 1)).current
+  // dispatch don't have action and don't changes between rerenders
+  return useReducer<Reducer<boolean, null>>(s => !s, true)[1] as () => void
 }
 
 const lifeCycleStatus = {
