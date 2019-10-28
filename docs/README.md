@@ -223,6 +223,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   </tr>
   <tr>
     <td align="center"><a href="https://github.com/godested"><img src="https://avatars2.githubusercontent.com/u/22772547?v=4" width="100px;" alt="Ilya Zaitsev"/><br /><sub><b>Ilya Zaitsev</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=godested" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://jeetiss.github.io/"><img src="https://avatars1.githubusercontent.com/u/6726016?v=4" width="100px;" alt="Ivakhnenko Dmitry"/><br /><sub><b>Ivakhnenko Dmitry</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=jeetiss" title="Code">💻</a></td>
   </tr>
 </table>
 
