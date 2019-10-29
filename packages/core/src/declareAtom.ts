@@ -36,7 +36,7 @@ type DependencyMatcher<TState> = (
 ) => void[]
 
 export type Atom<TState> = Unit<'atom'> & {
-  (state?: StateCtx, action?: ActionBase<any>): Record<string, TState | any>
+  (state?: StateCtx, action?: ActionBase<any>): Record<string, TState | unknown>
   getState<T = TState>(
     dependedAtom?: Atom<T>,
     state?: StateCtx,
@@ -98,12 +98,10 @@ export function declareAtom<TState>(
 
     const depNode = getNode(dep)
     if (!depNode) throwError('atom dependency №' + position)
-    const depId = depNode.id
+    const { id: depId, depsAll: depDepsAll } = depNode
     const isDepActionCreator = getIsAction(dep)
 
-    depNode.depsAll.forEach(
-      id => !selfDepsAll.includes(id) && selfDepsAll.push(id),
-    )
+    depDepsAll.forEach(id => !selfDepsAll.includes(id) && selfDepsAll.push(id))
     selfDepsAll.push(depId)
     selfDeps.push(depNode)
 
@@ -275,35 +273,35 @@ export function combine<Input extends CombineInput, Output>(
   mapper: (dependedState: CombineOutput<Input>) => Output,
 ): Atom<Output>
 export function combine<Input extends CombineInput, Output>(
-  name: string | [Id] | Input,
-  input?: Input | ((dependedState: CombineOutput<Input>) => Output),
-  mapper: (dependedState: CombineOutput<Input>) => Output = v => v as any,
+  first: string | [Id] | Input,
+  second?: Input | ((dependedState: CombineOutput<Input>) => Output),
+  third: (dependedState: CombineOutput<Input>) => Output = v => v as any,
 ) {
   const argsLength = arguments.length
-  if (argsLength === 1 && getIsCombineInputCollection(name)) {
-    return _combine('combine', name)
+  if (argsLength === 1 && getIsCombineInputCollection(first)) {
+    return _combine('combine', first)
   }
   if (
     argsLength === 2 &&
-    getIsName(name) &&
-    getIsCombineInputCollection(input)
+    getIsName(first) &&
+    getIsCombineInputCollection(second)
   ) {
-    return _combine(name, input)
+    return _combine(first, second)
   }
-  if (argsLength === 2 && getIsFn(input)) {
-    if (getIsCombineInputCollection(name)) {
-      return _map('combine', _combine('combine', name), input)
+  if (argsLength === 2 && getIsFn(second)) {
+    if (getIsCombineInputCollection(first)) {
+      return _map('combine', _combine('combine', first), second)
     }
-    if (getIsAtom(name)) {
-      return _map('combine', name, input)
+    if (getIsAtom(first)) {
+      return _map('combine', first, second)
     }
   }
-  if (argsLength === 3 && getIsName(name) && getIsFn(mapper)) {
-    if (getIsCombineInputCollection(input)) {
-      return _map('combine', _combine('combine', input), mapper)
+  if (argsLength === 3 && getIsName(first) && getIsFn(third)) {
+    if (getIsCombineInputCollection(second)) {
+      return _map('combine', _combine('combine', second), third)
     }
-    if (getIsAtom(input)) {
-      return _map('combine', input, mapper)
+    if (getIsAtom(second)) {
+      return _map('combine', second, third)
     }
   }
 
