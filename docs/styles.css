@@ -39,7 +39,7 @@
 
 .markdown-section code {
   font-weight: normal;
-  color: #000;
+  color: var(--theme-color);
 }
 
 .token.function, .token.keyword {
