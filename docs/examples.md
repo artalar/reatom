@@ -86,7 +86,7 @@ test("side effects", async () => {
 
 > Beware, it is _enterprise_-like example with feature-driven structure, normalization and other abstractions. Simpler examples will be added later.
 
-[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-todo-app-fikvf)
+[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-todo-app-eko8b)
 
 ---
 
