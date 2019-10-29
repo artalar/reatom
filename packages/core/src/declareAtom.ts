@@ -106,21 +106,23 @@ export function declareAtom<TState>(
     selfDeps.push(depNode)
 
     selfUpdates.push(({ state, stateNew, payload, changedIds, type }: Ctx) => {
-      if (!depNode.depsAll.includes(type)) return
+      if (!depDepsAll.includes(type)) return
 
-      const atomStateSnapshot = state[selfId]
+      const atomStateSnapshot = state[selfId] as TState | undefined
       const isFirstWalk = atomStateSnapshot === undefined
 
       if (!isFirstWalk && type === initAction.type) return
 
-      const atomStatePreviousReducer = stateNew[selfId]
+      const atomStatePreviousReducer = stateNew[selfId] as TState | undefined
       // it is mean atom has more than one dependencies
       // that depended from dispatched action
       // and one of the atom reducers already processed
       const hasAtomNewState = atomStatePreviousReducer !== undefined
-      const atomState = (hasAtomNewState
+      let atomState = hasAtomNewState
         ? atomStatePreviousReducer
-        : atomStateSnapshot) as TState
+        : atomStateSnapshot
+
+      if (atomState === undefined) atomState = initialState as TState
 
       const depStateSnapshot = state[depId]
       const depStateNew = stateNew[depId]
@@ -128,8 +130,6 @@ export function declareAtom<TState>(
       const depState = isDepChanged ? depStateNew : depStateSnapshot
       const depValue = (isDepActionCreator ? payload : depState) as T
 
-      if (atomState === undefined && type !== initAction.type)
-        throwError('dispatch with undefined state')
       if (isDepActionCreator || isDepChanged || isFirstWalk) {
         const atomStateNew = reducer(atomState, depValue)
 
