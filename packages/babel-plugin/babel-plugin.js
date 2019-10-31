@@ -99,7 +99,9 @@ function pushNameToArgs(path, nameNodeId, t, name) {
     case definions.declareAction:
       if (
         args.length === 0 ||
-        (args[0].type !== 'StringLiteral' && args[0].type !== 'ArrayExpression')
+        !['TemplateLiteral', 'StringLiteral', 'ArrayExpression'].includes(
+          args[0].type,
+        )
       ) {
         args.unshift(t.stringLiteral(displayName))
       }

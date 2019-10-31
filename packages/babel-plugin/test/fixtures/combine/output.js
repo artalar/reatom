@@ -7,11 +7,19 @@ const countersShape1 = combine('myName', {
   counter,
   counterDoubled
 });
+const countersShapex = combine(`myName`, {
+  counter,
+  counterDoubled
+});
 const countersShape2 = c("countersShape2", {
   counter,
   counterDoubled
 });
 const countersShape3 = c('myName', {
+  counter,
+  counterDoubled
+});
+const countersShapexx = c(`myName`, {
   counter,
   counterDoubled
 });
