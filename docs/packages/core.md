@@ -15,6 +15,14 @@ or
 yarn add @reatom/core
 ```
 
+## API Reference
+
+- [declareAction](/api/core/declareAction)
+- [declareAtom](/api/core/declareAtom)
+- [map](/api/core/map)
+- [combine](/api/core/combine)
+- [createStore](/api/core/createStore)
+
 ## Usage
 
 [Open in CodeSandbox](https://codesandbox.io/s/reatomcore-demo-28t3d)

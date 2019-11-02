@@ -17,60 +17,11 @@ yarn add @reatom/react
 
 > NOTE. **@reatom/react** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
-## Hooks Api
+## API Reference
 
-### useAtom
-
-Connects the atom to the store provided in context and returns the state of the atom from the store (or default atom state).
-
-#### Retrieve atom state from the store
-
-```ts
-const atomValue = useAtom(atom)
-```
-
-#### Retrieve atom state and apply dynamic selector
-
-```ts
-const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
-```
-
-> NOTE. You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
-
-#### Mount without subscription (for subscribing atoms to actions)
-
-```ts
-const atomValue = useAtom(atom, () => null, [])
-```
-
-### useAction
-
-Binds action and dispatch to the store provided in the context.
-
-#### Basic (useAction)
-
-```ts
-const handleDoSome = useAction(doSome)
-```
-
-#### Prepare payload for dispatch
-
-```ts
-const handleDoSome = useAction(value => doSome({
-  id: props.id,
-  value
-}), [props.id])
-```
-
-#### Conditional dispatch
-
-Dispatch is not called if action creator doesn't return an action.
-
-```ts
-const handleDoSome = useAction(payload => {
-    if (condition) return doSome(payload)
-}, [])
-```
+- [context](/api/react/context)
+- [useAtom](/api/react/useAtom)
+- [useAction](/api/react/useAction)
 
 ## Usage
 
