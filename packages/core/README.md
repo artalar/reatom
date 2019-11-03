@@ -34,6 +34,14 @@ or
 yarn add @reatom/core
 ```
 
+## API Refernces
+
+- [declareAction](https://artalar.github.io/reatom/#/api/core/declareAction)
+- [declareAtom](https://artalar.github.io/reatom/#/api/core/declareAtom)
+- [map](https://artalar.github.io/reatom/#/api/core/map)
+- [combine](https://artalar.github.io/reatom/#/api/core/combine)
+- [createStore](https://artalar.github.io/reatom/#/api/core/createStore)
+
 ## Usage
 
 [Open in CodeSandbox](https://codesandbox.io/s/reatomcore-demo-28t3d)
