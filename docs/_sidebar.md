@@ -5,11 +5,11 @@
   * [Contributing](/contributing.md)
 
 - Packages
-  * [@reatom/core](/packages/reatom-core.md)
-  * [@reatom/react](/packages/reatom-react.md)
-  * [@reatom/observable](/packages/reatom-observable.md)
-  * [@reatom/babel-plugin](/packages/reatom-babel-plugin.md)
-  * [@reatom/debug](/packages/reatom-debug.md)
+  * [@reatom/core](/packages/core.md)
+  * [@reatom/react](/packages/react.md)
+  * [@reatom/observable](/packages/observable.md)
+  * [@reatom/babel-plugin](/packages/babel-plugin.md)
+  * [@reatom/debug](/packages/debug.md)
 
 - Guides
   * [Naming Conventions](/guides/naming-conventions.md)

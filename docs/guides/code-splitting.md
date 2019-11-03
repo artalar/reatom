@@ -67,7 +67,7 @@ unsubscribe2()
 
 ## Usage in React
 
-And so, now you know what root and lazy atoms are. But what will it look like in React? For this purpose, we have a special [@reatom/react](/packages/reatom-react) package.
+And so, now you know what root and lazy atoms are. But what will it look like in React? For this purpose, we have a special [@reatom/react](/packages/react) package.
 
 This package automatically subscribes to atoms when mounting a component and unsubscribes when unmounting.
 
