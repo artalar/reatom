@@ -19,7 +19,11 @@ import {
 
 function noop() {}
 
-export const context = createContext<Store | null>(null)
+const context = createContext<Store | null>(null)
+
+const { Provider } = context
+
+export { Provider }
 
 function useForceUpdate() {
   // dispatch don't have action and don't changes between rerenders
