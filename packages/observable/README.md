@@ -27,6 +27,10 @@ yarn add @reatom/observable
 
 > NOTE. **@reatom/observable** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
 
+## API Refernces
+
+- [observe](https://artalar.github.io/reatom/#/api/observable/observe)
+
 ## Usage
 
 ```js
