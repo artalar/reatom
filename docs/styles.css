@@ -8,6 +8,10 @@
   max-width: 200px;
 }
 
+.markdown-section {
+  max-width: 900px;
+}
+
 .markdown-section code  {
   font-size: inherit;
 }
@@ -50,6 +54,7 @@ h3 .anchor {
   font-weight: normal;
 }
 
+.token.constant,
 .token.number,
 .token.boolean,
 .token.string {
