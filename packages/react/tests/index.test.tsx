@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react-hooks'
 import { render } from '@testing-library/react'
 import { act } from 'react-test-renderer'
 import { declareAction, declareAtom, createStore, Store } from '@reatom/core'
-import { context, useAtom, useAction } from '../src/index'
+import { Provider as StoreProvider, useAtom, useAction } from '../src/index'
 
 const increment = declareAction()
 const add = declareAction<number>()
@@ -14,7 +14,7 @@ const countAtom = declareAtom(['count'], 0, on => [
 
 function Provider(props: { store: Store; children?: any }) {
   return (
-    <context.Provider value={props.store}>{props.children}</context.Provider>
+    <StoreProvider value={props.store}>{props.children}</StoreProvider>
   )
 }
 

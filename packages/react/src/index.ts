@@ -21,6 +21,8 @@ function noop() {}
 
 export const context = createContext<Store | null>(null)
 
+export const { Provider } = context
+
 function useForceUpdate() {
   // dispatch don't have action and don't changes between rerenders
   return useReducer<Reducer<boolean, null>>(s => !s, true)[1] as () => void
