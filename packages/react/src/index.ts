@@ -19,7 +19,8 @@ import {
 
 function noop() {}
 
-const context = createContext<Store | null>(null)
+// todo: remove export in major release
+export const context = createContext<Store | null>(null)
 
 const { Provider } = context
 
