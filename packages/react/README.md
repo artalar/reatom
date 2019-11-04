@@ -35,58 +35,11 @@ yarn add @reatom/react
 
 > `@reatom/react` depends on and works with `@reatom/core`.
 
-## Hooks Api
+## API Refernces
 
-### useAtom
-
-Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state).
-
-#### Basic (useAtom)
-
-```ts
-const atomValue = useAtom(atom)
-```
-
-#### Depended value by selector
-
-```ts
-const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
-```
-
-#### Mount without subscription (for subscribing atoms to actions)
-
-```ts
-const atomValue = useAtom(atom, () => null, [])
-```
-
-### useAction
-
-Binds action with dispatch to the store provided in the context.
-
-#### Basic (useAction)
-
-```ts
-const handleDoSome = useAction(doSome)
-```
-
-#### Prepare payload for dispatch
-
-```ts
-const handleDoSome = useAction(value => doSome({ id: props.id, value }), [props.id])
-```
-
-#### Conditional dispatch
-
-If action creator don't return an action dispatch not calling.
-
-```ts
-const handleDoSome = useAction(
-  payload => {
-    if (condition) return doSome(payload)
-  },
-  []
-)
-```
+- [context](https://artalar.github.io/reatom/#/api/react/context)
+- [useAtom](https://artalar.github.io/reatom/#/api/react/useAtom)
+- [useAction](https://artalar.github.io/reatom/#/api/react/useAction)
 
 ## Usage
 
