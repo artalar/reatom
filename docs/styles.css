@@ -61,6 +61,10 @@ h3 .anchor {
   color: #c76b29;
 }
 
+.sidebar ul {
+  padding-bottom: 40px;
+}
+
 .sidebar .sidebar-nav {
   display: flex;
   flex-direction: column;
