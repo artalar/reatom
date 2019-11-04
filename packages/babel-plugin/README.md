@@ -8,7 +8,7 @@
 # @reatom/babel-plugin
 [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) 
 
-[Open in docs](https://artalar.github.io/reatom/#/packages/reatom-babel-plugin)
+[Open in docs](https://artalar.github.io/reatom/#/packages/babel-plugin)
 
 ## Install
 
