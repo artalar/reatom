@@ -46,6 +46,10 @@
   color: var(--theme-color);
 }
 
+a code {
+  color: inherit !important;
+}
+
 .token.function, .token.keyword {
   color: #3c699e;
 }
