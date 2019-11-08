@@ -1,5 +1,6 @@
 {
   "hooks": {
+    "pre-commit": "npm run prettify",
     "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
   }
 }
