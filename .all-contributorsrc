@@ -112,6 +112,15 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "Kurzdor",
+      "name": "Paul Ekshmidt",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/19878951?v=4",
+      "profile": "http://kurzdor.me",
+      "contributions": [
+        "infra"
+      ]
     }
   ],
   "contributorsPerLine": 7
