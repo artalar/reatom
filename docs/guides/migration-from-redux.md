@@ -286,7 +286,7 @@ const store = createStore()
 const increment = declareAction()
 const decrement = declareAction()
 
-const incrementAsync = declareAction(({ dispatch }) => {
+const incrementAsync = declareAction((payload, { dispatch }) => {
   // ... which themselves may dispatch many times
   dispatch(increment())
   dispatch(increment())
