@@ -8,6 +8,10 @@
   max-width: 200px;
 }
 
+.markdown-section {
+  max-width: 900px;
+}
+
 .markdown-section code  {
   font-size: inherit;
 }
@@ -42,6 +46,10 @@
   color: var(--theme-color);
 }
 
+a code {
+  color: inherit !important;
+}
+
 .token.function, .token.keyword {
   color: #3c699e;
 }
@@ -50,10 +58,15 @@ h3 .anchor {
   font-weight: normal;
 }
 
+.token.constant,
 .token.number,
 .token.boolean,
 .token.string {
   color: #c76b29;
+}
+
+.sidebar ul {
+  padding-bottom: 40px;
 }
 
 .sidebar .sidebar-nav {
