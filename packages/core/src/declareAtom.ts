@@ -27,7 +27,7 @@ type DependencyMatcher<TState> = (
 ) => any
 
 export interface Atom<T> extends Unit {
-  (state?: State, action?: Action<any>): Record<string, T | any>
+  (state?: State, action?: Action<any>): Record<string, T>
   [DEPS]: Set<TreeId>
 }
 
