@@ -5,6 +5,7 @@ export {
   GenId,
   TreeId,
   Unit,
+  InferType,
   getTree,
   getIsAtom,
   getIsAction,

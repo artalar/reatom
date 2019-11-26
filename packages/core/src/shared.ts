@@ -1,11 +1,22 @@
 import { Tree, TreeId } from './kernel'
 import { Atom } from './declareAtom'
+import { PayloadActionCreator } from './declareAction'
 
 export { TreeId }
 export type GenId = (name: string | [string]) => TreeId
 export const TREE = Symbol('@@Reatom/TREE')
 
 export type Unit = { [TREE]: Tree }
+
+/**
+ * Helper for retrieving the data type used in an atom or action
+ * @example
+ * type MyAtomType = InferType<typeof myAtom>
+ * type MyActionType = InferType<typeof myAction>
+ */
+export type InferType<T> = T extends (Atom<infer R> | PayloadActionCreator<infer R>)
+  ? R 
+  : never
 
 export function noop() {}
 
