@@ -13,11 +13,6 @@
 
 Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. 
 
-> **IMPORTANT!** Current state is **Work In Progress**.
-> At the moment we do not recommend to use `reatom` in production, but... We look forward to your feedback and suggestions to improve the API
-
-> **v1.0.0 schedule**: October 2019
-
 ## Goals and features
 
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
