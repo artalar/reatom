@@ -11,5 +11,5 @@ export {
   getIsAction,
   nameToIdDefault,
   setNameToId,
-  noop
+  noop,
 } from './shared'

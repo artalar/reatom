@@ -248,9 +248,7 @@ describe('@reatom/core', () => {
       const increment = declareAction('increment')
       const set = declareAction<number>('set')
 
-      const count1 = declareAtom(0, on =>
-        on(increment, state => state + 1),
-      )
+      const count1 = declareAtom(0, on => on(increment, state => state + 1))
       const count2SetMap = jest.fn((state, payload) => payload)
       const count2 = declareAtom(0, on => [
         on(increment, state => state + 1),
@@ -316,13 +314,9 @@ describe('@reatom/core', () => {
       const increment1 = declareAction()
       const increment2 = declareAction()
 
-      const count1 = declareAtom(0, on =>
-        on(increment1, state => state + 1),
-      )
+      const count1 = declareAtom(0, on => on(increment1, state => state + 1))
       const count1Doubled = map(count1, payload => payload * 2)
-      const count2 = declareAtom(0, on =>
-        on(increment2, state => state + 1),
-      )
+      const count2 = declareAtom(0, on => on(increment2, state => state + 1))
       const count2Doubled = map(count2, payload => payload * 2)
 
       const root = combine({ count1 })
@@ -427,6 +421,36 @@ describe('@reatom/core', () => {
       })
       expect(storeWithPreloadedState.getState(staticCount)).toBe(1)
       expect(storeWithPreloadedState.getState(dynamicCount)).toBe(2)
+    })
+    test('createStore reactions state diff', () => {
+      const increment1 = declareAction()
+      const increment2 = declareAction()
+
+      const count1Atom = declareAtom(0, on => on(increment1, s => s + 1))
+      const count2Atom = declareAtom(0, on => on(increment2, s => s + 1))
+      const store = createStore()
+      store.subscribe(count1Atom, noop)
+      store.subscribe(count2Atom, noop)
+
+      const reaction = jest.fn()
+      store.subscribe(reaction)
+
+      let action = declareAction()()
+      store.dispatch(action)
+
+      expect(reaction).toBeCalledWith(action, {})
+
+      action = increment1()
+      store.dispatch(action)
+      expect(reaction).toBeCalledWith(action, {
+        [getTree(count1Atom).id]: 1,
+      })
+
+      action = increment2()
+      store.dispatch(action)
+      expect(reaction).toBeCalledWith(action, {
+        [getTree(count2Atom).id]: 1,
+      })
     })
   })
 

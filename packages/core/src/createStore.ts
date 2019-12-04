@@ -10,7 +10,7 @@ import {
 import { Action } from './declareAction'
 import { Atom, initAction, getState } from './declareAtom'
 
-type ActionsSubscriber = (action: Action<any>) => any
+type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
 type SubscribeFunction = {
   <T>(target: Atom<T>, listener: (state: T) => any): () => void
   (listener: ActionsSubscriber): () => void
@@ -21,7 +21,7 @@ type GetStateFunction = {
 }
 
 export type Store = {
-  dispatch: ActionsSubscriber
+  dispatch: (action: Action<unknown>) => void
   subscribe: SubscribeFunction
   getState: GetStateFunction
 }
@@ -172,8 +172,8 @@ export function createStore(
       }
     }
 
-    ;(action.reactions || []).forEach(r => r(payload, store))
-    callFromList((actionsListeners = nextActionsListeners), action)
+    callFromList(action.reactions || [], payload, store)
+    callFromList((actionsListeners = nextActionsListeners), action, stateNew)
   }
 
   const store = {
@@ -185,6 +185,7 @@ export function createStore(
   return store
 }
 
-function callFromList(list: Function[], arg: any, i = -1) {
-  while (++i < list.length) list[i](arg)
+function callFromList(list: Function[], ...arg: any[]) {
+  let i = -1
+  while (++i < list.length) list[i](...arg)
 }

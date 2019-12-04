@@ -1,6 +1,6 @@
 export type Leaf = string // unique
 export type TreeId = string // unique
-export type State = Record<TreeId, any>
+export type State = Record<TreeId, unknown>
 // reatom specific
 export type Fn = (ctx: Ctx) => any
 export type Ctx = ReturnType<typeof createCtx>

@@ -92,9 +92,9 @@ export function declareAtom<TState>(
       // that depended from dispatched action
       // and one of the atom reducers already processed
       const hasAtomNewState = atomStatePreviousReducer !== undefined
-      const atomState = hasAtomNewState
+      const atomState = (hasAtomNewState
         ? atomStatePreviousReducer
-        : atomStateSnapshot
+        : atomStateSnapshot) as TState
 
       const depStateSnapshot = state[depId]
       const depStateNew = stateNew[depId]
@@ -143,7 +143,7 @@ export function declareAtom<TState>(
 }
 
 export function getState<T>(state: State, atom: Atom<T>): T | undefined {
-  return state[atom[TREE].id]
+  return state[atom[TREE].id] as T | undefined
 }
 
 export function map<T, TSource = unknown>(
