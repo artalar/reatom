@@ -28,6 +28,42 @@ yarn add @reatom/debug --dev
 
 ## Usage
 
+### redux-devtools
+
+Basic
+
+```js
+import { createStore } from '@reatom/core'
+import { connectReduxDevtools } from '@reatom/debug'
+
+const store = createStore()
+
+const unsubscribeDevTools = connectReduxDevtools(store)
+```
+
+With React
+
+```js
+import { createStore } from '@reatom/core'
+import { context } from '@reatom/react'
+import { connectReduxDevtools } from '@reatom/debug'
+
+function App() {
+  const store = createStore()
+
+  useEffect(() => connectReduxDevtools(store))
+
+  return (
+    <context.Provider value={store}>
+      <Main />
+    </context.Provider>
+  )
+}
+
+```
+
+### add file path to names of actions and atoms declarations
+
 ```js
 import { genIdFromLine } from '@reatom/debug'
 import { declareAtom, declareAction, setNameToId } from '@reatom/core'
