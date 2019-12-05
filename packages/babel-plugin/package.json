@@ -1,7 +1,7 @@
 {
   "name": "@reatom/babel-plugin",
   "private": false,
-  "version": "1.0.0-rc3",
+  "version": "1.0.0",
   "description": "Compile-time preprocessing for reatom",
   "repository": "https://github.com/artalar/reatom",
   "files": [
