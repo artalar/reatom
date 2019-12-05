@@ -7,12 +7,15 @@ import {
   getIsAtom,
   getIsAction,
 } from './shared'
-import { Action } from './declareAction'
+import { Action, PayloadActionCreator } from './declareAction'
 import { Atom, initAction, getState } from './declareAtom'
 
 type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
 type SubscribeFunction = {
-  <T>(target: Atom<T>, listener: (state: T) => any): () => void
+  <T>(
+    target: Atom<T> | PayloadActionCreator<T>,
+    listener: (state: T) => any,
+  ): () => void
   (listener: ActionsSubscriber): () => void
 }
 type GetStateFunction = {
@@ -35,10 +38,10 @@ export function createStore(
   atom?: Atom<any> | State,
   initState?: State,
 ): Store {
-  let atomsListeners: Map<TreeId, Function[]> = new Map<TreeId, Function[]>()
-  let nextAtomsListeners: Map<TreeId, Function[]> = atomsListeners
-  let actionsListeners: Function[] = []
-  let nextActionsListeners: Function[] = actionsListeners
+  let listeners: Map<TreeId, Function[]> = new Map<TreeId, Function[]>()
+  let nextListeners: Map<TreeId, Function[]> = listeners
+  let dispatchListeners: Function[] = []
+  let nextDispatchListeners: Function[] = dispatchListeners
   let initialAtoms = new Set<TreeId>()
   const state: State = {}
   const storeTree = new Tree('store')
@@ -58,17 +61,17 @@ export function createStore(
     }
   }
 
-  function ensureCanMutateNextListeners() {
-    if (nextActionsListeners === actionsListeners) {
-      nextActionsListeners = actionsListeners.slice()
+  function ensureCanMutateNextDispatchListeners() {
+    if (nextDispatchListeners === dispatchListeners) {
+      nextDispatchListeners = dispatchListeners.slice()
     }
   }
 
-  function ensureCanMutateNextAtomsListeners(treeId: TreeId) {
-    if (nextAtomsListeners === atomsListeners) {
-      nextAtomsListeners = new Map()
-      atomsListeners.forEach((value, key) =>
-        nextAtomsListeners.set(key, treeId === key ? value.slice() : value),
+  function ensureCanMutateNextListeners(treeId: TreeId) {
+    if (nextListeners === listeners) {
+      nextListeners = new Map()
+      listeners.forEach((value, key) =>
+        nextListeners.set(key, treeId === key ? value.slice() : value),
       )
     }
   }
@@ -91,11 +94,11 @@ export function createStore(
 
   function subscribe(subscriber: ActionsSubscriber): () => void
   function subscribe<T>(
-    target: Atom<T>,
+    target: Atom<T> | PayloadActionCreator<T>,
     subscriber: (state: T) => any,
   ): () => void
   function subscribe<T>(
-    target: Atom<T> | ActionsSubscriber,
+    target: Atom<T> | PayloadActionCreator<T> | ActionsSubscriber,
     subscriber?: (state: T) => any,
   ): () => void {
     const listener = safetyFunc(subscriber || target, 'listener')
@@ -105,24 +108,26 @@ export function createStore(
       if (getIsAtom(listener) || getIsAction(listener))
         throwError('Invalid listener')
 
-      ensureCanMutateNextListeners()
-      nextActionsListeners.push(listener)
+      ensureCanMutateNextDispatchListeners()
+      nextDispatchListeners.push(listener)
       return () => {
         if (!isSubscribed) return
         isSubscribed = false
-        ensureCanMutateNextListeners()
-        nextActionsListeners.splice(nextActionsListeners.indexOf(listener), 1)
+        ensureCanMutateNextDispatchListeners()
+        nextDispatchListeners.splice(nextDispatchListeners.indexOf(listener), 1)
       }
     }
 
-    if (!getIsAtom(target)) throwError('Subscription target is not Atom')
-    const targetTree = getTree(target as Atom<T>)
+    const isAction = getIsAction(target)
+    if (!getIsAtom(target) && !isAction)
+      throwError('Invalid subscription target')
+    const targetTree = getTree(target as Atom<T> | PayloadActionCreator<T>)
     const targetId = targetTree.id
-    const isLazy = !initialAtoms.has(targetId)
+    const isLazy = !isAction && !initialAtoms.has(targetId)
 
-    ensureCanMutateNextAtomsListeners(targetId)
-    if (!nextAtomsListeners.has(targetId)) {
-      nextAtomsListeners.set(targetId, [])
+    ensureCanMutateNextListeners(targetId)
+    if (!nextListeners.has(targetId)) {
+      nextListeners.set(targetId, [])
       if (isLazy) {
         storeTree.union(targetTree)
         const ctx = createCtx(state, initAction)
@@ -131,18 +136,18 @@ export function createStore(
       }
     }
 
-    nextAtomsListeners.get(targetId)!.push(listener)
+    nextListeners.get(targetId)!.push(listener)
 
     return () => {
       if (!isSubscribed) return
       isSubscribed = false
 
-      ensureCanMutateNextAtomsListeners(targetId)
-      const _listeners = nextAtomsListeners.get(targetId)!
+      ensureCanMutateNextListeners(targetId)
+      const _listeners = nextListeners.get(targetId)!
       _listeners.splice(_listeners.indexOf(listener), 1)
 
       if (isLazy && _listeners.length === 0) {
-        nextAtomsListeners.delete(targetId)
+        nextListeners.delete(targetId)
         storeTree.disunion(targetTree)
         // FIXME: dependencies are not clearing
         delete state[targetId]
@@ -151,29 +156,32 @@ export function createStore(
   }
 
   function dispatch(action: Action<any>) {
+    const { type, payload, reactions } = action
     if (
       typeof action !== 'object' ||
       action === null ||
-      typeof action.type !== 'string'
+      typeof type !== 'string'
     )
       throwError('Invalid action')
 
     const ctx = createCtx(state, action)
-    storeTree.forEach(action.type, ctx)
+    storeTree.forEach(type, ctx)
 
-    const { changedIds, stateNew, payload } = ctx
+    const { changedIds, stateNew } = ctx
+
+    listeners = nextListeners
 
     if (changedIds.length > 0) {
       assign(state, stateNew)
-      atomsListeners = nextAtomsListeners
       for (let i = 0; i < changedIds.length; i++) {
         const id = changedIds[i]
-        callFromList(atomsListeners.get(id) || [], stateNew[id])
+        callFromList(listeners.get(id) || [], stateNew[id])
       }
     }
 
-    callFromList(action.reactions || [], payload, store)
-    callFromList((actionsListeners = nextActionsListeners), action, stateNew)
+    callFromList(reactions || [], payload, store)
+    callFromList(listeners.get(type) || [], payload)
+    callFromList((dispatchListeners = nextDispatchListeners), action, stateNew)
   }
 
   const store = {

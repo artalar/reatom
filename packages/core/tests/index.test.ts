@@ -452,6 +452,24 @@ describe('@reatom/core', () => {
         [getTree(count2Atom).id]: 1,
       })
     })
+    test('createStore subscribe to action', () => {
+      const action = declareAction<null>()
+      const trackAction = jest.fn()
+      const trackActions = jest.fn()
+      const store = createStore()
+
+      store.subscribe(action, trackAction)
+      store.subscribe(trackActions)
+
+      store.dispatch(declareAction()())
+      expect(trackAction).toBeCalledTimes(0)
+      expect(trackActions).toBeCalledTimes(1)
+
+      store.dispatch(action(null))
+      expect(trackAction).toBeCalledTimes(1)
+      expect(trackAction).toBeCalledWith(null)
+      expect(trackActions).toBeCalledTimes(2)
+    })
   })
 
   test('declareAction reactions', async () => {
