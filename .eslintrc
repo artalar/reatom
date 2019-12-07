@@ -1,14 +1,26 @@
 {
-  "parser": "babel-eslint",
+  "parser": "@typescript-eslint/parser",
 
-  "plugins": ["jest", "prettier"],
+  "settings": {
+    "import/resolver": {
+      "node": {
+        "extensions": [".js", ".ts"]
+      }
+    }
+  },
+
+  "plugins": ["jest", "prettier", "@typescript-eslint"],
 
   "extends": [
     "airbnb-base",
-    "plugin:prettier/recommended"
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier/@typescript-eslint",
+    "prettier"
   ],
 
   "rules": {
+    "no-use-before-define": "off",
     "no-param-reassign": "off",
     "no-prototype-builtins": "off",
     "no-void": "off",
@@ -22,7 +34,10 @@
     "no-continue": "off",
     "no-return-assign": "off",
     "no-sequences": "off",
-    "no-unused-vars": "warn"
+    "no-unused-vars": "warn",
+
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/explicit-function-return-type": "off"
   },
 
   "env": {
