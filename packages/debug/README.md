@@ -51,7 +51,7 @@ import { connectReduxDevtools } from '@reatom/debug'
 function App() {
   const store = createStore()
 
-  useEffect(() => connectReduxDevtools(store))
+  useEffect(() => connectReduxDevtools(store), [])
 
   return (
     <context.Provider value={store}>
