@@ -106,6 +106,11 @@ store.dispatch(add(2))
 
 ## Motivation
 
+Why another state manager? The reason is dissatisfaction with existing solutions that do not cover our requirements. We strive to create a lightweight state manager that combines the best solutions proven over the years and personal experience.
+
+<details>
+<summary>Show problems in popular solutions</summary>
+
 > **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom. 
 
 <!-- 
@@ -121,7 +126,7 @@ Guiding principles of state manager:
 
 -->
 
-### Why not Redux
+### Redux
 [link to repository](https://github.com/reduxjs/redux)
 
 - Selectors are not inspectable (lacking in devtools).
@@ -136,7 +141,7 @@ Guiding principles of state manager:
   <!-- - Memorized selectors do extra computations by default, but it is definitely unnecessary in SSR -->
   > Some problems can be solved by various fabric functions and third party libriaries. This makes it diffcuilt to reuse solutions across multiple projects.
 
-### Why not Effector
+### Effector
 [link to repository](https://github.com/zerobias/effector)
 
 - Effector is about atomic **stores** — it uses stateful approach that has certain problems:
@@ -170,7 +175,7 @@ Guiding principles of state manager:
 - The [size](https://bundlephobia.com/result?p=effector)
 - [Throw in reducer does not cancel the computations in other reducers](https://github.com/zerobias/effector/issues/90)
 
-### Why not MobX
+### MobX
 [link to repository](https://github.com/mobxjs/mobx)
 
 - Large bundle size, unstandardized syntax (decorators), ES5 limitations.
@@ -179,6 +184,8 @@ Guiding principles of state manager:
 - [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) lacks a visual part of code semantic.
 - It is complicated under the hood and [it can be complicated when one has to work with complex data-structures](https://twitter.com/art_al_ar/status/1162769896025075719)
 - [And others...](https://mobx.js.org/best/pitfalls.html)
+
+</details>
 
 ## Community
 Follow us on Twitter [@reatomjs](https://twitter.com/reatomjs)
