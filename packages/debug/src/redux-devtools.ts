@@ -1,7 +1,7 @@
 import { Store } from '@reatom/core'
 
 // http://extension.remotedev.io/docs/API/Methods.html#connect
-export function connectReduxDevtools(store: Store, config: object) {
+export function connectReduxDevtools(store: Store, config: object = {}) {
   const devTools =
     // @ts-ignore
     window.__REDUX_DEVTOOLS_EXTENSION__ &&
