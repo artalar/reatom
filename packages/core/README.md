@@ -1,7 +1,7 @@
 <div align="center">
 <br/>
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
 
 </div>
 
@@ -14,9 +14,9 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
-[Open in docs](https://artalar.github.io/reatom/#/packages/core)
+[Open in docs](https://reatom.js.org/#/packages/core)
 
-> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://artalar.github.io/reatom/).
+> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://reatom.js.org/).
 
 ## Install
 

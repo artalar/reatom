@@ -108,5 +108,5 @@ const store = createStore(
 
 Next:
 
-> - <a href="https://artalar.github.io/reatom/#/examples">Examples</a>
-> - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>
+> - <a href="https://reatom.js.org/#/examples">Examples</a>
+> - <a href="https://reatom.js.org/#/faq">FAQ</a>

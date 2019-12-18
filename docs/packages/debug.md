@@ -15,7 +15,7 @@ or
 yarn add @reatom/debug --dev
 ```
 
-> NOTE. **@reatom/debug** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/debug** depends on and works with [@reatom/core](https://reatom.js.org/#/reatom-core).
 
 ## Usage
 

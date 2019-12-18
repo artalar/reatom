@@ -1,7 +1,7 @@
 <div align="center">
 <br/>
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
 
 </div>
 
@@ -13,7 +13,7 @@ Package of Reatom for creating observers of atoms or stores
 [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) 
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
 
-[Open in docs](https://artalar.github.io/reatom/#/packages/observable)
+[Open in docs](https://reatom.js.org/#/packages/observable)
 
 ## Install
 
@@ -25,7 +25,7 @@ or
 yarn add @reatom/observable
 ```
 
-> NOTE. **@reatom/observable** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/observable** depends on and works with [@reatom/core](https://reatom.js.org/#/reatom-core).
 
 ## Usage
 

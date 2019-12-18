@@ -1,14 +1,14 @@
 <div align="center">
 <br/>
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
 
 </div>
 
 # @reatom/babel-plugin
 [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) 
 
-[Open in docs](https://artalar.github.io/reatom/#/packages/babel-plugin)
+[Open in docs](https://reatom.js.org/#/packages/babel-plugin)
 
 ## Install
 
@@ -20,7 +20,7 @@ or
 yarn add @reatom/babel-plugin --dev
 ```
 
-> NOTE. **@reatom/babel-plugin** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/babel-plugin** depends on and works with [@reatom/core](https://reatom.js.org/#/reatom-core).
 
 ## Usage
 

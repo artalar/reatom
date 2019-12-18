@@ -1,6 +1,6 @@
 <div align="center">
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
@@ -42,7 +42,7 @@ Data flow diagram:
 
 <div align="center">
 
-![reatom data flow](https://artalar.github.io/reatom/flow.svg)
+![reatom data flow](https://reatom.js.org/flow.svg)
 
 </div>
 
@@ -98,11 +98,11 @@ store.dispatch(add(2))
 ## Packages
 | Package | Version | Size
 --------|---------|----
-| [`@reatom/core`](https://artalar.github.io/reatom/#/packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
-| [`@reatom/react`](https://artalar.github.io/reatom/#/packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
-| [`@reatom/observable`](https://artalar.github.io/reatom/#/packages/observable) | [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
-| [`@reatom/babel-plugin`](https://artalar.github.io/reatom/#/packages/babel-plugin) | [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) | -
-| [`@reatom/debug`](https://artalar.github.io/reatom/#/packages/debug) | [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
+| [`@reatom/core`](https://reatom.js.org/#/packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
+| [`@reatom/react`](https://reatom.js.org/#/packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
+| [`@reatom/observable`](https://reatom.js.org/#/packages/observable) | [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
+| [`@reatom/babel-plugin`](https://reatom.js.org/#/packages/babel-plugin) | [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) | -
+| [`@reatom/debug`](https://reatom.js.org/#/packages/debug) | [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
 
 ## Motivation
 
@@ -203,10 +203,10 @@ Telegram
 
 Next:
 
-> - <a href="https://artalar.github.io/reatom/#/glossary">Glossary</a>
-> - <a href="https://artalar.github.io/reatom/#/examples">Examples</a>
-> - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>
-> - <a href="https://artalar.github.io/reatom/#/contributing">Contributing</a>
+> - <a href="https://reatom.js.org/#/glossary">Glossary</a>
+> - <a href="https://reatom.js.org/#/examples">Examples</a>
+> - <a href="https://reatom.js.org/#/faq">FAQ</a>
+> - <a href="https://reatom.js.org/#/contributing">Contributing</a>
 
 ## Contributors ✨
 
