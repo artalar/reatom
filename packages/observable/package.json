@@ -43,7 +43,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://artalar.github.io/reatom",
+  "homepage": "https://reatom.js.org",
   "keywords": [
     "RxJS",
     "Observables",

@@ -1,7 +1,7 @@
 <div align="center">
 <br/>
 
-[![reatom logo](https://artalar.github.io/reatom/logos/logo.svg)](https://artalar.github.io/reatom)
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
 
 </div>
 
@@ -12,7 +12,7 @@ Package of Reatom for generating dynamic names with contain source path
 [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug) 
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
 
-[Open in docs](https://artalar.github.io/reatom/#/packages/debug)
+[Open in docs](https://reatom.js.org/#/packages/debug)
 
 ## Install
 
@@ -24,7 +24,7 @@ or
 yarn add @reatom/debug --dev
 ```
 
-> NOTE. **@reatom/debug** depends on and works with [@reatom/core](https://artalar.github.io/reatom/#/reatom-core).
+> NOTE. **@reatom/debug** depends on and works with [@reatom/core](https://reatom.js.org/#/reatom-core).
 
 ## Usage
 

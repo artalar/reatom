@@ -92,4 +92,4 @@ test("side effects", async () => {
 
 Next:
 
-> - <a href="https://artalar.github.io/reatom/#/faq">FAQ</a>
+> - <a href="https://reatom.js.org/#/faq">FAQ</a>

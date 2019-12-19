@@ -33,7 +33,7 @@
     "test": "./node_modules/.bin/jest test/"
   },
   "bugs": "https://github.com/artalar/reatom/issues",
-  "homepage": "https://artalar.github.io/reatom",
+  "homepage": "https://reatom.js.org",
   "engines": {
     "node": ">=6.0.0"
   },
