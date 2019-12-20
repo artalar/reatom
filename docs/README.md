@@ -198,6 +198,7 @@ Telegram
 - [Reatom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
 - [Reatom vs MobX. Part 2](https://soundcloud.com/5minreact/062-reatom-vs-mobx) (5minreact, russian podcast)
 - [Reatom. Rethink of Redux](https://www.youtube.com/watch?v=b14YQNswsTk) (RND JS, russian meetup)
+- [Begebot №29. State managers and reatom as the pinnacle of evolution](https://soundcloud.com/begebot/ep29) (russian podcast)
 
 ---
 
