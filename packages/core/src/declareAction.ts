@@ -16,13 +16,15 @@ export type BaseActionCreator<Type extends string = string> = {
   getType: () => Type
 } & Unit
 
-export type ActionCreator<Type extends string = string> = BaseActionCreator<Type> &
+export type ActionCreator<Type extends string = string> = BaseActionCreator<
+  Type
+> &
   (() => Action<undefined, Type>)
 
 export type PayloadActionCreator<
   Payload,
   Type extends string = string
-  > = BaseActionCreator<Type> & ((payload: Payload) => Action<Payload, Type>)
+> = BaseActionCreator<Type> & ((payload: Payload) => Action<Payload, Type>)
 
 export function declareAction(
   name?: string | Reaction<undefined>,
