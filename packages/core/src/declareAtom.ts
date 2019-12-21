@@ -17,6 +17,7 @@ const DEPS = Symbol('@@Reatom/DEPS')
 const _initAction = declareAction(['@@Reatom/init'])
 export const initAction = _initAction()
 
+type AtomName = string | [TreeId] | symbol
 type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
@@ -36,12 +37,12 @@ export function declareAtom<TState>(
   dependencyMatcher: DependencyMatcher<TState>,
 ): Atom<TState>
 export function declareAtom<TState>(
-  name: string | [TreeId],
+  name: AtomName,
   initialState: TState,
   dependencyMatcher: DependencyMatcher<TState>,
 ): Atom<TState>
 export function declareAtom<TState>(
-  name: string | [TreeId] | TState,
+  name: AtomName | TState,
   initialState: TState | DependencyMatcher<TState>,
   dependencyMatcher?: DependencyMatcher<TState>,
 ): Atom<TState> {
@@ -51,7 +52,7 @@ export function declareAtom<TState>(
     name = 'atom'
   }
 
-  const _id = nameToId(name as string | [TreeId])
+  const _id = nameToId(name as AtomName)
 
   if (initialState === undefined)
     throwError(`Atom "${_id}". Initial state can't be undefined`)

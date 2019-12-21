@@ -12,11 +12,12 @@
   * [@reatom/debug](/packages/debug.md)
 
 - Guides
-  * [Naming Conventions](/guides/naming-conventions.md)
-  * [File Structure](/guides/file-structure.md)
+  * [Migration from Redux](/guides/migration-from-redux.md)
   * [Code Splitting](/guides/code-splitting.md)
   * [Server Side Rendering](/guides/server-side-rendering.md)
-  * [Migration from Redux](/guides/migration-from-redux.md)
+  * [Dependency injection](/guides/di.md)
+  * [Naming Conventions](/guides/naming-conventions.md)
+  * [File Structure](/guides/file-structure.md)
 
 * [Examples](/examples.md)
 
