@@ -1,4 +1,10 @@
-import { declareAction, declareAtom, getState, map, combine } from '../src/index'
+import {
+  declareAction,
+  declareAtom,
+  getState,
+  map,
+  combine,
+} from '../src/index'
 
 describe('diamond problem (declareAtom)', () => {
   test('display name', () => {
