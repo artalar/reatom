@@ -3,7 +3,7 @@ import { Atom } from './declareAtom'
 import { PayloadActionCreator } from './declareAction'
 
 export { TreeId }
-export type GenId = (name: string | [string]) => TreeId
+export type GenId = (name: string | [string] | symbol) => TreeId
 export const TREE = Symbol('@@Reatom/TREE')
 
 export type Unit = { [TREE]: Tree }
@@ -14,8 +14,10 @@ export type Unit = { [TREE]: Tree }
  * type MyAtomType = InferType<typeof myAtom>
  * type MyActionType = InferType<typeof myAction>
  */
-export type InferType<T> = T extends (Atom<infer R> | PayloadActionCreator<infer R>)
-  ? R 
+export type InferType<T> = T extends (
+  | Atom<infer R>
+  | PayloadActionCreator<infer R>)
+  ? R
   : never
 
 export function noop() {}
@@ -37,13 +39,16 @@ export function getIsAction(thing: any): thing is Atom<any> {
 }
 
 let id = 0
-export function nameToIdDefault(name: string | [string]): TreeId {
-  return Array.isArray(name)
+export function nameToIdDefault(name: string | [string] | symbol): TreeId {
+  return typeof name === 'symbol'
+    ? // TODO: https://github.com/microsoft/TypeScript/issues/1863
+      ((name as unknown) as string)
+    : Array.isArray(name)
     ? safetyStr(name[0], 'name')
     : `${safetyStr(name, 'name')} [${++id}]`
 }
 let _nameToId: GenId
-export function nameToId(name: string | [string]): TreeId {
+export function nameToId(name: string | [string] | symbol): TreeId {
   return _nameToId ? _nameToId(name) : nameToIdDefault(name)
 }
 
