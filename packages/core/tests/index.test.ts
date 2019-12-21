@@ -472,6 +472,21 @@ describe('@reatom/core', () => {
     })
   })
 
+  test('DI example', () => {
+    class Api {}
+    const api = new Api()
+    const apiAtom = declareAtom(Symbol('API'), api, () => [])
+
+    var store = createStore(apiAtom)
+    expect(store.getState()).toEqual({
+      [getTree(apiAtom).id]: api,
+    })
+
+    var store = createStore({ [getTree(apiAtom).id]: api })
+    expect(store.getState(apiAtom)).toBe(api)
+    expect(JSON.stringify(store.getState())).toBe('{}')
+  })
+
   test('declareAction reactions', async () => {
     const delay = () => new Promise(on => setTimeout(on, 10))
     const setValue = declareAction<number>()
