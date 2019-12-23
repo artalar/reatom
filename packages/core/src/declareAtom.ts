@@ -2,6 +2,7 @@ import { Tree, State, TreeId, Ctx, createCtx } from './kernel'
 import {
   TREE,
   nameToId,
+  NonUndefined,
   Unit,
   throwError,
   getTree,
@@ -148,20 +149,20 @@ export function getState<T>(state: State, atom: Atom<T>): T | undefined {
 
 export function map<T, TSource = unknown>(
   source: Atom<TSource>,
-  mapper: (dependedAtomState: TSource) => T,
+  mapper: (dependedAtomState: TSource) => NonUndefined<T>,
 ): Atom<T>
 export function map<T, TSource = unknown>(
   name: string | [TreeId],
   source: Atom<TSource>,
-  mapper: (dependedAtomState: TSource) => T,
+  mapper: (dependedAtomState: TSource) => NonUndefined<T>,
 ): Atom<T>
 export function map<T, TSource = unknown>(
   name: string | [TreeId] | Atom<TSource>,
   source: ((dependedAtomState: TSource) => T) | Atom<TSource>,
-  mapper?: (dependedAtomState: TSource) => T,
+  mapper?: (dependedAtomState: TSource) => NonUndefined<T>,
 ) {
   if (!mapper) {
-    mapper = source as (dependedAtomState: TSource) => T
+    mapper = source as (dependedAtomState: TSource) => NonUndefined<T>
     source = name as Atom<TSource>
     name = getTree(source).id + ' [map]'
   }
