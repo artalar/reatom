@@ -7,7 +7,7 @@ import {
   getIsAtom,
   getIsAction,
 } from './shared'
-import { Action, PayloadActionCreator } from './declareAction'
+import { declareAction, Action, PayloadActionCreator } from './declareAction'
 import { Atom, initAction, getState } from './declareAtom'
 
 type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
@@ -43,7 +43,7 @@ export function createStore(
   let dispatchListeners: Function[] = []
   let nextDispatchListeners: Function[] = dispatchListeners
   let initialAtoms = new Set<TreeId>()
-  const state: State = {}
+  let state: State = {}
   const storeTree = new Tree('store')
   if (atom !== undefined) {
     if (typeof atom === 'object' && initState === undefined) assign(state, atom)
@@ -171,6 +171,7 @@ export function createStore(
 
     listeners = nextListeners
 
+    if (type === initAction.type) state = payload || {}
     if (changedIds.length > 0) {
       assign(state, stateNew)
       for (let i = 0; i < changedIds.length; i++) {

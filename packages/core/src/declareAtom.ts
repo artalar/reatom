@@ -14,8 +14,8 @@ import { Action, declareAction, PayloadActionCreator } from './declareAction'
 const DEPS = Symbol('@@Reatom/DEPS')
 
 // action for set initialState of each atom to global state
-const _initAction = declareAction(['@@Reatom/init'])
-export const initAction = _initAction()
+const initActionCreator = declareAction(['@@Reatom/init'])
+export const initAction = initActionCreator()
 
 type AtomName = string | [TreeId] | symbol
 type AtomsMap = { [key: string]: Atom<any> }
@@ -86,7 +86,7 @@ export function declareAtom<TState>(
       // first `walk` of lazy (dynamically added by subscription) atom
       const isAtomLazy = atomStateSnapshot === undefined
 
-      if (!isAtomLazy && type === initAction.type) return
+      if (!isAtomLazy && type === initAction.type && !payload) return
 
       const atomStatePreviousReducer = stateNew[_id]
       // it is mean atom has more than one dependencies
@@ -122,7 +122,8 @@ export function declareAtom<TState>(
     depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
   }
 
-  on(_initAction, (state = initialState as TState) => state)
+  // @ts-ignore
+  on(initActionCreator, (_, { [_id]: state = initialState } = {}) => state)
   dependencyMatcher(on)
 
   const atom = function atom(
