@@ -8,6 +8,8 @@ export const TREE = Symbol('@@Reatom/TREE')
 
 export type Unit = { [TREE]: Tree }
 
+export type NonUndefined<T> = Exclude<T, undefined>
+
 /**
  * Helper for retrieving the data type used in an atom or action
  * @example
