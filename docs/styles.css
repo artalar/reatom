@@ -4,6 +4,10 @@
   --color-link-hover: #f00;
 }
 
+body {
+  font-size: 18px;
+}
+
 .app-name img {
   max-width: 200px;
 }
