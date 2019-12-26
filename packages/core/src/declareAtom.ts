@@ -153,24 +153,24 @@ export function map<T, TSource = unknown>(
   mapper: (dependedAtomState: TSource) => T,
 ): Atom<T>
 export function map<T, TSource = unknown>(
-  name: string | [TreeId],
+  name: AtomName,
   source: Atom<TSource>,
   mapper: (dependedAtomState: TSource) => T,
 ): Atom<T>
 export function map<T, TSource = unknown>(
-  name: string | [TreeId] | Atom<TSource>,
+  name: AtomName | Atom<TSource>,
   source: ((dependedAtomState: TSource) => T) | Atom<TSource>,
   mapper?: (dependedAtomState: TSource) => T,
 ) {
   if (!mapper) {
     mapper = source as (dependedAtomState: TSource) => T
     source = name as Atom<TSource>
-    name = getTree(source).id + ' [map]'
+    name = getTree(source).id.toString() + ' [map]'
   }
   safetyFunc(mapper, 'mapper')
 
   return declareAtom<T>(
-    name as string | [TreeId],
+    name as AtomName,
     // FIXME: initialState for `map` :thinking:
     null as any,
     handle =>
@@ -183,17 +183,17 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine<T extends AtomsMap | TupleOfAtoms>(
-  name: string | [TreeId],
+  name: AtomName,
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine<T extends AtomsMap | TupleOfAtoms>(
-  name: string | [TreeId] | T,
+  name: AtomName | T,
   shape?: T,
 ) {
   let keys: (string | number)[]
   if (!shape) {
     shape = name as T
-    name = '{' + (keys = Object.keys(shape)).join() + '}'
+    name = Symbol('{' + (keys = Object.keys(shape)).join() + '}')
   }
 
   keys = keys! || Object.keys(shape)
