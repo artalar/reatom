@@ -8,8 +8,8 @@
     "build": "lerna run build",
     "test": "lerna run test",
     "size": "lerna run size",
-    "prettify": "prettier --write **/*.{j,t}s !**/babel-plugin/test/**",
-    "prettify:watch": "onchange **/*.{j,t}s !**/babel-plugin/test/** -- prettier --write {{changed}}"
+    "prettify": "prettier --write '**/*.{js,ts,md}' !**/babel-plugin/test/**",
+    "prettify:watch": "onchange '**/*.{js,ts,md}' !**/babel-plugin/test/** -- prettier --write {{changed}}"
   },
   "devDependencies": {
     "@babel/cli": "^7.5.5",

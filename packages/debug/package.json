@@ -18,8 +18,8 @@
     "test": "cross-env fixme=fixme ../../node_modules/.bin/jest",
     "test:watch": "cross-env fixme=fixme ../../node_modules/.bin/jest --watch",
     "test:debug": "node --inspect-brk ../../node_modules/.bin/jest --runInBand",
-    "prettify": "cross-env fixme=fixme ../../node_modules/.bin/prettier --write '**/*.ts'",
-    "prettify:watch": "cross-env fixme=fixme../../node_modules/.bin/onchange '**/*.{j,t}s' -- prettier --write {{changed}}",
+    "prettify": "cross-env fixme=fixme ../../node_modules/.bin/prettier --write '**/*.{js,ts,md}'",
+    "prettify:watch": "cross-env fixme=fixme ../../node_modules/.bin/onchange '**/*.{js,ts,md}' -- prettier --write {{changed}}",
     "ts-check": "cross-env fixme=fixme ../../node_modules/.bin/tsc --noEmit",
     "ts-check:watch": "npm run ts-check -- --watch",
     "update": "npx npm-check-updates -u"
