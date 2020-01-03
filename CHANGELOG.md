@@ -23,6 +23,7 @@ Core improvements and bugs fixes...
 ## 3.0.10
 
 Improve API naming
+
 > `createReducer` -> `createAtom`
 
 ## 3.0.9

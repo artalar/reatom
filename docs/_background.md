@@ -1,7 +1,8 @@
 > **This is a draft of russian talk about Reatom prerequisites and motivation. Lately, I hope, it will be translating to english.**
 
 # Что стоит стейт-менеджер построить
-<!-- 
+
+<!--
 ## Оглавление
 
 Расскажу что нужно знать при написании своего стейт-менеджера (СТМ).
@@ -50,7 +51,7 @@
   > - по умолчанию селекторы и их мемоизация никак не автоматизируются. Из-за этого некоторые могут инлайнить описание модели в совершенно случайных местах, в виде getState().my.value (это сложно рефакторить);
   > - селекторы исполняются после обновления стейта и неправильные данные (установленные в редусерах, которые обычно не имеют рантайм контрактов) могут уронить селектор, но данные остануться в сторе - с этим сложно работать (откатывать, например);
   > - "мидлвары" - спорный паттерн и является чрезмерно гибким и не всегда предсказуемым апи;
-  > часть проблем решается, но решения не стандартизированы, что может влечь еще перечень проблем.
+  >   часть проблем решается, но решения не стандартизированы, что может влечь еще перечень проблем.
 - https://github.com/bowheart/zedux
 - https://github.com/zmitry/okdux
 - https://github.com/oguzgelal/reclare
@@ -100,13 +101,13 @@
   - Фундаментальная предсказуемость
   - Не большие накладные расходы
   - Средство отслеживания изменений
-  > ["Data Driven UIs, Incrementally" by Yaron Minsky](https://www.youtube.com/watch?v=R3xX37RGJKE)
-  >
-  > [Seven Implementations of Incremental](https://www.youtube.com/watch?v=G6a5G5i4gQU)
-  <!-- пример с http://alt.js.org/ -->
+    > ["Data Driven UIs, Incrementally" by Yaron Minsky](https://www.youtube.com/watch?v=R3xX37RGJKE)
+    >
+    > [Seven Implementations of Incremental](https://www.youtube.com/watch?v=G6a5G5i4gQU)
+    <!-- пример с http://alt.js.org/ -->
 - Proxy
-- [Cursor](https://en.wikipedia.org/wiki/Cursor_(databases))
-<!-- pathon -->
+- [Cursor](<https://en.wikipedia.org/wiki/Cursor_(databases)>)
+  <!-- pathon -->
 - [lens](https://github.com/calmm-js/partial.lenses)
 - [optic](https://github.com/calmm-js/partial.lenses#optics)
 - [Zipper](https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf)
@@ -193,6 +194,7 @@ Flux
 ### Документация, инфраструктура, маркетинг
 
 <!-- TODO: -->
+
 ...
 
 > [Спасибо всем контрибьюетрам](https://github.com/artalar/reatom/graphs/contributors)
@@ -207,7 +209,7 @@ Flux
 - [The introduction to Reactive Programming you've been missing](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754)
 
 <!-- - стейт редакса - это дерево? (нет, селекторы делают DAG) -->
-<!-- 
+<!--
 - проблема: консистентность очередности подписок и их нотификации
 - проблема: react zombie children
 - проблема: отписка во время диспатча

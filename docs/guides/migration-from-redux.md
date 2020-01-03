@@ -302,6 +302,7 @@ store.dispatch(incrementAsync())
 ```
 
 ### for `redux-saga` users
+
 Changing logic from sagas to effects could be painful. Redux-saga allows us to work with any external state management library through `runSaga`. Redux-saga uses [pattern](redux-saga.js.org/docs/api/#takepattern) to determine which action is needed
 
 **Redux**
@@ -309,29 +310,31 @@ Changing logic from sagas to effects could be painful. Redux-saga allows us to w
 ```js
 import { combineReducers, applyMiddleware, createStore } from 'redux'
 import createSagaMiddleware from 'redux-saga'
-import { take, select } from 'redux-saga/effects';
+import { take, select } from 'redux-saga/effects'
 
 /**
  * main code
  */
-const INCREMENT = 'INCREMENT';
-const LOG_COUNTER = 'LOG_COUNTER';
+const INCREMENT = 'INCREMENT'
+const LOG_COUNTER = 'LOG_COUNTER'
 
 const counterReducer = (state = 0, action) => {
-  switch(action.type) {
-    case INCREMENT: return state + 1;
-    default: return state;
+  switch (action.type) {
+    case INCREMENT:
+      return state + 1
+    default:
+      return state
   }
 }
 const counterSelector = state => state.counter
 
 function* logCounterSaga() {
   while (true) {
-    yield take(LOG_COUNTER);
+    yield take(LOG_COUNTER)
 
-    const counter = yield select(counterSelector);
+    const counter = yield select(counterSelector)
 
-    console.log("counter: ", counter);
+    console.log('counter: ', counter)
   }
 }
 
@@ -343,16 +346,16 @@ const store = createStore(
   combineReducers({ counter: counterReducer }),
   applyMiddleware(sagaMiddleware),
 )
-sagaMiddleware.run(logCounterSaga);
+sagaMiddleware.run(logCounterSaga)
 
 /**
  * dispatch
  */
-store.dispatch({ type: LOG_COUNTER }); // 0
+store.dispatch({ type: LOG_COUNTER }) // 0
 
-store.dispatch({ type: INCREMENT });
+store.dispatch({ type: INCREMENT })
 
-store.dispatch({ type: LOG_COUNTER }); // 1
+store.dispatch({ type: LOG_COUNTER }) // 1
 ```
 
 **Reatom**
@@ -360,55 +363,54 @@ store.dispatch({ type: LOG_COUNTER }); // 1
 [Open in CodeSandbox](https://codesandbox.io/s/reatom-redux-saga-5pq0e)
 
 ```js
-import { declareAction, declareAtom, createStore } from "@reatom/core";
-import { runSaga, stdChannel } from "redux-saga";
-import { take, select } from "redux-saga/effects";
+import { declareAction, declareAtom, createStore } from '@reatom/core'
+import { runSaga, stdChannel } from 'redux-saga'
+import { take, select } from 'redux-saga/effects'
 
 /**
  * helper effect
  */
-const selectAtom = atom => select(getState => getState(atom));
+const selectAtom = atom => select(getState => getState(atom))
 
 /**
  * main code
  */
-const increment = declareAction();
-const logCounter = declareAction();
+const increment = declareAction()
+const logCounter = declareAction()
 
-const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)]);
+const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
 
 function* logCounterSaga() {
   while (true) {
-    yield take(logCounter.getType());
+    yield take(logCounter.getType())
 
-    const counter = yield selectAtom(counterAtom);
+    const counter = yield selectAtom(counterAtom)
 
-    console.log("counter: ", counter);
+    console.log('counter: ', counter)
   }
 }
 
 /**
  * initialization code
  */
-const store = createStore(counterAtom);
+const store = createStore(counterAtom)
 const options = {
   dispatch: store.dispatch,
   getState: () => store.getState,
-  channel: stdChannel()
-};
-store.subscribe(options.channel.put);
+  channel: stdChannel(),
+}
+store.subscribe(options.channel.put)
 
-runSaga(options, logCounterSaga);
+runSaga(options, logCounterSaga)
 
 /**
  * dispatch
  */
-store.dispatch(logCounter()); // 0
+store.dispatch(logCounter()) // 0
 
-store.dispatch(increment());
+store.dispatch(increment())
 
-store.dispatch(logCounter()); // 1
-
+store.dispatch(logCounter()) // 1
 ```
 
 ## Async reducers

@@ -7,7 +7,7 @@
 
 # @reatom/core
 
-Core package of [Reatom](https://github.com/artalar/reatom) state manager. 
+Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
 ![npm type definitions](https://img.shields.io/npm/types/@reatom/core?style=flat-square)
@@ -23,7 +23,9 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 ```sh
 npm i @reatom/core
 ```
+
 or
+
 ```sh
 yarn add @reatom/core
 ```
@@ -38,7 +40,7 @@ import {
   declareAtom,
   map,
   combine,
-  createStore
+  createStore,
 } from '@reatom/core'
 
 /**
@@ -51,13 +53,11 @@ const increment = declareAction()
  * Step 2.
  * Declare atoms (like reducers or models)
  */
-const counterAtom = declareAtom(0, on => [
-  on(increment, state => state + 1)
-])
+const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
 const counterDoubledAtom = map(counterAtom, value => value * 2)
-const countersShapeAtom = combine({ 
-  counter: counterAtom, 
-  counterDoubled: counterDoubledAtom
+const countersShapeAtom = combine({
+  counter: counterAtom,
+  counterDoubled: counterDoubledAtom,
 })
 
 /**

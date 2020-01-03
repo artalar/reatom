@@ -3,6 +3,7 @@
 Server rendering is a very useful way to speed up the transfer of content to the user. This makes mobile users happier and more loyal to your resource.
 
 This process consists of 4 stages:
+
 1. Request from browser
 2. Building state and render page
 3. Send page and state to the browser
@@ -15,6 +16,7 @@ If the States are different, there may be problems with the information displaye
 ## Static atom names
 
 You're probably already familiar with declaring dynamic atom names to ensure uniqueness.
+
 ```js
 declareAtom('greeting', '', () => [])
 // name: greeting #1
@@ -42,12 +44,13 @@ declareAtom(['greeting'], '', () => [])
 ## Example
 
 **Server**
+
 ```js
 import { declareAction, declareAtom, createStore } from '@reatom/core'
 
 const setText = declareAction()
 const greetingAtom = declareAtom(['greeting'], '', on => [
-  on(setText, (state, payload) => payload)
+  on(setText, (state, payload) => payload),
 ])
 
 const store = createStore(greetingAtom)
@@ -57,21 +60,21 @@ store.dispatch(setText('Hello Reatom!'))
 
 ```js
 // Serialize your store in html
-`window._INITIAL_DATA = ${JSON.stringify(store.getState())}`
-
+;`window._INITIAL_DATA = ${JSON.stringify(store.getState())}`
 // Result
-`window._INITIAL_DATA = {"greeting": "Hello Reatom!"}`
+;`window._INITIAL_DATA = {"greeting": "Hello Reatom!"}`
 ```
 
 > **NOTE.** NodeJS is single-threaded. Since all requests are handled by one instance of the application, you need to create your own store for each request.
 
 **Browser**
+
 ```js
 import { declareAction, declareAtom, createStore } from '@reatom/core'
 
 const setText = declareAction()
 const greetingAtom = declareAtom(['greeting'], '', on => [
-  on(setText, (state, payload) => payload)
+  on(setText, (state, payload) => payload),
 ])
 
 const store = createStore(greetingAtom, window._INITIAL_DATA)

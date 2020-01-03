@@ -1,5 +1,5 @@
 import { Store, Atom, Action } from '@reatom/core'
-import Symbol_observable from 'symbol-observable';
+import Symbol_observable from 'symbol-observable'
 
 export type ActionOrValue<T> = T extends undefined ? Action<any, string> : T
 

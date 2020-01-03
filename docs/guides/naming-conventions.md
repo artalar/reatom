@@ -13,11 +13,11 @@ Through actions, we tell the model about our intentions. For this reason, you sh
 ## Atoms
 
 For clarity in the documentation we adhere to the following naming style:
+
 - atom name in `camelCase`
 - adding postfix `Atom`
 
 **Examples:** `counterAtom`, `usersListAtom`
-
 
 ### Alternative atoms naming
 

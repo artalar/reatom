@@ -11,7 +11,7 @@
 <br/>
 </div>
 
-Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. 
+Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
 
 ## Goals and features
 
@@ -37,7 +37,6 @@ Reatom is a blend of the one-way data flow (by [flux](https://github.com/faceboo
 
 > Inspired by [redux](https://github.com/reduxjs/redux), [kefir](https://github.com/kefirjs/kefir), [effector](https://github.com/zerobias/effector)
 
-
 Data flow diagram:
 
 <div align="center">
@@ -51,12 +50,15 @@ Data flow diagram:
 ```sh
 npm i @reatom/core
 ```
+
 or
+
 ```sh
 yarn add @reatom/core
 ```
 
 ## Usage
+
 [Open in CodeSandbox](https://codesandbox.io/s/reatom-intro-jlepp)
 
 ```js
@@ -96,13 +98,14 @@ store.dispatch(add(2))
 ```
 
 ## Packages
-| Package | Version | Size
---------|---------|----
-| [`@reatom/core`](https://reatom.js.org/#/packages/core) | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)
-| [`@reatom/react`](https://reatom.js.org/#/packages/react) | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
-| [`@reatom/observable`](https://reatom.js.org/#/packages/observable) | [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
-| [`@reatom/babel-plugin`](https://reatom.js.org/#/packages/babel-plugin) | [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) | -
-| [`@reatom/debug`](https://reatom.js.org/#/packages/debug) | [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug) | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
+
+| Package                                                                 | Version                                                                                                                           | Size                                                                                                                                                        |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`@reatom/core`](https://reatom.js.org/#/packages/core)                 | [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)                 | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)             |
+| [`@reatom/react`](https://reatom.js.org/#/packages/react)               | [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)               | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)           |
+| [`@reatom/observable`](https://reatom.js.org/#/packages/observable)     | [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable)     | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable) |
+| [`@reatom/babel-plugin`](https://reatom.js.org/#/packages/babel-plugin) | [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin) | -                                                                                                                                                           |
+| [`@reatom/debug`](https://reatom.js.org/#/packages/debug)               | [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug)               | [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)           |
 
 ## Motivation
 
@@ -111,9 +114,9 @@ Why another state manager? The reason is dissatisfaction with existing solutions
 <details>
 <summary>Show problems in popular solutions</summary>
 
-> **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom. 
+> **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom.
 
-<!-- 
+<!--
 
 ### State management Zen
 
@@ -127,6 +130,7 @@ Guiding principles of state manager:
 -->
 
 ### Redux
+
 [link to repository](https://github.com/reduxjs/redux)
 
 - Selectors are not inspectable (lacking in devtools).
@@ -142,6 +146,7 @@ Guiding principles of state manager:
   > Some problems can be solved by various fabric functions and third party libriaries. This makes it diffcuilt to reuse solutions across multiple projects.
 
 ### Effector
+
 [link to repository](https://github.com/zerobias/effector)
 
 - Effector is about atomic **stores** — it uses stateful approach that has certain problems:
@@ -150,6 +155,7 @@ Guiding principles of state manager:
   - difficult [store] instance reusability (concurrency problems with SSR)
     > It can be solved, but it is better to solve it by design of a library architecture and API
 - Asynchronous and probably cyclic dependencies specification
+
   <details>
   <summary>show example</summary>
 
@@ -170,12 +176,14 @@ Guiding principles of state manager:
   otherEvent(2000)
   // console.log: 2000
   ```
+
   </details>
 
 - The [size](https://bundlephobia.com/result?p=effector)
 - [Throw in reducer does not cancel the computations in other reducers](https://github.com/zerobias/effector/issues/90)
 
 ### MobX
+
 [link to repository](https://github.com/mobxjs/mobx)
 
 - Large bundle size, unstandardized syntax (decorators), ES5 limitations.
@@ -188,13 +196,16 @@ Guiding principles of state manager:
 </details>
 
 ## Community
+
 Follow us on Twitter [@reatomjs](https://twitter.com/reatomjs)
 
 Telegram
+
 - [@reatom_en](https://t.me/reatom_en) — english
 - [@reatom_ru](https://t.me/reatom_ru) — russian
 
 ## Mass media
+
 - [Reatom vs Redux. Part 1](https://soundcloud.com/5minreact/061-reatom-vs-redux) (5minreact, russian podcast)
 - [Reatom vs MobX. Part 2](https://soundcloud.com/5minreact/062-reatom-vs-mobx) (5minreact, russian podcast)
 - [Reatom. Rethink of Redux](https://www.youtube.com/watch?v=b14YQNswsTk) (RND JS, russian meetup)
@@ -236,6 +247,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 <!-- markdownlint-enable -->
 <!-- prettier-ignore-end -->
+
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

@@ -1,4 +1,3 @@
-
 Кстати, я вчера вечером понял главную проблему перф теста.
 Плохая новость: на текущем ядре это невозможно обойти.
 Хорошая новость: эту же проблему невозможно обойти на редаксе и (без дичайших костылей) на эффекторе.
@@ -28,9 +27,8 @@ declareAtom([], (r, lense) => [
 
 ```js
 get: (list, key) => list[key]
-set: (list, key, value) => (list = list.slice(), list[key] = value, list)
+set: (list, key, value) => ((list = list.slice()), (list[key] = value), list)
 ```
 
 ```js
-
 ```

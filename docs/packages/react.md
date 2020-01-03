@@ -10,7 +10,9 @@ React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 ```
 npm i @reatom/react
 ```
+
 or
+
 ```sh
 yarn add @reatom/react
 ```
@@ -56,10 +58,14 @@ const handleDoSome = useAction(doSome)
 #### Prepare payload for dispatch
 
 ```ts
-const handleDoSome = useAction(value => doSome({
-  id: props.id,
-  value
-}), [props.id])
+const handleDoSome = useAction(
+  value =>
+    doSome({
+      id: props.id,
+      value,
+    }),
+  [props.id],
+)
 ```
 
 #### Conditional dispatch
@@ -68,7 +74,7 @@ Dispatch is not called if action creator doesn't return an action.
 
 ```ts
 const handleDoSome = useAction(payload => {
-    if (condition) return doSome(payload)
+  if (condition) return doSome(payload)
 }, [])
 ```
 
@@ -79,24 +85,24 @@ const handleDoSome = useAction(payload => {
 ```jsx
 // App
 
-import React from 'react';
+import React from 'react'
 import { createStore } from '@reatom/core'
 import { context } from '@reatom/react'
 import { Form } from './components/Form'
 
-import './App.css';
+import './App.css'
 
 export const App = () => {
   // create stateful context for atoms execution
-  const store = createStore();
+  const store = createStore()
 
   return (
-    <div className='App'>
+    <div className="App">
       <context.Provider value={store}>
         <Form />
       </context.Provider>
     </div>
-  );
+  )
 }
 ```
 
@@ -110,7 +116,7 @@ import { useAction, useAtom } from '@reatom/react'
 
 const changeName = declareAction()
 const nameAtom = declareAtom('', on => [
-  on(changeName, (state, payload) => payload)
+  on(changeName, (state, payload) => payload),
 ])
 
 export const Form = () => {
@@ -120,11 +126,12 @@ export const Form = () => {
   return (
     <form>
       <label htmlFor="name">Enter your name</label>
-      <input id="name" value={name} onChange={handleChangeName}/>
+      <input id="name" value={name} onChange={handleChangeName} />
     </form>
   )
 }
 ```
+
 ---
 
 [Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/react)
