@@ -27,26 +27,25 @@ test('simple counter', () => {
 ## Derived (computed) atoms
 
 ```js
-test("derived (computed) atoms", () => {
-  const increment = declareAction();
-  const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)]);
-  const counterDoubledAtom = map(counterAtom, value => value * 2);
-  const countersShapeAtom = combine([counterAtom, counterDoubledAtom]);
+test('derived (computed) atoms', () => {
+  const increment = declareAction()
+  const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
+  const counterDoubledAtom = map(counterAtom, value => value * 2)
+  const countersShapeAtom = combine([counterAtom, counterDoubledAtom])
 
-  const store = createStore(countersShapeAtom);
+  const store = createStore(countersShapeAtom)
 
-  store.dispatch(increment());
-  expect(store.getState(counterAtom)).toBe(1);
-  expect(store.getState(counterDoubledAtom)).toBe(2);
-  expect(store.getState(countersShapeAtom)).toEqual([1, 2]);
-});
-
+  store.dispatch(increment())
+  expect(store.getState(counterAtom)).toBe(1)
+  expect(store.getState(counterDoubledAtom)).toBe(2)
+  expect(store.getState(countersShapeAtom)).toEqual([1, 2])
+})
 ```
 
 ## Side effects
 
 ```js
-test("side effects", async () => {
+test('side effects', async () => {
   const setValue = declareAction()
   let lastCallId = 0
   const setValueConcurrent = declareAction(async (payload, store) => {
@@ -78,8 +77,7 @@ test("side effects", async () => {
   await delay()
   expect(valueSubscriber).toBeCalledTimes(3)
   expect(valueSubscriber).toBeCalledWith(50)
-});
-
+})
 ```
 
 ## Todo-list

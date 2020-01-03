@@ -12,7 +12,7 @@ store.dispatch(increment())
 const stateNew = myAtom(stateOld, increment())
 ```
 
-> **NOTE**. See FAQ on [why declare*](/faq?id=why-declare)
+> **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)
 
 ### Action payload
 
@@ -51,8 +51,10 @@ console.log(workflowIntention())
 const fetchUserDone = declareAction()
 const fetchUser = declareAction(
   name, // or type - optional
-  (payload, store) => fetch('/user', payload)
-    .then(response => store.dispatch(fetchUserDone(response)))
+  (payload, store) =>
+    fetch('/user', payload).then(response =>
+      store.dispatch(fetchUserDone(response)),
+    ),
 )
 
 // will call `fetch('/user', payload)`
@@ -73,23 +75,24 @@ Atom reducers may depend on declared action or other atoms and must be pure func
 import { declareAtom } from '@reatom/core'
 
 const countAtom = declareAtom(
-  'count',     // name (optional!)
-  0,           // initial state
-  on => [      // reducers definitions
-  //on(dependedDeclaredActionOrAtom, reducer)
-  //reducer: (oldState, dependedValues) => newState
+  'count', // name (optional!)
+  0, // initial state
+  on => [
+    // reducers definitions
+    //on(dependedDeclaredActionOrAtom, reducer)
+    //reducer: (oldState, dependedValues) => newState
     on(increment, state => state + 1),
-    on(add, (state, payload) => state + payload)
-  ]
+    on(add, (state, payload) => state + payload),
+  ],
 )
-const countDoubledAtom = declareAtom(
-  0,
-  on => [on(countAtom, (state, count) => count * 2)]
-)
+const countDoubledAtom = declareAtom(0, on => [
+  on(countAtom, (state, count) => count * 2),
+])
 // shortcut:
 // const countDoubledAtom = map(count, count => count * 2)
 ```
-> **NOTE**. See FAQ on [why declare*](/faq?id=why-declare)
+
+> **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)
 
 ## Store
 

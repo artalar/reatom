@@ -2,7 +2,7 @@
 
 Package of Reatom for creating observers of atoms or stores
 
-[![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable) 
+[![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
 
 ## Install
@@ -10,7 +10,9 @@ Package of Reatom for creating observers of atoms or stores
 ```sh
 npm i @reatom/observable
 ```
+
 or
+
 ```sh
 yarn add @reatom/observable
 ```
@@ -23,9 +25,7 @@ yarn add @reatom/observable
 import { declareAtom, declareAction, createStore } from '@reatom/core'
 
 const action = declareAction()
-const atom = declareAtom(0, on => [
-  on(action, (state, payload) => payload)
-])
+const atom = declareAtom(0, on => [on(action, (state, payload) => payload)])
 
 const store = createStore(atom)
 ```
@@ -42,15 +42,17 @@ subscription.unsubscribe() // unsubscribes
 ```
 
 Alternative subscsribe
+
 ```js
 const subscription = observableStore.subscribe({
   next(action) {
     console.log(action)
-  }
+  },
 })
 ```
 
 ### Atom observer
+
 ```js
 import { observe } from '@reatom/observable'
 
@@ -61,11 +63,12 @@ subscription.unsubscribe() // unsubscribes
 ```
 
 Alternative subscsribe
+
 ```js
 const subscription = observableAtom.subscribe({
   next(state) {
     console.log(state)
-  }
+  },
 })
 ```
 

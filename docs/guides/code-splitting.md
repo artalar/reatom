@@ -9,6 +9,7 @@ We also adhere to this idea and tried to make Reatom with the expectation of thi
 ![Example project](./code-splitting.assets/struct1.svg)
 
 Consider a simplified structure of an application. Our application consists of several parts:
+
 - `Auth`
 - `Messages`
 - `Profile`
@@ -29,6 +30,7 @@ const rootAtom = combine([userRoleAtom, userNameAtom])
 
 const store = createStore(rootAtom)
 ```
+
 > **NOTE.** Atoms declared when you create a store will always be available without the ability to cancel their response to actions with the model.
 
 > **NOTE.** Root atom is optional. We can create store without it. `const store = createStore()`
@@ -40,6 +42,7 @@ Great! Now you have learned about the purpose of root atoms. But that is why you
 Lazy connect atoms is a very flexible approach to building the architecture of your application. Thanks to this solution, you do not need to think about how to create a store depending on a particular page. This allows you to connect parts of your application asynchronously depending on different conditions.
 
 ### Step 1. Connect atoms to the store
+
 ```js
 import { messagesListAtom } from './features/messages/model'
 import { discountAtom } from './features/profile/model'
@@ -63,6 +66,7 @@ For clearing you enough trigger unsubscribe from atoms, the rest work for you wi
 unsubscribe1()
 unsubscribe2()
 ```
+
 > **NOTE.** Clearing atom data from the store occurs only when there are no more subscribers to the atom.
 
 ## Usage in React

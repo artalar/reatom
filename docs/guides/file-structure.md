@@ -3,6 +3,7 @@
 Reatom does not dictate the organization of the file system. In this guide we are just trying to help those who can not decide how and where to store the code.
 
 From this guide you will learn:
+
 - where to store atoms
 - where to store actions
 - where to store types (if you using it)
