@@ -1,5 +1,3 @@
-> **These are the examples from [tests](https://github.com/artalar/reatom/blob/master/examples/counter.test.ts)**
-
 ## Simple counter
 
 ```js
