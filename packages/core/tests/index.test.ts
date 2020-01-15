@@ -507,7 +507,7 @@ describe('@reatom/core', () => {
     })
   })
 
-  test('DI example', () => {
+  test('IoC example', () => {
     class Api {}
     const api = new Api()
     const apiAtom = declareAtom(Symbol('API'), api, () => [])
