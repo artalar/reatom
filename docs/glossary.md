@@ -101,10 +101,36 @@ Communicating state**ful** context between actions and atoms.
 ```js
 import { createStore } from '@reatom/core'
 
+/* CREATION */
+
 const store = createStore(
   atom, // optional
   preloadedState, // optional
 )
+
+/* DISPATCHING */
+
+store.dispatch(action)
+store.dispatch(actionCreator())
+store.dispatch(actionCreator(payload))
+
+/* SUBSCRIBING */
+
+store.subscribe(atom, (atomValue) => 'side effect')
+store.subscribe(actionCreator, (actionPayload) => 'side effect')
+store.subscribe((dispatchedAction, stateDiff) => 'side effect')
+
+/* STATE */
+
+store.getState() // clone state snapshot
+store.getState(atom) // atom state
+
+/* BINDING */
+
+const actionCreatorBinded = store.bind(actionCreator)
+
+actionCreator(0) // `{ type: '...', payload: 0 }`
+actionCreatorBinded(0) // dispatching, void
 ```
 
 ---

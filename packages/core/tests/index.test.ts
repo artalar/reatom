@@ -549,6 +549,17 @@ describe('@reatom/core', () => {
     expect(listener).toHaveBeenLastCalledWith(2)
   })
 
+  test('createStore().bind', () => {
+    const a = declareAction<0>()
+    const store = createStore()
+    const track = jest.fn()
+
+    store.subscribe(a, track)
+    store.bind(a)(0)
+
+    expect(track).toBeCalledWith(0)
+  })
+
   test('declareAction reactions', async () => {
     const delay = () => new Promise(on => setTimeout(on, 10))
     const setValue = declareAction<number>()

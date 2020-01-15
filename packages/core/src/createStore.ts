@@ -1,4 +1,4 @@
-import { Tree, State, TreeId, createCtx } from './kernel'
+import { Tree, State, TreeId, createCtx, BaseAction } from './kernel'
 import {
   throwError,
   getTree,
@@ -7,7 +7,7 @@ import {
   getIsAtom,
   getIsAction,
 } from './shared'
-import { declareAction, Action, PayloadActionCreator } from './declareAction'
+import { Action, PayloadActionCreator } from './declareAction'
 import { Atom, initAction, getState } from './declareAtom'
 
 type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
@@ -27,6 +27,9 @@ export type Store = {
   dispatch: (action: Action<unknown>) => void
   subscribe: SubscribeFunction
   getState: GetStateFunction
+  bind: <A extends (...a: any[]) => BaseAction>(
+    a: A,
+  ) => (...a: A extends (...a: infer Args) => any ? Args : never) => void
 }
 
 export function createStore(initState?: State): Store
@@ -187,10 +190,14 @@ export function createStore(
     callFromList((dispatchListeners = nextDispatchListeners), action, stateNew)
   }
 
+  const bind: Store['bind'] = actionCreator => (...a) =>
+    store.dispatch(actionCreator(...a))
+
   const store = {
     getState: _getState,
     subscribe,
     dispatch,
+    bind,
   }
 
   return store
