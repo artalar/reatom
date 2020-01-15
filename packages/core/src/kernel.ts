@@ -1,5 +1,5 @@
 export type Leaf = string // unique
-export type TreeId = string // unique
+export type TreeId = string | symbol // unique
 export type State = Record<TreeId, unknown>
 // reatom specific
 export type Fn = {
@@ -63,7 +63,7 @@ export class Tree {
       set.forEach(fn => fns.add(fn))
     })
   }
-  disunion(tree: Tree, cb: (key: Leaf) => any) {
+  disunion(tree: Tree, cb: (key: TreeId) => any) {
     tree.fnsMap.forEach((set, key) => {
       const fns = this._getFns(key)
       set.forEach(fn => fns.delete(fn) && cb(fn._ownerAtomId))

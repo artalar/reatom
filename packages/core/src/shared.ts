@@ -30,6 +30,10 @@ export function getTree(thing: Unit): Tree {
   return thing && thing[TREE]
 }
 
+export function getName(treeId: TreeId): string {
+  return typeof treeId === 'symbol' ? treeId.description : treeId
+}
+
 export function getIsAtom(thing: any): thing is Atom<any> {
   const vertex = getTree(thing)
   return Boolean(vertex && !vertex.isLeaf)

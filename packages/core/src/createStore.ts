@@ -151,10 +151,10 @@ export function createStore(
 
       if (isLazy && _listeners.length === 0) {
         nextListeners.delete(targetId)
-        delete state[targetId]
+        delete state[targetId as string]
         storeTree.disunion(targetTree, id => {
           nextListeners.delete(id)
-          delete state[id]
+          delete state[id as string]
         })
       }
     }
@@ -181,7 +181,7 @@ export function createStore(
       assign(state, stateNew)
       for (let i = 0; i < changedIds.length; i++) {
         const id = changedIds[i]
-        callFromList(listeners.get(id) || [], stateNew[id])
+        callFromList(listeners.get(id) || [], stateNew[id as string])
       }
     }
 
