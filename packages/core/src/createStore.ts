@@ -148,9 +148,11 @@ export function createStore(
 
       if (isLazy && _listeners.length === 0) {
         nextListeners.delete(targetId)
-        storeTree.disunion(targetTree)
-        // FIXME: dependencies are not clearing
         delete state[targetId]
+        storeTree.disunion(targetTree, id => {
+          nextListeners.delete(id)
+          delete state[id]
+        })
       }
     }
   }

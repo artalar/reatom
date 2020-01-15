@@ -82,7 +82,13 @@ export function declareAtom<TState>(
 
     _tree.union(depTree)
 
-    function update({ state, stateNew, payload, changedIds, type }: Ctx) {
+    const update = function update({
+      state,
+      stateNew,
+      payload,
+      changedIds,
+      type,
+    }: Ctx) {
       const atomStateSnapshot = state[_id]
       // first `walk` of lazy (dynamically added by subscription) atom
       const isAtomLazy = atomStateSnapshot === undefined
@@ -116,6 +122,7 @@ export function declareAtom<TState>(
         stateNew[_id] = atomStateNew
       }
     }
+    update._ownerAtomId = _id
 
     if (isDepActionCreator) return _tree.addFn(update, depId)
     if (_deps.has(depId)) throwError('One of dependencies has the equal id')

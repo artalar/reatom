@@ -11,7 +11,7 @@ import {
 } from '../src/index'
 import { initAction } from '../src/declareAtom'
 
-function noop() { }
+function noop() {}
 
 describe('@reatom/core', () => {
   describe('main api', () => {
@@ -54,11 +54,12 @@ describe('@reatom/core', () => {
         reactions: [],
       })
     })
+
     describe('declareAtom', () => {
       test('basics', () => {
         const name = '_atomName_'
         const initialState = {}
-        const atom = declareAtom(name, initialState, () => { })
+        const atom = declareAtom(name, initialState, () => {})
         const state = atom({}, initAction)
 
         expect(getState(state, atom)).toBe(initialState)
@@ -68,10 +69,11 @@ describe('@reatom/core', () => {
             return keys.length === 1 && keys[0].includes(name)
           })(),
         ).toBe(true)
-        expect(declareAtom([name], initialState, () => { })()).toEqual({
+        expect(declareAtom([name], initialState, () => {})()).toEqual({
           [name]: initialState,
         })
       })
+
       test('strict uid', () => {
         const addUnderscore = declareAction()
         const atom1 = declareAtom(['name1'], '1', on => [
@@ -96,6 +98,7 @@ describe('@reatom/core', () => {
           [getTree(atomRoot).id]: ['_1', '_2'],
         })
       })
+
       test('throw error if declareAtom called with undefined initial state', () => {
         const run = () => declareAtom(['test'], undefined, on => [])
 
@@ -103,6 +106,7 @@ describe('@reatom/core', () => {
           `[reatom] Atom "test". Initial state can't be undefined`,
         )
       })
+
       test('throw error if atom produced undefined value', () => {
         const action = declareAction()
 
@@ -124,6 +128,7 @@ describe('@reatom/core', () => {
           '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
         )
       })
+
       test('reducers collisions', () => {
         const increment = declareAction()
 
@@ -144,6 +149,7 @@ describe('@reatom/core', () => {
         expect(sideEffect).toBeCalledWith(3)
       })
     })
+
     test('createStore', () => {
       const increment = declareAction('increment')
       const toggle = declareAction()
@@ -179,7 +185,7 @@ describe('@reatom/core', () => {
 
       expect(
         store.getState(root) !==
-        (store.dispatch(increment()), store.getState(root)),
+          (store.dispatch(increment()), store.getState(root)),
       ).toBe(true)
       expect(store.getState(root)).toEqual({
         count: 1,
@@ -234,12 +240,13 @@ describe('@reatom/core', () => {
 
       expect(
         store.getState(root) ===
-        (store.dispatch({ type: 'random', payload: null }),
+          (store.dispatch({ type: 'random', payload: null }),
           store.getState(root)),
       ).toBe(true)
       expect(storeSubscriber.mock.calls.length).toBe(3)
       expect(subscriberToggled.mock.calls.length).toBe(1)
     })
+
     test('createStore lazy selectors', () => {
       const storeSubscriber = jest.fn()
       const subscriberCount1 = jest.fn()
@@ -309,6 +316,7 @@ describe('@reatom/core', () => {
       expect(count2Subscriber2.mock.calls.length).toBe(3)
       expect(count2SetMap.mock.calls.length).toBe(2)
     })
+
     test('createStore lazy computed', () => {
       const storeSubscriber = jest.fn()
       const increment1 = declareAction()
@@ -331,11 +339,12 @@ describe('@reatom/core', () => {
       expect(store.getState(count2)).toBe(0)
       expect(store.getState(count2Doubled)).toBe(0)
 
-      store.subscribe(count2Doubled, () => { })
+      store.subscribe(count2Doubled, () => {})
       store.dispatch(increment2())
       expect(store.getState(count2)).toBe(1)
       expect(store.getState(count2Doubled)).toBe(2)
     })
+
     test('createStore lazy resubscribes', () => {
       const storeSubscriber = jest.fn()
       const increment = declareAction()
@@ -354,7 +363,7 @@ describe('@reatom/core', () => {
       expect(store.getState(count)).toBe(1)
       expect(store.getState().countDoubled).toBe(undefined)
 
-      let unsubscriber = store.subscribe(countDoubled, () => { })
+      let unsubscriber = store.subscribe(countDoubled, () => {})
       store.dispatch(increment())
       expect(store.getState(count)).toBe(2)
       expect(store.getState().countDoubled).toBe(4)
@@ -364,11 +373,33 @@ describe('@reatom/core', () => {
       expect(store.getState(count)).toBe(3)
       expect(store.getState().countDoubled).toBe(undefined)
 
-      unsubscriber = store.subscribe(countDoubled, () => { })
+      unsubscriber = store.subscribe(countDoubled, () => {})
       store.dispatch(increment())
       expect(store.getState(count)).toBe(4)
       expect(store.getState().countDoubled).toBe(8)
     })
+
+    test('createStore lazy derived resubscribes', () => {
+      const increment = declareAction()
+
+      const count = declareAtom(['count'], 0, on =>
+        on(increment, state => state + 1),
+      )
+      const root = combine(['root'], { count })
+
+      const store = createStore()
+
+      const unsubscribe = store.subscribe(root, () => {})
+
+      store.dispatch(increment())
+
+      expect(store.getState().count).toBe(1)
+
+      unsubscribe()
+
+      expect(store.getState().count).toBe(undefined)
+    })
+
     test('createStore with undefined atom', () => {
       const increment = declareAction()
       const countStatic = declareAtom(['countStatic'], 0, on =>
@@ -380,15 +411,17 @@ describe('@reatom/core', () => {
 
       expect(store.getState(countStatic)).toBe(10)
 
-      store.subscribe(countStatic, () => { })
+      store.subscribe(countStatic, () => {})
       store.dispatch(increment())
 
       expect(store.getState(countStatic)).toBe(11)
     })
+
     test('createStore with undefined atom and state', () => {
       const store = createStore()
       expect(store.getState()).toEqual({})
     })
+
     test('createStore preloaded state', () => {
       const increment = declareAction()
 
@@ -422,6 +455,7 @@ describe('@reatom/core', () => {
       expect(storeWithPreloadedState.getState(staticCount)).toBe(1)
       expect(storeWithPreloadedState.getState(dynamicCount)).toBe(2)
     })
+
     test('createStore reactions state diff', () => {
       const increment1 = declareAction()
       const increment2 = declareAction()
@@ -452,6 +486,7 @@ describe('@reatom/core', () => {
         [getTree(count2Atom).id]: 1,
       })
     })
+
     test('createStore subscribe to action', () => {
       const action = declareAction<null>()
       const trackAction = jest.fn()
@@ -473,7 +508,7 @@ describe('@reatom/core', () => {
   })
 
   test('DI example', () => {
-    class Api { }
+    class Api {}
     const api = new Api()
     const apiAtom = declareAtom(Symbol('API'), api, () => [])
 
@@ -486,11 +521,10 @@ describe('@reatom/core', () => {
     expect(store.getState(apiAtom)).toBe(api)
     expect(JSON.stringify(store.getState())).toBe('{}')
   })
+
   test('createStore replace state', () => {
     const increment = declareAction()
-    const countAtom = declareAtom(0, on => [
-      on(increment, (state) => state + 1)
-    ])
+    const countAtom = declareAtom(0, on => [on(increment, state => state + 1)])
     const listener = jest.fn()
     const store = createStore(countAtom)
 
