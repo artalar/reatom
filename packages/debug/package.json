@@ -1,7 +1,7 @@
 {
   "name": "@reatom/debug",
   "private": false,
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.2",
   "description": "Debug tools for reatom",
   "source": "src/index.ts",
   "main": "build/index.js",
