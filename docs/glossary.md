@@ -111,13 +111,13 @@ const store = createStore(
 /* DISPATCHING */
 
 store.dispatch(action)
-store.dispatch(actionCreator())
-store.dispatch(actionCreator(payload))
+store.dispatch(declaredAction())
+store.dispatch(declaredAction(payload))
 
 /* SUBSCRIBING */
 
 store.subscribe(atom, atomValue => 'side effect')
-store.subscribe(actionCreator, actionPayload => 'side effect')
+store.subscribe(declaredAction, actionPayload => 'side effect')
 store.subscribe((dispatchedAction, stateDiff) => 'side effect')
 
 /* STATE */
@@ -127,10 +127,10 @@ store.getState(atom) // atom state
 
 /* BINDING */
 
-const actionCreatorBinded = store.bind(actionCreator)
+const declaredActionBinded = store.bind(declaredAction)
 
-actionCreator(0) // `{ type: '...', payload: 0 }`
-actionCreatorBinded(0) // dispatching, void
+declaredAction(0) // `{ type: '...', payload: 0 }`
+declaredActionBinded(0) // dispatching, void
 ```
 
 ### States laziness

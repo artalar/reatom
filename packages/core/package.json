@@ -2,7 +2,7 @@
   "name": "@reatom/core",
   "private": false,
   "version": "1.0.2-alpha.6",
-  "description": "State manager with a focus of all needs",
+  "description": "State Manager with a focus on all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
   "umd:main": "build/index.umd.js",

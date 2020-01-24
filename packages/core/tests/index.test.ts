@@ -99,7 +99,7 @@ describe('@reatom/core', () => {
         })
       })
 
-      test('throw error if declareAtom called with undefined initial state', () => {
+      test('throw error if declareAtom called with an undefined initial state', () => {
         const run = () => declareAtom(['test'], undefined, on => [])
 
         expect(run).toThrowError(
@@ -125,7 +125,7 @@ describe('@reatom/core', () => {
             on(action, () => undefined as any),
           ])({}, action()),
         ).toThrowError(
-          '[reatom] Invalid state. Reducer № 2 in "test" atom returns undefined',
+          '[reatom] Invalid state. Reducer number 2 in "test" atom returns undefined',
         )
       })
 
@@ -510,6 +510,7 @@ describe('@reatom/core', () => {
   test('IoC example', () => {
     class Api {}
     const api = new Api()
+    const mockApi = new Api()
     const apiAtom = declareAtom(Symbol('API'), api, () => [])
 
     var store = createStore(apiAtom)
@@ -517,8 +518,8 @@ describe('@reatom/core', () => {
       [getTree(apiAtom).id]: api,
     })
 
-    var store = createStore({ [getTree(apiAtom).id]: api })
-    expect(store.getState(apiAtom)).toBe(api)
+    var store = createStore({ [getTree(apiAtom).id]: mockApi })
+    expect(store.getState(apiAtom)).toBe(mockApi)
     expect(JSON.stringify(store.getState())).toBe('{}')
   })
 

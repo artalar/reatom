@@ -117,7 +117,7 @@ export function declareAtom<TState>(
 
         if (atomStateNew === undefined)
           throwError(
-            `Invalid state. Reducer № ${position} in "${_name}" atom returns undefined`,
+            `Invalid state. Reducer number ${position} in "${_name}" atom returns undefined`,
           )
 
         if (atomStateNew !== atomState && !hasAtomNewState) changedIds.push(_id)

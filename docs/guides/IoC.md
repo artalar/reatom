@@ -2,9 +2,9 @@
 
 ## Explanation
 
-[Inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control) is a concept for changing some dependencies based on the running context - most popular reason for that is a tasting. Good for Reatom users - all basic entities (actions, atoms) are already working in a controlled context - a store. By the same token, any atom dependencies (as another atom) are automatically adding to a store when computed atom connecting to it. That means you already have dependencies resolving mechanism with Reatom.
+[Inversion of control](https://en.wikipedia.org/wiki/Inversion_of_control) is a concept for changing some dependency based on the running context - most popular reason for that is tasting. Good for Reatom users - all basic entities (actions, atoms) are already working in a controlled context - a store. By the same token, any atom dependency (as another atom) is automatically added to a store when the computed atom is connecting to it. That means you already have a dependency resolution mechanism with Reatom.
 
-What is it mean in the conclusion? You can create not only reactive atoms (depended on actions) but just _static_ atoms and use it as a service.
+What does it mean in conclusion? You can create not only reactive atoms (depended on actions) but just _static_ atoms and use it as a service.
 
 ## Example
 
@@ -33,7 +33,7 @@ store.dispatch(requestData())
 
 /* TESTS */
 
-// here we rewrite initial state (axios) of apiAtom by preloaded state
+// here we rewrite the initial state (axios) of apiAtom with a preloaded state
 const store = createStore({
   [API]: mockedAxiosInstance,
 })
