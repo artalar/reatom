@@ -35,6 +35,6 @@ store.dispatch(requestData())
 
 // here we rewrite initial state (axios) of apiAtom by preloaded state
 const store = createStore({
-  [API]: mockedAxiosInstance
+  [API]: mockedAxiosInstance,
 })
 ```
