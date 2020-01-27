@@ -31,7 +31,9 @@ export function getTree(thing: Unit): Tree {
 }
 
 export function getName(treeId: TreeId): string {
-  return typeof treeId === 'symbol' ? treeId.description : treeId
+  return typeof treeId === 'symbol'
+    ? treeId.description || treeId.toString().replace(/Symbol\((.*)\)/, '$1')
+    : treeId
 }
 
 export function getIsAtom(thing: any): thing is Atom<any> {

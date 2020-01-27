@@ -116,7 +116,7 @@ describe('@reatom/core', () => {
             action(),
           ),
         ).toThrowError(
-          '[reatom] Invalid state. Reducer № 1 in "myAtom" atom returns undefined',
+          '[reatom] Invalid state. Reducer number 1 in "myAtom" atom returns undefined',
         )
 
         expect(() =>
@@ -505,6 +505,26 @@ describe('@reatom/core', () => {
       expect(trackAction).toBeCalledWith(null)
       expect(trackActions).toBeCalledTimes(2)
     })
+  })
+
+  test('atom id as symbol', () => {
+    const atom = declareAtom(['my atom'], 0, on => [])
+    const atomMap = map(atom, v => v)
+    const atomCombine = combine([atom, atomMap])
+
+    expect(typeof getTree(declareAtom(0, on => [])).id).toBe('string')
+    expect(getTree(atom).id).toBe('my atom')
+    expect(typeof getTree(atomMap).id).toBe('symbol')
+    expect(getTree(atomMap).id.toString()).toBe('Symbol(my atom [map])')
+    expect(typeof getTree(atomCombine).id).toBe('symbol')
+    expect(getTree(atomCombine).id.toString()).toBe(
+      'Symbol([my atom,my atom [map]])',
+    )
+    expect(
+      getTree(
+        map(declareAtom(Symbol('123'), 0, on => []), v => v),
+      ).id.toString(),
+    ).toBe('Symbol(123 [map])')
   })
 
   test('IoC example', () => {

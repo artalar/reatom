@@ -204,13 +204,21 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
 ) {
   if (arguments.length === 1) shape = name as T
 
+  const isArray = Array.isArray(shape)
+
   const keys = Object.keys(shape!)
   keys.push(...((Object.getOwnPropertySymbols(shape) as unknown) as string[]))
 
   if (arguments.length === 1)
-    name = Symbol('{' + keys.map(getName).join() + '}')
-
-  const isArray = Array.isArray(shape)
+    name = isArray
+      ? Symbol(
+          '[' +
+            keys
+              .map(k => getName(getTree((shape as TupleOfAtoms)[k as any]).id))
+              .join() +
+            ']',
+        )
+      : Symbol('{' + keys.map(getName).join() + '}')
 
   return declareAtom(name as AtomName, isArray ? [] : {}, reduce =>
     keys.forEach(key =>
