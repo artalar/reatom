@@ -1,4 +1,4 @@
-import { Tree, State, TreeId, Ctx, createCtx } from './kernel'
+import { Tree, State, TreeId, Ctx, createCtx, Leaf } from './kernel'
 import {
   TREE,
   nameToId,
@@ -9,15 +9,17 @@ import {
   safetyFunc,
   getIsAction,
   assign,
+  getName,
 } from './shared'
 import { Action, declareAction, PayloadActionCreator } from './declareAction'
 
 const DEPS = Symbol('@@Reatom/DEPS')
 
 // action for set initialState of each atom to global state
-const _initAction = declareAction(['@@Reatom/init'])
-export const initAction = _initAction()
+const initActionCreator = declareAction(['@@Reatom/init'])
+export const initAction = initActionCreator()
 
+type AtomName = TreeId | [string]
 type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
 type DependencyMatcher<TState> = (
@@ -37,12 +39,12 @@ export function declareAtom<TState>(
   dependencyMatcher: DependencyMatcher<TState>,
 ): Atom<TState>
 export function declareAtom<TState>(
-  name: string | [TreeId],
+  name: AtomName,
   initialState: TState,
   dependencyMatcher: DependencyMatcher<TState>,
 ): Atom<TState>
 export function declareAtom<TState>(
-  name: string | [TreeId] | TState,
+  name: AtomName | TState,
   initialState: TState | DependencyMatcher<TState>,
   dependencyMatcher?: DependencyMatcher<TState>,
 ): Atom<TState> {
@@ -52,10 +54,11 @@ export function declareAtom<TState>(
     name = 'atom'
   }
 
-  const _id = nameToId(name as string | [TreeId])
+  const _id = nameToId(name as AtomName)
+  const _name = getName(_id)
 
   if (initialState === undefined)
-    throwError(`Atom "${_id}". Initial state can't be undefined`)
+    throwError(`Atom "${_name}". Initial state can't be undefined`)
 
   const _tree = new Tree(_id)
   const _deps = new Set<TreeId>()
@@ -81,14 +84,20 @@ export function declareAtom<TState>(
 
     _tree.union(depTree)
 
-    function update({ state, stateNew, payload, changedIds, type }: Ctx) {
-      const atomStateSnapshot = state[_id]
+    const update = function update({
+      state,
+      stateNew,
+      payload,
+      changedIds,
+      type,
+    }: Ctx) {
+      const atomStateSnapshot = state[_id as string]
       // first `walk` of lazy (dynamically added by subscription) atom
       const isAtomLazy = atomStateSnapshot === undefined
 
-      if (!isAtomLazy && type === initAction.type) return
+      if (!isAtomLazy && type === initAction.type && !payload) return
 
-      const atomStatePreviousReducer = stateNew[_id]
+      const atomStatePreviousReducer = stateNew[_id as string]
       // it is mean atom has more than one dependencies
       // that depended from dispatched action
       // and one of the atom reducers already processed
@@ -97,8 +106,8 @@ export function declareAtom<TState>(
         ? atomStatePreviousReducer
         : atomStateSnapshot) as TState
 
-      const depStateSnapshot = state[depId]
-      const depStateNew = stateNew[depId]
+      const depStateSnapshot = state[depId as string]
+      const depStateNew = stateNew[depId as string]
       const isDepChanged = depStateNew !== undefined
       const depState = isDepChanged ? depStateNew : depStateSnapshot
       const depValue = isDepActionCreator ? payload : depState
@@ -108,21 +117,23 @@ export function declareAtom<TState>(
 
         if (atomStateNew === undefined)
           throwError(
-            `Invalid state. Reducer № ${position} in "${_id}" atom returns undefined`,
+            `Invalid state. Reducer number ${position} in "${_name}" atom returns undefined`,
           )
 
         if (atomStateNew !== atomState && !hasAtomNewState) changedIds.push(_id)
-        stateNew[_id] = atomStateNew
+        stateNew[_id as string] = atomStateNew
       }
     }
+    update._ownerAtomId = _id
 
-    if (isDepActionCreator) return _tree.addFn(update, depId)
+    if (isDepActionCreator) return _tree.addFn(update, depId as Leaf)
     if (_deps.has(depId)) throwError('One of dependencies has the equal id')
     _deps.add(depId)
     depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
   }
 
-  on(_initAction, (state = initialState as TState) => state)
+  // @ts-ignore
+  on(initActionCreator, (_, { [_id]: state = initialState } = {}) => state)
   dependencyMatcher(on)
 
   const atom = function atom(
@@ -144,7 +155,7 @@ export function declareAtom<TState>(
 }
 
 export function getState<T>(state: State, atom: Atom<T>): T | undefined {
-  return state[atom[TREE].id] as T | undefined
+  return state[atom[TREE].id as string] as T | undefined
 }
 
 export function map<T, TSource = unknown>(
@@ -152,24 +163,24 @@ export function map<T, TSource = unknown>(
   mapper: (dependedAtomState: TSource) => NonUndefined<T>,
 ): Atom<T>
 export function map<T, TSource = unknown>(
-  name: string | [TreeId],
+  name: AtomName,
   source: Atom<TSource>,
   mapper: (dependedAtomState: TSource) => NonUndefined<T>,
 ): Atom<T>
 export function map<T, TSource = unknown>(
-  name: string | [TreeId] | Atom<TSource>,
+  name: AtomName | Atom<TSource>,
   source: ((dependedAtomState: TSource) => T) | Atom<TSource>,
   mapper?: (dependedAtomState: TSource) => NonUndefined<T>,
 ) {
   if (!mapper) {
     mapper = source as (dependedAtomState: TSource) => NonUndefined<T>
     source = name as Atom<TSource>
-    name = getTree(source).id + ' [map]'
+    name = Symbol(getName(getTree(source).id) + ' [map]')
   }
   safetyFunc(mapper, 'mapper')
 
   return declareAtom<T>(
-    name as string | [TreeId],
+    name as AtomName,
     // FIXME: initialState for `map` :thinking:
     null as any,
     handle =>
@@ -178,28 +189,38 @@ export function map<T, TSource = unknown>(
   )
 }
 
+type TupleOfAtoms = [Atom<unknown>] | Atom<unknown>[]
+
 export function combine<T extends AtomsMap | TupleOfAtoms>(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine<T extends AtomsMap | TupleOfAtoms>(
-  name: string | [TreeId],
+  name: AtomName,
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>
 export function combine<T extends AtomsMap | TupleOfAtoms>(
-  name: string | [TreeId] | T,
+  name: AtomName | T,
   shape?: T,
 ) {
-  let keys: (string | number)[]
-  if (!shape) {
-    shape = name as T
-    name = '{' + (keys = Object.keys(shape)).join() + '}'
-  }
-
-  keys = keys! || Object.keys(shape)
+  if (arguments.length === 1) shape = name as T
 
   const isArray = Array.isArray(shape)
 
-  return declareAtom(name as string | [TreeId], isArray ? [] : {}, reduce =>
+  const keys = Object.keys(shape!)
+  keys.push(...((Object.getOwnPropertySymbols(shape) as unknown) as string[]))
+
+  if (arguments.length === 1)
+    name = isArray
+      ? Symbol(
+          '[' +
+            keys
+              .map(k => getName(getTree((shape as TupleOfAtoms)[k as any]).id))
+              .join() +
+            ']',
+        )
+      : Symbol('{' + keys.map(getName).join() + '}')
+
+  return declareAtom(name as AtomName, isArray ? [] : {}, reduce =>
     keys.forEach(key =>
       //@ts-ignore
       reduce(shape[key], (state, payload) => {
@@ -212,22 +233,3 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
     ),
   )
 }
-
-// prettier-ignore
-type TupleOfAtoms =
-  [Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]
-  | [Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>, Atom<unknown>]

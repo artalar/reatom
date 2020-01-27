@@ -1,4 +1,4 @@
-import { Tree, State, TreeId, createCtx } from './kernel'
+import { Tree, State, TreeId, createCtx, BaseAction } from './kernel'
 import {
   throwError,
   getTree,
@@ -27,6 +27,9 @@ export type Store = {
   dispatch: (action: Action<unknown>) => void
   subscribe: SubscribeFunction
   getState: GetStateFunction
+  bind: <A extends (...a: any[]) => BaseAction>(
+    a: A,
+  ) => (...a: A extends (...a: infer Args) => any ? Args : never) => void
 }
 
 export function createStore(initState?: State): Store
@@ -43,7 +46,7 @@ export function createStore(
   let dispatchListeners: Function[] = []
   let nextDispatchListeners: Function[] = dispatchListeners
   let initialAtoms = new Set<TreeId>()
-  const state: State = {}
+  let state: State = {}
   const storeTree = new Tree('store')
   if (atom !== undefined) {
     if (typeof atom === 'object' && initState === undefined) assign(state, atom)
@@ -148,9 +151,11 @@ export function createStore(
 
       if (isLazy && _listeners.length === 0) {
         nextListeners.delete(targetId)
-        storeTree.disunion(targetTree)
-        // FIXME: dependencies are not clearing
-        delete state[targetId]
+        delete state[targetId as string]
+        storeTree.disunion(targetTree, id => {
+          nextListeners.delete(id)
+          delete state[id as string]
+        })
       }
     }
   }
@@ -171,11 +176,12 @@ export function createStore(
 
     listeners = nextListeners
 
+    if (type === initAction.type) state = payload || {}
     if (changedIds.length > 0) {
       assign(state, stateNew)
       for (let i = 0; i < changedIds.length; i++) {
         const id = changedIds[i]
-        callFromList(listeners.get(id) || [], stateNew[id])
+        callFromList(listeners.get(id) || [], stateNew[id as string])
       }
     }
 
@@ -184,10 +190,14 @@ export function createStore(
     callFromList((dispatchListeners = nextDispatchListeners), action, stateNew)
   }
 
+  const bind: Store['bind'] = actionCreator => (...a) =>
+    store.dispatch(actionCreator(...a))
+
   const store = {
     getState: _getState,
     subscribe,
     dispatch,
+    bind,
   }
 
   return store

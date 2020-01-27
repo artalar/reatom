@@ -19,6 +19,7 @@
   - [Code Splitting](/guides/code-splitting.md)
   - [Server Side Rendering](/guides/server-side-rendering.md)
   - [Migration from Redux](/guides/migration-from-redux.md)
+  - [Inversion of control](/guides/IoC.md)
 
 * [Examples](/examples.md)
 

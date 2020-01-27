@@ -1,8 +1,11 @@
 export type Leaf = string // unique
-export type TreeId = string // unique
+export type TreeId = string | symbol // unique
 export type State = Record<TreeId, unknown>
 // reatom specific
-export type Fn = (ctx: Ctx) => any
+export type Fn = {
+  (ctx: Ctx): any
+  _ownerAtomId: TreeId
+}
 export type Ctx = ReturnType<typeof createCtx>
 export type BaseAction<T = any> = { type: Leaf; payload: any }
 export function createCtx(state: State, { type, payload }: BaseAction) {
@@ -14,23 +17,25 @@ export function createCtx(state: State, { type, payload }: BaseAction) {
     changedIds: [] as TreeId[],
   }
 }
-// TODO: try to replace by class
-type SetCounted = ReturnType<typeof createSetCounted>
-function createSetCounted() {
-  const _counter = new Map<Fn, number>()
 
-  return {
-    add(el: Fn) {
-      _counter.set(el, (_counter.get(el) || 0) + 1)
-    },
-    delete(el: Fn) {
-      const count = _counter.get(el)
-      if (count === 1) _counter.delete(el)
-      else if (count! > 1) _counter.set(el, count! - 1)
-    },
-    forEach(cb: (fn: Fn) => any) {
-      _counter.forEach((_, fn) => cb(fn))
-    },
+class SetCounted {
+  _counter = new Map<Fn, number>()
+
+  add(el: Fn) {
+    this._counter.set(el, (this._counter.get(el) || 0) + 1)
+  }
+  delete(el: Fn) {
+    const count = this._counter.get(el)
+    if (count === 1) {
+      return this._counter.delete(el)
+    }
+    if (count! > 1) {
+      this._counter.set(el, count! - 1)
+    }
+    return false
+  }
+  forEach(cb: (fn: Fn) => any) {
+    this._counter.forEach((_, fn) => cb(fn))
   }
 }
 
@@ -46,22 +51,23 @@ export class Tree {
   _getFns(key: Leaf) {
     return (
       this.fnsMap.get(key) ||
-      (this.fnsMap.set(key, createSetCounted()).get(key) as SetCounted)
+      (this.fnsMap.set(key, new SetCounted()).get(key) as SetCounted)
     )
-  }
-  _manageFns(tree: Tree, type: 'add' | 'delete') {
-    tree.fnsMap.forEach((set, key) => {
-      set.forEach(this._getFns(key)[type])
-    })
   }
   addFn(fn: Fn, key: Leaf) {
     this._getFns(key).add(fn)
   }
   union(tree: Tree) {
-    this._manageFns(tree, 'add')
+    tree.fnsMap.forEach((set, key) => {
+      const fns = this._getFns(key)
+      set.forEach(fn => fns.add(fn))
+    })
   }
-  disunion(tree: Tree) {
-    this._manageFns(tree, 'delete')
+  disunion(tree: Tree, cb: (key: TreeId) => any) {
+    tree.fnsMap.forEach((set, key) => {
+      const fns = this._getFns(key)
+      set.forEach(fn => fns.delete(fn) && cb(fn._ownerAtomId))
+    })
   }
   forEach(key: Leaf, ctx: Ctx) {
     const setCounted = this.fnsMap.get(key)

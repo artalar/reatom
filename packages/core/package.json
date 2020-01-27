@@ -1,8 +1,8 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "1.0.0",
-  "description": "State manager with a focus of all needs",
+  "version": "1.1.0",
+  "description": "State Manager with a focus on all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
   "umd:main": "build/index.umd.js",

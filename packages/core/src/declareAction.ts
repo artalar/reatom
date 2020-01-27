@@ -1,5 +1,5 @@
 import { Leaf, Tree, BaseAction } from './kernel'
-import { TREE, noop, nameToId, Unit } from './shared'
+import { TREE, noop, nameToId, Unit, assign } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
@@ -12,17 +12,19 @@ export type Action<Payload, Type extends ActionType = string> = BaseAction<
   reactions?: Reaction<Payload>[]
 }
 
-export type BaseActionCreator = {
-  getType: () => string
+export type BaseActionCreator<Type extends string = string> = {
+  getType: () => Type
 } & Unit
 
-export type ActionCreator<Type extends string = string> = BaseActionCreator &
+export type ActionCreator<Type extends string = string> = BaseActionCreator<
+  Type
+> &
   (() => Action<undefined, Type>)
 
 export type PayloadActionCreator<
   Payload,
   Type extends string = string
-> = BaseActionCreator & ((payload: Payload) => Action<Payload, Type>)
+> = BaseActionCreator<Type> & ((payload: Payload) => Action<Payload, Type>)
 
 export function declareAction(
   name?: string | Reaction<undefined>,
@@ -58,7 +60,7 @@ export function declareAction<
   const id = nameToId(name)
 
   const ACTree = new Tree(id, true)
-  ACTree.addFn(noop, id)
+  ACTree.addFn(assign(() => {}, { _ownerAtomId: id }), id as string)
 
   const actionCreator = function actionCreator(payload?: Payload) {
     return {
@@ -69,7 +71,7 @@ export function declareAction<
   } as (ActionCreator<Type> | PayloadActionCreator<Payload, Type>)
 
   actionCreator[TREE] = ACTree
-  actionCreator.getType = () => id
+  actionCreator.getType = () => id as Type
 
   return actionCreator
 }
