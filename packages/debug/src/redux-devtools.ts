@@ -31,12 +31,13 @@ export function connectReduxDevtools(store: Store, config = {}) {
       state = { ...state }
       keys.forEach(k => {
         if (
-          typeof k !== 'symbol' ||
-          // combine
-          !k.toString().startsWith('Symbol({')
+          typeof k === 'symbol' &&
+          (k.toString().startsWith('Symbol({') ||
+            k.toString().startsWith('Symbol(['))
         ) {
-          state[k.toString()] = diff[k as string]
+          return
         }
+        state[k.toString()] = diff[k as string]
       })
     }
     devTools.send(action, state)
