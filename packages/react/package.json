@@ -30,7 +30,7 @@
     "update": "npx npm-check-updates -u"
   },
   "peerDependencies": {
-    "@reatom/core": "1.0.0",
+    "@reatom/core": "^1.0.0",
     "react": "^16.8.0"
   },
   "devDependencies": {
