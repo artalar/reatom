@@ -17,7 +17,7 @@
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "postpublish": "npm run clean",
-    "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core",
+    "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core --jsx react",
     "clean": "cross-env fixme=fixme ../../node_modules/.bin/rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test": "cross-env fixme=fixme ../../node_modules/.bin/jest tests/*",
