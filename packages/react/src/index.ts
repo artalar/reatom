@@ -1,5 +1,4 @@
 import {
-  createContext,
   useEffect,
   useRef,
   useReducer,
@@ -9,19 +8,12 @@ import {
   useMemo,
 } from 'react'
 
-import {
-  Store,
-  Atom,
-  ActionCreator,
-  PayloadActionCreator,
-  Action,
-} from '@reatom/core'
+import { Atom, ActionCreator, PayloadActionCreator, Action } from '@reatom/core'
+
+import { context } from './context'
+export { StoreProvider } from './context'
 
 function noop() {}
-
-export const context = createContext<Store | null>(null)
-
-export const { Provider } = context
 
 function useForceUpdate() {
   // dispatch don't have action and don't changes between rerenders
