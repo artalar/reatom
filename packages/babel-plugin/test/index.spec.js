@@ -7,4 +7,5 @@ const path = require('path')
 pluginTester({
   plugin,
   fixtures: path.join(__dirname, 'fixtures'),
+  endOfLine: 'auto',
 })
