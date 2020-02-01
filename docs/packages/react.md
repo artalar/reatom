@@ -87,7 +87,7 @@ const handleDoSome = useAction(payload => {
 
 import React from 'react'
 import { createStore } from '@reatom/core'
-import { context } from '@reatom/react'
+import { StoreProvider } from '@reatom/react'
 import { Form } from './components/Form'
 
 import './App.css'
@@ -99,8 +99,9 @@ export const App = () => {
   return (
     <div className="App">
       <context.Provider value={store}>
+      <StoreProvider store={store}>
         <Form />
-      </context.Provider>
+      </StoreProvider>
     </div>
   )
 }
