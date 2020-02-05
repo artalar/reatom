@@ -135,7 +135,7 @@ declaredActionBinded(0) // dispatching, void
 
 ### States laziness
 
-Atom never has it own state, only store contains states of all known atoms. How store can know about atoms - two ways: 1) you pasing combine of all needed atoms as argument to createStore; 2) create subscription to atom. In first way, pased atom and dependencies of it create states that will leave in store forever and you can always get it by `store.getState(myAtom)`. In second way, subscription to atom creating a temporal (seems like a cold / lazynes observable) state to atom and it dependencies in store, that will deleting after all depended unsubscibes.
+Atom never has it own state, only store contains states of all known atoms. How store can know about atoms - two ways: 1) you pasing combine of all needed atoms as argument to createStore; 2) create subscription to atom. In first way, pased atom and dependencies of it create states that will live in store forever and you can always get it by `store.getState(myAtom)`. In second way, subscription to atom creating a temporal (seems like a cold / lazynes observable) state to atom and it dependencies in store, that will deleting after all depended unsubscibes.
 
 Important note abount `getState(myAtom)`, dependent of atom status:
 
