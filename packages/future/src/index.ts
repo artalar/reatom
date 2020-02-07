@@ -1,6 +1,7 @@
 export type Fn<I extends unknown[] = unknown[], O = unknown> = (...a: I) => O
-export type Then<T> = T extends Promise<infer T> ? T : T
-export type Filter<T> = T extends undefined ? never : T
+export type Thened<T> = T extends Promise<infer T> ? T : T
+export type Filtered<T> = T extends undefined ? never : T
+export type Collection<T> = Record<keyof any, T>
 
 export const { assign } = Object
 
@@ -46,15 +47,15 @@ export function Queue<T>(): Queue<T> {
   }
 }
 
-export class FutureRef {
+export type RefCache = Collection<unknown>
+export class Ref {
   links: Future<any, any>[] = []
-  cache = new Map<unknown, unknown>()
-  cleanup?: Fn
+  cache: RefCache = {}
+  cleanup?: Fn | void
 }
-export type UserFutureRef = FutureRef['cache']
 
 export class Ctx {
-  private links = new Map<Future<any, any>, FutureRef>()
+  private links = new Map<Future<any, any>, Ref>()
   private lifeCycleQueue: Fn[] = []
 
   private _link(target: Future<any, any>, dependent: Future<any, any>) {
@@ -62,8 +63,8 @@ export class Ctx {
     let targetRef = links.get(target)
 
     if (targetRef === undefined) {
-      links.set(target, (targetRef = new FutureRef()))
-      // init life cycle method must be called starts from parent and to child
+      links.set(target, (targetRef = new Ref()))
+      // init life cycle method must be called starts from parent to child
       target.deps.forEach(dep => this.link(dep, target))
       if (target.init !== undefined) {
         lifeCycleQueue.push(
@@ -84,7 +85,7 @@ export class Ctx {
 
       if (targetRef.links.length === 0) {
         links.delete(target)
-        // cleanup life cycle method must be called starts from child and to parent
+        // cleanup life cycle method must be called starts from child to parent
         if (targetRef!.cleanup !== undefined) {
           lifeCycleQueue.push(targetRef!.cleanup!)
         }
@@ -95,10 +96,13 @@ export class Ctx {
 
   private _lifeCycle() {
     while (this.lifeCycleQueue.length !== 0)
+      // it will be good to catch an errors and do rollback of the links
+      // but it not required for all users and implementation code is not tree-shackable
+      // so it good for implementing in some extra package by Ctx extending
       callSafety(this.lifeCycleQueue.shift()!)
   }
 
-  getRef(target: Future<any, any>): FutureRef | undefined {
+  getRef(target: Future<any, any>): Ref | undefined {
     return this.links.get(target)
   }
 
@@ -112,29 +116,27 @@ export class Ctx {
   }
 }
 
+export type ProcessCache = unknown
 export class ProcessCtx extends Ctx {
   queue = Queue<Future<any, any>>()
-  cache = new Map<unknown, unknown>()
+  cache = new Map<Future<any, any>, ProcessCache>()
 }
 
+export type ExecutorValue<T> = Filtered<Thened<T>>
+
 export type Executor<Input, Output> = Fn<
-  [Filter<Then<Input>>, UserFutureRef],
+  [ExecutorValue<Input>, RefCache],
   Output
 >
 
 export type LifeCycleHook<Input, Output> = Fn<
   [Future<Input, Output>, Ctx],
-  Fn | undefined
+  Fn | void
 >
-
-// TODO: test and improve
-export type Deps<Input> = Input extends any[]
-  ? Future<any, Input[number]> | [Future<any, Input>]
-  : [Future<any, Input>]
 
 export type ConstructorOptions<Input, Output> = {
   ctx?: Ctx
-  deps?: Deps<Input>
+  deps?: Future<any, any>[]
   init?: LifeCycleHook<Input, Output>
   name?: string
 }
@@ -142,6 +144,22 @@ export type MethodOptions<Input, Output> = Omit<
   ConstructorOptions<Input, Output>,
   'deps'
 >
+
+export type FutureInput<F> = F extends Future<infer T, any> ? T : never
+export type FutureOutput<F> = F extends Future<any, infer T> ? T : never
+
+export type FutureListInput<
+  Shape extends Future<any, any>[] | Collection<Future<any, any>>
+> = { [K in keyof Shape]: FutureInput<Shape[K]> }
+export type FutureListOutput<
+  Shape extends Future<any, any>[] | Collection<Future<any, any>>
+> = { [K in keyof Shape]: FutureOutput<Shape[K]> }
+
+export type MappedFutureOutput<Output, T> = Output extends Promise<infer O>
+  ? Promise<O extends undefined ? Thened<T> | undefined : Thened<T>>
+  : Output extends undefined
+  ? T | undefined
+  : T
 
 export class Future<Input, Output> {
   static ctx = new Ctx()
@@ -160,49 +178,16 @@ export class Future<Input, Output> {
     return new Future<T | undefined, T>(
       // @ts-ignore
       (payload = value) => payload,
-      {
-        ctx,
-        init,
-        name,
-      },
+      { ctx, init, name },
     )
   }
-  static all<T extends [Future<any, any>] | Future<any, any>[]>(
-    futures: T,
-    {
-      ctx,
-      init,
-      name = `"Future.all"`,
-    }: MethodOptions<
-      never,
-      { [K in keyof T]: T[K] extends Future<any, infer T> ? T : never }
-    > = {},
-  ): Future<
-    never,
-    { [K in keyof T]: T[K] extends Future<any, infer T> ? T : never }
-  > {
+
+  static race<T>(
+    futures: Future<any, T>[],
+    { ctx, init, name = `"Future.race"` }: MethodOptions<never, T> = {},
+  ): Future<never, T> {
     return new Future(
-      // @ts-ignore
-      (payload: unknown[], cache) => {
-        let map = cache.get(Future.all) as Map<Future<any, any>, unknown>
-        if (map === undefined) cache.set(Future.all, (map = new Map()))
-
-        const newPayload = payload.slice()
-        let shouldContinue = true
-
-        for (let i = 0; i < newPayload.length; i++) {
-          let value = newPayload[i] //?
-          if (value === undefined) {
-            value = newPayload[i] = map.get(futures[i])
-          } else {
-            map.set(futures[i], value)
-          }
-
-          shouldContinue = shouldContinue && value !== undefined
-        }
-
-        if (shouldContinue) return newPayload
-      },
+      (payload: T[]) => payload.find(v => v !== undefined) as T,
       {
         ctx,
         deps: futures,
@@ -212,19 +197,61 @@ export class Future<Input, Output> {
     )
   }
 
-  static race<T>(
-    futures: Future<any, T>[],
-    { ctx, init, name = `"Future.race"` }: MethodOptions<never, T> = {},
-  ): Future<never, T> {
-    // @ts-ignore
-    return new Future(payload => payload.find(v => v !== undefined) as T, {
+  static all<
+    T extends
+      | [Future<any, any>]
+      | Future<any, any>[]
+      | Collection<Future<any, any>>
+  >(
+    futures: T,
+    {
       ctx,
-      deps: futures,
       init,
-      name,
-    })
+      name = `"Future.all"`,
+    }: MethodOptions<FutureListInput<T>, FutureListOutput<T>> = {},
+  ): Future<FutureListInput<T>, FutureListOutput<T>> {
+    const isArray = Array.isArray(futures)
+    const keys = Object.keys(futures)
+    const f = new Future(
+      // @ts-ignore
+      (payload: unknown[], cache: { map?: Map<Future<any, any>, unknown> }) => {
+        let map = cache.map
+        if (map === undefined) map = cache.map = new Map()
+
+        const result: any = isArray ? [] : {}
+        for (let i = 0; i < keys.length; i++) {
+          const key = keys[i] as any
+          let value = payload[i]
+          if (value === undefined) {
+            value = map.get(futures[key])
+          } else {
+            map.set(futures[key], value)
+          }
+          if (value === undefined) return
+
+          if (isArray) result.push(value)
+          else result[key] = value
+        }
+
+        return result as []
+      },
+      {
+        ctx,
+        deps: keys.map((k: any) => futures[k]),
+        init,
+        name,
+      },
+    )
+
+    f._fork = (input: FutureListInput<T>, pctx: ProcessCtx) => {
+      keys.map((k: any) => futures[k]._fork(input[k], pctx))
+    }
+
+    return f
   }
 
+  private _executor!: Executor<Input, Output>
+  private _buildedExecutor?: Executor<Input, Output>
   private executor!: Fn<[ProcessCtx], Output>
   ctx!: Ctx
   deps!: Future<any, Input>[]
@@ -233,10 +260,9 @@ export class Future<Input, Output> {
   name!: string
 
   constructor(
-    executor: Executor<Input, Output>,
+    _executor: Executor<Input, Output>,
     {
       ctx = Future.ctx,
-      // @ts-ignore
       deps = [],
       init,
       name = Future.createName(),
@@ -253,10 +279,8 @@ export class Future<Input, Output> {
       deps,
       init,
       ctx,
-      depth: (deps as Future<any, any>[]).reduce(
-        (acc, v) => Math.max(acc + 1, v.depth),
-        0,
-      ),
+      _executor,
+      depth: deps.reduce((acc, v) => Math.max(acc + 1, v.depth), 0),
       executor: {
         [executorName](pctx: ProcessCtx) {
           const input =
@@ -265,18 +289,18 @@ export class Future<Input, Output> {
               : me.deps.length === 1
               ? pctx.cache.get(me.deps[0])
               : me.deps.map(f => pctx.cache.get(f))
-          const ref = pctx.getRef(me)
+          const ref = pctx.getRef(me)!
           const isSubscriber = ref === undefined
 
-          const result = executor(
+          let result = _executor(
             input as any,
-            isSubscriber ? (null as any) : ref!.cache,
+            isSubscriber ? (null as any) : ref.cache,
           )
 
           function resume(result: unknown) {
-            if (!isSubscriber && result !== undefined) {
+            if (isSubscriber === false && result !== undefined) {
               pctx.cache.set(me, result)
-              ref!.links.forEach(f => pctx.queue.insert(f.depth, f))
+              ref.links.forEach(f => pctx.queue.insert(f.depth, f))
             }
             const next = pctx.queue.extract()
             return next === undefined ? result : next.executor(pctx)
@@ -290,22 +314,18 @@ export class Future<Input, Output> {
     })
   }
 
-  private _findInput(): Future<Input, any> {
-    switch (this.deps.length) {
-      case 0:
-        return this
-      case 1:
-        return this.deps[0]._findInput()
-      default:
-        // It may be implemented later
-        throw new Error("React: can't fork combined future")
+  private _fork(input: Input, pctx: ProcessCtx) {
+    if (this.deps.length === 0) {
+      pctx.cache.set(this, input)
+      pctx.queue.insert(this.depth, this)
     }
+    this.deps.forEach(f => f._fork(input, pctx))
   }
 
-  subscribe(cb: Fn<[Filter<Then<Output>>]>, ctx = this.ctx) {
-    const f = new Future<Output, any>(v => (callSafety(cb, v), v), {
+  subscribe(cb: Fn<[ExecutorValue<Output>]>, ctx = this.ctx) {
+    const f = new Future<Output, void>(v => (callSafety(cb, v), v), {
       name: `subscriber of ${this.name}`,
-      deps: ([this] as unknown) as Deps<Output>,
+      deps: [this],
     })
     ctx.link(this, f)
 
@@ -318,28 +338,14 @@ export class Future<Input, Output> {
     }
   }
 
-  map<T>(
-    executor: (payload: Filter<Then<Output>>, ctx: UserFutureRef) => T,
+  chain<T>(
+    executor: Executor<Output, T>,
     {
       name = `map of ${this.name}`,
       init,
       ctx,
-    }: MethodOptions<
-      Input,
-      Output extends Promise<infer O>
-        ? Promise<O extends undefined ? Then<T> | undefined : Then<T>>
-        : Output extends undefined
-        ? T | undefined
-        : T
-    > = {},
-  ): Future<
-    Input,
-    Output extends Promise<infer O>
-      ? Promise<O extends undefined ? Then<T> | undefined : Then<T>>
-      : Output extends undefined
-      ? T | undefined
-      : T
-  > {
+    }: MethodOptions<Input, MappedFutureOutput<Output, T>> = {},
+  ): Future<Input, MappedFutureOutput<Output, T>> {
     return new Future(
       // @ts-ignore
       executor,
@@ -352,8 +358,8 @@ export class Future<Input, Output> {
     )
   }
 
-  bind(ctx: Ctx): this {
-    return Object.assign(Future.of(), this, { ctx })
+  bind(ctx: Ctx) {
+    return this.chain(v => v, { ctx, name: this.name })
   }
 
   fork(input: Input, ctx: Ctx | ProcessCtx | null = this.ctx): Output {
@@ -368,19 +374,35 @@ export class Future<Input, Output> {
       throw new TypeError('Reatom: invalid context')
     }
 
-    const unsubscribe = this.subscribe(() => {})
-
-    const fDep = this._findInput()
-    pctx.cache.set(fDep, input)
+    const cleanup = this.subscribe(() => {}, pctx)
 
     let result!: Output
     try {
-      result = fDep.executor(pctx) as Output
+      this._fork(input, pctx)
+      result = pctx.queue.extract()!.executor(pctx)
     } finally {
-      if (result && result instanceof Promise) result.finally(unsubscribe)
-      else unsubscribe()
+      if (result && result instanceof Promise) result.finally(cleanup)
+      else cleanup()
     }
 
     return result
   }
+
+  // run(input: Input) {
+  //   if (this._buildedExecutor === undefined) {
+  //     this._buildedExecutor = this._executor
+
+  //     let acc = this.deps
+  //     while (acc.length) {
+  //       const { _executor, deps } = acc[0]
+  //       const dependent = this._buildedExecutor
+  //       this._buildedExecutor = (input: Input) => {
+  //         return dependent(_executor(input, {}))
+  //       }
+  //       acc = deps
+  //     }
+  //   }
+
+  //   return this._buildedExecutor(input, {})
+  // }
 }

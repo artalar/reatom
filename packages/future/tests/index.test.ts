@@ -1,22 +1,30 @@
 import { Future, Ctx } from '../src'
 
+function log(...a) {
+  console.log('TEST', ...a)
+}
+
 describe('@reatom/future', () => {
   test('source', () => {
+    log('source')
     const f = Future.of(0)
 
     expect(f.fork(1)).toBe(1)
   })
   test('map', () => {
-    const f = Future.of(0).map(v => v ** 2)
+    log('map')
+    const f = Future.of(0).chain(v => v ** 2)
 
     expect(f.fork(2)).toBe(4)
   })
   test('map async', async () => {
-    const f = Future.of(0).map(v => Promise.resolve(v))
+    log('map async')
+    const f = Future.of(0).chain(v => Promise.resolve(v))
 
     expect(await Promise.all([f.fork(1), f.fork(2)])).toEqual([1, 2])
   })
   test('subscription', () => {
+    log('subscription')
     const f = Future.of(0)
     const cb = jest.fn()
 
@@ -32,11 +40,11 @@ describe('@reatom/future', () => {
     expect(cb).toBeCalledTimes(1)
   })
   test('subscription filter', () => {
-    const f = Future.of(0)
-      .map(v => {
-        // all `undefined` will filtered (in types too!)
-        if (v % 2) return v
-      })
+    log('subscription filter')
+    const f = Future.of(0).chain(v => {
+      // all `undefined` will filtered (in types too!)
+      if (v % 2) return v
+    })
     const cb = jest.fn()
 
     f.subscribe(cb)
@@ -52,6 +60,7 @@ describe('@reatom/future', () => {
     expect(cb).toBeCalledTimes(2)
   })
   test('subscription contexts', () => {
+    log('subscription contexts')
     const f = Future.of(0)
     const ctx1 = new Ctx()
     const ctx2 = new Ctx()
@@ -74,6 +83,7 @@ describe('@reatom/future', () => {
     expect(cb2).toBeCalledTimes(1)
   })
   test('combines', () => {
+    log('combines')
     const f1 = Future.of(1)
     const f2 = Future.of(2)
     const cb1 = jest.fn()
@@ -94,7 +104,19 @@ describe('@reatom/future', () => {
     expect(cb1).toBeCalledWith([2, 3])
     expect(cb2).toBeCalledWith(3)
   })
+  test('fork all', () => {
+    log('all')
+    const f1 = Future.of(1)
+    const f2 = Future.of(2)
+
+    const fArray = Future.all([f1, f2])
+    expect(fArray.fork([3, 4])).toEqual([3, 4])
+
+    const fShape = Future.all({ f1, f2 })
+    expect(fShape.fork({ f1: 3, f2: 4 })).toEqual({ f1: 3, f2: 4 })
+  })
   test('life cycle', async () => {
+    log('life cycle')
     const initState = 0
     const f = Future.of(initState, {
       init(me, ctx) {
@@ -109,7 +131,7 @@ describe('@reatom/future', () => {
     const unsubscribe = f.subscribe(cb)
 
     let resolve!: Function
-    await new Promise(r => resolve = r)
+    await new Promise(r => (resolve = r))
     unsubscribe()
 
     expect(cb).toBeCalledTimes(2)
