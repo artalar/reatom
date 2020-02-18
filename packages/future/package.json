@@ -1,6 +1,6 @@
 {
   "name": "@reatom/future",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "Future of friendly FRP",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/future",
   "repository": {
