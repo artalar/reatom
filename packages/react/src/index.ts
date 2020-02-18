@@ -9,13 +9,7 @@ import {
   useMemo,
 } from 'react'
 
-import {
-  Store,
-  Atom,
-  ActionCreator,
-  PayloadActionCreator,
-  Action,
-} from '@reatom/core'
+import { Store, Atom, Action } from '@reatom/core'
 
 function noop() {}
 
@@ -104,23 +98,16 @@ export function useAtom<TI, TO = TI>(
   return stateRef.current as TO
 }
 
-type Payload<
-  PAC extends PayloadActionCreator<any>
-> = PAC extends PayloadActionCreator<infer T> ? T : never
-type PayloadCb<T> = (payload: T) => Action<T> | void
+type AnyActionCreator = (...args: any[]) => Action<any> | void
 
 /**
  * @param cb actionCreator (may return void for preventing dispatch)
  * @param deps
  */
-export function useAction<AC extends ActionCreator>(
+export function useAction<AC extends AnyActionCreator>(
   cb: AC,
   deps?: any[],
-): () => void
-export function useAction<PAC extends PayloadActionCreator<any>>(
-  cb: PAC,
-  deps?: any[],
-): (payload: Payload<PAC>) => void
+): (...args: Parameters<AC>) => void
 export function useAction(
   cb: () => Action<any> | void,
   deps?: any[],
@@ -130,12 +117,9 @@ export function useAction<T>(
   deps?: any[],
 ): (payload: T) => void
 export function useAction(
-  cb:
-    | ActionCreator
-    | PayloadActionCreator<any>
-    | ((a?: any) => Action<any> | void),
+  cb: AnyActionCreator,
   deps: any[] = [],
-): (a?: any) => void {
+): (...args: any[]) => void {
   const store = useContext(context)
 
   if (!store) throw new Error('[reatom] The provider is not defined')
@@ -143,8 +127,8 @@ export function useAction(
     throw new TypeError('[reatom] `useAction` argument must be a function')
   }
 
-  return useCallback(payload => {
-    const action = cb(payload)
+  return useCallback((...args) => {
+    const action = cb(...args)
     if (action) store.dispatch(action)
   }, deps)
 }
@@ -153,6 +137,7 @@ export function useAction(
 
 // const a = declareAction()
 // const ap = declareAction<0>()
+// const aop = declareAction<{ a: string; b: number; c: boolean }>()
 
 // const test1 = useAction(a)
 // const test2 = useAction(() => a())
@@ -172,3 +157,4 @@ export function useAction(
 //     return 123
 //   }
 // })
+// const test8 = useAction((a: string, b: number, c: boolean = false) => aop({ a, b, c }))
