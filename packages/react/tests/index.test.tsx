@@ -1,8 +1,14 @@
-import React from 'react'
+import React, { createContext } from 'react'
 import { renderHook } from '@testing-library/react-hooks'
 import { act } from 'react-test-renderer'
 import { declareAction, declareAtom, createStore, Store } from '@reatom/core'
-import { Provider as StoreProvider, useAtom, useAction } from '../src/index'
+import {
+  Provider as StoreProvider,
+  useAtom,
+  useAction,
+  createActionHook,
+  createAtomHook,
+} from '../src/index'
 
 const increment = declareAction()
 const add = declareAction<number>()
@@ -209,6 +215,82 @@ describe('@reatom/react', () => {
 
       result.current(10)
       expect(dispatch).toBeCalledWith(add(30))
+    })
+  })
+
+  describe('createActionHook', () => {
+    test(`calls the correct store's dispatch function`, () => {
+      const NestedContext = createContext(null)
+      const useCustomAction = createActionHook(NestedContext)
+
+      const store1 = createStore(null)
+      const dispatch1 = jest.fn()
+      store1.dispatch = dispatch1
+
+      const store2 = createStore(null)
+      const dispatch2 = jest.fn()
+      store2.dispatch = dispatch2
+
+      const { result } = renderHook(
+        () => ({
+          act1: useAction(increment),
+          act2: useCustomAction(increment),
+        }),
+        {
+          wrapper: props => (
+            <Provider store={store1}>
+              <NestedContext.Provider {...props} value={store2} />
+            </Provider>
+          ),
+        },
+      )
+
+      act(() => result.current.act1())
+
+      expect(dispatch1).toHaveBeenCalledTimes(1)
+      expect(dispatch2).toHaveBeenCalledTimes(0)
+
+      act(() => result.current.act2())
+
+      expect(dispatch1).toHaveBeenCalledTimes(1)
+      expect(dispatch2).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('createAtomHook', () => {
+    test(`returns the correct store's atom value`, () => {
+      const NestedContext = createContext(null)
+      const useCustomAtom = createAtomHook(NestedContext)
+
+      const store1 = createStore(countAtom)
+      const store2 = createStore(countAtom)
+
+      const { result } = renderHook(
+        () => ({
+          atom1: useAtom(countAtom),
+          atom2: useCustomAtom(countAtom),
+        }),
+        {
+          wrapper: props => (
+            <Provider store={store1}>
+              <NestedContext.Provider {...props} value={store2} />
+            </Provider>
+          ),
+        },
+      )
+
+      expect(result.current.atom1).toBe(0)
+      expect(result.current.atom2).toBe(0)
+
+      act(() => store1.dispatch(increment()))
+
+      expect(result.current.atom1).toBe(1)
+      expect(result.current.atom2).toBe(0)
+
+      act(() => store2.dispatch(increment()))
+
+      expect(result.current.atom1).toBe(1)
+      expect(result.current.atom2).toBe(1)
     })
   })
 })
