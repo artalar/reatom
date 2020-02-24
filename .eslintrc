@@ -1,31 +1,100 @@
 {
-  "parser": "babel-eslint",
+  "parser": "@typescript-eslint/parser",
 
-  "plugins": ["jest", "prettier"],
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+
+  "plugins": ["jest", "prettier", "@typescript-eslint", "react"],
 
   "extends": [
     "airbnb-base",
-    "plugin:prettier/recommended"
+    "plugin:import/typescript",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:prettier/recommended",
+    "prettier/@typescript-eslint"
+  ],
+
+  "overrides": [
+    {
+      "files": ["*.js"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
   ],
 
   "rules": {
-    "no-param-reassign": "off",
-    "no-prototype-builtins": "off",
-    "no-void": "off",
-    "no-plusplus": "off",
-    "no-underscore-dangle": "off",
-    "prettier/prettier": "error",
+    "@typescript-eslint/camelcase": [
+      "warn",
+      {
+        "allow": ["^UNSAFE_", "^_"]
+      }
+    ],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-empty-function": [
+      "error",
+      {
+        "allow": ["functions", "arrowFunctions"]
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-use-before-define": [
+      "error",
+      {
+        "functions": false
+      }
+    ],
     "class-methods-use-this": "off",
-    "prefer-destructuring": "warn",
     "consistent-return": "off",
+    "import/no-cycle": "warn",
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": [
+          "**/*.test.{js,jsx,ts,tsx}",
+          "**/*.spec.{js,jsx,ts,tsx}",
+          "**/benchmark/**/*.{js,jsx,ts,tsx}"
+        ]
+      }
+    ],
     "import/prefer-default-export": "off",
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "mjs": "never",
+        "jsx": "never",
+        "ts": "never",
+        "tsx": "never"
+      }
+    ],
+    "max-classes-per-file": "warn",
     "no-continue": "off",
+    "no-nested-ternary": "warn",
+    "no-param-reassign": "off",
+    "no-plusplus": "off",
+    "no-prototype-builtins": "off",
     "no-return-assign": "off",
     "no-sequences": "off",
-    "no-unused-vars": "warn"
+    "no-underscore-dangle": "off",
+    "no-void": "off",
+    "prettier/prettier": "error",
+    "react/jsx-uses-react": "error",
+    "react/jsx-uses-vars": "error"
   },
 
   "env": {
     "jest/globals": true
+  },
+
+  "settings": {
+    "react": {
+      "pragma": "React"
+    }
   }
 }
