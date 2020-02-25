@@ -60,6 +60,7 @@ export function useAtom<TI, TO = TI>(
 
   if (!store) throw new Error('[reatom] The provider is not defined')
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   function getRelativeState(atomValue = store!.getState(atomRef.current!)) {
     return selectorRef.current(atomValue)
   }

@@ -1,5 +1,5 @@
-import { genIdFromLine } from '../src/genIdFromLine'
 import { declareAtom, declareAction, setNameToId, getTree } from '@reatom/core'
+import { genIdFromLine } from '../src/genIdFromLine'
 
 describe('@reatom/debug', () => {
   describe('genIdFromLine', () => {

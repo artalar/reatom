@@ -16,6 +16,7 @@ function noop() {}
 describe('@reatom/core', () => {
   describe('main api', () => {
     test('getIsAction', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       expect(getIsAction()).toBe(false)
       expect(getIsAction(null)).toBe(false)
@@ -24,6 +25,7 @@ describe('@reatom/core', () => {
       expect(getIsAction(declareAtom(0, noop))).toBe(false)
     })
     test('getIsAtom', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       expect(getIsAtom()).toBe(false)
       expect(getIsAtom(null)).toBe(false)
@@ -100,7 +102,7 @@ describe('@reatom/core', () => {
       })
 
       test('throw error if declareAtom called with an undefined initial state', () => {
-        const run = () => declareAtom(['test'], undefined, on => [])
+        const run = () => declareAtom(['test'], undefined, () => [])
 
         expect(run).toThrowError(
           `[reatom] Atom "test". Initial state can't be undefined`,
@@ -508,11 +510,11 @@ describe('@reatom/core', () => {
   })
 
   test('atom id as symbol', () => {
-    const atom = declareAtom(['my atom'], 0, on => [])
+    const atom = declareAtom(['my atom'], 0, () => [])
     const atomMap = map(atom, v => v)
     const atomCombine = combine([atom, atomMap])
 
-    expect(typeof getTree(declareAtom(0, on => [])).id).toBe('string')
+    expect(typeof getTree(declareAtom(0, () => [])).id).toBe('string')
     expect(getTree(atom).id).toBe('my atom')
     expect(typeof getTree(atomMap).id).toBe('symbol')
     expect(getTree(atomMap).id.toString()).toBe('Symbol(my atom [map])')
@@ -522,7 +524,7 @@ describe('@reatom/core', () => {
     )
     expect(
       getTree(
-        map(declareAtom(Symbol('123'), 0, on => []), v => v),
+        map(declareAtom(Symbol('123'), 0, () => []), v => v),
       ).id.toString(),
     ).toBe('Symbol(123 [map])')
   })
@@ -532,13 +534,14 @@ describe('@reatom/core', () => {
     const api = new Api()
     const mockApi = new Api()
     const apiAtom = declareAtom(Symbol('API'), api, () => [])
+    let store
 
-    var store = createStore(apiAtom)
+    store = createStore(apiAtom)
     expect(store.getState()).toEqual({
       [getTree(apiAtom).id]: api,
     })
 
-    var store = createStore({ [getTree(apiAtom).id]: mockApi })
+    store = createStore({ [getTree(apiAtom).id]: mockApi })
     expect(store.getState(apiAtom)).toBe(mockApi)
     expect(JSON.stringify(store.getState())).toBe('{}')
   })

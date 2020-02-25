@@ -38,21 +38,18 @@ describe('diamond problem (declareAtom)', () => {
     )
 
     const fullName = declareAtom('@fullName', '', handle =>
-      handle(
-        combine({ firstName, lastName }),
-        (state, { firstName, lastName }) => {
-          fullNameMap(firstName, lastName)
-          return `${firstName} ${lastName}`
-        },
-      ),
+      handle(combine({ firstName, lastName }), (state, dep) => {
+        fullNameMap(dep.firstName, dep.lastName)
+        return `${dep.firstName} ${dep.lastName}`
+      }),
     )
 
     const displayName = declareAtom('@displayName', '', handle =>
       handle(
         combine({ firstName, isFirstNameShort, fullName }),
-        (state, { firstName, isFirstNameShort, fullName }) => {
-          displayNameMap(firstName, isFirstNameShort, fullName)
-          return isFirstNameShort ? fullName : firstName
+        (state, dep) => {
+          displayNameMap(dep.firstName, dep.isFirstNameShort, dep.fullName)
+          return dep.isFirstNameShort ? dep.fullName : dep.firstName
         },
       ),
     )

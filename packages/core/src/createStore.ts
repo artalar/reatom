@@ -90,7 +90,7 @@ export function createStore(
     if (targetState !== undefined) return targetState
 
     const ctx = createCtx(state, initAction)
-    getTree(target)!.forEach(initAction.type, ctx)
+    getTree(target).forEach(initAction.type, ctx)
 
     return getState(ctx.stateNew, target)
   }
@@ -139,6 +139,7 @@ export function createStore(
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     nextListeners.get(targetId)!.push(listener)
 
     return () => {
@@ -146,6 +147,7 @@ export function createStore(
       isSubscribed = false
 
       ensureCanMutateNextListeners(targetId)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const _listeners = nextListeners.get(targetId)!
       _listeners.splice(_listeners.indexOf(listener), 1)
 
@@ -185,12 +187,14 @@ export function createStore(
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     callFromList(reactions || [], payload, store)
     callFromList(listeners.get(type) || [], payload)
     callFromList((dispatchListeners = nextDispatchListeners), action, stateNew)
   }
 
   const bind: Store['bind'] = actionCreator => (...a) =>
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     store.dispatch(actionCreator(...a))
 
   const store = {
