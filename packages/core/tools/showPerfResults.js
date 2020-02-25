@@ -12,7 +12,7 @@ function median(values) {
 
   values.sort((a, b) => a - b)
 
-  var half = Math.floor(values.length / 2)
+  const half = Math.floor(values.length / 2)
 
   if (values.length % 2) return values[half]
 
@@ -26,7 +26,7 @@ function average(values) {
 function targetsAverage(targetsValues) {
   const targetsValuesAverage = targetsValues.map(median)
   const min = Math.min(...targetsValuesAverage)
-  return targetsValuesAverage.map(v => ((min / +v) * 100).toFixed(0) + '%')
+  return targetsValuesAverage.map(v => `${((min / +v) * 100).toFixed(0)}%`)
 }
 
 let times = 0
@@ -38,7 +38,7 @@ const displayData = Object.entries(logData).reduce(
     times = targetsValues[0].length
 
     acc[testName] = targetsNames.reduce(
-      (acc, k, i) => ((acc[k] = targetsValuesAverage[i]), acc),
+      (acc1, k, i) => ((acc1[k] = targetsValuesAverage[i]), acc1),
       {},
     )
 
@@ -47,5 +47,7 @@ const displayData = Object.entries(logData).reduce(
   {},
 )
 
+// eslint-disable-next-line no-console
 console.log('\n', 'Average from', times, 'times')
+// eslint-disable-next-line no-console
 console.log(displayData)

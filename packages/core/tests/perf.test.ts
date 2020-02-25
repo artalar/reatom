@@ -1,5 +1,5 @@
-import fs from 'fs'
-import path from 'path'
+// import fs from 'fs'
+// import path from 'path'
 import {
   createStore as createStoreRedux,
   combineReducers as combineReducersRedux,
@@ -13,7 +13,6 @@ import {
   // replace('es', 'src') // for develop
 } from '../src/index'
 
-// @ts-ignore
 function log(name, target, time) {
   // console.log(name, target, time, 'ms')
   // // use with `tools/showPerfResults.js`
@@ -28,7 +27,9 @@ describe('redux-reatom', () => {
   describe('perf [~100 stores ~30 actions]', () => {
     // const test = (name, f) => f();
 
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
     const { performance } = require('perf_hooks')
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
     const { createSelector } = require('reselect')
 
     const heavyCalculates = () =>

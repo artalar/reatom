@@ -184,7 +184,7 @@ function median(values: number[]) {
 
   values.sort((a, b) => (a - b ? 1 : -1))
 
-  var half = Math.floor(values.length / 2)
+  const half = Math.floor(values.length / 2)
 
   if (values.length % 2) return values[half]
 
@@ -198,6 +198,7 @@ function medianTitle(type, results) {
 const displayData = Object.entries(logResult)
   .map(
     ([name, typesResults]) =>
+      // eslint-disable-next-line prefer-template
       `${name}\n` +
       medianTitle('redux', typesResults) +
       '\n' +
@@ -206,7 +207,9 @@ const displayData = Object.entries(logResult)
   .join('\n\n')
 
 export const displayResult = () => {
+  // eslint-disable-next-line no-console
   console.log('\n', 'Average from', ITEMS, 'items;', times, 'times \n')
+  // eslint-disable-next-line no-console
   console.log(displayData)
 }
 

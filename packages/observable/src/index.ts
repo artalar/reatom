@@ -1,5 +1,5 @@
 import { Store, Atom, Action } from '@reatom/core'
-import Symbol_observable from 'symbol-observable'
+import $$observable from 'symbol-observable'
 
 export type ActionOrValue<T> = T extends undefined ? Action<any, string> : T
 
@@ -44,11 +44,14 @@ export interface Observer<T> {
 
 export class Observable<T> implements Observable<T> {
   readonly store: Store
+
   readonly atom?: Atom<T>
+
   constructor(store: Store, atom?: Atom<T>) {
     this.store = store
     this.atom = atom
   }
+
   subscribe(
     observer: Observer<T> | ((value: ActionOrValue<T>) => void),
     onError?: Function,
@@ -84,14 +87,14 @@ export class Observable<T> implements Observable<T> {
       },
     }
 
-    if (typeof observer !== 'function' && observer!.start) {
+    if (typeof observer !== 'function' && observer.start) {
       observer.start(subscription)
     }
 
     return subscription
   }
 
-  [Symbol_observable]() {
+  [$$observable]() {
     return this
   }
 }

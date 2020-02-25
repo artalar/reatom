@@ -13,14 +13,16 @@ type GenConfiguration = {
   showColumn: boolean
 }
 
-class StackTraceParcer extends Error {
+class StackTraceParser extends Error {
   stackTraces: Trace[]
+
   constructor(error?: string) {
     super(error)
     this.stackTraces = []
     Error.captureStackTrace(this, this.constructor)
     this.getTrace()
   }
+
   getTrace() {
     function prepareStackTrace(
       err: Error,
@@ -54,10 +56,10 @@ export function genIdFromLine(
     ...config,
   }
 
-  function genIdFromLine(name: string | [string]): TreeId {
+  function _genIdFromLine(name: string | [string]): TreeId {
     const {
       stackTraces: [, , , trace],
-    } = new StackTraceParcer()
+    } = new StackTraceParser()
 
     if (!trace || !trace.file) {
       return nameToIdDefault(name)
@@ -67,7 +69,7 @@ export function genIdFromLine(
     const withoutBackSlashes = trace.file.replace(/\\/g, '/')
     const file = useFullPath
       ? withoutBackSlashes
-      : withoutBackSlashes.match(`(?:\/[^\/]*){1,${pathMaxDeep}}$`)
+      : withoutBackSlashes.match(`(?:\\/[^\\/]*){1,${pathMaxDeep}}$`)
 
     let id = `${extractName} [${file}:${trace.line}`
 
@@ -79,5 +81,5 @@ export function genIdFromLine(
 
     return id
   }
-  return genIdFromLine
+  return _genIdFromLine
 }
