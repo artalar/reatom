@@ -1,4 +1,4 @@
-const definions = {
+const definitions = {
   source: '@reatom/core',
   declareAtom: 'declareAtom',
   declareAction: 'declareAction',
@@ -12,7 +12,7 @@ const definions = {
   Thanks @zerobias and @goodmind for implementation example
   https://www.npmjs.com/package/effector
 */
-module.exports = function(babel) {
+module.exports = function babelPlugin(babel) {
   const { types: t } = babel
 
   const plugin = {
@@ -26,7 +26,7 @@ module.exports = function(babel) {
           source: { value: source },
           specifiers,
         } = path.node
-        if (source !== definions.source) {
+        if (source !== definitions.source) {
           return
         }
         for (let i = 0; i < specifiers.length; i++) {
@@ -34,7 +34,7 @@ module.exports = function(babel) {
           if (!s.imported) continue
           const importedName = s.imported.name
           const localName = s.local.name
-          if (definions.names.includes(importedName)) {
+          if (definitions.names.includes(importedName)) {
             this.importedNames.set(localName, importedName)
           }
         }
@@ -90,13 +90,13 @@ function pushNameToArgs(path, nameNodeId, t, name) {
   } = callExp
 
   switch (name) {
-    case definions.map:
-    case definions.declareAtom:
+    case definitions.map:
+    case definitions.declareAtom:
       if (args.length === 2) {
         args.unshift(t.stringLiteral(displayName))
       }
       break
-    case definions.declareAction:
+    case definitions.declareAction:
       if (
         args.length === 0 ||
         !['TemplateLiteral', 'StringLiteral', 'ArrayExpression'].includes(
@@ -106,7 +106,7 @@ function pushNameToArgs(path, nameNodeId, t, name) {
         args.unshift(t.stringLiteral(displayName))
       }
       break
-    case definions.combine:
+    case definitions.combine:
       if (args.length === 1) {
         args.unshift(t.stringLiteral(displayName))
       }

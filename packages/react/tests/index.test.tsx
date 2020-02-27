@@ -1,6 +1,5 @@
-import React, { useMemo, useEffect } from 'react'
+import React from 'react'
 import { renderHook } from '@testing-library/react-hooks'
-import { render } from '@testing-library/react'
 import { act } from 'react-test-renderer'
 import { declareAction, declareAtom, createStore, Store } from '@reatom/core'
 import { Provider as StoreProvider, useAtom, useAction } from '../src/index'
@@ -13,9 +12,7 @@ const countAtom = declareAtom(['count'], 0, on => [
 ])
 
 function Provider(props: { store: Store; children?: any }) {
-  return (
-    <StoreProvider value={props.store}>{props.children}</StoreProvider>
-  )
+  return <StoreProvider value={props.store}>{props.children}</StoreProvider>
 }
 
 describe('@reatom/react', () => {
@@ -86,7 +83,6 @@ describe('@reatom/react', () => {
       const store = createStore(countAtom, { count: 10 })
       const subscriber = jest.fn()
       const _subscribe = store.subscribe
-      // @ts-ignore
       store.subscribe = atom => _subscribe(atom, subscriber)
 
       const { rerender } = renderHook(
@@ -140,7 +136,6 @@ describe('@reatom/react', () => {
       const store = createStore(null)
       const _subscribe = store.subscribe
       const subscriber = jest.fn()
-      // @ts-ignore
       store.subscribe = atom => _subscribe(atom, subscriber)
 
       const { unmount } = renderHook(() => useAtom(countAtom, () => null, []), {
@@ -159,6 +154,7 @@ describe('@reatom/react', () => {
 
   describe('useAction', () => {
     test('throw Error if provider is not set', () => {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
       // @ts-ignore
       const { result } = renderHook(() => useAtom())
       expect(result.error).toEqual(

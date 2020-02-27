@@ -24,6 +24,7 @@ export type InferType<T> = T extends (
 
 export function noop() {}
 
+// eslint-disable-next-line prefer-destructuring
 export const assign = Object.assign
 
 export function getTree(thing: Unit): Tree {
@@ -66,7 +67,7 @@ export function setNameToId(gen: GenId) {
 
 export function throwError(error: string) {
   // TODO: add link to docs with full description
-  throw new Error('[reatom] ' + error)
+  throw new Error(`[reatom] ${error}`)
 }
 export function safetyStr(str: string, name: string): string {
   if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)

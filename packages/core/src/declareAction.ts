@@ -1,5 +1,5 @@
 import { Leaf, Tree, BaseAction } from './kernel'
-import { TREE, noop, nameToId, Unit, assign } from './shared'
+import { TREE, nameToId, Unit, assign } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf

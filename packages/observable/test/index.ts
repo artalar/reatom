@@ -1,5 +1,5 @@
-import { observe } from '../src/'
 import { declareAtom, declareAction, createStore } from '@reatom/core'
+import { observe } from '../src'
 
 describe('@reatom/observable', () => {
   test('Symbol.observable', () => {

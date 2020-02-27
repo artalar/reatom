@@ -64,7 +64,7 @@ export function declareAtom<TState>(
   const _deps = new Set<TreeId>()
   // start from `0` for missing `actionDefault`
   let dependencePosition = 0
-  let initialPhase = true
+  const initialPhase = true
 
   function on<T>(
     dep: Unit | PayloadActionCreator<T>,
@@ -76,7 +76,7 @@ export function declareAtom<TState>(
     safetyFunc(reducer, 'reducer')
 
     const position = dependencePosition++
-    const depTree = getTree(dep as Unit)!
+    const depTree = getTree(dep as Unit)
     if (!depTree) throwError('Invalid dependency')
     const depId = depTree.id
 
@@ -132,8 +132,7 @@ export function declareAtom<TState>(
     depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
   }
 
-  // @ts-ignore
-  on(initActionCreator, (_, { [_id]: state = initialState } = {}) => state)
+  on(initActionCreator, (_, { [_id]: state = initialState }: any = {}) => state)
   dependencyMatcher(on)
 
   const atom = function atom(
@@ -175,7 +174,7 @@ export function map<T, TSource = unknown>(
   if (!mapper) {
     mapper = source as (dependedAtomState: TSource) => NonUndefined<T>
     source = name as Atom<TSource>
-    name = Symbol(getName(getTree(source).id) + ' [map]')
+    name = Symbol(`${getName(getTree(source).id)} [map]`)
   }
   safetyFunc(mapper, 'mapper')
 
@@ -184,8 +183,8 @@ export function map<T, TSource = unknown>(
     // FIXME: initialState for `map` :thinking:
     null as any,
     handle =>
-      //@ts-ignore
-      handle(source as Atom<TSource>, (state, payload) => mapper(payload)),
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      handle(source as Atom<TSource>, (state, payload) => mapper!(payload)),
   )
 }
 
@@ -206,24 +205,22 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
 
   const isArray = Array.isArray(shape)
 
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const keys = Object.keys(shape!)
   keys.push(...((Object.getOwnPropertySymbols(shape) as unknown) as string[]))
 
   if (arguments.length === 1)
     name = isArray
       ? Symbol(
-          '[' +
-            keys
-              .map(k => getName(getTree((shape as TupleOfAtoms)[k as any]).id))
-              .join() +
-            ']',
+          `[${keys
+            .map(k => getName(getTree((shape as TupleOfAtoms)[k as any]).id))
+            .join()}]`,
         )
-      : Symbol('{' + keys.map(getName).join() + '}')
+      : Symbol(`{${keys.map(getName).join()}}`)
 
   return declareAtom(name as AtomName, isArray ? [] : {}, reduce =>
     keys.forEach(key =>
-      //@ts-ignore
-      reduce(shape[key], (state, payload) => {
+      reduce((shape as any)[key], (state, payload) => {
         const newState: any = isArray
           ? (state as any[]).slice(0)
           : assign({}, state)
