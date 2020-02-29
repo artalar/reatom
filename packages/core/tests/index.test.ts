@@ -685,4 +685,69 @@ describe('@reatom/core', () => {
       ).toThrowError('[reatom] One of dependencies has the equal id')
     })
   })
+
+  describe('subscriber should not be called', () => {
+    test('if returns previous state from atom reducer', () => {
+      const increment = declareAction()
+      const initialState = {
+        counter: 0,
+        data: {
+          counter: 1,
+        },
+      }
+      const dataReducerMock = jest.fn(state => state.data)
+      const counterReducerMock = jest.fn(state => state.counter)
+
+      const rootAtom = declareAtom(initialState, on => [
+        on(increment, state => ({ ...state, counter: state.counter + 1 })),
+      ])
+      const dataAtom = map(rootAtom, dataReducerMock)
+      const counterAtom = map(dataAtom, counterReducerMock)
+
+      const store = createStore(counterAtom)
+
+      expect(dataReducerMock).toBeCalledTimes(1)
+      expect(counterReducerMock).toBeCalledTimes(1)
+
+      store.dispatch(increment())
+
+      expect(dataReducerMock).toBeCalledTimes(2)
+      expect(counterReducerMock).toBeCalledTimes(1)
+    })
+
+    test('if returns snapshot state from atom reducer', () => {
+      const action = declareAction()
+      const rootAtom = declareAtom(0, on => [
+        on(action, state => state + 1),
+        on(action, state => state - 1),
+      ])
+
+      const subReducerMock = jest.fn(state => state)
+      const subAtom = map(rootAtom, subReducerMock)
+      const store = createStore(subAtom)
+
+      expect(subReducerMock).toBeCalledTimes(1)
+
+      store.dispatch(action())
+
+      expect(subReducerMock).toBeCalledTimes(1)
+    })
+
+    test('if always returns NaN from atom reducer', () => {
+      const action = declareAction()
+      const rootAtom = declareAtom(0, on => [on(action, () => NaN)])
+
+      const counterReducerMock = jest.fn(state => state)
+      const counterAtom = map(rootAtom, counterReducerMock)
+
+      const store = createStore(counterAtom)
+      expect(counterReducerMock).toBeCalledTimes(1)
+
+      store.dispatch(action())
+      expect(counterReducerMock).toBeCalledTimes(2)
+
+      store.dispatch(action())
+      expect(counterReducerMock).toBeCalledTimes(2)
+    })
+  })
 })

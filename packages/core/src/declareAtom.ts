@@ -10,6 +10,7 @@ import {
   getIsAction,
   assign,
   getName,
+  equals,
 } from './shared'
 import { Action, declareAction, PayloadActionCreator } from './declareAction'
 
@@ -120,8 +121,18 @@ export function declareAtom<TState>(
             `Invalid state. Reducer number ${position} in "${_name}" atom returns undefined`,
           )
 
-        if (atomStateNew !== atomState && !hasAtomNewState) changedIds.push(_id)
-        stateNew[_id as string] = atomStateNew
+        if (hasAtomNewState && equals(atomStateSnapshot, atomStateNew)) {
+          changedIds.splice(changedIds.indexOf(_id), 1)
+          delete stateNew[_id as string]
+
+          return
+        }
+
+        if (!equals(atomState, atomStateNew)) {
+          if (!hasAtomNewState) changedIds.push(_id)
+
+          stateNew[_id as string] = atomStateNew
+        }
       }
     }
     update._ownerAtomId = _id
