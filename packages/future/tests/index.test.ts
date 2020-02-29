@@ -1,37 +1,47 @@
-import { Future, Ctx, Atom, STOP, all, race, reduce } from '../src'
+import {
+  STOP,
+  Ctx,
+  RunCtx,
+  futureOf,
+  futureMap,
+  futureCombine,
+  atomOf,
+  noop,
+} from '../src'
 
 function log(...a: any[]) {
+  return
   console.log('TEST', ...a)
 }
 
 describe('@reatom/future', () => {
   test('source', () => {
     log('source')
-    const f = Future.of(0)
+    const f = futureOf((v: number = 0) => v)
 
-    expect(f.fork(1)).toBe(1)
+    expect(f(1)).toBe(1)
   })
   test('chain', () => {
     log('chain')
-    const f = Future.of(0).chain(v => v ** 2)
+    const f = futureOf((v: number = 0) => v).chain(v => v ** 2)
 
-    expect(f.fork(2)).toBe(4)
+    expect(f(2)).toBe(4)
   })
   test('chain async', async () => {
     log('chain async')
-    const f = Future.of(0)
+    const f = futureOf((v: number = 0) => v)
       .chain(v => Promise.resolve(v))
       .chain(v => v * 2)
 
-    expect(f.fork(1)).toBeInstanceOf(Promise)
-    expect(await f.fork(1)).toBe(2)
-    expect(await Promise.all([f.fork(1), f.fork(2)])).toEqual([2, 4])
+    expect(f(1)).toBeInstanceOf(Promise)
+    expect(await f(1)).toBe(2)
+    expect(await Promise.all([f(1), f(2)])).toEqual([2, 4])
   })
   test('async concurrency', async () => {
     log('async concurrency')
 
-    const fetchConcurrent = Future.from(async (data: number, cache) => {
-      const tag = (cache.tag = (cache.tag || 0) + 1)
+    const fetchConcurrent = futureOf(async (data: number, runCtx, cache) => {
+      const tag = (cache.tag = ((cache.tag as number) || 0) + 1)
 
       await new Promise(r => setTimeout(r))
 
@@ -42,34 +52,34 @@ describe('@reatom/future', () => {
 
     fetchConcurrent.subscribe(cb)
 
-    fetchConcurrent.fork(1)
-    fetchConcurrent.fork(2)
-    fetchConcurrent.fork(3)
+    fetchConcurrent(1)
+    fetchConcurrent(2)
+    fetchConcurrent(3)
 
     await new Promise(r => setTimeout(r))
 
     expect(cb).toBeCalledTimes(1)
-    expect(cb).toBeCalledWith(3)
+    expect(cb.mock.calls[0][0]).toBe(3)
   })
   test('subscription', () => {
     log('subscription')
-    const f = Future.of(0)
+    const f = futureOf((v: number = 0) => v)
     const cb = jest.fn()
 
     const unsubscribe = f.subscribe(v => cb(v))
     expect(cb).toBeCalledTimes(0)
 
-    f.fork(1)
+    f(1)
     expect(cb).toBeCalledWith(1)
 
     unsubscribe()
 
-    f.fork(2)
+    f(2)
     expect(cb).toBeCalledTimes(1)
   })
   test('subscription filter', () => {
     log('subscription filter')
-    const f = Future.of(0).chain(v => {
+    const f = futureOf((v: number = 0) => v).chain(v => {
       if (v % 2) return v
       return STOP
     })
@@ -78,65 +88,80 @@ describe('@reatom/future', () => {
     f.subscribe(v => cb(v))
     expect(cb).toBeCalledTimes(0)
 
-    f.fork(1)
+    f(1)
     expect(cb).toBeCalledTimes(1)
 
-    f.fork(2)
+    f(2)
     expect(cb).toBeCalledTimes(1)
 
-    f.fork(3)
+    f(3)
     expect(cb).toBeCalledTimes(2)
   })
   test('subscription contexts', () => {
     log('subscription contexts')
-    const f = Future.of(0)
-    const ctx1 = new Ctx()
-    const ctx2 = new Ctx()
+    const f = futureOf((v: number = 0) => v)
+    const ctx1 = Ctx()
+    const ctx2 = Ctx()
     const cb1 = jest.fn()
     const cb2 = jest.fn()
 
     f.subscribe(cb1, ctx1)
     f.subscribe(cb2, ctx2)
 
-    f.fork(1)
+    f(1)
     expect(cb1).toBeCalledTimes(0)
     expect(cb2).toBeCalledTimes(0)
 
-    f.fork(1, ctx1)
+    ctx1.dispatch(f, 1)
     expect(cb1).toBeCalledTimes(1)
     expect(cb2).toBeCalledTimes(0)
 
-    f.fork(1, ctx2)
+    ctx2.dispatch(f, 1)
+    expect(cb1).toBeCalledTimes(1)
+    expect(cb2).toBeCalledTimes(1)
+  })
+  test('subscription contexts (bind)', () => {
+    log('subscription contexts (bind)')
+    const f = futureOf((v: number = 0) => v)
+    const f1 = f.bind(Ctx())
+    const f2 = f.bind(Ctx())
+    const cb1 = jest.fn()
+    const cb2 = jest.fn()
+
+    f1.subscribe(cb1)
+    f2.subscribe(cb2)
+
+    f(1)
+    expect(cb1).toBeCalledTimes(0)
+    expect(cb2).toBeCalledTimes(0)
+
+    f1(1)
+    expect(cb1).toBeCalledTimes(1)
+    expect(cb2).toBeCalledTimes(0)
+
+    f2(1)
     expect(cb1).toBeCalledTimes(1)
     expect(cb2).toBeCalledTimes(1)
   })
   test('combines', () => {
     log('combines')
-    const f1 = Future.of(1)
-    const f2 = Future.of(2)
+    const f = futureOf((v: number) => v)
+    const f1 = f.chain(v => v + 1)
+    const f2 = f.chain(v => v + 2)
     const cb1 = jest.fn()
-    const cb2 = jest.fn()
 
-    all([f1, f2]).subscribe(v => cb1(v))
-    race([f1, f2]).subscribe(v => cb2(v))
+    futureCombine([f1, f2]).subscribe(v => cb1(v))
 
-    f1.fork(1)
-    expect(cb1).toBeCalledTimes(0)
-    expect(cb2).toBeCalledWith(1)
-
-    f1.fork(2)
-    expect(cb1).toBeCalledTimes(0)
-    expect(cb2).toBeCalledWith(2)
-
-    f2.fork(3)
+    f(3)
     expect(cb1).toBeCalledTimes(1)
-    expect(cb1).toBeCalledWith([2, 3])
-    expect(cb2).toBeCalledWith(3)
+    expect(cb1.mock.calls[0][0]).toEqual([4, 5])
   })
   test('all async stop', async () => {
     log('all async stop')
-    const f1 = Future.of(0)
-    const f2 = Future.of(0)
+    const f = futureOf((v: number) => v)
+    const f1 = f.chain(v => v + 1)
+    const f2 = f
+      .chain(v => v + 2)
       .chain(v => Promise.resolve(v))
       .chain(v => {
         if (v % 2) return STOP
@@ -145,44 +170,44 @@ describe('@reatom/future', () => {
 
     const cb = jest.fn()
 
-    all([f1, f2]).subscribe(v => cb(v))
+    futureCombine([f1, f2]).subscribe(v => cb(v))
 
-    f1.fork(1)
+    f1(1)
     await new Promise(r => setTimeout(r))
     expect(cb).toBeCalledTimes(0)
 
-    f2.fork(2)
+    f2(2)
     await new Promise(r => setTimeout(r))
     expect(cb).toBeCalledTimes(1)
-    expect(cb).toBeCalledWith([1, 2])
+    expect(cb).toBeCalledWith([3, 4])
 
-    f2.fork(3)
+    f2(3)
     await new Promise(r => setTimeout(r))
     expect(cb).toBeCalledTimes(1)
 
-    f2.fork(4)
+    f2(4)
     await new Promise(r => setTimeout(r))
     expect(cb).toBeCalledTimes(2)
-    expect(cb).toBeCalledWith([1, 4])
+    expect(cb).toBeCalledWith([5, 6])
   })
   test('fork all', () => {
     log('all')
-    const f1 = Future.of(1)
-    const f2 = Future.of(2) //.chain(v => Promise.resolve(v))
+    const f1 = futureOf((v: number = 1) => v)
+    const f2 = futureOf((v: number = 2) => v) //.chain(v => Promise.resolve(v))
 
-    const fArray = all([f1, f2])
-    expect(fArray.fork([3, 4])).toEqual([3, 4])
+    const fArray = futureCombine([f1, f2])
+    expect(fArray([3, 4])).toEqual([3, 4])
 
-    const fShape = all({ f1, f2 })
-    expect(fShape.fork({ f1: 3, f2: 4 })).toEqual({ f1: 3, f2: 4 })
+    const fShape = futureCombine({ f1, f2 })
+    expect(fShape({ f1: 3, f2: 4 })).toEqual({ f1: 3, f2: 4 })
   })
   test('life cycle', async () => {
     log('life cycle')
     const initState = 0
-    const f = Future.of(initState, {
+    const f = futureOf((v: number = initState) => v, {
       init(me, cache, ctx) {
         let state = initState
-        const timerId = setInterval(() => me.fork(++state, ctx))
+        const timerId = setInterval(() => ctx.dispatch(me, ++state))
 
         return () => cleanup(timerId)
       },
@@ -200,67 +225,124 @@ describe('@reatom/future', () => {
   })
   test('atom', () => {
     log('atom')
-    const f1 = Future.of(0)
-    const f2 = Future.of('string')
+    const f1 = futureOf((v: number) => v)
+    const f2 = futureOf((v: number) => v)
     const cb = jest.fn()
 
-    const atom = Atom.create(
-      0,
-      reduce(f1, (state, payload) => payload),
-      reduce(f2, (state, payload) => payload),
-    )
+    const atom = atomOf(0, {
+      reducers: [
+        f1.reduce((state, payload) => payload),
+        f2.reduce((state, payload) => payload),
+      ],
+    })
 
     const un = atom.subscribe(v => cb(v))
 
-    atom.fork(1)
+    f1(1)
     expect(cb).toBeCalledWith(1)
 
-    f1.fork(42)
-    expect(cb).toBeCalledWith(42)
+    f2(2)
+    expect(cb).toBeCalledWith(2)
+    expect(cb).toBeCalledTimes(2)
 
-    f2.fork('string')
-    expect(cb).toBeCalledWith('string')
-    expect(cb).toBeCalledTimes(3)
+    f2(2)
+    expect(cb).toBeCalledTimes(2)
 
-    f2.fork('string')
-    expect(cb).toBeCalledTimes(3)
+    expect(atom.bind(Ctx())(1)).toBe(1)
+    expect(cb).toBeCalledTimes(2)
+  })
+  test('atom actions', async () => {
+    log('atom actions')
+    const cb = jest.fn()
+    const atom = atomOf(0, {
+      actions: {
+        update(state, payload: number) {
+          return payload
+        },
+      },
+    })
 
-    expect(atom.fork(1, new Ctx())).toBe(1)
-    expect(cb).toBeCalledWith('string')
+    const un = atom.subscribe(v => cb(v))
+
+    atom.actions.update(1)
+    expect(atom.getState()).toBe(1)
+    expect(cb).toBeCalledWith(1)
+    atom.actions.update(2)
+    expect(atom.getState()).toBe(2)
+    expect(cb).toBeCalledWith(2)
   })
   test('atom async', async () => {
-    log('atom')
-    const f1 = Future.of(0)
+    log('atom async')
+    const data = { data: true }
+    const requestData = futureOf(() => Promise.resolve(data))
     const cb = jest.fn()
 
-    const atom = Atom.create(
-      0,
-      reduce(f1, (state, payload) => payload),
-      reduce(
-        f1.chain(v => Promise.resolve(v * 2)),
-        (state, payload) => payload,
-      ),
-    )
+    const atom = atomOf<null | { data: any }>(null, {
+      reducers: [requestData.reduce((state, payload) => payload)],
+    })
 
     const un = atom.subscribe(v => cb(v))
 
-    f1.fork(1)
-    expect(cb).toBeCalledWith(1)
+    requestData(1)
+    expect(atom.getState()).toBe(null)
+    expect(cb).toBeCalledTimes(0)
     await new Promise(r => setTimeout(r))
-    expect(cb).toBeCalledWith(2)
+    expect(atom.getState()).toBe(data)
+    expect(cb).toBeCalledWith(data)
+  })
+  test('atom call', () => {
+    log('atom call')
+
+    const atom = atomOf(0)
+    const cb = jest.fn()
+    const un = atom.subscribe(v => cb(v))
+
+    atom(1)
+    expect(atom.getState()).toBe(1)
+    expect(cb).toBeCalledWith(1)
+  })
+  test('getInitialStoreState', () => {
+    log('getInitialStoreState')
+    const setTitle = futureOf<string>(v => v)
+    const titleAtom = atomOf('title', {
+      reducers: [setTitle.reduce((_, payload) => payload)],
+    })
+
+    const setMode = futureOf<string>(v => v)
+    const modeAtom = atomOf('desktop', {
+      reducers: [setMode.reduce((_, payload) => payload)],
+    })
+
+    const appAtom = futureCombine({
+      title: titleAtom,
+      mode: modeAtom,
+    })
+
+    appAtom.subscribe(noop)
+
+    expect(titleAtom.getState()).toEqual('title')
+    expect(modeAtom.getState()).toEqual('desktop')
+
+    appAtom({
+      title: 'My App',
+      mode: 'mobile',
+    })
+
+    expect(titleAtom.getState()).toEqual('My App')
+    expect(modeAtom.getState()).toEqual('mobile')
   })
   test.skip('ctx inherit', () => {
     log('ctx inherit')
 
-    const globalCtx = new Ctx()
-    const localCtx1 = (new InheritedCtx(globalCtx) as any) as Ctx
-    const localCtx2 = (new InheritedCtx(globalCtx) as any) as Ctx
+    const globalCtx = Ctx()
+    const localCtx1 = (InheritedCtx(globalCtx) as any) as Ctx
+    const localCtx2 = (InheritedCtx(globalCtx) as any) as Ctx
     const priceViewInstance1 = jest.fn()
     const priceViewInstance2 = jest.fn()
 
-    const taxAtom = Atom.create(0.2)
-    const costAtom = Atom.create(0)
-    const priceAtom = Atom.all([taxAtom, costAtom]).chain(
+    const taxAtom = atomOf(0.2)
+    const costAtom = atomOf(0)
+    const priceAtom = futureCombine([taxAtom, costAtom]).chain(
       ([tax, payload]) => tax * payload,
     )
 
@@ -268,15 +350,15 @@ describe('@reatom/future', () => {
     priceAtom.subscribe(priceViewInstance1, localCtx1)
     priceAtom.subscribe(priceViewInstance2, localCtx2)
 
-    costAtom.fork(10, localCtx1)
+    costAtom(10, localCtx1)
     expect(priceViewInstance1).toBeCalledWith(2)
     expect(priceViewInstance2).not.toBeCalled()
 
-    costAtom.fork(100, localCtx2)
+    costAtom(100, localCtx2)
     expect(priceViewInstance1).toBeCalledWith(2)
     expect(priceViewInstance2).toBeCalledWith(20)
 
-    taxAtom.fork(0.1, globalCtx)
+    taxAtom(0.1, globalCtx)
     expect(priceViewInstance1).toBeCalledWith(1)
     expect(priceViewInstance2).toBeCalledWith(10)
   })

@@ -1,415 +1,195 @@
-import { STOP, Queue, Fn, Collection, callSafety, clearTag } from '.'
+import * as effector from 'effector'
 
-export type Uid = string
+/* -------- */
+/* - TEST - */
+/* -------- */
 
-export type Thened<T> = T extends Promise<infer T> ? T : T
-export type Filtered<T> = T extends STOP ? never : T
-
-export type RefCache = Collection<any>
-export class Ref {
-  cache: RefCache = {}
-  cleanup?: Fn | void
-  links: Future<any, any>[] = []
+// declare function assert(condition: boolean, description?: string): asserts condition
+function assert(condition: boolean, description = 'Assert error') {
+  if (condition === false) throw new Error(description)
+}
+function isObject(thing: any): thing is Collection<unknown> {
+  return typeof thing === 'object' && thing !== null
 }
 
-export type CtxLinks = Map<Uid, Ref>
-export class Ctx {
-  private _lifeCycleQueue: Fn[] = []
-  private _links: CtxLinks = new Map()
-  // private _subscriptions: Fn<[RunCtx]>[] = []
+declare function isEqual<A, B extends A>(a: A, b: B): a is B
+declare function isEqual<B, A extends B>(a: A, b: B): b is A
+function isEqual(a: any, b: any): any {
+  return (
+    Object.is(a, b) ||
+    (isObject(a) &&
+      isObject(b) &&
+      Object.keys(a).length === Object.keys(b).length &&
+      Object.entries(a).every(([k, v]) => isEqual(v, b[k])))
+  )
+}
 
-  private _link(target: Future<any, any>, dependent: Future<any, any>) {
-    let targetRef = this.getRef(target)
+declare function createTrackedFn(): FnAny & { _calls: unknown[][] }
+declare function createTrackedFn<T extends FnAny>(
+  executor: T,
+): T & { _calls: unknown[][] }
+function createTrackedFn(executor = (v => v) as FnAny): any {
+  const _calls: unknown[][] = []
 
-    if (targetRef === undefined) {
-      this._links.set(target.uid, (targetRef = new Ref()))
-      // init life cycle method must be called starts from parent to child
-      target.deps.forEach(dep => this._link(dep, target))
-      if (target.init !== undefined) {
-        this._lifeCycleQueue.push(() => {
-          targetRef!.cleanup = target.init!(target, targetRef!.cache, this)
-        })
-      }
-    }
+  return assign(
+    function fn(...a: any[]) {
+      const result = executor(...a)
+      _calls.push(a)
+      return result
+    },
+    { _calls },
+  )
+}
 
-    targetRef.links.push(dependent)
-  }
+;(async () => {
+  const f0Map = createTrackedFn((v: number) => v + 1)
+  const f1Map = createTrackedFn(v => v + 1)
+  const f2Map = createTrackedFn(([_0, _1]) => ({ _0, _1 }))
 
-  private _unlink(target: Future<any, any>, dependent: Future<any, any>) {
-    const targetRef = this.getRef(target)
+  const f0 = futureOf(f0Map)
+  const f1 = futureMap(f0, f1Map)
+  const f2 = futureCombine([f0, f1], f2Map)
 
-    if (targetRef !== undefined) {
-      targetRef.links.splice(targetRef.links.indexOf(dependent), 1)
+  const track = createTrackedFn()
+  const uns = f2.subscribe(track)
 
-      if (targetRef.links.length === 0) {
-        this._links.delete(target.uid)
-        // cleanup life cycle method must be called starts from child to parent
-        if (targetRef.cleanup) {
-          this._lifeCycleQueue.push(targetRef.cleanup)
-        }
-        target.deps.forEach(dep => this._unlink(dep, target))
-      }
-    }
-  }
+  const result = f2([1, 2])
+  const expected = { _0: 2, _1: 3 }
 
-  private _lifeCycle() {
-    while (this._lifeCycleQueue.length !== 0)
-      // it will be good to catch an errors and do rollback of the linking
-      // but it not required for all users and implementation code is not tree-shackable
-      // so it good for implementing in some extra package by Ctx extending
-      callSafety(this._lifeCycleQueue.shift()!)
-  }
+  assert(isEqual(result, expected))
 
-  // subscribe<T>(cb: Fn<[RunCtx]>): () => void
-  subscribe<T>(
-    cb: Mapper<ChainedValue<T>, any>,
-    target: Future<any, T>,
-  ): () => void
-  subscribe<T>(cb: Fn<any>, target: Future<any, T>): () => void {
-    let isSubscribed = true
+  assert(f0Map._calls.length === 1)
+  assert(f1Map._calls.length === 1)
+  assert(f2Map._calls.length === 1)
 
-    // if (target === undefined) {
-    //   this._subscriptions.push(cb)
+  assert(track._calls.length === 1 && isEqual(track._calls[0][0], expected))
 
-    //   const unsubscribe = () => {
-    //     if (isSubscribed) {
-    //       isSubscribed = false
-    //       this._subscriptions.splice(this._subscriptions.indexOf(cb), 1)
-    //     }
-    //   }
-    //   return unsubscribe
+  uns()
+  f2([2, 3])
+  assert(track._calls.length === 1)
+})()
+;(async () => {
+  const track = createTrackedFn((v: string) => v)
+
+  const f3 = futureOf((v: number) => Promise.resolve(`_${v}`)).chain(track)
+  const result = await f3(42)
+  const expected = '_42'
+
+  assert(isEqual(result, expected))
+  assert(isEqual(track._calls[0][0], expected))
+})()
+;(async () => {
+  const a1 = atomOf(0)
+  const a2 = atomOf('0', {
+    reducers: [
+      a1.reduce((a, b) => {
+        return a + b
+      }),
+    ],
+  })
+
+  a2.subscribe(v => {
+    v //?
+  })
+
+  a1(1) //?
+  a1(1) //?
+})()
+;(async () => {
+  const atom = atomOf(0, {
+    reducers: [atomOf('').reduce((state, payload) => state)],
+    actions: {
+      update(state, payload: number) {
+        return payload
+      },
+    },
+  })
+
+  atom.subscribe(v => {
+    v //?
+  })
+
+  atom.actions.update(1) //?
+  atom.actions.update(2) //?
+})()
+
+// const myAtom = atom({
+//   name: 'myAtom', // or 'key' (optional)
+//   initState: '...',
+//   domain: '...', // (optional)
+//   reducers: [
+//     doSome.reduce((state, payload) => state),
+//     dataAtom.reduce((state, data) => state),
+//   ],
+//   actions: {
+//     update: (state, payload) => payload
+//   }
+// })
+
+// myAtom.update(42)
+// // { type: 'update "myAtom [1]"', payload: 42 }
+
+/* --------- */
+/* PERF TEST */
+/* --------- */
+;(() => {
+  return
+  const entry = futureOf((v: number = 0) => v) //1
+  const a = atomOf(0, { reducers: [entry.reduce(s => s + 1)] }) //2
+  const b = futureMap(a, a => a + 1) //3
+  const c = futureMap(a, a => a + 1) //4
+  const d = futureCombine([b, c], ([b, c]) => b + c) //5
+  const e = futureMap(d, d => d + 1) //6
+  const f = futureMap(d, d => d + 1) //7
+  const g = futureCombine([e, f], ([e, f]) => e + f) //8
+  const h1 = futureCombine([d, e, f, g], ([d, e, f, g]) => d + e + f + g) //9
+  const h2 = futureCombine([d, e, f, g], ([d, e, f, g]) => d + e + f + g) //10
+  const h = futureCombine([h1, h2], ([h1, h2]) => h1 + h2) //11
+  let res = 0
+  h.subscribe(v => {
+    res += v
+  })
+  res = 0
+  entry()
+
+  const eEntry = effector.createEvent()
+  const eA = effector.createStore(0).on(eEntry, s => s + 1)
+  const eB = eA.map(a => a + 1)
+  const eC = eA.map(a => a + 1)
+  const eD = effector.combine(eB, eC, (b, c) => b + c)
+  const eE = eD.map(d => d + 1)
+  const eF = eD.map(d => d + 1)
+  const eG = effector.combine(eE, eF, (e, f) => e + f)
+  const eH1 = effector.combine(eD, eE, eF, eG, (d, e, f, g) => d + e + f + g)
+  const eH2 = effector.combine(eD, eE, eF, eG, (d, e, f, g) => d + e + f + g)
+  const eH = effector.combine(eH1, eH2, (h1, h2) => h1 + h2)
+  let eRes = 0
+  eH.subscribe(v => {
+    eRes += v
+  })
+  eRes = 0
+  eEntry()
+
+  console.log({ res, eRes })
+
+  var i = 1000
+  while (i--) {
+    /* REATOM   */ entry() //?.
+    /* EFFECTOR */ eEntry() //?.
+
+    // if (!(i % 50)) {
+    //   const future = futureCombine([e, f], ([e, f]) => e + f) //?.
+    //   future.subscribe(v => (res += v))                       //?.
+    //   future.subscribe(v => (res += v))                       //?.
+    //   future.subscribe(v => (res += v))                       //?.
+    //   future.subscribe(v => (res += v))                       //?.
+    //   const store = effector.combine(eE, eF, (e, f) => e + f) //?.
+    //   store.subscribe(v => (eRes += v))                       //?.
+    //   store.subscribe(v => (eRes += v))                       //?.
+    //   store.subscribe(v => (eRes += v))                       //?.
+    //   store.subscribe(v => (eRes += v))                       //?.
     // }
-
-    const dependent = new Future<T, void>({
-      deps: [target],
-      name: `subscriber of ${target.name}`,
-      mapper: (v, cache, runCtx) => callSafety(cb, v, cache, runCtx),
-    })
-    this._link(target, dependent)
-    this._lifeCycle()
-
-    const unsubscribe = () => {
-      if (isSubscribed) {
-        isSubscribed = false
-        this._unlink(target, dependent)
-        this._lifeCycle()
-      }
-    }
-    return unsubscribe
   }
 
-  getRef(target: Future<any, any>): Ref | undefined {
-    return this._links.get(target.uid)
-  }
-}
-
-export type RunPayload = unknown
-export class RunCtx {
-  private _queue = Queue<Future<any, any>>()
-  payload = new Map<Future<any, any>, RunPayload>()
-  constructor(public ctx = new Ctx()) {}
-
-  schedule(links: Ref['links']) {
-    links.forEach(f => this._queue.insert(f.depth, f))
-  }
-
-  next() {
-    const f = this._queue.extract()
-
-    return f === undefined ? () => {} : f.executor
-  }
-}
-
-type BaseLifeCycleHook = Fn<[BaseFuture, RefCache, Ctx], Fn | void>
-class BaseFuture {
-  constructor({
-    ctx,
-    deps,
-    executor,
-    init,
-    name,
-  }: {
-    ctx: Ctx
-    deps: BaseFuture[]
-    executor: Fn<[RunCtx]>
-    init: BaseLifeCycleHook
-    name: string
-  }) {
-    this.ctx = ctx
-    this.deps = deps
-    this.executor = executor
-    this.init = init
-    this.name = name
-  }
-
-  pipe(...a: ((future: this) => void)[]) {
-    return a.reduce((acc, f) => , this)
-  }
-}
-
-export type Executor<Input, Output> = Fn<[RunCtx], any>
-export type ChainedValue<T> = Filtered<Thened<T>>
-export type Mapper<Input, Output> = Fn<[Input, RefCache, RunCtx], Output>
-
-export type LifeCycleHook<Input, Output> = Fn<
-  [Future<Input, Output>, RefCache, Ctx],
-  Fn | void
->
-
-export type CommonOptions<Input, Output> = {
-  ctx?: Ctx
-  init?: LifeCycleHook<Input, Output>
-  name?: string
-}
-export type ConstructorOptions<Input, Output> = CommonOptions<Input, Output> & {
-  deps?: [Future<any, any>] | Future<any, any>[]
-  mapper?: Mapper<Input, Output>
-}
-
-export type FutureInput<F> = F extends Future<infer T, any> ? T : never
-export type FutureOutput<F> = F extends Future<any, infer T> ? T : never
-export type ChainInput<Dependency> = ChainedValue<FutureOutput<Dependency>>
-export type ChainOutput<Output, T> = Output extends Promise<infer O>
-  ? Promise<O extends STOP ? Thened<T> | STOP : Thened<T>>
-  : Output extends STOP
-  ? T | STOP
-  : T
-
-export type ForkOutput<Output> = Output extends Promise<infer T>
-  ? T extends STOP
-    ? undefined
-    : T
-  : Output extends STOP
-  ? undefined
-  : Output
-
-let _id = 0
-export class Future<Input, Output> {
-  static ctx = new Ctx()
-  static createUid = (name: string): Uid => `${name} [${++_id}]`
-
-  static from<Input, Output>(
-    mapper: Mapper<Input, Output>,
-    options?: CommonOptions<Input, Output>,
-  ): Future<Input, Output>
-  static from<Output>(
-    mapper: Fn<[], Output>,
-    options?: CommonOptions<undefined, Output>,
-  ): Future<undefined, Output>
-  static from(
-    mapper: Mapper<any, any>,
-    { ctx, init, name = 'Future.from' }: CommonOptions<any, any> = {},
-  ) {
-    return new Future({
-      ctx,
-      init,
-      mapper,
-      name,
-    })
-  }
-
-  static of<T>(): Future<T, T>
-  static of<T>(
-    value: T,
-    options?: CommonOptions<T | undefined, T>,
-  ): Future<T | undefined, T>
-  static of(
-    value?: any,
-    { ctx, init, name = 'Future.of' }: CommonOptions<any, any> = {},
-  ) {
-    return Future.from((payload = value) => payload, { ctx, init, name })
-  }
-
-  readonly ctx: Ctx
-  readonly deps: Future<any, Input>[]
-  readonly depth: number
-  readonly executor: Executor<Input, Output>
-  readonly init?: LifeCycleHook<Input, Output>
-  readonly name: string
-  readonly uid: Uid
-
-  constructor({
-    ctx = Future.ctx,
-    deps = [],
-    init,
-    mapper = (v: any) => v,
-    name = 'Future',
-  }: ConstructorOptions<Input, Output>) {
-    const me = this
-    const uid = Future.createUid(name)
-    const executor: Executor<Input, Output> = {
-      [uid](runCtx: RunCtx) {
-        // TODO: undefined?
-        const input = me._read(runCtx)!
-        const ref = runCtx.ctx.getRef(me) || new Ref()
-
-        const output: any = mapper(input, ref.cache, runCtx)
-        me._write(runCtx, output)
-
-        if (output !== STOP) {
-          if (output instanceof Promise) {
-            output.then(value => {
-              me._write(runCtx, value)
-
-              if (value !== STOP) {
-                runCtx.schedule(ref.links)
-              }
-
-              runCtx.next()(runCtx)
-            })
-          } else {
-            runCtx.schedule(ref.links)
-          }
-        }
-
-        runCtx.next()(runCtx)
-      },
-    }[name]
-
-    this.ctx = ctx
-    this.deps = deps
-    this.depth = deps.reduce((acc, v) => Math.max(acc + 1, v.depth), 0)
-    this.executor = executor
-    this.init = init
-    this.name = name
-    this.uid = uid
-  }
-
-  _read(runCtx: RunCtx): Input | undefined {
-    return this.deps.length === 0
-      ? runCtx.payload.get(this)
-      : this.deps.length === 1
-      ? runCtx.payload.get(this.deps[0])
-      : (this.deps.map(f => runCtx.payload.get(f)) as any)
-  }
-
-  _write(runCtx: RunCtx, value: Output) {
-    runCtx.payload.set(this, value)
-  }
-
-  _fork(input: Input, runCtx: RunCtx) {
-    if (this.deps.length === 0) {
-      this._write(runCtx, input as any)
-      runCtx.schedule([this])
-    }
-    this.deps.forEach(f => f._fork(input, runCtx))
-  }
-
-  subscribe(cb: Mapper<ChainedValue<Output>, any>, ctx = this.ctx): () => void {
-    return ctx.subscribe(cb, this)
-  }
-
-  chain<T>(
-    mapper: Mapper<ChainedValue<Output>, T>,
-    {
-      ctx,
-      init,
-      name = `chain of ${this.name}`,
-    }: CommonOptions<Input, ChainOutput<Output, T>> = {},
-  ): Future<Input, ChainOutput<Output, T>> {
-    return new Future<any, any>({
-      ctx,
-      deps: [this],
-      init,
-      mapper,
-      name,
-    })
-  }
-
-  bind(ctx: Ctx) {
-    return this.chain(v => v, { ctx, name: this.name })
-  }
-
-  // TODO: ignore `init`? :thinking:
-  fork(): Input extends undefined ? ForkOutput<Output> : never
-  fork(input: Input, ctx?: Ctx | RunCtx): ForkOutput<Output>
-  fork(input?: Input, ctx: Ctx | RunCtx = this.ctx): any {
-    let runCtx: RunCtx
-    if (ctx instanceof RunCtx) runCtx = ctx
-    else if (ctx instanceof Ctx) runCtx = new RunCtx(ctx)
-    else throw new TypeError('Reatom: invalid context')
-
-    let resolve: Fn = () => {}
-    const promise = new Promise(r => (resolve = r))
-
-    this._fork(input!, runCtx)
-    const cleanup = this.subscribe((v, cache, _runCtx) => {
-      if (_runCtx !== runCtx) return
-      cleanup()
-      resolve(v)
-    }, runCtx.ctx)
-    runCtx.next()(runCtx)
-
-    if (runCtx.payload.has(this)) return clearTag(runCtx.payload.get(this))
-    // if (runCtx.hasPromise(this)) return promise.then(clearTag)
-    // else return undefined
-  }
-
-  run(input: Input): ForkOutput<Output> {
-    const ctx = new Ctx()
-    // create links and cache it
-    ctx.subscribe(() => {}, this)
-    this.run = (input: Input) => this.fork(input, ctx)
-    return this.run(input)
-  }
-}
-
-export function reduce<T, F extends Future<any, any>>(
-  future: F,
-  reducer: (state: T, payload: ChainInput<F>) => T,
-): [F, Fn<[T, ChainInput<F>], T>] {
-  return [future, reducer]
-}
-
-export class Atom<State> extends Future<State, State> {
-  defaultState!: State
-
-  static create<T>(
-    initState: T,
-    ...a:
-      | [[Future<any, any>, Fn<[T, any], T>]]
-      | [Future<any, any>, Fn<[T, any], T>][]
-  ): Atom<T> {
-    const atom = new Atom<T>({
-      deps: a.map(([f]) => f),
-      init(me, cache, ctx) {
-        cache.state = initState
-        cache.last = new Array(a.length)
-      },
-      // @ts-ignore
-      mapper(input: any, cache: { state: T; last: unknown[] }, runCtx) {
-        const newState = runCtx.payload.get(atom) as T
-        let { state, last } = cache
-        let isChanged = false
-        if (last.length === 1) input = [input]
-
-        if (newState !== undefined) {
-          return newState !== state ? (cache.state = newState) : STOP
-        }
-
-        for (let i = 0; i < last.length; i++) {
-          const depValue = input[i]
-          if (depValue !== undefined && depValue !== last[i]) {
-            isChanged = true
-            state = cache.state = a[i][1](state, (last[i] = depValue))
-          }
-        }
-
-        return isChanged ? state : STOP
-      },
-    })
-
-    atom.defaultState = initState
-
-    atom._fork = (input: T = initState, runCtx: RunCtx) => {
-      atom._write(runCtx, input)
-      runCtx.schedule([atom])
-    }
-
-    return atom
-  }
-
-  reduce<T>(reducer: Fn<[T, State], T>): [this, Fn<[T, State], T>] {
-    return [this, reducer]
-  }
-}
+  console.log({ res, eRes })
+})()
