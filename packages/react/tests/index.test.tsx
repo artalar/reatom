@@ -156,6 +156,80 @@ describe('@reatom/react', () => {
       act(() => store.dispatch(increment()))
       expect(subscriber).toBeCalledTimes(1)
     })
+
+    test('updates state if store instance has changed', () => {
+      const store1 = createStore(null)
+      const store2 = createStore(null)
+
+      let store = store1
+      const { result, rerender } = renderHook(() => useAtom(countAtom), {
+        wrapper: props => {
+          return <Provider {...props} store={store} />
+        },
+      })
+
+      act(() => store.dispatch(increment()))
+
+      expect(result.current).toBe(1)
+
+      store = store2
+      rerender()
+
+      expect(result.current).toBe(0)
+
+      act(() => store.dispatch(increment()))
+
+      expect(result.current).toBe(1)
+    })
+
+    test('unsubscribes from previous store instance', () => {
+      function getMocks(store: Store) {
+        const subscribeMock = jest.fn()
+        const unsubscribeMock = jest.fn()
+
+        store.subscribe = () => {
+          subscribeMock()
+
+          return unsubscribeMock
+        }
+
+        return { subscribeMock, unsubscribeMock }
+      }
+
+      const store1 = createStore(null)
+      const store2 = createStore(null)
+
+      const {
+        subscribeMock: subscribe1,
+        unsubscribeMock: unsubscribe1,
+      } = getMocks(store1)
+      const {
+        subscribeMock: subscribe2,
+        unsubscribeMock: unsubscribe2,
+      } = getMocks(store2)
+
+      let store = store1
+      const { rerender } = renderHook(() => useAtom(countAtom), {
+        wrapper: props => {
+          return <Provider {...props} store={store} />
+        },
+      })
+
+      expect(subscribe1).toBeCalledTimes(1)
+      expect(unsubscribe1).toBeCalledTimes(0)
+
+      expect(subscribe2).toBeCalledTimes(0)
+      expect(unsubscribe2).toBeCalledTimes(0)
+
+      store = store2
+      rerender()
+
+      expect(subscribe1).toBeCalledTimes(1)
+      expect(unsubscribe1).toBeCalledTimes(1)
+
+      expect(subscribe2).toBeCalledTimes(1)
+      expect(unsubscribe2).toBeCalledTimes(0)
+    })
   })
 
   describe('useAction', () => {
@@ -215,6 +289,38 @@ describe('@reatom/react', () => {
 
       result.current(10)
       expect(dispatch).toBeCalledWith(add(30))
+    })
+
+    test('updates action wrapper if store instance has changed', () => {
+      const store1 = createStore(null)
+      const store2 = createStore(null)
+
+      const dispatch1 = jest.fn()
+      store1.dispatch = dispatch1
+
+      const dispatch2 = jest.fn()
+      store2.dispatch = dispatch2
+
+      let store = store1
+      const { rerender, result } = renderHook(() => useAction(increment), {
+        wrapper: props => <Provider {...props} store={store} />,
+      })
+
+      expect(dispatch1).toBeCalledTimes(0)
+      expect(dispatch2).toBeCalledTimes(0)
+
+      result.current()
+
+      expect(dispatch1).toBeCalledTimes(1)
+      expect(dispatch2).toBeCalledTimes(0)
+
+      store = store2
+      rerender()
+
+      result.current()
+
+      expect(dispatch1).toBeCalledTimes(1)
+      expect(dispatch2).toBeCalledTimes(1)
     })
   })
 
