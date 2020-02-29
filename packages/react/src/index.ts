@@ -65,7 +65,7 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
       return selectorRef.current(atomValue)
     }
 
-    if (atomRef.current !== atom) {
+    useMemo(() => {
       atomRef.current = atom
       unsubscribeRef.current()
       unsubscribeRef.current = store.subscribe(
@@ -83,7 +83,7 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
         },
       )
       stateRef.current = getRelativeState()
-    }
+    }, [atom, store])
 
     useMemo(() => {
       if (mountStatusRef.current === lifeCycleStatus.mounted) {
@@ -143,7 +143,7 @@ export function createActionHook(ctx: Context<Store | null> = context) {
     return useCallback((...args) => {
       const action = cb(...args)
       if (action) store.dispatch(action)
-    }, deps)
+    }, deps.concat(store))
   }
 
   return useAction
