@@ -27,6 +27,30 @@ describe('@reatom/future', () => {
     expect(await f.fork(1)).toBe(2)
     expect(await Promise.all([f.fork(1), f.fork(2)])).toEqual([2, 4])
   })
+  test('async concurrency', async () => {
+    log('async concurrency')
+
+    const fetchConcurrent = Future.from(async (data: number, cache) => {
+      const tag = (cache.tag = (cache.tag || 0) + 1)
+
+      await new Promise(r => setTimeout(r))
+
+      if (tag !== cache.tag) return STOP
+      return data
+    })
+    const cb = jest.fn()
+
+    fetchConcurrent.subscribe(cb)
+
+    fetchConcurrent.fork(1)
+    fetchConcurrent.fork(2)
+    fetchConcurrent.fork(3)
+
+    await new Promise(r => setTimeout(r))
+
+    expect(cb).toBeCalledTimes(1)
+    expect(cb).toBeCalledWith(3)
+  })
   test('subscription', () => {
     log('subscription')
     const f = Future.of(0)

@@ -1,26 +1,28 @@
 import { STOP, Queue, Fn, Collection, callSafety, clearTag } from '.'
 
+export type Uid = string
+
 export type Thened<T> = T extends Promise<infer T> ? T : T
 export type Filtered<T> = T extends STOP ? never : T
 
-export type RefCache = Collection<unknown>
+export type RefCache = Collection<any>
 export class Ref {
   cache: RefCache = {}
   cleanup?: Fn | void
   links: Future<any, any>[] = []
 }
 
-export type CtxLinks = Map<Future<any, any>, Ref>
+export type CtxLinks = Map<Uid, Ref>
 export class Ctx {
   private _lifeCycleQueue: Fn[] = []
-  private _links: CtxLinks = new Map<Future<any, any>, Ref>()
-  private _subscriptions: Fn<[RunCtx]>[] = []
+  private _links: CtxLinks = new Map()
+  // private _subscriptions: Fn<[RunCtx]>[] = []
 
   private _link(target: Future<any, any>, dependent: Future<any, any>) {
     let targetRef = this.getRef(target)
 
     if (targetRef === undefined) {
-      this._links.set(target, (targetRef = new Ref()))
+      this._links.set(target.uid, (targetRef = new Ref()))
       // init life cycle method must be called starts from parent to child
       target.deps.forEach(dep => this._link(dep, target))
       if (target.init !== undefined) {
@@ -40,7 +42,7 @@ export class Ctx {
       targetRef.links.splice(targetRef.links.indexOf(dependent), 1)
 
       if (targetRef.links.length === 0) {
-        this._links.delete(target)
+        this._links.delete(target.uid)
         // cleanup life cycle method must be called starts from child to parent
         if (targetRef.cleanup) {
           this._lifeCycleQueue.push(targetRef.cleanup)
@@ -58,25 +60,25 @@ export class Ctx {
       callSafety(this._lifeCycleQueue.shift()!)
   }
 
-  subscribe<T>(cb: Fn<[RunCtx]>): () => void
+  // subscribe<T>(cb: Fn<[RunCtx]>): () => void
   subscribe<T>(
     cb: Mapper<ChainedValue<T>, any>,
     target: Future<any, T>,
   ): () => void
-  subscribe<T>(cb: Fn<any>, target?: Future<any, T>): () => void {
+  subscribe<T>(cb: Fn<any>, target: Future<any, T>): () => void {
     let isSubscribed = true
 
-    if (target === undefined) {
-      this._subscriptions.push(cb)
+    // if (target === undefined) {
+    //   this._subscriptions.push(cb)
 
-      const unsubscribe = () => {
-        if (isSubscribed) {
-          isSubscribed = false
-          this._subscriptions.splice(this._subscriptions.indexOf(cb), 1)
-        }
-      }
-      return unsubscribe
-    }
+    //   const unsubscribe = () => {
+    //     if (isSubscribed) {
+    //       isSubscribed = false
+    //       this._subscriptions.splice(this._subscriptions.indexOf(cb), 1)
+    //     }
+    //   }
+    //   return unsubscribe
+    // }
 
     const dependent = new Future<T, void>({
       deps: [target],
@@ -97,41 +99,51 @@ export class Ctx {
   }
 
   getRef(target: Future<any, any>): Ref | undefined {
-    return this._links.get(target)
+    return this._links.get(target.uid)
   }
 }
 
 export type RunPayload = unknown
 export class RunCtx {
-  private _resolve: Fn<[this]> = () => this
   private _queue = Queue<Future<any, any>>()
-  _asyncCount = 0
   payload = new Map<Future<any, any>, RunPayload>()
-  promise: Promise<this>
-  constructor(public ctx = new Ctx()) {
-    this.promise = new Promise(r => (this._resolve = r))
-  }
-
-  hasPromise = (f: Future<any, any>): boolean => {
-    return (
-      this.payload.get(f) instanceof Promise ||
-      f.deps.some(f => this.payload.get(f) instanceof Promise) ||
-      f.deps.some(this.hasPromise)
-    )
-  }
+  constructor(public ctx = new Ctx()) {}
 
   schedule(links: Ref['links']) {
     links.forEach(f => this._queue.insert(f.depth, f))
   }
 
   next() {
-    let next = this._queue.extract()
+    const f = this._queue.extract()
 
-    if (next === undefined) {
-      if (this._asyncCount === 0) this._resolve(this)
-      return () => {}
-    }
-    return next.executor
+    return f === undefined ? () => {} : f.executor
+  }
+}
+
+type BaseLifeCycleHook = Fn<[BaseFuture, RefCache, Ctx], Fn | void>
+class BaseFuture {
+  constructor({
+    ctx,
+    deps,
+    executor,
+    init,
+    name,
+  }: {
+    ctx: Ctx
+    deps: BaseFuture[]
+    executor: Fn<[RunCtx]>
+    init: BaseLifeCycleHook
+    name: string
+  }) {
+    this.ctx = ctx
+    this.deps = deps
+    this.executor = executor
+    this.init = init
+    this.name = name
+  }
+
+  pipe(...a: ((future: this) => void)[]) {
+    return a.reduce((acc, f) => , this)
   }
 }
 
@@ -174,19 +186,19 @@ export type ForkOutput<Output> = Output extends Promise<infer T>
 let _id = 0
 export class Future<Input, Output> {
   static ctx = new Ctx()
-  static createName = () => `[future #${++_id}]`
+  static createUid = (name: string): Uid => `${name} [${++_id}]`
 
-  static from<Output>(
-    mapper: Fn<[], Output>,
-    options?: CommonOptions<undefined, Output>,
-  ): Future<undefined, Output>
   static from<Input, Output>(
     mapper: Mapper<Input, Output>,
     options?: CommonOptions<Input, Output>,
   ): Future<Input, Output>
+  static from<Output>(
+    mapper: Fn<[], Output>,
+    options?: CommonOptions<undefined, Output>,
+  ): Future<undefined, Output>
   static from(
     mapper: Mapper<any, any>,
-    { ctx, init, name = `"Future.from"` }: CommonOptions<any, any> = {},
+    { ctx, init, name = 'Future.from' }: CommonOptions<any, any> = {},
   ) {
     return new Future({
       ctx,
@@ -203,7 +215,7 @@ export class Future<Input, Output> {
   ): Future<T | undefined, T>
   static of(
     value?: any,
-    { ctx, init, name = `"Future.of"` }: CommonOptions<any, any> = {},
+    { ctx, init, name = 'Future.of' }: CommonOptions<any, any> = {},
   ) {
     return Future.from((payload = value) => payload, { ctx, init, name })
   }
@@ -214,17 +226,19 @@ export class Future<Input, Output> {
   readonly executor: Executor<Input, Output>
   readonly init?: LifeCycleHook<Input, Output>
   readonly name: string
+  readonly uid: Uid
 
   constructor({
     ctx = Future.ctx,
     deps = [],
     init,
     mapper = (v: any) => v,
-    name = Future.createName(),
+    name = 'Future',
   }: ConstructorOptions<Input, Output>) {
     const me = this
+    const uid = Future.createUid(name)
     const executor: Executor<Input, Output> = {
-      [name](runCtx: RunCtx) {
+      [uid](runCtx: RunCtx) {
         // TODO: undefined?
         const input = me._read(runCtx)!
         const ref = runCtx.ctx.getRef(me) || new Ref()
@@ -234,8 +248,6 @@ export class Future<Input, Output> {
 
         if (output !== STOP) {
           if (output instanceof Promise) {
-            runCtx._asyncCount++
-            output.finally(() => runCtx._asyncCount--)
             output.then(value => {
               me._write(runCtx, value)
 
@@ -260,9 +272,10 @@ export class Future<Input, Output> {
     this.executor = executor
     this.init = init
     this.name = name
+    this.uid = uid
   }
 
-  private _read(runCtx: RunCtx): Input | undefined {
+  _read(runCtx: RunCtx): Input | undefined {
     return this.deps.length === 0
       ? runCtx.payload.get(this)
       : this.deps.length === 1
@@ -270,11 +283,11 @@ export class Future<Input, Output> {
       : (this.deps.map(f => runCtx.payload.get(f)) as any)
   }
 
-  private _write(runCtx: RunCtx, value: Output) {
+  _write(runCtx: RunCtx, value: Output) {
     runCtx.payload.set(this, value)
   }
 
-  private _fork(input: Input, runCtx: RunCtx) {
+  _fork(input: Input, runCtx: RunCtx) {
     if (this.deps.length === 0) {
       this._write(runCtx, input as any)
       runCtx.schedule([this])
@@ -328,7 +341,7 @@ export class Future<Input, Output> {
     runCtx.next()(runCtx)
 
     if (runCtx.payload.has(this)) return clearTag(runCtx.payload.get(this))
-    if (runCtx.hasPromise(this)) return promise.then(clearTag)
+    // if (runCtx.hasPromise(this)) return promise.then(clearTag)
     // else return undefined
   }
 
