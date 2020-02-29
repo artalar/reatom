@@ -27,6 +27,8 @@ export function noop() {}
 // eslint-disable-next-line prefer-destructuring
 export const assign = Object.assign
 
+export const equals = Object.is
+
 export function getTree(thing: Unit): Tree {
   return thing && thing[TREE]
 }
