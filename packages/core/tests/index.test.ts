@@ -625,6 +625,7 @@ describe('@reatom/core', () => {
     store.dispatch(action(0))
     expect(fn).toBeCalledTimes(1)
   })
+
   describe('derived state', () => {
     test('map + combine', () => {
       const increment = declareAction()
@@ -750,4 +751,26 @@ describe('@reatom/core', () => {
       expect(counterReducerMock).toBeCalledTimes(2)
     })
   })
+
+  test.each([
+    ['basic id', 'atom'],
+    ['strict id', ['atom']],
+    ['symbol id', Symbol('atom')],
+  ] as [string, string | symbol | [string]][])(
+    'state of initial atom with %s should not be cleared after unsubscribing',
+    (_, name) => {
+      const action = declareAction()
+      const atom = declareAtom(name, 0, on => [on(action, state => state + 1)])
+
+      const store = createStore(atom)
+      store.dispatch(action())
+
+      expect(store.getState(atom)).toBe(1)
+
+      const unsubscribe = store.subscribe(atom, noop)
+      unsubscribe()
+
+      expect(store.getState(atom)).toBe(1)
+    },
+  )
 })
