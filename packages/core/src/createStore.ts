@@ -6,6 +6,7 @@ import {
   assign,
   getIsAtom,
   getIsAction,
+  getOwnKeys,
 } from './shared'
 import { Action, PayloadActionCreator } from './declareAction'
 import { Atom, initAction, getState } from './declareAtom'
@@ -60,7 +61,7 @@ export function createStore(
       const ctx = createCtx(state, initAction)
       storeTree.forEach(initAction.type, ctx)
       assign(state, ctx.stateNew)
-      initialAtoms = new Set(Object.keys(ctx.stateNew))
+      initialAtoms = new Set(getOwnKeys(ctx.stateNew))
     }
   }
 

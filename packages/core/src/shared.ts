@@ -82,3 +82,10 @@ export function safetyFunc<T extends Function>(
   if (typeof func !== 'function') throwError(`Invalid ${name}`)
   return func as T
 }
+
+export function getOwnKeys<T extends object>(obj: T): Array<keyof T> {
+  const keys = Object.keys(obj) as Array<keyof T>
+  keys.push(...(Object.getOwnPropertySymbols(obj) as Array<keyof T>))
+
+  return keys
+}
