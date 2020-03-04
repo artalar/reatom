@@ -24,12 +24,20 @@ export const initAction = initActionCreator()
 type AtomName = TreeId | [string]
 type AtomsMap = { [key: string]: Atom<any> }
 type Reducer<TState, TValue> = (state: TState, value: TValue) => TState
-type DependencyMatcher<TState> = (
-  on: <T>(
+
+/**
+ * This interface needed for correct type inference with TypeScript 3.5
+ * @see https://github.com/artalar/reatom/issues/301
+ */
+interface DependencyMatcherOn<TState> {
+  <T>(dependency: Atom<T>, reducer: Reducer<TState, T>): void
+  <T>(dependency: PayloadActionCreator<T>, reducer: Reducer<TState, T>): void
+  <T>(
     dependency: Atom<T> | PayloadActionCreator<T>,
     reducer: Reducer<TState, T>,
-  ) => void,
-) => any
+  ): void
+}
+type DependencyMatcher<TState> = (on: DependencyMatcherOn<TState>) => any
 
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): Record<string, T | any>
