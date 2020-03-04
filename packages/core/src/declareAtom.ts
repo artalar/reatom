@@ -11,6 +11,7 @@ import {
   assign,
   getName,
   equals,
+  getOwnKeys,
 } from './shared'
 import { Action, declareAction, PayloadActionCreator } from './declareAction'
 
@@ -217,8 +218,7 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
   const isArray = Array.isArray(shape)
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const keys = Object.keys(shape!)
-  keys.push(...((Object.getOwnPropertySymbols(shape) as unknown) as string[]))
+  const keys = getOwnKeys(shape!) as TreeId[]
 
   if (arguments.length === 1)
     name = isArray
