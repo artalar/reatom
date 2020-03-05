@@ -7,7 +7,7 @@ export type Fn = {
   _ownerAtomId: TreeId
 }
 export type Ctx = ReturnType<typeof createCtx>
-export type BaseAction<T = any> = { type: Leaf; payload: any }
+export type BaseAction<T = any> = { type: Leaf; payload: T }
 export function createCtx(state: State, { type, payload }: BaseAction) {
   return {
     state,
