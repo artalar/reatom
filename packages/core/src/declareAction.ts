@@ -60,7 +60,10 @@ export function declareAction<
   const id = nameToId(name)
 
   const ACTree = new Tree(id, true)
-  ACTree.addFn(assign(() => {}, { _ownerAtomId: id }), id as string)
+  ACTree.addFn(
+    assign(() => {}, { _ownerAtomId: id }),
+    id as string,
+  )
 
   const actionCreator = function actionCreator(payload?: Payload) {
     return {
@@ -68,7 +71,7 @@ export function declareAction<
       payload,
       reactions,
     }
-  } as (ActionCreator<Type> | PayloadActionCreator<Payload, Type>)
+  } as ActionCreator<Type> | PayloadActionCreator<Payload, Type>
 
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id as Type

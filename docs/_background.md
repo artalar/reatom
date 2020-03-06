@@ -126,7 +126,7 @@
 
 ```ts
 type AND<T extends any[]> = {
-  step: ((...args: T) => any) extends ((x: infer X, ...xs: infer Xs) => any)
+  step: ((...args: T) => any) extends (x: infer X, ...xs: infer Xs) => any
     ? Xs extends []
       ? X
       : X & AND<Xs>
