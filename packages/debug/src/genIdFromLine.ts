@@ -1,5 +1,12 @@
 import { TreeId, nameToIdDefault } from '@reatom/core'
 
+// TODO: replace from @reatom/core
+function getName(treeId: TreeId): string {
+  return typeof treeId === 'symbol'
+    ? treeId.description || treeId.toString().replace(/Symbol\((.*)\)/, '$1')
+    : treeId
+}
+
 type Trace = {
   file: string | null
   name: string | null
@@ -71,7 +78,7 @@ export function genIdFromLine(
       ? withoutBackSlashes
       : withoutBackSlashes.match(`(?:\\/[^\\/]*){1,${pathMaxDeep}}$`)
 
-    let id = `${extractName} [${file}:${trace.line}`
+    let id = `${getName(extractName)} [${file}:${trace.line}`
 
     if (showColumn) {
       id += `:${trace.column}]`
