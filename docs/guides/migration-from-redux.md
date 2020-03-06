@@ -175,12 +175,9 @@ Subscribing to the store is similar to how you did it in Redux, but with small d
 ```js
 import { createSelector } from 'reselect'
 
-const onVisibleTodosUpdate = createSelector(
-  getVisibleTodos,
-  todosState => {
-    // ...do something
-  },
-)
+const onVisibleTodosUpdate = createSelector(getVisibleTodos, todosState => {
+  // ...do something
+})
 
 const unsubscribe = store.subscribe(() =>
   onVisibleTodosUpdate(store.getState()),

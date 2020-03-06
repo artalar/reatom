@@ -16,9 +16,9 @@ export type NonUndefined<T> = Exclude<T, undefined>
  * type MyAtomType = InferType<typeof myAtom>
  * type MyActionType = InferType<typeof myAction>
  */
-export type InferType<T> = T extends (
+export type InferType<T> = T extends
   | Atom<infer R>
-  | PayloadActionCreator<infer R>)
+  | PayloadActionCreator<infer R>
   ? R
   : never
 
