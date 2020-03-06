@@ -32,8 +32,8 @@
   "devDependencies": {
     "@size-limit/preset-small-lib": "^2.1.4",
     "cross-env": "^5.2.1",
-    "effector": "^20.1.2",
-    "redux": "^4.0.4",
+    "effector": "^20.12.2",
+    "redux": "^4.0.5",
     "reselect": "^4.0.0",
     "ts-node": "^8.3.0"
   },
