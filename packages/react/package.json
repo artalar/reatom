@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
@@ -30,12 +30,12 @@
     "update": "npx npm-check-updates -u"
   },
   "peerDependencies": {
-    "@reatom/core": "^1.0.0",
+    "@reatom/core": "^1.1.1",
     "react": "^16.8.0"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.8.3",
-    "@reatom/core": "^1.1.0",
+    "@reatom/core": "^1.1.1",
     "@testing-library/jest-dom": "^4.1.0",
     "@testing-library/react": "^9.1.4",
     "@testing-library/react-hooks": "^2.0.1",

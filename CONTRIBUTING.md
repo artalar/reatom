@@ -41,7 +41,7 @@ If you found a bug or want to make an improvement in the library please check wh
    $ git fetch upstream
    ```
 
-6. Create a `feature-branch` that includes the number of the [created issue](#creating-an-issue).
+6. Create a `feature-branch` from `next` branch that includes the number of the [created issue](#creating-an-issue).
 
    ```bash
    $ git checkout upstream/master
@@ -71,7 +71,7 @@ If you found a bug or want to make an improvement in the library please check wh
 
     > **Note**: It is desirable to use **interactive rebase** (`git rebase upstream/master -i`) for cleanup commits list before sending a Pull Request
 
-11. Send a [Pull Request](https://github.com/artalar/reatom/compare) based on the branch created.
+11. Send a [Pull Request](https://github.com/artalar/reatom/compare) to the `next` branch.
 12. Link the Pull Request and issue with [keyword](https://help.github.com/en/articles/closing-issues-using-keywords) in the comment. Example: `fix #74`
 13. Wait for a decision about accepting the changes.
 
