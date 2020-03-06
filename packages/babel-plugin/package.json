@@ -26,7 +26,7 @@
   "license": "MIT",
   "readme": "README.md",
   "devDependencies": {
-    "babel-plugin-tester": "^7.0.1",
+    "babel-plugin-tester": "^7.0.4",
     "jest": "^24.9.0"
   },
   "scripts": {
