@@ -101,7 +101,7 @@ function bench({
   subscribeToInput,
   changeHouse,
   changeInput,
-}: (typeof suites)[number]) {
+}: typeof suites[number]) {
   const logList = []
   let store: ReturnType<typeof initializeStore>
   const addresses: RA.Addresses = {
