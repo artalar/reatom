@@ -9,7 +9,7 @@ import {
   getIsAction,
   getIsAtom,
 } from '../src/index'
-import { initAction } from '../src/declareAtom'
+import { initAction, getDepsShape } from '../src/declareAtom'
 
 function noop() {}
 
@@ -776,4 +776,52 @@ describe('@reatom/core', () => {
       expect(store.getState(atom)).toBe(1)
     },
   )
+
+  describe('getInitialStoreState', () => {
+    function getInitialStoreState(rootAtom, state) {
+      const depsShape = getDepsShape(rootAtom)
+      if (depsShape) {
+        const states = Object.keys(depsShape).map(id =>
+          getInitialStoreState(depsShape[id], state[id]),
+        )
+
+        return Object.assign({}, ...states)
+      }
+
+      return {
+        [getTree(rootAtom).id]: state,
+      }
+    }
+
+    test('init root atom with combine', () => {
+      const setTitle = declareAction()
+      const titleAtom = declareAtom('title', on => [
+        on(setTitle, (_, payload) => payload),
+      ])
+
+      const setMode = declareAction()
+      const modeAtom = declareAtom('desktop', on => [
+        on(setMode, (_, payload) => payload),
+      ])
+
+      const appAtom = combine(['app_store'], {
+        title: titleAtom,
+        mode: modeAtom,
+      })
+
+      const defaultState = getInitialStoreState(appAtom, {
+        title: 'My App',
+        mode: 'mobile',
+      })
+
+      const store = createStore(defaultState)
+
+      expect(store.getState(appAtom)).toEqual({
+        title: 'My App',
+        mode: 'mobile',
+      })
+      expect(store.getState(modeAtom)).toEqual('mobile')
+      expect(store.getState(titleAtom)).toEqual('My App')
+    })
+  })
 })
