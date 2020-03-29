@@ -65,6 +65,7 @@ typings/
 dist/
 .cache/
 build/
+.idea/
 
 packages/**/package-lock.json
 packages/**/yarn.lock
