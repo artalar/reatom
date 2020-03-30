@@ -44,7 +44,7 @@ If you found a bug or want to make an improvement in the library please check wh
 6. Create a `feature-branch` from `next` branch that includes the number of the [created issue](#creating-an-issue).
 
    ```bash
-   $ git checkout upstream/master
+   $ git checkout upstream/next
    $ git checkout -b issue-<issue number>
    ```
 
@@ -58,7 +58,7 @@ If you found a bug or want to make an improvement in the library please check wh
 9. Fetch the latest changes.
 
    ```bash
-   $ git pull --rebase upstream master
+   $ git pull --rebase upstream next
    ```
 
    > **Note:** Repeat this step before every change you make, to be sure that you are working with code that contains the latest updates.
@@ -69,7 +69,7 @@ If you found a bug or want to make an improvement in the library please check wh
     $ git push -u origin issue-<issue number>
     ```
 
-    > **Note**: It is desirable to use **interactive rebase** (`git rebase upstream/master -i`) for cleanup commits list before sending a Pull Request
+    > **Note**: It is desirable to use **interactive rebase** (`git rebase upstream/next -i`) for cleanup commits list before sending a Pull Request
 
 11. Send a [Pull Request](https://github.com/artalar/reatom/compare) to the `next` branch.
 12. Link the Pull Request and issue with [keyword](https://help.github.com/en/articles/closing-issues-using-keywords) in the comment. Example: `fix #74`
