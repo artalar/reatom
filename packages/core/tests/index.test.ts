@@ -824,4 +824,78 @@ describe('@reatom/core', () => {
       expect(store.getState(titleAtom)).toEqual('My App')
     })
   })
+
+  test('subscription', () => {
+    // arrange
+    const store = createStore()
+
+    const addItem = declareAction<string>('addItem')
+    const aAtom = declareAtom<string[]>(['a'], [], on => [
+      on(addItem, (state, item) => [...state, item]),
+    ])
+
+    const rootAtom = declareAtom<string[]>(['root'], [], on =>
+      on(aAtom, (state, payload) => payload),
+    )
+
+    expect(store.getState()).toEqual({})
+
+    store.subscribe(rootAtom, () => null)
+    // subscribe for atom
+    const subscription = store.subscribe(aAtom, () => null)
+
+    expect(store.getState(rootAtom)).toEqual([])
+    expect(store.getState(aAtom)).toEqual([])
+
+    store.dispatch(addItem('hello'))
+
+    expect(store.getState(rootAtom)).toEqual(['hello'])
+    expect(store.getState(aAtom)).toEqual(['hello'])
+
+    // act
+    subscription()
+
+    // assert
+    expect(store.getState(rootAtom)).toEqual(['hello'])
+    expect(store.getState(aAtom)).toEqual(['hello'])
+  })
+
+  test('direct and wia combine subscription', () => {
+    // arrange
+    const store = createStore()
+
+    const addItem = declareAction<string>('addItem')
+    const aAtom = declareAtom<string[]>(['a'], [], on => [
+      on(addItem, (state, item) => [...state, item]),
+    ])
+
+    const rootAtom = combine({ a: aAtom })
+
+    expect(store.getState()).toEqual({})
+
+    const rootSubscription = store.subscribe(rootAtom, () => null)
+    // subscribe for atom
+    const subscription = store.subscribe(aAtom, () => null)
+
+    expect(store.getState(rootAtom)).toEqual({ a: [] })
+    expect(store.getState(aAtom)).toEqual([])
+
+    store.dispatch(addItem('hello'))
+
+    expect(store.getState(rootAtom)).toEqual({ a: ['hello'] })
+    expect(store.getState(aAtom)).toEqual(['hello'])
+
+    // act
+    subscription()
+
+    // assert
+    expect(store.getState(rootAtom)).toEqual({ a: ['hello'] })
+    expect(store.getState(aAtom)).toEqual(['hello'])
+
+    // act
+    rootSubscription()
+
+    // assert
+    expect(store.getState()).toEqual({})
+  })
 })
