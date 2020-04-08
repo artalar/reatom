@@ -151,7 +151,7 @@ Guiding principles of state manager:
 [link to repository](https://github.com/zerobias/effector)
 
 - Effector is about atomic **stores** — it uses stateful approach that has certain problems:
-  - probable memory leaks (should be proofed)
+  - probable memory leaks (as every unit of effector is a _hot_ observable, thats less safety than _cold_ observables)
     > Like any other observable libraries
   - difficult [store] instance reusability
     > It can be solved, but it is better to solve it by design of a library architecture and API
