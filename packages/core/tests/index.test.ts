@@ -9,7 +9,7 @@ import {
   getIsAction,
   getIsAtom,
 } from '../src/index'
-import { initAction } from '../src/declareAtom'
+import { initAction, getDepsShape } from '../src/declareAtom'
 
 function noop() {}
 
@@ -776,4 +776,126 @@ describe('@reatom/core', () => {
       expect(store.getState(atom)).toBe(1)
     },
   )
+
+  describe('getInitialStoreState', () => {
+    function getInitialStoreState(rootAtom, state) {
+      const depsShape = getDepsShape(rootAtom)
+      if (depsShape) {
+        const states = Object.keys(depsShape).map(id =>
+          getInitialStoreState(depsShape[id], state[id]),
+        )
+
+        return Object.assign({}, ...states)
+      }
+
+      return {
+        [getTree(rootAtom).id]: state,
+      }
+    }
+
+    test('init root atom with combine', () => {
+      const setTitle = declareAction()
+      const titleAtom = declareAtom('title', on => [
+        on(setTitle, (_, payload) => payload),
+      ])
+
+      const setMode = declareAction()
+      const modeAtom = declareAtom('desktop', on => [
+        on(setMode, (_, payload) => payload),
+      ])
+
+      const appAtom = combine(['app_store'], {
+        title: titleAtom,
+        mode: modeAtom,
+      })
+
+      const defaultState = getInitialStoreState(appAtom, {
+        title: 'My App',
+        mode: 'mobile',
+      })
+
+      const store = createStore(defaultState)
+
+      expect(store.getState(appAtom)).toEqual({
+        title: 'My App',
+        mode: 'mobile',
+      })
+      expect(store.getState(modeAtom)).toEqual('mobile')
+      expect(store.getState(titleAtom)).toEqual('My App')
+    })
+  })
+
+  test('subscription', () => {
+    // arrange
+    const store = createStore()
+
+    const addItem = declareAction<string>('addItem')
+    const aAtom = declareAtom<string[]>(['a'], [], on => [
+      on(addItem, (state, item) => [...state, item]),
+    ])
+
+    const rootAtom = declareAtom<string[]>(['root'], [], on =>
+      on(aAtom, (state, payload) => payload),
+    )
+
+    expect(store.getState()).toEqual({})
+
+    store.subscribe(rootAtom, () => null)
+    // subscribe for atom
+    const subscription = store.subscribe(aAtom, () => null)
+
+    expect(store.getState(rootAtom)).toEqual([])
+    expect(store.getState(aAtom)).toEqual([])
+
+    store.dispatch(addItem('hello'))
+
+    expect(store.getState(rootAtom)).toEqual(['hello'])
+    expect(store.getState(aAtom)).toEqual(['hello'])
+
+    // act
+    subscription()
+
+    // assert
+    expect(store.getState(rootAtom)).toEqual(['hello'])
+    expect(store.getState(aAtom)).toEqual(['hello'])
+  })
+
+  test('direct and wia combine subscription', () => {
+    // arrange
+    const store = createStore()
+
+    const addItem = declareAction<string>('addItem')
+    const aAtom = declareAtom<string[]>(['a'], [], on => [
+      on(addItem, (state, item) => [...state, item]),
+    ])
+
+    const rootAtom = combine({ a: aAtom })
+
+    expect(store.getState()).toEqual({})
+
+    const rootSubscription = store.subscribe(rootAtom, () => null)
+    // subscribe for atom
+    const subscription = store.subscribe(aAtom, () => null)
+
+    expect(store.getState(rootAtom)).toEqual({ a: [] })
+    expect(store.getState(aAtom)).toEqual([])
+
+    store.dispatch(addItem('hello'))
+
+    expect(store.getState(rootAtom)).toEqual({ a: ['hello'] })
+    expect(store.getState(aAtom)).toEqual(['hello'])
+
+    // act
+    subscription()
+
+    // assert
+    expect(store.getState(rootAtom)).toEqual({ a: ['hello'] })
+    expect(store.getState(aAtom)).toEqual(['hello'])
+
+    // act
+    rootSubscription()
+
+    // assert
+    expect(store.getState()).toEqual({})
+  })
 })

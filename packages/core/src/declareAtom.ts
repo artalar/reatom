@@ -16,6 +16,7 @@ import {
 import { Action, declareAction, PayloadActionCreator } from './declareAction'
 
 const DEPS = Symbol('@@Reatom/DEPS')
+const DEPS_SHAPE = Symbol('@@Reatom/DEPS_SHAPE')
 
 // action for set initialState of each atom to global state
 const initActionCreator = declareAction(['@@Reatom/init'])
@@ -42,6 +43,7 @@ type DependencyMatcher<TState> = (on: DependencyMatcherOn<TState>) => any
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): Record<string, T | any>
   [DEPS]: Set<TreeId>
+  [DEPS_SHAPE]?: AtomsMap | TupleOfAtoms
 }
 
 export function declareAtom<TState>(
@@ -237,7 +239,7 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
         )
       : Symbol(`{${keys.map(getName).join()}}`)
 
-  return declareAtom(name as AtomName, isArray ? [] : {}, reduce =>
+  const atom = declareAtom(name as AtomName, isArray ? [] : {}, reduce =>
     keys.forEach(key =>
       reduce((shape as any)[key], (state, payload) => {
         const newState: any = isArray
@@ -248,4 +250,12 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
       }),
     ),
   )
+  atom[DEPS_SHAPE] = shape
+  return atom
+}
+
+export function getDepsShape(
+  thing: Atom<any>,
+): AtomsMap | TupleOfAtoms | undefined {
+  return thing[DEPS_SHAPE]
 }
