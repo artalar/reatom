@@ -1,4 +1,4 @@
-# @reatom/react
+# Module: @reatom/react
 
 React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 
@@ -17,7 +17,7 @@ or
 yarn add @reatom/react
 ```
 
-> NOTE. **@reatom/react** depends on and works with [@reatom/core](https://reatom.js.org/#/reatom-core).
+> NOTE. **@reatom/react** depends on [@reatom/core](https://reatom.js.org/#/reatom-core).
 
 ## Hooks Api
 
@@ -31,7 +31,7 @@ Connects the atom to the store provided in context and returns the state of the 
 const atomValue = useAtom(atom)
 ```
 
-#### Retrieve atom state and apply dynamic selector
+#### Get atom state and apply dynamic selector
 
 ```ts
 const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
@@ -47,7 +47,7 @@ const atomValue = useAtom(atom, () => null, [])
 
 ### useAction
 
-Binds action and dispatch to the store provided in the context.
+Creates a handle, which dispatches the action to the store provided in the context.
 
 #### Basic (useAction)
 
@@ -132,6 +132,84 @@ export const Form = () => {
 }
 ```
 
+## Index
+
+### Variables
+
+- [Provider](_reatom_react.md#markdown-header-provider)
+- [context](_reatom_react.md#markdown-header-const-context)
+- [useAction](_reatom_react.md#markdown-header-const-useaction)
+- [useAtom](_reatom_react.md#markdown-header-const-useatom)
+
+### Functions
+
+- [createActionHook](_reatom_react.md#markdown-header-createactionhook)
+- [createAtomHook](_reatom_react.md#markdown-header-createatomhook)
+
+## Variables
+
+### Provider
+
+• **Provider**: _ProviderExoticComponent‹ProviderProps‹null | object››_
+
 ---
 
-[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/react)
+### `Const` context
+
+• **context**: _Context‹null | object›_ = createContext<Store | null>(null)
+
+---
+
+### `Const` useAction
+
+• **useAction**: _useAction_ = createActionHook()
+
+**`param`** actionCreator (may return void for preventing dispatch)
+
+**`param`**
+
+---
+
+### `Const` useAtom
+
+• **useAtom**: _useAtom_ = createAtomHook()
+
+**`param`** target atom for subscription
+
+**`param`** (optional)
+
+**`param`** (optional)
+
+**`returns`** atom value
+
+## Functions
+
+### createActionHook
+
+▸ **createActionHook**(`ctx`: Context‹[Store](_reatom_core.md#markdown-header-store) | null›): _useAction_
+
+**Parameters:**
+
+| Name  | Type                                                                | Default | Description                   |
+| ----- | ------------------------------------------------------------------- | ------- | ----------------------------- |
+| `ctx` | Context‹[Store](_reatom_core.md#markdown-header-store) &#124; null› | context | react context for your store. |
+
+**Returns:** _useAction_
+
+A `useAction` hook bound to the context.
+
+---
+
+### createAtomHook
+
+▸ **createAtomHook**(`ctx`: Context‹[Store](_reatom_core.md#markdown-header-store) | null›): _useAtom_
+
+**Parameters:**
+
+| Name  | Type                                                                | Default | Description                   |
+| ----- | ------------------------------------------------------------------- | ------- | ----------------------------- |
+| `ctx` | Context‹[Store](_reatom_core.md#markdown-header-store) &#124; null› | context | react context for your store. |
+
+**Returns:** _useAtom_
+
+A `useAtom` hook bound to the context.

@@ -1,9 +1,18 @@
-# @reatom/observable
+# Module: @reatom/observable
+
+<div align="center">
+<br/>
+
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
+
+</div>
 
 Package of Reatom for creating observers of atoms or stores
 
 [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/observable?style=flat-square)](https://bundlephobia.com/result?p=@reatom/observable)
+
+[Open in docs](https://reatom.js.org/#/packages/observable)
 
 ## Install
 
@@ -72,6 +81,46 @@ const subscription = observableAtom.subscribe({
 })
 ```
 
----
+## Index
 
-[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/observable)
+### Classes
+
+- [Observable](../classes/_reatom_observable.observable.md)
+
+### Interfaces
+
+- [Observer](../interfaces/_reatom_observable.observer.md)
+- [Subscription](../interfaces/_reatom_observable.subscription.md)
+
+### Type aliases
+
+- [ActionOrValue](_reatom_observable.md#markdown-header-actionorvalue)
+
+### Functions
+
+- [observe](_reatom_observable.md#markdown-header-observe)
+
+## Type aliases
+
+### ActionOrValue
+
+Ƭ **ActionOrValue**: _T extends undefined ? Action<any, string> : T_
+
+## Functions
+
+### observe
+
+▸ **observe**<**T**>(`store`: [Store](_reatom_core.md#markdown-header-store), `atom?`: [Atom](../interfaces/_reatom_core.atom.md)‹T›): _[Observable](../classes/_reatom_observable.observable.md)‹T›_
+
+**Type parameters:**
+
+▪ **T**
+
+**Parameters:**
+
+| Name    | Type                                           |
+| ------- | ---------------------------------------------- |
+| `store` | [Store](_reatom_core.md#markdown-header-store) |
+| `atom?` | [Atom](../interfaces/_reatom_core.atom.md)‹T›  |
+
+**Returns:** _[Observable](../classes/_reatom_observable.observable.md)‹T›_

@@ -5,8 +5,6 @@
 
 </div>
 
-# @reatom/debug
-
 Package of Reatom for generating dynamic names with contain source path
 
 [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug)

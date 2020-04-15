@@ -1,9 +1,18 @@
-# @reatom/debug
+# Module: @reatom/debug
+
+<div align="center">
+<br/>
+
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
+
+</div>
 
 Package of Reatom for generating dynamic names with contain source path
 
 [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
+
+[Open in docs](https://reatom.js.org/#/packages/debug)
 
 ## Install
 
@@ -78,6 +87,55 @@ const atom = declareAtom('myAtom', 0, () => {})
 // myAtom [/src/folder/index.js:5]
 ```
 
+## Index
+
+### References
+
+- [connectReduxDevtools](_reatom_debug.md#markdown-header-connectreduxdevtools)
+- [genIdFromLine](_reatom_debug.md#markdown-header-genidfromline)
+
+### Functions
+
+- [connectReduxDevtools](_reatom_debug.md#markdown-header-connectreduxdevtools)
+- [genIdFromLine](_reatom_debug.md#markdown-header-genidfromline)
+
+## References
+
+### connectReduxDevtools
+
+• **connectReduxDevtools**:
+
 ---
 
-[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/debug)
+### genIdFromLine
+
+• **genIdFromLine**:
+
+## Functions
+
+### connectReduxDevtools
+
+▸ **connectReduxDevtools**(`store`: [Store](_reatom_core.md#markdown-header-store), `config`: object): _undefined | function_
+
+**Parameters:**
+
+| Name     | Type                                           | Default |
+| -------- | ---------------------------------------------- | ------- |
+| `store`  | [Store](_reatom_core.md#markdown-header-store) | -       |
+| `config` | object                                         | {}      |
+
+**Returns:** _undefined | function_
+
+---
+
+### genIdFromLine
+
+▸ **genIdFromLine**(`config`: Partial‹GenConfiguration›): _\_genIdFromLine_
+
+**Parameters:**
+
+| Name     | Type                      | Default              |
+| -------- | ------------------------- | -------------------- |
+| `config` | Partial‹GenConfiguration› | configurationDefault |
+
+**Returns:** _\_genIdFromLine_

@@ -5,8 +5,6 @@
 
 </div>
 
-# @reatom/babel-plugin
-
 [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin)
 
 [Open in docs](https://reatom.js.org/#/packages/babel-plugin)

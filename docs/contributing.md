@@ -1,6 +1,6 @@
 # Contributing
 
-**Hello friends!**
+**Hello, friends!**
 
 Happy to see your interest in the project! We would be grateful for any help in the development of Reatom.
 

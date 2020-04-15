@@ -5,8 +5,6 @@
 
 </div>
 
-# @reatom/observable
-
 Package of Reatom for creating observers of atoms or stores
 
 [![npm](https://img.shields.io/npm/v/@reatom/observable?style=flat-square)](https://www.npmjs.com/package/@reatom/observable)
