@@ -9,7 +9,7 @@
     "test": "lerna run test",
     "size": "lerna run size",
     "lint": "eslint --ext .ts,.tsx,.js,.jsx packages/",
-    "prettify": "cross-env prettier --write '**/*.{js,ts,md}' !**/babel-plugin/test/**",
+    "prettify": "prettier --write '**/*.{js,ts,md}' !**/babel-plugin/test/**",
     "prettify:watch": "onchange '**/*.{js,ts,md}' !**/babel-plugin/test/** -- prettier --write {{changed}}"
   },
   "devDependencies": {
