@@ -92,9 +92,9 @@ const countDoubledAtom = declareAtom(0, on => [
 // const countDoubledAtom = map(count, count => count * 2)
 ```
 
-### Atom init
+### Dynamic initial state
 
-If you want to init atom you can subscribe on init action
+If you need to dynamically generate atom state (on subscription) you can derive it from `init` action
 
 ```js
 import { init } from '@reatom/core'
