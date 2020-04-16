@@ -92,6 +92,16 @@ const countDoubledAtom = declareAtom(0, on => [
 // const countDoubledAtom = map(count, count => count * 2)
 ```
 
+### Atom init
+
+If you want to init atom you can subscribe on init action
+
+```js
+import { init } from '@reatom/core'
+
+const dateAtom = declareAtom(Date.now(), on => [on(init, () => Date.now())])
+```
+
 > **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)
 
 ## Store
