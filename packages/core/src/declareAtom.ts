@@ -16,8 +16,8 @@ import { Action, declareAction, PayloadActionCreator } from './declareAction'
 const DEPS = Symbol('@@Reatom/DEPS')
 
 // action for set initialState of each atom to global state
-const initActionCreator = declareAction(['@@Reatom/init'])
-export const initAction = initActionCreator()
+export const init = declareAction(['@@Reatom/init'])
+export const initAction = init()
 
 type AtomName = TreeId | [string]
 type AtomsMap = { [key: string]: Atom<any> }
@@ -133,7 +133,7 @@ export function declareAtom<TState>(
   }
 
   // @ts-ignore
-  on(initActionCreator, (_, { [_id]: state = initialState } = {}) => state)
+  on(init, (_, { [_id]: state = initialState } = {}) => state)
   dependencyMatcher(on)
 
   const atom = function atom(
