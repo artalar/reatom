@@ -898,4 +898,33 @@ describe('@reatom/core', () => {
     // assert
     expect(store.getState()).toEqual({})
   })
+
+  describe('dynamic initialState', () => {
+    const sleep = (ms = 50) => new Promise(r => setTimeout(r, ms))
+    const dateAtom = declareAtom(Date.now(), on => [
+      on(declareAction([initAction.type]), () => Date.now()),
+    ])
+    const store = createStore()
+
+    test('unsubscribed atom should recalculate on each `getState`', async () => {
+      const date1 = store.getState(dateAtom)
+      await sleep()
+      const date2 = store.getState(dateAtom)
+      expect(date1).not.toBe(date2)
+    })
+
+    test('reducer of `initAction.type` should calling on each mount', async () => {
+      const un = store.subscribe(dateAtom, () => {})
+
+      const date1 = store.getState(dateAtom)
+      await sleep()
+      const date2 = store.getState(dateAtom)
+      expect(date1).toBe(date2)
+
+      un()
+      store.subscribe(dateAtom, () => {})
+      const date3 = store.getState(dateAtom)
+      expect(date1).not.toBe(date3)
+    })
+  })
 })
