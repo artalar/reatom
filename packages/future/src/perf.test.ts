@@ -1,4 +1,6 @@
+import { performance } from 'perf_hooks'
 import * as effector from 'effector'
+import { futureFrom, futureCombine, futureChain } from './index'
 
 /* -------- */
 /* - TEST - */
@@ -31,7 +33,7 @@ declare function createTrackedFn<T extends FnAny>(
 function createTrackedFn(executor = (v => v) as FnAny): any {
   const _calls: unknown[][] = []
 
-  return assign(
+  return Object.assign(
     function fn(...a: any[]) {
       const result = executor(...a)
       _calls.push(a)
@@ -44,11 +46,14 @@ function createTrackedFn(executor = (v => v) as FnAny): any {
 ;(async () => {
   const f0Map = createTrackedFn((v: number) => v + 1)
   const f1Map = createTrackedFn(v => v + 1)
-  const f2Map = createTrackedFn(([_0, _1]) => ({ _0, _1 }))
+  const f2Map = createTrackedFn(([_0, _1]) => {
+    new Error().stack //?
+    return { _0, _1 }
+  })
 
-  const f0 = futureOf(f0Map)
-  const f1 = futureMap(f0, f1Map)
-  const f2 = futureCombine([f0, f1], f2Map)
+  const f0 = futureFrom(f0Map, { name: 'f0' })
+  const f1 = futureMap(f0, f1Map, { name: 'f1' })
+  const f2 = futureCombine([f0, f1], f2Map, { name: 'f2' })
 
   const track = createTrackedFn()
   const uns = f2.subscribe(track)
@@ -71,7 +76,7 @@ function createTrackedFn(executor = (v => v) as FnAny): any {
 ;(async () => {
   const track = createTrackedFn((v: string) => v)
 
-  const f3 = futureOf((v: number) => Promise.resolve(`_${v}`)).chain(track)
+  const f3 = futureFrom((v: number) => Promise.resolve(`_${v}`)).chain(track)
   const result = await f3(42)
   const expected = '_42'
 
@@ -133,24 +138,27 @@ function createTrackedFn(executor = (v => v) as FnAny): any {
 /* PERF TEST */
 /* --------- */
 ;(() => {
-  return
-  const entry = futureOf((v: number = 0) => v) //1
-  const a = atomOf(0, { reducers: [entry.reduce(s => s + 1)] }) //2
-  const b = futureMap(a, a => a + 1) //3
-  const c = futureMap(a, a => a + 1) //4
-  const d = futureCombine([b, c], ([b, c]) => b + c) //5
-  const e = futureMap(d, d => d + 1) //6
-  const f = futureMap(d, d => d + 1) //7
-  const g = futureCombine([e, f], ([e, f]) => e + f) //8
-  const h1 = futureCombine([d, e, f, g], ([d, e, f, g]) => d + e + f + g) //9
-  const h2 = futureCombine([d, e, f, g], ([d, e, f, g]) => d + e + f + g) //10
-  const h = futureCombine([h1, h2], ([h1, h2]) => h1 + h2) //11
+  // return
+  const entry = futureFrom((v: number = 0) => v) //1
+  const a = entry.chain({
+    defaultState: 0,
+    executor: s => s + 1,
+  }) //2
+  const b = futureChain(a, a => a + 1) //3
+  const c = futureChain(a, a => a + 1) //4
+  const d = futureCombine([b, c]).chain(([b, c]) => b + c) //5
+  const e = futureChain(d, d => d + 1) //6
+  const f = futureChain(d, d => d + 1) //7
+  const g = futureCombine([e, f]).chain(([e, f]) => e + f) //8
+  const h1 = futureCombine([d, e, f, g]).chain(([d, e, f, g]) => d + e + f + g) //9
+  const h2 = futureCombine([d, e, f, g]).chain(([d, e, f, g]) => d + e + f + g) //10
+  const h = futureCombine([h1, h2]).chain(([h1, h2]) => h1 + h2) //11
   let res = 0
   h.subscribe(v => {
     res += v
   })
   res = 0
-  entry()
+  entry(0)
 
   const eEntry = effector.createEvent()
   const eA = effector.createStore(0).on(eEntry, s => s + 1)
@@ -172,24 +180,48 @@ function createTrackedFn(executor = (v => v) as FnAny): any {
 
   console.log({ res, eRes })
 
+  const reatomLogs = []
+  const effectorLogs = []
+
   var i = 1000
   while (i--) {
-    /* REATOM   */ entry() //?.
-    /* EFFECTOR */ eEntry() //?.
+    const startReatom = performance.now()
+    /* REATOM   */ entry(i)
+    reatomLogs.push(performance.now() - startReatom)
+    const startEffector = performance.now()
+    /* EFFECTOR */ eEntry()
+    effectorLogs.push(performance.now() - startEffector)
 
     // if (!(i % 50)) {
-    //   const future = futureCombine([e, f], ([e, f]) => e + f) //?.
-    //   future.subscribe(v => (res += v))                       //?.
-    //   future.subscribe(v => (res += v))                       //?.
-    //   future.subscribe(v => (res += v))                       //?.
-    //   future.subscribe(v => (res += v))                       //?.
-    //   const store = effector.combine(eE, eF, (e, f) => e + f) //?.
-    //   store.subscribe(v => (eRes += v))                       //?.
-    //   store.subscribe(v => (eRes += v))                       //?.
-    //   store.subscribe(v => (eRes += v))                       //?.
-    //   store.subscribe(v => (eRes += v))                       //?.
+    //   const future = futureCombine([e, f], ([e, f]) => e + f)
+    //   future.subscribe(v => (res += v))
+    //   future.subscribe(v => (res += v))
+    //   future.subscribe(v => (res += v))
+    //   future.subscribe(v => (res += v))
+    //   const store = effector.combine(eE, eF, (e, f) => e + f)
+    //   store.subscribe(v => (eRes += v))
+    //   store.subscribe(v => (eRes += v))
+    //   store.subscribe(v => (eRes += v))
+    //   store.subscribe(v => (eRes += v))
     // }
   }
 
   console.log({ res, eRes })
+
+  console.log('reatom', median(reatomLogs).toFixed(3))
+  console.log('effector', median(effectorLogs).toFixed(3))
 })()
+
+function median(values: number[]) {
+  if (values.length === 0) return 0
+
+  values = values.map(v => +v)
+
+  values.sort((a, b) => (a - b ? 1 : -1))
+
+  var half = Math.floor(values.length / 2)
+
+  if (values.length % 2) return values[half]
+
+  return (values[half - 1] + values[half]) / 2.0
+}
