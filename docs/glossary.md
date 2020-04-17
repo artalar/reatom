@@ -102,6 +102,18 @@ One of the most powerfull and complicated feature of atoms is it state lifetime 
 
 > See FAQ on [why declare\*](/faq?id=why-declare)
 
+### Dynamic initial state
+
+If you need to dynamically generate atom state (on subscription) you can derive it from `init` action
+
+```js
+import { init } from '@reatom/core'
+
+const dateAtom = declareAtom(Date.now(), on => [on(init, () => Date.now())])
+```
+
+> **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)
+
 ## Store
 
 Communicating state**ful** context between actions and atoms.
