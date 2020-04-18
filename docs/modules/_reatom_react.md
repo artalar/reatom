@@ -150,13 +150,39 @@ export const Form = () => {
 
 ### <a id="markdown-header-provider" name="markdown-header-provider"></a> Provider
 
-• **Provider**: _ProviderExoticComponent‹ProviderProps‹any››_
+• **Provider**: _ProviderExoticComponent‹ProviderProps‹null | object››_
 
 ---
 
 ### <a id="markdown-header-const-context" name="markdown-header-const-context"></a> context
 
-• **context**: _Context‹any›_ = createContext<Store | null>(null)
+• **context**: _Context‹null | object›_ = createContext<Store | null>(null)
+
+Added in: v1.0.0
+
+```js
+import { context } from '@reatom/react'
+```
+
+#### Description
+
+Context for Reatom store
+
+#### Examples
+
+Basic
+
+```jsx
+<context.Provider value={store}>
+  <App />
+</context.Provider>
+```
+
+Getting store
+
+```js
+const store = useContext(context)
+```
 
 ---
 
@@ -164,23 +190,73 @@ export const Form = () => {
 
 • **useAction**: _useAction_ = createActionHook()
 
-**`param`** actionCreator (may return void for preventing dispatch)
+Added in: v1.0.0
 
-**`param`**
+```js
+import { useAction } from '@reatom/react'
+```
+
+#### Description
+
+React Hook for bind action and dispatch to the store provided in the context.
+
+#### Signature
+
+### useAction(actionCreator)
+
+**Arguments**
+
+- actionCreator [`ActionCreator`](../core/ActionCreator) | `() =>`[`Action`](../core/Action)
+
+**Returns** [`ActionCreator`](./../core/ActionCreator)
+
+#### Examples
+
+```js
+const doIncrement = useAction(increment)
+```
 
 ---
 
 ### <a id="markdown-header-const-useatom" name="markdown-header-const-useatom"></a> useAtom
 
-• **useAtom**: _function_ = createAtomHook()
+• **useAtom**: _useAtom_ = createAtomHook()
 
-**`param`** target atom for subscription
+Added in: v1.0.0
 
-**`param`** (optional)
+```js
+import { useAction } from '@reatom/react'
+```
 
-**`param`** (optional)
+#### Description
 
-**`returns`** atom value
+React Hook for connects the atom to the store provided in context and returns the state of the atom from the store (or default atom state).
+
+#### Signature
+
+### useAtom(atom, selector?, deps?)
+
+**Arguments**
+
+- atom [`Atom`](../core/Atom.md) - required
+- selector `Function` - optional
+- deps `Array` - optional
+
+**Returns** [`AtomState`](../core/AtomState.md)
+
+#### Examples
+
+Basic
+
+```js
+const products = useAtom(productsAtom)
+```
+
+With selector
+
+```js
+const product = useAtom(productsAtom, state => state[id], [id])
+```
 
 ## Functions
 

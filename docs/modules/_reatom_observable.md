@@ -112,6 +112,12 @@ const subscription = observableAtom.subscribe({
 
 ▸ **observe**<**T**>(`store`: [Store](_reatom_core.md#markdown-header-store), `atom?`: [Atom](../interfaces/_reatom_core.atom.md)‹T›): _[Observable](../classes/_reatom_observable.observable.md)‹T›_
 
+Added in: v1.0.0
+
+```js
+import { observe } from '@reatom/observable'
+```
+
 **Type parameters:**
 
 ▪ **T**

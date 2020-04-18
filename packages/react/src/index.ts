@@ -12,8 +12,37 @@ import {
 
 import { Store, Atom, Action } from '@reatom/core'
 
+/**
+ * @ignore
+ */
 function noop() {}
 
+/**
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { context } from '@reatom/react'
+ * ```
+ *
+ * #### Description
+ *
+ * Context for Reatom store
+ *
+ * #### Examples
+ *
+ * Basic
+ * ```jsx
+ * <context.Provider value={store}>
+ *   <App />
+ * </context.Provider>
+ * ```
+ *
+ * Getting store
+ *
+ * ```js
+ * const store = useContext(context)
+ * ```
+ */
 export const context = createContext<Store | null>(null)
 
 export const { Provider } = context
@@ -106,10 +135,38 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
 }
 
 /**
- * @param atom target atom for subscription
- * @param selector (optional)
- * @param deps (optional)
- * @returns atom value
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { useAction } from '@reatom/react'
+ * ```
+ *
+ * #### Description
+ *
+ * React Hook for connects the atom to the store provided in context and returns the state of the atom from the store (or default atom state).
+ *
+ * #### Signature
+ *
+ * ### useAtom(atom, selector?, deps?)
+ *
+ * **Arguments**
+ * - atom [`Atom`](../core/Atom.md) - required
+ * - selector `Function` - optional
+ * - deps `Array` - optional
+ *
+ * **Returns** [`AtomState`](../core/AtomState.md)
+ *
+ * #### Examples
+ *
+ * Basic
+ * ```js
+ * const products = useAtom(productsAtom)
+ * ```
+ *
+ * With selector
+ * ```js
+ * const product = useAtom(productsAtom, state => state[id], [id])
+ * ```
  */
 export const useAtom = createAtomHook()
 
@@ -150,8 +207,30 @@ export function createActionHook(ctx: Context<Store | null> = context) {
 }
 
 /**
- * @param cb actionCreator (may return void for preventing dispatch)
- * @param deps
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { useAction } from '@reatom/react'
+ * ```
+ *
+ * #### Description
+ *
+ * React Hook for bind action and dispatch to the store provided in the context.
+ *
+ * #### Signature
+ *
+ * ### useAction(actionCreator)
+ *
+ * **Arguments**
+ * - actionCreator [`ActionCreator`](../core/ActionCreator) | `() =>`[`Action`](../core/Action)
+ *
+ * **Returns** [`ActionCreator`](./../core/ActionCreator)
+ *
+ * #### Examples
+ *
+ * ```js
+ * const doIncrement = useAction(increment)
+ * ```
  */
 export const useAction = createActionHook()
 

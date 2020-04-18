@@ -111,7 +111,6 @@ console.log(store.getState(countersShapeAtom))
 ### Functions
 
 - [combine](_reatom_core.md#markdown-header-combine)
-- [createCtx](_reatom_core.md#markdown-header-createctx)
 - [createStore](_reatom_core.md#markdown-header-createstore)
 - [declareAction](_reatom_core.md#markdown-header-declareaction)
 - [declareAtom](_reatom_core.md#markdown-header-declareatom)
@@ -119,17 +118,11 @@ console.log(store.getState(countersShapeAtom))
 - [getIsAction](_reatom_core.md#markdown-header-getisaction)
 - [getIsAtom](_reatom_core.md#markdown-header-getisatom)
 - [getName](_reatom_core.md#markdown-header-getname)
-- [getOwnKeys](_reatom_core.md#markdown-header-getownkeys)
 - [getState](_reatom_core.md#markdown-header-getstate)
 - [getTree](_reatom_core.md#markdown-header-gettree)
 - [map](_reatom_core.md#markdown-header-map)
-- [nameToId](_reatom_core.md#markdown-header-nametoid)
 - [nameToIdDefault](_reatom_core.md#markdown-header-nametoiddefault)
 - [noop](_reatom_core.md#markdown-header-noop)
-- [safetyFunc](_reatom_core.md#markdown-header-safetyfunc)
-- [safetyStr](_reatom_core.md#markdown-header-safetystr)
-- [setNameToId](_reatom_core.md#markdown-header-setnametoid)
-- [throwError](_reatom_core.md#markdown-header-throwerror)
 
 ## Type aliases
 
@@ -139,11 +132,58 @@ console.log(store.getState(countersShapeAtom))
 
 Action is a packet of data sent to the store for processing by atoms.
 
+> See more info about [flux standard action](https://github.com/redux-utilities/flux-standard-action):
+
+#### Signature
+
+```ts
+type Reaction<T> = (payload: T, store: Store) => void
+
+interface Action<T> {
+  type: string
+  payload: Payload<T>
+  reactions?: Reaction<T>[]
+}
+```
+
+#### Examples
+
+Basic
+
+```js
+{
+  type: 'auth',
+  payload: { user: 'Sergey' }
+}
+```
+
+With reactions
+
+```js
+{
+  type: 'auth',
+  payload: { user: 'Sergey' },
+  reactions: [
+    payload => console.log(payload),
+    payload => console.log(payload.user),
+  ]
+}
+```
+
 ---
 
 ### <a id="markdown-header-actioncreator" name="markdown-header-actioncreator"></a> ActionCreator
 
 Ƭ **ActionCreator**: _[BaseActionCreator](_reatom_core.md#markdown-header-baseactioncreator)‹Type› & function_
+
+Function for crating action packages
+
+```ts
+interface ActionCreator {
+  (): Action<T>
+  getType(): string
+}
+```
 
 ---
 
@@ -268,6 +308,61 @@ type MyActionType = InferType<typeof myAction>
 
 Ƭ **Store**: _object_
 
+Store is communicating stateful context between actions and atoms.
+
+#### Interface
+
+```ts
+type Unsubscriber = () => void
+type StoreState = Record<string, any>
+
+interface Store {
+  getState(): StoreState
+  getState(atom: Atom): AtomState
+
+  subscribe(subscriber: ActionsSubsriber): Unsubscriber
+  subscribe(atom: Atom, subscriber: AtomSubscriber): Unsubscriber
+
+  dispatch(action: Action): void
+}
+```
+
+#### getState
+
+Getting full store state
+
+```js
+store.getState()
+```
+
+Getting atom state from store
+
+```js
+store.getState(myAtom)
+```
+
+#### subscribe
+
+Subsctibe to the actions
+
+```js
+store.subscribe(action => {})
+```
+
+Subsctibe to the state
+
+```js
+store.subscribe(myAtom, state => {})
+```
+
+#### dispatch
+
+Dispatching actions to the store
+
+```js
+store.dispatch(myAction())
+```
+
 #### Type declaration:
 
 - **bind**(): _function_
@@ -312,6 +407,53 @@ type MyActionType = InferType<typeof myAction>
 
 ▸ **combine**<**T**>(`shape`: T): _[Atom](../interfaces/_reatom_core.atom.md)‹object›_
 
+Added in: v1.0.0
+
+```js
+import { combine } from '@reatom/core'
+```
+
+#### Description
+
+A function to combine several atoms into one.
+
+#### Signature
+
+```typescript
+// overload 1
+combine(shape: AtomsMap | TupleOfAtoms): Atom
+
+// overload 2
+combine(name: string | [string], shape: AtomsMap | TupleOfAtoms): Atom
+```
+
+**Arguments**
+
+- **name** `string` | `[string]` - optional
+- **shape** `Object` - required
+
+**Returns** [`Atom`](./Atom)
+
+#### Examples
+
+Basic
+
+```js
+const myCombinedAtom = combine({ myAtom1, myAtom2 })
+```
+
+With name
+
+```js
+const myCombinedAtom = combine('myCombinedAtom', [myAtom1, myAtom2])
+```
+
+With static name
+
+```js
+const myCombinedAtom = combine(['myCombinedAtom'], [myAtom1, myAtom2])
+```
+
 **Type parameters:**
 
 ▪ **T**: _AtomsMap | TupleOfAtoms_
@@ -341,38 +483,62 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### <a id="markdown-header-createctx" name="markdown-header-createctx"></a> createCtx
-
-▸ **createCtx**(`state`: [State](_reatom_core.md#markdown-header-state), `__namedParameters`: object): _object_
-
-**Parameters:**
-
-▪ **state**: _[State](_reatom_core.md#markdown-header-state)_
-
-▪ **\_\_namedParameters**: _object_
-
-| Name      | Type   |
-| --------- | ------ |
-| `payload` | any    |
-| `type`    | string |
-
-**Returns:** _object_
-
-- **changedIds**: _string | symbol[]_ = [] as TreeId[]
-
-- **payload**: _any_
-
-- **state**(): _object_
-
-- **stateNew**(): _object_
-
-- **type**: _string_
-
----
-
 ### <a id="markdown-header-createstore" name="markdown-header-createstore"></a> createStore
 
 ▸ **createStore**(`initState?`: [State](_reatom_core.md#markdown-header-state)): _[Store](_reatom_core.md#markdown-header-store)_
+
+Added in: v1.0.0
+
+```js
+import { createStore } from '@reatom/core'
+```
+
+#### Description
+
+Function to create a store.
+
+#### Signature
+
+```typescript
+// overload 1
+createStore(initialState: StoreState?): Store
+
+// overload 2
+createStore(rootAtom: Atom?, initialState: StoreState?): Store
+```
+
+**Arguments**
+
+1. **rootAtom** [`Atom`](./Atom) - optional
+2. **initialState** [`StoreState`](./StoreState) - optional
+
+**Returns** [`Store`](./Store)
+
+#### Examples
+
+Basic
+
+```js
+const store = createStore()
+```
+
+With root atom
+
+```js
+const store = createStore(myAtom)
+```
+
+With initial state
+
+```js
+const store = createStore({ foo: 'bar' })
+```
+
+With root atom and initial state
+
+```js
+const store = createStore(myAtom, { foo: 'bar' })
+```
 
 **Parameters:**
 
@@ -399,7 +565,68 @@ type MyActionType = InferType<typeof myAction>
 
 ▸ **declareAction**(`name?`: string | [Reaction](_reatom_core.md#markdown-header-reaction)‹undefined›, ...`reactions`: [Reaction](_reatom_core.md#markdown-header-reaction)‹undefined›[]): _[ActionCreator](_reatom_core.md#markdown-header-actioncreator)‹string›_
 
-declareAction is used
+Added in: v1.0.0
+
+```js
+import { declareAction } from '@reatom/core'
+```
+
+#### Description
+
+A function to create the Declaration of the action.
+
+#### Signature
+
+```typescript
+// overload 1
+declareAction<P>(...reactions: Reaction<P>[]): ActionCreator<P>
+
+// overload 2
+declareAction<P>(type: string | [string], ...reactions: Reaction<P>[]): ActionCreator<P>
+```
+
+**Arguments**
+
+- **type** `string` | `[string]` - optional
+- **...reactions** [`Reaction[]`](./Reaction) - optional
+
+**Returns** [`ActionCreator`](./ActionCreator)
+
+#### Examples
+
+Basic
+
+```js
+const action = declareAction()
+```
+
+With type
+
+```js
+const action = declareAction('myAction')
+```
+
+With static type
+
+```js
+const action = declareAction(['myAction'])
+```
+
+With reaction
+
+```js
+const action = declareAction((payload, store) => {
+  store.dispatch(otherAction())
+})
+```
+
+With type and reaction
+
+```js
+const action = declareAction('myAction', (payload, store) => {
+  store.dispatch(otherAction())
+})
+```
 
 **Parameters:**
 
@@ -462,6 +689,65 @@ declareAction is used
 ### <a id="markdown-header-declareatom" name="markdown-header-declareatom"></a> declareAtom
 
 ▸ **declareAtom**<**TState**>(`initialState`: TState, `dependencyMatcher`: DependencyMatcher‹TState›): _[Atom](../interfaces/_reatom_core.atom.md)‹TState›_
+
+Added in: v1.0.0
+
+```js
+import { declareAtom } from '@reatom/core'
+```
+
+#### Description
+
+Function to create an atom Declaration.
+
+#### Signature
+
+```typescript
+// overload 1
+declareAtom<S>(defaultState: AtomState<S>, depsMatcher: DependcyMatcher<S>): Atom<S>
+
+// overload 2
+declareAtom<S>(name: string | [string], defaultState: AtomState<S>, depsMatcher: DependcyMatcher<S>): Atom<S>
+
+```
+
+**Generic Types**
+
+- **S** - type of atom state
+
+**Arguments**
+
+- **name** `string` | `[string]` - optional
+- **defaultState** `any` - required
+- **depsMatcher** `Function` - required
+
+**Returns** [`Atom`](./Atom)
+
+#### Examples
+
+Basic
+
+```js
+const myList = declareAtom([], on => [
+  on(addItem, (state, payload) => [...state, payload]),
+])
+```
+
+With name
+
+```js
+const myList = declareAtom('products', [], on => [
+  on(addItem, (state, payload) => [...state, payload]),
+])
+```
+
+With static name
+
+```js
+const myList = declareAtom(['products'], [], on => [
+  on(addItem, (state, payload) => [...state, payload]),
+])
+```
 
 **Type parameters:**
 
@@ -550,24 +836,6 @@ declareAction is used
 
 ---
 
-### <a id="markdown-header-getownkeys" name="markdown-header-getownkeys"></a> getOwnKeys
-
-▸ **getOwnKeys**<**T**>(`obj`: T): _Array‹keyof T›_
-
-**Type parameters:**
-
-▪ **T**: _object_
-
-**Parameters:**
-
-| Name  | Type |
-| ----- | ---- |
-| `obj` | T    |
-
-**Returns:** _Array‹keyof T›_
-
----
-
 ### <a id="markdown-header-getstate" name="markdown-header-getstate"></a> getState
 
 ▸ **getState**<**T**>(`state`: [State](_reatom_core.md#markdown-header-state), `atom`: [Atom](../interfaces/_reatom_core.atom.md)‹T›): _T | undefined_
@@ -604,6 +872,54 @@ declareAction is used
 ### <a id="markdown-header-map" name="markdown-header-map"></a> map
 
 ▸ **map**<**T**, **TSource**>(`source`: [Atom](../interfaces/_reatom_core.atom.md)‹TSource›, `mapper`: function): _[Atom](../interfaces/_reatom_core.atom.md)‹T›_
+
+Added in: v1.0.0
+
+```js
+import { map } from '@reatom/core'
+```
+
+#### Description
+
+A function to create derived atoms by the required data format.
+
+#### Signature
+
+```typescript
+// overload 1
+map(atom: Atom, mapper: Function): Atom
+
+// overload 2
+map(name: string | [string], atom: Atom, mapper: Function): Atom
+```
+
+**Arguments**
+
+- **name** `string` | `[string]` - optional
+- **atom** [`Atom`](./Atom) - required
+- **mapper** `Function` - required
+
+**Returns** [`Atom`](./Atom)
+
+#### Examples
+
+Basic
+
+```js
+const newAtom = map(counterAtom, atomState => atomState * 2)
+```
+
+With name
+
+```js
+const newAtom = map('newAtom', counterAtom, atomState => atomState * 2)
+```
+
+With static name
+
+```js
+const newAtom = map(['newAtom'], counterAtom, atomState => atomState * 2)
+```
 
 **Type parameters:**
 
@@ -655,20 +971,6 @@ declareAction is used
 
 ---
 
-### <a id="markdown-header-nametoid" name="markdown-header-nametoid"></a> nameToId
-
-▸ **nameToId**(`name`: string | [string] | symbol): _[TreeId](_reatom_core.md#markdown-header-treeid)_
-
-**Parameters:**
-
-| Name   | Type                                 |
-| ------ | ------------------------------------ |
-| `name` | string &#124; [string] &#124; symbol |
-
-**Returns:** _[TreeId](_reatom_core.md#markdown-header-treeid)_
-
----
-
 ### <a id="markdown-header-nametoiddefault" name="markdown-header-nametoiddefault"></a> nameToIdDefault
 
 ▸ **nameToIdDefault**(`name`: string | [string] | symbol): _[TreeId](_reatom_core.md#markdown-header-treeid)_
@@ -686,67 +988,5 @@ declareAction is used
 ### <a id="markdown-header-noop" name="markdown-header-noop"></a> noop
 
 ▸ **noop**(): _void_
-
-**Returns:** _void_
-
----
-
-### <a id="markdown-header-safetyfunc" name="markdown-header-safetyfunc"></a> safetyFunc
-
-▸ **safetyFunc**<**T**>(`func`: T | undefined, `name`: string): _T_
-
-**Type parameters:**
-
-▪ **T**: _Function_
-
-**Parameters:**
-
-| Name   | Type               |
-| ------ | ------------------ |
-| `func` | T &#124; undefined |
-| `name` | string             |
-
-**Returns:** _T_
-
----
-
-### <a id="markdown-header-safetystr" name="markdown-header-safetystr"></a> safetyStr
-
-▸ **safetyStr**(`str`: string, `name`: string): _string_
-
-**Parameters:**
-
-| Name   | Type   |
-| ------ | ------ |
-| `str`  | string |
-| `name` | string |
-
-**Returns:** _string_
-
----
-
-### <a id="markdown-header-setnametoid" name="markdown-header-setnametoid"></a> setNameToId
-
-▸ **setNameToId**(`gen`: [GenId](_reatom_core.md#markdown-header-genid)): _void_
-
-**Parameters:**
-
-| Name  | Type                                           |
-| ----- | ---------------------------------------------- |
-| `gen` | [GenId](_reatom_core.md#markdown-header-genid) |
-
-**Returns:** _void_
-
----
-
-### <a id="markdown-header-throwerror" name="markdown-header-throwerror"></a> throwError
-
-▸ **throwError**(`error`: string): _void_
-
-**Parameters:**
-
-| Name    | Type   |
-| ------- | ------ |
-| `error` | string |
 
 **Returns:** _void_
