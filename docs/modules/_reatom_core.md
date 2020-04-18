@@ -88,43 +88,6 @@ console.log(store.getState(countersShapeAtom))
 
 ## Index
 
-### References
-
-- [Action](_reatom_core.md#markdown-header-action)
-- [ActionCreator](_reatom_core.md#markdown-header-actioncreator)
-- [ActionType](_reatom_core.md#markdown-header-actiontype)
-- [Atom](_reatom_core.md#markdown-header-atom)
-- [BaseActionCreator](_reatom_core.md#markdown-header-baseactioncreator)
-- [GenId](_reatom_core.md#markdown-header-genid)
-- [InferType](_reatom_core.md#markdown-header-infertype)
-- [PayloadActionCreator](_reatom_core.md#markdown-header-payloadactioncreator)
-- [Reaction](_reatom_core.md#markdown-header-reaction)
-- [Store](_reatom_core.md#markdown-header-store)
-- [TreeId](_reatom_core.md#markdown-header-treeid)
-- [Unit](_reatom_core.md#markdown-header-unit)
-- [combine](_reatom_core.md#markdown-header-combine)
-- [createStore](_reatom_core.md#markdown-header-createstore)
-- [declareAction](_reatom_core.md#markdown-header-declareaction)
-- [declareAtom](_reatom_core.md#markdown-header-declareatom)
-- [getDepsShape](_reatom_core.md#markdown-header-getdepsshape)
-- [getIsAction](_reatom_core.md#markdown-header-getisaction)
-- [getIsAtom](_reatom_core.md#markdown-header-getisatom)
-- [getState](_reatom_core.md#markdown-header-getstate)
-- [getTree](_reatom_core.md#markdown-header-gettree)
-- [initAction](_reatom_core.md#markdown-header-initaction)
-- [map](_reatom_core.md#markdown-header-map)
-- [nameToIdDefault](_reatom_core.md#markdown-header-nametoiddefault)
-- [noop](_reatom_core.md#markdown-header-noop)
-- [setNameToId](_reatom_core.md#markdown-header-setnametoid)
-
-### Classes
-
-- [Tree](../classes/_reatom_core.tree.md)
-
-### Interfaces
-
-- [Atom](../interfaces/_reatom_core.atom.md)
-
 ### Type aliases
 
 - [Action](_reatom_core.md#markdown-header-action)
@@ -144,13 +107,6 @@ console.log(store.getState(countersShapeAtom))
 - [Store](_reatom_core.md#markdown-header-store)
 - [TreeId](_reatom_core.md#markdown-header-treeid)
 - [Unit](_reatom_core.md#markdown-header-unit)
-
-### Variables
-
-- [TREE](_reatom_core.md#markdown-header-const-tree)
-- [assign](_reatom_core.md#markdown-header-const-assign)
-- [equals](_reatom_core.md#markdown-header-const-equals)
-- [initAction](_reatom_core.md#markdown-header-const-initaction)
 
 ### Functions
 
@@ -175,183 +131,29 @@ console.log(store.getState(countersShapeAtom))
 - [setNameToId](_reatom_core.md#markdown-header-setnametoid)
 - [throwError](_reatom_core.md#markdown-header-throwerror)
 
-## References
-
-### Action
-
-• **Action**:
-
----
-
-### ActionCreator
-
-• **ActionCreator**:
-
----
-
-### ActionType
-
-• **ActionType**:
-
----
-
-### Atom
-
-• **Atom**:
-
----
-
-### BaseActionCreator
-
-• **BaseActionCreator**:
-
----
-
-### GenId
-
-• **GenId**:
-
----
-
-### InferType
-
-• **InferType**:
-
----
-
-### PayloadActionCreator
-
-• **PayloadActionCreator**:
-
----
-
-### Reaction
-
-• **Reaction**:
-
----
-
-### Store
-
-• **Store**:
-
----
-
-### TreeId
-
-• **TreeId**:
-
----
-
-### Unit
-
-• **Unit**:
-
----
-
-### combine
-
-• **combine**:
-
----
-
-### createStore
-
-• **createStore**:
-
----
-
-### declareAction
-
-• **declareAction**:
-
----
-
-### declareAtom
-
-• **declareAtom**:
-
----
-
-### getDepsShape
-
-• **getDepsShape**:
-
----
-
-### getIsAction
-
-• **getIsAction**:
-
----
-
-### getIsAtom
-
-• **getIsAtom**:
-
----
-
-### getState
-
-• **getState**:
-
----
-
-### getTree
-
-• **getTree**:
-
----
-
-### initAction
-
-• **initAction**:
-
----
-
-### map
-
-• **map**:
-
----
-
-### nameToIdDefault
-
-• **nameToIdDefault**:
-
----
-
-### noop
-
-• **noop**:
-
----
-
-### setNameToId
-
-• **setNameToId**:
-
 ## Type aliases
 
-### Action
+### <a id="markdown-header-action" name="markdown-header-action"></a> Action
 
 Ƭ **Action**: _[BaseAction](_reatom_core.md#markdown-header-baseaction)‹Payload› & object_
 
+Action is a packet of data sent to the store for processing by atoms.
+
 ---
 
-### ActionCreator
+### <a id="markdown-header-actioncreator" name="markdown-header-actioncreator"></a> ActionCreator
 
 Ƭ **ActionCreator**: _[BaseActionCreator](_reatom_core.md#markdown-header-baseactioncreator)‹Type› & function_
 
 ---
 
-### ActionType
+### <a id="markdown-header-actiontype" name="markdown-header-actiontype"></a> ActionType
 
 Ƭ **ActionType**: _[Leaf](_reatom_core.md#markdown-header-leaf)_
 
 ---
 
-### BaseAction
+### <a id="markdown-header-baseaction" name="markdown-header-baseaction"></a> BaseAction
 
 Ƭ **BaseAction**: _object_
 
@@ -363,19 +165,19 @@ console.log(store.getState(countersShapeAtom))
 
 ---
 
-### BaseActionCreator
+### <a id="markdown-header-baseactioncreator" name="markdown-header-baseactioncreator"></a> BaseActionCreator
 
 Ƭ **BaseActionCreator**: _object & [Unit](_reatom_core.md#markdown-header-unit)_
 
 ---
 
-### Ctx
+### <a id="markdown-header-ctx" name="markdown-header-ctx"></a> Ctx
 
 Ƭ **Ctx**: _ReturnType‹typeof createCtx›_
 
 ---
 
-### Fn
+### <a id="markdown-header-fn" name="markdown-header-fn"></a> Fn
 
 Ƭ **Fn**: _object_
 
@@ -393,7 +195,7 @@ console.log(store.getState(countersShapeAtom))
 
 ---
 
-### GenId
+### <a id="markdown-header-genid" name="markdown-header-genid"></a> GenId
 
 Ƭ **GenId**: _function_
 
@@ -409,7 +211,7 @@ console.log(store.getState(countersShapeAtom))
 
 ---
 
-### InferType
+### <a id="markdown-header-infertype" name="markdown-header-infertype"></a> InferType
 
 Ƭ **InferType**: _T extends Atom<infer R> | PayloadActionCreator<infer R> ? R : never_
 
@@ -421,25 +223,25 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### Leaf
+### <a id="markdown-header-leaf" name="markdown-header-leaf"></a> Leaf
 
 Ƭ **Leaf**: _string_
 
 ---
 
-### NonUndefined
+### <a id="markdown-header-nonundefined" name="markdown-header-nonundefined"></a> NonUndefined
 
 Ƭ **NonUndefined**: _Exclude‹T, undefined›_
 
 ---
 
-### PayloadActionCreator
+### <a id="markdown-header-payloadactioncreator" name="markdown-header-payloadactioncreator"></a> PayloadActionCreator
 
 Ƭ **PayloadActionCreator**: _[BaseActionCreator](_reatom_core.md#markdown-header-baseactioncreator)‹Type› & function_
 
 ---
 
-### Reaction
+### <a id="markdown-header-reaction" name="markdown-header-reaction"></a> Reaction
 
 Ƭ **Reaction**: _function_
 
@@ -456,13 +258,13 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### State
+### <a id="markdown-header-state" name="markdown-header-state"></a> State
 
 Ƭ **State**: _Record‹[TreeId](_reatom_core.md#markdown-header-treeid), unknown›_
 
 ---
 
-### Store
+### <a id="markdown-header-store" name="markdown-header-store"></a> Store
 
 Ƭ **Store**: _object_
 
@@ -484,47 +286,29 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### TreeId
+### <a id="markdown-header-treeid" name="markdown-header-treeid"></a> TreeId
 
 Ƭ **TreeId**: _string | symbol_
 
 ---
 
-### Unit
+### <a id="markdown-header-unit" name="markdown-header-unit"></a> Unit
 
 Ƭ **Unit**: _object_
+
+Unit
+
+**`example`**
+type MyAtomType = InferType<typeof myAtom>
+type MyActionType = InferType<typeof myAction>
 
 #### Type declaration:
 
 - **\_\_computed**: _[Tree](../classes/_reatom_core.tree.md)_
 
-## Variables
-
-### `Const` TREE
-
-• **TREE**: _unique symbol_ = Symbol('@@Reatom/TREE')
-
----
-
-### `Const` assign
-
-• **assign**: _assign_ = Object.assign
-
----
-
-### `Const` equals
-
-• **equals**: _is_ = Object.is
-
----
-
-### `Const` initAction
-
-• **initAction**: _object & object_ = initActionCreator()
-
 ## Functions
 
-### combine
+### <a id="markdown-header-combine" name="markdown-header-combine"></a> combine
 
 ▸ **combine**<**T**>(`shape`: T): _[Atom](../interfaces/_reatom_core.atom.md)‹object›_
 
@@ -557,7 +341,7 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### createCtx
+### <a id="markdown-header-createctx" name="markdown-header-createctx"></a> createCtx
 
 ▸ **createCtx**(`state`: [State](_reatom_core.md#markdown-header-state), `__namedParameters`: object): _object_
 
@@ -586,7 +370,7 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### createStore
+### <a id="markdown-header-createstore" name="markdown-header-createstore"></a> createStore
 
 ▸ **createStore**(`initState?`: [State](_reatom_core.md#markdown-header-state)): _[Store](_reatom_core.md#markdown-header-store)_
 
@@ -611,9 +395,11 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### declareAction
+### <a id="markdown-header-declareaction" name="markdown-header-declareaction"></a> declareAction
 
 ▸ **declareAction**(`name?`: string | [Reaction](_reatom_core.md#markdown-header-reaction)‹undefined›, ...`reactions`: [Reaction](_reatom_core.md#markdown-header-reaction)‹undefined›[]): _[ActionCreator](_reatom_core.md#markdown-header-actioncreator)‹string›_
+
+declareAction is used
 
 **Parameters:**
 
@@ -673,19 +459,9 @@ type MyActionType = InferType<typeof myAction>
 
 ---
 
-### declareAtom
+### <a id="markdown-header-declareatom" name="markdown-header-declareatom"></a> declareAtom
 
 ▸ **declareAtom**<**TState**>(`initialState`: TState, `dependencyMatcher`: DependencyMatcher‹TState›): _[Atom](../interfaces/_reatom_core.atom.md)‹TState›_
-
-To declare atom:
-
-```
-var x = declareAtom()
-```
-
-```typescript
-const x = declareAtom()
-```
 
 **Type parameters:**
 
@@ -701,16 +477,6 @@ const x = declareAtom()
 **Returns:** _[Atom](../interfaces/_reatom_core.atom.md)‹TState›_
 
 ▸ **declareAtom**<**TState**>(`name`: AtomName, `initialState`: TState, `dependencyMatcher`: DependencyMatcher‹TState›): _[Atom](../interfaces/_reatom_core.atom.md)‹TState›_
-
-To declare atom with atom name:
-
-```js
-var x = declareAtom()
-```
-
-```typescript
-const x = declareAtom()
-```
 
 **Type parameters:**
 
@@ -728,7 +494,7 @@ const x = declareAtom()
 
 ---
 
-### getDepsShape
+### <a id="markdown-header-getdepsshape" name="markdown-header-getdepsshape"></a> getDepsShape
 
 ▸ **getDepsShape**(`thing`: [Atom](../interfaces/_reatom_core.atom.md)‹any›): _AtomsMap | TupleOfAtoms | undefined_
 
@@ -742,7 +508,7 @@ const x = declareAtom()
 
 ---
 
-### getIsAction
+### <a id="markdown-header-getisaction" name="markdown-header-getisaction"></a> getIsAction
 
 ▸ **getIsAction**(`thing`: any): _thing is Atom<any>_
 
@@ -756,7 +522,7 @@ const x = declareAtom()
 
 ---
 
-### getIsAtom
+### <a id="markdown-header-getisatom" name="markdown-header-getisatom"></a> getIsAtom
 
 ▸ **getIsAtom**(`thing`: any): _thing is Atom<any>_
 
@@ -770,7 +536,7 @@ const x = declareAtom()
 
 ---
 
-### getName
+### <a id="markdown-header-getname" name="markdown-header-getname"></a> getName
 
 ▸ **getName**(`treeId`: [TreeId](_reatom_core.md#markdown-header-treeid)): _string_
 
@@ -784,7 +550,7 @@ const x = declareAtom()
 
 ---
 
-### getOwnKeys
+### <a id="markdown-header-getownkeys" name="markdown-header-getownkeys"></a> getOwnKeys
 
 ▸ **getOwnKeys**<**T**>(`obj`: T): _Array‹keyof T›_
 
@@ -802,7 +568,7 @@ const x = declareAtom()
 
 ---
 
-### getState
+### <a id="markdown-header-getstate" name="markdown-header-getstate"></a> getState
 
 ▸ **getState**<**T**>(`state`: [State](_reatom_core.md#markdown-header-state), `atom`: [Atom](../interfaces/_reatom_core.atom.md)‹T›): _T | undefined_
 
@@ -821,7 +587,7 @@ const x = declareAtom()
 
 ---
 
-### getTree
+### <a id="markdown-header-gettree" name="markdown-header-gettree"></a> getTree
 
 ▸ **getTree**(`thing`: [Unit](_reatom_core.md#markdown-header-unit)): _[Tree](../classes/_reatom_core.tree.md)_
 
@@ -835,7 +601,7 @@ const x = declareAtom()
 
 ---
 
-### map
+### <a id="markdown-header-map" name="markdown-header-map"></a> map
 
 ▸ **map**<**T**, **TSource**>(`source`: [Atom](../interfaces/_reatom_core.atom.md)‹TSource›, `mapper`: function): _[Atom](../interfaces/_reatom_core.atom.md)‹T›_
 
@@ -889,7 +655,7 @@ const x = declareAtom()
 
 ---
 
-### nameToId
+### <a id="markdown-header-nametoid" name="markdown-header-nametoid"></a> nameToId
 
 ▸ **nameToId**(`name`: string | [string] | symbol): _[TreeId](_reatom_core.md#markdown-header-treeid)_
 
@@ -903,7 +669,7 @@ const x = declareAtom()
 
 ---
 
-### nameToIdDefault
+### <a id="markdown-header-nametoiddefault" name="markdown-header-nametoiddefault"></a> nameToIdDefault
 
 ▸ **nameToIdDefault**(`name`: string | [string] | symbol): _[TreeId](_reatom_core.md#markdown-header-treeid)_
 
@@ -917,7 +683,7 @@ const x = declareAtom()
 
 ---
 
-### noop
+### <a id="markdown-header-noop" name="markdown-header-noop"></a> noop
 
 ▸ **noop**(): _void_
 
@@ -925,7 +691,7 @@ const x = declareAtom()
 
 ---
 
-### safetyFunc
+### <a id="markdown-header-safetyfunc" name="markdown-header-safetyfunc"></a> safetyFunc
 
 ▸ **safetyFunc**<**T**>(`func`: T | undefined, `name`: string): _T_
 
@@ -944,7 +710,7 @@ const x = declareAtom()
 
 ---
 
-### safetyStr
+### <a id="markdown-header-safetystr" name="markdown-header-safetystr"></a> safetyStr
 
 ▸ **safetyStr**(`str`: string, `name`: string): _string_
 
@@ -959,7 +725,7 @@ const x = declareAtom()
 
 ---
 
-### setNameToId
+### <a id="markdown-header-setnametoid" name="markdown-header-setnametoid"></a> setNameToId
 
 ▸ **setNameToId**(`gen`: [GenId](_reatom_core.md#markdown-header-genid)): _void_
 
@@ -973,7 +739,7 @@ const x = declareAtom()
 
 ---
 
-### throwError
+### <a id="markdown-header-throwerror" name="markdown-header-throwerror"></a> throwError
 
 ▸ **throwError**(`error`: string): _void_
 

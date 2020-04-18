@@ -134,7 +134,7 @@ export const Form = () => {
 
 ## Index
 
-### Variables
+### Globals
 
 - [Provider](_reatom_react.md#markdown-header-provider)
 - [context](_reatom_react.md#markdown-header-const-context)
@@ -146,21 +146,21 @@ export const Form = () => {
 - [createActionHook](_reatom_react.md#markdown-header-createactionhook)
 - [createAtomHook](_reatom_react.md#markdown-header-createatomhook)
 
-## Variables
+## Globals
 
-### Provider
+### <a id="markdown-header-provider" name="markdown-header-provider"></a> Provider
 
-• **Provider**: _ProviderExoticComponent‹ProviderProps‹null | object››_
-
----
-
-### `Const` context
-
-• **context**: _Context‹null | object›_ = createContext<Store | null>(null)
+• **Provider**: _ProviderExoticComponent‹ProviderProps‹any››_
 
 ---
 
-### `Const` useAction
+### <a id="markdown-header-const-context" name="markdown-header-const-context"></a> context
+
+• **context**: _Context‹any›_ = createContext<Store | null>(null)
+
+---
+
+### <a id="markdown-header-const-useaction" name="markdown-header-const-useaction"></a> useAction
 
 • **useAction**: _useAction_ = createActionHook()
 
@@ -170,9 +170,9 @@ export const Form = () => {
 
 ---
 
-### `Const` useAtom
+### <a id="markdown-header-const-useatom" name="markdown-header-const-useatom"></a> useAtom
 
-• **useAtom**: _useAtom_ = createAtomHook()
+• **useAtom**: _function_ = createAtomHook()
 
 **`param`** target atom for subscription
 
@@ -184,7 +184,7 @@ export const Form = () => {
 
 ## Functions
 
-### createActionHook
+### <a id="markdown-header-createactionhook" name="markdown-header-createactionhook"></a> createActionHook
 
 ▸ **createActionHook**(`ctx`: Context‹[Store](_reatom_core.md#markdown-header-store) | null›): _useAction_
 
@@ -200,7 +200,7 @@ A `useAction` hook bound to the context.
 
 ---
 
-### createAtomHook
+### <a id="markdown-header-createatomhook" name="markdown-header-createatomhook"></a> createAtomHook
 
 ▸ **createAtomHook**(`ctx`: Context‹[Store](_reatom_core.md#markdown-header-store) | null›): _useAtom_
 

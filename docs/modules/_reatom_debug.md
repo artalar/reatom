@@ -91,8 +91,8 @@ const atom = declareAtom('myAtom', 0, () => {})
 
 ### References
 
-- [connectReduxDevtools](_reatom_debug.md#markdown-header-connectreduxdevtools)
-- [genIdFromLine](_reatom_debug.md#markdown-header-genidfromline)
+- [connectReduxDevtools]()
+- [genIdFromLine]()
 
 ### Functions
 
@@ -101,21 +101,21 @@ const atom = declareAtom('myAtom', 0, () => {})
 
 ## References
 
-### connectReduxDevtools
+### <a id="" name=""></a> connectReduxDevtools
 
 • **connectReduxDevtools**:
 
 ---
 
-### genIdFromLine
+### <a id="" name=""></a> genIdFromLine
 
 • **genIdFromLine**:
 
 ## Functions
 
-### connectReduxDevtools
+### <a id="markdown-header-connectreduxdevtools" name="markdown-header-connectreduxdevtools"></a> connectReduxDevtools
 
-▸ **connectReduxDevtools**(`store`: [Store](_reatom_core.md#markdown-header-store), `config`: object): _undefined | function_
+▸ **connectReduxDevtools**(`store`: [Store](_reatom_core.md#markdown-header-store), `config`: object): _any_
 
 **Parameters:**
 
@@ -124,11 +124,11 @@ const atom = declareAtom('myAtom', 0, () => {})
 | `store`  | [Store](_reatom_core.md#markdown-header-store) | -       |
 | `config` | object                                         | {}      |
 
-**Returns:** _undefined | function_
+**Returns:** _any_
 
 ---
 
-### genIdFromLine
+### <a id="markdown-header-genidfromline" name="markdown-header-genidfromline"></a> genIdFromLine
 
 ▸ **genIdFromLine**(`config`: Partial‹GenConfiguration›): _\_genIdFromLine_
 

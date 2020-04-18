@@ -6,13 +6,14 @@
     "postinstall": "npm run bootstrap",
     "bootstrap": "lerna bootstrap && lerna run rebuild",
     "build": "lerna run build",
-    "build:docs": "typedoc && cpy build/docs/modules/*.md docs/packages",
+    "build:docs": "typedoc && cpy build/docs/modules/*.md docs/modules && cpy build/docs/interfaces/*.md docs/interfaces && cpy build/docs/classes/*.md docs/classes && node ./scripts/docs-fix/docs-fix",
     "test": "lerna run test",
     "size": "lerna run size",
     "lint": "eslint --ext .ts,.tsx,.js,.jsx packages/",
     "prettify": "prettier --write \"**/*.{js,jsx,ts,tsx,md}\" !**/babel-plugin/test/**",
     "prettify:watch": "onchange \"**/*.{js,jsx,ts,tsx,md}\" !**/babel-plugin/test/** -- prettier --write {{changed}}",
-    "serve:docs": "docsify serve docs"
+    "serve:docs": "docsify serve docs",
+    "build:docs:debug": "node --inspect ./node_modules/typedoc/bin/typedoc"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
