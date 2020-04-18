@@ -1,0 +1,86 @@
+{
+  "name": "@reatom/redux-compat",
+  "version": "1.1.1",
+  "description": "@reatom helpers to simplify moving from redux to reatom",
+  "homepage": "https://github.com/artalar/reatom/tree/master/packages/redux-compat",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "license": "MIT",
+  "source": "src/index.ts",
+  "main": "build/index.js",
+  "umd:main": "build/index.umd.js",
+  "module": "build/index.es.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "prepublishOnly": "npm run rebuild && npm run test",
+    "postpublish": "npm run clean",
+    "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core",
+    "clean": "cross-env fixme=fixme ../../node_modules/.bin/rimraf build/",
+    "rebuild": "npm run clean && npm run build",
+    "test": "cross-env fixme=fixme ../../node_modules/.bin/jest tests/*",
+    "test:watch": "cross-env fixme=fixme ../../node_modules/.bin/jest --watch",
+    "test:debug": "node --inspect-brk ../../node_modules/.bin/jest --runInBand",
+    "prettify": "cross-env fixme=fixme ../../node_modules/.bin/prettier --write **/*.{js,ts,md}",
+    "prettify:watch": "cross-env fixme=fixme ../../node_modules/.bin/onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
+    "ts-check": "cross-env fixme=fixme ../../node_modules/.bin/tsc --noEmit",
+    "ts-check:watch": "npm run ts-check -- --watch",
+    "update": "npx npm-check-updates -u"
+  },
+  "peerDependencies": {
+    "@reatom/core": "^1.1.1",
+    "react": "^16.8.0"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "^7.8.3",
+    "@reatom/core": "^1.1.1",
+    "@testing-library/jest-dom": "^4.1.0",
+    "@testing-library/react": "^9.1.4",
+    "@testing-library/react-hooks": "^2.0.1",
+    "@types/react": "^16.8.0",
+    "cross-env": "^5.2.1",
+    "react": "^16.8.0",
+    "react-dom": "^16.9.0",
+    "react-test-renderer": "^16.9.0"
+  },
+  "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar"
+    },
+    {
+      "name": "belozer"
+    }
+  ],
+  "readme": "README.md",
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "keywords": [
+    "state",
+    "store",
+    "flux",
+    "atom",
+    "reactive",
+    "reactivity",
+    "redux",
+    "effector",
+    "mobx",
+    "state-manager",
+    "state manager",
+    "reatom",
+    "react",
+    "hooks"
+  ],
+  "files": [
+    "/README.md",
+    "/package.json",
+    "/index.ts",
+    "/build"
+  ],
+  "dependencies": {
+    "@reatom/react": "^1.1.0"
+  }
+}
