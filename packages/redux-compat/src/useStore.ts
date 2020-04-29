@@ -1,6 +1,7 @@
 import { useContext } from 'react'
 
 import { context } from '@reatom/react'
+import { Store } from '@reatom/core'
 
 /**
  * A hook to access the reatom store.
@@ -17,7 +18,7 @@ import { context } from '@reatom/react'
  *   return <div>{JSON.stringify(store.getState())}</div>
  * }
  */
-export const useStore = () => {
+export const useStore = (): Store => {
   const store = useContext(context)
 
   if (!store) {
