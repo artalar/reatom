@@ -1,5 +1,7 @@
 import { Store, Atom, Action } from '@reatom/core'
-import $$observable from 'symbol-observable'
+// Have to import index file directly because microbundle/rollup incorrectly detects module type and compilation fails with an error
+// (babel plugin) SyntaxError: reatom\node_modules\symbol-observable\es\index.js: 'import' and 'export' may only appear at the top level (5:0)
+import $$observable from 'symbol-observable/index'
 
 export type ActionOrValue<T> = T extends undefined ? Action<any, string> : T
 

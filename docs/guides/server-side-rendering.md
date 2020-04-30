@@ -89,80 +89,82 @@ We hope that from this guide you understand the purpose of static names of atoms
 
 ## custom function getInitialStoreState
 
-If you don't want use initial data without atom names you can use custom *getInitialStoreState* function
+If you don't want use initial data without atom names you can use custom _getInitialStoreState_ function
 
 **Server**
 
 ```js
-  import { declareAction, declareAtom, combine, createStore } from '@reatom/core'
-  const setTitle = declareAction()
-  const titleAtom = declareAtom('title', on => [
-    on(setTitle, (_, payload) => payload),
-  ])
+import { declareAction, declareAtom, combine, createStore } from '@reatom/core'
+const setTitle = declareAction()
+const titleAtom = declareAtom('title', on => [
+  on(setTitle, (_, payload) => payload),
+])
 
-  const setMode = declareAction()
-  const modeAtom = declareAtom('desktop', on => [
-    on(setMode, (_, payload) => payload),
-  ])
+const setMode = declareAction()
+const modeAtom = declareAtom('desktop', on => [
+  on(setMode, (_, payload) => payload),
+])
 
-  const appAtom = combine({
-    title: titleAtom,
-    mode: modeAtom,
-  })
+const appAtom = combine({
+  title: titleAtom,
+  mode: modeAtom,
+})
 
-  const store = createStore(appAtom)
-  store.dispatch(setTitle('Reatom App'))
-  store.dispatch(setMode('mobile'))
+const store = createStore(appAtom)
+store.dispatch(setTitle('Reatom App'))
+store.dispatch(setMode('mobile'))
 ```
+
 ```js
-  // Serialize your store in html
-  ;`window._INITIAL_DATA = ${JSON.stringify(store.getState(appAtom))}`
-  // Result
-  ;`window._INITIAL_DATA = {"title":"Reatom App","mode":"mobile"}`
+// Serialize your store in html
+;`window._INITIAL_DATA = ${JSON.stringify(store.getState(appAtom))}`
+// Result
+;`window._INITIAL_DATA = {"title":"Reatom App","mode":"mobile"}`
 ```
 
 **Browser**
+
 ```js
-  import { declareAction, declareAtom, combine, createStore } from '@reatom/core'
-  
-  function getInitialStoreState(rootAtom, state) {
-    const depsShape = getDepsShape(rootAtom)
-    if (depsShape) {
-      const states = Object.keys(depsShape).map(id =>
-        getInitialStoreState(depsShape[id], state[id]),
-      )
+import { declareAction, declareAtom, combine, createStore } from '@reatom/core'
 
-      return Object.assign({}, ...states)
-    }
+function getInitialStoreState(rootAtom, state) {
+  const depsShape = getDepsShape(rootAtom)
+  if (depsShape) {
+    const states = Object.keys(depsShape).map(id =>
+      getInitialStoreState(depsShape[id], state[id]),
+    )
 
-    return {
-      [getTree(rootAtom).id]: state,
-    }
+    return Object.assign({}, ...states)
   }
 
-  const setTitle = declareAction()
-  const titleAtom = declareAtom('title', on => [
-    on(setTitle, (_, payload) => payload),
-  ])
+  return {
+    [getTree(rootAtom).id]: state,
+  }
+}
 
-  const setMode = declareAction()
-  const modeAtom = declareAtom('desktop', on => [
-    on(setMode, (_, payload) => payload),
-  ])
+const setTitle = declareAction()
+const titleAtom = declareAtom('title', on => [
+  on(setTitle, (_, payload) => payload),
+])
 
-  const appAtom = combine({
-    title: titleAtom,
-    mode: modeAtom,
-  })
+const setMode = declareAction()
+const modeAtom = declareAtom('desktop', on => [
+  on(setMode, (_, payload) => payload),
+])
 
-  const defaultState = getInitialStoreState(appAtom, window._INITIAL_DATA)
+const appAtom = combine({
+  title: titleAtom,
+  mode: modeAtom,
+})
 
-  const store = createStore(appAtom, defaultState)
+const defaultState = getInitialStoreState(appAtom, window._INITIAL_DATA)
 
-  store.getState(appAtom)
-  // { title: 'Reatom App', mode: 'mobile' }
-  store.getState(modeAtom)
-  // mobile
-  store.getState(titleAtom)
-  // Reatom App
+const store = createStore(appAtom, defaultState)
+
+store.getState(appAtom)
+// { title: 'Reatom App', mode: 'mobile' }
+store.getState(modeAtom)
+// mobile
+store.getState(titleAtom)
+// Reatom App
 ```
