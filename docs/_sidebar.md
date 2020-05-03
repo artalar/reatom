@@ -12,6 +12,7 @@
   - [@reatom/observable](/modules/_reatom_observable.md)
   - [@reatom/babel-plugin](/modules/_reatom_babel_plugin.md)
   - [@reatom/debug](/modules/_reatom_debug.md)
+  - [@reatom/redux-compat](/modules/_reatom_redux_compat.md)
 
 - Guides
   - [Naming Conventions](/guides/naming-conventions.md)
