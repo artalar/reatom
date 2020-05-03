@@ -18,13 +18,9 @@ import { Action, declareAction, PayloadActionCreator } from './declareAction'
 const DEPS = Symbol('@@Reatom/DEPS')
 const DEPS_SHAPE = Symbol('@@Reatom/DEPS_SHAPE')
 
-// action for set initialState of each atom to global state
-const initActionCreator = declareAction(['@@Reatom/init'])
-
-/**
- * @ignore
- */
-export const initAction = initActionCreator()
+/** action for set initialState of each atom to global state */
+export const init = declareAction(['@@Reatom/init'])
+export const initAction = init()
 
 type AtomName = TreeId | [string]
 type AtomsMap = { [key: string]: Atom<any> }
@@ -229,7 +225,7 @@ export function declareAtom<TState>(
     depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
   }
 
-  on(initActionCreator, (_, { [_id]: state = initialState }: any = {}) => state)
+  on(init, (_, { [_id]: state = initialState }: any = {}) => state)
   dependencyMatcher(on)
 
   const atom = function atom(
