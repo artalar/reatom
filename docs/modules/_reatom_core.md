@@ -108,6 +108,10 @@ console.log(store.getState(countersShapeAtom))
 - [TreeId](_reatom_core.md#markdown-header-treeid)
 - [Unit](_reatom_core.md#markdown-header-unit)
 
+### Globals
+
+- [init](_reatom_core.md#markdown-header-const-init)
+
 ### Functions
 
 - [combine](_reatom_core.md#markdown-header-combine)
@@ -399,7 +403,22 @@ type MyActionType = InferType<typeof myAction>
 
 #### Type declaration:
 
-- **\_\_computed**: _[Tree](../classes/_reatom_core.tree.md)_
+- **[TREE]**: _[Tree](../classes/_reatom_core.tree.md)_
+
+## Globals
+
+### <a id="markdown-header-const-init" name="markdown-header-const-init"></a> init
+
+• **init**: _object & object & function_ = declareAction(['@@Reatom/init'])
+
+#### Description
+
+Core action used to set initial atom state. Called on subscription to the atom.
+
+```js
+import { init } from '@reatom/core'
+const dateAtom = declareAtom(Date.now(), on => [on(init, () => Date.now())])
+```
 
 ## Functions
 

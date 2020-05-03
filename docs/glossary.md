@@ -94,12 +94,14 @@ const countDoubledAtom = declareAtom(0, on => [
 
 ### Dynamic initial state
 
-If you need to dynamically generate atom state (on subscription) you can derive it from `init` action
+If you need to dynamically generate atom state (on subscription) you can use `initAction` action
 
 ```js
-import { init } from '@reatom/core'
+import { initAction } from '@reatom/core'
 
-const dateAtom = declareAtom(Date.now(), on => [on(init, () => Date.now())])
+const dateAtom = declareAtom(Date.now(), on => [
+  on(initAction, () => Date.now()),
+])
 ```
 
 > **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)

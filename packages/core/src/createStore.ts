@@ -9,7 +9,7 @@ import {
   getOwnKeys,
 } from './shared'
 import { Action, PayloadActionCreator } from './declareAction'
-import { Atom, initAction, getState } from './declareAtom'
+import { Atom, initActionInstance, getState } from './declareAtom'
 
 type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
 type SubscribeFunction = {
@@ -158,8 +158,8 @@ export function createStore(
       else if (initState !== undefined) throwError('Invalid initial state')
 
       storeTree.union(getTree(atom as Atom<any>))
-      const ctx = createCtx(state, initAction)
-      storeTree.forEach(initAction.type, ctx)
+      const ctx = createCtx(state, initActionInstance)
+      storeTree.forEach(initActionInstance.type, ctx)
       assign(state, ctx.stateNew)
       initialAtoms = new Set(getOwnKeys(ctx.stateNew))
     }
@@ -190,8 +190,8 @@ export function createStore(
     const targetState = getState<T>(state, target)
     if (targetState !== undefined) return targetState
 
-    const ctx = createCtx(state, initAction)
-    getTree(target).forEach(initAction.type, ctx)
+    const ctx = createCtx(state, initActionInstance)
+    getTree(target).forEach(initActionInstance.type, ctx)
 
     return getState(ctx.stateNew, target)
   }
@@ -234,8 +234,8 @@ export function createStore(
       nextListeners.set(targetId, [])
       if (isLazy) {
         storeTree.union(targetTree)
-        const ctx = createCtx(state, initAction)
-        targetTree.forEach(initAction.type, ctx)
+        const ctx = createCtx(state, initActionInstance)
+        targetTree.forEach(initActionInstance.type, ctx)
         assign(state, ctx.stateNew)
       }
     }
@@ -278,7 +278,7 @@ export function createStore(
 
     listeners = nextListeners
 
-    if (type === initAction.type) state = payload || {}
+    if (type === initActionInstance.type) state = payload || {}
     if (changedIds.length > 0) {
       assign(state, stateNew)
       for (let i = 0; i < changedIds.length; i++) {

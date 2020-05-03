@@ -75,4 +75,4 @@ Atom reducers may depend on declared action or other atoms and must be pure func
 
 • **[TREE]**: _[Tree](../classes/_reatom_core.tree.md)_
 
-_Inherited from **type.**computed_
+_Inherited from \_\_type.[TREE]_
