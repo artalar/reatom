@@ -18,7 +18,7 @@ import { Action, declareAction, PayloadActionCreator } from './declareAction'
 const DEPS = Symbol('@@Reatom/DEPS')
 const DEPS_SHAPE = Symbol('@@Reatom/DEPS_SHAPE')
 
-// action for set initialState of each atom to global state
+/** action for set initialState of each atom to global state */
 export const init = declareAction(['@@Reatom/init'])
 export const initAction = init()
 
@@ -40,12 +40,83 @@ interface DependencyMatcherOn<TState> {
 }
 type DependencyMatcher<TState> = (on: DependencyMatcherOn<TState>) => any
 
+/**
+ * Atoms\* are state**less** instructions to calculate derived state in the right order (without [glitches](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx)).
+ *
+ * > For redux users: **atom - is a thing that works concomitantly like reducer and selector.**
+ *
+ * Atom reducers may depend on declared action or other atoms and must be pure functions that return new immutable version of the state. If a reducer returns old state – depended atoms and subscribers will not be triggered.
+ *
+ * > [\*](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) The term "atom" is borrowed from [Clojure](http://clojure.org/reference/atoms) and comes from the idea that one only performs ["atomic"](https://en.wikipedia.org/wiki/Read-modify-write), or [race-condition](https://en.wikipedia.org/wiki/Race_condition) free, operations on individual atoms. Besides that reatoms atoms is stateless and seamlessly like [Futures](https://en.wikipedia.org/wiki/Futures_and_promises) in this case.
+ *
+ * #### Signature
+ *
+ * ```typescript
+ * ```
+ */
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): Record<string, T | any>
   [DEPS]: Set<TreeId>
   [DEPS_SHAPE]?: AtomsMap | TupleOfAtoms
 }
 
+/**
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { declareAtom } from '@reatom/core'
+ * ```
+ *
+ * #### Description
+ *
+ * Function to create an atom Declaration.
+ *
+ * #### Signature
+ *
+ * ```typescript
+ * // overload 1
+ * declareAtom<S>(defaultState: AtomState<S>, depsMatcher: DependcyMatcher<S>): Atom<S>
+ *
+ * // overload 2
+ * declareAtom<S>(name: string | [string], defaultState: AtomState<S>, depsMatcher: DependcyMatcher<S>): Atom<S>
+ *
+ * ```
+ * **Generic Types**
+ * - **S** - type of atom state
+ *
+ * **Arguments**
+ * - **name** `string` | `[string]` - optional
+ * - **defaultState** `any` - required
+ * - **depsMatcher** `Function` - required
+ *
+ * **Returns** [`Atom`](./Atom)
+ *
+ * #### Examples
+ *
+ * Basic
+ *
+ * ```js
+ * const myList = declareAtom([], on => [
+ *   on(addItem, (state, payload) => [...state, payload])
+ * ])
+ * ```
+ *
+ * With name
+ *
+ * ```js
+ * const myList = declareAtom('products', [], on => [
+ *   on(addItem, (state, payload) => [...state, payload])
+ * ])
+ * ```
+ *
+ * With static name
+ *
+ * ```js
+ * const myList = declareAtom(['products'], [], on => [
+ *   on(addItem, (state, payload) => [...state, payload])
+ * ])
+ * ```
+ */
 export function declareAtom<TState>(
   initialState: TState,
   dependencyMatcher: DependencyMatcher<TState>,
@@ -179,6 +250,51 @@ export function getState<T>(state: State, atom: Atom<T>): T | undefined {
   return state[atom[TREE].id as string] as T | undefined
 }
 
+/**
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { map } from '@reatom/core'
+ * ```
+ *
+ * #### Description
+ *
+ * A function to create derived atoms by the required data format.
+ *
+ * #### Signature
+ *
+ * ```typescript
+ * // overload 1
+ * map(atom: Atom, mapper: Function): Atom
+ *
+ * // overload 2
+ * map(name: string | [string], atom: Atom, mapper: Function): Atom
+ * ```
+ *
+ * **Arguments**
+ * - **name** `string` | `[string]` - optional
+ * - **atom** [`Atom`](./Atom) - required
+ * - **mapper** `Function` - required
+ *
+ * **Returns** [`Atom`](./Atom)
+ *
+ * #### Examples
+ *
+ * Basic
+ * ```js
+ * const newAtom = map(counterAtom, atomState => atomState * 2)
+ * ```
+ *
+ * With name
+ * ```js
+ * const newAtom = map('newAtom', counterAtom, atomState => atomState * 2)
+ * ```
+ *
+ * With static name
+ * ```js
+ * const newAtom = map(['newAtom'], counterAtom, atomState => atomState * 2)
+ * ```
+ */
 export function map<T, TSource = unknown>(
   source: Atom<TSource>,
   mapper: (dependedAtomState: TSource) => NonUndefined<T>,
@@ -212,6 +328,50 @@ export function map<T, TSource = unknown>(
 
 type TupleOfAtoms = [Atom<unknown>] | Atom<unknown>[]
 
+/**
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { combine } from '@reatom/core'
+ * ```
+ *
+ * #### Description
+ *
+ * A function to combine several atoms into one.
+ *
+ * #### Signature
+ *
+ * ```typescript
+ * // overload 1
+ * combine(shape: AtomsMap | TupleOfAtoms): Atom
+ *
+ * // overload 2
+ * combine(name: string | [string], shape: AtomsMap | TupleOfAtoms): Atom
+ * ```
+ *
+ * **Arguments**
+ * - **name** `string` | `[string]` - optional
+ * - **shape** `Object` - required
+ *
+ * **Returns** [`Atom`](./Atom)
+ *
+ * #### Examples
+ *
+ * Basic
+ * ```js
+ * const myCombinedAtom = combine({ myAtom1, myAtom2 })
+ * ```
+ *
+ * With name
+ * ```js
+ * const myCombinedAtom = combine('myCombinedAtom', [myAtom1, myAtom2])
+ * ```
+ *
+ * With static name
+ * ```js
+ * const myCombinedAtom = combine(['myCombinedAtom'], [myAtom1, myAtom2])
+ * ```
+ */
 export function combine<T extends AtomsMap | TupleOfAtoms>(
   shape: T,
 ): Atom<{ [key in keyof T]: T[key] extends Atom<infer S> ? S : never }>

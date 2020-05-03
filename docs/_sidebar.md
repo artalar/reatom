@@ -7,11 +7,11 @@
 
 - Packages
 
-  - [@reatom/core](/packages/core.md)
-  - [@reatom/react](/packages/react.md)
-  - [@reatom/observable](/packages/observable.md)
-  - [@reatom/babel-plugin](/packages/babel-plugin.md)
-  - [@reatom/debug](/packages/debug.md)
+  - [@reatom/core](/modules/_reatom_core.md)
+  - [@reatom/react](/modules/_reatom_react.md)
+  - [@reatom/observable](/modules/_reatom_observable.md)
+  - [@reatom/babel-plugin](/modules/_reatom_babel_plugin.md)
+  - [@reatom/debug](/modules/_reatom_debug.md)
 
 - Guides
   - [Naming Conventions](/guides/naming-conventions.md)

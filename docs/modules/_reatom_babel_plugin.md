@@ -1,8 +1,15 @@
-# @reatom/babel-plugin
+# Module: @reatom/babel-plugin
 
-Babel plugin for automatically insert variable name to declarations of atoms or actions
+<div align="center">
+<br/>
+
+[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
+
+</div>
 
 [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin)
+
+[Open in docs](https://reatom.js.org/#/packages/babel-plugin)
 
 ## Install
 
@@ -51,7 +58,3 @@ const myAtom = declareAtom('myAtom', {}, () => [])
 const mySelector = map('mySelector', myAtom, atomState => atomState)
 const myCombine = combine('myCombine', [myAtom, mySelector])
 ```
-
----
-
-[Open source code on GitHub](https://github.com/artalar/reatom/tree/master/packages/babel-plugin)

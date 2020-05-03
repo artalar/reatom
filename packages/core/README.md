@@ -5,8 +5,6 @@
 
 </div>
 
-# @reatom/core
-
 Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)

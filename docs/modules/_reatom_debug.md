@@ -1,3 +1,5 @@
+# Module: @reatom/debug
+
 <div align="center">
 <br/>
 
@@ -84,3 +86,56 @@ const action = declareAction('myAction')
 const atom = declareAtom('myAtom', 0, () => {})
 // myAtom [/src/folder/index.js:5]
 ```
+
+## Index
+
+### References
+
+- [connectReduxDevtools](_reatom_debug.md#markdown-header-connectreduxdevtools)
+- [genIdFromLine](_reatom_debug.md#markdown-header-genidfromline)
+
+### Functions
+
+- [connectReduxDevtools](_reatom_debug.md#markdown-header-connectreduxdevtools)
+- [genIdFromLine](_reatom_debug.md#markdown-header-genidfromline)
+
+## References
+
+### <a id="markdown-header-connectreduxdevtools" name="markdown-header-connectreduxdevtools"></a> connectReduxDevtools
+
+• **connectReduxDevtools**:
+
+---
+
+### <a id="markdown-header-genidfromline" name="markdown-header-genidfromline"></a> genIdFromLine
+
+• **genIdFromLine**:
+
+## Functions
+
+### <a id="markdown-header-connectreduxdevtools" name="markdown-header-connectreduxdevtools"></a> connectReduxDevtools
+
+▸ **connectReduxDevtools**(`store`: [Store](_reatom_core.md#markdown-header-store), `config`: object): _undefined | function_
+
+**Parameters:**
+
+| Name     | Type                                           | Default |
+| -------- | ---------------------------------------------- | ------- |
+| `store`  | [Store](_reatom_core.md#markdown-header-store) | -       |
+| `config` | object                                         | {}      |
+
+**Returns:** _undefined | function_
+
+---
+
+### <a id="markdown-header-genidfromline" name="markdown-header-genidfromline"></a> genIdFromLine
+
+▸ **genIdFromLine**(`config`: Partial‹GenConfiguration›): _\_genIdFromLine_
+
+**Parameters:**
+
+| Name     | Type                      | Default              |
+| -------- | ------------------------- | -------------------- |
+| `config` | Partial‹GenConfiguration› | configurationDefault |
+
+**Returns:** _\_genIdFromLine_

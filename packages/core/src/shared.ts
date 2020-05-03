@@ -4,8 +4,18 @@ import { PayloadActionCreator } from './declareAction'
 
 export { TreeId }
 export type GenId = (name: string | [string] | symbol) => TreeId
+
+/**
+ * @ignore
+ */
 export const TREE = Symbol('@@Reatom/TREE')
 
+/**
+ * Unit
+ * @example
+ * type MyAtomType = InferType<typeof myAtom>
+ * type MyActionType = InferType<typeof myAction>
+ */
 export type Unit = { [TREE]: Tree }
 
 export type NonUndefined<T> = Exclude<T, undefined>
@@ -24,9 +34,15 @@ export type InferType<T> = T extends
 
 export function noop() {}
 
+/**
+ * @ignore
+ */
 // eslint-disable-next-line prefer-destructuring
 export const assign = Object.assign
 
+/**
+ * @ignore
+ */
 export const equals = Object.is
 
 export function getTree(thing: Unit): Tree {
@@ -59,22 +75,38 @@ export function nameToIdDefault(name: string | [string] | symbol): TreeId {
     : `${safetyStr(name, 'name')} [${++id}]`
 }
 let _nameToId: GenId
+
+/**
+ @internal
+ */
 export function nameToId(name: string | [string] | symbol): TreeId {
   return _nameToId ? _nameToId(name) : nameToIdDefault(name)
 }
 
+/**
+ @internal
+ */
 export function setNameToId(gen: GenId) {
   _nameToId = safetyFunc(gen, 'gen')
 }
 
+/**
+ @internal
+ */
 export function throwError(error: string) {
   // TODO: add link to docs with full description
   throw new Error(`[reatom] ${error}`)
 }
+/**
+ @internal
+ */
 export function safetyStr(str: string, name: string): string {
   if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)
   return str
 }
+/**
+ @internal
+ */
 export function safetyFunc<T extends Function>(
   func: T | undefined,
   name: string,
@@ -83,6 +115,9 @@ export function safetyFunc<T extends Function>(
   return func as T
 }
 
+/**
+ @internal
+ */
 export function getOwnKeys<T extends object>(obj: T): Array<keyof T> {
   const keys = Object.keys(obj) as Array<keyof T>
   keys.push(...(Object.getOwnPropertySymbols(obj) as Array<keyof T>))

@@ -6,11 +6,14 @@
     "postinstall": "npm run bootstrap",
     "bootstrap": "lerna bootstrap && lerna run rebuild",
     "build": "lerna run build",
+    "build:docs": "typedoc && cpy build/docs/modules/*.md docs/modules && cpy build/docs/interfaces/*.md docs/interfaces && cpy build/docs/classes/*.md docs/classes && node ./scripts/docs-fix/docs-fix",
     "test": "lerna run test",
     "size": "lerna run size",
     "lint": "eslint --ext .ts,.tsx,.js,.jsx packages/",
-    "prettify": "prettier --write **/*.{js,ts,md} !**/babel-plugin/test/**",
-    "prettify:watch": "onchange **/*.{js,ts,md} !**/babel-plugin/test/** -- prettier --write {{changed}}"
+    "prettify": "prettier --write \"**/*.{js,jsx,ts,tsx,md}\" !**/babel-plugin/test/**",
+    "prettify:watch": "onchange \"**/*.{js,jsx,ts,tsx,md}\" !**/babel-plugin/test/** -- prettier --write {{changed}}",
+    "serve:docs": "docsify serve docs",
+    "build:docs:debug": "node --inspect ./node_modules/typedoc/bin/typedoc"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
@@ -29,6 +32,7 @@
     "babel-core": "^7.0.0-bridge.0",
     "babel-jest": "^24.9.0",
     "babel-loader": "^8.1.0",
+    "cpy-cli": "^3.1.0",
     "cross-env": "^5.2.1",
     "docsify-cli": "^4.4.0",
     "eslint": "^6.8.0",
@@ -46,6 +50,9 @@
     "prettier": "^1.19.1",
     "rimraf": "^3.0.2",
     "ts-node": "^8.8.2",
+    "typedoc": "^0.17.4",
+    "typedoc-plugin-lerna-packages": "^0.3.0",
+    "typedoc-plugin-markdown": "^2.2.17",
     "typescript": "^3.8.3"
   },
   "author": "artalar",
