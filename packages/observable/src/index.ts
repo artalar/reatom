@@ -101,6 +101,14 @@ export class Observable<T> implements Observable<T> {
   }
 }
 
+/**
+ *
+ * Added in: v1.0.0
+ *
+ * ```js
+ * import { observe } from '@reatom/observable'
+ * ```
+ */
 export function observe<T = undefined>(store: Store, atom?: Atom<T>) {
   return new Observable<T>(store, atom)
 }

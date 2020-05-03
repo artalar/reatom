@@ -8,6 +8,10 @@ export type Fn = {
 }
 export type Ctx = ReturnType<typeof createCtx>
 export type BaseAction<T = any> = { type: Leaf; payload: T }
+
+/**
+ @internal
+ */
 export function createCtx(state: State, { type, payload }: BaseAction) {
   return {
     state,
@@ -18,6 +22,9 @@ export function createCtx(state: State, { type, payload }: BaseAction) {
   }
 }
 
+/**
+ @internal
+ */
 class SetCounted {
   _counter = new Map<Fn, number>()
 

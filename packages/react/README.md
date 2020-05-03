@@ -1,22 +1,7 @@
-<div align="center">
-<br/>
-
-[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
-
-</div>
-
-# @reatom/react
-
 React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 
 [![npm](https://img.shields.io/npm/v/@reatom/react?style=flat-square)](https://www.npmjs.com/package/@reatom/react)
-![npm type definitions](https://img.shields.io/npm/types/@reatom/react?style=flat-square)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
-![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
-
-[Open in docs](https://reatom.js.org/#/packages/react)
-
-> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://reatom.js.org/).
 
 ## Install
 
@@ -30,25 +15,27 @@ or
 yarn add @reatom/react
 ```
 
-> `@reatom/react` depends on and works with `@reatom/core`.
+> NOTE. **@reatom/react** depends on [@reatom/core](https://reatom.js.org/#/reatom-core).
 
 ## Hooks Api
 
 ### useAtom
 
-Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state).
+Connects the atom to the store provided in context and returns the state of the atom from the store (or default atom state).
 
-#### Basic (useAtom)
+#### Retrieve atom state from the store
 
 ```ts
 const atomValue = useAtom(atom)
 ```
 
-#### Depended value by selector
+#### Get atom state and apply dynamic selector
 
 ```ts
 const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
 ```
+
+> NOTE. You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
 
 #### Mount without subscription (for subscribing atoms to actions)
 
@@ -58,7 +45,7 @@ const atomValue = useAtom(atom, () => null, [])
 
 ### useAction
 
-Binds action with dispatch to the store provided in the context.
+Creates a handle, which dispatches the action to the store provided in the context.
 
 #### Basic (useAction)
 
@@ -69,14 +56,19 @@ const handleDoSome = useAction(doSome)
 #### Prepare payload for dispatch
 
 ```ts
-const handleDoSome = useAction(value => doSome({ id: props.id, value }), [
-  props.id,
-])
+const handleDoSome = useAction(
+  value =>
+    doSome({
+      id: props.id,
+      value,
+    }),
+  [props.id],
+)
 ```
 
 #### Conditional dispatch
 
-If action creator don't return an action dispatch not calling.
+Dispatch is not called if action creator doesn't return an action.
 
 ```ts
 const handleDoSome = useAction(payload => {
@@ -99,7 +91,7 @@ import { Form } from './components/Form'
 import './App.css'
 
 export const App = () => {
-  // create statefull context for atoms execution
+  // create stateful context for atoms execution
   const store = createStore()
 
   return (
@@ -112,7 +104,7 @@ export const App = () => {
 }
 ```
 
-### Step 2. Use in component
+### Step 2. Use in components
 
 ```jsx
 // components/Form

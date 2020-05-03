@@ -1,0 +1,24 @@
+{
+  "out": "build/docs",
+  "name": "@reatom packages",
+  "readme": "README",
+  "mode": "modules",
+  "theme": "bitbucket",
+  "exclude": [
+    "**/node_modules/**",
+    "**/benchmark/**/*",
+    "**/tests/**/*",
+    "**/test/**/*",
+    "**/tools/**/*"
+  ],
+  "excludeExternals": true,
+  "excludeNotExported": true,
+  "excludePrivate": true,
+  "ignoreCompilerErrors": false,
+  "disableOutputCheck": false,
+  "stripInternal": true,
+  "hideBreadcrumbs": true,
+  "hideProjectTitle": true,
+  "hideSources": true,
+  "namedAnchors": true
+}
