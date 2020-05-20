@@ -60,41 +60,36 @@ yarn add @reatom/core
 
 ## Usage
 
-[Open in CodeSandbox](https://codesandbox.io/s/reatom-intro-jlepp)
+[Open in CodeSandbox](https://codesandbox.io/s/reatom-intro-srvsd)
 
 ```js
-import {
-  declareAction,
-  declareAtom,
-  map,
-  combine,
-  createStore,
-} from '@reatom/core'
+import { declareAction, declareAtom, map, createStore } from "@reatom/core";
 
 /** Actions */
-const increment = declareAction()
-const add = declareAction()
+const increment = declareAction();
+const add = declareAction();
 
 /** Atoms */
 const countAtom = declareAtom(1, on => [
   on(increment, state => state + 1),
-  on(add, (state, payload) => state + payload),
-])
-const isOddAtom = map(countAtom, count => Boolean(count % 2))
-const rootAtom = combine({ count: countAtom, isOdd: isOddAtom })
+  on(add, (state, payload) => state + payload)
+]);
+const isOddAtom = map(countAtom, count => Boolean(count % 2));
 
 /** Store */
-const store = createStore(rootAtom)
+const store = createStore();
 
-store.subscribe(countAtom, count => console.log('count: ', count))
-store.subscribe(isOddAtom, isOdd => console.log('isOdd: ', isOdd))
+store.subscribe(countAtom, count => console.log("`count` state: ", count));
+store.subscribe(isOddAtom, isOdd => console.log("`isOdd` state: ", isOdd));
+store.subscribe(add, payload => console.log("`add` payload: ", payload));
 
-store.dispatch(increment())
-// count: 2
-// isOdd: false
+store.dispatch(increment());
+// `count` state: 2
+// `isOdd` state: false
 
-store.dispatch(add(2))
-// count: 4
+store.dispatch(add(2));
+// `count` state: 4
+// `add` payload: 2
 // here `isOdd` subscriber will not be called because its value is not changed
 ```
 
@@ -111,9 +106,6 @@ store.dispatch(add(2))
 ## Motivation
 
 Why another state manager? The reason is dissatisfaction with existing solutions that do not cover our requirements. We strive to create a lightweight state manager that combines the best solutions proven over the years and personal experience.
-
-<details>
-<summary>Show problems in popular solutions</summary>
 
 > **NOTE.** Please do not consider these arguments as a way to dissuade you from using these libraries. These are very interesting projects and they deserve your attention. This list only shows the motivation for creating Reatom.
 
@@ -143,44 +135,19 @@ Guiding principles of state manager:
 - Classic reducer API and [static] type descriptions have a lot of boilerplate.
 - Selectors are "runtime" oriented; if a "feature" uses any part of the state (by selector) and later you remove this part, you will get an error only when mounting your "feature" at runtime (if you do not have static typing). The single solution is to connect all features statically by imports.
 - Middleware is a confusing pattern that can unexpectedly modify the behavior of the store. For example, actions for redux-thunk do not log.
-  <!-- - Memorized selectors do extra computations by default, but it is definitely unnecessary in SSR -->
   > Some problems can be solved by various fabric functions and third party libriaries. This makes it diffcuilt to reuse solutions across multiple projects.
 
 ### Effector
 
 [link to repository](https://github.com/zerobias/effector)
 
-- Effector is about atomic **stores** — it uses stateful approach that has certain problems:
-  - probable memory leaks (as every unit of effector is a _hot_ observable, thats less safety than _cold_ observables)
-    > Like any other observable libraries
-  - difficult [store] instance reusability
+- Effector is about atomic **stores** — it uses stateful approach and has a problems as a any Producers:
+  - probable memory leaks, because an store existents controlled not by a consumers (subscribers), but by a data sources, that is a more common.
+    > if you have a source `A` and derived source `B` and `C`, even if only `B` has a subscribers and need to application workflow, `C` still be receiving an updates and calculate it, even if nobody need it.
+  - difficult [store] instance reusability.
     > It can be solved, but it is better to solve it by design of a library architecture and API
-- Asynchronous and probably cyclic dependencies specification
-
-  <details>
-  <summary>show example</summary>
-
-  ```js
-  const store = createStore(0)
-  store.watch(console.log)
-
-  const event = createEvent()
-  store.on(event, (state, payload) => payload)
-
-  event(1000)
-  // console.log: 1000
-
-  // In any time and in any project part
-  const otherEvent = createEvent()
-  store.on(otherEvent, (state, payload) => payload)
-
-  otherEvent(2000)
-  // console.log: 2000
-  ```
-
-  </details>
-
-- The [size](https://bundlephobia.com/result?p=effector)
+- Asynchronous and probably cyclic dependencies specification - it less predictable than describe all dependencies with instance creation.
+- The [size](https://bundlephobia.com/result?p=effector) (Reatom is 3 times lighter).
 - [Throw in reducer does not cancel the computations in other reducers](https://github.com/zerobias/effector/issues/90)
 
 ### MobX
@@ -193,8 +160,6 @@ Guiding principles of state manager:
 - [Proxy pattern](https://en.wikipedia.org/wiki/Proxy_pattern) lacks a visual part of code semantic.
 - It is complicated under the hood and [it can be complicated when one has to work with complex data-structures](https://twitter.com/art_al_ar/status/1162769896025075719)
 - [And others...](https://mobx.js.org/best/pitfalls.html)
-
-</details>
 
 ## Community
 

@@ -47,6 +47,8 @@ console.log(workflowIntention())
 
 ### Action reactions
 
+Reatom includes something like a built-in [Thunk](https://github.com/reduxjs/redux-thunk) - just pass a side-effect to action declaration:
+
 ```js
 const fetchUserDone = declareAction()
 const fetchUser = declareAction(
@@ -60,6 +62,8 @@ const fetchUser = declareAction(
 // will call `fetch('/user', payload)`
 store.dispatch(fetchUser(userId))
 ```
+
+It is better than `redux-thunk`, becaus you can inspect an action with side-effect and it payload in a subscription log or in a [devtools](https://reatom.js.org/#/packages/debug?id=redux-devtools).
 
 ## Atom
 
@@ -78,9 +82,9 @@ const countAtom = declareAtom(
   'count', // name (optional!)
   0, // initial state
   on => [
-    // reducers definitions
-    //on(dependedDeclaredActionOrAtom, reducer)
-    //reducer: (oldState, dependedValues) => newState
+    // reducers definitions:
+    // `on(dependedDeclaredActionOrAtom, reducer)`
+    // reducer: (oldState, dependedValues) => newState
     on(increment, state => state + 1),
     on(add, (state, payload) => state + payload),
   ],
