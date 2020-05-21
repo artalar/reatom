@@ -9,6 +9,7 @@
 
   - [@reatom/core](/packages/core.md)
   - [@reatom/react](/packages/react.md)
+  - [@reatom/angular](/packages/angular.md)
   - [@reatom/observable](/packages/observable.md)
   - [@reatom/babel-plugin](/packages/babel-plugin.md)
   - [@reatom/debug](/packages/debug.md)
