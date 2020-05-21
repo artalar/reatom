@@ -63,31 +63,31 @@ yarn add @reatom/core
 [Open in CodeSandbox](https://codesandbox.io/s/reatom-intro-srvsd)
 
 ```js
-import { declareAction, declareAtom, map, createStore } from "@reatom/core";
+import { declareAction, declareAtom, map, createStore } from '@reatom/core'
 
 /** Actions */
-const increment = declareAction();
-const add = declareAction();
+const increment = declareAction()
+const add = declareAction()
 
 /** Atoms */
 const countAtom = declareAtom(1, on => [
   on(increment, state => state + 1),
-  on(add, (state, payload) => state + payload)
-]);
-const isOddAtom = map(countAtom, count => Boolean(count % 2));
+  on(add, (state, payload) => state + payload),
+])
+const isOddAtom = map(countAtom, count => Boolean(count % 2))
 
 /** Store */
-const store = createStore();
+const store = createStore()
 
-store.subscribe(countAtom, count => console.log("`count` state: ", count));
-store.subscribe(isOddAtom, isOdd => console.log("`isOdd` state: ", isOdd));
-store.subscribe(add, payload => console.log("`add` payload: ", payload));
+store.subscribe(countAtom, count => console.log('`count` state: ', count))
+store.subscribe(isOddAtom, isOdd => console.log('`isOdd` state: ', isOdd))
+store.subscribe(add, payload => console.log('`add` payload: ', payload))
 
-store.dispatch(increment());
+store.dispatch(increment())
 // `count` state: 2
 // `isOdd` state: false
 
-store.dispatch(add(2));
+store.dispatch(add(2))
 // `count` state: 4
 // `add` payload: 2
 // here `isOdd` subscriber will not be called because its value is not changed
@@ -179,12 +179,18 @@ Telegram
 
 ---
 
-Next:
-
+> **Next:**
+>
 > - <a href="https://reatom.js.org/#/glossary">Glossary</a>
 > - <a href="https://reatom.js.org/#/examples">Examples</a>
 > - <a href="https://reatom.js.org/#/faq">FAQ</a>
-> - <a href="https://reatom.js.org/#/contributing">Contributing</a>
+> - Guides
+>   - <a href="https://reatom.js.org/#/guides/naming-conventions.md">Naming Conventions</a>
+>   - <a href="https://reatom.js.org/#/guides/file-structure.md">File Structure</a>
+>   - <a href="https://reatom.js.org/#/guides/code-splitting.md">Code Splitting</a>
+>   - <a href="https://reatom.js.org/#/guides/server-side-rendering.md">Server Side Rendering</a>
+>   - <a href="https://reatom.js.org/#/guides/migration-from-redux.md">Migration from Redux</a>
+>   - <a href="https://reatom.js.org/#/guides/IoC.md">Inversion of control</a>
 
 ## Contributors ✨
 
@@ -216,6 +222,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 <!-- markdownlint-enable -->
 <!-- prettier-ignore-end -->
+
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!

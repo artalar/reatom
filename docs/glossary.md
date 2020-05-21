@@ -65,15 +65,15 @@ store.dispatch(fetchUser(userId))
 
 It is better than `redux-thunk`, becaus you can inspect an action with side-effect and it payload in a subscription log or in a [devtools](https://reatom.js.org/#/packages/debug?id=redux-devtools).
 
+Commonly Reatom, inspiring by Redux, is focused only a simple and reactive description of application data-model and not provide an extra methods for manage complex side-effect. You still can use reactions (see above) for describe all asynchronous workflow of your application, but if you want more futures tools you can reuse a packages from redux ecosystem, like [redux-saga](https://redux-saga.js.org) or [redux-observable](https://redux-observable.js.org). [Here you can find an example](https://reatom.js.org/#/guides/migration-from-redux?id=for-redux-saga-users) how to do it with `redux-saga`.
+
 ## Atom
 
-Atoms\* are state**less** instructions to calculate derived state in the right order (without [glitches](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx)).
+Atoms\* are state**less** instructions to calculate derived state in the right order (without [glitches](https://en.wikipedia.org/wiki/Reactive_programming#Glitches)).
 
-> For redux users: **atom - is a thing that works concomitantly like reducer and selector.**
+> For redux users: **atom unifying reducer and selector to a one entity.**
 
 Atom reducers may depend on declared action or other atoms and must be pure functions that return new immutable version of the state. If a reducer returns old state – depended atoms and subscribers will not be triggered.
-
-> [\*](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) The term "atom" is borrowed from [Clojure](http://clojure.org/reference/atoms) and comes from the idea that one only performs ["atomic"](https://en.wikipedia.org/wiki/Read-modify-write), or [race-condition](https://en.wikipedia.org/wiki/Race_condition) free, operations on individual atoms. Besides that reatoms atoms is stateless and seamlessly like [Futures](https://en.wikipedia.org/wiki/Futures_and_promises) in this case.
 
 ```js
 import { declareAtom } from '@reatom/core'
@@ -96,7 +96,11 @@ const countDoubledAtom = declareAtom(0, on => [
 // const countDoubledAtom = map(count, count => count * 2)
 ```
 
-> **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)
+One of the most powerfull and complicated feature of atoms is it state lifetime - [read below](https://reatom.js.org/#/glossary?id=states-laziness).
+
+> [\*](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) The term "atom" is borrowed from [Clojure](http://clojure.org/reference/atoms) and comes from the idea that one only performs ["atomic"](https://en.wikipedia.org/wiki/Read-modify-write), or [race-condition](https://en.wikipedia.org/wiki/Race_condition) free, operations on individual atoms. Besides that reatoms atoms is stateless and seamlessly like [Futures](https://en.wikipedia.org/wiki/Futures_and_promises) in this case.
+
+> See FAQ on [why declare\*](/faq?id=why-declare)
 
 ## Store
 
@@ -139,9 +143,9 @@ declaredActionBinded(0) // dispatching, void
 
 ### States laziness
 
-Atom never has it own state, only store contains states of all known atoms. How store can know about atoms - two ways: 1) you pasing combine of all needed atoms as argument to createStore; 2) create subscription to atom. In first way, pased atom and dependencies of it create states that will live in store forever and you can always get it by `store.getState(myAtom)`. In second way, subscription to atom creating a temporal (seems like a cold / lazynes observable) state to atom and it dependencies in store, that will deleting after all depended unsubscibes.
+Atom never has it own state, only store contains states of all known atoms. How store can know about atoms - two ways: 1) you passing combine of all needed atoms as argument to createStore; 2) create subscription to atom. In first way, passed atom and dependencies of it create states that will live in store forever and you can always get it by `store.getState(myAtom)`. In second way, subscription to atom creating a temporal (seems like a cold / lazy observable) state to atom and it dependencies in store, that will deleting after all depended unsubscribes.
 
-Important note abount `getState(myAtom)`, dependent of atom status:
+Important note about `getState(myAtom)`, dependent of atom status:
 
 - If atom state already has in store (by store creation or subscription) - returns it state.
 - Else if atom has a dependencies that has state in store context - return state recalculated based on it dependencies states.
@@ -149,7 +153,14 @@ Important note abount `getState(myAtom)`, dependent of atom status:
 
 ---
 
-Next:
-
+> **Next:**
+>
 > - <a href="https://reatom.js.org/#/examples">Examples</a>
 > - <a href="https://reatom.js.org/#/faq">FAQ</a>
+> - Guides
+>   - <a href="https://reatom.js.org/#/guides/naming-conventions.md">Naming Conventions</a>
+>   - <a href="https://reatom.js.org/#/guides/file-structure.md">File Structure</a>
+>   - <a href="https://reatom.js.org/#/guides/code-splitting.md">Code Splitting</a>
+>   - <a href="https://reatom.js.org/#/guides/server-side-rendering.md">Server Side Rendering</a>
+>   - <a href="https://reatom.js.org/#/guides/migration-from-redux.md">Migration from Redux</a>
+>   - <a href="https://reatom.js.org/#/guides/IoC.md">Inversion of control</a>

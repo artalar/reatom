@@ -524,10 +524,7 @@ describe('@reatom/core', () => {
     )
     expect(
       getTree(
-        map(
-          declareAtom(Symbol('123'), 0, () => []),
-          v => v,
-        ),
+        map(declareAtom(Symbol('123'), 0, () => []), v => v),
       ).id.toString(),
     ).toBe('Symbol(123 [map])')
   })
