@@ -92,9 +92,7 @@ describe('redux-reatom', () => {
     const reatomAtomFabric = (parentId, initialState) => {
       const prefix =
         parentId !== '10' && !(parentId % 2) ? parentId - 1 : parentId
-      return (reatomNestedChildren[parentId][
-        initialState
-      ] = declareAtom(
+      return (reatomNestedChildren[parentId][initialState] = declareAtom(
         `reatomAtomFabric${parentId + initialState}`,
         initialState,
         handle => [

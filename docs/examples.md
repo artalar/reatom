@@ -78,14 +78,25 @@ test('side effects', async () => {
 })
 ```
 
+## How to move from redux/toolkit to Reatom
+
+[Here](https://github.com/artalar/rtk-github-issues-example/pull/1/commits) you can find the example of how to move from redux/toolkit to Reatom. Every commit name is describe a step to make a movement. The benefit of movement is: less bundlesize, more simple API (atom and reactions) and future opportunity to unlimited by performance code-base scaling.
+
 ## Todo-list
 
 > Beware, it is _enterprise_-like example with feature-driven structure, normalization and other abstractions. Simpler examples will be added later.
 
-[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-todo-app-eko8b)
+[![Todo-list](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-todo-app-timetravel-zz0tj)
 
 ---
 
-Next:
-
-> - <a href="https://reatom.js.org/#/faq">FAQ</a>
+> **Next:**
+>
+> - [FAQ](https://reatom.js.org/#/faq)
+> - Guides
+>   - [Naming Conventions](/guides/naming-conventions.md)
+>   - [File Structure](/guides/file-structure.md)
+>   - [Code Splitting](/guides/code-splitting.md)
+>   - [Server Side Rendering](/guides/server-side-rendering.md)
+>   - [Migration from Redux](/guides/migration-from-redux.md)
+>   - [Inversion of control](/guides/IoC.md)

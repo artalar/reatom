@@ -60,10 +60,21 @@
 > `npm ERR! 403 Forbidden - PUT https://registry.npmjs.org/reatom - Package name too similar to existing packages; try renaming your package to '@artalar/reatom' and publishing with 'npm publish --access=public' instead` https://www.npmjs.com/package/awful-name-thanks-npm#wtf-is-wrong-with-the-package-name
 -->
 
+<!--
 ## TODO
 
 - API for `.doNotTrack()` version of atom to receive (in reducer) it state, but not subscribe to it
 - API for effects
 - API for catch throw
 - friendly API to work with collections (based on lenses?)
-- `match`-like API for describe side-effects like transitions
+- `match`-like API for describe side-effects like transitions -->
+
+> **Next:**
+>
+> - Guides
+>   - [Naming Conventions](/guides/naming-conventions.md)
+>   - [File Structure](/guides/file-structure.md)
+>   - [Code Splitting](/guides/code-splitting.md)
+>   - [Server Side Rendering](/guides/server-side-rendering.md)
+>   - [Migration from Redux](/guides/migration-from-redux.md)
+>   - [Inversion of control](/guides/IoC.md)
