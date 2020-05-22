@@ -51,6 +51,7 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
     const selectorRef = useRef(selector)
     selectorRef.current = selector
     const stateRef = useRef<TO>()
+    const originalStateRef = useRef<TI>()
     const unsubscribeRef = useRef<Function>(noop)
     const mountStatusRef = useRef<keyof typeof lifeCycleStatus>(
       lifeCycleStatus.initActual,
@@ -60,8 +61,13 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
 
     if (!store) throw new Error('[reatom] The provider is not defined')
 
+    if (originalStateRef.current !== undefined) {
+      originalStateRef.current = store.getState(atomRef.current!)
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     function getRelativeState(atomValue = store!.getState(atomRef.current!)) {
+      originalStateRef.current = atomValue
       return selectorRef.current(atomValue)
     }
 
@@ -71,14 +77,20 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
       unsubscribeRef.current = store.subscribe(
         atomRef.current,
         (state: any) => {
+          if (originalStateRef.current === state) return
+
+          originalStateRef.current = state
+
           const newState = getRelativeState(state)
-          if (newState !== stateRef.current) {
-            stateRef.current = newState
-            if (mountStatusRef.current === lifeCycleStatus.mounted) {
-              forceUpdate()
-            } else {
-              mountStatusRef.current = lifeCycleStatus.initNotActual
-            }
+
+          if (newState === stateRef.current) return
+
+          stateRef.current = newState
+
+          if (mountStatusRef.current === lifeCycleStatus.mounted) {
+            forceUpdate()
+          } else {
+            mountStatusRef.current = lifeCycleStatus.initNotActual
           }
         },
       )
