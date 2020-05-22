@@ -1,6 +1,6 @@
 import React, { createContext } from 'react'
-import { renderHook } from '@testing-library/react-hooks'
-import { act } from 'react-test-renderer'
+import { renderHook, act as actHooks } from '@testing-library/react-hooks'
+import { render, act as actReact } from '@testing-library/react'
 import { declareAction, declareAtom, createStore, Store } from '@reatom/core'
 import {
   Provider as StoreProvider,
@@ -61,10 +61,10 @@ describe('@reatom/react', () => {
 
       expect(result.current).toBe(10)
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(result.current).toBe(11)
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(result.current).toBe(12)
     })
 
@@ -100,12 +100,12 @@ describe('@reatom/react', () => {
         },
       )
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(subscriber).toBeCalledTimes(1)
 
       rerender({ multiplier: 3 })
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(subscriber).toBeCalledTimes(2)
     })
 
@@ -121,7 +121,7 @@ describe('@reatom/react', () => {
       })
 
       expect(render).toBeCalledTimes(1)
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(render).toBeCalledTimes(1)
     })
 
@@ -148,12 +148,12 @@ describe('@reatom/react', () => {
         wrapper: props => <Provider {...props} store={store} />,
       })
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(subscriber).toBeCalledTimes(1)
 
       unmount()
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
       expect(subscriber).toBeCalledTimes(1)
     })
 
@@ -168,7 +168,7 @@ describe('@reatom/react', () => {
         },
       })
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
 
       expect(result.current).toBe(1)
 
@@ -177,7 +177,7 @@ describe('@reatom/react', () => {
 
       expect(result.current).toBe(0)
 
-      act(() => store.dispatch(increment()))
+      actHooks(() => store.dispatch(increment()))
 
       expect(result.current).toBe(1)
     })
@@ -229,6 +229,38 @@ describe('@reatom/react', () => {
 
       expect(subscribe2).toBeCalledTimes(1)
       expect(unsubscribe2).toBeCalledTimes(0)
+    })
+
+    /** github.com/facebook/react/issues/14259#issuecomment-439632622 */
+    test('filter unnecessary updates', () => {
+      const action = declareAction()
+      const atom1 = declareAtom(0, on => [on(action, s => s + 1)])
+      const atom2 = declareAtom(0, on => [on(action, s => s + 1)])
+
+      const store = createStore()
+
+      let rerenders = 0
+
+      function Component() {
+        useAtom(atom1)
+        useAtom(atom2)
+
+        rerenders++
+
+        return null
+      }
+
+      render(
+        <Provider store={store}>
+          <Component />
+        </Provider>,
+      )
+
+      expect(rerenders).toBe(1)
+
+      actReact(() => store.dispatch(action()))
+
+      expect(rerenders).toBe(2)
     })
   })
 
@@ -351,12 +383,12 @@ describe('@reatom/react', () => {
         },
       )
 
-      act(() => result.current.act1())
+      actHooks(() => result.current.act1())
 
       expect(dispatch1).toHaveBeenCalledTimes(1)
       expect(dispatch2).toHaveBeenCalledTimes(0)
 
-      act(() => result.current.act2())
+      actHooks(() => result.current.act2())
 
       expect(dispatch1).toHaveBeenCalledTimes(1)
       expect(dispatch2).toHaveBeenCalledTimes(1)
@@ -388,12 +420,12 @@ describe('@reatom/react', () => {
       expect(result.current.atom1).toBe(0)
       expect(result.current.atom2).toBe(0)
 
-      act(() => store1.dispatch(increment()))
+      actHooks(() => store1.dispatch(increment()))
 
       expect(result.current.atom1).toBe(1)
       expect(result.current.atom2).toBe(0)
 
-      act(() => store2.dispatch(increment()))
+      actHooks(() => store2.dispatch(increment()))
 
       expect(result.current.atom1).toBe(1)
       expect(result.current.atom2).toBe(1)
