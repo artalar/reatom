@@ -6,7 +6,6 @@ import {
   useContext,
   useCallback,
   Reducer,
-  useMemo,
   Context,
 } from 'react'
 
@@ -24,9 +23,9 @@ function useForceUpdate() {
 }
 
 const lifeCycleStatus = {
-  initActual: 'initActual',
-  initNotActual: 'initNotActual',
-  mounted: 'mounted',
+  init: 'init',
+  upToDate: 'upToDate',
+  outOfDate: 'outOfDate',
 } as const
 
 const defaultMapper = (atomValue: any) => atomValue
@@ -47,75 +46,67 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
     selector: (atomValue: TI) => TO = defaultMapper,
     deps: any[] = [],
   ): TO {
-    const atomRef = useRef<Atom<TI>>()
-    const selectorRef = useRef(selector)
-    selectorRef.current = selector
-    const stateRef = useRef<TO>()
-    const originalStateRef = useRef<TI>()
-    const unsubscribeRef = useRef<Function>(noop)
-    const mountStatusRef = useRef<keyof typeof lifeCycleStatus>(
-      lifeCycleStatus.initActual,
-    )
-    const store = useContext(ctx)
     const forceUpdate = useForceUpdate()
-
+    const store = useContext(ctx)
     if (!store) throw new Error('[reatom] The provider is not defined')
 
-    if (originalStateRef.current !== undefined) {
-      const atomValue = store.getState(atomRef.current!)
-      if (atomValue !== originalStateRef.current) {
-        originalStateRef.current = atomValue
-        stateRef.current = selectorRef.current(atomValue)
+    const { current: that } = useRef({
+      store,
+      atom: (undefined as any) as Atom<TI>,
+      selector,
+      deps,
+      atomValue: (undefined as any) as TI,
+      selectorValue: (undefined as any) as TO,
+      unsubscribe: noop,
+      mountStatus: lifeCycleStatus.init as keyof typeof lifeCycleStatus,
+    })
+    that.selector = selector
+
+    if (store !== that.store || atom !== that.atom) {
+      that.store = store
+      that.atom = atom
+      that.deps = deps
+      that.unsubscribe()
+      that.unsubscribe = store.subscribe(that.atom, (atomValue: any) => {
+        if (Object.is(that.atomValue, atomValue)) return
+        that.atomValue = atomValue
+
+        const selectorValue = that.selector(atomValue)
+        if (Object.is(selectorValue, that.selectorValue)) return
+        that.selectorValue = selectorValue
+
+        if (that.mountStatus === lifeCycleStatus.init) {
+          that.mountStatus = lifeCycleStatus.outOfDate
+        } else {
+          forceUpdate()
+        }
+      })
+      that.atomValue = that.store.getState(atom)
+      that.selectorValue = that.selector(that.atomValue)
+    } else {
+      const atomValue = that.store.getState(that.atom)
+      if (
+        !Object.is(atomValue, that.atomValue) ||
+        deps.length !== that.deps.length ||
+        deps.some((d, i) => !Object.is(d, that.deps[i]))
+      ) {
+        that.deps = deps
+        that.atomValue = atomValue
+        that.selectorValue = that.selector(that.atomValue)
       }
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    function getRelativeState(atomValue = store!.getState(atomRef.current!)) {
-      originalStateRef.current = atomValue
-      return selectorRef.current(atomValue)
-    }
-
-    useMemo(() => {
-      atomRef.current = atom
-      unsubscribeRef.current()
-      unsubscribeRef.current = store.subscribe(
-        atomRef.current,
-        (atomValue: any) => {
-          if (originalStateRef.current === atomValue) return
-
-          originalStateRef.current = atomValue
-
-          const newState = getRelativeState(atomValue)
-
-          if (newState === stateRef.current) return
-
-          stateRef.current = newState
-
-          if (mountStatusRef.current === lifeCycleStatus.mounted) {
-            forceUpdate()
-          } else {
-            mountStatusRef.current = lifeCycleStatus.initNotActual
-          }
-        },
-      )
-      stateRef.current = getRelativeState()
-    }, [atom, store])
-
-    useMemo(() => {
-      if (mountStatusRef.current === lifeCycleStatus.mounted) {
-        stateRef.current = getRelativeState()
-      }
-    }, deps)
 
     useEffect(() => {
-      if (mountStatusRef.current === lifeCycleStatus.initNotActual) {
+      if (that.mountStatus === lifeCycleStatus.outOfDate) {
+        that.mountStatus = lifeCycleStatus.upToDate
         forceUpdate()
       }
-      mountStatusRef.current = lifeCycleStatus.mounted
-      return () => unsubscribeRef.current()
+      that.mountStatus = lifeCycleStatus.upToDate
+
+      return () => that.unsubscribe()
     }, [])
 
-    return stateRef.current as TO
+    return that.selectorValue as TO
   }
 
   return useAtom
