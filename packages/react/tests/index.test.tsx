@@ -240,10 +240,10 @@ describe('@reatom/react', () => {
       const store = createStore()
 
       let rerenders = 0
+      let datas = []
 
       function Component() {
-        useAtom(atom1)
-        useAtom(atom2)
+        datas = [useAtom(atom1), useAtom(atom2)]
 
         rerenders++
 
@@ -257,10 +257,13 @@ describe('@reatom/react', () => {
       )
 
       expect(rerenders).toBe(1)
+      expect(datas).toEqual([0, 0])
 
-      actReact(() => store.dispatch(action()))
+      // DO NOT use `act` here for prevent batching
+      store.dispatch(action())
 
       expect(rerenders).toBe(2)
+      expect(datas).toEqual([1, 1])
     })
   })
 

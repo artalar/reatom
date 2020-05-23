@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
@@ -41,7 +41,7 @@
     "@testing-library/react-hooks": "^2.0.1",
     "@types/react": "^16.8.0",
     "cross-env": "^5.2.1",
-    "react": "^16.8.0",
+    "react": "^16.13.1",
     "react-dom": "^16.9.0",
     "react-test-renderer": "^16.9.0"
   },
