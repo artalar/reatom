@@ -62,7 +62,11 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
     if (!store) throw new Error('[reatom] The provider is not defined')
 
     if (originalStateRef.current !== undefined) {
-      originalStateRef.current = store.getState(atomRef.current!)
+      const atomValue = store.getState(atomRef.current!)
+      if (atomValue !== originalStateRef.current) {
+        originalStateRef.current = atomValue
+        stateRef.current = selectorRef.current(atomValue)
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -76,12 +80,12 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
       unsubscribeRef.current()
       unsubscribeRef.current = store.subscribe(
         atomRef.current,
-        (state: any) => {
-          if (originalStateRef.current === state) return
+        (atomValue: any) => {
+          if (originalStateRef.current === atomValue) return
 
-          originalStateRef.current = state
+          originalStateRef.current = atomValue
 
-          const newState = getRelativeState(state)
+          const newState = getRelativeState(atomValue)
 
           if (newState === stateRef.current) return
 
