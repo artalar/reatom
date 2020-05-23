@@ -137,3 +137,9 @@ export const Form = () => {
   )
 }
 ```
+<!-- 
+## Why React so unfriendly for state-managers
+
+- github.com/facebook/react/issues/14259#issuecomment-439632622
+- kaihao.dev/posts/Stale-props-and-zombie-children-in-Redux
+-->
