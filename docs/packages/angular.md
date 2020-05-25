@@ -7,10 +7,6 @@ Angular bindings package for [Reatom](https://github.com/artalar/reatom) store.
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/angular?style=flat-square)](https://bundlephobia.com/result?p=@reatom/angular)
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
-[Open in docs](https://reatom.js.org/#/packages/angular)
-
-> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://reatom.js.org/).
-
 ## Install
 
 ```
@@ -34,13 +30,13 @@ Makes Observables from atom
 #### Basic (useAtom)
 
 ```ts
-const value$ = useAtom(atom)
+const user$ = useAtom(userAtom)
 ```
 
 #### Depended value by path
 
 ```ts
-const value$ = useAtom(atom, 'value')
+const userName$ = useAtom(userAtom, 'name')
 ```
 
 ### useAction
