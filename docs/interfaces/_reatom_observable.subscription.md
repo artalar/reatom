@@ -8,7 +8,7 @@
 
 ### Properties
 
-- [closed](_reatom_observable.subscription.md#markdown-header-closed)
+- [closed](_reatom_observable.subscription.md#markdown-header-readonly-closed)
 
 ### Methods
 
@@ -16,7 +16,7 @@
 
 ## Properties
 
-### <a id="markdown-header-closed" name="markdown-header-closed"></a> closed
+### <a id="markdown-header-readonly-closed" name="markdown-header-readonly-closed"></a> `Readonly` closed
 
 • **closed**: _boolean_
 

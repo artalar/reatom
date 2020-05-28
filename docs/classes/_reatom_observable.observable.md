@@ -26,8 +26,8 @@
 
 ### Properties
 
-- [atom](_reatom_observable.observable.md#markdown-header-optional-atom)
-- [store](_reatom_observable.observable.md#markdown-header-store)
+- [atom](_reatom_observable.observable.md#markdown-header-optional-readonly-atom)
+- [store](_reatom_observable.observable.md#markdown-header-readonly-store)
 
 ### Methods
 
@@ -52,13 +52,13 @@
 
 ## Properties
 
-### <a id="markdown-header-optional-atom" name="markdown-header-optional-atom"></a> `Optional` atom
+### <a id="markdown-header-optional-readonly-atom" name="markdown-header-optional-readonly-atom"></a> `Optional` `Readonly` atom
 
 • **atom**? : _[Atom](../interfaces/_reatom_core.atom.md)‹T›_
 
 ---
 
-### <a id="markdown-header-store" name="markdown-header-store"></a> store
+### <a id="markdown-header-readonly-store" name="markdown-header-readonly-store"></a> `Readonly` store
 
 • **store**: _[Store](../modules/_reatom_core.md#markdown-header-store)_
 

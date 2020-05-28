@@ -125,7 +125,13 @@ store.dispatch(setMode('mobile'))
 **Browser**
 
 ```js
-import { declareAction, declareAtom, combine, createStore, getTree } from '@reatom/core'
+import {
+  declareAction,
+  declareAtom,
+  combine,
+  createStore,
+  getTree,
+} from '@reatom/core'
 
 function getInitialStoreState(rootAtom, state) {
   const depsShape = getDepsShape(rootAtom)
