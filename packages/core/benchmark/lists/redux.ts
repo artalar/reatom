@@ -101,9 +101,6 @@ export const createSelectorHousesCell = (id, cb: () => any) =>
     cb,
   )
 export const createSelectorInput = (cb: () => any) =>
-  createSelector(
-    (state: RootState) => state.input,
-    cb,
-  )
+  createSelector((state: RootState) => state.input, cb)
 
 export const initializeStore = () => createStore(root)
