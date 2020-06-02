@@ -63,7 +63,7 @@ const fetchUser = declareAction(
 store.dispatch(fetchUser(userId))
 ```
 
-It is better than `redux-thunk`, becaus you can inspect an action with side-effect and it payload in a subscription log or in a [devtools](https://reatom.js.org/#/packages/debug?id=redux-devtools).
+It is better than `redux-thunk`, because you can inspect an action with side-effect and it payload in a subscription log or in a [devtools](https://reatom.js.org/#/packages/debug?id=redux-devtools).
 
 Commonly Reatom, inspiring by Redux, is focused only a simple and reactive description of application data-model and not provide an extra methods for manage complex side-effect. You still can use reactions (see above) for describe all asynchronous workflow of your application, but if you want more futures tools you can reuse a packages from redux ecosystem, like [redux-saga](https://redux-saga.js.org) or [redux-observable](https://redux-observable.js.org). [Here you can find an example](https://reatom.js.org/#/guides/migration-from-redux?id=for-redux-saga-users) how to do it with `redux-saga`.
 
