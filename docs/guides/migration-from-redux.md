@@ -244,7 +244,7 @@ store.dispatch({
 
 ## Async actions
 
-In Redux world your you need to use special libraries ([redux-thunk](github.com/reduxjs/redux-thunk) or [redux-saga](https://github.com/redux-saga/redux-saga)) for creating async actions. In Reatom world you don't need to use it. This role is played by [reactions](/glossary?id=action-reactions).
+In Redux world your you need to use special libraries ([redux-thunk](github.com/reduxjs/redux-thunk), [redux-saga](https://github.com/redux-saga/redux-saga) or [redux-observable](https://github.com/redux-observable/redux-observable)) for creating async actions. In Reatom world you don't need to use it. This role is played by [reactions](/glossary?id=action-reactions).
 
 ### for `redux-thunk` users
 
@@ -399,6 +399,125 @@ const options = {
 store.subscribe(options.channel.put)
 
 runSaga(options, logCounterSaga)
+
+/**
+ * dispatch
+ */
+store.dispatch(logCounter()) // 0
+
+store.dispatch(increment())
+
+store.dispatch(logCounter()) // 1
+```
+
+### for `redux-observable` users
+
+**Redux**
+
+```js
+import { combineReducers, applyMiddleware, createStore } from 'redux'
+import { createEpicMiddleware, ofType } from 'redux-observable'
+import { map } from 'rxjs/operators'
+
+/**
+ * main code
+ */
+const INCREMENT = 'INCREMENT'
+const LOG_COUNTER = 'LOG_COUNTER'
+const NOOP = 'NOOP'
+
+const counterReducer = (state = 0, action) => {
+  switch (action.type) {
+    case INCREMENT:
+      return state + 1
+    default:
+      return state
+  }
+}
+
+const rootEpic = (action$, state$) =>
+  action$.pipe(
+    ofType(LOG_COUNTER),
+    map(() => {
+      const { counter } = state$.value
+
+      console.log('counter: ', counter)
+
+      return { type: NOOP }
+    }),
+  )
+
+/**
+ * initialization code
+ */
+const epicMiddleware = createEpicMiddleware()
+const store = createStore(
+  combineReducers({ counter: counterReducer }),
+  applyMiddleware(epicMiddleware),
+)
+epicMiddleware.run(rootEpic)
+
+/**
+ * dispatch
+ */
+store.dispatch({ type: LOG_COUNTER }) // 0
+
+store.dispatch({ type: INCREMENT })
+
+store.dispatch({ type: LOG_COUNTER }) // 1
+```
+
+**Reatom**
+
+[Open in CodeSandbox](https://codesandbox.io/s/reatom-redux-observable-example-ps7yt)
+
+```js
+import { declareAction, declareAtom, createStore } from '@reatom/core'
+import { createEpicMiddleware, ofType } from 'redux-observable'
+import { map } from 'rxjs/operators'
+
+/**
+ * main code
+ */
+const increment = declareAction()
+const logCounter = declareAction()
+const noopAction = declareAction()
+
+const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
+
+const rootEpic = (action$, state$) =>
+  action$.pipe(
+    ofType(logCounter.getType()),
+    map(() => {
+      const counter = state$.value(counterAtom)
+
+      console.log('counter: ', counter)
+
+      return noopAction()
+    }),
+  )
+
+/**
+ * initialization code
+ */
+function noop() {}
+
+function connectReduxObservable(store, middleware) {
+  const options = {
+    dispatch: store.dispatch,
+    getState: () => store.getState,
+  }
+
+  const subscribe = middleware(options)(noop)
+
+  return store.subscribe(subscribe)
+}
+
+const store = createStore(counterAtom)
+
+const epicMiddleware = createEpicMiddleware()
+connectReduxObservable(store, epicMiddleware)
+epicMiddleware.run(rootEpic)
 
 /**
  * dispatch
