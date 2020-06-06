@@ -15,10 +15,11 @@
   "excludeNotExported": true,
   "excludePrivate": true,
   "ignoreCompilerErrors": false,
-  "disableOutputCheck": false,
+  "disableOutputCheck": true,
   "stripInternal": true,
   "hideBreadcrumbs": true,
   "hideProjectTitle": true,
   "hideSources": true,
-  "namedAnchors": true
+  "namedAnchors": true,
+  "hideIndexes": true
 }

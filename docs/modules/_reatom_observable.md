@@ -92,7 +92,7 @@ const subscription = observableAtom.subscribe({
 - [Observer](../interfaces/_reatom_observable.observer.md)
 - [Subscription](../interfaces/_reatom_observable.subscription.md)
 
-### Type aliases
+### Types
 
 - [ActionOrValue](_reatom_observable.md#markdown-header-actionorvalue)
 
@@ -100,33 +100,16 @@ const subscription = observableAtom.subscribe({
 
 - [observe](_reatom_observable.md#markdown-header-observe)
 
-## Type aliases
+## Types
 
 ### <a id="markdown-header-actionorvalue" name="markdown-header-actionorvalue"></a> ActionOrValue
-
-Ƭ **ActionOrValue**: _T extends undefined ? Action<any, string> : T_
 
 ## Functions
 
 ### <a id="markdown-header-observe" name="markdown-header-observe"></a> observe
-
-▸ **observe**<**T**>(`store`: [Store](_reatom_core.md#markdown-header-store), `atom?`: [Atom](../interfaces/_reatom_core.atom.md)‹T›): _[Observable](../classes/_reatom_observable.observable.md)‹T›_
 
 Added in: v1.0.0
 
 ```js
 import { observe } from '@reatom/observable'
 ```
-
-**Type parameters:**
-
-▪ **T**
-
-**Parameters:**
-
-| Name    | Type                                           |
-| ------- | ---------------------------------------------- |
-| `store` | [Store](_reatom_core.md#markdown-header-store) |
-| `atom?` | [Atom](../interfaces/_reatom_core.atom.md)‹T›  |
-
-**Returns:** _[Observable](../classes/_reatom_observable.observable.md)‹T›_

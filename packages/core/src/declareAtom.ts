@@ -18,7 +18,9 @@ import { Action, declareAction, PayloadActionCreator } from './declareAction'
 const DEPS = Symbol('@@Reatom/DEPS')
 const DEPS_SHAPE = Symbol('@@Reatom/DEPS_SHAPE')
 
-/** action for set initialState of each atom to global state */
+/**
+ * Action used to set initial state of atom
+ */
 export const init = declareAction(['@@Reatom/init'])
 export const initAction = init()
 
@@ -48,11 +50,6 @@ type DependencyMatcher<TState> = (on: DependencyMatcherOn<TState>) => any
  * Atom reducers may depend on declared action or other atoms and must be pure functions that return new immutable version of the state. If a reducer returns old state – depended atoms and subscribers will not be triggered.
  *
  * > [\*](https://github.com/calmm-js/kefir.atom/blob/master/README.md#related-work) The term "atom" is borrowed from [Clojure](http://clojure.org/reference/atoms) and comes from the idea that one only performs ["atomic"](https://en.wikipedia.org/wiki/Read-modify-write), or [race-condition](https://en.wikipedia.org/wiki/Race_condition) free, operations on individual atoms. Besides that reatoms atoms is stateless and seamlessly like [Futures](https://en.wikipedia.org/wiki/Futures_and_promises) in this case.
- *
- * #### Signature
- *
- * ```typescript
- * ```
  */
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): Record<string, T | any>

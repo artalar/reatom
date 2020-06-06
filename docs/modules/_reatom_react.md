@@ -150,13 +150,9 @@ export const Form = () => {
 
 ### <a id="markdown-header-provider" name="markdown-header-provider"></a> Provider
 
-• **Provider**: _ProviderExoticComponent‹ProviderProps‹null | object››_
-
 ---
 
 ### <a id="markdown-header-const-context" name="markdown-header-const-context"></a> context
-
-• **context**: _Context‹null | object›_ = createContext<Store | null>(null)
 
 Added in: v1.0.0
 
@@ -188,8 +184,6 @@ const store = useContext(context)
 
 ### <a id="markdown-header-const-useaction" name="markdown-header-const-useaction"></a> useAction
 
-• **useAction**: _useAction_ = createActionHook()
-
 Added in: v1.0.0
 
 ```js
@@ -219,8 +213,6 @@ const doIncrement = useAction(increment)
 ---
 
 ### <a id="markdown-header-const-useatom" name="markdown-header-const-useatom"></a> useAtom
-
-• **useAtom**: _useAtom_ = createAtomHook()
 
 Added in: v1.0.0
 
@@ -262,30 +254,6 @@ const product = useAtom(productsAtom, state => state[id], [id])
 
 ### <a id="markdown-header-createactionhook" name="markdown-header-createactionhook"></a> createActionHook
 
-▸ **createActionHook**(`ctx`: Context‹[Store](_reatom_core.md#markdown-header-store) | null›): _useAction_
-
-**Parameters:**
-
-| Name  | Type                                                                | Default | Description                   |
-| ----- | ------------------------------------------------------------------- | ------- | ----------------------------- |
-| `ctx` | Context‹[Store](_reatom_core.md#markdown-header-store) &#124; null› | context | react context for your store. |
-
-**Returns:** _useAction_
-
-A `useAction` hook bound to the context.
-
 ---
 
 ### <a id="markdown-header-createatomhook" name="markdown-header-createatomhook"></a> createAtomHook
-
-▸ **createAtomHook**(`ctx`: Context‹[Store](_reatom_core.md#markdown-header-store) | null›): _useAtom_
-
-**Parameters:**
-
-| Name  | Type                                                                | Default | Description                   |
-| ----- | ------------------------------------------------------------------- | ------- | ----------------------------- |
-| `ctx` | Context‹[Store](_reatom_core.md#markdown-header-store) &#124; null› | context | react context for your store. |
-
-**Returns:** _useAtom_
-
-A `useAtom` hook bound to the context.

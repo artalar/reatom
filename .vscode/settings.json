@@ -3,5 +3,6 @@
     "editor.tabSize": 2,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
-    "html.format.endWithNewline": true
+    "html.format.endWithNewline": true,
+    "debug.node.autoAttach": "on"
 }

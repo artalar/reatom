@@ -6,7 +6,7 @@
     "postinstall": "npm run bootstrap",
     "bootstrap": "lerna bootstrap && lerna run rebuild",
     "build": "lerna run build",
-    "build:docs": "typedoc && cpy build/docs/modules/*.md docs/modules && cpy build/docs/interfaces/*.md docs/interfaces && cpy build/docs/classes/*.md docs/classes && node ./scripts/docs-fix/docs-fix",
+    "build:docs": "typedoc && cpy build/docs/modules/*.md docs/modules && cpy build/docs/interfaces/*.md docs/interfaces && cpy build/docs/classes/*.md docs/classes",
     "test": "lerna run test",
     "size": "lerna run size",
     "lint": "eslint --ext .ts,.tsx,.js,.jsx packages/",
@@ -52,7 +52,7 @@
     "ts-node": "^8.8.2",
     "typedoc": "^0.17.4",
     "typedoc-plugin-lerna-packages": "^0.3.0",
-    "typedoc-plugin-markdown": "^2.2.17",
+    "typedoc-plugin-markdown": "github:ivan-nemtinov/typedoc-plugin-markdown#reatom",
     "typescript": "^3.8.3"
   },
   "author": "artalar",
