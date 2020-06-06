@@ -106,6 +106,8 @@ One of the most powerfull and complicated feature of atoms is it state lifetime 
 
 If you need to dynamically generate atom state (on subscription) you can derive it from `init` action
 
+> see [tests](https://github.com/artalar/reatom/pull/326/files#diff-f212137c77c45e774722b9be132e9dc7)
+
 ```js
 import { init } from '@reatom/core'
 
