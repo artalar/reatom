@@ -219,11 +219,13 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/after-finitude"><img src="https://avatars2.githubusercontent.com/u/44684130?v=4" width="100px;" alt=""/><br /><sub><b>Alexander Zenov</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=after-finitude" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/ivan-nemtinov"><img src="https://avatars2.githubusercontent.com/u/8067664?v=4" width="100px;" alt=""/><br /><sub><b>ivan-nemtinov</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=ivan-nemtinov" title="Code">💻</a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://binjo.ru"><img src="https://avatars2.githubusercontent.com/u/8722478?v=4" width="100px;" alt=""/><br /><sub><b>Viktor Pasynok</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=binjospookie" title="Code">💻</a></td>
+  </tr>
 </table>
 
 <!-- markdownlint-enable -->
 <!-- prettier-ignore-end -->
-
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
