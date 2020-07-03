@@ -19,7 +19,7 @@ export const { Provider } = context
 
 function useForceUpdate() {
   // dispatch don't have action and don't changes between rerenders
-  return useReducer<Reducer<number, null>>(s => s++, 0)[1] as () => void
+  return useReducer<Reducer<number, null>>(s => s + 1, 0)[1] as () => void
 }
 
 const lifeCycleStatus = {
