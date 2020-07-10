@@ -155,7 +155,6 @@ export function createStore(
       if (isLazy && _listeners.length === 0) {
         nextListeners.delete(targetId)
         storeTree.disunion(targetTree, id => {
-          nextListeners.delete(id)
           delete state[id as string]
         })
       }

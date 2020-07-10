@@ -927,4 +927,24 @@ describe('@reatom/core', () => {
       expect(date1).not.toBe(date3)
     })
   })
+
+  /**
+   * @see https://github.com/artalar/reatom/issues/348
+   */
+  test('unsubscribe from atom should not cancel the subscription from the action', () => {
+    const subscription = jest.fn()
+
+    const store = createStore()
+    const increment = declareAction()
+    const counter = declareAtom(0, on => [on(increment, state => state + 1)])
+
+    const unsubscribeAtom = store.subscribe(counter, noop)
+    const unsubscribeAction = store.subscribe(increment, subscription)
+    unsubscribeAtom()
+
+    store.dispatch(increment())
+    expect(subscription).toBeCalledTimes(1)
+
+    unsubscribeAction()
+  })
 })
