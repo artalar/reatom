@@ -27,7 +27,7 @@
   "readme": "README.md",
   "devDependencies": {
     "babel-plugin-tester": "^7.0.4",
-    "jest": "^24.9.0"
+    "jest": "^25.2.7"
   },
   "scripts": {
     "test": "./node_modules/.bin/jest test/"
