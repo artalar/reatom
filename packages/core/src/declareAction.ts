@@ -1,5 +1,5 @@
 import { Leaf, Tree, BaseAction } from './kernel'
-import { TREE, nameToId, Unit, assign } from './shared'
+import { TREE, nameToId, Unit } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
@@ -60,10 +60,6 @@ export function declareAction<
   const id = nameToId(name)
 
   const ACTree = new Tree(id, true)
-  ACTree.addFn(
-    assign(() => {}, { _ownerAtomId: id }),
-    id as string,
-  )
 
   const actionCreator = function actionCreator(payload?: Payload) {
     return {
