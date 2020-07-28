@@ -41,7 +41,7 @@ If you want to specify exact action type (from other library) you can pass it as
 ```js
 const locationChange = declareAction(['@@router/LOCATION_CHANGE'])
 
-console.log(workflowIntention())
+console.log(locationChange())
 // { type: '@@router/LOCATION_CHANGE', payload: undefined }
 ```
 
