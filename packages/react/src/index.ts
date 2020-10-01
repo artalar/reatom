@@ -14,6 +14,12 @@ import ReactDOM from 'react-dom'
 
 function noop() {}
 
+function batchedFunction(func: Function) {
+  return (...funcArgs: any[]) => {
+    ReactDOM.unstable_batchedUpdates(() => func(...funcArgs))
+  }
+}
+
 export const context = createContext<Store | null>(null)
 
 export const { Provider } = context
@@ -145,9 +151,6 @@ export function createActionHook(ctx: Context<Store | null> = context) {
     if (!store) throw new Error('[reatom] The provider is not defined')
     if (typeof cb !== 'function') {
       throw new TypeError('[reatom] `useAction` argument must be a function')
-    }
-    const batchedFunction = (func: Function) => (...funcArgs: any[]) => {
-      ReactDOM.unstable_batchedUpdates(() => func(...funcArgs))
     }
 
     return batchedFunction(
