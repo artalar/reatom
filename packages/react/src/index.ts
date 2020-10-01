@@ -10,6 +10,7 @@ import {
 } from 'react'
 
 import { Store, Atom, Action } from '@reatom/core'
+import ReactDOM from 'react-dom'
 
 function noop() {}
 
@@ -141,16 +142,20 @@ export function createActionHook(ctx: Context<Store | null> = context) {
     deps: any[] = [],
   ): (...args: any[]) => void {
     const store = useContext(ctx)
-
     if (!store) throw new Error('[reatom] The provider is not defined')
     if (typeof cb !== 'function') {
       throw new TypeError('[reatom] `useAction` argument must be a function')
     }
+    const batchedFunction = (func: Function) => (...funcArgs: any[]) => {
+      ReactDOM.unstable_batchedUpdates(() => func(...funcArgs))
+    }
 
-    return useCallback((...args) => {
-      const action = cb(...args)
-      if (action) store.dispatch(action)
-    }, deps.concat(store))
+    return batchedFunction(
+      useCallback((...args) => {
+        const action = cb(...args)
+        if (action) store.dispatch(action)
+      }, deps.concat(store)),
+    )
   }
 
   return useAction
