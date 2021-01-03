@@ -1,91 +1,75 @@
-import { Tree, TreeId } from './kernel'
-import { Atom } from './declareAtom'
-import { PayloadActionCreator } from './declareAction'
+import { ActionCreator, Atom, AtomPatch, F } from "./internal"
 
-export { TreeId }
-export type GenId = (name: string | [string] | symbol) => TreeId
-export const TREE = Symbol('@@Reatom/TREE')
+export const KIND = Symbol(`@@Reatom/KIND`)
+type KIND = typeof KIND
 
-export type Unit = { [TREE]: Tree }
+export const identity = <T>(v: T) => v
 
-export type NonUndefined<T> = Exclude<T, undefined>
-
-/**
- * Helper for retrieving the data type used in an atom or action
- * @example
- * type MyAtomType = InferType<typeof myAtom>
- * type MyActionType = InferType<typeof myAction>
- */
-export type InferType<T> = T extends
-  | Atom<infer R>
-  | PayloadActionCreator<infer R>
-  ? R
-  : never
-
-export function noop() {}
-
-// eslint-disable-next-line prefer-destructuring
-export const assign = Object.assign
-
-export const equals = Object.is
-
-export function getTree(thing: Unit): Tree {
-  return thing && thing[TREE]
+export function callSafety<I extends any[], O>(
+  fn: F<I, O>,
+  ...args: I
+): O | undefined {
+  try {
+    return fn(...args)
+  } catch (e) {
+    e = e instanceof Error ? e : new Error(e)
+    setTimeout(() => {
+      throw e
+    })
+  }
 }
 
-export function getName(treeId: TreeId): string {
-  return typeof treeId === 'symbol'
-    ? treeId.description || treeId.toString().replace(/Symbol\((.*)\)/, '$1')
-    : treeId
+export function addToSetsMap<T>(
+  map: Map<string, Set<T>>,
+  key: string,
+  value: T,
+) {
+  let set = map.get(key)
+  if (!set) map.set(key, (set = new Set()))
+  set.add(value)
+}
+export function delFromSetsMap<T>(
+  map: Map<string, Set<T>>,
+  key: string,
+  value: T,
+) {
+  const set = map.get(key)
+  set?.delete(value)
+  if (set?.size === 0) map.delete(key)
 }
 
-export function getIsAtom(thing: any): thing is Atom<any> {
-  const vertex = getTree(thing)
-  return Boolean(vertex && !vertex.isLeaf)
+export function createPatch<T>({
+  deps = [],
+  listeners = new Set(),
+  state,
+  types = new Set(),
+  isDepsChange = false,
+  isStateChange = false,
+  isTypesChange = false,
+}: Partial<AtomPatch<T>> = {}): AtomPatch<T> {
+  return {
+    deps,
+    listeners,
+    // @ts-expect-error
+    state,
+    types,
+    isDepsChange,
+    isStateChange,
+    isTypesChange,
+  }
 }
 
-export function getIsAction(thing: any): thing is Atom<any> {
-  const vertex = getTree(thing)
-  return Boolean(vertex && vertex.isLeaf)
+export function isAtom(thing: any): thing is Atom<unknown> {
+  return typeof thing === 'function' && thing[KIND] === 'atom'
 }
-
-let id = 0
-export function nameToIdDefault(name: string | [string] | symbol): TreeId {
-  return typeof name === 'symbol'
-    ? // TODO: https://github.com/microsoft/TypeScript/issues/1863
-      ((name as unknown) as string)
-    : Array.isArray(name)
-    ? safetyStr(name[0], 'name')
-    : `${safetyStr(name, 'name')} [${++id}]`
+export function safeAtom(thing: any): Atom {
+  if (isAtom(thing)) return thing
+  throw new TypeError(`Thing is not atom`)
 }
-let _nameToId: GenId
-export function nameToId(name: string | [string] | symbol): TreeId {
-  return _nameToId ? _nameToId(name) : nameToIdDefault(name)
+export function isAction(thing: any): thing is ActionCreator<unknown> {
+  return typeof thing === 'function' && thing[KIND] === 'action'
 }
-
-export function setNameToId(gen: GenId) {
-  _nameToId = safetyFunc(gen, 'gen')
-}
-
-export function throwError(error: string) {
-  // TODO: add link to docs with full description
-  throw new Error(`[reatom] ${error}`)
-}
-export function safetyStr(str: string, name: string): string {
-  if (typeof str !== 'string' || str.length === 0) throwError(`Invalid ${name}`)
-  return str
-}
-export function safetyFunc<T extends Function>(
-  func: T | undefined,
-  name: string,
-): T {
-  if (typeof func !== 'function') throwError(`Invalid ${name}`)
-  return func as T
-}
-
-export function getOwnKeys<T extends object>(obj: T): Array<keyof T> {
-  const keys = Object.keys(obj) as Array<keyof T>
-  keys.push(...(Object.getOwnPropertySymbols(obj) as Array<keyof T>))
-
-  return keys
+export function safeAction(thing: any): ActionCreator {
+  if (isAction(thing)) return thing
+  throw new TypeError(`Thing is not action`)
 }
