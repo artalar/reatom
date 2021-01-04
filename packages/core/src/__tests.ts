@@ -3,7 +3,7 @@ import { Action, Atom, Store } from '.'
 const setFirstName = Action<string>('setFirstName')
 const setFullName = Action<string>('setFullName')
 const firstNameAtom = Atom(($, state: string = 'John') => {
-  state = $(state, setFirstName, name => name)
+  state = $(state, setFirstName)
   state = $(state, setFullName, fullName => fullName.split(' ')[0])
   return state
 })
@@ -26,6 +26,8 @@ try {
   })
 
   store.dispatch(setFirstName('Joe'))
+  store.dispatch(setFirstName('Joe'))
+  store.dispatch(setFirstName('Joooooooooooooooooooe'))
   store.dispatch(setFirstName('Joooooooooooooooooooe'))
 } catch (error) {
   error //?

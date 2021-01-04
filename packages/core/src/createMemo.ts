@@ -23,7 +23,7 @@ function invalidateDeps<T>(
   patch.deps.push(dep)
   patch.isDepsChange =
     patch.isDepsChange ||
-    cache.deps.length === depIndex ||
+    cache.deps.length <= depIndex ||
     cache.deps[depIndex] !== dep
 }
 
@@ -69,6 +69,7 @@ export function createMemo({
     }
 
     const result = createPatch<T>({ listeners: atomCache.listeners })
+    let shouldTrack = true
 
     const track: ITrack = (
       ...args:
@@ -80,7 +81,7 @@ export function createMemo({
         const depAtom = safeAtom(args[0])
         const depPatch = memo(depAtom)
 
-        invalidateDeps(atomCache!, result, depAtom)
+        if (shouldTrack) invalidateDeps(atomCache!, result, depAtom)
 
         return depPatch.state
       } else {
@@ -89,9 +90,14 @@ export function createMemo({
         const mapper = args.length === 3 ? args[2] : identity
         const depType = depActionCreator.type
 
-        invalidateDeps(atomCache!, result, depActionCreator)
+        if (shouldTrack) invalidateDeps(atomCache!, result, depActionCreator)
 
-        return depType === action.type ? mapper(action.payload) : fallback
+        shouldTrack = false
+        const value =
+          depType === action.type ? mapper(action.payload) : fallback
+        shouldTrack = true
+
+        return value
       }
     }
 
@@ -119,6 +125,7 @@ export function createMemo({
       result.types = result.isTypesChange ? result.types : atomCache.types
     } else {
       result.deps = atomCache.deps
+      result.types = atomCache.types
     }
 
     patch.set(atom, result)

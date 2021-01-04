@@ -1,4 +1,4 @@
-import { IActionCreator, IAtom, IAtomPatch, F } from "./internal"
+import { IActionCreator, IAtom, IAtomPatch, F } from './internal'
 
 export const KIND = Symbol(`@@Reatom/KIND`)
 type KIND = typeof KIND

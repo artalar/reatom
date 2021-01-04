@@ -13,15 +13,8 @@ import {
 
 export class Store {
   private activeAtoms = new Map<string, Set<IAtom>>()
-  private listeners = new Map<string, Set<F<[IAction, Map<IAtom, IAtomCache>]>>>()
+  private listeners = new Set<F<[IAction, Map<IAtom, IAtomPatch>]>>()
   private cache = new WeakMap<IAtom, IAtomCache>()
-
-  protected set<T>(atom: IAtom<T>, cache: IAtomCache<T>) {
-    this.cache.set(atom, cache)
-  }
-  protected get<T>(atom: IAtom<T>): IAtomCache<T> | undefined {
-    return this.cache.get(atom)
-  }
 
   dispatch(action: IAction) {
     const activeAtoms = this.activeAtoms.get(action.type)
@@ -44,18 +37,20 @@ export class Store {
         isStateChange,
         isTypesChange,
       } = cache
+
+      const atomCache = this.cache.get(atom)
+      if (isTypesChange && atomCache) {
+        atomCache.types.forEach(t => delFromSetsMap(this.activeAtoms, t, atom))
+        types.forEach(t => addToSetsMap(this.activeAtoms, t, atom))
+      }
+
       if (isDepsChange || isStateChange || isTypesChange) {
-        this.set(atom, {
+        this.cache.set(atom, {
           deps,
           listeners,
           state,
           types,
         })
-      }
-
-      if (isTypesChange) {
-        types.forEach(t => delFromSetsMap(this.activeAtoms, t, atom))
-        types.forEach(t => addToSetsMap(this.activeAtoms, t, atom))
       }
     })
     patch.forEach(
@@ -63,9 +58,7 @@ export class Store {
         cache.isStateChange &&
         cache.listeners.forEach(cb => callSafety(cb, cache.state)),
     )
-    this.listeners
-      .get(action.type)
-      ?.forEach(cb => callSafety(cb, action, patch))
+    this.listeners.forEach(cb => callSafety(cb, action, patch))
   }
 
   subscribe<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void> {
@@ -90,6 +83,12 @@ export class Store {
         cache!.types.forEach(t => delFromSetsMap(this.activeAtoms, t, atom))
       }
     }
+  }
+
+  listen(cb: (action: IAction, patch: Map<IAtom, IAtomPatch>) => void) {
+    this.listeners.add(cb)
+
+    return () => this.listeners.delete(cb)
   }
 
   getState<T>(atom: IAtom<T>): T | undefined {
