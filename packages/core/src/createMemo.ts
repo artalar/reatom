@@ -1,23 +1,23 @@
 import {
-  Action,
-  ActionCreator,
-  Atom,
-  AtomCache,
-  AtomPatch,
+  IAction,
+  IActionCreator,
+  IAtom,
+  IAtomCache,
+  IAtomPatch,
   createPatch,
   F,
   identity,
   isAction,
-  Memo,
+  IMemo,
   safeAction,
   safeAtom,
-  Track,
+  ITrack,
 } from './internal'
 
 function invalidateDeps<T>(
-  cache: AtomCache<T>,
-  patch: AtomPatch<T>,
-  dep: Atom | ActionCreator,
+  cache: IAtomCache<T>,
+  patch: IAtomPatch<T>,
+  dep: IAtom | IActionCreator,
 ) {
   const depIndex = patch.deps.length
   patch.deps.push(dep)
@@ -28,8 +28,8 @@ function invalidateDeps<T>(
 }
 
 function invalidateTypes<T>(
-  cache: AtomCache<T>,
-  patch: AtomPatch<T>,
+  cache: IAtomCache<T>,
+  patch: IAtomPatch<T>,
   type: string,
 ) {
   patch.types.add(type)
@@ -44,11 +44,11 @@ export function createMemo({
   cache,
   patch,
 }: {
-  action: Action
-  cache: WeakMap<Atom, AtomCache>
-  patch: Map<Atom, AtomPatch>
-}): Memo {
-  return function memo<T>(atom: Atom<T>): AtomPatch<T> {
+  action: IAction
+  cache: WeakMap<IAtom, IAtomCache>
+  patch: Map<IAtom, IAtomPatch>
+}): IMemo {
+  return function memo<T>(atom: IAtom<T>): IAtomPatch<T> {
     const atomPatch = patch.get(atom)
     if (atomPatch) return atomPatch
 
@@ -70,11 +70,11 @@ export function createMemo({
 
     const result = createPatch<T>({ listeners: atomCache.listeners })
 
-    const track: Track = (
+    const track: ITrack = (
       ...args:
-        | [any, ActionCreator]
-        | [any, ActionCreator, F<[any], any>]
-        | [Atom]
+        | [any, IActionCreator]
+        | [any, IActionCreator, F<[any], any>]
+        | [IAtom]
     ) => {
       if (args.length === 1) {
         const depAtom = safeAtom(args[0])

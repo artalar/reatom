@@ -1,9 +1,9 @@
 import {
-  Action,
+  IAction,
   addToSetsMap,
-  Atom,
-  AtomCache,
-  AtomPatch,
+  IAtom,
+  IAtomCache,
+  IAtomPatch,
   callSafety,
   createMemo,
   delFromSetsMap,
@@ -12,23 +12,23 @@ import {
 } from './internal'
 
 export class Store {
-  private activeAtoms = new Map<string, Set<Atom>>()
-  private listeners = new Map<string, Set<F<[Action, Map<Atom, AtomCache>]>>>()
-  private cache = new WeakMap<Atom, AtomCache>()
+  private activeAtoms = new Map<string, Set<IAtom>>()
+  private listeners = new Map<string, Set<F<[IAction, Map<IAtom, IAtomCache>]>>>()
+  private cache = new WeakMap<IAtom, IAtomCache>()
 
-  protected set<T>(atom: Atom<T>, cache: AtomCache<T>) {
+  protected set<T>(atom: IAtom<T>, cache: IAtomCache<T>) {
     this.cache.set(atom, cache)
   }
-  protected get<T>(atom: Atom<T>): AtomCache<T> | undefined {
+  protected get<T>(atom: IAtom<T>): IAtomCache<T> | undefined {
     return this.cache.get(atom)
   }
 
-  dispatch(action: Action) {
+  dispatch(action: IAction) {
     const activeAtoms = this.activeAtoms.get(action.type)
 
     if (!activeAtoms) return
 
-    const patch = new Map<Atom, AtomPatch>()
+    const patch = new Map<IAtom, IAtomPatch>()
 
     const memo = createMemo({ action, cache: this.cache, patch })
 
@@ -68,7 +68,7 @@ export class Store {
       ?.forEach(cb => callSafety(cb, action, patch))
   }
 
-  subscribe<T>(atom: Atom<T>, cb: F<[T]>): F<[], void> {
+  subscribe<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void> {
     let cache = this.cache.get(atom)
     if (!cache) {
       this.cache.set(
@@ -92,7 +92,7 @@ export class Store {
     }
   }
 
-  getState<T>(atom: Atom<T>): T | undefined {
+  getState<T>(atom: IAtom<T>): T | undefined {
     return this.cache.get(atom)?.state
   }
 }

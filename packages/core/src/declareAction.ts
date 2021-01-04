@@ -1,8 +1,8 @@
-import { ActionCreator, KIND } from "./internal"
+import { IActionCreator, KIND } from './internal'
 
 export function createActionCreator<Payload = void>(
   type: string,
-): ActionCreator<Payload> {
+): IActionCreator<Payload> {
   function actionCreator(payload: Payload) {
     return {
       type,
@@ -15,7 +15,7 @@ export function createActionCreator<Payload = void>(
   return actionCreator
 }
 let actionsCount = 0
-export function declareAction<T>(name = 'action') {
+export function Action<T>(name = 'action') {
   return createActionCreator<T>(`${name} [${++actionsCount}]`)
 }
 

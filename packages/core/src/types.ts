@@ -2,64 +2,62 @@ import { KIND } from './internal'
 
 export type F<I extends unknown[] = any[], O = any> = (...a: I) => O
 
-export type ActionType = string
+export type IActionType = string
 
-export type Action<Payload = any> = {
-  type: ActionType
+export interface IAction<Payload = any> {
+  type: IActionType
   payload: Payload
-  memo?: Memo
+  memo?: IMemo
 }
 
-export type ActionCreator<Payload = any> = {
-  (payload: Payload): Action<Payload>
-  type: ActionType
+export interface IActionCreator<Payload = any> {
+  (payload: Payload): IAction<Payload>
+  type: IActionType
   /** @internal */
   [KIND]: 'action'
 }
 
-export type Reducer<State = any> = (
-  action: Action,
-  state?: State,
-) => ReducerCache<State>
-
-export type ReducerCache<State = any> = {
-  state: State
-  types: Set<ActionType>
+export interface IReducer<State = any> {
+  (action: IAction, state?: State): IReducerCache<State>
 }
 
-export type Memo = <T>(atom: Atom<T>) => AtomPatch<T>
+export interface IReducerCache<State = any> {
+  state: State
+  types: Set<IActionType>
+}
 
-export type ComputerReducer<State = any> = ($: Track, state?: State) => State
+export interface IMemo {
+  <T>(atom: IAtom<T>): IAtomPatch<T>
+}
 
-export type Track = {
-  <Payload>(fallback: Payload, actionCreator: ActionCreator<Payload>): Payload
+export interface IComputerReducer<State = any> {
+  ($: ITrack, state?: State): State
+}
+
+export interface ITrack {
+  <Payload>(fallback: Payload, actionCreator: IActionCreator<Payload>): Payload
   <Payload, Result>(
     fallback: Result,
-    actionCreator: ActionCreator<Payload>,
+    actionCreator: IActionCreator<Payload>,
     map: F<[Payload], Result>,
   ): Result
-  <Payload>(atom: Atom<Payload>): Payload
+  <Payload>(atom: IAtom<Payload>): Payload
 }
 
-export type Atom<State = any> = {
-  (action: Action, state?: State): AtomCache<State>
-  computer: ComputerReducer<State>
+export interface IAtom<State = any> {
+  (action: IAction, state?: State): IAtomCache<State>
+  computer: IComputerReducer<State>
   /** @internal */
   [KIND]: 'atom'
 }
 
-export type AtomCache<State = any> = ReducerCache<State> & {
-  deps: Array<Atom | ActionCreator>
+export interface IAtomCache<State = any> extends IReducerCache<State> {
+  deps: Array<IAtom | IActionCreator>
   listeners: Set<F>
 }
 
-export type AtomPatch<State = any> = AtomCache<State> & {
+export interface IAtomPatch<State = any> extends IAtomCache<State> {
   isStateChange: boolean
   isTypesChange: boolean
   isDepsChange: boolean
 }
-
-export type Mapper<Payload = any, State = any> = (
-  payload: Payload,
-  state: State,
-) => State

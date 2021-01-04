@@ -1,18 +1,16 @@
 import {
-  Action,
-  Atom,
-  AtomCache,
-  ComputerReducer,
+  IAction,
+  IAtom,
+  IAtomCache,
+  IComputerReducer,
   createActionCreator,
   createMemo,
   createPatch,
   KIND,
 } from './internal'
 
-export function declareAtom<State>(
-  computer: ComputerReducer<State>,
-): Atom<State> {
-  function atom(action: Action, state?: State): AtomCache<State> {
+export function Atom<State>(computer: IComputerReducer<State>): IAtom<State> {
+  function atom(action: IAction, state?: State): IAtomCache<State> {
     return (
       action.memo ??
       createMemo({

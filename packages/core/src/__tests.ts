@@ -1,19 +1,19 @@
-import { declareAction, declareAtom, Store } from '.'
+import { Action, Atom, Store } from '.'
 
-const setFirstName = declareAction<string>('setFirstName')
-const setFullName = declareAction<string>('setFullName')
-const firstNameAtom = declareAtom(($, state: string = 'John') => {
+const setFirstName = Action<string>('setFirstName')
+const setFullName = Action<string>('setFullName')
+const firstNameAtom = Atom(($, state: string = 'John') => {
   state = $(state, setFirstName, name => name)
   state = $(state, setFullName, fullName => fullName.split(' ')[0])
   return state
 })
-const lastNameAtom = declareAtom(($, state: string = 'Doe') => {
+const lastNameAtom = Atom(($, state: string = 'Doe') => {
   state = $(state, setFullName, fullName => fullName.split(' ')[1])
   return state
 })
-const isFirstNameShortAtom = declareAtom($ => $(firstNameAtom).length < 10)
-const fullNameAtom = declareAtom($ => `${$(firstNameAtom)} ${$(lastNameAtom)}`)
-const displayNameAtom = declareAtom($ =>
+const isFirstNameShortAtom = Atom($ => $(firstNameAtom).length < 10)
+const fullNameAtom = Atom($ => `${$(firstNameAtom)} ${$(lastNameAtom)}`)
+const displayNameAtom = Atom($ =>
   $(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom),
 )
 

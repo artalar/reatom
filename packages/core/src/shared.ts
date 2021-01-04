@@ -1,4 +1,4 @@
-import { ActionCreator, Atom, AtomPatch, F } from "./internal"
+import { IActionCreator, IAtom, IAtomPatch, F } from "./internal"
 
 export const KIND = Symbol(`@@Reatom/KIND`)
 type KIND = typeof KIND
@@ -46,7 +46,7 @@ export function createPatch<T>({
   isDepsChange = false,
   isStateChange = false,
   isTypesChange = false,
-}: Partial<AtomPatch<T>> = {}): AtomPatch<T> {
+}: Partial<IAtomPatch<T>> = {}): IAtomPatch<T> {
   return {
     deps,
     listeners,
@@ -59,17 +59,17 @@ export function createPatch<T>({
   }
 }
 
-export function isAtom(thing: any): thing is Atom<unknown> {
+export function isAtom(thing: any): thing is IAtom<unknown> {
   return typeof thing === 'function' && thing[KIND] === 'atom'
 }
-export function safeAtom(thing: any): Atom {
+export function safeAtom(thing: any): IAtom {
   if (isAtom(thing)) return thing
   throw new TypeError(`Thing is not atom`)
 }
-export function isAction(thing: any): thing is ActionCreator<unknown> {
+export function isAction(thing: any): thing is IActionCreator<unknown> {
   return typeof thing === 'function' && thing[KIND] === 'action'
 }
-export function safeAction(thing: any): ActionCreator {
+export function safeAction(thing: any): IActionCreator {
   if (isAction(thing)) return thing
   throw new TypeError(`Thing is not action`)
 }
