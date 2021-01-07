@@ -61,3 +61,5 @@ export interface IAtomPatch<State = any> extends IAtomCache<State> {
   isTypesChange: boolean
   isDepsChange: boolean
 }
+
+export interface Patch extends Map<IAtom, IAtomPatch> {}

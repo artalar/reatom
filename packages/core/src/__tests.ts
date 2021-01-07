@@ -1,4 +1,4 @@
-import { Action, Atom, Store } from '.'
+import { Action, Atom, createStore } from '.'
 
 const setFirstName = Action<string>('setFirstName')
 const setFullName = Action<string>('setFullName')
@@ -19,7 +19,7 @@ const displayNameAtom = Atom($ =>
 
 try {
   // displayNameAtom(init()) //?
-  const store = new Store()
+  const store = createStore()
 
   store.subscribe(displayNameAtom, v => {
     v //?

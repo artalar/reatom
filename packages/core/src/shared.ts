@@ -73,3 +73,11 @@ export function safeAction(thing: any): IActionCreator {
   if (isAction(thing)) return thing
   throw new TypeError(`Thing is not action`)
 }
+
+export function invalid(predicate: any, msg: string) {
+  if (predicate) throw new Error(`Reatom: invalid ${msg}`)
+}
+
+export function onDiff<T>(source: Set<T>, target: Set<T>, cb: F<[T]>) {
+  source.forEach(v => target.has(v) || cb(v))
+}

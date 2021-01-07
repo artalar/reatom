@@ -1,17 +1,18 @@
 import {
+  createPatch,
+  F,
   IAction,
   IActionCreator,
   IAtom,
   IAtomCache,
   IAtomPatch,
-  createPatch,
-  F,
   identity,
-  isAction,
   IMemo,
+  isAction,
+  ITrack,
+  Patch,
   safeAction,
   safeAtom,
-  ITrack,
 } from './internal'
 
 function invalidateDeps<T>(
@@ -46,7 +47,7 @@ export function createMemo({
 }: {
   action: IAction
   cache: WeakMap<IAtom, IAtomCache>
-  patch: Map<IAtom, IAtomPatch>
+  patch: Patch
 }): IMemo {
   return function memo<T>(atom: IAtom<T>): IAtomPatch<T> {
     const atomPatch = patch.get(atom)
@@ -80,6 +81,9 @@ export function createMemo({
       if (args.length === 1) {
         const depAtom = safeAtom(args[0])
         const depPatch = memo(depAtom)
+
+        // TODO: improve
+        result.isDepsChange = result.isDepsChange || depPatch.isTypesChange
 
         if (shouldTrack) invalidateDeps(atomCache!, result, depAtom)
 

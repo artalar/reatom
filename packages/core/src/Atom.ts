@@ -1,11 +1,11 @@
 import {
+  createActionCreator,
+  createMemo,
+  createPatch,
   IAction,
   IAtom,
   IAtomCache,
   IComputerReducer,
-  createActionCreator,
-  createMemo,
-  createPatch,
   KIND,
 } from './internal'
 
