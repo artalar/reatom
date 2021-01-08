@@ -25,6 +25,10 @@ try {
     v //?
   })
 
+  store.subscribe((action, patch) => {
+    patch //?
+  })
+
   store.dispatch(setFirstName('Joe'))
   store.dispatch(setFirstName('Joe'))
   store.dispatch(setFirstName('Joooooooooooooooooooe'))

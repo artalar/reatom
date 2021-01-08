@@ -8,6 +8,7 @@ import {
   IAtomPatch,
   identity,
   IMemo,
+  invalid,
   isAction,
   ITrack,
   Patch,
@@ -82,10 +83,12 @@ export function createMemo({
         const depAtom = safeAtom(args[0])
         const depPatch = memo(depAtom)
 
-        // TODO: improve
-        result.isDepsChange = result.isDepsChange || depPatch.isTypesChange
+        if (shouldTrack) {
+          // TODO: improve
+          result.isDepsChange = result.isDepsChange || depPatch.isTypesChange
 
-        if (shouldTrack) invalidateDeps(atomCache!, result, depAtom)
+          invalidateDeps(atomCache!, result, depAtom)
+        }
 
         return depPatch.state
       } else {
@@ -107,7 +110,7 @@ export function createMemo({
 
     result.state = atom.computer(track, atomCache.state)
 
-    if (result.state === undefined) throw new Error(`State can't be undefined`)
+    invalid(result.state === undefined, `state, can't be undefined`)
 
     result.isStateChange = !Object.is(result.state, atomCache.state)
 

@@ -10,6 +10,14 @@ import {
 } from './internal'
 
 export function Atom<State>(computer: IComputerReducer<State>): IAtom<State> {
+  // TODO: 🤔
+  // if (typeof computer !== 'function') {
+  //   const update = declareAction()
+  //   return Object.assign(
+  //     Atom(($, state = computer) => $(state, update)),
+  //     { update },
+  //   )
+  // }
   function atom(action: IAction, state?: State): IAtomCache<State> {
     return (
       action.memo ??
