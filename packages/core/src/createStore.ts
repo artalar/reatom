@@ -115,6 +115,8 @@ export function createStore() {
 
     atomCache.listeners.add(cb)
 
+    callSafety(cb, atomCache.state)
+
     return () => {
       atomCache!.listeners.delete(cb)
       if (atomCache!.listeners.size === 0) {

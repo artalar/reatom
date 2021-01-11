@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "1.1.5",
+  "version": "2.0.0-alpha0",
   "description": "State Manager with a focus on all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -11,7 +11,7 @@
   "types": "build/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepublishOnly": "npm run rebuild && npm run test",
+    "prepublishOnly": "npm run rebuild",
     "postpublish": "npm run clean",
     "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core",
     "clean": "cross-env fixme=fixme ../../node_modules/.bin/rimraf build/",
@@ -35,7 +35,8 @@
     "effector": "^20.12.2",
     "redux": "^4.0.5",
     "reselect": "^4.0.0",
-    "ts-node": "^8.8.2"
+    "ts-node": "^8.8.2",
+    "wonka": "^4.0.15"
   },
   "author": "artalar",
   "license": "MIT",
