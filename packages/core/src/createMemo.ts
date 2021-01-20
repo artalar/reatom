@@ -55,9 +55,12 @@ export function createMemo({
     if (atomPatch) return atomPatch
 
     let atomCache = cache.get(atom)
+    let shouldInvalidateDeps = false
 
-    if (!atomCache) atomCache = createPatch()
-    else if (
+    if (!atomCache) {
+      // shouldInvalidateDeps = true
+      atomCache = createPatch()
+    } else if (
       !atomCache.types.has(action.type) ||
       atomCache.deps.every(dep => {
         if (isAction(dep)) return dep.type !== action.type

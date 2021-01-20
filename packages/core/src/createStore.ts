@@ -115,13 +115,19 @@ export function createStore() {
 
     atomCache.listeners.add(cb)
 
-    callSafety(cb, atomCache.state)
-
-    return () => {
+    function unsubscribe() {
       atomCache!.listeners.delete(cb)
       if (atomCache!.listeners.size === 0) {
         atomCache!.types.forEach(t => delFromSetsMap(activeAtoms, t, atom))
       }
+    }
+
+    try {
+      cb(atomCache!.state)
+      return unsubscribe
+    } catch (error) {
+      unsubscribe()
+      throw error
     }
   }
 

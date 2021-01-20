@@ -8,10 +8,25 @@ export interface IAction<Payload = any> {
   type: IActionType
   payload: Payload
   memo?: IMemo
+  [K: string]: any
 }
 
-export interface IActionCreator<Payload = any> {
-  (payload: Payload): IAction<Payload>
+type IActionCreatorResult<Payload, Action> = {
+  type: 'type' extends keyof Action ? Action['type'] : string
+  payload: 'payload' extends keyof Action ? Action['payload'] : Payload
+  memo?: IMemo
+} & Omit<Action, 'type' | 'payload'>
+export interface IActionCreator<
+  Payload = any,
+  Action extends Partial<IAction> = IAction
+> {
+  (payload: Payload): {
+    //  infer plain object instead of type alias for better readability
+    [K in keyof IActionCreatorResult<Payload, Action>]: IActionCreatorResult<
+      Payload,
+      Action
+    >[K]
+  }
   type: IActionType
   /** @internal */
   [KIND]: 'action'
@@ -47,6 +62,7 @@ export interface ITrack {
 export interface IAtom<State = any> {
   (action: IAction, state?: State): IAtomCache<State>
   computer: IComputerReducer<State>
+  displayName: string
   /** @internal */
   [KIND]: 'atom'
 }

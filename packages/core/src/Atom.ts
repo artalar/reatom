@@ -1,5 +1,5 @@
 import {
-  createActionCreator,
+  Action,
   createMemo,
   createPatch,
   IAction,
@@ -9,6 +9,7 @@ import {
   KIND,
 } from './internal'
 
+let atomsCount = 0
 export function Atom<State>(computer: IComputerReducer<State>): IAtom<State> {
   // TODO: 🤔
   // if (typeof computer !== 'function') {
@@ -26,7 +27,7 @@ export function Atom<State>(computer: IComputerReducer<State>): IAtom<State> {
         cache: new WeakMap().set(
           atom,
           createPatch({
-            deps: [createActionCreator(action.type)],
+            deps: [Object.assign(Action(), { type: action.type })],
             state,
             types: new Set<string>().add(action.type),
           }),
@@ -35,8 +36,9 @@ export function Atom<State>(computer: IComputerReducer<State>): IAtom<State> {
       })
     )(atom)
   }
-  atom[KIND] = 'atom' as const
+  atom.displayName = `atom [№${++atomsCount}]`
   atom.computer = computer
+  atom[KIND] = 'atom' as const
 
   return atom
 }
