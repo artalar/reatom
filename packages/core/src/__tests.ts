@@ -2,6 +2,8 @@ import { Action, Atom, createStore, F } from '.'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
+let noop: F = () => {}
+
 export function mockFn<I extends any[], O>(
   fn: F<I, O> = (...i: any) => void 0 as any,
 ) {
@@ -25,12 +27,12 @@ export function mockFn<I extends any[], O>(
 test(`displayName`, () => {
   const setFirstName = Action<string>()
   const setFullName = Action<string>()
-  const firstNameAtom = Atom(($, state: string = 'John') => {
+  const firstNameAtom = Atom(($, state = 'John') => {
     state = $(state, setFirstName)
     state = $(state, setFullName, fullName => fullName.split(' ')[0])
     return state
   })
-  const lastNameAtom = Atom(($, state: string = 'Doe') => {
+  const lastNameAtom = Atom(($, state = 'Doe') => {
     state = $(state, setFullName, fullName => fullName.split(' ')[1])
     return state
   })
@@ -39,6 +41,7 @@ test(`displayName`, () => {
   const displayNameAtom = Atom($ =>
     $(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom),
   )
+  displayNameAtom.displayName = `displayNameAtom`
 
   const store = createStore()
 
@@ -65,6 +68,8 @@ test(`displayName`, () => {
   store.dispatch(setFirstName('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
   assert.is(cb.calls[2].i[0], 'Joooooooooooooooooooe')
+
+  store.getState() //?
 })
 
 test(`effect`, () => {
@@ -82,6 +87,35 @@ test(`effect`, () => {
 
   assert.is(effect.calls.length, 1)
   assert.is(effect.calls[0].i[0], store)
+})
+
+test(`Atom from`, () => {
+  const atom = Atom.from(42)
+
+  assert.is(atom(Action()()).state, 42)
+  assert.is(atom(atom.update(s => s + 1)).state, 43)
+  assert.is(atom(atom.update(44)).state, 44)
+})
+
+test(`Store preloaded state`, () => {
+  const atom = Atom.from(42)
+  const storeWithPreloadedState = createStore({ [atom.displayName]: 0 })
+  const storeWithoutPreloadedState = createStore()
+
+  assert.is(storeWithoutPreloadedState.getState(atom), 42)
+  assert.is(storeWithPreloadedState.getState(atom), 0)
+
+  storeWithoutPreloadedState.subscribe(atom, noop)
+  storeWithPreloadedState.subscribe(atom, noop)
+
+  assert.is(storeWithoutPreloadedState.getState(atom), 42)
+  assert.is(storeWithPreloadedState.getState(atom), 0)
+
+  storeWithoutPreloadedState.dispatch(atom.update(s => s + 1))
+  storeWithPreloadedState.dispatch(atom.update(s => s + 1))
+
+  assert.is(storeWithoutPreloadedState.getState(atom), 43)
+  assert.is(storeWithPreloadedState.getState(atom), 1)
 })
 
 test.run()

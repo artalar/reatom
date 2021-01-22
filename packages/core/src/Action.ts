@@ -14,16 +14,17 @@ export function Action(
     const { type } = actionCreator
     const action: any = mapper(payload)
 
-    invalid(
-      'type' in action && action.type !== type,
-      `mapper type, expect nothing or "${type}", but got "${action.type}"`,
-    )
+    invalid('type' in action, `type from mapper`)
 
-    return {
-      type,
-      payload,
-      ...action,
-    }
+    return Object.assign(
+      {
+        payload,
+      },
+      action,
+      {
+        type,
+      },
+    )
   }
   actionCreator.type = `action [№${++actionsCount}]`
   actionCreator[KIND] = 'action' as const
@@ -31,5 +32,5 @@ export function Action(
   return actionCreator
 }
 
-export const init = Action(payload => ({ type: `@@Reatom/init`, payload }))
+export const init = Action()
 init.type = `@@Reatom/init`

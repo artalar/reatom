@@ -2,11 +2,11 @@ import {
   addToSetsMap,
   callSafety,
   createMemo,
-  createPatch,
   delFromSetsMap,
   F,
   IAction,
   IActionCreator,
+  IActionType,
   IAtom,
   IAtomCache,
   IAtomPatch,
@@ -18,11 +18,12 @@ import {
   Patch,
 } from './internal'
 
-export function createStore() {
+// TODO: describe return type
+export function createStore(snapshot?: Record<string, any>) {
   const atomsCache = new WeakMap<IAtom, IAtomCache>()
-  const activeAtoms = new Map<string, Set<IAtom>>()
+  const activeAtoms = new Map<IActionType, Set<IAtom>>()
   const patchListeners = new Set<F<[IAction, Patch]>>()
-  const actionsListeners = new Map<string, Set<F<[any]>>>()
+  const actionsListeners = new Map<IActionType, Set<F<[any]>>>()
 
   function mergePatch(patch: Patch) {
     patch.forEach(
@@ -73,7 +74,7 @@ export function createStore() {
     const patch = new Map<IAtom, IAtomPatch>()
 
     if (activeAtomsSet) {
-      const memo = createMemo({ action, cache: atomsCache, patch })
+      const memo = createMemo({ action, cache: atomsCache, patch, snapshot })
 
       activeAtomsSet.forEach(memo)
 
@@ -93,10 +94,32 @@ export function createStore() {
       ?.forEach(cb => callSafety(cb, action.payload))
   }
 
-  function getState<T>(atom: IAtom<T>): T | undefined {
+  function getState<T>(): Record<string, any>
+  function getState<T>(atom: IAtom<T>): T | undefined
+  function getState<T>(atom?: IAtom<T>) {
+    if (atom === undefined) {
+      const result = {} as Record<string, any>
+
+      activeAtoms.forEach((atoms, type) =>
+        atoms.forEach(
+          atom => (result[atom.displayName] = atomsCache.get(atom)!.state),
+        ),
+      )
+
+      return result
+    }
+
     invalid(!isAtom(atom), `"getState" argument`)
 
-    return atomsCache.get(atom)?.state
+    return (
+      atomsCache.get(atom) ||
+      createMemo({
+        action: init(),
+        cache: atomsCache,
+        patch: new Map(),
+        snapshot
+      })(atom)
+    ).state
   }
 
   function subscribeAtom<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void> {
@@ -108,6 +131,7 @@ export function createStore() {
         action: init(),
         cache: atomsCache,
         patch,
+        snapshot
       })(atom)
       atomCache.listeners.add(cb)
       mergePatch(patch)

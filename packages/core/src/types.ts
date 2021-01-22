@@ -45,8 +45,8 @@ export interface IMemo {
   <T>(atom: IAtom<T>): IAtomPatch<T>
 }
 
-export interface IComputerReducer<State = any> {
-  ($: ITrack, state?: State): State
+export interface IComputer<State = any> {
+  ($: ITrack, a?: State): State
 }
 
 export interface ITrack {
@@ -61,7 +61,7 @@ export interface ITrack {
 
 export interface IAtom<State = any> {
   (action: IAction, state?: State): IAtomCache<State>
-  computer: IComputerReducer<State>
+  computer: IComputer<State>
   displayName: string
   /** @internal */
   [KIND]: 'atom'

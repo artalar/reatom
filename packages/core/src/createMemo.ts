@@ -8,6 +8,7 @@ import {
   IAtomPatch,
   identity,
   IMemo,
+  init,
   invalid,
   isAction,
   ITrack,
@@ -45,10 +46,12 @@ export function createMemo({
   action,
   cache,
   patch,
+  snapshot = {}
 }: {
   action: IAction
   cache: WeakMap<IAtom, IAtomCache>
-  patch: Patch
+  patch: Patch,
+  snapshot?: Record<string, any>,
 }): IMemo {
   return function memo<T>(atom: IAtom<T>): IAtomPatch<T> {
     const atomPatch = patch.get(atom)
@@ -59,8 +62,9 @@ export function createMemo({
 
     if (!atomCache) {
       // shouldInvalidateDeps = true
-      atomCache = createPatch()
+      atomCache = createPatch({state: atom.displayName in snapshot ? snapshot[atom.displayName] : undefined})
     } else if (
+      action.type === init.type ||
       !atomCache.types.has(action.type) ||
       atomCache.deps.every(dep => {
         if (isAction(dep)) return dep.type !== action.type
