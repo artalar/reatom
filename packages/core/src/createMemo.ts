@@ -12,7 +12,7 @@ import {
   invalid,
   isAction,
   ITrack,
-  Patch,
+  IPatch,
   safeAction,
   safeAtom,
 } from './internal'
@@ -46,12 +46,12 @@ export function createMemo({
   action,
   cache,
   patch,
-  snapshot = {}
+  snapshot = {},
 }: {
   action: IAction
   cache: WeakMap<IAtom, IAtomCache>
-  patch: Patch,
-  snapshot?: Record<string, any>,
+  patch: IPatch
+  snapshot?: Record<string, any>
 }): IMemo {
   return function memo<T>(atom: IAtom<T>): IAtomPatch<T> {
     const atomPatch = patch.get(atom)
@@ -62,7 +62,10 @@ export function createMemo({
 
     if (!atomCache) {
       // shouldInvalidateDeps = true
-      atomCache = createPatch({state: atom.displayName in snapshot ? snapshot[atom.displayName] : undefined})
+      atomCache = createPatch({
+        state:
+          atom.displayName in snapshot ? snapshot[atom.displayName] : undefined,
+      })
     } else if (
       action.type === init.type ||
       !atomCache.types.has(action.type) ||

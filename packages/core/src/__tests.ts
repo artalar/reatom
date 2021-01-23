@@ -1,4 +1,4 @@
-import { Action, Atom, createStore, F } from '.'
+import { Action, Atom, createStore, F, IAtom } from '.'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -41,7 +41,6 @@ test(`displayName`, () => {
   const displayNameAtom = Atom($ =>
     $(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom),
   )
-  displayNameAtom.displayName = `displayNameAtom`
 
   const store = createStore()
 
@@ -69,12 +68,21 @@ test(`displayName`, () => {
   assert.is(cb.calls.length, 3)
   assert.is(cb.calls[2].i[0], 'Joooooooooooooooooooe')
 
-  store.getState() //?
+  console.log(`👍`)
 })
 
-test(`effect`, () => {
+test(`action mapper`, () => {
+  const action = Action((payload: number) => ({ payload: payload + 1 }))
+  assert.is(action(1).payload, 2)
+
+  console.log(`👍`)
+})
+
+test(`action effect example`, () => {
   function handleEffects(store: ReturnType<typeof createStore>) {
-    store.subscribe(action => action.effect?.(store))
+    store.subscribe(actions =>
+      actions.forEach(action => action.effect?.(store)),
+    )
   }
 
   const effect = mockFn()
@@ -87,6 +95,8 @@ test(`effect`, () => {
 
   assert.is(effect.calls.length, 1)
   assert.is(effect.calls[0].i[0], store)
+
+  console.log(`👍`)
 })
 
 test(`Atom from`, () => {
@@ -95,6 +105,8 @@ test(`Atom from`, () => {
   assert.is(atom(Action()()).state, 42)
   assert.is(atom(atom.update(s => s + 1)).state, 43)
   assert.is(atom(atom.update(44)).state, 44)
+
+  console.log(`👍`)
 })
 
 test(`Store preloaded state`, () => {
@@ -116,6 +128,22 @@ test(`Store preloaded state`, () => {
 
   assert.is(storeWithoutPreloadedState.getState(atom), 43)
   assert.is(storeWithPreloadedState.getState(atom), 1)
+
+  console.log(`👍`)
 })
 
-test.run()
+test(`Batched dispatch`, () => {
+  const atom = Atom.from(0)
+  const store = createStore()
+  const cb = mockFn()
+
+  store.subscribe(atom, cb)
+
+  assert.is(cb.calls.length, 1)
+
+  store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
+  assert.is(cb.calls.length, 2)
+  assert.is(cb.calls[1].i[0], 2)
+
+  console.log(`👍`)
+})

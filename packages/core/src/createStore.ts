@@ -12,20 +12,20 @@ import {
   IAtomPatch,
   init,
   invalid,
+  IPatch,
   isAction,
   isAtom,
+  IStore,
   onSetsDiff,
-  Patch,
 } from './internal'
 
-// TODO: describe return type
-export function createStore(snapshot?: Record<string, any>) {
+export function createStore(snapshot?: Record<string, any>): IStore {
   const atomsCache = new WeakMap<IAtom, IAtomCache>()
   const activeAtoms = new Map<IActionType, Set<IAtom>>()
-  const patchListeners = new Set<F<[IAction, Patch]>>()
+  const patchListeners = new Set<F<[Array<IAction>, IPatch]>>()
   const actionsListeners = new Map<IActionType, Set<F<[any]>>>()
 
-  function mergePatch(patch: Patch) {
+  function mergePatch(patch: IPatch) {
     patch.forEach(
       (
         {
@@ -61,37 +61,71 @@ export function createStore(snapshot?: Record<string, any>) {
     )
   }
 
-  function dispatch(action: IAction) {
-    invalid(
-      !(
-        typeof action.type == 'string' &&
-        'payload' in action &&
-        ('memo' in action == false || typeof action.memo == 'function')
-      ),
-      `dispatch arguments`,
-    )
-    const activeAtomsSet = activeAtoms.get(action.type)
-    const patch = new Map<IAtom, IAtomPatch>()
+  const dispatch = (action: IAction | Array<IAction>) => {
+    const actions = Array.isArray(action) ? action : [action]
+    const finalPatch = new Map<IAtom, IAtomPatch>()
+    let cache = atomsCache
 
-    if (activeAtomsSet) {
-      const memo = createMemo({ action, cache: atomsCache, patch, snapshot })
-
-      activeAtomsSet.forEach(memo)
-
-      mergePatch(patch)
-
-      patch.forEach(
-        cache =>
-          cache.isStateChange &&
-          cache.listeners.forEach(cb => callSafety(cb, cache.state)),
+    actions.forEach((action, i) => {
+      invalid(
+        !(
+          typeof action.type == 'string' &&
+          'payload' in action &&
+          ('memo' in action == false || typeof action.memo == 'function')
+        ),
+        `dispatch arguments`,
       )
-    }
+      const activeAtomsSet = activeAtoms.get(action.type)
 
-    patchListeners.forEach(cb => callSafety(cb, action, patch))
+      if (activeAtomsSet) {
+        if (finalPatch.size > 0 && cache === atomsCache) {
+          cache = Object.assign(Object.create(atomsCache), {
+            get(key: any) {
+              return finalPatch.get(key) || atomsCache.get(key)
+            },
+          })
+        }
+        const patch: typeof finalPatch =
+          i === 0 || finalPatch.size === 0 ? finalPatch : new Map()
+        const memo = createMemo({ action, cache, patch, snapshot })
 
-    actionsListeners
-      .get(action.type)
-      ?.forEach(cb => callSafety(cb, action.payload))
+        activeAtomsSet.forEach(memo)
+
+        if (patch !== finalPatch)
+          patch.forEach((atomPatch, atom) => {
+            const atomFinalPatch = finalPatch.get(atom)
+            if (atomFinalPatch) {
+              atomFinalPatch.deps = atomPatch.deps
+              atomFinalPatch.listeners = atomPatch.listeners
+              atomFinalPatch.state = atomPatch.state
+              atomFinalPatch.types = atomPatch.types
+
+              atomFinalPatch.isDepsChange =
+                atomFinalPatch.isDepsChange || atomPatch.isDepsChange
+              atomFinalPatch.isStateChange =
+                atomFinalPatch.isStateChange || atomPatch.isStateChange
+              atomFinalPatch.isTypesChange =
+                atomFinalPatch.isTypesChange || atomPatch.isTypesChange
+            } else finalPatch.set(atom, atomPatch)
+          })
+      }
+    })
+
+    mergePatch(finalPatch)
+
+    patchListeners.forEach(cb => callSafety(cb, actions, finalPatch))
+
+    finalPatch.forEach(
+      atomCache =>
+        atomCache.isStateChange &&
+        atomCache.listeners.forEach(cb => callSafety(cb, atomCache.state)),
+    )
+
+    actions.forEach(action =>
+      actionsListeners
+        .get(action.type)
+        ?.forEach(cb => callSafety(cb, action.payload)),
+    )
   }
 
   function getState<T>(): Record<string, any>
@@ -117,7 +151,7 @@ export function createStore(snapshot?: Record<string, any>) {
         action: init(),
         cache: atomsCache,
         patch: new Map(),
-        snapshot
+        snapshot,
       })(atom)
     ).state
   }
@@ -131,7 +165,7 @@ export function createStore(snapshot?: Record<string, any>) {
         action: init(),
         cache: atomsCache,
         patch,
-        snapshot
+        snapshot,
       })(atom)
       atomCache.listeners.add(cb)
       mergePatch(patch)
@@ -164,7 +198,7 @@ export function createStore(snapshot?: Record<string, any>) {
     return () => delFromSetsMap(actionsListeners, actionCreator.type, cb)
   }
 
-  function subscribePatch(cb: F<[IAction, Patch]>): F<[], void> {
+  function subscribePatch(cb: F<[Array<IAction>, IPatch]>): F<[], void> {
     patchListeners.add(cb)
 
     return () => patchListeners.delete(cb)
@@ -175,12 +209,12 @@ export function createStore(snapshot?: Record<string, any>) {
     actionCreator: IActionCreator<T>,
     cb: (payload: T) => void,
   ): F<[], void>
-  function subscribe(cb: F<[IAction, Patch]>): F<[], void>
+  function subscribe(cb: F<[Array<IAction>, IPatch]>): F<[], void>
   function subscribe<T>(
     ...a:
       | [IAtom<T>, F<[T]>]
       | [IActionCreator<T>, F<[T]>]
-      | [F<[IAction, Patch]>]
+      | [F<[Array<IAction>, IPatch]>]
   ): F<[], void> {
     return a.length === 1 && typeof a[0] === 'function'
       ? subscribePatch(a[0])
