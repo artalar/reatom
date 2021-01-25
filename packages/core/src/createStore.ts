@@ -16,6 +16,7 @@ import {
   isAction,
   isAtom,
   IStore,
+  noop,
   onSetsDiff,
 } from './internal'
 
@@ -75,9 +76,10 @@ export function createStore(snapshot?: Record<string, any>): IStore {
         ),
         `dispatch arguments`,
       )
+      const isFirstPatch = i === 0 || finalPatch.size === 0
       const activeAtomsSet = activeAtoms.get(action.type)
 
-      if (activeAtomsSet) {
+      if (activeAtomsSet || !isFirstPatch) {
         if (finalPatch.size > 0 && cache === atomsCache) {
           cache = Object.assign(Object.create(atomsCache), {
             get(key: any) {
@@ -85,13 +87,15 @@ export function createStore(snapshot?: Record<string, any>): IStore {
             },
           })
         }
-        const patch: typeof finalPatch =
-          i === 0 || finalPatch.size === 0 ? finalPatch : new Map()
+        const patch: typeof finalPatch = isFirstPatch ? finalPatch : new Map()
         const memo = createMemo({ action, cache, patch, snapshot })
 
-        activeAtomsSet.forEach(memo)
+        activeAtomsSet?.forEach(memo)
 
-        if (patch !== finalPatch)
+        if (!isFirstPatch) {
+          // need to update atoms with new types from prev patch of batch
+          finalPatch.forEach((atomPatch, atom) => memo(atom))
+
           patch.forEach((atomPatch, atom) => {
             const atomFinalPatch = finalPatch.get(atom)
             if (atomFinalPatch) {
@@ -106,8 +110,11 @@ export function createStore(snapshot?: Record<string, any>): IStore {
                 atomFinalPatch.isStateChange || atomPatch.isStateChange
               atomFinalPatch.isTypesChange =
                 atomFinalPatch.isTypesChange || atomPatch.isTypesChange
-            } else finalPatch.set(atom, atomPatch)
+            } else {
+              finalPatch.set(atom, atomPatch)
+            }
           })
+        }
       }
     })
 
@@ -126,6 +133,8 @@ export function createStore(snapshot?: Record<string, any>): IStore {
         .get(action.type)
         ?.forEach(cb => callSafety(cb, action.payload)),
     )
+
+    return finalPatch
   }
 
   function getState<T>(): Record<string, any>
@@ -228,6 +237,10 @@ export function createStore(snapshot?: Record<string, any>): IStore {
   return {
     dispatch,
     getState,
+    init(...atoms: Array<IAtom>) {
+      const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
+      return () => unsubscribers.forEach(un => un())
+    },
     subscribe,
   }
 }

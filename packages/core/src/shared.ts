@@ -3,6 +3,8 @@ import { IActionCreator, IAtom, IAtomPatch, F } from './internal'
 export const KIND = Symbol(`@@Reatom/KIND`)
 type KIND = typeof KIND
 
+export const noop: F = () => {}
+
 export const identity = <T>(v: T) => v
 
 export function callSafety<I extends any[], O>(

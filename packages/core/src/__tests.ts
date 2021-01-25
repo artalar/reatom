@@ -1,6 +1,7 @@
-import { Action, Atom, createStore, F, IAtom } from '.'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
+
+import { Action, Atom, createStore, F, IAtom, IAction, IActionCreator } from '.'
 
 let noop: F = () => {}
 
@@ -144,6 +145,33 @@ test(`Batched dispatch`, () => {
   store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
   assert.is(cb.calls.length, 2)
   assert.is(cb.calls[1].i[0], 2)
+
+  console.log(`👍`)
+})
+
+test(`Batched dispatch dynamic types change`, () => {
+  const action = Action<any>()
+  const addAction = Action<IActionCreator>()
+  const atom = Atom(
+    (
+      $,
+      { deps, values } = { deps: new Array<IActionCreator>(), values: new Array<any>() },
+    ) => {
+      deps = $(deps, addAction, a => [...deps, a])
+      values = deps.map(a => $(null, a, v => v))
+      return { deps, values }
+    },
+  )
+  const store = createStore()
+
+  store.init(atom)
+
+  store.dispatch([addAction(action), action(0)])
+
+  assert.equal(store.getState(atom), {
+    deps: [action],
+    values: [0],
+  })
 
   console.log(`👍`)
 })

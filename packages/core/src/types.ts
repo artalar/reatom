@@ -85,8 +85,12 @@ export interface IAtomPatch<State = any> extends IAtomCache<State> {
 export interface IPatch extends Map<IAtom, IAtomPatch> {}
 
 export interface IStore {
+  dispatch(action: IAction | Array<IAction>): IPatch
+
   getState<T>(): Record<string, any>
   getState<T>(atom: IAtom<T>): T | undefined
+
+  init(...atoms: Array<IAtom>): () => void
 
   subscribe<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void>
   subscribe<T>(
@@ -94,8 +98,6 @@ export interface IStore {
     cb: (payload: T) => void,
   ): F<[], void>
   subscribe(cb: F<[Array<IAction>, IPatch]>): F<[], void>
-
-  dispatch(action: IAction | Array<IAction>): void
 }
 
 export interface IStoreBatch {
