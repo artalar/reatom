@@ -18,7 +18,13 @@ export function mockFn<I extends any[], O>(
       return o
     },
     {
-      calls: new Array<{ i: I; o: O }>(),
+      calls: Object.assign(new Array<{ i: I; o: O }>(), {
+        tail(this: Array<{ i: I; o: O }>) {
+          const { length } = this
+          if (length === 0) throw new TypeError(`Array is empty`)
+          return this[length - 1]
+        },
+      }),
     },
   )
 
@@ -49,25 +55,25 @@ test(`displayName`, () => {
   store.subscribe(displayNameAtom, cb)
 
   assert.is(cb.calls.length, 1)
-  assert.is(cb.calls[0].i[0], 'John Doe')
+  assert.is(cb.calls.tail().i[0], 'John Doe')
 
   store.dispatch(setFirstName('John'))
   assert.is(cb.calls.length, 1)
-  assert.is(cb.calls[0].i[0], 'John Doe')
+  assert.is(cb.calls.tail().i[0], 'John Doe')
 
   store.dispatch(setFirstName('Joe'))
 
   store.dispatch(setFirstName('Joe'))
   assert.is(cb.calls.length, 2)
-  assert.is(cb.calls[1].i[0], 'Joe Doe')
+  assert.is(cb.calls.tail().i[0], 'Joe Doe')
 
   store.dispatch(setFirstName('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
-  assert.is(cb.calls[2].i[0], 'Joooooooooooooooooooe')
+  assert.is(cb.calls.tail().i[0], 'Joooooooooooooooooooe')
 
   store.dispatch(setFirstName('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
-  assert.is(cb.calls[2].i[0], 'Joooooooooooooooooooe')
+  assert.is(cb.calls.tail().i[0], 'Joooooooooooooooooooe')
 
   console.log(`👍`)
 })
@@ -95,7 +101,7 @@ test(`action effect example`, () => {
   store.dispatch(doEffect())
 
   assert.is(effect.calls.length, 1)
-  assert.is(effect.calls[0].i[0], store)
+  assert.is(effect.calls.tail().i[0], store)
 
   console.log(`👍`)
 })
@@ -144,7 +150,7 @@ test(`Batched dispatch`, () => {
 
   store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
   assert.is(cb.calls.length, 2)
-  assert.is(cb.calls[1].i[0], 2)
+  assert.is(cb.calls.tail().i[0], 2)
 
   console.log(`👍`)
 })
@@ -152,15 +158,10 @@ test(`Batched dispatch`, () => {
 test(`Batched dispatch dynamic types change`, () => {
   const action = Action<any>()
   const addAction = Action<IActionCreator>()
-  const atom = Atom(
-    (
-      $,
-      { deps, values } = { deps: new Array<IActionCreator>(), values: new Array<any>() },
-    ) => {
-      deps = $(deps, addAction, a => [...deps, a])
-      values = deps.map(a => $(null, a, v => v))
-      return { deps, values }
-    },
+  const atom = Atom(($, state = new Array<readonly [IActionCreator, any]>()) =>
+    $(state, addAction, action => [...state, [action, null] as const]).map(
+      ([action]) => [action, $(null, action)] as const,
+    ),
   )
   const store = createStore()
 
@@ -168,10 +169,10 @@ test(`Batched dispatch dynamic types change`, () => {
 
   store.dispatch([addAction(action), action(0)])
 
-  assert.equal(store.getState(atom), {
-    deps: [action],
-    values: [0],
-  })
+  store.getState(atom) //?
+  assert.equal(store.getState(atom), [[action, 0]])
 
   console.log(`👍`)
 })
+
+test.run()

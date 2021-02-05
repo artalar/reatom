@@ -107,7 +107,8 @@ export function createMemo({
         const mapper = args.length === 3 ? args[2] : identity
         const depType = depActionCreator.type
 
-        if (shouldTrack) invalidateDeps(atomCache!, result, depActionCreator)
+        invalid(!shouldTrack, `access to another action from action handler`)
+        invalidateDeps(atomCache!, result, depActionCreator)
 
         shouldTrack = false
         const value =
