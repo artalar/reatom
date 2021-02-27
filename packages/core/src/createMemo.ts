@@ -1,7 +1,4 @@
 import {
-  Action,
-  Atom,
-  F,
   IAction,
   IActionCreator,
   IAtom,
@@ -10,9 +7,8 @@ import {
   init,
   invalid,
   IPatch,
-  isActionCreator,
   IStoreCache,
-  ITrack,
+  KIND,
   safeActionCreator,
   safeAtom,
   safeFunction,
@@ -33,15 +29,15 @@ export function createMemo({
     const atomPatch = patch.get(atom)!
     if (atomPatch !== undefined) return atomPatch
 
-    const types: IAtomCache['types'] = new Set()
-    const deps: IAtomCache['deps'] = []
+    const patchTypes: IAtomCache['types'] = new Set()
+    const patchDeps: IAtomCache['deps'] = []
     let atomCache = cache.get(atom)
     let shouldTrack = true
     let isDepsChange = false
     let isTypesChange = false
     let result: IAtomCache | undefined
 
-    if (!atomCache) {
+    if (atomCache === undefined) {
       atomCache = {
         state: undefined,
         types: new Set(),
@@ -56,55 +52,54 @@ export function createMemo({
       // then deps change their value
       // then atom returns to active
       // and may been stale.
-      atomCache.deps.every((dep, i) =>
-        isActionCreator(dep.unit)
-          ? dep.unit.type !== action.type
-          : dep.cache === memo(dep.unit),
+      atomCache.deps.every(dep =>
+        dep[0][KIND] === 'action'
+          ? (dep[0] as IActionCreator).type !== action.type
+          : dep[1] === memo(dep[0] as IAtom),
       )
     ) {
       patch.set(atom, atomCache)
       return atomCache
     }
 
-    const track: ITrack = (
-      ...args: [IActionCreator, F<[any], any>] | [IAtom]
-    ) => {
+    const { state = snapshot[atom.displayName], types, deps } = atomCache
+
+    function track() {
       if (result === undefined) {
-        if (args.length === 1) {
-          const depAtom = safeAtom(args[0])
+        if (arguments.length === 1) {
+          const depAtom = safeAtom(arguments[0])
           const depPatch = memo(depAtom)
 
           if (shouldTrack) {
-            const depIndex = deps.length
+            const depIndex = patchDeps.length
 
-            deps.push({ unit: depAtom, cache: depPatch })
+            patchDeps.push([depAtom, depPatch])
 
             isDepsChange =
               isDepsChange ||
-              atomCache!.deps.length <= depIndex ||
-              atomCache!.deps[depIndex].unit !== depAtom
+              deps.length <= depIndex ||
+              deps[depIndex][0] !== depAtom
 
             isTypesChange =
               isTypesChange ||
               isDepsChange ||
-              atomCache!.deps[depIndex].cache?.types !== depPatch.types
+              deps[depIndex][1]?.types !== depPatch.types
           }
 
           return depPatch.state
         } else {
           invalid(!shouldTrack, `access to another action from action handler`)
 
-          const depActionCreator = safeActionCreator(args[0])
-          const reaction = safeFunction(args[1])
+          const depActionCreator = safeActionCreator(arguments[0])
 
-          deps.push({ unit: depActionCreator, cache: null })
-          types.add(depActionCreator.type)
+          patchDeps.push([depActionCreator, null])
           isTypesChange =
-            isTypesChange ||
-            atomCache!.types.has(depActionCreator.type) === false
+            isTypesChange || types.has(depActionCreator.type) === false
 
           shouldTrack = false
-          if (depActionCreator.type === action.type) reaction(action.payload)
+          if (depActionCreator.type === action.type) {
+            safeFunction(arguments[1])(action.payload)
+          }
           shouldTrack = true
         }
       } else {
@@ -112,29 +107,27 @@ export function createMemo({
       }
     }
 
-    const { state = snapshot[atom.displayName] } = atomCache
-
     const newState = atom.computer(track, state)
 
     invalid(newState === undefined, `state, can't be undefined`)
 
     if (
       (isTypesChange =
-        isTypesChange || isDepsChange || atomCache.deps.length > deps.length)
+        isTypesChange || isDepsChange || deps.length > patchDeps.length)
     ) {
-      deps.forEach(dep =>
-        isActionCreator(dep.unit)
-          ? types.add(dep.unit.type)
-          : dep.cache!.types.forEach(type => types.add(type)),
+      patchDeps.forEach(dep =>
+        dep[0][KIND] === 'action'
+          ? patchTypes.add((dep[0] as IActionCreator).type)
+          : dep[1]!.types.forEach(type => patchTypes.add(type)),
       )
     }
 
     result =
-      isTypesChange || Object.is(atomCache.state, newState) === false
+      isTypesChange || Object.is(state, newState) === false
         ? {
             state: newState,
-            types: isTypesChange ? types : atomCache.types,
-            deps,
+            types: isTypesChange ? patchTypes : types,
+            deps: patchDeps,
           }
         : atomCache
 

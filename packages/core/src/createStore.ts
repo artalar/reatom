@@ -56,21 +56,22 @@ export function createStore(snapshot?: Record<string, any>): IStore {
 
     const patch = new Map<IAtom, IAtomCache>()
     const memo = createMemo({ action, cache: atomsCache, patch, snapshot })
-    const changedAtoms = new Array<IAtom>()
+    const changedAtoms = new Array<[IAtom, IAtomCache]>()
 
     actionsComputers.get(action.type)?.forEach(memo)
 
     patch.forEach(
       (atomPatch, atom) =>
-        mergePatch(atomPatch, atom) || changedAtoms.push(atom),
+        mergePatch(atomPatch, atom) || changedAtoms.push([atom, atomPatch]),
     )
 
     patchListeners.forEach(cb => callSafety(cb, action, patch))
 
-    changedAtoms.forEach(atom => {
-      const atomCache = atomsCache.get(atom)!
-      atomsListeners.get(atom)?.forEach(cb => callSafety(cb, atomCache.state))
-    })
+    changedAtoms.forEach(change =>
+      atomsListeners
+        .get(change[0])
+        ?.forEach(cb => callSafety(cb, change[1].state)),
+    )
 
     actionsListeners
       .get(action.type)
@@ -112,7 +113,7 @@ export function createStore(snapshot?: Record<string, any>): IStore {
           const { state, deps } = atomsCache.get(unit)!
 
           result[unit.displayName] = state
-          deps.forEach(dep => collect(dep.unit))
+          deps.forEach(dep => collect(dep[0]))
         }
       }
 
