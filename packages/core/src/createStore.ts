@@ -9,188 +9,165 @@ import {
   IActionType,
   IAtom,
   IAtomCache,
-  IAtomPatch,
-  init,
+  init as createInitAction,
   invalid,
   IPatch,
   isAction,
+  isActionCreator,
   isAtom,
+  isFunction,
   IStore,
   noop,
-  onSetsDiff,
 } from './internal'
 
 export function createStore(snapshot?: Record<string, any>): IStore {
   const atomsCache = new WeakMap<IAtom, IAtomCache>()
-  const activeAtoms = new Map<IActionType, Set<IAtom>>()
-  const patchListeners = new Set<F<[Array<IAction>, IPatch]>>()
-  const actionsListeners = new Map<IActionType, Set<F<[any]>>>()
+  const atomsListeners = new Map<IAtom, Set<F>>()
+  const actionsComputers = new Map<IActionType, Set<IAtom>>()
+  const actionsListeners = new Map<IActionType, Set<F>>()
+  const patchListeners = new Set<F<[IAction, IPatch]>>()
 
-  function mergePatch(patch: IPatch) {
-    patch.forEach(
-      (
-        {
-          deps,
-          listeners,
-          state,
-          types,
-          isDepsChange,
-          isStateChange,
-          isTypesChange,
-        },
-        atom,
-      ) => {
-        const atomCacheTypes = atomsCache.get(atom)?.types ?? new Set()
-        if (isTypesChange && listeners.size) {
-          onSetsDiff(atomCacheTypes, types, t =>
-            delFromSetsMap(activeAtoms, t, atom),
-          )
-          onSetsDiff(types, atomCacheTypes, t =>
-            addToSetsMap(activeAtoms, t, atom),
-          )
-        }
+  function mergePatch(patch: IAtomCache, atom: IAtom) {
+    const atomCache = atomsCache.get(atom)
+    if (atomsListeners.has(atom)) {
+      if (atomCache === undefined) {
+        patch.types.forEach(type => addToSetsMap(actionsComputers, type, atom))
+      } else if (atomCache.types !== patch.types) {
+        patch.types.forEach(
+          type =>
+            atomCache.types.has(type) ||
+            addToSetsMap(actionsComputers, type, atom),
+        )
+        atomCache.types.forEach(
+          type =>
+            patch.types.has(type) ||
+            delFromSetsMap(actionsComputers, type, atom),
+        )
+      }
+    }
 
-        if (isDepsChange || isStateChange || isTypesChange) {
-          atomsCache.set(atom, {
-            deps,
-            listeners,
-            state,
-            types,
-          })
-        }
-      },
-    )
+    atomsCache.set(atom, patch)
+
+    return Object.is(atomCache?.state, patch.state)
   }
 
-  const dispatch = (action: IAction | Array<IAction>) => {
-    const actions = Array.isArray(action) ? action : [action]
-    const finalPatch = new Map<IAtom, IAtomPatch>()
-    let cache = atomsCache
+  const dispatch: IStore['dispatch'] = (action: IAction) => {
+    invalid(!isAction(action), `action`)
 
-    actions.forEach((action, i) => {
-      invalid(
-        !(
-          typeof action.type == 'string' &&
-          'payload' in action &&
-          ('memo' in action == false || typeof action.memo == 'function')
-        ),
-        `dispatch arguments`,
-      )
-      const isFirstPatch = i === 0 || finalPatch.size === 0
-      const activeAtomsSet = activeAtoms.get(action.type)
+    const patch = new Map<IAtom, IAtomCache>()
+    const memo = createMemo({ action, cache: atomsCache, patch, snapshot })
+    const changedAtoms = new Array<IAtom>()
 
-      if (activeAtomsSet || !isFirstPatch) {
-        if (finalPatch.size > 0 && cache === atomsCache) {
-          cache = Object.assign(Object.create(atomsCache), {
-            get(key: any) {
-              return finalPatch.get(key) || atomsCache.get(key)
-            },
-          })
-        }
-        const patch: typeof finalPatch = isFirstPatch ? finalPatch : new Map()
-        const memo = createMemo({ action, cache, patch, snapshot })
+    actionsComputers.get(action.type)?.forEach(memo)
 
-        activeAtomsSet?.forEach(memo)
+    patch.forEach(
+      (atomPatch, atom) =>
+        mergePatch(atomPatch, atom) || changedAtoms.push(atom),
+    )
 
-        if (!isFirstPatch) {
-          // need to update atoms with new types from prev patch of batch
-          finalPatch.forEach((atomPatch, atom) => memo(atom))
+    patchListeners.forEach(cb => callSafety(cb, action, patch))
 
-          patch.forEach((atomPatch, atom) => {
-            const atomFinalPatch = finalPatch.get(atom)
-            if (atomFinalPatch) {
-              atomFinalPatch.deps = atomPatch.deps
-              atomFinalPatch.listeners = atomPatch.listeners
-              atomFinalPatch.state = atomPatch.state
-              atomFinalPatch.types = atomPatch.types
-
-              atomFinalPatch.isDepsChange =
-                atomFinalPatch.isDepsChange || atomPatch.isDepsChange
-              atomFinalPatch.isStateChange =
-                atomFinalPatch.isStateChange || atomPatch.isStateChange
-              atomFinalPatch.isTypesChange =
-                atomFinalPatch.isTypesChange || atomPatch.isTypesChange
-            } else {
-              finalPatch.set(atom, atomPatch)
-            }
-          })
-        }
-      }
+    changedAtoms.forEach(atom => {
+      const atomCache = atomsCache.get(atom)!
+      atomsListeners.get(atom)?.forEach(cb => callSafety(cb, atomCache.state))
     })
 
-    mergePatch(finalPatch)
+    actionsListeners
+      .get(action.type)
+      ?.forEach(cb => callSafety(cb, action.payload))
 
-    patchListeners.forEach(cb => callSafety(cb, actions, finalPatch))
-
-    finalPatch.forEach(
-      atomCache =>
-        atomCache.isStateChange &&
-        atomCache.listeners.forEach(cb => callSafety(cb, atomCache.state)),
-    )
-
-    actions.forEach(action =>
-      actionsListeners
-        .get(action.type)
-        ?.forEach(cb => callSafety(cb, action.payload)),
-    )
-
-    return finalPatch
+    return patch
   }
+
+  // TODO: tsdx
+  // if (process.env.NODE_ENV !== 'production') {
+  //   let i = 0
+
+  //   var incrementGetStateOveruse = () => {
+  //     if (i++ < 3) return
+
+  //   incrementGetStateOveruse = () => {}
+
+  //     console.warn(
+  //       `Full state requests too often, it may slow down the application`,
+  //       `Use subscription to patch instead or request partial state by \`getState(atom)\``,
+  //     )
+  //   }
+
+  //   setInterval(() => (i = 0), 3000)
+  // }
 
   function getState<T>(): Record<string, any>
   function getState<T>(atom: IAtom<T>): T | undefined
   function getState<T>(atom?: IAtom<T>) {
     if (atom === undefined) {
+      // if (process.env.NODE_ENV !== 'production') {
+      //   incrementGetStateOveruse()
+      // }
+
       const result = {} as Record<string, any>
 
-      activeAtoms.forEach((atoms, type) =>
-        atoms.forEach(
-          atom => (result[atom.displayName] = atomsCache.get(atom)!.state),
-        ),
-      )
+      function collect(unit: IAtom | IActionCreator) {
+        if (isAtom(unit)) {
+          const { state, deps } = atomsCache.get(unit)!
+
+          result[unit.displayName] = state
+          deps.forEach(dep => collect(dep.unit))
+        }
+      }
+
+      actionsComputers.forEach(atoms => atoms.forEach(collect))
 
       return result
     }
 
     invalid(!isAtom(atom), `"getState" argument`)
 
-    return (
-      atomsCache.get(atom) ||
-      createMemo({
-        action: init(),
-        cache: atomsCache,
-        patch: new Map(),
-        snapshot,
-      })(atom)
-    ).state
-  }
-
-  function subscribeAtom<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void> {
     let atomCache = atomsCache.get(atom)
 
-    if (!atomCache) {
-      const patch = new Map()
+    if (atomCache === undefined) {
+      const patch = new Map<IAtom, IAtomCache>()
       atomCache = createMemo({
-        action: init(),
+        action: createInitAction(),
         cache: atomsCache,
         patch,
         snapshot,
       })(atom)
-      atomCache.listeners.add(cb)
-      mergePatch(patch)
+
+      patch.forEach(mergePatch)
     }
 
-    atomCache.listeners.add(cb)
+    return atomCache.state
+  }
+
+  function subscribeAtom<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void> {
+    let listeners = atomsListeners.get(atom)
+
+    if (listeners === undefined) {
+      atomsListeners.set(atom, (listeners = new Set()))
+    }
+
+    listeners.add(cb)
+
+    getState(atom)
+
+    const atomCache = atomsCache.get(atom)!
+
+    // FIXME: should happen by `getState`
+    atomCache.types.forEach(type => addToSetsMap(actionsComputers, type, atom))
 
     function unsubscribe() {
-      atomCache!.listeners.delete(cb)
-      if (atomCache!.listeners.size === 0) {
-        atomCache!.types.forEach(t => delFromSetsMap(activeAtoms, t, atom))
+      listeners!.delete(cb)
+      if (listeners!.size === 0) {
+        atomsListeners.delete(atom)
+        atomsCache
+          .get(atom)!
+          .types.forEach(type => delFromSetsMap(actionsComputers, type, atom))
       }
     }
 
     try {
-      cb(atomCache!.state)
+      cb(atomCache.state)
       return unsubscribe
     } catch (error) {
       unsubscribe()
@@ -207,7 +184,7 @@ export function createStore(snapshot?: Record<string, any>): IStore {
     return () => delFromSetsMap(actionsListeners, actionCreator.type, cb)
   }
 
-  function subscribePatch(cb: F<[Array<IAction>, IPatch]>): F<[], void> {
+  function subscribePatch(cb: F<[IAction, IPatch]>): F<[], void> {
     patchListeners.add(cb)
 
     return () => patchListeners.delete(cb)
@@ -218,29 +195,31 @@ export function createStore(snapshot?: Record<string, any>): IStore {
     actionCreator: IActionCreator<T>,
     cb: (payload: T) => void,
   ): F<[], void>
-  function subscribe(cb: F<[Array<IAction>, IPatch]>): F<[], void>
+  function subscribe(cb: F<[IAction, IPatch]>): F<[], void>
   function subscribe<T>(
     ...a:
       | [IAtom<T>, F<[T]>]
       | [IActionCreator<T>, F<[T]>]
-      | [F<[Array<IAction>, IPatch]>]
+      | [F<[IAction, IPatch]>]
   ): F<[], void> {
-    return a.length === 1 && typeof a[0] === 'function'
+    return a.length === 1 && isFunction(a[0])
       ? subscribePatch(a[0])
-      : isAtom(a[0]) && typeof a[1] === 'function' // @ts-expect-error
+      : isAtom(a[0]) && isFunction(a[1]) // @ts-expect-error
       ? subscribeAtom(...a)
-      : isAction(a[0]) && typeof a[1] === 'function' // @ts-expect-error
+      : isActionCreator(a[0]) && isFunction(a[1]) // @ts-expect-error
       ? subscribeAction(...a)
-      : (invalid(1, `subscribe arguments`) as never)
+      : (invalid(true, `subscribe arguments`) as never)
+  }
+
+  function init(...atoms: Array<IAtom>) {
+    const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
+    return () => unsubscribers.forEach(un => un())
   }
 
   return {
     dispatch,
     getState,
-    init(...atoms: Array<IAtom>) {
-      const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
-      return () => unsubscribers.forEach(un => un())
-    },
+    init,
     subscribe,
   }
 }

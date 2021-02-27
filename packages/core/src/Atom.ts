@@ -1,11 +1,12 @@
 import {
   Action,
   createMemo,
-  createPatch,
+  F,
   IAction,
   IActionCreator,
   IAtom,
   IAtomCache,
+  isFunction,
   ITrack,
   KIND,
 } from './internal'
@@ -23,14 +24,7 @@ export function Atom<State>(computer: _IComputer<State>): IAtom<State> {
       action.memo ??
       createMemo({
         action,
-        cache: new WeakMap().set(
-          atom,
-          createPatch({
-            deps: [Object.assign(Action(), { type: action.type })],
-            state,
-            types: new Set<string>().add(action.type),
-          }),
-        ),
+        cache: new WeakMap(),
         patch: new Map(),
       })
     )(atom)
@@ -49,11 +43,13 @@ Atom.from = <State>(
 } => {
   const update = Action<State | ((prevState: State) => State)>()
   return Object.assign(
-    Atom(($, state: State = defaultState as State) =>
-      $(state, update, value =>
-        typeof value === 'function' ? (value as Function)(state) : value,
-      ),
-    ),
+    Atom(($, state = defaultState) => {
+      $(
+        update,
+        value => (state = isFunction(value) ? (value as F)(state) : value),
+      )
+      return state
+    }),
     { update },
   )
 }

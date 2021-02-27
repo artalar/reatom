@@ -15,11 +15,15 @@ export interface IAction<Payload = any> {
   [K: string]: any
 }
 
-type IActionCreatorResult<Payload, Action> = {
+type IActionCreatorResult<Payload, Action> = Omit<
+  Action,
+  'type' | 'payload'
+> & {
   type: 'type' extends keyof Action ? Action['type'] : string
   payload: 'payload' extends keyof Action ? Action['payload'] : Payload
   memo?: IMemo
-} & Omit<Action, 'type' | 'payload'>
+}
+
 export interface IActionCreator<
   Payload = any,
   Action extends Partial<IAction> = IAction
@@ -46,7 +50,7 @@ export interface IReducerCache<State = any> {
 }
 
 export interface IMemo {
-  <T>(atom: IAtom<T>): IAtomPatch<T>
+  <T>(atom: IAtom<T>): IAtomCache<T>
 }
 
 export interface IComputer<State = any> {
@@ -54,12 +58,10 @@ export interface IComputer<State = any> {
 }
 
 export interface ITrack {
-  <Payload>(fallback: Payload, actionCreator: IActionCreator<Payload>): Payload
-  <Payload, Result>(
-    fallback: Result,
+  <Payload>(
     actionCreator: IActionCreator<Payload>,
-    map: F<[Payload], Result>,
-  ): Result
+    reaction: (payload: Payload) => void,
+  ): void
   <Payload>(atom: IAtom<Payload>): Payload
 }
 
@@ -72,37 +74,27 @@ export interface IAtom<State = any> {
 }
 
 export interface IAtomCache<State = any> extends IReducerCache<State> {
-  deps: Array<IAtom | IActionCreator>
-  listeners: Set<F>
+  deps: Array<
+    { unit: IAtom; cache: IAtomCache } | { unit: IActionCreator; cache: null }
+  >
 }
 
-export interface IAtomPatch<State = any> extends IAtomCache<State> {
-  isStateChange: boolean
-  isTypesChange: boolean
-  isDepsChange: boolean
-}
+export interface IStoreCache extends WeakMap<IAtom, IAtomCache> {}
 
-export interface IPatch extends Map<IAtom, IAtomPatch> {}
+export interface IPatch extends Map<IAtom, IAtomCache> {}
 
 export interface IStore {
-  dispatch(action: IAction | Array<IAction>): IPatch
+  dispatch(action: IAction): IPatch
 
   getState<T>(): Record<string, any>
   getState<T>(atom: IAtom<T>): T | undefined
 
   init(...atoms: Array<IAtom>): () => void
 
-  subscribe<T>(atom: IAtom<T>, cb: F<[T]>): F<[], void>
+  subscribe<T>(atom: IAtom<T>, cb: (value: T) => void): F<[], void>
   subscribe<T>(
     actionCreator: IActionCreator<T>,
     cb: (payload: T) => void,
   ): F<[], void>
-  subscribe(cb: F<[Array<IAction>, IPatch]>): F<[], void>
-}
-
-export interface IStoreBatch {
-  (transactionStore: {
-    dispatch: (action: IAction) => void
-    getState: IStore['getState']
-  }): void
+  subscribe(cb: F<[IAction, IPatch]>): F<[], void>
 }

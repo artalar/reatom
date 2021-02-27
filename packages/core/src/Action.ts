@@ -1,4 +1,4 @@
-import { IAction, IActionCreator, invalid, KIND } from './internal'
+import { F, IAction, IActionCreator, invalid, KIND } from './internal'
 
 let actionsCount = 0
 export function Action<Payload = void>(): IActionCreator<Payload>
@@ -6,9 +6,7 @@ export function Action<
   Payload = void,
   Action extends Partial<IAction> = IAction
 >(mapper: (payload: Payload) => Action): IActionCreator<Payload, Action>
-export function Action(
-  mapper = (payload: any) => ({ payload }),
-): IActionCreator {
+export function Action(mapper: F = () => ({})): IActionCreator {
   // @ts-expect-error
   const actionCreator: IActionCreator = (payload: any): IAction => {
     const { type } = actionCreator
