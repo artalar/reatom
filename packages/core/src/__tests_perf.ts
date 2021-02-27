@@ -1,10 +1,9 @@
 import { performance } from 'perf_hooks'
 import * as effector from 'effector'
 import w from 'wonka'
+// @ts-expect-error
 import { cellx } from 'cellx/dist/cellx.umd.js'
 import { Action, Atom, createStore } from '../build'
-
-// const cellx = require('cellx')
 
 const w_combine = <A, B>(
   sourceA: w.Source<A>,
@@ -17,7 +16,7 @@ const w_combine = <A, B>(
 
 const entry = Action<number>()
 const a = Atom(($, state: number = 0) => {
-  // $(state, entry, v => (v % 2 ? state : v + 1))
+  // $(entry, v => (state = v % 2 ? state : v + 1))
   $(entry, v => (state = v))
   return state
 })
@@ -145,7 +144,6 @@ async function start() {
   console.log('wonka', median(wonkaLogs).toFixed(3))
   console.log('cellx', median(cellxLogs).toFixed(3))
 }
-
 function median(values: number[]) {
   if (values.length === 0) return 0
 
