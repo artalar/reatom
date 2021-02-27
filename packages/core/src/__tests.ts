@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { Action, Atom, createStore, F, IStore } from '.'
+import { Action, Atom, createStore, F, IActionCreator, IStore } from '.'
 
 let noop: F = () => {}
 
@@ -141,46 +141,49 @@ test(`Store preloaded state`, () => {
   console.log(`👍`)
 })
 
-// test(`Batched dispatch`, () => {
-//   const atom = Atom.from(0)
-//   const store = createStore()
-//   const cb = mockFn()
+test(`Batched dispatch`, () => {
+  const atom = Atom.from(0)
+  const store = createStore()
+  const cb = mockFn()
 
-//   store.subscribe(atom, cb)
+  store.subscribe(atom, cb)
 
-//   assert.is(cb.calls.length, 1)
+  assert.is(cb.calls.length, 1)
 
-//   store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
-//   assert.is(cb.calls.length, 2)
-//   assert.is(cb.calls.tail().i[0], 2)
+  store.dispatch(
+    atom.update(s => s + 1),
+    atom.update(s => s + 1),
+  )
+  assert.is(cb.calls.length, 2)
+  assert.is(cb.calls.tail().i[0], 2)
 
-//   console.log(`👍`)
-// })
+  console.log(`👍`)
+})
 
-// test(`Batched dispatch dynamic types change`, () => {
-//   const action = Action<any>()
-//   const addAction = Action<IActionCreator>()
-//   const atom = Atom(
-//     ($, state = new Array<readonly [IActionCreator, any]>()) => {
-//       $(addAction, action => (state = [...state, [action, null] as const]))
+test(`Batched dispatch dynamic types change`, () => {
+  const action = Action<any>()
+  const addAction = Action<IActionCreator>()
+  const atom = Atom(
+    ($, state = new Array<readonly [IActionCreator, any]>()) => {
+      $(addAction, action => (state = [...state, [action, null] as const]))
 
-//       return state.map(([action]) => {
-//         let payload = null
-//         $(action, v => (payload = v))
-//         return [action, payload] as const
-//       })
-//     },
-//   )
-//   const store = createStore()
+      return state.map(([action]) => {
+        let payload = null
+        $(action, v => (payload = v))
+        return [action, payload] as const
+      })
+    },
+  )
+  const store = createStore()
 
-//   store.init(atom)
+  store.init(atom)
 
-//   store.dispatch([addAction(action), action(0)])
+  store.dispatch(addAction(action), action(0))
 
-//   store.getState(atom)
-//   assert.equal(store.getState(atom), [[action, 0]])
+  store.getState(atom)
+  assert.equal(store.getState(atom), [[action, 0]])
 
-//   console.log(`👍`)
-// })
+  console.log(`👍`)
+})
 
 test.run()

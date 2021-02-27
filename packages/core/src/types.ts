@@ -85,7 +85,7 @@ export interface IStoreCache extends WeakMap<IAtom, IAtomCache> {}
 export interface IPatch extends Map<IAtom, IAtomCache> {}
 
 export interface IStore {
-  dispatch(action: IAction): IPatch
+  dispatch(...actions: Array<IAction>): IPatch
 
   getState<T>(): Record<string, any>
   getState<T>(atom: IAtom<T>): T | undefined

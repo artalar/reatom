@@ -23,7 +23,7 @@ export function Atom<State>(computer: _IComputer<State>): IAtom<State> {
     return (
       action.memo ??
       createMemo({
-        action,
+        actions: [action],
         cache: new WeakMap(),
         patch: new Map(),
       })

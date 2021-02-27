@@ -51,21 +51,27 @@ export function createStore(snapshot?: Record<string, any>): IStore {
     return Object.is(atomCache?.state, patch.state)
   }
 
-  const dispatch: IStore['dispatch'] = (action: IAction) => {
-    invalid(!isAction(action), `action`)
+  const dispatch: IStore['dispatch'] = (...actions: Array<IAction>) => {
+    invalid(
+      // TODO: except `init`?
+      actions.length === 0 || actions.every(isAction) === false,
+      `dispatch arguments`,
+    )
 
     const patch = new Map<IAtom, IAtomCache>()
-    const memo = createMemo({ action, cache: atomsCache, patch, snapshot })
+    const memo = createMemo({ actions, cache: atomsCache, patch, snapshot })
     const changedAtoms = new Array<[IAtom, IAtomCache]>()
 
-    actionsComputers.get(action.type)?.forEach(memo)
+    actions.forEach(action => actionsComputers.get(action.type)?.forEach(memo))
 
     patch.forEach(
       (atomPatch, atom) =>
         mergePatch(atomPatch, atom) || changedAtoms.push([atom, atomPatch]),
     )
 
-    patchListeners.forEach(cb => callSafety(cb, action, patch))
+    actions.forEach(action =>
+      patchListeners.forEach(cb => callSafety(cb, action, patch)),
+    )
 
     changedAtoms.forEach(change =>
       atomsListeners
@@ -73,9 +79,11 @@ export function createStore(snapshot?: Record<string, any>): IStore {
         ?.forEach(cb => callSafety(cb, change[1].state)),
     )
 
-    actionsListeners
-      .get(action.type)
-      ?.forEach(cb => callSafety(cb, action.payload))
+    actions.forEach(action =>
+      actionsListeners
+        .get(action.type)
+        ?.forEach(cb => callSafety(cb, action.payload)),
+    )
 
     return patch
   }
@@ -129,7 +137,7 @@ export function createStore(snapshot?: Record<string, any>): IStore {
     if (atomCache === undefined) {
       const patch = new Map<IAtom, IAtomCache>()
       atomCache = createMemo({
-        action: createInitAction(),
+        actions: [createInitAction()],
         cache: atomsCache,
         patch,
         snapshot,

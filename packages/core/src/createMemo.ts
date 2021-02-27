@@ -15,12 +15,12 @@ import {
 } from './internal'
 
 export function createMemo({
-  action,
+  actions,
   cache,
   patch,
   snapshot = {},
 }: {
-  action: IAction
+  actions: Array<IAction>
   cache: IStoreCache
   patch: IPatch
   snapshot?: Record<string, any>
@@ -44,8 +44,8 @@ export function createMemo({
         deps: [],
       }
     } else if (
-      action.type === init.type ||
-      atomCache.types.has(action.type) === false ||
+      actions[0].type === init.type ||
+      actions.every(({ type }) => atomCache!.types.has(type) === false) ||
       // If parent atoms are not changed recomputation is not needed.
       // Also this test the case when cache was created
       // then all listeners / children was removed
@@ -54,7 +54,9 @@ export function createMemo({
       // and may been stale.
       atomCache.deps.every(dep =>
         dep[0][KIND] === 'action'
-          ? (dep[0] as IActionCreator).type !== action.type
+          ? actions.every(
+              action => (dep[0] as IActionCreator).type !== action.type,
+            )
           : dep[1] === memo(dep[0] as IAtom),
       )
     ) {
@@ -96,11 +98,13 @@ export function createMemo({
           isTypesChange =
             isTypesChange || types.has(depActionCreator.type) === false
 
-          shouldTrack = false
-          if (depActionCreator.type === action.type) {
-            safeFunction(arguments[1])(action.payload)
-          }
-          shouldTrack = true
+          actions.forEach(action => {
+            if (action.type === depActionCreator.type) {
+              shouldTrack = false
+              safeFunction(arguments[1])(action.payload)
+              shouldTrack = true
+            }
+          })
         }
       } else {
         invalid(true, `outdated track call`)
