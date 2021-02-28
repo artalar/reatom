@@ -31,8 +31,10 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^2.1.4",
+    "cellx": "^1.10.17",
     "cross-env": "^6.0.2",
     "effector": "^20.12.2",
+    "mol_atom2_all": "^2.2.3",
     "redux": "^4.0.5",
     "reselect": "^4.0.0",
     "ts-node": "^8.8.2",

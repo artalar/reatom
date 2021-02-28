@@ -3,7 +3,8 @@ import * as effector from 'effector'
 import w from 'wonka'
 // @ts-expect-error
 import { cellx } from 'cellx/dist/cellx.umd.js'
-import { Action, Atom, createStore } from '../build'
+import { $mol_atom2 } from 'mol_atom2_all'
+import { Action, Atom, createStore, F } from '../'
 
 const w_combine = <A, B>(
   sourceA: w.Source<A>,
@@ -104,10 +105,22 @@ const cF = cellx(() => cD() + cE())
 const cG = cellx(() => cD() + cE())
 const cH = cellx(() => cF() + cG())
 let cRes = 0
-cH.subscribe(() => {
-  cRes += cH()
-})
-cRes = 0
+
+function mAtom<T>(calc: F<[], T>) {
+  const a = new $mol_atom2<T>()
+  a.calculate = calc
+  return a
+}
+const mEntry = mAtom(() => 0)
+const mA = mAtom(() => mEntry.get())
+const mB = mAtom(() => mA.get() + 1)
+const mC = mAtom(() => mA.get() + 1)
+const mD = mAtom(() => mB.get() + mC.get())
+const mE = mAtom(() => mD.get() + 1)
+const mF = mAtom(() => mD.get() + mE.get())
+const mG = mAtom(() => mD.get() + mE.get())
+const mH = mAtom(() => mF.get() + mG.get())
+let mRes = 0
 
 start()
 async function start() {
@@ -117,9 +130,11 @@ async function start() {
   const effectorLogs = []
   const wonkaLogs = []
   const cellxLogs = []
+  const molLogs = []
 
+  const iterations = 100
   var i = 0
-  while (i++ < 1000) {
+  while (i++ < iterations) {
     const startReatom = performance.now()
     store.dispatch(entry(i))
     reatomLogs.push(performance.now() - startReatom)
@@ -134,16 +149,28 @@ async function start() {
 
     const startCellx = performance.now()
     cEntry(i)
-    cH()
+    cRes += cH()
     cellxLogs.push(performance.now() - startCellx)
+
+    const startMol = performance.now()
+    mEntry.push(i)
+    mRes += mH.get()
+    molLogs.push(performance.now() - startMol)
   }
 
-  console.log({ res, eRes, wRes, cRes })
-  console.log('reatom', median(reatomLogs).toFixed(3))
-  console.log('effector', median(effectorLogs).toFixed(3))
-  console.log('wonka', median(wonkaLogs).toFixed(3))
-  console.log('cellx', median(cellxLogs).toFixed(3))
+  if (new Set([res, eRes, wRes, cRes, mRes]).size !== 1) {
+    console.log(`Results is not equal`)
+  }
+
+  console.log(`Median on one call in ms from ${iterations} iterations`)
+
+  console.log(`reatom`, median(reatomLogs).toFixed(3))
+  console.log(`effector`, median(effectorLogs).toFixed(3))
+  console.log(`wonka`, median(wonkaLogs).toFixed(3))
+  console.log(`cellx`, median(cellxLogs).toFixed(3))
+  console.log(`mol`, median(molLogs).toFixed(3))
 }
+
 function median(values: number[]) {
   if (values.length === 0) return 0
 
