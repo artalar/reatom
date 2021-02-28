@@ -161,29 +161,27 @@ test(`Batched dispatch`, () => {
 })
 
 test(`Batched dispatch dynamic types change`, () => {
-  const action = Action<any>()
+  const doSome = Action<any>()
   const addAction = Action<IActionCreator>()
-  const atom = Atom(
+  const actionsCacheAtom = Atom(
     ($, state = new Array<readonly [IActionCreator, any]>()) => {
-      $(addAction, action => (state = [...state, [action, null] as const]))
+      $(addAction, actionCreator => (state = [...state, [actionCreator, null]]))
 
-      return state.map(([action]) => {
+      return state.map(([actionCreator]) => {
         let payload = null
-        $(action, v => (payload = v))
-        return [action, payload] as const
+        $(actionCreator, v => (payload = v))
+        return [actionCreator, payload] as const
       })
     },
   )
   const store = createStore()
 
-  store.init(atom)
+  store.init(actionsCacheAtom)
 
-  store.dispatch(addAction(action), action(0))
+  store.dispatch(addAction(doSome), doSome(0))
 
-  store.getState(atom)
-  assert.equal(store.getState(atom), [[action, 0]])
+  store.getState(actionsCacheAtom)
+  assert.equal(store.getState(actionsCacheAtom), [[doSome, 0]])
 
   console.log(`👍`)
 })
-
-test.run()
