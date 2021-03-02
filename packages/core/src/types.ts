@@ -75,8 +75,8 @@ export interface IAtom<State = any> {
 
 export interface IAtomCache<State = any> extends IReducerCache<State> {
   deps: Array<
-    | [/* unit:  */ IAtom, /* cache:  */ IAtomCache]
-    | [/* unit:  */ IActionCreator, /* cache:  */ null]
+    | { dep: IAtom; cache: IAtomCache }
+    | { dep: IActionCreator; cache?: undefined }
   >
 }
 

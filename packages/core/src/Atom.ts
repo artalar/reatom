@@ -26,6 +26,7 @@ export function Atom<State>(computer: _IComputer<State>): IAtom<State> {
         actions: [action],
         cache: new WeakMap(),
         patch: new Map(),
+        snapshot: { [atom.displayName]: state },
       })
     )(atom)
   }

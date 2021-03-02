@@ -121,7 +121,7 @@ export function createStore(snapshot?: Record<string, any>): IStore {
           const { state, deps } = atomsCache.get(unit)!
 
           result[unit.displayName] = state
-          deps.forEach(dep => collect(dep[0]))
+          deps.forEach(dep => collect(dep.dep))
         }
       }
 
