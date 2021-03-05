@@ -1,6 +1,6 @@
 export * from './types'
 export * from './shared'
-export * from './createMemo'
+export * from './memo'
 export * from './Action'
 export * from './Atom'
 export * from './createStore'

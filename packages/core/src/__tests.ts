@@ -1,7 +1,15 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { Action, Atom, createStore, F, IActionCreator, IStore } from '.'
+import {
+  ActionCreator,
+  createStore,
+  createTransaction,
+  declareAction,
+  declareAtom,
+  F,
+  Store,
+} from '.'
 
 let noop: F = () => {}
 
@@ -32,28 +40,28 @@ export function mockFn<I extends any[], O>(
 }
 
 test(`displayName`, () => {
-  const setFirstName = Action<string>()
-  const setFullName = Action<string>()
-  const firstNameAtom = Atom(($, state = 'John') => {
-    $(setFirstName, name => (state = name))
-    $(setFullName, fullName => (state = fullName.split(' ')[0]))
+  const setFirstName = declareAction<string>()
+  const setFullName = declareAction<string>()
+  const firstNameAtom = declareAtom(($, state = 'John') => {
+    $(setFirstName.handle(name => (state = name)))
+    $(setFullName.handle(fullName => (state = fullName.split(' ')[0])))
     return state
   })
-  firstNameAtom.displayName = `firstNameAtom`
 
-  const lastNameAtom = Atom(($, state = 'Doe') => {
-    $(setFullName, fullName => (state = fullName.split(' ')[1]))
+  const lastNameAtom = declareAtom(($, state = 'Doe') => {
+    $(setFullName.handle(fullName => (state = fullName.split(' ')[1])))
     return state
   })
-  lastNameAtom.displayName = `lastNameAtom`
-  const isFirstNameShortAtom = Atom($ => $(firstNameAtom).length < 10)
-  isFirstNameShortAtom.displayName = `isFirstNameShortAtom`
-  const fullNameAtom = Atom($ => `${$(firstNameAtom)} ${$(lastNameAtom)}`)
-  fullNameAtom.displayName = `fullNameAtom`
-  const displayNameAtom = Atom($ =>
+
+  const isFirstNameShortAtom = declareAtom($ => $(firstNameAtom).length < 10)
+
+  const fullNameAtom = declareAtom(
+    $ => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
+  )
+
+  const displayNameAtom = declareAtom($ =>
     $(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom),
   )
-  displayNameAtom.displayName = `displayNameAtom`
 
   const store = createStore()
 
@@ -82,20 +90,51 @@ test(`displayName`, () => {
   console.log(`👍`)
 })
 
+test(`combine`, () => {
+  const aAtom = declareAtom.from(0)
+  const bAtom = declareAtom($ => $(aAtom) & 2)
+  const cAtom = declareAtom($ => $(aAtom) & 2)
+  const bcAtom = declareAtom($ => ({
+    b: $(bAtom),
+    c: $(cAtom),
+  }))
+  const store = createStore()
+  store.init(bcAtom)
+
+  const bsState1 = store.getState(bcAtom)
+  assert.is(store.getState(aAtom), 0)
+  assert.equal(bsState1, { b: 0, c: 0 })
+
+  store.dispatch(aAtom.update(s => s + 1))
+  const bsState2 = store.getState(bcAtom)
+  assert.is(store.getState(aAtom), 1)
+  assert.equal(bsState1, bsState2)
+
+  store.dispatch(aAtom.update(s => s + 1))
+  const bsState3 = store.getState(bcAtom)
+  assert.is(store.getState(aAtom), 2)
+  assert.not.equal(bsState2, bsState3)
+  assert.equal(bsState3, { b: 2, c: 2 })
+
+  console.log(`👍`)
+})
+
 test(`action mapper`, () => {
-  const action = Action((payload: number) => ({ payload: payload + 1 }))
+  const action = declareAction((payload: number) => ({ payload: payload + 1 }))
   assert.is(action(1).payload, 2)
 
   console.log(`👍`)
 })
 
 test(`action effect example`, () => {
-  function handleEffects(store: IStore) {
-    store.subscribe(action => action.effect?.(store))
+  function handleEffects(store: Store) {
+    store.subscribe(({ actions }) =>
+      actions.forEach(action => action.effect?.(store)),
+    )
   }
 
   const effect = mockFn()
-  const doEffect = Action(() => ({ effect }))
+  const doEffect = declareAction(payload => ({ payload, effect }))
   const store = createStore()
 
   handleEffects(store)
@@ -108,18 +147,44 @@ test(`action effect example`, () => {
   console.log(`👍`)
 })
 
-test(`Atom from`, () => {
-  const atom = Atom.from(42)
+test(`Atom store dependency states`, () => {
+  const aTrack = mockFn()
+  const incrementA = declareAction()
+  const noopAction = declareAction()
+  const aAtom = declareAtom(($, state = 1) => {
+    aTrack()
+    $(incrementA.handle(() => (state += 1)))
+    return state
+  })
+  const bAtom = declareAtom($ => $(aAtom) + 1)
 
-  assert.is(atom(Action()()).state, 42)
-  assert.is(atom(atom.update(s => s + 1)).state, 43)
-  assert.is(atom(atom.update(44)).state, 44)
+  const bCache1 = bAtom(createTransaction([noopAction()]))
+  assert.is(aTrack.calls.length, 1)
+
+  const bCache2 = bAtom(createTransaction([noopAction()]), bCache1)
+  assert.is(aTrack.calls.length, 1)
+  assert.is(bCache1, bCache2)
+
+  assert.is(bCache2.state, 2)
+  const bCache3 = bAtom(createTransaction([incrementA()]), bCache1)
+  assert.is(aTrack.calls.length, 2)
+  assert.is(bCache3.state, 3)
+
+  console.log(`👍`)
+})
+
+test(`Atom from`, () => {
+  const atom = declareAtom.from(42)
+
+  assert.is(atom(createTransaction([declareAction()()])).state, 42)
+  assert.is(atom(createTransaction([atom.update(43)])).state, 43)
+  assert.is(atom(createTransaction([atom.update(s => s + 2)])).state, 44)
 
   console.log(`👍`)
 })
 
 test(`Store preloaded state`, () => {
-  const atom = Atom.from(42)
+  const atom = declareAtom.from(42)
   const storeWithPreloadedState = createStore({ [atom.displayName]: 0 })
   const storeWithoutPreloadedState = createStore()
 
@@ -142,7 +207,7 @@ test(`Store preloaded state`, () => {
 })
 
 test(`Batched dispatch`, () => {
-  const atom = Atom.from(0)
+  const atom = declareAtom.from(0)
   const store = createStore()
   const cb = mockFn()
 
@@ -161,15 +226,19 @@ test(`Batched dispatch`, () => {
 })
 
 test(`Batched dispatch dynamic types change`, () => {
-  const doSome = Action<any>()
-  const addAction = Action<IActionCreator>()
-  const actionsCacheAtom = Atom(
-    ($, state = new Array<readonly [IActionCreator, any]>()) => {
-      $(addAction, actionCreator => (state = [...state, [actionCreator, null]]))
+  const doSome = declareAction<any>()
+  const addAction = declareAction<ActionCreator>()
+  const actionsCacheAtom = declareAtom(
+    ($, state = new Array<readonly [ActionCreator, any]>()) => {
+      $(
+        addAction.handle(
+          actionCreator => (state = [...state, [actionCreator, null]]),
+        ),
+      )
 
       return state.map(([actionCreator]) => {
         let payload = null
-        $(actionCreator, v => (payload = v))
+        $(actionCreator.handle(v => (payload = v)))
         return [actionCreator, payload] as const
       })
     },
@@ -185,3 +254,5 @@ test(`Batched dispatch dynamic types change`, () => {
 
   console.log(`👍`)
 })
+
+test.run()

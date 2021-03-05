@@ -1,101 +1,86 @@
-import { KIND } from './internal'
-
 export type F<I extends unknown[] = any[], O = any> = (...a: I) => O
 
-export type FInput<T extends F> = T extends F<infer I> ? I : never
+export type Collection<T = any> = Record<string, T>
 
-export type FOutput<T extends F> = T extends F<any[], infer O> ? O : never
+export type ActionType = string
 
-export type IActionType = string
+export type Cache<T extends Readonly<Collection> = Readonly<Collection>> = T & {
+  readonly types: Set<string>
+  readonly handler?: Handler // FIXME: Handler<Cache<T>>
+}
 
-export interface IAction<Payload = any> {
-  type: IActionType
+export type AtomCache<State = any> = Cache<{
+  readonly state: State
+  readonly deps: Array<{ dep: Handler; cache: Cache }>
+}>
+
+export type StoreCache = WeakMap<Atom, AtomCache>
+
+export type Patch = Map<Atom, AtomCache>
+
+export interface Action<Payload = any> {
+  type: ActionType
   payload: Payload
-  memo?: IMemo
   [K: string]: any
 }
 
-type IActionCreatorResult<Payload, Action> = Omit<
-  Action,
-  'type' | 'payload'
-> & {
-  type: 'type' extends keyof Action ? Action['type'] : string
-  payload: 'payload' extends keyof Action ? Action['payload'] : Payload
-  memo?: IMemo
-}
-
-export interface IActionCreator<
-  Payload = any,
-  Action extends Partial<IAction> = IAction
+export interface ActionCreator<
+  Arguments extends any[] = any[],
+  ActionData extends { payload: any } = { payload: Arguments[0] }
 > {
-  (payload: Payload): {
-    //  infer plain object instead of type alias for better readability
-    [K in keyof IActionCreatorResult<Payload, Action>]: IActionCreatorResult<
-      Payload,
-      Action
-    >[K]
-  }
-  type: IActionType
-  /** @internal */
-  [KIND]: 'action'
+  (...a: Arguments): ActionData & { type: string }
+  handle: (
+    callback: F<
+      [ActionData['payload'], ActionData & { type: string }, Transaction]
+    >,
+  ) => Handler
+  type: ActionType
 }
 
-export interface IReducer<State = any> {
-  (action: IAction, state?: State): IReducerCache<State>
+export interface Handler<T extends Cache = Cache> {
+  (transaction: Transaction, cache?: T): T
 }
 
-export interface IReducerCache<State = any> {
-  state: State
-  types: Set<IActionType>
-}
-
-export interface IMemo {
-  <T>(atom: IAtom<T>): IAtomCache<T>
-}
-
-export interface IComputer<State = any> {
-  ($: ITrack, a?: State): State
-}
-
-export interface ITrack {
-  <Payload>(
-    actionCreator: IActionCreator<Payload>,
-    reaction: (payload: Payload) => void,
-  ): void
-  <Payload>(atom: IAtom<Payload>): Payload
-}
-
-export interface IAtom<State = any> {
-  (action: IAction, state?: State): IAtomCache<State>
-  computer: IComputer<State>
+export interface Atom<State = any> extends Handler<AtomCache<State>> {
+  computer: Computer<State>
   displayName: string
-  /** @internal */
-  [KIND]: 'atom'
 }
 
-export interface IAtomCache<State = any> extends IReducerCache<State> {
-  deps: Array<
-    | { dep: IAtom; cache: IAtomCache }
-    | { dep: IActionCreator; cache?: undefined }
+export interface Memo {
+  <T>(transaction: Transaction, atom: Atom<T>, cache?: AtomCache<T>): AtomCache<
+    T
   >
 }
 
-export interface IStoreCache extends WeakMap<IAtom, IAtomCache> {}
+export interface Computer<State = any> {
+  ($: Track, state?: State): State
+}
 
-export interface IPatch extends Map<IAtom, IAtomCache> {}
+export interface Track {
+  <T extends Cache>(handler: Handler<T>): T extends { state: infer State }
+    ? State
+    : void
+}
 
-export interface IStore {
-  dispatch(...actions: Array<IAction>): IPatch
+export interface Store {
+  dispatch(...actions: Array<Action>): Patch
 
   getState<T>(): Record<string, any>
-  getState<T>(atom: IAtom<T>): T | undefined
+  getState<T>(atom: Atom<T>): T | undefined
 
-  init(...atoms: Array<IAtom>): () => void
+  subscribe(cb: F<[Transaction]>): F<[], void>
+  subscribe<T>(atom: Atom<T>, cb: F<[T]>): F
+  subscribe<T extends { payload: any }>(
+    actionCreator: ActionCreator<any[], T>,
+    cb: F<[T & { type: string }]>,
+  ): F
 
-  subscribe<T>(atom: IAtom<T>, cb: (value: T) => void): F<[], void>
-  subscribe<T>(
-    actionCreator: IActionCreator<T>,
-    cb: (payload: T) => void,
-  ): F<[], void>
-  subscribe(cb: F<[IAction, IPatch]>): F<[], void>
+  init(...atoms: Array<Atom>): () => void
+}
+
+export interface Transaction {
+  actions: Array<Action>
+  cache: StoreCache
+  patch: Patch
+  snapshot: Record<string, any>
 }

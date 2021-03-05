@@ -1,7 +1,13 @@
-import { IActionCreator, IAtom, F, IAction } from './internal'
-
-export const KIND = Symbol(`@@Reatom/KIND`)
-type KIND = typeof KIND
+import {
+  Action,
+  ActionCreator,
+  Atom,
+  Collection,
+  F,
+  Patch,
+  StoreCache,
+  Transaction,
+} from './internal'
 
 export const noop: F = () => {}
 
@@ -47,49 +53,48 @@ export function isFunction(thing: any): thing is Function {
 }
 
 export function safeFunction(thing: any): F {
-  if (isFunction(thing)) return thing
-  throw new TypeError(`Thing is not function`)
+  invalid(!isFunction(thing), `thing, expected function`)
+  return thing
 }
 
-export function isAtom(thing: any): thing is IAtom<unknown> {
-  return typeof isFunction(thing) && thing[KIND] === 'atom'
+export function isAtom(thing: any): thing is Atom<unknown> {
+  return isFunction(thing) && isFunction(thing.computer)
 }
 
-export function safeAtom(thing: any): IAtom {
-  if (isAtom(thing)) return thing
-  throw new TypeError(`Thing is not atom`)
+export function safeAtom(thing: any): Atom {
+  invalid(!isAtom(thing), `thing, expected atom`)
+  return thing
 }
 
-export function isActionCreator(thing: any): thing is IActionCreator<unknown> {
-  return isFunction(thing) && thing[KIND] === 'action'
+export function isActionCreator(thing: any): thing is ActionCreator {
+  return isFunction(thing) && typeof thing.type === 'string'
 }
 
-export function safeActionCreator(thing: any): IActionCreator {
-  if (isActionCreator(thing)) return thing
-  throw new TypeError(`Thing is not action`)
+export function safeActionCreator(thing: any): ActionCreator {
+  invalid(!isActionCreator(thing), `thing, expected action`)
+  return thing
 }
 
-export function isAction(thing: any): thing is IAction<unknown> {
+export function isAction(thing: any): thing is Action<unknown> {
   return (
     typeof thing === 'object' &&
     thing !== null &&
     typeof thing.type === 'string' &&
-    'payload' in thing &&
-    ('memo' in thing === false || isFunction(thing.memo))
+    'payload' in thing
   )
 }
 
-export function invalid<T extends true | false = false>(
-  predicate: any,
-  msg: string,
-  // FIXME
-  // @ts-ignore
-): T extends true ? never : void {
+export function invalid<T extends true>(predicate: T, msg: string): never
+export function invalid(predicate: any, msg: string): any
+export function invalid(predicate: any, msg: string) {
   if (predicate) throw new Error(`Reatom: invalid ${msg}`)
 }
 
-// export function isPatchChange(cache: IStoreCache, patch: IPatch, atom: IAtom){
-//   const atomCache = cache.get(atom)
-//   const atomPatch = patch.get(atom)
-//   return atomCache !== atomPatch
-// }
+export function createTransaction(
+  actions: Array<Action>,
+  cache: StoreCache = new WeakMap(),
+  patch: Patch = new Map(),
+  snapshot: Collection = {},
+): Transaction {
+  return { actions, cache, patch, snapshot }
+}

@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "2.0.0-alpha4",
+  "version": "2.0.0-alpha5",
   "description": "State Manager with a focus on all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
