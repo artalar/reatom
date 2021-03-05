@@ -1,4 +1,4 @@
-import { ActionCreator, F, invalid, Transaction } from './internal'
+import { ActionCreator, Cache, F, invalid, Transaction } from './internal'
 
 let actionsCount = 0
 export function declareAction<Payload = void>(): ActionCreator<[Payload]>
@@ -13,8 +13,7 @@ export function declareAction(
   mapper: (...a: any[]) => any = (payload: any) => ({ payload }),
   { type = `action [${++actionsCount}]` } = {},
 ) {
-  // FIXME: it is a hack, we should improve it
-  let cache = { types: new Set([type]), handler }
+  const types = new Set([type])
 
   const actionCreator: ActionCreator = (...a) => {
     const action = mapper(...a)
@@ -27,7 +26,10 @@ export function declareAction(
 
     return Object.assign({}, action, { type }) as any
   }
-  actionCreator.handle = (cb: F) => transaction => (
+  actionCreator.handle = (cb: F) => (
+    transaction,
+    cache = { types, handler } as Cache,
+  ) => (
     transaction.actions.forEach(
       action => action.type === type && cb(action.payload, action, transaction),
     ),
@@ -35,7 +37,7 @@ export function declareAction(
   )
   actionCreator.type = type
 
-  function handler(transaction: Transaction) {
+  function handler(transaction: Transaction, cache = { types, handler }) {
     if (transaction.actions.some(action => action.type === type)) {
       cache = Object.assign({}, cache)
     }
