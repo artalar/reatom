@@ -1,12 +1,13 @@
 import { ActionCreator, Cache, F, invalid, Transaction } from './internal'
 
 let actionsCount = 0
-export function declareAction<Payload = void>(): ActionCreator<[Payload]>
+export function declareAction(): ActionCreator<[]>
+export function declareAction<Payload>(): ActionCreator<[Payload]>
 export function declareAction<
-  Arguments extends any[] = [void],
+  Arguments extends any[] = [],
   ActionData extends { payload: any } = { payload: Arguments[0] }
 >(
-  mapper?: (...a: Arguments) => ActionData,
+  mapper: (...a: Arguments) => ActionData,
   options?: { type?: string },
 ): ActionCreator<Arguments, ActionData>
 export function declareAction(
@@ -38,15 +39,14 @@ export function declareAction(
   actionCreator.type = type
 
   function handler(transaction: Transaction, cache = { types, handler }) {
-    if (transaction.actions.some(action => action.type === type)) {
-      cache = Object.assign({}, cache)
-    }
-    return cache
+    return transaction.actions.some(action => action.type === type)
+      ? Object.assign({}, cache)
+      : cache
   }
 
   return actionCreator
 }
 
-export const init = declareAction(payload => ({ payload }), {
+export const init = declareAction(() => ({ payload: null }), {
   type: `@@Reatom/init`,
 })

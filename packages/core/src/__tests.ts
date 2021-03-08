@@ -134,7 +134,7 @@ test(`action effect example`, () => {
   }
 
   const effect = mockFn()
-  const doEffect = declareAction(payload => ({ payload, effect }))
+  const doEffect = declareAction(() => ({ payload: null, effect }))
   const store = createStore()
 
   handleEffects(store)
@@ -215,10 +215,7 @@ test(`Batched dispatch`, () => {
 
   assert.is(cb.calls.length, 1)
 
-  store.dispatch(
-    atom.update(s => s + 1),
-    atom.update(s => s + 1),
-  )
+  store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
   assert.is(cb.calls.length, 2)
   assert.is(cb.calls.tail().i[0], 2)
 
@@ -226,10 +223,12 @@ test(`Batched dispatch`, () => {
 })
 
 test(`Batched dispatch dynamic types change`, () => {
+  let computerCalls = 0
   const doSome = declareAction<any>()
   const addAction = declareAction<ActionCreator>()
   const actionsCacheAtom = declareAtom(
     ($, state = new Array<readonly [ActionCreator, any]>()) => {
+      computerCalls++
       $(
         addAction.handle(
           actionCreator => (state = [...state, [actionCreator, null]]),
@@ -246,11 +245,11 @@ test(`Batched dispatch dynamic types change`, () => {
   const store = createStore()
 
   store.init(actionsCacheAtom)
+  assert.is(computerCalls, 1)
 
-  store.dispatch(addAction(doSome), doSome(0))
-
-  store.getState(actionsCacheAtom)
+  store.dispatch([addAction(doSome), doSome(0)])
   assert.equal(store.getState(actionsCacheAtom), [[doSome, 0]])
+  assert.is(computerCalls, 2)
 
   console.log(`👍`)
 })

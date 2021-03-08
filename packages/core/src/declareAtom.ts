@@ -38,6 +38,7 @@ export function declareAtom<State>(
 
 declareAtom.from = <State>(
   defaultState: State,
+  options?: { displayName?: string; memo?: Memo },
 ): Atom<State> & {
   update: ActionCreator<[State | ((prevState: State) => State)]>
 } => {
@@ -50,7 +51,7 @@ declareAtom.from = <State>(
         ),
       )
       return state
-    }),
+    }, options),
     { update },
   )
 }

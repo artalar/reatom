@@ -52,7 +52,8 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     return Object.is(atomCache?.state, patch.state)
   }
 
-  const dispatch: Store['dispatch'] = (...actions: Array<Action>) => {
+  const dispatch: Store['dispatch'] = (action: Action | Array<Action>) => {
+    const actions = Array.isArray(action) ? action : [action]
     invalid(
       // TODO: except `init`?
       actions.length === 0 || actions.every(isAction) === false,
