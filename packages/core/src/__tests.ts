@@ -92,8 +92,8 @@ test(`displayName`, () => {
 
 test(`combine`, () => {
   const aAtom = declareAtom.from(0)
-  const bAtom = declareAtom($ => $(aAtom) & 2)
-  const cAtom = declareAtom($ => $(aAtom) & 2)
+  const bAtom = declareAtom($ => $(aAtom) % 2)
+  const cAtom = declareAtom($ => $(aAtom) % 2)
   const bcAtom = declareAtom($ => ({
     b: $(bAtom),
     c: $(cAtom),
@@ -108,13 +108,13 @@ test(`combine`, () => {
   store.dispatch(aAtom.update(s => s + 1))
   const bsState2 = store.getState(bcAtom)
   assert.is(store.getState(aAtom), 1)
-  assert.equal(bsState1, bsState2)
+  assert.equal(bsState2, { b: 1, c: 1 })
 
-  store.dispatch(aAtom.update(s => s + 1))
+  store.dispatch(aAtom.update(s => s + 2))
   const bsState3 = store.getState(bcAtom)
-  assert.is(store.getState(aAtom), 2)
-  assert.not.equal(bsState2, bsState3)
-  assert.equal(bsState3, { b: 2, c: 2 })
+  assert.is(store.getState(aAtom), 3)
+  assert.equal(bsState3, { b: 1, c: 1 })
+  assert.is(bsState2, bsState3)
 
   console.log(`👍`)
 })
