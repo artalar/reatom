@@ -87,6 +87,8 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       actionsListeners.get(action.type)?.forEach(cb => callSafety(cb, action)),
     )
 
+    transaction.effects.forEach(cb => callSafety(cb, store))
+
     return patch
   }
 
@@ -109,7 +111,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   // }
 
   function getState<T>(): Record<string, any>
-  function getState<T>(atom: Atom<T>): T | undefined
+  function getState<T>(atom: Atom<T>): T
   function getState<T>(atom?: Atom<T>) {
     if (atom === undefined) {
       // if (process.env.NODE_ENV !== 'production') {
@@ -146,6 +148,15 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     }
 
     return atomCache.state
+  }
+
+  function init(...atoms: Array<Atom>) {
+    const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
+    return () => unsubscribers.forEach(un => un())
+  }
+
+  function readCache<T>(atom: Atom<T>): AtomCache<T> | undefined {
+    return atomsCache.get(atom)
   }
 
   function subscribeAtom<T>(atom: Atom<T>, cb: F<[T]>): F<[], void> {
@@ -216,15 +227,13 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       : (invalid(true, `subscribe arguments`) as never)
   }
 
-  function init(...atoms: Array<Atom>) {
-    const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
-    return () => unsubscribers.forEach(un => un())
-  }
-
-  return {
+  const store = {
     dispatch,
     getState,
     init,
+    readCache,
     subscribe,
   }
+
+  return store
 }

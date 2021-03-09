@@ -33,12 +33,20 @@ export type ActionCreator<
   ActionData extends { payload: any } = { payload: Arguments[0] }
 > = {
   (...a: Arguments): ActionData & { type: string }
-  handle: (
+
+  type: ActionType
+
+  handle(
+    callback: F<
+      [ActionData['payload'], ActionData & { type: string }, Transaction],
+      F<[Store]>
+    >,
+  ): Handler
+  handle(
     callback: F<
       [ActionData['payload'], ActionData & { type: string }, Transaction]
     >,
-  ) => Handler
-  type: ActionType
+  ): Handler
 }
 
 export type Atom<State = any> = Handler<AtomCache<State>> & {
@@ -67,7 +75,11 @@ export type Store = {
   dispatch(actions: Array<Action>): Patch
 
   getState<T>(): Record<string, any>
-  getState<T>(atom: Atom<T>): T | undefined
+  getState<T>(atom: Atom<T>): T
+
+  init(...atoms: Array<Atom>): () => void
+
+  readCache<T>(atom: Atom<T>): AtomCache<T> | undefined
 
   subscribe(cb: F<[Transaction]>): F<[], void>
   subscribe<T>(atom: Atom<T>, cb: F<[T]>): F
@@ -75,13 +87,16 @@ export type Store = {
     actionCreator: ActionCreator<any[], T>,
     cb: F<[T & { type: string }]>,
   ): F
-
-  init(...atoms: Array<Atom>): () => void
 }
 
 export type Transaction = {
   actions: Array<Action>
-  cache: StoreCache
+  effects: Array<F<[Store]>>
   patch: Patch
+  readCache<T>(atom: Atom<T>): AtomCache<T> | undefined
   snapshot: Record<string, any>
 }
+
+export type AtomState<T extends Atom> = T extends Atom<infer State>
+  ? State
+  : never

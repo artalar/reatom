@@ -1,4 +1,12 @@
-import { ActionCreator, Cache, F, invalid, Transaction } from './internal'
+import {
+  ActionCreator,
+  Cache,
+  F,
+  invalid,
+  isFunction,
+  Store,
+  Transaction,
+} from './internal'
 
 let actionsCount = 0
 export function declareAction(): ActionCreator<[]>
@@ -16,6 +24,12 @@ export function declareAction(
 ) {
   const types = new Set([type])
 
+  function handler(transaction: Transaction, cache = { types, handler }) {
+    return transaction.actions.some(action => action.type === type)
+      ? { types, handler }
+      : cache
+  }
+
   const actionCreator: ActionCreator = (...a) => {
     const action = mapper(...a)
 
@@ -27,22 +41,19 @@ export function declareAction(
 
     return Object.assign({}, action, { type }) as any
   }
-  actionCreator.handle = (cb: F) => (
-    transaction,
+  actionCreator.type = type
+  actionCreator.handle = ((cb: F) => (
+    transaction: Transaction,
     cache = { types, handler } as Cache,
   ) => (
-    transaction.actions.forEach(
-      action => action.type === type && cb(action.payload, action, transaction),
-    ),
+    transaction.actions.forEach(action => {
+      if (action.type === type) {
+        const result = cb(action.payload, action, transaction)
+        if (isFunction(result)) transaction.effects.push(result)
+      }
+    }),
     cache
-  )
-  actionCreator.type = type
-
-  function handler(transaction: Transaction, cache = { types, handler }) {
-    return transaction.actions.some(action => action.type === type)
-      ? Object.assign({}, cache)
-      : cache
-  }
+  )) as any
 
   return actionCreator
 }

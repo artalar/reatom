@@ -4,10 +4,10 @@ export const memo: Memo = (transaction, atom, atomCacheSnapshot?) => {
   const atomPatch = transaction.patch.get(atom)!
   if (atomPatch !== undefined) return atomPatch
 
-  const { actions, cache, patch, snapshot } = transaction
+  const { actions, readCache, patch, snapshot } = transaction
   const patchTypes: AtomCache['types'] = new Set()
   const patchDeps: AtomCache['deps'] = []
-  let atomCache = cache.get(atom) || atomCacheSnapshot
+  let atomCache = readCache(atom) || atomCacheSnapshot
   let trackNesting = 0
   let isDepsChange = false
   let result: AtomCache | undefined
@@ -37,7 +37,7 @@ export const memo: Memo = (transaction, atom, atomCacheSnapshot?) => {
     }
   } else {
     atomCache = {
-      state: undefined,
+      state: undefined as any,
       types: new Set(),
       deps: [],
     }

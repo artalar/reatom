@@ -9,9 +9,12 @@ import {
   declareAtom,
   F,
   Store,
+  Transaction,
 } from '.'
 
 let noop: F = () => {}
+
+const sleep = (ms = 0) => new Promise(r => setTimeout(r, ms))
 
 export function mockFn<I extends any[], O>(
   fn: F<I, O> = (...i: any) => void 0 as any,
@@ -26,13 +29,12 @@ export function mockFn<I extends any[], O>(
       return o
     },
     {
-      calls: Object.assign(new Array<{ i: I; o: O }>(), {
-        tail(this: Array<{ i: I; o: O }>) {
-          const { length } = this
-          if (length === 0) throw new TypeError(`Array is empty`)
-          return this[length - 1]
-        },
-      }),
+      calls: new Array<{ i: I; o: O }>(),
+      lastInput(): I[0] {
+        const { length } = _fn.calls
+        if (length === 0) throw new TypeError(`Array is empty`)
+        return _fn.calls[length - 1].i[0]
+      },
     },
   )
 
@@ -69,29 +71,29 @@ test(`displayName`, () => {
   store.subscribe(displayNameAtom, cb)
 
   assert.is(cb.calls.length, 1)
-  assert.is(cb.calls.tail().i[0], 'John Doe')
+  assert.is(cb.lastInput(), 'John Doe')
 
   store.dispatch(setFirstName('John'))
   assert.is(cb.calls.length, 1)
-  assert.is(cb.calls.tail().i[0], 'John Doe')
+  assert.is(cb.lastInput(), 'John Doe')
 
   store.dispatch(setFirstName('Joe'))
   assert.is(cb.calls.length, 2)
-  assert.is(cb.calls.tail().i[0], 'Joe Doe')
+  assert.is(cb.lastInput(), 'Joe Doe')
 
   store.dispatch(setFirstName('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
-  assert.is(cb.calls.tail().i[0], 'Joooooooooooooooooooe')
+  assert.is(cb.lastInput(), 'Joooooooooooooooooooe')
 
   store.dispatch(setFirstName('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
-  assert.is(cb.calls.tail().i[0], 'Joooooooooooooooooooe')
+  assert.is(cb.lastInput(), 'Joooooooooooooooooooe')
 
   console.log(`👍`)
 })
 
 test(`combine`, () => {
-  const aAtom = declareAtom.from(0)
+  const aAtom = declareAtom(0)
   const bAtom = declareAtom($ => $(aAtom) % 2)
   const cAtom = declareAtom($ => $(aAtom) % 2)
   const bcAtom = declareAtom($ => ({
@@ -126,6 +128,45 @@ test(`action mapper`, () => {
   console.log(`👍`)
 })
 
+test(`in atom action effect`, async () => {
+  function declareResource<I, O>(fetcher: (params: I) => Promise<O>) {
+    const request = declareAction<I>()
+
+    return Object.assign(
+      declareAtom<null | O | Error>(null, ($, state, update) => {
+        $(
+          request.handle(params => ({ dispatch }) =>
+            fetcher(params)
+              .then(data => dispatch(update(data)))
+              .catch(e =>
+                dispatch(update(e instanceof Error ? e : new Error(e))),
+              ),
+          ),
+        )
+        return state
+      }),
+      { request },
+    )
+  }
+
+  const dataAtom = declareResource(() => Promise.resolve([]))
+  const cb = mockFn()
+
+  const store = createStore()
+
+  store.subscribe(dataAtom, cb)
+  assert.is(cb.calls.length, 1)
+  assert.is(cb.lastInput(), null)
+
+  store.dispatch(dataAtom.request(() => Promise.resolve([])))
+  assert.is(cb.calls.length, 1)
+  await sleep()
+  assert.is(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), [])
+
+  console.log(`👍`)
+})
+
 test(`action effect example`, () => {
   function handleEffects(store: Store) {
     store.subscribe(({ actions }) =>
@@ -142,7 +183,7 @@ test(`action effect example`, () => {
   store.dispatch(doEffect())
 
   assert.is(effect.calls.length, 1)
-  assert.is(effect.calls.tail().i[0], store)
+  assert.is(effect.lastInput(), store)
 
   console.log(`👍`)
 })
@@ -174,7 +215,7 @@ test(`Atom store dependency states`, () => {
 })
 
 test(`Atom from`, () => {
-  const atom = declareAtom.from(42)
+  const atom = declareAtom(42)
 
   assert.is(atom(createTransaction([declareAction()()])).state, 42)
   assert.is(atom(createTransaction([atom.update(43)])).state, 43)
@@ -184,7 +225,7 @@ test(`Atom from`, () => {
 })
 
 test(`Store preloaded state`, () => {
-  const atom = declareAtom.from(42)
+  const atom = declareAtom(42)
   const storeWithPreloadedState = createStore({ [atom.displayName]: 0 })
   const storeWithoutPreloadedState = createStore()
 
@@ -207,7 +248,7 @@ test(`Store preloaded state`, () => {
 })
 
 test(`Batched dispatch`, () => {
-  const atom = declareAtom.from(0)
+  const atom = declareAtom(0)
   const store = createStore()
   const cb = mockFn()
 
@@ -217,7 +258,7 @@ test(`Batched dispatch`, () => {
 
   store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
   assert.is(cb.calls.length, 2)
-  assert.is(cb.calls.tail().i[0], 2)
+  assert.is(cb.lastInput(), 2)
 
   console.log(`👍`)
 })
@@ -250,6 +291,140 @@ test(`Batched dispatch dynamic types change`, () => {
   store.dispatch([addAction(doSome), doSome(0)])
   assert.equal(store.getState(actionsCacheAtom), [[doSome, 0]])
   assert.is(computerCalls, 2)
+
+  console.log(`👍`)
+})
+
+test(`declareResource`, async () => {
+  // FIXME: prevent concurrent requests (last win)
+  function declareResource<Params, State>(
+    fetcher: (params: Params) => Promise<State>,
+  ) {
+    const get = declareAction<Params>()
+    const req = declareAction<Params>()
+    const res = declareAction<State>()
+    const err = declareAction<Error>()
+
+    const request = (params: Params, { effects }: Transaction) => {
+      effects.push(async store =>
+        new Promise((res, err) => fetcher(params).then(res, err)).then(
+          data => store.dispatch(res(data as State)),
+          error =>
+            store.dispatch(
+              err(error instanceof Error ? error : new Error(error)),
+            ),
+        ),
+      )
+    }
+
+    return Object.assign(
+      declareAtom(
+        (
+          $,
+          state = { isLoading: false, data: null as any } as {
+            isLoading: boolean
+            data: State
+            error?: Error
+            params?: Params
+          },
+        ) => {
+          $(
+            get.handle(function(params, action, t) {
+              if (
+                state.data === null ||
+                state.error ||
+                state.params !== params
+              ) {
+                state = { isLoading: true, data: state.data, params }
+                request(params, t)
+              }
+            }),
+          )
+          $(
+            req.handle(function(params, action, t) {
+              state = { isLoading: true, data: state.data, params }
+              request(params, t)
+            }),
+          )
+          $(
+            res.handle(
+              data =>
+                (state = { isLoading: false, data, params: state.params }),
+            ),
+          )
+          $(
+            err.handle(
+              error =>
+                (state = {
+                  isLoading: false,
+                  error,
+                  data: state.data,
+                  params: state.params,
+                }),
+            ),
+          )
+          return state
+        },
+      ),
+      {
+        get,
+        req,
+        res,
+        err,
+      },
+    )
+  }
+
+  const resourceAtom = declareResource((param: number) =>
+    Promise.resolve(param.toString()),
+  )
+  const store = createStore()
+  const cb = mockFn()
+
+  store.subscribe(resourceAtom, cb)
+  assert.is(cb.calls.length, 1)
+  assert.equal(cb.lastInput(), { isLoading: false, data: null })
+
+  store.dispatch(resourceAtom.get(42))
+  assert.is(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), {
+    isLoading: true,
+    data: null,
+    params: 42,
+  })
+  await sleep()
+  assert.is(cb.calls.length, 3)
+  assert.equal(cb.lastInput(), {
+    isLoading: false,
+    data: '42',
+    params: 42,
+  })
+
+  const state = store.getState(resourceAtom)
+  store.dispatch(resourceAtom.get(42))
+  assert.is(cb.calls.length, 3)
+  assert.is(cb.lastInput(), state)
+  await sleep()
+  assert.is(cb.calls.length, 3)
+  assert.is(cb.lastInput(), state)
+
+  store.dispatch(resourceAtom.req(42))
+  assert.is(cb.calls.length, 4)
+  await sleep()
+  assert.is(cb.calls.length, 5)
+  assert.equal(cb.lastInput(), state)
+
+  store.dispatch(
+    resourceAtom.req({
+      toString() {
+        throw new Error('test')
+      },
+    } as any),
+  )
+  assert.is(cb.calls.length, 6)
+  await sleep()
+  assert.is(cb.calls.length, 7)
+  assert.equal(cb.lastInput().error, new Error('test'))
 
   console.log(`👍`)
 })
