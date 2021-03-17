@@ -5,22 +5,33 @@ export type Collection<T = any> = Record<string, T>
 export type ActionType = string
 
 export type Cache<T extends Collection = Collection> = T & {
-  readonly types: Set<string>
+  readonly types: Set<ActionType>
   readonly handler?: Handler // FIXME: Handler<Cache<T>>
 }
-
-export type AtomCache<State = any> = Cache<{
-  readonly state: State
-  readonly deps: Array<{ dep: Handler; cache: Cache }>
-}>
-
-export type StoreCache = WeakMap<Atom, AtomCache>
-
-export type Patch = Map<Atom, AtomCache>
 
 export type Handler<T extends Cache = Cache> = {
   (transaction: Transaction, cache?: T): T
 }
+
+export type AtomCache<State = any> = Cache<{
+  readonly state: State
+  // Deps useful for testing and debugging.
+  // Also this helps to test the case when cache was created
+  // then all listeners / children was removed
+  // then deps change their value
+  // then atom returns to active
+  // and may been stale.
+  readonly deps: Array<AtomDep>
+}>
+
+export type AtomDep<T = Collection> = {
+  handler: Handler<Cache<T>>
+  cache: Cache<T>
+}
+
+export type StoreCache = WeakMap<Atom, AtomCache>
+
+export type Patch = Map<Atom, AtomCache>
 
 export type Action<Payload = any> = {
   type: ActionType
@@ -52,7 +63,12 @@ export type ActionCreator<
 export type Atom<State = any> = Handler<AtomCache<State>> & {
   computer: Computer<State>
   displayName: string
+  update?: AtomUpdate<State>
 }
+
+export type AtomUpdate<State> = ActionCreator<
+  [State | ((prevState: State) => State)]
+>
 
 export type Memo = {
   <T>(transaction: Transaction, atom: Atom<T>, cache?: AtomCache<T>): AtomCache<
@@ -71,15 +87,14 @@ export type Track = {
 }
 
 export type Store = {
-  dispatch(action: Action): Patch
-  dispatch(actions: Array<Action>): Patch
+  dispatch(action: Action | Array<Action>): Patch
 
   getState<T>(): Record<string, any>
   getState<T>(atom: Atom<T>): T
 
   init(...atoms: Array<Atom>): () => void
 
-  readCache<T>(atom: Atom<T>): AtomCache<T> | undefined
+  getCache<T>(atom: Atom<T>): AtomCache<T> | undefined
 
   subscribe(cb: F<[Transaction]>): F<[], void>
   subscribe<T>(atom: Atom<T>, cb: F<[T]>): F
@@ -93,7 +108,7 @@ export type Transaction = {
   actions: Array<Action>
   effects: Array<F<[Store]>>
   patch: Patch
-  readCache<T>(atom: Atom<T>): AtomCache<T> | undefined
+  getCache<T>(atom: Atom<T>): AtomCache<T> | undefined
   snapshot: Record<string, any>
 }
 

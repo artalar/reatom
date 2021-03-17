@@ -20,7 +20,7 @@ async function start() {
 
   const entry = declareAction<number>()
   const a = declareAtom(($, state: number = 0) => {
-    // $(entry, v => (state = v % 2 ? state : v + 1))
+    // $(entry.handle(v => (state = v % 2 ? state : v + 1)))
     $(entry.handle(v => (state = v)))
     return state
   })
@@ -181,7 +181,7 @@ async function start() {
   }
 
   if (new Set([res, /* rRes, */ eRes, wRes, /* cRes, */ mRes]).size !== 1) {
-    console.log(`Results is not equal`)
+    console.error(`Results is not equal`)
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)

@@ -10,7 +10,6 @@ import {
   delFromSetsMap,
   F,
   Handler,
-  init as createInitAction,
   invalid,
   isAction,
   isActionCreator,
@@ -55,7 +54,6 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   const dispatch: Store['dispatch'] = (action: Action | Array<Action>) => {
     const actions = Array.isArray(action) ? action : [action]
     invalid(
-      // TODO: except `init`?
       actions.length === 0 || actions.every(isAction) === false,
       `dispatch arguments`,
     )
@@ -92,6 +90,10 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     return patch
   }
 
+  function getCache<T>(atom: Atom<T>): AtomCache<T> | undefined {
+    return atomsCache.get(atom)
+  }
+
   // TODO: tsdx
   // if (process.env.NODE_ENV !== 'production') {
   //   let i = 0
@@ -125,7 +127,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
           const { state, deps } = atomsCache.get(handler)!
 
           result[handler.displayName] = state
-          deps.forEach(dep => collect(dep.dep))
+          deps.forEach(dep => collect(dep.handler))
         }
       }
 
@@ -141,7 +143,12 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     if (atomCache === undefined) {
       const patch = new Map<Atom, AtomCache>()
       atomCache = atom(
-        createTransaction([createInitAction()], atomsCache, patch, snapshot),
+        createTransaction(
+          [{ type: `init [${Math.random()}]`, payload: null }],
+          atomsCache,
+          patch,
+          snapshot,
+        ),
       )
 
       patch.forEach(mergePatch)
@@ -153,10 +160,6 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   function init(...atoms: Array<Atom>) {
     const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
     return () => unsubscribers.forEach(un => un())
-  }
-
-  function readCache<T>(atom: Atom<T>): AtomCache<T> | undefined {
-    return atomsCache.get(atom)
   }
 
   function subscribeAtom<T>(atom: Atom<T>, cb: F<[T]>): F<[], void> {
@@ -231,7 +234,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     dispatch,
     getState,
     init,
-    readCache,
+    getCache,
     subscribe,
   }
 

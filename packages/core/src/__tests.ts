@@ -128,6 +128,38 @@ test(`action mapper`, () => {
   console.log(`👍`)
 })
 
+test(`atom filter`, () => {
+  const aAtom = declareAtom(0)
+  const bAtom = declareAtom(0, ($, s) => {
+    track()
+
+    const a = $(aAtom)
+    if (a % 2) s = a
+    return s
+  })
+  const track = mockFn()
+
+  const bCache1 = bAtom(createTransaction([]))
+  assert.is(track.calls.length, 1)
+  assert.is(bCache1.state, 0)
+
+  const bCache2 = bAtom(createTransaction([]), bCache1)
+  assert.is(track.calls.length, 1)
+  assert.is(bCache1, bCache2)
+
+  const bCache3 = bAtom(createTransaction([aAtom.update(0)]), bCache2)
+  assert.is(track.calls.length, 1)
+  assert.is.not(bCache2, bCache3)
+  assert.is(bCache2.state, bCache3.state)
+
+  const bCache4 = bAtom(createTransaction([aAtom.update(1)]), bCache3)
+  assert.is(track.calls.length, 2)
+  assert.is.not(bCache3, bCache4)
+  assert.is.not(bCache3.state, bCache4.state)
+
+  console.log(`👍`)
+})
+
 test(`in atom action effect`, async () => {
   function declareResource<I, O>(fetcher: (params: I) => Promise<O>) {
     const request = declareAction<I>()

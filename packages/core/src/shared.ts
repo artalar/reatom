@@ -96,5 +96,11 @@ export function createTransaction(
   patch: Patch = new Map(),
   snapshot: Collection = {},
 ): Transaction {
-  return { actions, readCache: cache.get.bind(cache), patch, snapshot, effects: [] }
+  return {
+    actions,
+    getCache: cache.get.bind(cache),
+    patch,
+    snapshot,
+    effects: [],
+  }
 }

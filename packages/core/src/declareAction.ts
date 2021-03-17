@@ -24,7 +24,10 @@ export function declareAction(
 ) {
   const types = new Set([type])
 
-  function handler(transaction: Transaction, cache = { types, handler }) {
+  function handler(
+    transaction: Transaction,
+    cache: Cache = { types, handler },
+  ) {
     return transaction.actions.some(action => action.type === type)
       ? { types, handler }
       : cache
@@ -39,12 +42,12 @@ export function declareAction(
       `missing payload in created action data`,
     )
 
-    return Object.assign({}, action, { type }) as any
+    return Object.assign({}, action, { type })
   }
   actionCreator.type = type
-  actionCreator.handle = ((cb: F) => (
+  actionCreator.handle = (cb: F) => (
     transaction: Transaction,
-    cache = { types, handler } as Cache,
+    cache: Cache = { types, handler },
   ) => (
     transaction.actions.forEach(action => {
       if (action.type === type) {
@@ -53,11 +56,7 @@ export function declareAction(
       }
     }),
     cache
-  )) as any
+  )
 
   return actionCreator
 }
-
-export const init = declareAction(() => ({ payload: null }), {
-  type: `@@Reatom/init`,
-})

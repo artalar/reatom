@@ -1,7 +1,7 @@
 import {
-  ActionCreator,
   Atom,
   AtomCache,
+  AtomUpdate,
   Computer,
   declareAction,
   invalid,
@@ -12,8 +12,9 @@ import {
   Transaction,
 } from './internal'
 
-// Don't know why work
-// but it the single fined way to infer type from default value of second argument of an computer
+// I don't know why it work,
+// but this is the single fined way
+// to infer type from default value
 type ComputerWithInfer<State> =
   | (($: Track) => State)
   | ((($: any) => State) & (($: any, state?: State | undefined) => any))
@@ -22,12 +23,10 @@ type ComputerWithUpdate<State> = {
   ($: Track, state: State, update: AtomUpdate<State>): State
 }
 
-type AtomUpdate<State> = ActionCreator<[State | ((prevState: State) => State)]>
-
 export type AtomOptions = { displayName?: string; memo?: Memo }
 
 let atomsCount = 0
-// FIXME:
+// FIXME: update TS
 // @ts-ignore
 export function declareAtom<State>(
   computer: ComputerWithInfer<State>,
@@ -43,7 +42,7 @@ export function declareAtom<State>(
   options?: AtomOptions,
 ): Atom<State>
 export function declareAtom<State>(
-  ...a:
+  ...args:
     | [ComputerWithInfer<State>]
     | [ComputerWithInfer<State>, AtomOptions]
     | [State]
@@ -55,13 +54,13 @@ export function declareAtom<State>(
   let computer: Computer<State>
   let options: AtomOptions = {}
 
-  invalid((a.length as number) === 0 || a.length > 3, 'atom arguments')
+  invalid(args.length < 1 || args.length > 3, 'atom arguments')
 
-  if (isFunction(a[0])) {
-    computer = a[0]
-    if (a.length === 2) options = a[1] as AtomOptions
+  if (isFunction(args[0])) {
+    computer = args[0]
+    if (args.length === 2) options = args[1] as AtomOptions
   } else {
-    initialState = a[0]
+    initialState = args[0]
     computer = ($, state = initialState) => {
       $(
         update.handle(
@@ -70,18 +69,25 @@ export function declareAtom<State>(
       )
       return state
     }
-    if (a.length > 1 && isFunction(a[1])) {
-      const _computer = computer
-      const computerWithUpdate = a[1]
-      computer = ($, state) =>
-        computerWithUpdate($, _computer($, state), update)
+    if (args.length > 1) {
+      if (!isFunction(args[1])) {
+        options = args[1] as AtomOptions
+      } else {
+        const internalComputer = computer
+        const outerComputer = args[1]
+        computer = ($, state) =>
+          outerComputer($, internalComputer($, state), update)
+
+        if (args.length === 3) options = args[2]
+      }
     }
-    if (a.length === 2 && !isFunction(a[1])) options = a[1] as AtomOptions
-    if (a.length === 3) options = a[2]
   }
 
   const { displayName = `atom [${++atomsCount}]`, memo = defaultMemo } = options
-  const update = declareAction<State | ((prevState: State) => State)>()
+  const update = declareAction(
+    (payload: State | ((prevState: State) => State)) => ({ payload }),
+    { type: `update of "${displayName}"` },
+  )
 
   function atom(
     transaction: Transaction,
@@ -90,6 +96,7 @@ export function declareAtom<State>(
     return memo(transaction, atom, cache)
   }
   atom.computer = computer
+  atom.update = update
   atom.displayName = displayName
 
   return atom
