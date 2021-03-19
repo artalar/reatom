@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "2.0.0-alpha1",
+  "version": "2.0.0-alpha2",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
@@ -32,7 +32,9 @@
   "peerDependencies": {
     "@reatom/core": "^2.0.0-alpha8",
     "react": "^16.8.0 || ^17.0.0",
-    "react-dom": "^16.8.0 || ^17.0.0"
+    "react-dom": "^16.8.0 || ^17.0.0",
+    "@types/use-subscription": "^1.0.0",
+    "use-subscription": "^1.5.1"
   },
   "devDependencies": {
     "@babel/preset-react": "^7.8.3",
@@ -44,7 +46,9 @@
     "cross-env": "^6.0.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
-    "react-test-renderer": "^16.13.1"
+    "react-test-renderer": "^16.13.1",
+    "@types/use-subscription": "^1.0.0",
+    "use-subscription": "^1.5.1"
   },
   "author": "artalar",
   "maintainers": [
@@ -80,9 +84,5 @@
     "/package.json",
     "/index.ts",
     "/build"
-  ],
-  "dependencies": {
-    "@types/use-subscription": "^1.0.0",
-    "use-subscription": "^1.5.1"
-  }
+  ]
 }
