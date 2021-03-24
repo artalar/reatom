@@ -107,6 +107,7 @@ export type Store = {
 export type Transaction = {
   actions: Array<Action>
   effects: Array<F<[Store]>>
+  effectsResult?: Array<unknown>
   patch: Patch
   getCache<T>(atom: Atom<T>): AtomCache<T> | undefined
   snapshot: Record<string, any>

@@ -181,7 +181,7 @@ test(`in atom action effect`, async () => {
     )
   }
 
-  const dataAtom = declareResource(() => Promise.resolve([]))
+  const dataAtom = declareResource((params: void) => Promise.resolve([]))
   const cb = mockFn()
 
   const store = createStore()
@@ -190,7 +190,7 @@ test(`in atom action effect`, async () => {
   assert.is(cb.calls.length, 1)
   assert.is(cb.lastInput(), null)
 
-  store.dispatch(dataAtom.request(() => Promise.resolve([])))
+  store.dispatch(dataAtom.request())
   assert.is(cb.calls.length, 1)
   await sleep()
   assert.is(cb.calls.length, 2)
@@ -323,6 +323,62 @@ test(`Batched dispatch dynamic types change`, () => {
   store.dispatch([addAction(doSome), doSome(0)])
   assert.equal(store.getState(actionsCacheAtom), [[doSome, 0]])
   assert.is(computerCalls, 2)
+
+  console.log(`👍`)
+})
+
+test(`async collection of transaction.effectsResult`, async () => {
+  const doA = declareAction()
+  const doB = declareAction()
+
+  const resourceAtom = declareAtom(0, ($, state, update) => {
+    $(
+      doA.handle(() => async ({ dispatch }) => {
+        await sleep(10)
+        dispatch(doB())
+      }),
+    )
+    $(
+      doB.handle(() => async ({ dispatch }) => {
+        await sleep(10)
+        dispatch(update(s => s + 1))
+      }),
+    )
+    return state
+  })
+
+  const store = createStore()
+  const cb = mockFn()
+
+  let effectsCounter = 0
+  store.subscribe(async transaction => {
+    await Promise.resolve()
+    transaction.effectsResult!.forEach(some => {
+      if (!(some instanceof Promise)) return
+
+      effectsCounter++
+
+      some.finally(() => {
+        effectsCounter--
+
+        if (effectsCounter === 0) cb()
+      })
+    })
+  })
+
+  store.init(resourceAtom)
+
+  store.dispatch(doA())
+
+  assert.is(cb.calls.length, 0)
+
+  await sleep(10)
+
+  assert.is(cb.calls.length, 0)
+
+  await sleep(10)
+
+  assert.is(cb.calls.length, 1)
 
   console.log(`👍`)
 })

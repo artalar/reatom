@@ -71,9 +71,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         mergePatch(atomPatch, atom) || changedAtoms.push([atom, atomPatch]),
     )
 
-    actions.forEach(action =>
-      transactionListeners.forEach(cb => callSafety(cb, transaction)),
-    )
+    transactionListeners.forEach(cb => callSafety(cb, transaction))
 
     changedAtoms.forEach(change =>
       atomsListeners
@@ -81,11 +79,13 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         ?.forEach(cb => callSafety(cb, change[1].state)),
     )
 
+    transaction.effectsResult = transaction.effects.map(cb =>
+      callSafety(cb, store),
+    )
+
     actions.forEach(action =>
       actionsListeners.get(action.type)?.forEach(cb => callSafety(cb, action)),
     )
-
-    transaction.effects.forEach(cb => callSafety(cb, store))
 
     return patch
   }

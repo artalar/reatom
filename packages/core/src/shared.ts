@@ -15,14 +15,15 @@ export function callSafety<I extends any[], O, This = any>(
   this: This,
   fn: (this: This, ...a: I) => O,
   ...args: I
-): O | undefined {
+): O | Error {
   try {
     return fn.apply(this, args)
-  } catch (e) {
-    e = e instanceof Error ? e : new Error(e)
+  } catch (error) {
+    error = error instanceof Error ? error : new Error(error)
     setTimeout(() => {
-      throw e
+      throw error
     })
+    return error
   }
 }
 
