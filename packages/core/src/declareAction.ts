@@ -1,26 +1,31 @@
 import {
   ActionCreator,
   Cache,
-  F,
+  defaultStore,
   invalid,
   isFunction,
-  Store,
+  isString,
   Transaction,
 } from './internal'
 
+const defaultMapper = (payload: any) => ({
+  payload,
+})
+
 let actionsCount = 0
-export function declareAction(): ActionCreator<[]>
-export function declareAction<Payload>(): ActionCreator<[Payload]>
+
+export function declareAction(type?: string): ActionCreator<[]>
+export function declareAction<Payload>(type?: string): ActionCreator<[Payload]>
 export function declareAction<
   Arguments extends any[] = [],
-  ActionData extends { payload: any } = { payload: Arguments[0] }
+  ActionData extends { payload: any; type?: never } = { payload: Arguments[0] }
 >(
   mapper: (...a: Arguments) => ActionData,
-  options?: { type?: string },
+  type?: string,
 ): ActionCreator<Arguments, ActionData>
 export function declareAction(
-  mapper: (...a: any[]) => any = (payload: any) => ({ payload }),
-  { type = `action [${++actionsCount}]` } = {},
+  mapper?: string | ((...a: any[]) => any),
+  type = isString(mapper) ? mapper : `action [${++actionsCount}]`,
 ) {
   const types = new Set([type])
 
@@ -34,7 +39,7 @@ export function declareAction(
   }
 
   const actionCreator: ActionCreator = (...a) => {
-    const action = mapper(...a)
+    const action = (isFunction(mapper) ? mapper : defaultMapper)(...a)
 
     invalid('type' in action, `action type in created action data`)
     invalid(
@@ -45,18 +50,24 @@ export function declareAction(
     return Object.assign({}, action, { type })
   }
   actionCreator.type = type
-  actionCreator.handle = (cb: F) => (
-    transaction: Transaction,
-    cache: Cache = { types, handler },
-  ) => (
-    transaction.actions.forEach(action => {
-      if (action.type === type) {
-        const result = cb(action.payload, action, transaction)
-        if (isFunction(result)) transaction.effects.push(result)
-      }
-    }),
+  actionCreator.handle = cb => (transaction, cache = { types, handler }) => (
+    transaction.actions.forEach(
+      action => action.type === type && cb(action.payload, action, transaction),
+    ),
     cache
   )
+  actionCreator.handleEffect = cb => (
+    transaction,
+    cache = { types, handler },
+  ) => (
+    transaction.actions.forEach(
+      action =>
+        action.type === type &&
+        transaction.effects.push(store => cb(action, store, transaction)),
+    ),
+    cache
+  )
+  actionCreator.dispatch = (...a) => defaultStore.dispatch(actionCreator(...a))
 
   return actionCreator
 }

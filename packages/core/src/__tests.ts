@@ -121,6 +121,19 @@ test(`combine`, () => {
   console.log(`👍`)
 })
 
+test(`atom id`, () => {
+  const a = declareAtom(1, 'a')
+  const b = declareAtom(2, ($, s) => s, 'b')
+  const c = declareAtom(($, s = 3) => s, 'c')
+  const store = createStore()
+
+  store.init(a, b, c)
+
+  assert.equal(store.getState(), { a: 1, b: 2, c: 3 })
+
+  console.log(`👍`)
+})
+
 test(`action mapper`, () => {
   const action = declareAction((payload: number) => ({ payload: payload + 1 }))
   assert.is(action(1).payload, 2)
@@ -167,8 +180,8 @@ test(`in atom action effect`, async () => {
     return Object.assign(
       declareAtom<null | O | Error>(null, ($, state, update) => {
         $(
-          request.handle(params => ({ dispatch }) =>
-            fetcher(params)
+          request.handleEffect(({ payload }, { dispatch }) =>
+            fetcher(payload)
               .then(data => dispatch(update(data)))
               .catch(e =>
                 dispatch(update(e instanceof Error ? e : new Error(e))),
@@ -258,7 +271,7 @@ test(`Atom from`, () => {
 
 test(`Store preloaded state`, () => {
   const atom = declareAtom(42)
-  const storeWithPreloadedState = createStore({ [atom.displayName]: 0 })
+  const storeWithPreloadedState = createStore({ [atom.id]: 0 })
   const storeWithoutPreloadedState = createStore()
 
   assert.is(storeWithoutPreloadedState.getState(atom), 42)
@@ -328,18 +341,48 @@ test(`Batched dispatch dynamic types change`, () => {
 })
 
 test(`async collection of transaction.effectsResult`, async () => {
+  function createEffectsTracker(store: Store, start = () => {}) {
+    let unsubscribeFromAction: F | undefined
+    const promise = new Promise<void>(res => {
+      let effectsCount = 0
+
+      store.subscribe(transaction => {
+        unsubscribeFromAction = store.subscribe(
+          declareAction(transaction.actions[0]!.type),
+          () => {
+            transaction.effectsResult!.forEach(some => {
+              if (some instanceof Promise) {
+                effectsCount++
+
+                some.finally(() => --effectsCount === 0 && res())
+              }
+            })
+
+            if (effectsCount === 0) res()
+          },
+        )
+      })
+
+      start()
+    })
+
+    unsubscribeFromAction?.()
+
+    return promise
+  }
+
   const doA = declareAction()
   const doB = declareAction()
 
   const resourceAtom = declareAtom(0, ($, state, update) => {
     $(
-      doA.handle(() => async ({ dispatch }) => {
+      doA.handleEffect(async (action, { dispatch }) => {
         await sleep(10)
         dispatch(doB())
       }),
     )
     $(
-      doB.handle(() => async ({ dispatch }) => {
+      doB.handleEffect(async (action, { dispatch }) => {
         await sleep(10)
         dispatch(update(s => s + 1))
       }),
@@ -350,25 +393,9 @@ test(`async collection of transaction.effectsResult`, async () => {
   const store = createStore()
   const cb = mockFn()
 
-  let effectsCounter = 0
-  store.subscribe(async transaction => {
-    await Promise.resolve()
-    transaction.effectsResult!.forEach(some => {
-      if (!(some instanceof Promise)) return
-
-      effectsCounter++
-
-      some.finally(() => {
-        effectsCounter--
-
-        if (effectsCounter === 0) cb()
-      })
-    })
-  })
-
   store.init(resourceAtom)
 
-  store.dispatch(doA())
+  createEffectsTracker(store, () => store.dispatch(doA())).then(cb)
 
   assert.is(cb.calls.length, 0)
 

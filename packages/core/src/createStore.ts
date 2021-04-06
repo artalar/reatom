@@ -126,7 +126,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         if (isAtom(handler)) {
           const { state, deps } = atomsCache.get(handler)!
 
-          result[handler.displayName] = state
+          result[handler.id] = state
           deps.forEach(dep => collect(dep.handler))
         }
       }
@@ -240,3 +240,5 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
   return store
 }
+
+export const defaultStore = createStore()

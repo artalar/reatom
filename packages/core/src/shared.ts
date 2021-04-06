@@ -3,8 +3,10 @@ import {
   ActionCreator,
   Atom,
   Collection,
+  declareAction,
   F,
   Patch,
+  Store,
   StoreCache,
   Transaction,
 } from './internal'
@@ -49,6 +51,14 @@ export function delFromSetsMap<T>(
   }
 }
 
+export function isString(thing: any): thing is string {
+  return typeof thing === 'string'
+}
+
+export function isObject(thing: any): thing is Record<keyof any, any> {
+  return typeof thing === 'object' && thing !== null
+}
+
 export function isFunction(thing: any): thing is Function {
   return typeof thing === 'function'
 }
@@ -68,7 +78,7 @@ export function safeAtom(thing: any): Atom {
 }
 
 export function isActionCreator(thing: any): thing is ActionCreator {
-  return isFunction(thing) && typeof thing.type === 'string'
+  return isFunction(thing) && isString(thing.type)
 }
 
 export function safeActionCreator(thing: any): ActionCreator {
@@ -77,12 +87,7 @@ export function safeActionCreator(thing: any): ActionCreator {
 }
 
 export function isAction(thing: any): thing is Action<unknown> {
-  return (
-    typeof thing === 'object' &&
-    thing !== null &&
-    typeof thing.type === 'string' &&
-    'payload' in thing
-  )
+  return isObject(thing) && isString(thing.type) && 'payload' in thing
 }
 
 export function invalid<T extends true>(predicate: T, msg: string): never

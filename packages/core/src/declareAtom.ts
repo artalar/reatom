@@ -4,10 +4,12 @@ import {
   AtomUpdate,
   Computer,
   declareAction,
+  defaultStore,
+  F,
   invalid,
   isFunction,
-  memo as defaultMemo,
-  Memo,
+  memo,
+  Store,
   Track,
   Transaction,
 } from './internal'
@@ -23,70 +25,67 @@ type ComputerWithUpdate<State> = {
   ($: Track, state: State, update: AtomUpdate<State>): State
 }
 
-export type AtomOptions = { displayName?: string; memo?: Memo }
-
 let atomsCount = 0
 // FIXME: update TS
 // @ts-ignore
 export function declareAtom<State>(
   computer: ComputerWithInfer<State>,
-  options?: AtomOptions,
+  id?: string,
 ): Atom<State>
 export function declareAtom<State>(
   initialState: State,
-  options?: AtomOptions,
+  id?: string,
 ): Atom<State> & { update: AtomUpdate<State> }
 export function declareAtom<State>(
   initialState: State,
   computer: ComputerWithUpdate<State>,
-  options?: AtomOptions,
+  id?: string,
 ): Atom<State>
 export function declareAtom<State>(
   ...args:
     | [ComputerWithInfer<State>]
-    | [ComputerWithInfer<State>, AtomOptions]
+    | [ComputerWithInfer<State>, string]
     | [State]
-    | [State, AtomOptions]
+    | [State, string]
     | [State, ComputerWithUpdate<State>]
-    | [State, ComputerWithUpdate<State>, AtomOptions]
+    | [State, ComputerWithUpdate<State>, string]
 ): Atom<State> {
+  const internalComputer: Computer<State> = ($, state = initialState) => {
+    $(
+      update.handle(
+        value => (state = isFunction(value) ? value(state) : value),
+      ),
+    )
+    return state
+  }
+  let outerComputer: ComputerWithUpdate<State> = ($, state) => state
   let initialState: State
-  let computer: Computer<State>
-  let options: AtomOptions = {}
+  let id: string
 
   invalid(args.length < 1 || args.length > 3, 'atom arguments')
 
   if (isFunction(args[0])) {
-    computer = args[0]
-    if (args.length === 2) options = args[1] as AtomOptions
+    outerComputer = args[0]
+    if (args.length === 2) id = args[1] as string
   } else {
     initialState = args[0]
-    computer = ($, state = initialState) => {
-      $(
-        update.handle(
-          value => (state = isFunction(value) ? value(state) : value),
-        ),
-      )
-      return state
-    }
     if (args.length > 1) {
       if (!isFunction(args[1])) {
-        options = args[1] as AtomOptions
+        id = args[1] as string
       } else {
-        const internalComputer = computer
-        const outerComputer = args[1]
-        computer = ($, state) =>
-          outerComputer($, internalComputer($, state), update)
+        outerComputer = args[1]
 
-        if (args.length === 3) options = args[2]
+        if (args.length === 3) id = args[2]
       }
     }
   }
 
-  const { displayName = `atom [${++atomsCount}]`, memo = defaultMemo } = options
-  const update = declareAction(
-    (payload: State | ((prevState: State) => State)) => ({ payload }),
-    { type: `update of "${displayName}"` },
+  const computer: Computer<State> = ($, state) =>
+    outerComputer($, internalComputer($, state), update)
+
+  id = id! || `atom [${++atomsCount}]`
+  const update = declareAction<State | ((prevState: State) => State)>(
+    `update of "${id}"`,
   )
 
   function atom(
@@ -97,7 +96,8 @@ export function declareAtom<State>(
   }
   atom.computer = computer
   atom.update = update
-  atom.displayName = displayName
+  atom.id = id
+  atom.subscribe = (cb: F<[State]>): F => defaultStore.subscribe(atom, cb)
 
   return atom
 }

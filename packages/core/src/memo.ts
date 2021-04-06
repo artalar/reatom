@@ -80,7 +80,7 @@ export const memo: Memo = (transaction, atom, atomCacheSnapshot?) => {
     }
   }
 
-  const { state = snapshot[atom.displayName], deps } = atomCache
+  const { state = snapshot[atom.id], deps } = atomCache
 
   const track: Track = (depHandler: Handler<any>) => {
     if (result === undefined) {
@@ -118,14 +118,14 @@ export const memo: Memo = (transaction, atom, atomCacheSnapshot?) => {
 
       return depPatch.state
     } else {
-      invalid(true, `outdated track call of "${atom.displayName}"`)
+      invalid(true, `outdated track call of "${atom.id}"`)
     }
   }
 
   patchState = atom.computer(track, state)
   invalid(
     patchState === undefined,
-    `result of "${atom.displayName}" computer, state can't be undefined`,
+    `result of "${atom.id}" computer, state can't be undefined`,
   )
 
   isDepsHandlerChange = isDepsHandlerChange || deps.length > patchDeps.length

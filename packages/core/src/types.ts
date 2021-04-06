@@ -41,7 +41,7 @@ export type Action<Payload = any> = {
 
 export type ActionCreator<
   Arguments extends any[] = any[],
-  ActionData extends { payload: any } = { payload: Arguments[0] }
+  ActionData extends { payload: any; type?: never } = { payload: Arguments[0] }
 > = {
   (...a: Arguments): ActionData & { type: string }
 
@@ -49,21 +49,23 @@ export type ActionCreator<
 
   handle(
     callback: F<
-      [ActionData['payload'], ActionData & { type: string }, Transaction],
-      F<[Store]>
-    >,
-  ): Handler
-  handle(
-    callback: F<
       [ActionData['payload'], ActionData & { type: string }, Transaction]
     >,
   ): Handler
+
+  handleEffect(
+    callback: F<[ActionData & { type: string }, Store, Transaction]>,
+  ): Handler
+
+  dispatch(...a: Arguments): Patch
 }
 
 export type Atom<State = any> = Handler<AtomCache<State>> & {
   computer: Computer<State>
-  displayName: string
+  id: string
   update?: AtomUpdate<State>
+
+  subscribe(cb: F<[State]>): F
 }
 
 export type AtomUpdate<State> = ActionCreator<
