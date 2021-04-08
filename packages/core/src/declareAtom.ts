@@ -8,8 +8,8 @@ import {
   F,
   invalid,
   isFunction,
+  isString,
   memo,
-  Store,
   Track,
   Transaction,
 } from './internal'
@@ -69,9 +69,9 @@ export function declareAtom<State>(
     if (args.length === 2) id = args[1] as string
   } else {
     initialState = args[0]
-    if (args.length > 1) {
-      if (!isFunction(args[1])) {
-        id = args[1] as string
+    if (args.length !== 1) {
+      if (isString(args[1])) {
+        id = args[1]
       } else {
         outerComputer = args[1]
 
