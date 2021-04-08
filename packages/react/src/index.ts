@@ -37,6 +37,12 @@ export function useAtom<T>(atom: Atom<T>, deps: any[] = []): T {
   return useSubscription(subscription)
 }
 
+export function useInit(atoms: Array<Atom>, deps: any[] = []) {
+  const store = React.useContext(reatomContext)
+
+  React.useEffect(() => store.init(...atoms), [])
+}
+
 export function useModel<
   Model extends Record<string, ((...a: any[]) => Action | Array<Action>) | Atom>
 >(
