@@ -68,6 +68,7 @@ export function declareAction(
     cache
   )
   actionCreator.dispatch = (...a) => defaultStore.dispatch(actionCreator(...a))
+  actionCreator.subscribe = cb => defaultStore.subscribe(actionCreator, cb)
 
   return actionCreator
 }

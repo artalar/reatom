@@ -58,6 +58,8 @@ export type ActionCreator<
   ): Handler
 
   dispatch(...a: Arguments): Patch
+
+  subscribe(cb: F<[ActionData & { type: string }]>): F
 }
 
 export type Atom<State = any> = Handler<AtomCache<State>> & {
