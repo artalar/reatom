@@ -2,12 +2,28 @@ export type F<I extends unknown[] = any[], O = any> = (...a: I) => O
 
 export type Collection<T = any> = Record<string, T>
 
+export type Merge<Intersection> = Intersection extends (...a: any[]) => any
+  ? Intersection
+  : Intersection extends new (...a: any[]) => any
+  ? Intersection
+  : Intersection extends object
+  ? {
+      [Key in keyof Intersection]: Intersection[Key]
+    }
+  : Intersection
+
 export type ActionType = string
 
-export type Cache<T extends Collection = Collection> = T & {
-  readonly types: Set<ActionType>
-  readonly handler?: Handler // FIXME: Handler<Cache<T>>
-}
+export type Cache<
+  T extends {
+    readonly handler?: /* FIXME: Handler<Cache<T>> */ Handler
+    [K: string]: any
+  } = Collection
+> = Merge<
+  T & {
+    readonly types: Set<ActionType>
+  }
+>
 
 export type Handler<T extends Cache = Cache> = {
   (transaction: Transaction, cache?: T): T
@@ -39,27 +55,29 @@ export type Action<Payload = any> = {
   [K: string]: any
 }
 
+type ActionCreatorAction<ActionData> = Merge<ActionData & { type: string }>
+
 export type ActionCreator<
   Arguments extends any[] = any[],
   ActionData extends { payload: any; type?: never } = { payload: Arguments[0] }
 > = {
-  (...a: Arguments): ActionData & { type: string }
+  (...a: Arguments): ActionCreatorAction<ActionData>
 
   type: ActionType
 
   handle(
     callback: F<
-      [ActionData['payload'], ActionData & { type: string }, Transaction]
+      [ActionData['payload'], ActionCreatorAction<ActionData>, Transaction]
     >,
   ): Handler
 
   handleEffect(
-    callback: F<[ActionData & { type: string }, Store, Transaction]>,
+    callback: F<[ActionCreatorAction<ActionData>, Store, Transaction]>,
   ): Handler
 
   dispatch(...a: Arguments): Patch
 
-  subscribe(cb: F<[ActionData & { type: string }]>): F
+  subscribe(cb: F<[ActionCreatorAction<ActionData>]>): F
 }
 
 export type Atom<State = any> = Handler<AtomCache<State>> & {
@@ -104,7 +122,7 @@ export type Store = {
   subscribe<T>(atom: Atom<T>, cb: F<[T]>): F
   subscribe<T extends { payload: any }>(
     actionCreator: ActionCreator<any[], T>,
-    cb: F<[T & { type: string }]>,
+    cb: F<[ActionCreatorAction<T>]>,
   ): F
 }
 
