@@ -434,9 +434,10 @@ test(`declareResource`, async () => {
     }, `version of ${id}`)
 
     const reqAtom = declareAtom(($, state = false) => {
-      $(resourceAtom.req.handle(() => (state = true)))
-      $(resourceAtom.res.handle(() => (state = false)))
-      $(resourceAtom.err.handle(() => (state = false)))
+      $(req.handle(() => (state = true)))
+      $(res.handle(() => (state = false)))
+      $(err.handle(() => (state = false)))
+      $(rej.handle(() => (state = false)))
       return state
     }, `req of ${id}`)
 
@@ -446,7 +447,7 @@ test(`declareResource`, async () => {
       return state
     }, `err of ${id}`)
 
-    const resourceAtom = Object.assign(
+    return Object.assign(
       declareAtom(($, state = initialState) => {
         const params = $(paramsAtom)
         const version = $(versionAtom)
@@ -477,17 +478,22 @@ test(`declareResource`, async () => {
         return state
       }, id),
       {
+        /** Action for try to fetch data new data. Memoized by fetcher params */
         get,
+        /** Action for force to fetch new data */
         req,
+        /** Action for fetcher response */
         res,
+        /** Action for fetcher error */
         err,
+        /** Action for cancel pending requests */
         rej,
+        /** Atom of loading status (boolean) */
         reqAtom,
+        /** Atom of fetcher error */
         errAtom,
       },
     )
-
-    return resourceAtom
   }
 
   const resourceAtom = declareResource([0], (param: number) =>
@@ -495,7 +501,6 @@ test(`declareResource`, async () => {
       ? Promise.resolve([param])
       : Promise.reject(new Error(param)),
   )
-  resourceAtom.rej
 
   const store = createStore()
   const cb = mockFn()
