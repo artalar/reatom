@@ -321,8 +321,7 @@ test(`Batched dispatch dynamic types change`, () => {
         ),
       )
 
-      return state.map(([actionCreator]) => {
-        let payload = null
+      return state.map(([actionCreator, payload = null]) => {
         $(actionCreator.handle(v => (payload = v)))
         return [actionCreator, payload] as const
       })
@@ -411,135 +410,135 @@ test(`async collection of transaction.effectsResult`, async () => {
 })
 
 test(`declareResource`, async () => {
-  // FIXME: prevent concurrent requests (last win)
-  function declareResource<Params, State>(
+  let resourcesCount = 0
+  function declareResource<State, Params = void>(
+    initialState: State,
     fetcher: (params: Params) => Promise<State>,
+    id = `resource [${++resourcesCount}]`,
   ) {
-    const get = declareAction<Params>()
-    const req = declareAction<Params>()
-    const res = declareAction<State>()
-    const err = declareAction<Error>()
+    const get = declareAction<Params>(`get of ${id}`)
+    const req = declareAction<Params>(`req of ${id}`)
+    const res = declareAction<State>(`res of ${id}`)
+    const err = declareAction<Error>(`err of ${id}`)
+    const rej = declareAction(`rej of ${id}`)
 
-    const request = (params: Params, { effects }: Transaction) => {
-      effects.push(async store =>
-        new Promise((res, err) => fetcher(params).then(res, err)).then(
-          data => store.dispatch(res(data as State)),
-          error =>
-            store.dispatch(
-              err(error instanceof Error ? error : new Error(error)),
-            ),
-        ),
-      )
-    }
+    const initTag = Symbol()
+    const paramsAtom = declareAtom(($, state = initTag as unknown) => {
+      $(req.handle(params => (state = params)))
+      return state
+    }, `params of ${id}`)
+    const versionAtom = declareAtom(($, state = 0) => {
+      $(req.handle(() => state++))
+      $(rej.handle(() => state++))
+      return state
+    }, `version of ${id}`)
 
-    return Object.assign(
-      declareAtom(
-        (
-          $,
-          state = { isLoading: false, data: null as any } as {
-            isLoading: boolean
-            data: State
-            error?: Error
-            params?: Params
-          },
-        ) => {
-          $(
-            get.handle(function(params, action, t) {
-              if (
-                state.data === null ||
-                state.error ||
-                state.params !== params
-              ) {
-                state = { isLoading: true, data: state.data, params }
-                request(params, t)
-              }
-            }),
-          )
-          $(
-            req.handle(function(params, action, t) {
-              state = { isLoading: true, data: state.data, params }
-              request(params, t)
-            }),
-          )
-          $(
-            res.handle(
-              data =>
-                (state = { isLoading: false, data, params: state.params }),
-            ),
-          )
-          $(
-            err.handle(
+    const reqAtom = declareAtom(($, state = false) => {
+      $(resourceAtom.req.handle(() => (state = true)))
+      $(resourceAtom.res.handle(() => (state = false)))
+      $(resourceAtom.err.handle(() => (state = false)))
+      return state
+    }, `req of ${id}`)
+
+    const errAtom = declareAtom(($, state = null as null | Error) => {
+      $(err.handle(e => (state = e)))
+      $(res.handle(() => (state = null)))
+      return state
+    }, `err of ${id}`)
+
+    const resourceAtom = Object.assign(
+      declareAtom(($, state = initialState) => {
+        const params = $(paramsAtom)
+        const version = $(versionAtom)
+
+        $(
+          get.handleEffect(
+            ({ payload }, { dispatch }) =>
+              (params === initTag || payload !== params) &&
+              dispatch(req(payload)),
+          ),
+        )
+
+        $(
+          req.handleEffect(({ payload }, { dispatch, getState }) =>
+            fetcher(payload).then(
+              data => getState(versionAtom) === version && dispatch(res(data)),
               error =>
-                (state = {
-                  isLoading: false,
-                  error,
-                  data: state.data,
-                  params: state.params,
-                }),
+                getState(versionAtom) === version &&
+                dispatch(
+                  err(error instanceof Error ? error : new Error(error)),
+                ),
             ),
-          )
-          return state
-        },
-      ),
+          ),
+        )
+
+        $(res.handle(data => (state = data)))
+
+        return state
+      }, id),
       {
         get,
         req,
         res,
         err,
+        rej,
+        reqAtom,
+        errAtom,
       },
     )
+
+    return resourceAtom
   }
 
-  const resourceAtom = declareResource((param: number) =>
-    Promise.resolve(param.toString()),
+  const resourceAtom = declareResource([0], (param: number) =>
+    typeof param === 'number'
+      ? Promise.resolve([param])
+      : Promise.reject(new Error(param)),
   )
+  resourceAtom.rej
+
   const store = createStore()
   const cb = mockFn()
 
   store.subscribe(resourceAtom, cb)
   assert.is(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), { isLoading: false, data: null })
+  assert.equal(cb.lastInput(), null)
 
   store.dispatch(resourceAtom.get(42))
-  assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), {
-    isLoading: true,
-    data: null,
-    params: 42,
-  })
+  assert.is(cb.calls.length, 1)
+  assert.equal(cb.lastInput(), null)
   await sleep()
-  assert.is(cb.calls.length, 3)
-  assert.equal(cb.lastInput(), {
-    isLoading: false,
-    data: '42',
-    params: 42,
-  })
+  cb.lastInput() //?
+  assert.is(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), [42])
 
   const state = store.getState(resourceAtom)
   store.dispatch(resourceAtom.get(42))
-  assert.is(cb.calls.length, 3)
+  assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), state)
   await sleep()
-  assert.is(cb.calls.length, 3)
+  assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), state)
 
   store.dispatch(resourceAtom.req(42))
+  assert.is(cb.calls.length, 2)
+  await sleep()
+  assert.is(cb.calls.length, 3)
+  assert.equal(cb.lastInput(), state)
+
+  store.dispatch(resourceAtom.req('42' as any))
+  assert.is(cb.calls.length, 3)
+  await sleep()
+  assert.is(cb.calls.length, 4)
+  assert.equal(cb.lastInput(), new Error('42'))
+
+  store.dispatch(resourceAtom.req(1))
+  store.dispatch(resourceAtom.req(2))
+  store.dispatch(resourceAtom.req(3))
   assert.is(cb.calls.length, 4)
   await sleep()
   assert.is(cb.calls.length, 5)
-  assert.equal(cb.lastInput(), state)
-
-  store.dispatch(
-    resourceAtom.req({
-      toString() {
-        throw new Error('test')
-      },
-    } as any),
-  )
-  assert.is(cb.calls.length, 6)
-  await sleep()
-  assert.is(cb.calls.length, 7)
-  assert.equal(cb.lastInput().error, new Error('test'))
+  assert.equal(cb.lastInput(), [3])
 
   console.log(`👍`)
 })
