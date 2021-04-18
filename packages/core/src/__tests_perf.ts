@@ -1,9 +1,9 @@
 import { performance } from 'perf_hooks'
 import * as effector from 'effector'
 import w from 'wonka'
-// import { cellx } from 'cellx/dist/cellx.umd.js'
+import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
-import { declareAction, declareAtom, createStore, F } from '../'
+import { declareAction, declareAtom, F } from '.'
 
 start()
 async function start() {
@@ -31,9 +31,8 @@ async function start() {
   const f = declareAtom($ => $(d) + $(e))
   const g = declareAtom($ => $(d) + $(e))
   const h = declareAtom($ => $(f) + $(g))
-  const store = createStore()
   let res = 0
-  store.subscribe(h, v => {
+  h.subscribe(v => {
     res += v
   })
   res = 0
@@ -114,16 +113,16 @@ async function start() {
   )
   wRes = 0
 
-  // const cEntry = cellx(0)
-  // const cA = cellx(() => cEntry())
-  // const cB = cellx(() => cA() + 1)
-  // const cC = cellx(() => cA() + 1)
-  // const cD = cellx(() => cB() + cC())
-  // const cE = cellx(() => cD() + 1)
-  // const cF = cellx(() => cD() + cE())
-  // const cG = cellx(() => cD() + cE())
-  // const cH = cellx(() => cF() + cG())
-  // let cRes = 0
+  const cEntry = cellx(0)
+  const cA = cellx(() => cEntry())
+  const cB = cellx(() => cA() + 1)
+  const cC = cellx(() => cA() + 1)
+  const cD = cellx(() => cB() + cC())
+  const cE = cellx(() => cD() + 1)
+  const cF = cellx(() => cD() + cE())
+  const cG = cellx(() => cD() + cE())
+  const cH = cellx(() => cF() + cG())
+  let cRes = 0
 
   function mAtom<T>(calc: F<[], T>) {
     const a = new $mol_atom2<T>()
@@ -141,8 +140,6 @@ async function start() {
   const mH = mAtom(() => mF.get() + mG.get())
   let mRes = 0
 
-  console.log({ res, /* rRes, */ eRes, wRes /* cRes */ })
-
   const reatomLogs = []
   const reatomV1Logs = []
   const effectorLogs = []
@@ -154,7 +151,7 @@ async function start() {
   var i = 0
   while (i++ < iterations) {
     const startReatom = performance.now()
-    store.dispatch(entry(i))
+    entry.dispatch(i)
     reatomLogs.push(performance.now() - startReatom)
 
     // const startReatomV1 = performance.now()
@@ -169,10 +166,10 @@ async function start() {
     wEntry.next(i)
     wonkaLogs.push(performance.now() - startWonka)
 
-    // const startCellx = performance.now()
-    // cEntry(i)
-    // cRes += cH()
-    // cellxLogs.push(performance.now() - startCellx)
+    const startCellx = performance.now()
+    cEntry(i)
+    cRes += cH()
+    cellxLogs.push(performance.now() - startCellx)
 
     const startMol = performance.now()
     mEntry.push(i)
@@ -180,20 +177,34 @@ async function start() {
     molLogs.push(performance.now() - startMol)
   }
 
-  if (new Set([res, /* rRes, */ eRes, wRes, /* cRes, */ mRes]).size !== 1) {
+  if (new Set([res, /* rRes, */ eRes, wRes, cRes, mRes]).size !== 1) {
+    console.log(`ERROR!`)
     console.error(`Results is not equal`)
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  console.log(`reatom`, median(reatomLogs).toFixed(3))
-  console.log(`effector`, median(effectorLogs).toFixed(3))
-  console.log(`wonka`, median(wonkaLogs).toFixed(3))
-  // console.log(`cellx`, median(cellxLogs).toFixed(3))
-  console.log(`mol`, median(molLogs).toFixed(3))
+  console.log(`reatom`)
+  console.log(log(reatomLogs) /*  */)
+  console.log(`effector`)
+  console.log(log(effectorLogs) /**/)
+  console.log(`mol`)
+  console.log(log(molLogs) /*     */)
+  console.log(`cellx`)
+  console.log(log(cellxLogs) /*   */)
+  console.log(`wonka`)
+  console.log(log(wonkaLogs) /*   */)
 }
 
-function median(values: number[]) {
+function log(values: Array<number>) {
+  return {
+    min: min(values),
+    med: med(values),
+    max: max(values),
+  }
+}
+
+function med(values: Array<number>) {
   if (values.length === 0) return 0
 
   values = values.map(v => +v)
@@ -204,5 +215,29 @@ function median(values: number[]) {
 
   if (values.length % 2) return values[half]
 
-  return (values[half - 1] + values[half]) / 2.0
+  return ((values[half - 1] + values[half]) / 2.0).toFixed(3)
+}
+
+function min(values: Array<number>) {
+  if (values.length === 0) return 0
+
+  values = values.map(v => +v)
+
+  values.sort((a, b) => (a - b ? -1 : 1))
+
+  const limit = Math.floor(values.length / 20)
+
+  return values[limit].toFixed(3)
+}
+
+function max(values: Array<number>) {
+  if (values.length === 0) return 0
+
+  values = values.map(v => +v)
+
+  values.sort((a, b) => (a - b ? -1 : 1))
+
+  const limit = values.length - 1 - Math.floor(values.length / 20)
+
+  return values[limit].toFixed(3)
 }

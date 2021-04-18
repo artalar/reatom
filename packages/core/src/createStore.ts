@@ -131,7 +131,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         }
       }
 
-      actionsComputers.forEach(atoms => atoms.forEach(collect))
+      atomsListeners.forEach((_, atom) => collect(atom))
 
       return result
     }

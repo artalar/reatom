@@ -50,7 +50,7 @@ export function declareAtom<State>(
     | [State, ComputerWithUpdate<State>]
     | [State, ComputerWithUpdate<State>, string]
 ): Atom<State> {
-  const internalComputer: Computer<State> = ($, state = initialState) => {
+  let internalComputer: Computer<State> = ($, state = initialState) => {
     $(
       update.handle(
         value => (state = isFunction(value) ? value(state) : value),
@@ -65,6 +65,8 @@ export function declareAtom<State>(
   invalid(args.length < 1 || args.length > 3, 'atom arguments')
 
   if (isFunction(args[0])) {
+    // remove unnecessary computation
+    internalComputer = ($, state = initialState) => state
     outerComputer = args[0]
     if (args.length === 2) id = args[1] as string
   } else {

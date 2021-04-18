@@ -31,7 +31,7 @@
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^2.1.4",
-    "cellx": "^1.10.17",
+    "cellx": "^1.10.18",
     "cross-env": "^6.0.2",
     "effector": "^20.12.2",
     "mol_atom2_all": "^2.2.3",

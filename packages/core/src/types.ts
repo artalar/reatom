@@ -83,7 +83,6 @@ export type ActionCreator<
 export type Atom<State = any> = Handler<AtomCache<State>> & {
   computer: Computer<State>
   id: string
-  update?: AtomUpdate<State>
 
   subscribe(cb: F<[State]>): F
 }
