@@ -11,6 +11,7 @@ import {
   Store,
   Transaction,
 } from '.'
+import { declareResource } from './experiments/declareResource'
 
 let noop: F = () => {}
 
@@ -410,92 +411,6 @@ test(`async collection of transaction.effectsResult`, async () => {
 })
 
 test(`declareResource`, async () => {
-  let resourcesCount = 0
-  function declareResource<State, Params = void>(
-    initialState: State,
-    fetcher: (params: Params) => Promise<State>,
-    id = `resource [${++resourcesCount}]`,
-  ) {
-    const get = declareAction<Params>(`get of ${id}`)
-    const req = declareAction<Params>(`req of ${id}`)
-    const res = declareAction<State>(`res of ${id}`)
-    const err = declareAction<Error>(`err of ${id}`)
-    const rej = declareAction(`rej of ${id}`)
-
-    const initTag = Symbol()
-    const paramsAtom = declareAtom(($, state = initTag as unknown) => {
-      $(req.handle(params => (state = params)))
-      return state
-    }, `params of ${id}`)
-    const versionAtom = declareAtom(($, state = 0) => {
-      $(req.handle(() => state++))
-      $(rej.handle(() => state++))
-      return state
-    }, `version of ${id}`)
-
-    const reqAtom = declareAtom(($, state = false) => {
-      $(req.handle(() => (state = true)))
-      $(res.handle(() => (state = false)))
-      $(err.handle(() => (state = false)))
-      $(rej.handle(() => (state = false)))
-      return state
-    }, `req of ${id}`)
-
-    const errAtom = declareAtom(($, state = null as null | Error) => {
-      $(err.handle(e => (state = e)))
-      $(res.handle(() => (state = null)))
-      return state
-    }, `err of ${id}`)
-
-    return Object.assign(
-      declareAtom(($, state = initialState) => {
-        const params = $(paramsAtom)
-        const version = $(versionAtom)
-
-        $(
-          get.handleEffect(
-            ({ payload }, { dispatch }) =>
-              (params === initTag || payload !== params) &&
-              dispatch(req(payload)),
-          ),
-        )
-
-        $(
-          req.handleEffect(({ payload }, { dispatch, getState }) =>
-            fetcher(payload).then(
-              data => getState(versionAtom) === version && dispatch(res(data)),
-              error =>
-                getState(versionAtom) === version &&
-                dispatch(
-                  err(error instanceof Error ? error : new Error(error)),
-                ),
-            ),
-          ),
-        )
-
-        $(res.handle(data => (state = data)))
-
-        return state
-      }, id),
-      {
-        /** Action for try to fetch data new data. Memoized by fetcher params */
-        get,
-        /** Action for force to fetch new data */
-        req,
-        /** Action for fetcher response */
-        res,
-        /** Action for fetcher error */
-        err,
-        /** Action for cancel pending requests */
-        rej,
-        /** Atom of loading status (boolean) */
-        reqAtom,
-        /** Atom of fetcher error */
-        errAtom,
-      },
-    )
-  }
-
   const resourceAtom = declareResource([0], (param: number) =>
     typeof param === 'number'
       ? Promise.resolve([param])
