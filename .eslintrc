@@ -85,7 +85,9 @@
     "no-void": "off",
     "prettier/prettier": "error",
     "react/jsx-uses-react": "error",
-    "react/jsx-uses-vars": "error"
+    "react/jsx-uses-vars": "error",
+    "prefer-spread": "off",
+    "prefer-object-spread": "off",
   },
 
   "env": {

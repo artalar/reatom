@@ -14,12 +14,6 @@ import ReactDOM from 'react-dom'
 
 function noop() {}
 
-function batchedFunction(func: Function) {
-  return (...funcArgs: any[]) => {
-    ReactDOM.unstable_batchedUpdates(() => func(...funcArgs))
-  }
-}
-
 export const context = createContext<Store | null>(null)
 
 export const { Provider } = context
@@ -153,12 +147,26 @@ export function createActionHook(ctx: Context<Store | null> = context) {
       throw new TypeError('[reatom] `useAction` argument must be a function')
     }
 
-    return batchedFunction(
-      useCallback((...args) => {
-        const action = cb(...args)
-        if (action) store.dispatch(action)
-      }, deps.concat(store)),
-    )
+    return useCallback((...args) => {
+      const action = cb(...args)
+      if (action) {
+        const storeFixed = Object.assign({}, store, {
+          dispatch(nextAction: Action<any>) {
+            const actionFixed = Object.assign({}, nextAction, {
+              reactions: (
+                nextAction.reactions || []
+              ).map(reaction => (payload: any) =>
+                reaction(payload, storeFixed),
+              ),
+            })
+
+            ReactDOM.unstable_batchedUpdates(() => store.dispatch(actionFixed))
+          },
+        })
+
+        storeFixed.dispatch(action)
+      }
+    }, deps.concat(store))
   }
 
   return useAction
