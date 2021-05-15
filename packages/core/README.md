@@ -27,7 +27,7 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 - 🧪 **testing**: simple mocking
 - 🛠 **debugging**: immutable data, devtools (redux ecosystem support by adapter)
 - 👴 **IE11 support**: [Can I Use](https://caniuse.com/?search=weakmap)
-- synchronous [glitch](https://stackoverflow.com/questions/25139257/terminology-what-is-a-glitch-in-functional-reactive-programming-rx) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/packages/core/tests/diamond.test.ts)
+- synchronous [glitch](https://en.wikipedia.org/wiki/Reactive_programming#Glitches) free: resolve [diamond problem](https://github.com/artalar/reatom/blob/master/packages/core/tests/diamond.test.ts)
 - simple integration with other libraries (Observable, redux ecosystem, etc)
 - awkward to write bad code
 - easy to write good code
@@ -75,22 +75,22 @@ import { declareAction, declareAtom, createStore } from '@reatom/core'
 /**
  * Step 1. Declare actions.
  */
-const increment = declareAction()
+const add = declareAction<number>()
 
 /**
  * Step 2. Declare atoms
  * `declareAtom` accepts an advanced version of the classic reducer.
  * Instead of action, atom reducer receives track function (`$`),
- * which accepts any _handler_ (see API section) and subscribes to it.
+ * which accepts an any action creator or atom
+ * for subscribing to it and new data processing
  */
 const counterAtom = declareAtom(($, state = 0) => {
-  // the handler may be an action handler
-  $(increment.handle(() => state++))
+  // handle new action from action creator
+  $(add, (payload) => state += payload)
   return state
 })
 const counterDoubledAtom = declareAtom(
-  // the handler may be another atom (which a handler too)
-  // in this case the track (`$`) will return atom state
+  // handle new data from other atom
   ($) => $(counterAtom) * 2
 )
 
@@ -106,22 +106,24 @@ const store = createStore()
  * Step 4. Subscribe to needed atoms.
  */
 store.subscribe(counterDoubledAtom, atomState => console.log(atomState))
-// ➜ 0
+// -> 0
 
 /**
  * Step 5. Dispatch action and receive results.
  */
-store.dispatch(increment())
-// ➜ 2
+store.dispatch(add(1))
+// -> 2
 
 /**
  * Step 6. Read data manually, if you need it.
  */
 store.getState(counterAtom)
-// ➜ 1
+// -> 1
 ```
 
 As you may see, Reatom flow looks like Redux flow, but reducers and selectors is unified to atoms, which allows you to describe data receiving naturally, as in MobX.
+
+Example above is a basic and don't show all cool features of Reatom. See [API section](#API) or [Guides](#Guides) to learn more about how to solve your tasks fast and efficient.
 
 ## What is state management?
 
@@ -139,31 +141,31 @@ Those problem you may solve by other ways too: streams / services / classes, but
 
 `declareAction` returns action creator. Optionally you may pass an payload mapper and used type.
 
-#### Function overloads
+#### declareAction overloads
 
 ```ts
 import { declareAction } from '@reatom/core'
 
 const increment = declareAction()
 increment()
-// { type: 'action [1]', payload: undefined }
+// -> { type: 'action [1]', payload: undefined }
 
 const add = declareAction<number>()
-increment(42)
-// { type: 'action [2]', payload: 42 }
+add(42)
+// -> { type: 'action [2]', payload: 42 }
 
 const set = declareAction((payload: number, meta: string) => ({ payload, meta }))
-increment(42, 'from somewhere')
-// { type: 'action [3]', payload: 42, meta: 'from somewhere' }
+set(42, 'from somewhere')
+// -> { type: 'action [3]', payload: 42, meta: 'from somewhere' }
 
 const push = declareAction<string>('ROUTER_PUSH')
 // OR
 const push = declareAction((payload: string) => ({ payload }), 'ROUTER_PUSH')
 push('/main')
-// { type: 'ROUTER_PUSH', payload: '/main' }
+// -> { type: 'ROUTER_PUSH', payload: '/main' }
 ```
 
-#### Methods
+#### declareAction methods and properties
 
 ```ts
 import { declareAction } from '@reatom/core'
@@ -173,16 +175,6 @@ const doSome = declareAction()
 // <string>
 // The type of creating action
 doSome.type
-
-// <(cb: (payload, action, transaction) => any) => Handler>
-// Create handler which call passed callback
-// if one of the dispatched action has the same type
-doSome.handle
-
-// <(cb: (action, store, transaction) => any) => Handler>
-// Create handler which push passed callback to the effect queue
-// if one of the dispatched action has the same type
-doSome.handleEffect
 
 // <(...arguments) => Action>
 // Create an action by passed arguments
@@ -198,44 +190,46 @@ doSome.subscribe
 
 `declareAtom` create atom - a handler thats receive immutable cache from store, process it and returns a new immutable version of cache. Also it may handle describe effect witch called only after successful recalculation of all atoms. Optionally you may pass `id` for better debugging or snapshot specification.
 
-#### Function overloads
+#### declareAtom overloads
 
 ```ts
 import { declareAction, declareAtom } from '@reatom/core'
 
 const add = declareAction<number>('add')
 
-// classic atom
+// classic atom (compute state from an actions)
 const counterAtom = declareAtom(0, ($, state) => {
-  $(add.handle((value) => state = state + value))
+  $(add, (payload) => state += payload)
   return state
-}, /* optional */ 'counter')
+})
 
-// derived atom
+// derived atom (compute state from an atoms)
 const counterNameAtom = declareAtom(($, state = 'zero') => {
   const counter = $(counterAtom)
-  return numberToWord(counter)
-}, /* optional */ 'counter name')
+  return toWord(counter)
+})
 
-// dumb atom (it has `update` method action)
-const counterDumbAtom = declareAtom(0, /* optional */ 'counter dumb')
-// imitate add action
+// dumb atom (it has build in `update` method action)
+const counterDumbAtom = declareAtom(0)
+// imitate increment action
+counterDumbAtom.update(1)
+// -> { type: 'update of "atom [N]"', payload: 1 }
 counterDumbAtom.update((state) => state + 1)
-// { type: 'update of "counter dumb"', payload: Function }
+// -> { type: 'update of "atom [N]"', payload: Function }
 
 const counterDebouncedAtom = declareAtom(0, ($, state, update) => {
   const counterAccumulator = $(counterAtom)
-  $(add.handleEffect(async (action, store) => {
+  $(add, (payload) => async (store) => {
     await new Promise(requestAnimationFrame)
     if (counterAccumulator === store.getState(counterAtom)) {
       store.dispatch(update(counterAccumulator))
     }
-  }))
+  })
   return state
 })
 ```
 
-#### Methods
+#### declareAtom methods and properties
 
 ```ts
 import { declareAtom } from '@reatom/core'
@@ -259,36 +253,52 @@ dataAtom.subscribe
 ```ts
 import { createStore } from '@reatom/core'
 
-const store = createStore(/* optional */{ [counterAtom.id]: 10 })
+// You may pass OPTIONAL snapshot by the first argument
+// It using instead an initialState of an atom
+const store = createStore({ [counterAtom.id]: 10 })
 
+// Subscribe to transactions (dispatch)
 store.subscribe((transaction) => console.log('transaction', transaction))
+// -> void
+// () => void
 
-store.subscribe(counterAtom, (counter) => console.log(counter))
-// ➜ 10
+// Subscribe to new state of an atom
+store.subscribe(
+  counterAtom,
+  (counter) => console.log('counterAtom new state', counter)
+)
+// -> 'counterAtom new state', 10
+// () => void
+
+// Subscribe to dispatch of an action creator
+store.subscribe(add, (payload) => console.log('add', payload))
+// -> void
+// () => void
 
 // You may dispatch a single action or array of actions for batching of it.
 store.dispatch([add(1), add(2)])
-// ➜ 13
-
-// 'transaction', {
-//   actions: [ { payload: 1, type: 'add' }, { payload: 2, type: 'add' } ], 
-//   getCache: Function, 
-//   patch: Map<Atom, AtomCache>
-//   snapshot: { counter: 10 }, 
-//   effects: []
-// }
+// -> 'transaction', {
+// ->   actions: [ { payload: 1, type: 'add' }, { payload: 2, type: 'add' } ], 
+// ->   getCache: Function, 
+// ->   patch: Map<Atom, AtomCache>
+// ->   snapshot: { counter: 10 }, 
+// ->   effects: []
+// -> }
+// ->
+// -> 'counterAtom new state', 13
+// ->
+// -> 'add', 1
+// ->
+// -> 'add', 2
+// Promise<void>
 
 store.getState(counterAtom)
 // 13
 ```
 
 ```ts
-store.subscribe(doSome, (action) => {})
-```
-
-```ts
 store.init(...atoms: Array<Atom>)
-// shortcut to
+// shortcut to. Need to warm up atoms action handling
 ;(new Array<Atom>()).forEach((atom) => store.subscribe(atom, noop))
 ```
 

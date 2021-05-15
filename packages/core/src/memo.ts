@@ -1,136 +1,194 @@
-import { AtomCache, AtomDep, Handler, invalid, Memo, Track } from './internal'
+import {
+  AC,
+  ActionPayload,
+  Atom,
+  Cache,
+  Effect,
+  Fn,
+  invalid,
+  isActionCreator,
+  isAtom,
+  isFunction,
+  Rec,
+  Transaction,
+} from './internal'
 
-export const memo: Memo = (transaction, atom, atomCacheSnapshot?) => {
-  const { actions, getCache, patch, snapshot } = transaction
-  const atomPatch = patch.get(atom)!
-  if (atomPatch !== undefined) return atomPatch
+export type Computer<State = any, Ctx extends Rec = Rec> = {
+  ($: Track<Ctx>, state: State): State
+}
 
-  let patchDeps: AtomCache['deps'] = []
-  let patchTypes: AtomCache['types'] = new Set()
-  let atomCache = getCache(atom) || atomCacheSnapshot
-  let isDepsHandlerChange = false
+export type Track<Ctx extends Rec = Rec> = {
+  <State>(atom: Atom<State>): State
+  <State>(atom: Atom<State>, cb: Fn<[State], void | Effect<Ctx>>): void
+  <T extends AC>(
+    actionCreator: T,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>], void | Effect<Ctx>>,
+  ): void
+}
+
+export function memo<State, Ctx extends Rec = Rec>(
+  transaction: Transaction,
+  cache: Cache<State, Ctx>,
+  computer: Computer<State, Ctx>,
+): Cache<State, Ctx> {
+  const { deps } = cache
+  let patchDeps: Cache<State>['deps'] = []
+  let patchState: State
+  let patchTypes: Cache<State>['types'] = new Set()
   let isDepsCacheChange = false
+  let isDepsOrderChange = false
   let isDepsTypesChange = false
-  let trackNesting = 0
-  let patchState: any
-  let result: AtomCache | undefined
+  let nesting = 0
 
   function calcResult() {
     if (isDepsTypesChange) {
-      patchDeps.forEach(dep =>
-        dep.cache.types.forEach(type => patchTypes.add(type)),
+      patchDeps.forEach((dep) =>
+        isActionCreator(dep)
+          ? patchTypes.add(dep.type)
+          : dep.cache.types.forEach((type) => patchTypes.add(type)),
       )
     } else {
-      patchTypes = atomCache!.types
+      patchTypes = cache.types
     }
-    result =
-      isDepsCacheChange || !Object.is(atomCache!.state, patchState)
-        ? {
-            types: patchTypes,
-            state: patchState,
-            deps: patchDeps,
-          }
-        : atomCache!
 
-    patch.set(atom, result)
-
-    return result
+    return isDepsCacheChange || deps.length === 0
+      ? {
+          deps: patchDeps,
+          ctx: cache.ctx,
+          state: patchState,
+          types: patchTypes,
+        }
+      : cache
   }
 
-  tryToSkipComputer: if (atomCache !== undefined) {
-    const { types, deps } = atomCache
+  function clearPatch() {
+    patchDeps.length = 0
+    patchTypes.clear()
+  }
 
-    if (actions.some(action => types.has(action.type))) {
-      for (let i = 0; i < deps.length; i++) {
-        const { handler: depHandler, cache: depCache } = deps[i]
-        const depPatch = depHandler(transaction, depCache)
-        const { handler = depHandler } = depPatch
-
-        patchDeps.push({ handler, cache: depPatch })
+  const shouldSkipComputer =
+    deps.length > 0 &&
+    deps.every((dep) => {
+      if (isActionCreator(dep)) {
+        const { type } = dep
+        if (transaction.actions.some((action) => action.type === type)) {
+          clearPatch()
+          return false
+        }
+      } else {
+        const { atom: depAtom, cache: depCache } = dep
+        const depPatch = transaction.process(depAtom)
 
         if (depPatch !== depCache) {
-          if (
-            handler !== depHandler ||
-            !('state' in depPatch) ||
-            depPatch.state !== depCache.state
-          ) {
-            patchDeps = []
-            patchTypes = new Set()
-            isDepsCacheChange = false
-            isDepsTypesChange = false
-            break tryToSkipComputer
+          if (depPatch.state !== depCache.state) {
+            clearPatch()
+            return false
           }
 
           isDepsCacheChange = true
 
-          isDepsTypesChange =
-            isDepsTypesChange || depPatch.types !== depCache.types
+          isDepsTypesChange ||= depPatch.types !== depCache.types
         }
-      }
-    }
 
-    patchState = atomCache.state
+        dep = { atom: depAtom, cache: depPatch }
+      }
+
+      patchDeps.push(dep)
+
+      return true
+    })
+
+  if (shouldSkipComputer) {
+    patchState = cache.state
 
     return calcResult()
-  } else {
-    atomCache = {
-      types: new Set(),
-      state: undefined as any,
-      deps: [],
+  }
+
+  function scheduleEffect(effect: any) {
+    if (isFunction(effect)) {
+      transaction.effects.push((store) => effect(store, cache.ctx))
     }
   }
 
-  const { state = snapshot[atom.id], deps } = atomCache
+  function trackAtom(depAtom: Atom, cb?: Fn) {
+    const depPatch = transaction.process(depAtom)
 
-  const track: Track = (depHandler: Handler<any>) => {
-    if (result === undefined) {
-      const depIndex = patchDeps.length
-      let dep: undefined | AtomDep
-      let depCache: undefined | AtomDep['cache']
+    if (nesting === 1) {
+      const dep: any =
+        deps.length > patchDeps.length ? deps[patchDeps.length] : null
 
-      if (trackNesting === 0 && deps.length > depIndex) {
-        dep = deps[depIndex]
-        if (dep.handler === depHandler) depCache = dep.cache
+      isDepsOrderChange ||= dep?.atom !== depAtom
+
+      isDepsCacheChange ||= isDepsOrderChange || dep.cache !== depPatch
+
+      isDepsTypesChange ||=
+        isDepsOrderChange || dep.cache.types !== depPatch.types
+
+      patchDeps.push({ atom: depAtom, cache: depPatch })
+
+      if (
+        cb &&
+        (isDepsOrderChange || !Object.is(dep.cache.state, depPatch.state))
+      ) {
+        scheduleEffect(cb(depPatch.state))
       }
-
-      trackNesting++
-      const depPatch = depHandler(transaction, depCache)
-      trackNesting--
-
-      const { handler = depHandler } = depPatch
-
-      if (trackNesting === 0) {
-        patchDeps.push({ handler, cache: depPatch })
-
-        isDepsHandlerChange =
-          isDepsHandlerChange ||
-          deps.length <= depIndex ||
-          dep!.handler !== handler
-
-        isDepsCacheChange =
-          isDepsCacheChange || isDepsHandlerChange || dep!.cache !== depPatch
-
-        isDepsTypesChange =
-          isDepsTypesChange ||
-          isDepsHandlerChange ||
-          depCache?.types !== depPatch.types
-      }
-
-      return depPatch.state
     } else {
-      invalid(true, `outdated track call of "${atom.id}"`)
+      if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+        invalid(cb, `callback in nested track`)
+      }
     }
+
+    return depPatch.state
   }
 
-  patchState = atom.computer(track, state)
-  invalid(
-    patchState === undefined,
-    `result of "${atom.id}" computer, state can't be undefined`,
-  )
+  let track: Track<Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
+    if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+      // TODO: how to pass the `id` of atom here?
+      invalid(Number.isNaN(nesting), `outdated track call`)
+    }
 
-  isDepsHandlerChange = isDepsHandlerChange || deps.length > patchDeps.length
-  isDepsCacheChange = isDepsCacheChange || isDepsHandlerChange
-  isDepsTypesChange = isDepsTypesChange || isDepsHandlerChange
+    nesting++
+
+    if (isAtom(atomOrAction)) return trackAtom(atomOrAction, cb)
+
+    if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+      invalid(!isActionCreator(atomOrAction), `track arguments`)
+    }
+
+    if (nesting === 1) {
+      if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+        invalid(!cb, `action track without callback`)
+      }
+
+      isDepsOrderChange ||=
+        deps.length <= patchDeps.length ||
+        deps[patchDeps.length] !== atomOrAction
+
+      isDepsTypesChange ||= isDepsOrderChange
+
+      patchDeps.push(atomOrAction)
+
+      transaction.actions.forEach((action) => {
+        if (action.type === atomOrAction.type) {
+          scheduleEffect(cb!(action.payload, action))
+        }
+      })
+    } else {
+      if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+        invalid(true, `action handling in nested track`)
+      }
+    }
+
+    nesting--
+  }
+
+  patchState = computer(track, cache.state)
+
+  nesting = NaN
+
+  isDepsOrderChange = isDepsOrderChange || deps.length > patchDeps.length
+  isDepsCacheChange = isDepsCacheChange || isDepsOrderChange
+  isDepsTypesChange = isDepsTypesChange || isDepsOrderChange
 
   return calcResult()
 }

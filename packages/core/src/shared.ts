@@ -2,16 +2,14 @@ import {
   Action,
   ActionCreator,
   Atom,
-  Collection,
-  declareAction,
-  F,
+  AtomsCache,
+  Fn,
   Patch,
-  Store,
-  StoreCache,
+  Rec,
   Transaction,
 } from './internal'
 
-export const noop: F = () => {}
+export const noop: Fn = () => {}
 
 export function callSafety<I extends any[], O, This = any>(
   this: This,
@@ -35,7 +33,9 @@ export function addToSetsMap<T>(
   value: T,
 ) {
   let set = map.get(key)
+
   if (set === undefined) map.set(key, (set = new Set()))
+
   set.add(value)
 }
 export function delFromSetsMap<T>(
@@ -63,30 +63,30 @@ export function isFunction(thing: any): thing is Function {
   return typeof thing === 'function'
 }
 
-export function safeFunction(thing: any): F {
-  invalid(!isFunction(thing), `thing, expected function`)
+export function safeFunction(thing: any, name = thing): Fn {
+  invalid(!isFunction(thing), `${name}, expected function`)
   return thing
 }
 
 export function isAtom(thing: any): thing is Atom<unknown> {
-  return isFunction(thing) && isFunction(thing.computer)
+  return isFunction(thing) && isFunction(thing.getState)
 }
 
-export function safeAtom(thing: any): Atom {
-  invalid(!isAtom(thing), `thing, expected atom`)
+export function safeAtom(thing: any, name = thing): Atom {
+  invalid(!isAtom(thing), `${name}, expected atom`)
   return thing
 }
 
 export function isActionCreator(thing: any): thing is ActionCreator {
-  return isFunction(thing) && isString(thing.type)
+  return isFunction(thing) && isFunction(thing.dispatch)
 }
 
-export function safeActionCreator(thing: any): ActionCreator {
-  invalid(!isActionCreator(thing), `thing, expected action`)
+export function safeActionCreator(thing: any, name = thing): ActionCreator {
+  invalid(!isActionCreator(thing), `${name}, expected action`)
   return thing
 }
 
-export function isAction(thing: any): thing is Action<unknown> {
+export function isAction(thing: any): thing is Action {
   return isObject(thing) && isString(thing.type) && 'payload' in thing
 }
 
@@ -98,15 +98,30 @@ export function invalid(predicate: any, msg: string) {
 
 export function createTransaction(
   actions: Array<Action>,
-  cache: StoreCache = new WeakMap(),
+  atomsCache: AtomsCache = new WeakMap(),
   patch: Patch = new Map(),
-  snapshot: Collection = {},
+  snapshot: Rec = {},
 ): Transaction {
-  return {
+  const transaction: Transaction = {
     actions,
-    getCache: cache.get.bind(cache),
-    patch,
-    snapshot,
     effects: [],
+    error: null,
+    process(atom, cache) {
+      return (
+        patch.get(atom) ??
+        atom(
+          transaction,
+          cache ??
+            atomsCache.get(atom) ?? {
+              deps: [],
+              ctx: undefined,
+              state: snapshot[atom.id],
+              types: new Set(),
+            },
+        )
+      )
+    },
   }
+
+  return transaction
 }

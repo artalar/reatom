@@ -4,12 +4,11 @@ import {
   ActionType,
   addToSetsMap,
   Atom,
-  AtomCache,
+  Cache,
   callSafety,
   createTransaction,
   delFromSetsMap,
-  F,
-  Handler,
+  Fn,
   invalid,
   isAction,
   isActionCreator,
@@ -21,25 +20,27 @@ import {
 } from './internal'
 
 export function createStore(snapshot: Record<string, any> = {}): Store {
-  const atomsCache = new WeakMap<Atom, AtomCache>()
-  const atomsListeners = new Map<Atom, Set<F>>()
+  const atomsCache = new WeakMap<Atom, Cache>()
+  const atomsListeners = new Map<Atom, Set<Fn>>()
   const actionsComputers = new Map<ActionType, Set<Atom>>()
-  const actionsListeners = new Map<ActionType, Set<F>>()
-  const transactionListeners = new Set<F<[Transaction]>>()
+  const actionsListeners = new Map<ActionType, Set<Fn>>()
+  const transactionListeners = new Set<Fn<[Transaction]>>()
 
-  function mergePatch(patch: AtomCache, atom: Atom) {
+  function mergePatch(patch: Cache, atom: Atom) {
     const atomCache = atomsCache.get(atom)
     if (atomsListeners.has(atom)) {
       if (atomCache === undefined) {
-        patch.types.forEach(type => addToSetsMap(actionsComputers, type, atom))
+        patch.types.forEach((type) =>
+          addToSetsMap(actionsComputers, type, atom),
+        )
       } else if (atomCache.types !== patch.types) {
         patch.types.forEach(
-          type =>
+          (type) =>
             atomCache.types.has(type) ||
             addToSetsMap(actionsComputers, type, atom),
         )
         atomCache.types.forEach(
-          type =>
+          (type) =>
             patch.types.has(type) ||
             delFromSetsMap(actionsComputers, type, atom),
         )
@@ -52,18 +53,22 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   }
 
   const dispatch: Store['dispatch'] = (action: Action | Array<Action>) => {
+    // TODO: try + catch
     const actions = Array.isArray(action) ? action : [action]
     invalid(
       actions.length === 0 || actions.every(isAction) === false,
       `dispatch arguments`,
     )
 
-    const patch = new Map<Atom, AtomCache>()
+    const patch = new Map<Atom, Cache>()
     const transaction = createTransaction(actions, atomsCache, patch, snapshot)
-    const changedAtoms = new Array<[Atom, AtomCache]>()
+    const changedAtoms = new Array<[Atom, Cache]>()
 
-    actions.forEach(action =>
-      actionsComputers.get(action.type)?.forEach(atom => atom(transaction)),
+    // FIXME:
+    function process(...a: any[]): any {}
+
+    actions.forEach((action) =>
+      actionsComputers.get(action.type)?.forEach((atom) => process(atom)),
     )
 
     patch.forEach(
@@ -71,26 +76,28 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         mergePatch(atomPatch, atom) || changedAtoms.push([atom, atomPatch]),
     )
 
-    transactionListeners.forEach(cb => callSafety(cb, transaction))
+    transactionListeners.forEach((cb) => callSafety(cb, transaction))
 
-    changedAtoms.forEach(change =>
+    changedAtoms.forEach((change) =>
       atomsListeners
         .get(change[0])
-        ?.forEach(cb => callSafety(cb, change[1].state)),
+        ?.forEach((cb) => callSafety(cb, change[1].state)),
     )
 
-    transaction.effectsResult = transaction.effects.map(cb =>
-      callSafety(cb, store),
+    actions.forEach((action) =>
+      actionsListeners
+        .get(action.type)
+        ?.forEach((cb) => callSafety(cb, action)),
     )
 
-    actions.forEach(action =>
-      actionsListeners.get(action.type)?.forEach(cb => callSafety(cb, action)),
-    )
-
-    return patch
+    return Promise.all(
+      transaction.effects.map((cb) =>
+        new Promise((res) => res(cb(store))).finally(() => null),
+      ),
+    ).then(() => {})
   }
 
-  function getCache<T>(atom: Atom<T>): AtomCache<T> | undefined {
+  function getCache<T>(atom: Atom<T>): Cache<T> | undefined {
     return atomsCache.get(atom)
   }
 
@@ -122,13 +129,11 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
       const result = {} as Record<string, any>
 
-      function collect(handler: Handler<any>) {
-        if (isAtom(handler)) {
-          const { state, deps } = atomsCache.get(handler)!
+      function collect(atom: Atom) {
+        const { state, deps } = atomsCache.get(atom)!
 
-          result[handler.id] = state
-          deps.forEach(dep => collect(dep.handler))
-        }
+        result[atom.id] = state
+        deps.forEach((dep) => !isActionCreator(dep) && collect(dep.atom))
       }
 
       atomsListeners.forEach((_, atom) => collect(atom))
@@ -141,15 +146,8 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     let atomCache = atomsCache.get(atom)
 
     if (atomCache === undefined) {
-      const patch = new Map<Atom, AtomCache>()
-      atomCache = atom(
-        createTransaction(
-          [{ type: `init [${Math.random()}]`, payload: null }],
-          atomsCache,
-          patch,
-          snapshot,
-        ),
-      )
+      const patch = new Map<Atom, Cache>()
+      atomCache = invalid(1, `FIXME`) as Cache
 
       patch.forEach(mergePatch)
     }
@@ -158,11 +156,11 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   }
 
   function init(...atoms: Array<Atom>) {
-    const unsubscribers = atoms.map(atom => subscribeAtom(atom, noop))
-    return () => unsubscribers.forEach(un => un())
+    const unsubscribers = atoms.map((atom) => subscribeAtom(atom, noop))
+    return () => unsubscribers.forEach((un) => un())
   }
 
-  function subscribeAtom<T>(atom: Atom<T>, cb: F<[T]>): F<[], void> {
+  function subscribeAtom<T>(atom: Atom<T>, cb: Fn<[T]>): Fn<[], void> {
     let listeners = atomsListeners.get(atom)
 
     if (listeners === undefined) {
@@ -176,7 +174,9 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     const atomCache = atomsCache.get(atom)!
 
     // FIXME: should happen by `getState`
-    atomCache.types.forEach(type => addToSetsMap(actionsComputers, type, atom))
+    atomCache.types.forEach((type) =>
+      addToSetsMap(actionsComputers, type, atom),
+    )
 
     function unsubscribe() {
       listeners!.delete(cb)
@@ -184,7 +184,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         atomsListeners.delete(atom)
         atomsCache
           .get(atom)!
-          .types.forEach(type => delFromSetsMap(actionsComputers, type, atom))
+          .types.forEach((type) => delFromSetsMap(actionsComputers, type, atom))
       }
     }
 
@@ -199,27 +199,27 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
   function subscribeAction<T extends { payload: any }>(
     actionCreator: ActionCreator<any[], T>,
-    cb: F<[T & { type: string }]>,
-  ): F {
+    cb: Fn<[T & { type: string }]>,
+  ): Fn {
     addToSetsMap(actionsListeners, actionCreator.type, cb)
 
     return () => delFromSetsMap(actionsListeners, actionCreator.type, cb)
   }
 
-  function subscribeTransaction(cb: F<[Transaction]>): F<[], void> {
+  function subscribeTransaction(cb: Fn<[Transaction]>): Fn<[], void> {
     transactionListeners.add(cb)
 
     return () => transactionListeners.delete(cb)
   }
 
-  function subscribe(cb: F<[Transaction]>): F<[], void>
-  function subscribe<T>(atom: Atom<T>, cb: F<[T]>): F
+  function subscribe(cb: Fn<[Transaction]>): Fn<[], void>
+  function subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Fn
   function subscribe<T extends { payload: any }>(
     actionCreator: ActionCreator<any[], T>,
-    cb: F<[T & { type: string }]>,
-  ): F
+    cb: Fn<[T & { type: string }]>,
+  ): Fn
   function subscribe(
-    ...a: [F<[Transaction]>] | [Atom, F] | [ActionCreator, F]
+    ...a: [Fn<[Transaction]>] | [Atom, Fn] | [ActionCreator, Fn]
   ) {
     return a.length === 1 && isFunction(a[0])
       ? subscribeTransaction(a[0])
@@ -236,6 +236,13 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     init,
     getCache,
     subscribe,
+    __DO_NOT_USE_IT_OR_YOU_WILL_BE_FIRED: {
+      atomsCache,
+      atomsListeners,
+      actionsComputers,
+      actionsListeners,
+      transactionListeners,
+    },
   }
 
   return store

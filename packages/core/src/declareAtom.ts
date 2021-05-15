@@ -1,18 +1,22 @@
 import {
+  ActionCreator,
   Atom,
-  AtomCache,
-  AtomUpdate,
+  Cache,
+  CacheAsArgument,
   Computer,
   declareAction,
   defaultStore,
-  F,
-  invalid,
+  Effect,
+  Fn,
   isFunction,
   isString,
   memo,
+  NotFn,
   Track,
   Transaction,
+  Unsubscribe,
 } from './internal'
+import { Rec } from './types'
 
 // I don't know why it work,
 // but this is the single fined way
@@ -22,84 +26,110 @@ type ComputerWithInfer<State> =
   | ((($: any) => State) & (($: any, state?: State | undefined) => any))
 
 type ComputerWithUpdate<State> = {
-  ($: Track, state: State, update: AtomUpdate<State>): State
+  ($: Track, state: State, update: DumbAtom<State>): State
+}
+
+type Reducer<State = any, Payload = any, Ctx extends Rec = Rec> = Fn<
+  [Payload, State],
+  State | Effect<Ctx>
+>
+
+type InferActionsReducers<ActionsReducers extends Rec<Reducer<any, any, any>>> =
+  {
+    [K in keyof ActionsReducers]: ActionsReducers[K] extends Reducer<
+      any,
+      infer T,
+      any
+    >
+      ? ActionCreator<[T]>
+      : never
+  }
+
+export type DumbAtom<State> = Atom<State> & {
+  update: ActionCreator<[State | ((prevState: State) => State)]>
 }
 
 let atomsCount = 0
-// FIXME: update TS
-// @ts-ignore
+// @ts-expect-error
 export function declareAtom<State>(
-  computer: ComputerWithInfer<State>,
+  initialState: NotFn<State>,
   id?: string,
-): Atom<State>
-export function declareAtom<State>(
-  initialState: State,
-  id?: string,
-): Atom<State> & { update: AtomUpdate<State> }
-export function declareAtom<State>(
-  initialState: State,
-  computer: ComputerWithUpdate<State>,
-  id?: string,
-): Atom<State>
-export function declareAtom<State>(
-  ...args:
-    | [ComputerWithInfer<State>]
-    | [ComputerWithInfer<State>, string]
-    | [State]
-    | [State, string]
-    | [State, ComputerWithUpdate<State>]
-    | [State, ComputerWithUpdate<State>, string]
-): Atom<State> {
-  let internalComputer: Computer<State> = ($, state = initialState) => {
-    $(
-      update.handle(
-        value => (state = isFunction(value) ? value(state) : value),
-      ),
-    )
+): DumbAtom<State>
+export function declareAtom<
+  State,
+  Ctx extends Rec = {},
+  ActionsReducers extends Rec<Reducer<State, any, Ctx>> = {},
+>(
+  initialStateOrComputer: ComputerWithInfer<State> | NotFn<State>,
+  options:
+    | string
+    | {
+        id?: string
+        ctx?: () => Ctx
+        methods?: ActionsReducers
+      } = {},
+): Atom<State> & InferActionsReducers<ActionsReducers> {
+  const actionCreators: Rec<ActionCreator> = {}
+
+  const {
+    id = `atom [${++atomsCount}]`,
+    ctx = () => ({} as Ctx),
+    methods = {} as Rec<Reducer<State, any, Ctx>>,
+  } = isString(options)
+    ? ({ id: options } as Exclude<typeof options, string>)
+    : options
+
+  const userComputer: Computer<State, Ctx> = isFunction(initialStateOrComputer)
+    ? initialStateOrComputer
+    : ($, state = initialStateOrComputer) => state
+
+  const computer: Computer<State, Ctx> = ($, state) => {
+    state = userComputer($, state)
+
+    for (const k in actionCreators) {
+      $(actionCreators[k], (payload) => {
+        const effect = methods[k](payload, state)
+        if (isFunction(effect)) return effect
+        state = effect
+      })
+    }
+
     return state
   }
-  let outerComputer: ComputerWithUpdate<State> = ($, state) => state
-  let initialState: State
-  let id: string
 
-  invalid(args.length < 1 || args.length > 3, 'atom arguments')
-
-  if (isFunction(args[0])) {
-    // remove unnecessary computation
-    internalComputer = ($, state = initialState) => state
-    outerComputer = args[0]
-    if (args.length === 2) id = args[1] as string
-  } else {
-    initialState = args[0]
-    if (args.length !== 1) {
-      if (isString(args[1])) {
-        id = args[1]
-      } else {
-        outerComputer = args[1]
-
-        if (args.length === 3) id = args[2]
-      }
-    }
+  if (
+    userComputer !== initialStateOrComputer &&
+    Object.keys(methods).length === 0
+  ) {
+    methods.update = (payload: State | ((prevState: State) => State), state) =>
+      isFunction(payload) ? payload(state) : payload
   }
 
-  const computer: Computer<State> = ($, state) =>
-    outerComputer($, internalComputer($, state), update)
-
-  id = id! || `atom [${++atomsCount}]`
-  const update = declareAction<State | ((prevState: State) => State)>(
-    `update of "${id}"`,
-  )
+  for (const k in methods) {
+    // FIXME:
+    // @ts-expect-error
+    atom[k] = actionCreators[k] = declareAction(`${k} of "${id}"`)
+  }
 
   function atom(
     transaction: Transaction,
-    cache?: AtomCache<State>,
-  ): AtomCache<State> {
-    return memo(transaction, atom, cache)
-  }
-  atom.computer = computer
-  atom.update = update
-  atom.id = id
-  atom.subscribe = (cb: F<[State]>): F => defaultStore.subscribe(atom, cb)
+    cache: CacheAsArgument<State, Ctx>,
+  ): Cache<State, Ctx> {
+    if (cache.ctx === undefined) cache.ctx = ctx()
 
+    return memo(transaction, cache as Cache<State, Ctx>, computer)
+  }
+
+  atom.id = id
+
+  atom.init = (): Unsubscribe => defaultStore.init(atom)
+
+  atom.getState = (): State => defaultStore.getState(atom)
+
+  atom.subscribe = (cb: Fn<[State]>): Unsubscribe =>
+    defaultStore.subscribe(atom, cb)
+
+  // FIXME:
+  // @ts-expect-error
   return atom
 }
