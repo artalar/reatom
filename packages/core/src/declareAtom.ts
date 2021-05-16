@@ -48,24 +48,24 @@ export function declareAtom<State>(
   computer: ComputerWithInfer<State>,
   options?: { id?: string },
 ): Atom<State>
-// @ts-expect-error
-export function declareAtom<State>(
-  initialState: NotFn<State>,
-  options?: { id?: string },
-): DumbAtom<State>
 export function declareAtom<
   State,
   Ctx extends Rec,
   Methods extends Rec<Reducer<State, any, Ctx>>,
 >(
   initialState: NotFn<State>,
-  options?: {
+  options: {
     id?: string
     ctx?: () => Ctx
     methods?: Methods
     computer?: Computer<State, Ctx>
   },
 ): Atom<State, Ctx> & Merge<InferMethods<Methods>>
+// @ts-expect-error
+export function declareAtom<State>(
+  initialState: NotFn<State>,
+  options?: { id?: string },
+): DumbAtom<State>
 export function declareAtom<
   State,
   Ctx extends Rec,

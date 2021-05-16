@@ -64,11 +64,10 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     const transaction = createTransaction(actions, atomsCache, patch, snapshot)
     const changedAtoms = new Array<[Atom, Cache]>()
 
-    // FIXME:
-    function process(...a: any[]): any {}
-
     actions.forEach((action) =>
-      actionsComputers.get(action.type)?.forEach((atom) => process(atom)),
+      actionsComputers
+        .get(action.type)
+        ?.forEach((atom) => transaction.process(atom)),
     )
 
     patch.forEach(
@@ -147,7 +146,12 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
     if (atomCache === undefined) {
       const patch = new Map<Atom, Cache>()
-      atomCache = invalid(1, `FIXME`) as Cache
+      atomCache = createTransaction(
+        [{ type: `init [${Math.random()}]`, payload: null }],
+        atomsCache,
+        patch,
+        snapshot,
+      ).process(atom)
 
       patch.forEach(mergePatch)
     }
@@ -172,11 +176,6 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     getState(atom)
 
     const atomCache = atomsCache.get(atom)!
-
-    // FIXME: should happen by `getState`
-    atomCache.types.forEach((type) =>
-      addToSetsMap(actionsComputers, type, atom),
-    )
 
     function unsubscribe() {
       listeners!.delete(cb)

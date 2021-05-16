@@ -107,9 +107,10 @@ export function createTransaction(
     effects: [],
     error: null,
     process(atom, cache) {
-      return (
-        patch.get(atom) ??
-        atom(
+      let atomPatch = patch.get(atom)
+
+      if (!atomPatch) {
+        atomPatch = atom(
           transaction,
           cache ??
             atomsCache.get(atom) ?? {
@@ -119,7 +120,10 @@ export function createTransaction(
               types: new Set(),
             },
         )
-      )
+
+        patch.set(atom, atomPatch)
+      }
+      return atomPatch
     },
   }
 

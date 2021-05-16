@@ -1,6 +1,6 @@
 /* UTILITY */
 
-export type Fn<I extends unknown[] = any[], O = any> = (...a: I) => O
+export type Fn<I extends any[] = any[], O = any> = (...a: I) => O
 
 export type Rec<T = any> = Record<string, T>
 

@@ -10,7 +10,7 @@ import {
   Fn,
   Store,
 } from '.'
-import { declareResource } from './experiments/declareResource'
+// import { declareResource } from './experiments/declareResource'
 
 let noop: Fn = () => {}
 
@@ -42,27 +42,38 @@ export function mockFn<I extends any[], O>(
 }
 
 test(`displayName`, () => {
-  const setFirstName = declareAction<string>()
-  const setFullName = declareAction<string>()
-  const firstNameAtom = declareAtom(($, state = 'John') => {
-    $(setFirstName, (name) => (state = name))
-    $(setFullName, (fullName) => (state = fullName.split(' ')[0]))
-    return state
-  })
+  const setFirstName = declareAction<string>(`setFirstName`)
+  const setFullName = declareAction<string>(`setFullName`)
+  const firstNameAtom = declareAtom(
+    ($, state = 'John') => {
+      $(setFirstName, (name) => (state = name))
+      $(setFullName, (fullName) => (state = fullName.split(' ')[0]))
+      return state
+    },
+    { id: `firstNameAtom` },
+  )
 
-  const lastNameAtom = declareAtom(($, state = 'Doe') => {
-    $(setFullName, (fullName) => (state = fullName.split(' ')[1]))
-    return state
-  })
+  const lastNameAtom = declareAtom(
+    ($, state = 'Doe') => {
+      $(setFullName, (fullName) => (state = fullName.split(' ')[1]))
+      return state
+    },
+    { id: `lastNameAtom` },
+  )
 
-  const isFirstNameShortAtom = declareAtom(($) => $(firstNameAtom).length < 10)
+  const isFirstNameShortAtom = declareAtom(
+    ($) => $(firstNameAtom).length < 10,
+    { id: `isFirstNameShortAtom` },
+  )
 
   const fullNameAtom = declareAtom(
     ($) => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
+    { id: `fullNameAtom` },
   )
 
-  const displayNameAtom = declareAtom(($) =>
-    $(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom),
+  const displayNameAtom = declareAtom(
+    ($) => ($(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom)),
+    { id: `displayNameAtom` },
   )
 
   const store = createStore()
@@ -180,15 +191,16 @@ test(`in atom action effect`, async () => {
     const request = declareAction<I>()
 
     return Object.assign(
-      declareAtom<null | O | Error>(null, ($, state, update) => {
+      declareAtom(($, state = null as null | O | Error) => {
         $(
-          request.handleEffect(({ payload }, { dispatch }) =>
-            fetcher(payload)
-              .then((data) => dispatch(update(data)))
-              .catch((e) =>
-                dispatch(update(e instanceof Error ? e : new Error(e))),
-              ),
-          ),
+          request,
+          (payload) =>
+            ({ dispatch }) =>
+              fetcher(payload)
+                .then((data) => dispatch(update(data)))
+                .catch((e) =>
+                  dispatch(update(e instanceof Error ? e : new Error(e))),
+                ),
         )
         return state
       }),
@@ -346,52 +358,18 @@ test(`Batched dispatch dynamic types change`, () => {
 })
 
 test(`async collection of transaction.effectsResult`, async () => {
-  function createEffectsTracker(store: Store, start = () => {}) {
-    let unsubscribeFromAction: Fn | undefined
-    const promise = new Promise<void>((res) => {
-      let effectsCount = 0
-
-      store.subscribe((transaction) => {
-        unsubscribeFromAction = store.subscribe(
-          declareAction(transaction.actions[0]!.type),
-          () => {
-            transaction.effectsResult!.forEach((some) => {
-              if (some instanceof Promise) {
-                effectsCount++
-
-                some.finally(() => --effectsCount === 0 && res())
-              }
-            })
-
-            if (effectsCount === 0) res()
-          },
-        )
-      })
-
-      start()
-    })
-
-    unsubscribeFromAction?.()
-
-    return promise
-  }
-
   const doA = declareAction()
   const doB = declareAction()
 
-  const resourceAtom = declareAtom(0, ($, state, update) => {
-    $(
-      doA.handleEffect(async (action, { dispatch }) => {
-        await sleep(10)
-        dispatch(doB())
-      }),
-    )
-    $(
-      doB.handleEffect(async (action, { dispatch }) => {
-        await sleep(10)
-        dispatch(update((s) => s + 1))
-      }),
-    )
+  const resourceAtom = declareAtom(($, state = 0) => {
+    $(doA, () => async ({ dispatch }) => {
+      await sleep(10)
+      dispatch(doB())
+    })
+    $(doB, () => async ({ dispatch }) => {
+      await sleep(10)
+      dispatch(update((s) => s + 1))
+    })
     return state
   })
 
@@ -400,7 +378,7 @@ test(`async collection of transaction.effectsResult`, async () => {
 
   store.init(resourceAtom)
 
-  createEffectsTracker(store, () => store.dispatch(doA())).then(cb)
+  store.dispatch(doA()).then(cb)
 
   assert.is(cb.calls.length, 0)
 

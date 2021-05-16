@@ -9,6 +9,7 @@ import {
   isActionCreator,
   isAtom,
   isFunction,
+  NotFn,
   Rec,
   Transaction,
 } from './internal'
@@ -19,10 +20,15 @@ export type Computer<State, Ctx extends Rec> = {
 
 export type Track<State, Ctx extends Rec> = {
   <T>(atom: Atom<T>): T
-  <T>(atom: Atom<T>, cb: Fn<[T], State | void | Effect<Ctx>>): void
+  <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
+  <T>(atom: Atom<T>, cb: Fn<[T]>): void
   <T extends AC>(
     actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>], State | void | Effect<Ctx>>,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
+  ): void
+  <T extends AC>(
+    actionCreator: T,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>]>,
   ): void
 }
 
@@ -51,7 +57,9 @@ export function memo<State, Ctx extends Rec = Rec>(
       patchTypes = cache.types
     }
 
-    return isDepsCacheChange || deps.length === 0
+    return isDepsCacheChange ||
+      !Object.is(cache.state, patchState) ||
+      deps.length === 0
       ? {
           deps: patchDeps,
           ctx: cache.ctx,
@@ -149,37 +157,39 @@ export function memo<State, Ctx extends Rec = Rec>(
 
     nesting++
 
-    if (isAtom(atomOrAction)) return trackAtom(atomOrAction, cb)
+    try {
+      if (isAtom(atomOrAction)) return trackAtom(atomOrAction, cb)
 
-    if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
-      invalid(!isActionCreator(atomOrAction), `track arguments`)
-    }
-
-    if (nesting === 1) {
       if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
-        invalid(!cb, `action track without callback`)
+        invalid(!isActionCreator(atomOrAction), `track arguments`)
       }
 
-      isDepsOrderChange ||=
-        deps.length <= patchDeps.length ||
-        deps[patchDeps.length] !== atomOrAction
-
-      isDepsTypesChange ||= isDepsOrderChange
-
-      patchDeps.push(atomOrAction)
-
-      transaction.actions.forEach((action) => {
-        if (action.type === atomOrAction.type) {
-          scheduleEffect(cb!(action.payload, action))
+      if (nesting === 1) {
+        if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+          invalid(!cb, `action track without callback`)
         }
-      })
-    } else {
-      if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
-        invalid(true, `action handling in nested track`)
-      }
-    }
 
-    nesting--
+        isDepsOrderChange ||=
+          deps.length <= patchDeps.length ||
+          deps[patchDeps.length] !== atomOrAction
+
+        isDepsTypesChange ||= isDepsOrderChange
+
+        patchDeps.push(atomOrAction)
+
+        transaction.actions.forEach((action) => {
+          if (action.type === atomOrAction.type) {
+            scheduleEffect(cb!(action.payload, action))
+          }
+        })
+      } else {
+        if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+          invalid(true, `action handling in nested track`)
+        }
+      }
+    } finally {
+      nesting--
+    }
   }
 
   patchState = computer(track, cache.state)
