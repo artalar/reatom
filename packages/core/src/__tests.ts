@@ -7,21 +7,20 @@ import {
   createTransaction,
   declareAction,
   declareAtom,
-  F,
+  Fn,
   Store,
-  Transaction,
 } from '.'
 import { declareResource } from './experiments/declareResource'
 
-let noop: F = () => {}
+let noop: Fn = () => {}
 
-const sleep = (ms = 0) => new Promise(r => setTimeout(r, ms))
+const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
 export function mockFn<I extends any[], O>(
-  fn: F<I, O> = (...i: any) => void 0 as any,
+  fn: Fn<I, O> = (...i: any) => void 0 as any,
 ) {
   const _fn = Object.assign(
-    function(...i: I) {
+    function (...i: I) {
       // @ts-ignore
       const o = fn.apply(this, i)
 
@@ -46,23 +45,23 @@ test(`displayName`, () => {
   const setFirstName = declareAction<string>()
   const setFullName = declareAction<string>()
   const firstNameAtom = declareAtom(($, state = 'John') => {
-    $(setFirstName.handle(name => (state = name)))
-    $(setFullName.handle(fullName => (state = fullName.split(' ')[0])))
+    $(setFirstName, (name) => (state = name))
+    $(setFullName, (fullName) => (state = fullName.split(' ')[0]))
     return state
   })
 
   const lastNameAtom = declareAtom(($, state = 'Doe') => {
-    $(setFullName.handle(fullName => (state = fullName.split(' ')[1])))
+    $(setFullName, (fullName) => (state = fullName.split(' ')[1]))
     return state
   })
 
-  const isFirstNameShortAtom = declareAtom($ => $(firstNameAtom).length < 10)
+  const isFirstNameShortAtom = declareAtom(($) => $(firstNameAtom).length < 10)
 
   const fullNameAtom = declareAtom(
-    $ => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
+    ($) => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
   )
 
-  const displayNameAtom = declareAtom($ =>
+  const displayNameAtom = declareAtom(($) =>
     $(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom),
   )
 
@@ -95,9 +94,9 @@ test(`displayName`, () => {
 
 test(`combine`, () => {
   const aAtom = declareAtom(0)
-  const bAtom = declareAtom($ => $(aAtom) % 2)
-  const cAtom = declareAtom($ => $(aAtom) % 2)
-  const bcAtom = declareAtom($ => ({
+  const bAtom = declareAtom(($) => $(aAtom) % 2)
+  const cAtom = declareAtom(($) => $(aAtom) % 2)
+  const bcAtom = declareAtom(($) => ({
     b: $(bAtom),
     c: $(cAtom),
   }))
@@ -108,12 +107,12 @@ test(`combine`, () => {
   assert.is(store.getState(aAtom), 0)
   assert.equal(bsState1, { b: 0, c: 0 })
 
-  store.dispatch(aAtom.update(s => s + 1))
+  store.dispatch(aAtom.update((s) => s + 1))
   const bsState2 = store.getState(bcAtom)
   assert.is(store.getState(aAtom), 1)
   assert.equal(bsState2, { b: 1, c: 1 })
 
-  store.dispatch(aAtom.update(s => s + 2))
+  store.dispatch(aAtom.update((s) => s + 2))
   const bsState3 = store.getState(bcAtom)
   assert.is(store.getState(aAtom), 3)
   assert.equal(bsState3, { b: 1, c: 1 })
@@ -123,9 +122,9 @@ test(`combine`, () => {
 })
 
 test(`atom id`, () => {
-  const a = declareAtom(1, 'a')
-  const b = declareAtom(2, ($, s) => s, 'b')
-  const c = declareAtom(($, s = 3) => s, 'c')
+  const a = declareAtom(1, { id: 'a' })
+  const b = declareAtom(2, { id: 'b', computer: ($, s) => s })
+  const c = declareAtom(($, s = 3) => s, { id: 'c' })
   const store = createStore()
 
   store.init(a, b, c)
@@ -136,7 +135,9 @@ test(`atom id`, () => {
 })
 
 test(`action mapper`, () => {
-  const action = declareAction((payload: number) => ({ payload: payload + 1 }))
+  const action = declareAction((payload: number) => ({
+    payload: payload + 1,
+  }))
   assert.is(action(1).payload, 2)
 
   console.log(`👍`)
@@ -144,7 +145,7 @@ test(`action mapper`, () => {
 
 test(`atom filter`, () => {
   const aAtom = declareAtom(0)
-  const bAtom = declareAtom(0, ($, s) => {
+  const bAtom = declareAtom(($, s = 0) => {
     track()
 
     const a = $(aAtom)
@@ -183,8 +184,8 @@ test(`in atom action effect`, async () => {
         $(
           request.handleEffect(({ payload }, { dispatch }) =>
             fetcher(payload)
-              .then(data => dispatch(update(data)))
-              .catch(e =>
+              .then((data) => dispatch(update(data)))
+              .catch((e) =>
                 dispatch(update(e instanceof Error ? e : new Error(e))),
               ),
           ),
@@ -216,12 +217,15 @@ test(`in atom action effect`, async () => {
 test(`action effect example`, () => {
   function handleEffects(store: Store) {
     store.subscribe(({ actions }) =>
-      actions.forEach(action => action.effect?.(store)),
+      actions.forEach((action) => action.effect?.(store)),
     )
   }
 
   const effect = mockFn()
-  const doEffect = declareAction(() => ({ payload: null, effect }))
+  const doEffect = declareAction(() => ({
+    payload: null,
+    effect,
+  }))
   const store = createStore()
 
   handleEffects(store)
@@ -240,10 +244,10 @@ test(`Atom store dependency states`, () => {
   const noopAction = declareAction()
   const aAtom = declareAtom(($, state = 1) => {
     aTrack()
-    $(incrementA.handle(() => (state += 1)))
+    $(incrementA, () => (state += 1))
     return state
   })
-  const bAtom = declareAtom($ => $(aAtom) + 1)
+  const bAtom = declareAtom(($) => $(aAtom) + 1)
 
   const bCache1 = bAtom(createTransaction([noopAction()]))
   assert.is(aTrack.calls.length, 1)
@@ -265,14 +269,16 @@ test(`Atom from`, () => {
 
   assert.is(atom(createTransaction([declareAction()()])).state, 42)
   assert.is(atom(createTransaction([atom.update(43)])).state, 43)
-  assert.is(atom(createTransaction([atom.update(s => s + 2)])).state, 44)
+  assert.is(atom(createTransaction([atom.update((s) => s + 2)])).state, 44)
 
   console.log(`👍`)
 })
 
 test(`Store preloaded state`, () => {
   const atom = declareAtom(42)
-  const storeWithPreloadedState = createStore({ [atom.id]: 0 })
+  const storeWithPreloadedState = createStore({
+    [atom.id]: 0,
+  })
   const storeWithoutPreloadedState = createStore()
 
   assert.is(storeWithoutPreloadedState.getState(atom), 42)
@@ -284,8 +290,8 @@ test(`Store preloaded state`, () => {
   assert.is(storeWithoutPreloadedState.getState(atom), 42)
   assert.is(storeWithPreloadedState.getState(atom), 0)
 
-  storeWithoutPreloadedState.dispatch(atom.update(s => s + 1))
-  storeWithPreloadedState.dispatch(atom.update(s => s + 1))
+  storeWithoutPreloadedState.dispatch(atom.update((s) => s + 1))
+  storeWithPreloadedState.dispatch(atom.update((s) => s + 1))
 
   assert.is(storeWithoutPreloadedState.getState(atom), 43)
   assert.is(storeWithPreloadedState.getState(atom), 1)
@@ -302,7 +308,7 @@ test(`Batched dispatch`, () => {
 
   assert.is(cb.calls.length, 1)
 
-  store.dispatch([atom.update(s => s + 1), atom.update(s => s + 1)])
+  store.dispatch([atom.update((s) => s + 1), atom.update((s) => s + 1)])
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 2)
 
@@ -317,13 +323,12 @@ test(`Batched dispatch dynamic types change`, () => {
     ($, state = new Array<readonly [ActionCreator, any]>()) => {
       computerCalls++
       $(
-        addAction.handle(
-          actionCreator => (state = [...state, [actionCreator, null]]),
-        ),
+        addAction,
+        (actionCreator) => (state = [...state, [actionCreator, null]]),
       )
 
       return state.map(([actionCreator, payload = null]) => {
-        $(actionCreator.handle(v => (payload = v)))
+        $(actionCreator, (v) => (payload = v))
         return [actionCreator, payload] as const
       })
     },
@@ -342,15 +347,15 @@ test(`Batched dispatch dynamic types change`, () => {
 
 test(`async collection of transaction.effectsResult`, async () => {
   function createEffectsTracker(store: Store, start = () => {}) {
-    let unsubscribeFromAction: F | undefined
-    const promise = new Promise<void>(res => {
+    let unsubscribeFromAction: Fn | undefined
+    const promise = new Promise<void>((res) => {
       let effectsCount = 0
 
-      store.subscribe(transaction => {
+      store.subscribe((transaction) => {
         unsubscribeFromAction = store.subscribe(
           declareAction(transaction.actions[0]!.type),
           () => {
-            transaction.effectsResult!.forEach(some => {
+            transaction.effectsResult!.forEach((some) => {
               if (some instanceof Promise) {
                 effectsCount++
 
@@ -384,7 +389,7 @@ test(`async collection of transaction.effectsResult`, async () => {
     $(
       doB.handleEffect(async (action, { dispatch }) => {
         await sleep(10)
-        dispatch(update(s => s + 1))
+        dispatch(update((s) => s + 1))
       }),
     )
     return state

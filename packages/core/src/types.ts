@@ -50,7 +50,7 @@ export type CacheAsArgument<State = any, Ctx extends Rec = Rec> = {
 }
 
 export type Atom<State = any, Ctx extends Rec = Rec> = {
-  (transaction: Transaction, cache: CacheAsArgument<State, Ctx>): Cache<
+  (transaction: Transaction, cache?: CacheAsArgument<State, Ctx>): Cache<
     State,
     Ctx
   >

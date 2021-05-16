@@ -13,16 +13,16 @@ import {
   Transaction,
 } from './internal'
 
-export type Computer<State = any, Ctx extends Rec = Rec> = {
-  ($: Track<Ctx>, state: State): State
+export type Computer<State, Ctx extends Rec> = {
+  ($: Track<State, Ctx>, state: State): State
 }
 
-export type Track<Ctx extends Rec = Rec> = {
-  <State>(atom: Atom<State>): State
-  <State>(atom: Atom<State>, cb: Fn<[State], void | Effect<Ctx>>): void
+export type Track<State, Ctx extends Rec> = {
+  <T>(atom: Atom<T>): T
+  <T>(atom: Atom<T>, cb: Fn<[T], State | void | Effect<Ctx>>): void
   <T extends AC>(
     actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>], void | Effect<Ctx>>,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>], State | void | Effect<Ctx>>,
   ): void
 }
 
@@ -141,7 +141,7 @@ export function memo<State, Ctx extends Rec = Rec>(
     return depPatch.state
   }
 
-  let track: Track<Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
+  let track: Track<State, Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
     if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
       // TODO: how to pass the `id` of atom here?
       invalid(Number.isNaN(nesting), `outdated track call`)
