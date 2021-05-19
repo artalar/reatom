@@ -36,11 +36,11 @@ export type Cache<State = any, Ctx extends Rec = Rec> = {
    * then atom returns to active
    * and may been stale.
    */
-  deps: Array<AtomDep>
+  readonly deps: Array<AtomDep>
 
-  types: Set<ActionType>
+  readonly types: Set<ActionType>
 
-  state: State
+  readonly state: State
 }
 
 export type CacheAsArgument<State = any, Ctx extends Rec = Rec> = {
@@ -69,7 +69,7 @@ export type Action<Payload = any> = {
 
   type: ActionType
 
-  owner?: Atom
+  targets?: Array<Atom>
 
   [K: string]: any
 }
@@ -78,13 +78,13 @@ type CustomAction<ActionData> = Merge<ActionData & { type: string }>
 
 export type ActionCreator<
   Arguments extends any[] = any[],
-  ActionData extends { payload: any; type?: never } = {
+  ActionData extends { payload: any; type?: never; targets?: Array<Atom> } = {
     payload: Arguments[0]
   },
 > = {
   (...a: Arguments): CustomAction<ActionData>
 
-  dispatch(...a: Arguments): Promise<void>
+  dispatch(...a: Arguments): Promise<unknown>
 
   subscribe(cb: Fn<[CustomAction<ActionData>]>): Fn
 
@@ -98,7 +98,7 @@ export type Store = {
   /** Accept action or pack of actions for a batch
    * and return Promise which resolves when all effects resolves
    */
-  dispatch(action: Action | Array<Action>): Promise<void>
+  dispatch(action: Action | Array<Action>): Promise<unknown>
 
   /** Collect states from all active atoms */
   getState<T>(): Record<string, any>
@@ -108,9 +108,12 @@ export type Store = {
   /** Connect atoms to store for actions handling */
   init(...atoms: Array<Atom<any, any>>): Unsubscribe
 
-  subscribe<T>(cb: Fn<[Transaction]>): Unsubscribe
-  subscribe<T>(atom: Atom<T, any>, cb: Fn<[T]>): Unsubscribe
-  subscribe<T>(actionCreator: AC<T>, cb: Fn<[T]>): Unsubscribe
+  subscribe<T>(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
+  subscribe<T>(atom: Atom<T, any>, cb: Fn<[state: T]>): Unsubscribe
+  subscribe<T extends AC>(
+    actionCreator: T,
+    cb: Fn<[action: ActionData<AC>]>,
+  ): Unsubscribe
 }
 
 /**
@@ -123,13 +126,19 @@ export type Transaction = {
 
   readonly effects: Array<Fn<[Store]>>
 
-  readonly error: Error | null
-
   /**
    * - memoize atom recalculation during transaction
    * - allow to redeclare target cache for scoping
    */
   process<T>(atom: Atom<T>, cache?: Cache<T>): Cache<T>
+}
+
+export type TransactionResult = {
+  actions: ReadonlyArray<Action>
+
+  error: Error | null
+
+  patch: Patch
 }
 
 export type Effect<Ctx extends Rec = Rec> = Fn<[Store, Ctx]>
@@ -144,10 +153,15 @@ export type AtomState<T extends Atom | Cache> = T extends Atom<infer State>
   ? State
   : never
 
-export type ActionPayload<T extends ActionCreator | Action> = T extends AC<
-  infer Payload
->
+export type ActionPayload<T extends AC | Action> = T extends AC<infer Payload>
   ? Payload
   : T extends Action<infer Payload>
   ? Payload
+  : never
+
+export type ActionData<T extends AC> = T extends ActionCreator<
+  any[],
+  infer Action
+>
+  ? Action
   : never

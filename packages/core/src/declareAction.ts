@@ -1,6 +1,7 @@
 import {
   ActionCreator,
   defaultStore,
+  Fn,
   invalid,
   isFunction,
   isString,
@@ -22,10 +23,10 @@ export function declareAction<
   type?: string,
 ): ActionCreator<Arguments, ActionData>
 export function declareAction(
-  mapperOrType?: string | ((...a: any[]) => any),
-  type = isString(mapperOrType) ? mapperOrType : `action [${++actionsCount}]`,
+  typeOrMapper?: string | Fn,
+  type = isString(typeOrMapper) ? typeOrMapper : `action [${++actionsCount}]`,
 ) {
-  const mapper = isFunction(mapperOrType) ? mapperOrType : defaultMapper
+  const mapper = isFunction(typeOrMapper) ? typeOrMapper : defaultMapper
   const actionCreator: ActionCreator = (...a) => {
     const action = mapper(...a)
 

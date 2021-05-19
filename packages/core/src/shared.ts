@@ -91,29 +91,28 @@ export function isAction(thing: any): thing is Action {
 }
 
 export function invalid<T extends true>(predicate: T, msg: string): never
-export function invalid(predicate: any, msg: string): any
+export function invalid(predicate: any, msg: string): unknown
 export function invalid(predicate: any, msg: string) {
   if (predicate) throw new Error(`Reatom: invalid ${msg}`)
 }
 
 export function createTransaction(
   actions: Array<Action>,
-  atomsCache: AtomsCache = new WeakMap(),
   patch: Patch = new Map(),
+  getCache: AtomsCache['get'] = () => undefined,
   snapshot: Rec = {},
 ): Transaction {
   const transaction: Transaction = {
     actions,
     effects: [],
-    error: null,
     process(atom, cache) {
       let atomPatch = patch.get(atom)
 
       if (!atomPatch) {
         atomPatch = atom(
           transaction,
-          cache ??
-            atomsCache.get(atom) ?? {
+          getCache(atom) ??
+            cache ?? {
               deps: [],
               ctx: undefined,
               state: snapshot[atom.id],
@@ -123,6 +122,7 @@ export function createTransaction(
 
         patch.set(atom, atomPatch)
       }
+
       return atomPatch
     },
   }

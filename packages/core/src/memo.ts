@@ -9,26 +9,25 @@ import {
   isActionCreator,
   isAtom,
   isFunction,
-  NotFn,
   Rec,
   Transaction,
 } from './internal'
 
-export type Computer<State, Ctx extends Rec> = {
+export type Computer<State = any, Ctx extends Rec = Rec> = {
   ($: Track<State, Ctx>, state: State): State
 }
 
 export type Track<State, Ctx extends Rec> = {
   <T>(atom: Atom<T>): T
   <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
-  <T>(atom: Atom<T>, cb: Fn<[T]>): void
+  <T>(atom: Atom<T>, cb: Fn<[T], any>): void
   <T extends AC>(
     actionCreator: T,
     cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
   ): void
   <T extends AC>(
     actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>]>,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>], any>,
   ): void
 }
 
@@ -85,7 +84,7 @@ export function memo<State, Ctx extends Rec = Rec>(
         }
       } else {
         const { atom: depAtom, cache: depCache } = dep
-        const depPatch = transaction.process(depAtom)
+        const depPatch = transaction.process(depAtom, depCache)
 
         if (depPatch !== depCache) {
           if (depPatch.state !== depCache.state) {
@@ -93,12 +92,12 @@ export function memo<State, Ctx extends Rec = Rec>(
             return false
           }
 
+          dep = { atom: depAtom, cache: depPatch }
+
           isDepsCacheChange = true
 
           isDepsTypesChange ||= depPatch.types !== depCache.types
         }
-
-        dep = { atom: depAtom, cache: depPatch }
       }
 
       patchDeps.push(dep)

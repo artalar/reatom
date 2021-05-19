@@ -6,14 +6,11 @@ import {
   Computer,
   declareAction,
   defaultStore,
-  Effect,
   Fn,
   invalid,
   isFunction,
-  isObject,
   isString,
   memo,
-  Merge,
   NotFn,
   Track,
   Transaction,
@@ -21,114 +18,61 @@ import {
 } from './internal'
 import { Rec } from './types'
 
-// I don't know why it work,
-// but this is the single fined way
-// to infer type from default value
-type ComputerWithInfer<State> =
-  | (($: Track<any, any>) => State)
-  | ((($: any) => State) & (($: any, state?: State | undefined) => any))
-
-type Reducer<State = any, Payload = any, Ctx extends Rec = Rec> = Fn<
-  [Payload, State],
-  State | Effect<Ctx>
->
-
-type InferMethods<Methods extends Rec<Reducer<any, any, any>>> = {
-  [K in keyof Methods]: Methods[K] extends Reducer<any, infer T, any>
-    ? ActionCreator<[T]>
-    : never
-}
+export type AtomOptions<State, Ctx extends Rec> =
+  | Atom['id']
+  | {
+      id?: Atom['id']
+      ctx?: () => Ctx
+      // TODO: extra options?
+      // memo: Memo<State, Ctx>
+      // onChange: (newState: State, state: State) => Effect<Ctx>
+      // toJSON?: Fn
+    }
 
 export type DumbAtom<State> = Atom<State> & {
   update: ActionCreator<[State | ((prevState: State) => State)]>
 }
 
 let atomsCount = 0
+export function declareAtom<State, Ctx extends Rec = Rec>(
+  computer: ($: Track<any, Ctx>) => State,
+  options?: AtomOptions<State, Ctx>,
+): Atom<State, Ctx>
 export function declareAtom<State>(
-  computer: ComputerWithInfer<State>,
-  options?: { id?: string },
-): Atom<State>
-export function declareAtom<
-  State,
-  Ctx extends Rec,
-  Methods extends Rec<Reducer<State, any, Ctx>>,
->(
-  initialState: NotFn<State>,
-  options: {
-    id?: string
-    ctx?: () => Ctx
-    methods?: Methods
-    computer?: Computer<State, Ctx>
-  },
-): Atom<State, Ctx> & Merge<InferMethods<Methods>>
-// @ts-expect-error
-export function declareAtom<State>(
-  initialState: NotFn<State>,
-  options?: { id?: string },
+  initState: NotFn<State>,
+  id?: string,
 ): DumbAtom<State>
-export function declareAtom<
-  State,
-  Ctx extends Rec,
-  Methods extends Rec<Reducer<State, any, Ctx>>,
->(
-  initialStateOrComputer: ComputerWithInfer<State> | NotFn<State>,
-  options: {
-    id?: string
-    ctx?: () => Ctx
-    methods?: Methods
-    computer?: Computer<State, Ctx>
-  } = {},
-): Atom<State, Ctx> & Merge<InferMethods<Methods>> {
-  const actionCreators: Rec<ActionCreator> = {}
+export function declareAtom<State, Ctx extends Rec = Rec>(
+  initialStateOrComputer: NotFn<State> | (($: Track<any, Ctx>) => State),
+  options: AtomOptions<State, Ctx> = {},
+): Atom<State, Ctx> & DumbAtom<State> {
+  options = isString(options) ? { id: options } : options
 
-  const {
-    id = `atom [${++atomsCount}]`,
-    ctx = () => ({} as Ctx),
-    methods = {} as Rec<Reducer<State, any, Ctx>>,
-    computer = isFunction(initialStateOrComputer)
-      ? initialStateOrComputer
-      : ($, state = initialStateOrComputer) => state,
-  } = options
+  const { id = `atom [${++atomsCount}]`, ctx = () => ({} as Ctx) } = options
+
+  let computer = initialStateOrComputer as Computer<State, Ctx>
+  if (!isFunction(initialStateOrComputer)) {
+    const update = (atom.update = declareAction<State | Fn<[State], State>>(
+      `update of "${id}"`,
+    ))
+
+    computer = ($, state = initialStateOrComputer) => {
+      $(update, (payload: NotFn<State>) => {
+        state = isFunction(payload) ? payload(state) : payload
+      })
+
+      return state
+    }
+  }
 
   if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
     invalid(
-      !isString(id) ||
-        !isFunction(ctx) ||
-        !isObject(methods) ||
-        !Object.keys(methods).every(isFunction) ||
+      initialStateOrComputer === undefined ||
         !isFunction(computer) ||
-        (isFunction(initialStateOrComputer) && isFunction(options.computer)),
+        !isString(id) ||
+        !isFunction(ctx),
       `atom arguments`,
     )
-  }
-
-  const internalComputer: Computer<State, Ctx> = ($, state) => {
-    state = computer($, state)
-
-    for (const k in actionCreators) {
-      $(actionCreators[k], (payload) => {
-        const effect = methods[k](payload, state)
-        if (isFunction(effect)) return effect
-        state = effect
-      })
-    }
-
-    return state
-  }
-
-  if (
-    !options.computer &&
-    computer !== initialStateOrComputer &&
-    Object.keys(methods).length === 0
-  ) {
-    methods.update = (payload: State | ((prevState: State) => State), state) =>
-      isFunction(payload) ? payload(state) : payload
-  }
-
-  for (const k in methods) {
-    // FIXME:
-    // @ts-expect-error
-    atom[k] = actionCreators[k] = declareAction(`${k} of "${id}"`)
   }
 
   function atom(
@@ -142,7 +86,7 @@ export function declareAtom<
   ): Cache<State, Ctx> {
     if (cache.ctx === undefined) cache.ctx = ctx()
 
-    return memo(transaction, cache as Cache<State, Ctx>, internalComputer)
+    return memo(transaction, cache as Cache<State, Ctx>, computer)
   }
 
   atom.id = id
