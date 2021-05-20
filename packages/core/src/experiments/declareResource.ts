@@ -1,89 +1,145 @@
-import { declareAction, declareAtom } from '../'
+import {
+  AC,
+  ActionCreator,
+  Atom,
+  AtomState,
+  declareAtom,
+  isObject,
+  Track,
+} from '../internal'
+
+function shallowEqual(a: any, b: any) {
+  if (isObject(a) && isObject(b)) {
+    const aKeys = Object.keys(a)
+    const bKeys = Object.keys(b)
+    return aKeys.length === bKeys.length && aKeys.every((k) => a[k] === b[k])
+  } else {
+    return a === b
+  }
+}
 
 let resourcesCount = 0
 export function declareResource<State, Params = void>(
-  initialState: State,
-  fetcher: (params: Params) => Promise<State>,
+  computer: ($: Track<any, {}>) => State,
+  fetcher: (params: Params) => Promise<State extends any ? State : never>,
   id = `resource [${++resourcesCount}]`,
 ) {
-  const get = declareAction<Params>(`get of ${id}`)
-  const req = declareAction<Params>(`req of ${id}`)
-  const res = declareAction<State>(`res of ${id}`)
-  const err = declareAction<Error>(`err of ${id}`)
-  const rej = declareAction(`rej of ${id}`)
+  const atom = declareAtom(
+    ($, state?: { data: State; err: null | Error; req: boolean }) => {
+      if (state === undefined) {
+        state = { data: computer($), err: null as null | Error, req: false }
+      } else {
+        const data = computer(
+          $,
+          // @ts-expect-error
+          state.data,
+        )
 
-  const initTag = Symbol()
-  const paramsAtom = declareAtom(($, state = initTag as unknown) => {
-    $(req.handle(params => (state = params)))
-    return state
-  }, `params of ${id}`)
-  const versionAtom = declareAtom(($, state = 0) => {
-    $(req.handle(() => state++))
-    $(rej.handle(() => state++))
-    return state
-  }, `version of ${id}`)
+        Object.is(data, state.data)
+      }
 
-  const reqAtom = declareAtom(($, state = false) => {
-    $(req.handle(() => (state = true)))
-    $(res.handle(() => (state = false)))
-    $(err.handle(() => (state = false)))
-    $(rej.handle(() => (state = false)))
-    return state
-  }, `req of ${id}`)
+      $(atom.get, (params) => ({ dispatch }, ctx) => {
+        const isParamsNew =
+          'params' in ctx === false || !shallowEqual(ctx.params, params)
+        if (isParamsNew) dispatch(atom.req(params))
+      })
 
-  const errAtom = declareAtom(($, state = null as null | Error) => {
-    $(err.handle(e => (state = e)))
-    $(res.handle(() => (state = null)))
-    return state
-  }, `err of ${id}`)
+      $(atom.req, (params) => ({ dispatch }, ctx) => {
+        const version = ++ctx.version
+        ctx.params = params
+        return fetcher(params).then(
+          (data) => {
+            if (ctx.version === version) dispatch(atom.res(data))
+          },
+          (error) => {
+            error = error instanceof Error ? error : new Error(error)
+            if (ctx.version === version) dispatch(atom.err(error))
+          },
+        )
+      })
 
-  return Object.assign(
-    declareAtom(($, state = initialState) => {
-      // force initialization
-      $(reqAtom)
-      $(errAtom)
-
-      const params = $(paramsAtom)
-      const version = $(versionAtom)
-
-      $(
-        get.handleEffect(
-          ({ payload }, { dispatch }) =>
-            (params === initTag || payload !== params) &&
-            dispatch(req(payload)),
-        ),
-      )
-
-      $(
-        req.handleEffect(({ payload }, { dispatch, getState }) =>
-          fetcher(payload).then(
-            data => getState(versionAtom) === version && dispatch(res(data)),
-            error =>
-              getState(versionAtom) === version &&
-              dispatch(err(error instanceof Error ? error : new Error(error))),
-          ),
-        ),
-      )
-
-      $(res.handle(data => (state = data)))
+      $(atom.rej, () => (store, ctx) => ctx.version++)
 
       return state
-    }, id),
+    },
     {
-      /** Action for data request. Memoized by fetcher params */
-      get,
-      /** Action for forced data request */
-      req,
-      /** Action for fetcher response */
-      res,
-      /** Action for fetcher error */
-      err,
-      /** Action for cancel pending request */
-      rej,
-      /** Atom of loading status (boolean) */
-      reqAtom,
-      /** Atom of fetcher error (null | Error) */
-      errAtom,
+      id,
+      createCtx: (): { params?: Params; version: number } => ({ version: 0 }),
+    },
+    {
+      get: (params: Params, state) => state,
+
+      req: (params: Params, state) =>
+        state.req
+          ? state
+          : {
+              data: state.data,
+              err: null,
+              req: true,
+            },
+
+      res: (data: State) => ({ data, err: null, req: false }),
+
+      err: (err: Error, state) => ({ data: state.data, err, req: false }),
+
+      rej: (payload: void, state) => ({ ...state, req: false }),
     },
   )
+
+  return atom
 }
+
+/* --- EXAMPLE --- */
+
+type Product = {}
+
+const productsAtom = declareResource(
+  ($, state = new Array<Product>()) => state,
+  (page: number = 0) =>
+    fetch(`/api/products?page=${page}`).then((r) => r.json()),
+)
+
+const pageAtom = declareAtom(
+  () => 0,
+  {
+    onChange: (newState, state, { dispatch }) =>
+      dispatch(productsAtom.get(state)),
+  },
+  {
+    next: (payload: void, state) => state + 1,
+    prev: (payload: void, state) => Math.max(0, state - 1),
+  },
+)
+
+export function Products() {
+  const [{ data, req }] = useAtom(productsAtom)
+  const [page, { next, prev }] = useAtom(pageAtom)
+
+  return html`
+    <ul>
+      ${data.map(
+        (el) => html`
+          <li>
+            <${Product} data=${el} />
+          </li>
+        `,
+      )}
+    </ul>
+    <button onClick=${next}>next</button>
+    <span>${req ? `Loading` : page}</span>
+    <button onClick=${prev}>prev</button>
+  `
+}
+
+declare function Product(props: { data: Product }): string
+
+declare function useAtom<T extends Atom<any, any>>(
+  atom: T,
+): [
+  AtomState<T>,
+  {
+    [K in keyof T]: T[K] extends AC ? T[K]['dispatch'] : never
+  },
+]
+
+declare function html(...a: any[]): string

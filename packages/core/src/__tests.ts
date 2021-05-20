@@ -10,7 +10,7 @@ import {
   Fn,
   Store,
 } from '.'
-// import { declareResource } from './experiments/declareResource'
+import { declareResource } from './experiments/declareResource'
 
 let noop: Fn = () => {}
 
@@ -396,10 +396,12 @@ test(`async collection of transaction.effectsResult`, async () => {
 })
 
 test(`declareResource`, async () => {
-  const resourceAtom = declareResource([0], (param: number) =>
-    typeof param === 'number'
-      ? Promise.resolve([param])
-      : Promise.reject(new Error(param)),
+  const resourceAtom = declareResource(
+    ($, state = [0]) => state,
+    (param: number) =>
+      typeof param === 'number'
+        ? Promise.resolve([param])
+        : Promise.reject(new Error(param)),
   )
 
   const store = createStore()
@@ -407,43 +409,43 @@ test(`declareResource`, async () => {
 
   store.subscribe(resourceAtom, cb)
   assert.is(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), null)
+  assert.equal(cb.lastInput(), { data: [0], err: null, req: false })
 
   store.dispatch(resourceAtom.get(42))
-  assert.is(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), null)
-  await sleep()
-  cb.lastInput() //?
   assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), [42])
+  assert.equal(cb.lastInput(), { data: [0], err: null, req: true })
+  await sleep()
+  assert.is(cb.calls.length, 3)
+  assert.equal(cb.lastInput(), { data: [42], err: null, req: false })
 
+  // `get` with same params should do nothing
   const state = store.getState(resourceAtom)
   store.dispatch(resourceAtom.get(42))
-  assert.is(cb.calls.length, 2)
-  assert.is(cb.lastInput(), state)
-  await sleep()
-  assert.is(cb.calls.length, 2)
-  assert.is(cb.lastInput(), state)
-
-  store.dispatch(resourceAtom.req(42))
-  assert.is(cb.calls.length, 2)
-  await sleep()
   assert.is(cb.calls.length, 3)
   assert.equal(cb.lastInput(), state)
 
-  store.dispatch(resourceAtom.req('42' as any))
-  assert.is(cb.calls.length, 3)
-  await sleep()
-  assert.is(cb.calls.length, 4)
-  assert.equal(cb.lastInput(), new Error('42'))
-
-  store.dispatch(resourceAtom.req(1))
-  store.dispatch(resourceAtom.req(2))
-  store.dispatch(resourceAtom.req(3))
+  // `req` with same params should force refetch
+  store.dispatch(resourceAtom.req(42))
   assert.is(cb.calls.length, 4)
   await sleep()
   assert.is(cb.calls.length, 5)
-  assert.equal(cb.lastInput(), [3])
+  assert.equal(cb.lastInput(), state)
+
+  // error should handled and stored
+  store.dispatch(resourceAtom.req('42' as any))
+  assert.is(cb.calls.length, 6)
+  await sleep()
+  assert.is(cb.calls.length, 7)
+  assert.equal(cb.lastInput(), { data: [42], err: new Error('42'), req: false })
+
+  // concurrent requests should proceed only one response
+  store.dispatch(resourceAtom.req(1))
+  store.dispatch(resourceAtom.req(2))
+  store.dispatch(resourceAtom.req(3))
+  assert.is(cb.calls.length, 8)
+  await sleep()
+  assert.is(cb.calls.length, 9)
+  assert.equal(cb.lastInput(), { data: [3], err: null, req: false })
 
   console.log(`👍`)
 })

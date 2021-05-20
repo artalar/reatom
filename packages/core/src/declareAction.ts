@@ -1,5 +1,6 @@
 import {
   ActionCreator,
+  Atom,
   defaultStore,
   Fn,
   invalid,
@@ -17,7 +18,9 @@ export function declareAction(type?: string): ActionCreator<[]>
 export function declareAction<Payload>(type?: string): ActionCreator<[Payload]>
 export function declareAction<
   Arguments extends any[] = [],
-  ActionData extends { payload: any; type?: never } = { payload: Arguments[0] },
+  ActionData extends { payload: any; type?: never; targets?: Array<Atom<any, any>> } = {
+    payload: Arguments[0]
+  },
 >(
   mapper: (...a: Arguments) => ActionData,
   type?: string,

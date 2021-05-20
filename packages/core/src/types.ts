@@ -78,7 +78,11 @@ type CustomAction<ActionData> = Merge<ActionData & { type: string }>
 
 export type ActionCreator<
   Arguments extends any[] = any[],
-  ActionData extends { payload: any; type?: never; targets?: Array<Atom> } = {
+  ActionData extends {
+    payload: any
+    type?: never
+    targets?: Array<Atom<any, any>>
+  } = {
     payload: Arguments[0]
   },
 > = {
@@ -147,11 +151,12 @@ export type Patch = Map<Atom, Cache>
 
 export type AtomsCache = WeakMap<Atom, Cache>
 
-export type AtomState<T extends Atom | Cache> = T extends Atom<infer State>
-  ? State
-  : T extends Cache<infer State>
-  ? State
-  : never
+export type AtomState<T extends Atom<any, any> | Cache<any, any>> =
+  T extends Atom<infer State, any>
+    ? State
+    : T extends Cache<infer State>
+    ? State
+    : never
 
 export type ActionPayload<T extends AC | Action> = T extends AC<infer Payload>
   ? Payload
