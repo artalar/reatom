@@ -100,9 +100,9 @@ const productsAtom = declareResource(
 )
 
 const pageAtom = declareAtom(
-  () => 0,
+  ($, state = 0) => state,
   {
-    onChange: (newState, state, { dispatch }) =>
+    onChange: (oldState, state, { dispatch }) =>
       dispatch(productsAtom.get(state)),
   },
   {

@@ -27,8 +27,8 @@ export type AtomOptions<State, Ctx extends Rec> =
       createCtx?: () => Ctx
       id?: Atom['id']
       onChange?: (
-        newState: State,
-        state: State | undefined,
+        oldState: State | undefined,
+        state: State,
         store: Store,
         ctx: Ctx,
       ) => any
@@ -145,7 +145,7 @@ export function declareAtom<
 
     if (onChange !== undefined && !Object.is(patch.state, cache.state)) {
       transaction.effects.push((store) =>
-        onChange(patch.state, cache.state, store, patch.ctx),
+        onChange(cache.state, patch.state, store, patch.ctx),
       )
     }
 
