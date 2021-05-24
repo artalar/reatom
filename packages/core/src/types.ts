@@ -24,9 +24,9 @@ export type Unsubscribe = () => void
 
 export type AtomDep = AC | { atom: Atom; cache: Cache }
 
-export type Cache<State = any, Ctx extends Rec = Rec> = {
+export type Cache<State = any> = {
   /** Local mutable context */
-  ctx: Ctx
+  ctx: Rec<unknown>
 
   /**
    * Deps useful for testing and debugging.
@@ -43,25 +43,29 @@ export type Cache<State = any, Ctx extends Rec = Rec> = {
   readonly state: State
 }
 
-export type CacheAsArgument<State = any, Ctx extends Rec = Rec> = {
-  [K in keyof Cache<State, Ctx>]: K extends `ctx` | `state`
-    ? Cache<State, Ctx>[K] | undefined
-    : Cache<State, Ctx>[K]
+export type CacheAsArgument<State = any> = {
+  [K in keyof Cache<State>]: K extends `ctx` | `state`
+    ? Cache<State>[K] | undefined
+    : Cache<State>[K]
 }
 
-export type Atom<State = any, Ctx extends Rec = Rec> = {
-  (transaction: Transaction, cache?: CacheAsArgument<State, Ctx>): Cache<
-    State,
-    Ctx
-  >
+export type Reducer<State = any> = (
+  transaction: Transaction | Action | Action[],
+  cache?: CacheAsArgument<State>,
+) => Cache<State>
 
+export type Atom<State = any> = Reducer<State> & {
+  /** Unique ID */
   id: string
 
+  /** Noop subscription to initiate actions handling (`defaultStore`) */
   init(): Unsubscribe
 
+  /** Read (or recalculate) state (`defaultStore`) */
   getState(): State
 
-  subscribe(cb: Fn<[State]>): Unsubscribe
+  /** Immediately receive current state and all new (`defaultStore`) */
+  subscribe(cb: Fn<[state: State]>): Unsubscribe
 }
 
 export type Action<Payload = any> = {
@@ -69,28 +73,31 @@ export type Action<Payload = any> = {
 
   type: ActionType
 
+  /** Atoms which achieves  */
   targets?: Array<Atom>
 
-  [K: string]: any
+  [K: string]: unknown
 }
 
-type CustomAction<ActionData> = Merge<ActionData & { type: string }>
+type CustomAction<ActionData extends Rec> = Merge<ActionData & { type: string }>
 
 export type ActionCreator<
   Arguments extends any[] = any[],
   ActionData extends {
     payload: any
     type?: never
-    targets?: Array<Atom<any, any>>
+    targets?: Array<Atom>
   } = {
     payload: Arguments[0]
   },
 > = {
   (...a: Arguments): CustomAction<ActionData>
 
-  dispatch(...a: Arguments): Promise<unknown>
+  /** Create the action creator action and dispatch it to `defaultStore` */
+  dispatch(...args: Arguments): ReturnType<Store['dispatch']>
 
-  subscribe(cb: Fn<[CustomAction<ActionData>]>): Fn
+  /** Subscribe to dispatches of the action to `defaultStore` */
+  subscribe(cb: Fn<[action: CustomAction<ActionData>]>): Unsubscribe
 
   type: ActionType
 }
@@ -107,13 +114,13 @@ export type Store = {
   /** Collect states from all active atoms */
   getState<T>(): Record<string, any>
   /** Get stored or calculate new state from atom */
-  getState<T>(atom: Atom<T, any>): T
+  getState<T>(atom: Atom<T>): T
 
   /** Connect atoms to store for actions handling */
-  init(...atoms: Array<Atom<any, any>>): Unsubscribe
+  init(...atoms: Array<Atom>): Unsubscribe
 
   subscribe<T>(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
-  subscribe<T>(atom: Atom<T, any>, cb: Fn<[state: T]>): Unsubscribe
+  subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
   subscribe<T extends AC>(
     actionCreator: T,
     cb: Fn<[action: ActionData<AC>]>,
@@ -151,12 +158,13 @@ export type Patch = Map<Atom, Cache>
 
 export type AtomsCache = WeakMap<Atom, Cache>
 
-export type AtomState<T extends Atom<any, any> | Cache<any, any>> =
-  T extends Atom<infer State, any>
-    ? State
-    : T extends Cache<infer State>
-    ? State
-    : never
+export type AtomState<T extends Atom | Cache<any>> = T extends Atom<
+  infer State
+>
+  ? State
+  : T extends Cache<infer State>
+  ? State
+  : never
 
 export type ActionPayload<T extends AC | Action> = T extends AC<infer Payload>
   ? Payload

@@ -25,9 +25,13 @@ export function declareResource<State, Params = void>(
   id = `resource [${++resourcesCount}]`,
 ) {
   const atom = declareAtom(
-    ($, state?: { data: State; err: null | Error; req: boolean }) => {
+    ($, state?: { data: State; error: null | Error; isLoading: boolean }) => {
       if (state === undefined) {
-        state = { data: computer($), err: null as null | Error, req: false }
+        state = {
+          data: computer($),
+          error: null,
+          isLoading: false,
+        }
       } else {
         const data = computer(
           $,
@@ -35,7 +39,13 @@ export function declareResource<State, Params = void>(
           state.data,
         )
 
-        Object.is(data, state.data)
+        state = Object.is(data, state.data)
+          ? state
+          : {
+              data,
+              error: state.error,
+              isLoading: state.isLoading,
+            }
       }
 
       $(atom.get, (params) => ({ dispatch }, ctx) => {
@@ -63,26 +73,30 @@ export function declareResource<State, Params = void>(
       return state
     },
     {
-      id,
-      createCtx: (): { params?: Params; version: number } => ({ version: 0 }),
-    },
-    {
       get: (params: Params, state) => state,
 
       req: (params: Params, state) =>
-        state.req
+        state.isLoading
           ? state
           : {
               data: state.data,
-              err: null,
-              req: true,
+              error: null,
+              isLoading: true,
             },
 
-      res: (data: State) => ({ data, err: null, req: false }),
+      res: (data: State) => ({ data, error: null, isLoading: false }),
 
-      err: (err: Error, state) => ({ data: state.data, err, req: false }),
+      err: (error: Error, state) => ({
+        data: state.data,
+        error,
+        isLoading: false,
+      }),
 
-      rej: (payload: void, state) => ({ ...state, req: false }),
+      rej: (payload: void, state) => ({ ...state, isLoading: false }),
+    },
+    {
+      id,
+      createCtx: (): { version: number; params?: Params } => ({ version: 0 }),
     },
   )
 
@@ -90,7 +104,6 @@ export function declareResource<State, Params = void>(
 }
 
 /* --- EXAMPLE --- */
-
 type Product = {}
 
 const productsAtom = declareResource(
@@ -102,17 +115,17 @@ const productsAtom = declareResource(
 const pageAtom = declareAtom(
   ($, state = 0) => state,
   {
-    onChange: (oldState, state, { dispatch }) =>
-      dispatch(productsAtom.get(state)),
-  },
-  {
     next: (payload: void, state) => state + 1,
     prev: (payload: void, state) => Math.max(0, state - 1),
+  },
+  {
+    onChange: (oldState, state, { dispatch }) =>
+      dispatch(productsAtom.get(state)),
   },
 )
 
 export function Products() {
-  const [{ data, req }] = useAtom(productsAtom)
+  const [{ data, isLoading }, methods] = useAtom(productsAtom)
   const [page, { next, prev }] = useAtom(pageAtom)
 
   return html`
@@ -126,14 +139,14 @@ export function Products() {
       )}
     </ul>
     <button onClick=${next}>next</button>
-    <span>${req ? `Loading` : page}</span>
+    <span>${isLoading ? `Loading` : page}</span>
     <button onClick=${prev}>prev</button>
   `
 }
 
 declare function Product(props: { data: Product }): string
 
-declare function useAtom<T extends Atom<any, any>>(
+declare function useAtom<T extends Atom<any>>(
   atom: T,
 ): [
   AtomState<T>,

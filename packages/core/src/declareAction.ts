@@ -18,7 +18,7 @@ export function declareAction(type?: string): ActionCreator<[]>
 export function declareAction<Payload>(type?: string): ActionCreator<[Payload]>
 export function declareAction<
   Arguments extends any[] = [],
-  ActionData extends { payload: any; type?: never; targets?: Array<Atom<any, any>> } = {
+  ActionData extends { payload: any; type?: never; targets?: Array<Atom> } = {
     payload: Arguments[0]
   },
 >(

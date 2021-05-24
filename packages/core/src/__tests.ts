@@ -8,6 +8,7 @@ import {
   declareAction,
   declareAtom,
   Fn,
+  isFunction,
   Store,
 } from '.'
 import { declareResource } from './experiments/declareResource'
@@ -44,29 +45,40 @@ export function mockFn<I extends any[], O>(
 test(`displayName`, () => {
   const setFirstName = declareAction<string>(`setFirstName`)
   const setFullName = declareAction<string>(`setFullName`)
-  const firstNameAtom = declareAtom(($, state = 'John') => {
-    $(setFirstName, (name) => (state = name))
-    $(setFullName, (fullName) => (state = fullName.split(' ')[0]))
-    return state
-  }, `firstName`)
+  const firstNameAtom = declareAtom(
+    ($, state = 'John') => {
+      $(setFirstName, (name) => (state = name))
+      $(setFullName, (fullName) => (state = fullName.split(' ')[0]))
+      return state
+    },
+    {},
+    `firstName`,
+  )
 
-  const lastNameAtom = declareAtom(($, state = 'Doe') => {
-    $(setFullName, (fullName) => (state = fullName.split(' ')[1]))
-    return state
-  }, `lastName`)
+  const lastNameAtom = declareAtom(
+    ($, state = 'Doe') => {
+      $(setFullName, (fullName) => (state = fullName.split(' ')[1]))
+      return state
+    },
+    {},
+    `lastName`,
+  )
 
   const isFirstNameShortAtom = declareAtom(
     ($) => $(firstNameAtom).length < 10,
+    {},
     `isFirstNameShort`,
   )
 
   const fullNameAtom = declareAtom(
     ($) => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
+    {},
     `fullName`,
   )
 
   const displayNameAtom = declareAtom(
     ($) => ($(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom)),
+    {},
     `displayName`,
   )
 
@@ -128,9 +140,9 @@ test(`combine`, () => {
 })
 
 test(`atom id`, () => {
-  const a = declareAtom(1, `a`)
-  const b = declareAtom(($, s = 2) => s, { id: `b` })
-  const c = declareAtom(($) => $(a), { id: `c` })
+  const a = declareAtom(1, {}, `a`)
+  const b = declareAtom(($, s = 2) => s, {}, `b`)
+  const c = declareAtom(($) => $(a), {}, `c`)
   const store = createStore()
 
   store.init(a, b, c)
@@ -228,7 +240,7 @@ test(`in atom action effect`, async () => {
 test(`action effect example`, () => {
   function handleEffects(store: Store) {
     store.subscribe(({ actions }) =>
-      actions.forEach((action) => action.effect?.(store)),
+      actions.forEach(({ effect }) => isFunction(effect) && effect(store)),
     )
   }
 
@@ -409,14 +421,14 @@ test(`declareResource`, async () => {
 
   store.subscribe(resourceAtom, cb)
   assert.is(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), { data: [0], err: null, req: false })
+  assert.equal(cb.lastInput(), { data: [0], error: null, isLoading: false })
 
   store.dispatch(resourceAtom.get(42))
   assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), { data: [0], err: null, req: true })
+  assert.equal(cb.lastInput(), { data: [0], error: null, isLoading: true })
   await sleep()
   assert.is(cb.calls.length, 3)
-  assert.equal(cb.lastInput(), { data: [42], err: null, req: false })
+  assert.equal(cb.lastInput(), { data: [42], error: null, isLoading: false })
 
   // `get` with same params should do nothing
   const state = store.getState(resourceAtom)
@@ -436,7 +448,11 @@ test(`declareResource`, async () => {
   assert.is(cb.calls.length, 6)
   await sleep()
   assert.is(cb.calls.length, 7)
-  assert.equal(cb.lastInput(), { data: [42], err: new Error('42'), req: false })
+  assert.equal(cb.lastInput(), {
+    data: [42],
+    error: new Error('42'),
+    isLoading: false,
+  })
 
   // concurrent requests should proceed only one response
   store.dispatch(resourceAtom.req(1))
@@ -445,7 +461,7 @@ test(`declareResource`, async () => {
   assert.is(cb.calls.length, 8)
   await sleep()
   assert.is(cb.calls.length, 9)
-  assert.equal(cb.lastInput(), { data: [3], err: null, req: false })
+  assert.equal(cb.lastInput(), { data: [3], error: null, isLoading: false })
 
   console.log(`👍`)
 })

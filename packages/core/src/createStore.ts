@@ -234,7 +234,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   function subscribe<T>(
     cb: Fn<[transactionResult: TransactionResult]>,
   ): Unsubscribe
-  function subscribe<T>(atom: Atom<T, any>, cb: Fn<[state: T]>): Unsubscribe
+  function subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
   function subscribe<T extends AC>(
     actionCreator: T,
     cb: Fn<[action: ActionData<AC>]>,

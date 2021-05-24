@@ -1,14 +1,17 @@
 import {
   AC,
+  Action,
   ActionCreator,
   Atom,
   Cache,
   CacheAsArgument,
   Computer,
+  createTransaction,
   declareAction,
   defaultStore,
   Fn,
   invalid,
+  isAction,
   isFunction,
   isString,
   memo,
@@ -37,20 +40,25 @@ export type AtomOptions<State, Ctx extends Rec> =
       // toJSON?: Fn
     }
 
-export type AtomMethod<State> = (payload: any, state: State) => State
+export type AtomMethod<State = any, Payload = any> = (
+  payload: Payload,
+  state: State,
+) => State
 
 export type ActionCreatorsMethods<Methods extends Rec<AtomMethod<any>>> = {
   [K in keyof Methods]: Methods[K] extends (
     payload: infer Payload,
     state: any,
   ) => any
-    ? AC<Payload>
+    ? ActionCreator<[payload: Payload]>
     : never
 }
 
-export type DumbAtom<State> = Atom<State> & {
-  update: ActionCreator<[State | ((prevState: State) => State)]>
+export type DumbAtomMethods<State> = {
+  update: AtomMethod<State, State | ((prevState: State) => State)>
 }
+
+export type DumbAtom<State> = Atom<State> & DumbAtomMethods<State>
 
 let atomsCount = 0
 export function declareAtom<
@@ -58,23 +66,33 @@ export function declareAtom<
   Ctx extends Rec,
   Methods extends Rec<AtomMethod<State>>,
 >(
-  computer: ($: Track<any, Ctx>) => State,
-  options?: AtomOptions<State, Ctx>,
+  computer: ($: Track<unknown, Ctx>) => State,
   methods?: Methods,
-): Atom<State, Ctx> & Merge<ActionCreatorsMethods<Methods>>
-export function declareAtom<State>(
+  options?: AtomOptions<State, Ctx>,
+): Atom<State> & Merge<ActionCreatorsMethods<Methods>>
+export function declareAtom<
+  State,
+  Ctx extends Rec,
+  Methods extends Rec<AtomMethod<State>> | undefined,
+>(
   initState: NotFn<State>,
-  id?: string,
-): DumbAtom<State>
+  methods?: Methods,
+  options?: AtomOptions<State, Ctx>,
+): Atom<State> &
+  Merge<
+    ActionCreatorsMethods<
+      Methods extends undefined ? DumbAtomMethods<State> : Methods
+    >
+  >
 export function declareAtom<
   State,
   Ctx extends Rec,
   Methods extends Rec<AtomMethod<State>>,
 >(
   initialStateOrComputer: NotFn<State> | (($: Track<any, Ctx>) => State),
-  options: AtomOptions<State, Ctx> = {},
   methods: Methods = {} as Methods,
-): Atom<State, Ctx> & DumbAtom<State> & Merge<ActionCreatorsMethods<Methods>> {
+  options: AtomOptions<State, Ctx> = {},
+): Atom<State> & Merge<ActionCreatorsMethods<Methods>> {
   options = isString(options) ? { id: options } : options
 
   const {
@@ -131,21 +149,27 @@ export function declareAtom<
   }
 
   function atom(
-    transaction: Transaction,
-    cache: CacheAsArgument<State, Ctx> = {
+    action: Transaction | Array<Action> | Action,
+    cache: CacheAsArgument<State> = {
       deps: [],
-      ctx: createCtx(),
+      ctx: undefined,
       state: undefined,
       types: new Set(),
     },
-  ): Cache<State, Ctx> {
+  ): Cache<State> {
+    const transaction = Array.isArray(action)
+      ? createTransaction(action)
+      : isAction(action)
+      ? createTransaction([action])
+      : action
+
     if (cache.ctx === undefined) cache.ctx = createCtx()
 
-    const patch = memo(transaction, cache as Cache<State, Ctx>, computer)
+    const patch = memo(transaction, cache as Cache<State>, computer)
 
     if (onChange !== undefined && !Object.is(patch.state, cache.state)) {
       transaction.effects.push((store) =>
-        onChange(cache.state, patch.state, store, patch.ctx),
+        onChange(cache.state, patch.state, store, patch.ctx as Ctx),
       )
     }
 
@@ -161,7 +185,6 @@ export function declareAtom<
   atom.subscribe = (cb: Fn<[State]>): Unsubscribe =>
     defaultStore.subscribe(atom, cb)
 
-  // FIXME:
   // @ts-expect-error
   return atom
 }

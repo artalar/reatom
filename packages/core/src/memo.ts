@@ -18,9 +18,9 @@ export type Computer<State = any, Ctx extends Rec = Rec> = {
 }
 
 export type Track<State, Ctx extends Rec> = {
-  <T>(atom: Atom<T, any>): T
-  <T>(atom: Atom<T, any>, cb: Fn<[T], Effect<Ctx>>): void
-  <T>(atom: Atom<T, any>, cb: Fn<[T], any>): void
+  <T>(atom: Atom<T>): T
+  <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
+  <T>(atom: Atom<T>, cb: Fn<[T], any>): void
   <T extends AC>(
     actionCreator: T,
     cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
@@ -33,9 +33,9 @@ export type Track<State, Ctx extends Rec> = {
 
 export function memo<State, Ctx extends Rec = Rec>(
   transaction: Transaction,
-  cache: Cache<State, Ctx>,
+  cache: Cache<State>,
   computer: Computer<State, Ctx>,
-): Cache<State, Ctx> {
+): Cache<State> {
   const { deps } = cache
   let patchDeps: Cache<State>['deps'] = []
   let patchState: State
