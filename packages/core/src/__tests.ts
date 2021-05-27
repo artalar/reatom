@@ -11,7 +11,7 @@ import {
   isFunction,
   Store,
 } from '.'
-import { declareResource } from './experiments/declareResource'
+import { declareResource } from '../build/experiments'
 
 let noop: Fn = () => {}
 
@@ -43,21 +43,21 @@ export function mockFn<I extends any[], O>(
 }
 
 test(`displayName`, () => {
-  const setFirstName = declareAction<string>(`setFirstName`)
-  const setFullName = declareAction<string>(`setFullName`)
   const firstNameAtom = declareAtom(
-    ($, state = 'John') => {
-      $(setFirstName, (name) => (state = name))
-      $(setFullName, (fullName) => (state = fullName.split(' ')[0]))
-      return state
+    'John',
+    {
+      set: (name: string) => name,
+      setFullName: (fullName: string) => fullName.split(' ')[0],
     },
-    {},
     `firstName`,
   )
 
   const lastNameAtom = declareAtom(
     ($, state = 'Doe') => {
-      $(setFullName, (fullName) => (state = fullName.split(' ')[1]))
+      $(
+        firstNameAtom.setFullName,
+        (fullName) => (state = fullName.split(' ')[1]),
+      )
       return state
     },
     {},
@@ -91,19 +91,19 @@ test(`displayName`, () => {
   assert.is(cb.calls.length, 1)
   assert.is(cb.lastInput(), 'John Doe')
 
-  store.dispatch(setFirstName('John'))
+  store.dispatch(firstNameAtom.set('John'))
   assert.is(cb.calls.length, 1)
   assert.is(cb.lastInput(), 'John Doe')
 
-  store.dispatch(setFirstName('Joe'))
+  store.dispatch(firstNameAtom.set('Joe'))
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 'Joe Doe')
 
-  store.dispatch(setFirstName('Joooooooooooooooooooe'))
+  store.dispatch(firstNameAtom.set('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
   assert.is(cb.lastInput(), 'Joooooooooooooooooooe')
 
-  store.dispatch(setFirstName('Joooooooooooooooooooe'))
+  store.dispatch(firstNameAtom.set('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
   assert.is(cb.lastInput(), 'Joooooooooooooooooooe')
 
@@ -423,7 +423,7 @@ test(`declareResource`, async () => {
   assert.is(cb.calls.length, 1)
   assert.equal(cb.lastInput(), { data: [0], error: null, isLoading: false })
 
-  store.dispatch(resourceAtom.get(42))
+  store.dispatch(resourceAtom.request(42))
   assert.is(cb.calls.length, 2)
   assert.equal(cb.lastInput(), { data: [0], error: null, isLoading: true })
   await sleep()
@@ -432,19 +432,19 @@ test(`declareResource`, async () => {
 
   // `get` with same params should do nothing
   const state = store.getState(resourceAtom)
-  store.dispatch(resourceAtom.get(42))
+  store.dispatch(resourceAtom.request(42))
   assert.is(cb.calls.length, 3)
   assert.equal(cb.lastInput(), state)
 
   // `req` with same params should force refetch
-  store.dispatch(resourceAtom.req(42))
+  store.dispatch(resourceAtom.fetch(42))
   assert.is(cb.calls.length, 4)
   await sleep()
   assert.is(cb.calls.length, 5)
   assert.equal(cb.lastInput(), state)
 
   // error should handled and stored
-  store.dispatch(resourceAtom.req('42' as any))
+  store.dispatch(resourceAtom.fetch('42' as any))
   assert.is(cb.calls.length, 6)
   await sleep()
   assert.is(cb.calls.length, 7)
@@ -455,9 +455,9 @@ test(`declareResource`, async () => {
   })
 
   // concurrent requests should proceed only one response
-  store.dispatch(resourceAtom.req(1))
-  store.dispatch(resourceAtom.req(2))
-  store.dispatch(resourceAtom.req(3))
+  store.dispatch(resourceAtom.fetch(1))
+  store.dispatch(resourceAtom.fetch(2))
+  store.dispatch(resourceAtom.fetch(3))
   assert.is(cb.calls.length, 8)
   await sleep()
   assert.is(cb.calls.length, 9)

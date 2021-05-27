@@ -49,12 +49,9 @@ export type CacheAsArgument<State = any> = {
     : Cache<State>[K]
 }
 
-export type Reducer<State = any> = (
-  transaction: Transaction | Action | Action[],
-  cache?: CacheAsArgument<State>,
-) => Cache<State>
+export type Atom<State = any> = {
+  (transaction: Transaction, cache?: CacheAsArgument<State>): Cache<State>
 
-export type Atom<State = any> = Reducer<State> & {
   /** Unique ID */
   id: string
 
@@ -158,9 +155,7 @@ export type Patch = Map<Atom, Cache>
 
 export type AtomsCache = WeakMap<Atom, Cache>
 
-export type AtomState<T extends Atom | Cache<any>> = T extends Atom<
-  infer State
->
+export type AtomState<T extends Atom | Cache<any>> = T extends Atom<infer State>
   ? State
   : T extends Cache<infer State>
   ? State

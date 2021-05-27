@@ -6,6 +6,7 @@ import {
   Effect,
   Fn,
   invalid,
+  IS_DEV,
   isActionCreator,
   isAtom,
   isFunction,
@@ -140,7 +141,7 @@ export function memo<State, Ctx extends Rec = Rec>(
         scheduleEffect(cb(depPatch.state))
       }
     } else {
-      if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+      if (IS_DEV) {
         invalid(cb, `callback in nested track`)
       }
     }
@@ -149,7 +150,7 @@ export function memo<State, Ctx extends Rec = Rec>(
   }
 
   let track: Track<State, Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
-    if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+    if (IS_DEV) {
       // TODO: how to pass the `id` of atom here?
       invalid(Number.isNaN(nesting), `outdated track call`)
     }
@@ -159,12 +160,12 @@ export function memo<State, Ctx extends Rec = Rec>(
     try {
       if (isAtom(atomOrAction)) return trackAtom(atomOrAction, cb)
 
-      if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+      if (IS_DEV) {
         invalid(!isActionCreator(atomOrAction), `track arguments`)
       }
 
       if (nesting === 1) {
-        if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+        if (IS_DEV) {
           invalid(!cb, `action track without callback`)
         }
 
@@ -182,7 +183,7 @@ export function memo<State, Ctx extends Rec = Rec>(
           }
         })
       } else {
-        if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+        if (IS_DEV) {
           invalid(true, `action handling in nested track`)
         }
       }

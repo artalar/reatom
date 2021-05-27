@@ -1,17 +1,14 @@
 import {
-  AC,
-  Action,
   ActionCreator,
   Atom,
   Cache,
   CacheAsArgument,
   Computer,
-  createTransaction,
   declareAction,
   defaultStore,
   Fn,
   invalid,
-  isAction,
+  IS_DEV,
   isFunction,
   isString,
   memo,
@@ -36,7 +33,7 @@ export type AtomOptions<State, Ctx extends Rec> =
         ctx: Ctx,
       ) => any
       // TODO: extra options?
-      // memo: Memo<State, Ctx>
+      // memo?: Memo<State, Ctx>
       // toJSON?: Fn
     }
 
@@ -46,10 +43,7 @@ export type AtomMethod<State = any, Payload = any> = (
 ) => State
 
 export type ActionCreatorsMethods<Methods extends Rec<AtomMethod<any>>> = {
-  [K in keyof Methods]: Methods[K] extends (
-    payload: infer Payload,
-    state: any,
-  ) => any
+  [K in keyof Methods]: Methods[K] extends Fn<[infer Payload, any]>
     ? ActionCreator<[payload: Payload]>
     : never
 }
@@ -89,10 +83,10 @@ export function declareAtom<
   Ctx extends Rec,
   Methods extends Rec<AtomMethod<State>>,
 >(
-  initialStateOrComputer: NotFn<State> | (($: Track<any, Ctx>) => State),
+  initialStateOrComputer: NotFn<State> | (($: Track<unknown, Ctx>) => State),
   methods: Methods = {} as Methods,
   options: AtomOptions<State, Ctx> = {},
-): Atom<State> & Merge<ActionCreatorsMethods<Methods>> {
+): Atom<State> {
   options = isString(options) ? { id: options } : options
 
   const {
@@ -102,42 +96,33 @@ export function declareAtom<
   } = options
 
   let userComputer = initialStateOrComputer as Computer<State, Ctx>
-  if (isFunction(initialStateOrComputer)) {
-  } else {
-    if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
-      invalid(Object.keys(methods).length > 0, `methods of dumb atom`)
-    }
-
-    // @ts-expect-error
-    methods.update = (payload: State | Fn<[State], State>, state: State) =>
-      isFunction(payload) ? payload(state) : payload
-
+  if (!isFunction(initialStateOrComputer)) {
     userComputer = ($, state = initialStateOrComputer) => state
+
+    if (Object.keys(methods).length === 0) {
+      // @ts-expect-error
+      methods.update = (payload: State | Fn<[State], State>, state: State) =>
+        isFunction(payload) ? payload(state) : payload
+    }
   }
 
-  const methodsKeys = Object.keys(methods)
-  const actionCreators: Rec<AC> = {}
-
-  methodsKeys.forEach(
-    (k) =>
-      // @ts-expect-error
-      (atom[k] = actionCreators[k] =
-        declareAction(
-          (payload: any) => ({
-            payload,
-            targets: [atom],
-          }),
-          `${k} of "${id}"`,
-        )),
-  )
+  const targets = [atom]
+  const methodsDecoupled = Object.keys(methods).map((k) => ({
+    reducer: methods[k],
+    // @ts-expect-error
+    actionCreator: (atom[k] = declareAction(
+      (payload: any) => ({ payload, targets }),
+      `${k} of "${id}"`,
+    )),
+  }))
 
   const computer: Computer<State, Ctx> = ($, state) =>
-    methodsKeys.reduce((state, k) => {
-      $(actionCreators[k], (payload) => (state = methods[k](payload, state)))
+    methodsDecoupled.reduce((state, { reducer, actionCreator }) => {
+      $(actionCreator, (payload) => (state = reducer(payload, state)))
       return state
     }, userComputer($, state))
 
-  if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+  if (IS_DEV) {
     invalid(
       initialStateOrComputer === undefined ||
         !isFunction(userComputer) ||
@@ -149,7 +134,7 @@ export function declareAtom<
   }
 
   function atom(
-    action: Transaction | Array<Action> | Action,
+    transaction: Transaction,
     cache: CacheAsArgument<State> = {
       deps: [],
       ctx: undefined,
@@ -157,12 +142,6 @@ export function declareAtom<
       types: new Set(),
     },
   ): Cache<State> {
-    const transaction = Array.isArray(action)
-      ? createTransaction(action)
-      : isAction(action)
-      ? createTransaction([action])
-      : action
-
     if (cache.ctx === undefined) cache.ctx = createCtx()
 
     const patch = memo(transaction, cache as Cache<State>, computer)
@@ -185,6 +164,5 @@ export function declareAtom<
   atom.subscribe = (cb: Fn<[State]>): Unsubscribe =>
     defaultStore.subscribe(atom, cb)
 
-  // @ts-expect-error
   return atom
 }

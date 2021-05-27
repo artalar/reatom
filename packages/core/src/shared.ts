@@ -9,6 +9,8 @@ import {
   Transaction,
 } from './internal'
 
+export const IS_DEV = /* TODO: `process.env.NODE_ENV === 'development'` */ true
+
 export const noop: Fn = () => {}
 
 export function callSafety<I extends any[], O, This = any>(

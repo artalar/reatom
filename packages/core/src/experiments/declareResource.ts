@@ -1,12 +1,4 @@
-import {
-  AC,
-  ActionCreator,
-  Atom,
-  AtomState,
-  declareAtom,
-  isObject,
-  Track,
-} from '../internal'
+import { AC, Atom, AtomState, declareAtom, isObject, Track } from '@reatom/core'
 
 function shallowEqual(a: any, b: any) {
   if (isObject(a) && isObject(b)) {
@@ -21,7 +13,10 @@ function shallowEqual(a: any, b: any) {
 let resourcesCount = 0
 export function declareResource<State, Params = void>(
   computer: ($: Track<any, {}>) => State,
-  fetcher: (params: Params) => Promise<State extends any ? State : never>,
+  fetcher: (
+    params: Params,
+    state: State extends any ? State : never,
+  ) => Promise<State extends any ? State : never>,
   id = `resource [${++resourcesCount}]`,
 ) {
   const atom = declareAtom(
@@ -48,34 +43,36 @@ export function declareResource<State, Params = void>(
             }
       }
 
-      $(atom.get, (params) => ({ dispatch }, ctx) => {
+      $(atom.request, (params) => ({ dispatch }, ctx) => {
         const isParamsNew =
           'params' in ctx === false || !shallowEqual(ctx.params, params)
-        if (isParamsNew) dispatch(atom.req(params))
+        if (isParamsNew) dispatch(atom.fetch(params))
       })
 
-      $(atom.req, (params) => ({ dispatch }, ctx) => {
+      $(atom.fetch, (params) => ({ dispatch }, ctx) => {
         const version = ++ctx.version
         ctx.params = params
-        return fetcher(params).then(
+        return fetcher(params, state!.data).then(
           (data) => {
-            if (ctx.version === version) dispatch(atom.res(data))
+            if (ctx.version === version) dispatch(atom.response(data))
           },
           (error) => {
             error = error instanceof Error ? error : new Error(error)
-            if (ctx.version === version) dispatch(atom.err(error))
+            if (ctx.version === version) dispatch(atom.error(error))
           },
         )
       })
 
-      $(atom.rej, () => (store, ctx) => ctx.version++)
+      $(atom.cancel, () => (store, ctx) => ctx.version++)
 
       return state
     },
     {
-      get: (params: Params, state) => state,
+      /** Action for data request. Memoized by fetcher params */
+      request: (params: Params, state) => state,
 
-      req: (params: Params, state) =>
+      /** Action for forced data request */
+      fetch: (params: Params, state) =>
         state.isLoading
           ? state
           : {
@@ -84,15 +81,18 @@ export function declareResource<State, Params = void>(
               isLoading: true,
             },
 
-      res: (data: State) => ({ data, error: null, isLoading: false }),
+      /** Action for fetcher response */
+      response: (data: State) => ({ data, error: null, isLoading: false }),
 
-      err: (error: Error, state) => ({
+      /** Action for fetcher error */
+      error: (error: Error, state) => ({
         data: state.data,
         error,
         isLoading: false,
       }),
 
-      rej: (payload: void, state) => ({ ...state, isLoading: false }),
+      /** Action for cancel pending request */
+      cancel: (payload: void, state) => ({ ...state, isLoading: false }),
     },
     {
       id,
@@ -103,56 +103,66 @@ export function declareResource<State, Params = void>(
   return atom
 }
 
-/* --- EXAMPLE --- */
-type Product = {}
+// This will throw by terser
+function example() {
+  type Product = {}
 
-const productsAtom = declareResource(
-  ($, state = new Array<Product>()) => state,
-  (page: number = 0) =>
-    fetch(`/api/products?page=${page}`).then((r) => r.json()),
-)
+  const productsAtom = declareResource(
+    ($, state = new Array<Product>()) => state,
+    (page: number = 0) =>
+      fetch(`/api/products?page=${page}`).then((r) => r.json()),
+    `products`,
+  )
 
-const pageAtom = declareAtom(
-  ($, state = 0) => state,
-  {
-    next: (payload: void, state) => state + 1,
-    prev: (payload: void, state) => Math.max(0, state - 1),
-  },
-  {
-    onChange: (oldState, state, { dispatch }) =>
-      dispatch(productsAtom.get(state)),
-  },
-)
+  const pageAtom = declareAtom(
+    0,
+    {
+      next: (payload: void, state) => state + 1,
+      prev: (payload: void, state) => Math.max(0, state - 1),
+    },
+    {
+      onChange: (oldState, state, { dispatch }) =>
+        dispatch(productsAtom.request(state)),
+      id: `paging`,
+    },
+  )
 
-export function Products() {
-  const [{ data, isLoading }, methods] = useAtom(productsAtom)
-  const [page, { next, prev }] = useAtom(pageAtom)
+  function Products() {
+    const [{ data, isLoading }, { fetch: req }] = useAtom(productsAtom)
+    const [page, { next, prev }] = useAtom(pageAtom)
 
-  return html`
-    <ul>
-      ${data.map(
-        (el) => html`
-          <li>
-            <${Product} data=${el} />
-          </li>
-        `,
-      )}
-    </ul>
-    <button onClick=${next}>next</button>
-    <span>${isLoading ? `Loading` : page}</span>
-    <button onClick=${prev}>prev</button>
-  `
+    return html`
+      <ul>
+        ${data.map(
+          (el) => html`
+            <li>
+              <${Product} data=${el} />
+            </li>
+          `,
+        )}
+      </ul>
+      <button onClick=${next}>next</button>
+      <span>${page}${isLoading && ` (Loading)`}</span>
+      <button onClick=${prev}>prev</button>
+    `
+  }
+
+  function Product(props: { data: Product }): string {
+    return null as any
+  }
+
+  function useAtom<T extends Atom<any>>(
+    atom: T,
+  ): [
+    AtomState<T>,
+    {
+      [K in keyof T]: T[K] extends AC ? T[K]['dispatch'] : never
+    },
+  ] {
+    return null as any
+  }
+
+  function html(...a: any[]): string {
+    return null as any
+  }
 }
-
-declare function Product(props: { data: Product }): string
-
-declare function useAtom<T extends Atom<any>>(
-  atom: T,
-): [
-  AtomState<T>,
-  {
-    [K in keyof T]: T[K] extends AC ? T[K]['dispatch'] : never
-  },
-]
-
-declare function html(...a: any[]): string

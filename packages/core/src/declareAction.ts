@@ -4,6 +4,7 @@ import {
   defaultStore,
   Fn,
   invalid,
+  IS_DEV,
   isFunction,
   isString,
 } from './internal'
@@ -33,7 +34,7 @@ export function declareAction(
   const actionCreator: ActionCreator = (...a) => {
     const action = mapper(...a)
 
-    if (/* TODO: `process.env.NODE_ENV === 'development'` */ true) {
+    if (IS_DEV) {
       invalid(`type` in action, `action type in created action data`)
       invalid(
         `payload` in action === false,
