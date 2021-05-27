@@ -69,7 +69,32 @@ yarn add @reatom/core@alpha
 
 ## Usage
 
-```js
+### Short example
+
+```ts
+import { declareAction, declareAtom } from '@reatom/core'
+
+const counterAtom = declareAtom(
+  0,
+  {
+    add: (value: number, state) => state + value,
+    inc: (_: void, state) => state + 1,
+  }
+)
+
+counterAtom.subscribe(counter => console.log(counter))
+// -> 0
+
+counterAtom.inc.dispatch()
+// -> 1
+
+counterAtom.add.dispatch(2)
+// -> 3
+```
+
+### Detailed example
+
+```ts
 import { declareAction, declareAtom, createStore } from '@reatom/core'
 
 /**
@@ -165,6 +190,10 @@ push('/main')
 // -> { type: 'ROUTER_PUSH', payload: '/main' }
 ```
 
+#### declareAction action targets
+
+You may pass property `targets` with array of atoms which receive the action even if they have no any dependent subscriptions
+
 #### declareAction methods and properties
 
 ```ts
@@ -195,38 +224,46 @@ doSome.subscribe
 ```ts
 import { declareAction, declareAtom } from '@reatom/core'
 
-const add = declareAction<number>('add')
+// classic atom (create action handlers by "method" API)
+const counterAtom = declareAtom(
+  0,
+  { add: (value: number, state) => state + value },
+)
 
-// classic atom (compute state from an actions)
-const counterAtom = declareAtom(0, ($, state) => {
-  $(add, (payload) => state += payload)
-  return state
-})
-
-// derived atom (compute state from an atoms)
+// derived atom (compute state from an atoms or other action creators)
 const counterNameAtom = declareAtom(($, state = 'zero') => {
   const counter = $(counterAtom)
+
+  $(counterAtom.add, (value, action) => {
+    const counterPrev = counter - value
+    return (store, ctx) => {
+      console.log(`Prev counter`, counterPrev)
+      console.log(`New counter`, counter)
+    }
+  })
+
   return toWord(counter)
 })
 
-// dumb atom (it has build in `update` method action)
+// dumb atom (it has build in `update` action creator with binded method(reducer))
 const counterDumbAtom = declareAtom(0)
+const counterDumbAtom = declareAtom(0, undefined, `dump counter`)
+const counterDumbAtom = declareAtom(
+  0,
+  undefined,
+  {
+    // create context (it leave in a store) as an mutable data for effects
+    createCtx = () => ({ updates: 0 })
+    onChange: (oldState, state, store, ctx) => 
+      console.log(`Counter ${++ctx.updates} update with ${state}`)
+    id: `dump counter with onChange effect`
+  }
+)
 // imitate increment action
 counterDumbAtom.update(1)
 // -> { type: 'update of "atom [N]"', payload: 1 }
 counterDumbAtom.update((state) => state + 1)
 // -> { type: 'update of "atom [N]"', payload: Function }
-
-const counterDebouncedAtom = declareAtom(0, ($, state, update) => {
-  const counterAccumulator = $(counterAtom)
-  $(add, (payload) => async (store) => {
-    await new Promise(requestAnimationFrame)
-    if (counterAccumulator === store.getState(counterAtom)) {
-      store.dispatch(update(counterAccumulator))
-    }
-  })
-  return state
-})
 ```
 
 #### declareAtom methods and properties
@@ -244,6 +281,14 @@ dataAtom.id
 // Subscribe to changes of the atom state
 // (call first time immediately after subscribe)
 dataAtom.subscribe
+
+// <() => State>
+// Calc or return memoized state of the atom
+dataAtom.getState
+
+// <() => () => void>
+// Noop subscription to initiate actions handling
+dataAtom.init
 ```
 
 ### `createStore`
@@ -271,7 +316,7 @@ store.subscribe(
 // () => void
 
 // Subscribe to dispatch of an action creator
-store.subscribe(add, (payload) => console.log('add', payload))
+store.subscribe(add, (action) => console.log('add', action.payload))
 // -> void
 // () => void
 
@@ -305,6 +350,8 @@ store.init(...atoms: Array<Atom>)
 ## Guides
 
 ### Increase performance by ref pattern
+
+> This is an ADVANCED pattern! We did not recommend to use it in regular development
 
 If you fill limit of immutable data structures and need to increase performance of partial updates of a huge list / collection you may use _ref pattern_ and wrap every element of collection in atom. With this you may change the atom value and it will not affect a collection reference. But when you will need to get plain data / JSON of collection you should unwrap every element from atom as write you own serialize.
 
