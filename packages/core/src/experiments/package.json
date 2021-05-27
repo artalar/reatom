@@ -1,0 +1,15 @@
+{
+  "name": "@reatom/experiments",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Experiment helpers for reatom",
+  "source": "index.ts",
+  "main": "../../build/experiments.js",
+  "module": "../../build/experiments.module.js",
+  "umd:main": "../../build/experiments.umd.js",
+  "types": "../../build/experiments.d.ts",
+  "license": "MIT",
+  "peerDependencies": {
+    "@reatom/core": "^2.0.0-alpha11"
+  }
+}

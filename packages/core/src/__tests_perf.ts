@@ -3,7 +3,60 @@ import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
-import { declareAction, declareAtom, F } from '.'
+import {
+  AC,
+  Action,
+  Atom,
+  AtomDep,
+  Cache,
+  CacheAsArgument,
+  createTransaction,
+  declareAction,
+  declareAtom,
+  defaultStore,
+  Fn,
+  isAction,
+  Transaction,
+  Unsubscribe,
+  // } from '../'
+} from '.'
+
+function map<T, Dep>(
+  depAtom: Atom<Dep>,
+  cb: Fn<[depState: Dep], T>,
+  id: string = ``,
+): Atom<T> {
+  const atom = Object.assign(
+    (t: Transaction, cache?: CacheAsArgument<T>): Cache<T> => {
+      const depPatch = t.process(depAtom)
+      const dep =
+        cache?.deps.length === 1
+          ? (cache.deps[0] as Exclude<AtomDep, AC>)
+          : { atom, cache: null }
+
+      if (dep.cache !== depPatch) {
+        cache = {
+          deps: [{ atom: depAtom, cache: depPatch }],
+          ctx: {},
+          state: Object.is(dep.cache?.state, depPatch.state)
+            ? cache!.state
+            : cb(depPatch.state /* , cache.state */),
+          types: depPatch.types,
+        }
+      }
+
+      return cache as Cache<T>
+    },
+    {
+      id,
+      init: (): Unsubscribe => defaultStore.init(atom),
+      getState: (): T => defaultStore.getState(atom),
+      subscribe: (cb: Fn<[T]>): Unsubscribe => defaultStore.subscribe(atom, cb),
+    },
+  )
+
+  return atom
+}
 
 start()
 async function start() {
@@ -19,20 +72,20 @@ async function start() {
   }
 
   const entry = declareAction<number>()
-  const a = declareAtom(($, state: number = 0) => {
+  const a = declareAtom(($, state = 0) => {
     // $(entry.handle(v => (state = v % 2 ? state : v + 1)))
-    $(entry.handle(v => (state = v)))
+    $(entry, (v) => (state = v))
     return state
-  })
-  const b = declareAtom($ => $(a) + 1)
-  const c = declareAtom($ => $(a) + 1)
-  const d = declareAtom($ => $(b) + $(c))
-  const e = declareAtom($ => $(d) + 1)
-  const f = declareAtom($ => $(d) + $(e))
-  const g = declareAtom($ => $(d) + $(e))
-  const h = declareAtom($ => $(f) + $(g))
+  }, {})
+  const b = map(a, (v) => v + 1)
+  const c = map(a, (v) => v + 1)
+  const d = declareAtom(($) => $(b) + $(c))
+  const e = map(d, (v) => v + 1)
+  const f = declareAtom(($) => $(d) + $(e))
+  const g = declareAtom(($) => $(d) + $(e))
+  const h = declareAtom(($) => $(f) + $(g))
   let res = 0
-  h.subscribe(v => {
+  h.subscribe((v) => {
     res += v
   })
   res = 0
@@ -58,15 +111,15 @@ async function start() {
     .createStore(0)
     // .on(eEntry, (state, v) => (v % 2 ? state : v + 1))
     .on(eEntry, (state, v) => v)
-  const eB = eA.map(a => a + 1)
-  const eC = eA.map(a => a + 1)
+  const eB = eA.map((a) => a + 1)
+  const eC = eA.map((a) => a + 1)
   const eD = effector.combine(eB, eC, (b, c) => b + c)
-  const eE = eD.map(d => d + 1)
+  const eE = eD.map((d) => d + 1)
   const eF = effector.combine(eD, eE, (d, e) => d + e)
   const eG = effector.combine(eD, eE, (d, e) => d + e)
   const eH = effector.combine(eF, eG, (h1, h2) => h1 + h2)
   let eRes = 0
-  eH.subscribe(v => {
+  eH.subscribe((v) => {
     eRes += v
   })
   eRes = 0
@@ -74,15 +127,15 @@ async function start() {
   const wEntry = w.makeSubject<number>()
   const wA = w.pipe(
     wEntry.source,
-    w.map(v => v),
+    w.map((v) => v),
   )
   const wB = w.pipe(
     wA,
-    w.map(v => v + 1),
+    w.map((v) => v + 1),
   )
   const wC = w.pipe(
     wA,
-    w.map(v => v + 1),
+    w.map((v) => v + 1),
   )
   const wD = w.pipe(
     w_combine(wB, wC),
@@ -90,7 +143,7 @@ async function start() {
   )
   const wE = w.pipe(
     wD,
-    w.map(v => v + 1),
+    w.map((v) => v + 1),
   )
   const wF = w.pipe(
     w_combine(wD, wE),
@@ -107,7 +160,7 @@ async function start() {
   let wRes = 0
   w.pipe(
     wH,
-    w.subscribe(v => {
+    w.subscribe((v) => {
       wRes += v
     }),
   )
@@ -124,7 +177,7 @@ async function start() {
   const cH = cellx(() => cF() + cG())
   let cRes = 0
 
-  function mAtom<T>(calc: F<[], T>) {
+  function mAtom<T>(calc: Fn<[], T>) {
     const a = new $mol_atom2<T>()
     a.calculate = calc
     return a
@@ -150,6 +203,8 @@ async function start() {
   const iterations = 1000
   var i = 0
   while (i++ < iterations) {
+    // if (i % (iterations / 10) === 0) await new Promise((r) => setTimeout(r, 10))
+
     const startReatom = performance.now()
     entry.dispatch(i)
     reatomLogs.push(performance.now() - startReatom)
@@ -207,7 +262,7 @@ function log(values: Array<number>) {
 function med(values: Array<number>) {
   if (values.length === 0) return 0
 
-  values = values.map(v => +v)
+  values = values.map((v) => +v)
 
   values.sort((a, b) => (a - b ? 1 : -1))
 
@@ -221,7 +276,7 @@ function med(values: Array<number>) {
 function min(values: Array<number>) {
   if (values.length === 0) return 0
 
-  values = values.map(v => +v)
+  values = values.map((v) => +v)
 
   values.sort((a, b) => (a - b ? -1 : 1))
 
@@ -233,7 +288,7 @@ function min(values: Array<number>) {
 function max(values: Array<number>) {
   if (values.length === 0) return 0
 
-  values = values.map(v => +v)
+  values = values.map((v) => +v)
 
   values.sort((a, b) => (a - b ? -1 : 1))
 
