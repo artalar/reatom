@@ -21,16 +21,16 @@ React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 ## Install
 
 ```
-npm i @reatom/react
+npm i @reatom/react@alpha
 ```
 
 or
 
 ```sh
-yarn add @reatom/react
+yarn add @reatom/react@alpha
 ```
 
-> `@reatom/react` depends on and works with `@reatom/core`.
+> `@reatom/react` depends on and works with `@reatom/core` and `use-subscription`. You should install this packages too.
 
 ## Hooks Api
 
@@ -41,19 +41,21 @@ Connects the atom to the store represented in context and returns the state of t
 #### Basic (useAtom)
 
 ```ts
-const atomValue = useAtom(atom)
+const [atomValue] = useAtom(atom)
 ```
 
 #### Depended value by selector
 
 ```ts
-const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
+const [atomPropValue] = useAtom(useMemo(
+  () => declareAtom(($) => $(atom)[props.id]),
+  [props.id]))
 ```
 
 #### Mount without subscription (for subscribing atoms to actions)
 
 ```ts
-const atomValue = useAtom(atom, () => null, [])
+useInit([atom])
 ```
 
 ### useAction
@@ -69,9 +71,10 @@ const handleDoSome = useAction(doSome)
 #### Prepare payload for dispatch
 
 ```ts
-const handleDoSome = useAction(value => doSome({ id: props.id, value }), [
-  props.id,
-])
+const handleDoSome = useAction(
+  value => doSome({ id: props.id, value }),
+  [props.id]
+)
 ```
 
 #### Conditional dispatch
@@ -93,26 +96,48 @@ const handleDoSome = useAction(payload => {
 
 import React from 'react'
 import { createStore } from '@reatom/core'
-import { context } from '@reatom/react'
+import { reatomContext } from '@reatom/react'
 import { Form } from './components/Form'
 
 import './App.css'
 
 export const App = () => {
-  // create statefull context for atoms execution
+  // create statefull reatomContext for atoms execution
   const store = createStore()
 
   return (
     <div className="App">
-      <context.Provider value={store}>
+      <reatomContext.Provider value={store}>
         <Form />
-      </context.Provider>
+      </reatomContext.Provider>
     </div>
   )
 }
 ```
 
-### Step 2. Use in component
+```jsx
+// components/Form
+
+import { declareAction, declareAtom } from '@reatom/core'
+import { useAtom } from '@reatom/react'
+
+const nameAtom = declareAtom('', {
+  onChange: (e) => e.currentTarget.value
+})
+
+export const Form = () => {
+  const [name, { onChange }] = useAtom(nameAtom)
+
+  return (
+    <form>
+      <label htmlFor="name">Enter your name</label>
+      <input id="name" value={name} onChange={onChange} />
+    </form>
+  )
+}
+```
+
+OR
 
 ```jsx
 // components/Form
@@ -120,23 +145,21 @@ export const App = () => {
 import { declareAction, declareAtom } from '@reatom/core'
 import { useAction, useAtom } from '@reatom/react'
 
-const changeName = declareAction()
-const nameAtom = declareAtom('', on => [
-  on(changeName, (state, payload) => payload),
-])
+const nameAtom = declareAtom('')
 
 export const Form = () => {
-  const name = useAtom(nameAtom)
-  const handleChangeName = useAction(e => changeName(e.target.value))
+  const [name] = useAtom(nameAtom)
+  const handleChange = useAction((e) => nameAtom.update(e.currentTarget.value))
 
   return (
     <form>
       <label htmlFor="name">Enter your name</label>
-      <input id="name" value={name} onChange={handleChangeName} />
+      <input id="name" value={name} onChange={handleChange} />
     </form>
   )
 }
 ```
+
 <!-- 
 ## Why React so unfriendly for state-managers
 

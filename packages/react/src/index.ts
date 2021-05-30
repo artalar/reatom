@@ -5,10 +5,10 @@ import {
   defaultStore,
   isActionCreator,
   Store,
-} from "@reatom/core"
-import React from "react"
-import ReactDOM from "react-dom"
-import { useSubscription } from "use-subscription"
+} from '@reatom/core'
+import React from 'react'
+import ReactDOM from 'react-dom'
+import { useSubscription } from 'use-subscription'
 
 export const reatomContext = React.createContext(defaultStore)
 
@@ -39,7 +39,7 @@ export function useAction<T = void>(
   )
 }
 
-type ActionCreators<T extends Atom> = {
+type ActionCreators<T extends any> = {
   [K in keyof T]: T[K] extends (payload: infer Payload) => Action
     ? (payload: Payload) => unknown
     : never
@@ -48,7 +48,7 @@ type ActionCreators<T extends Atom> = {
 export function useAtom<T extends Atom>(
   atom: T,
   deps: any[] = [],
-): [AtomState<T>, ActionCreators<T>] {
+): [state: AtomState<T>, bindedActionCreators: ActionCreators<T>] {
   const store = React.useContext(reatomContext)
 
   const result = React.useMemo(
@@ -73,5 +73,5 @@ export function useAtom<T extends Atom>(
 export function useInit(atoms: Array<Atom>, deps: any[] = []) {
   const store = React.useContext(reatomContext)
 
-  React.useEffect(() => store.init(...atoms), [])
+  React.useEffect(() => store.init(...atoms), deps)
 }
