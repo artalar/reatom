@@ -1,17 +1,22 @@
-import { Action, Atom, createStore, isAtom } from '@reatom/core'
-import React from 'react'
-import ReactDOM from 'react-dom'
-import { useSubscription } from 'use-subscription'
+import {
+  Action,
+  Atom,
+  AtomState,
+  defaultStore,
+  isActionCreator,
+  Store,
+} from "@reatom/core"
+import React from "react"
+import ReactDOM from "react-dom"
+import { useSubscription } from "use-subscription"
 
-export const reatomContext = React.createContext(createStore())
+export const reatomContext = React.createContext(defaultStore)
 
-export function useAction<T = void>(
+function bindActionCreator<T>(
+  store: Store,
   actionCreator: (payload: T) => Action | Action[] | void,
-  deps: any[] = [],
 ) {
-  const store = React.useContext(reatomContext)
-
-  return React.useCallback((payload: T) => {
+  return (payload: T) => {
     const action = actionCreator(payload)
 
     if (action) {
@@ -19,45 +24,54 @@ export function useAction<T = void>(
         store.dispatch(action)
       })
     }
-  }, deps.concat(store))
+  }
 }
 
-export function useAtom<T>(atom: Atom<T>, deps: any[] = []): T {
+export function useAction<T = void>(
+  actionCreator: (payload: T) => Action | Action[] | void,
+  deps: any[] = [],
+) {
   const store = React.useContext(reatomContext)
 
-  const subscription = React.useMemo(
-    () => ({
-      getCurrentValue: () => store.getState(atom),
-      subscribe: (cb: () => any) => store.subscribe(atom, cb),
-    }),
+  return React.useCallback(
+    bindActionCreator(store, actionCreator),
+    deps.concat(store),
+  )
+}
 
+type ActionCreators<T extends Atom> = {
+  [K in keyof T]: T[K] extends (payload: infer Payload) => Action
+    ? (payload: Payload) => unknown
+    : never
+}
+
+export function useAtom<T extends Atom>(
+  atom: T,
+  deps: any[] = [],
+): [AtomState<T>, ActionCreators<T>] {
+  const store = React.useContext(reatomContext)
+
+  const result = React.useMemo(
+    () =>
+      [
+        {
+          getCurrentValue: () => store.getState(atom),
+          subscribe: (cb: () => any) => store.subscribe(atom, cb),
+        },
+        Object.entries(atom).reduce((acc, [k, ac]) => {
+          // @ts-expect-error
+          if (isActionCreator(ac)) acc[k] = bindActionCreator(store, ac)
+          return acc
+        }, {} as ActionCreators<T>),
+      ] as const,
     deps.concat([atom, store]),
   )
 
-  return useSubscription(subscription)
+  return [useSubscription(result[0]), result[1]]
 }
 
 export function useInit(atoms: Array<Atom>, deps: any[] = []) {
   const store = React.useContext(reatomContext)
 
   React.useEffect(() => store.init(...atoms), [])
-}
-
-export function useModel<
-  Model extends Record<string, ((...a: any[]) => Action | Array<Action>) | Atom>
->(
-  modelCreator: () => Model,
-  deps = [],
-): {
-  [K in keyof Model]: Model[K] extends Atom<infer T> ? T : Model[K]
-} {
-  const model = React.useMemo(modelCreator, deps)
-  const result: Record<string, any> = {}
-  for (const key in model) {
-    const handler = model[key]
-    result[key as string] = isAtom(handler)
-      ? useAtom(handler)
-      : useAction(handler as any)
-  }
-  return result as any
 }
