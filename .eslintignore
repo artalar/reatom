@@ -1,4 +1,0 @@
-packages/babel-plugin/test/fixtures/**/*.js
-build/
-node_modules/
-.rt*

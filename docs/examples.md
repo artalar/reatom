@@ -8,7 +8,7 @@ test('simple counter', () => {
     0,
     // callback for creating
     // list of dependencies and their transformations
-    on => [on(increment, state => state + 1)],
+    (on) => [on(increment, (state) => state + 1)],
   )
 
   const store = createStore(counterAtom)
@@ -27,8 +27,10 @@ test('simple counter', () => {
 ```js
 test('derived (computed) atoms', () => {
   const increment = declareAction()
-  const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
-  const counterDoubledAtom = map(counterAtom, value => value * 2)
+  const counterAtom = declareAtom(0, (on) => [
+    on(increment, (state) => state + 1),
+  ])
+  const counterDoubledAtom = map(counterAtom, (value) => value * 2)
   const countersShapeAtom = combine([counterAtom, counterDoubledAtom])
 
   const store = createStore(countersShapeAtom)
@@ -51,7 +53,7 @@ test('side effects', async () => {
     await delay()
     if (incrementCallId === lastCallId) store.dispatch(setValue(payload))
   })
-  const valueAtom = declareAtom(0, on => [
+  const valueAtom = declareAtom(0, (on) => [
     on(setValue, (state, payload) => payload),
   ])
   const store = createStore(valueAtom)
