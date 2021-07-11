@@ -1,4 +1,5 @@
-import { AC, Atom, AtomState, declareAtom, isObject, Track } from '@reatom/core'
+// import { AC, Atom, AtomState, declareAtom, isObject, Track } from '@reatom/core'
+import { AC, Atom, AtomState, declareAtom, isObject, Track } from '../'
 
 function shallowEqual(a: any, b: any) {
   if (isObject(a) && isObject(b)) {

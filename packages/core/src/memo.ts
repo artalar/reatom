@@ -6,7 +6,6 @@ import {
   Effect,
   Fn,
   invalid,
-  IS_DEV,
   isActionCreator,
   isAtom,
   isFunction,
@@ -37,80 +36,53 @@ export function memo<State, Ctx extends Rec = Rec>(
   cache: Cache<State>,
   computer: Computer<State, Ctx>,
 ): Cache<State> {
-  const { deps } = cache
-  let patchDeps: Cache<State>['deps'] = []
-  let patchState: State
-  let patchTypes: Cache<State>['types'] = new Set()
-  let isDepsCacheChange = false
-  let isDepsOrderChange = false
-  let isDepsTypesChange = false
+  let { deps, state, types } = cache
+  let depsCount = 0
+  let typesCount = 0
   let nesting = 0
 
-  function calcResult() {
-    if (isDepsTypesChange) {
-      patchDeps.forEach((dep) =>
-        isActionCreator(dep)
-          ? patchTypes.add(dep.type)
-          : dep.cache.types.forEach((type) => patchTypes.add(type)),
-      )
-    } else {
-      patchTypes = cache.types
+  function getMutableDeps(to?: number) {
+    if (deps == cache.deps) {
+      deps = deps.slice(0, to)
     }
 
-    return isDepsCacheChange ||
-      !Object.is(cache.state, patchState) ||
-      deps.length === 0
-      ? {
-          deps: patchDeps,
-          ctx: cache.ctx,
-          state: patchState,
-          types: patchTypes,
-        }
-      : cache
+    return deps
   }
 
-  function clearPatch() {
-    patchDeps.length = 0
-    patchTypes.clear()
+  function getMutableTypes() {
+    if (types == cache.types) types = types.slice(0, typesCount)
+    return types
+  }
+
+  function calcResult(): Cache<State> {
+    return deps == cache.deps && Object.is(state, cache.state) && types == cache.types
+      ? cache
+      : { ctx: cache.ctx, deps, state, types }
   }
 
   const shouldSkipComputer =
-    deps.length > 0 &&
-    deps.every((dep) => {
-      if (isActionCreator(dep)) {
-        const { type } = dep
-        if (transaction.actions.some((action) => action.type === type)) {
-          clearPatch()
-          return false
+    (deps.length > 0 || types.length > 0) &&
+    transaction.actions.every((action) => !types.includes(action.type)) &&
+    deps.every(({ atom: depAtom, cache: depCache }, i) => {
+      const depPatch = transaction.process(depAtom, depCache)
+
+      if (Object.is(depCache.state, depPatch.state)) {
+        if (depPatch != depCache) {
+          getMutableDeps()[i] = { atom: depAtom, cache: depPatch }
         }
-      } else {
-        const { atom: depAtom, cache: depCache } = dep
-        const depPatch = transaction.process(depAtom, depCache)
 
-        if (depPatch !== depCache) {
-          if (depPatch.state !== depCache.state) {
-            clearPatch()
-            return false
-          }
-
-          dep = { atom: depAtom, cache: depPatch }
-
-          isDepsCacheChange = true
-
-          isDepsTypesChange ||= depPatch.types !== depCache.types
-        }
+        return true
       }
 
-      patchDeps.push(dep)
-
-      return true
+      return false
     })
 
   if (shouldSkipComputer) {
-    patchState = cache.state
-
     return calcResult()
   }
+
+  deps = cache.deps
+
 
   function scheduleEffect(effect: any) {
     if (isFunction(effect)) {
@@ -119,86 +91,74 @@ export function memo<State, Ctx extends Rec = Rec>(
   }
 
   function trackAtom(depAtom: Atom, cb?: Fn) {
-    const depPatch = transaction.process(depAtom)
+    const dep = nesting == 1 && cache.deps.length > depsCount ? cache.deps[depsCount] : null
+    const isDepChange = dep?.atom != depAtom
+    const depPatch = transaction.process(depAtom, isDepChange ? undefined : dep!.cache)
 
-    if (nesting === 1) {
-      const dep: any =
-        deps.length > patchDeps.length ? deps[patchDeps.length] : null
+    if (nesting == 1) {
+      const isDepPatchChange = isDepChange || dep!.cache != depPatch
+      const isDepStateChange = isDepChange || !Object.is(dep!.cache.state, depPatch.state)
 
-      isDepsOrderChange ||= dep?.atom !== depAtom
+      if (isDepPatchChange || deps != cache.deps) {
+        getMutableDeps(depsCount).push({ atom: depAtom, cache: depPatch })
+      }
 
-      isDepsCacheChange ||= isDepsOrderChange || dep.cache !== depPatch
+      depsCount++
 
-      isDepsTypesChange ||=
-        isDepsOrderChange || dep.cache.types !== depPatch.types
-
-      patchDeps.push({ atom: depAtom, cache: depPatch })
-
-      if (
-        cb &&
-        (isDepsOrderChange || !Object.is(dep.cache.state, depPatch.state))
-      ) {
+      if (isDepStateChange && cb) {
         scheduleEffect(cb(depPatch.state))
       }
+
     } else {
-      if (IS_DEV) {
-        invalid(cb, `callback in nested track`)
-      }
+      // this is wrong coz we not storing previous value of the atom
+      // and can't compare it with the actual value
+      // to handle the reaction correctly
+      invalid(cb, `atom reaction in nested track`)
     }
 
     return depPatch.state
   }
 
-  let track: Track<State, Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
-    if (IS_DEV) {
-      // TODO: how to pass the `id` of atom here?
-      invalid(Number.isNaN(nesting), `outdated track call`)
-    }
+  function trackAction({ type }: AC, cb?: Fn) {
+    if (nesting == 1) {
+      invalid(!cb, `action track without callback`)
 
-    nesting++
+      if (types.length <= typesCount || types[typesCount] != type || types != cache.types) {
+        getMutableTypes().push(type)
+      }
+
+      typesCount++
+
+      transaction.actions.forEach((action) => {
+        if (action.type == type) {
+          scheduleEffect(cb!(action.payload, action))
+        }
+      })
+    } else {
+      // this is wrong coz may cause nondeterministic behavior.
+      invalid(1, `action handling in nested track`)
+    }
+  }
+
+  let track: Track<State, Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
+    // TODO: how to pass the `id` of atom here?
+    invalid(Number.isNaN(nesting), `outdated track call, use \`store.getState\` in an effect.`)
 
     try {
+      nesting++
+
       if (isAtom(atomOrAction)) return trackAtom(atomOrAction, cb)
+      if (isActionCreator(atomOrAction)) return trackAction(atomOrAction, cb)
 
-      if (IS_DEV) {
-        invalid(!isActionCreator(atomOrAction), `track arguments`)
-      }
-
-      if (nesting === 1) {
-        if (IS_DEV) {
-          invalid(!cb, `action track without callback`)
-        }
-
-        isDepsOrderChange ||=
-          deps.length <= patchDeps.length ||
-          deps[patchDeps.length] !== atomOrAction
-
-        isDepsTypesChange ||= isDepsOrderChange
-
-        patchDeps.push(atomOrAction)
-
-        transaction.actions.forEach((action) => {
-          if (action.type === atomOrAction.type) {
-            scheduleEffect(cb!(action.payload, action))
-          }
-        })
-      } else {
-        if (IS_DEV) {
-          invalid(true, `action handling in nested track`)
-        }
-      }
+      invalid(1, `track arguments`)
     } finally {
       nesting--
     }
   }
 
-  patchState = computer(track, cache.state)
+  state = computer(track, cache.state)
 
   nesting = NaN
-
-  isDepsOrderChange = isDepsOrderChange || deps.length > patchDeps.length
-  isDepsCacheChange = isDepsCacheChange || isDepsOrderChange
-  isDepsTypesChange = isDepsTypesChange || isDepsOrderChange
 
   return calcResult()
 }

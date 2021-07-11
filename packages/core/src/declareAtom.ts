@@ -139,7 +139,7 @@ export function declareAtom<
       deps: [],
       ctx: undefined,
       state: undefined,
-      types: new Set(),
+      types: [],
     },
   ): Cache<State> {
     if (cache.ctx === undefined) cache.ctx = createCtx()

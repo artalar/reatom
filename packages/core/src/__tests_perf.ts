@@ -4,18 +4,13 @@ import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
 import {
-  AC,
-  Action,
   Atom,
-  AtomDep,
   Cache,
   CacheAsArgument,
-  createTransaction,
   declareAction,
   declareAtom,
   defaultStore,
   Fn,
-  isAction,
   Transaction,
   Unsubscribe,
   // } from '../'
@@ -31,7 +26,7 @@ function map<T, Dep>(
       const depPatch = t.process(depAtom)
       const dep =
         cache?.deps.length === 1
-          ? (cache.deps[0] as Exclude<AtomDep, AC>)
+          ? cache.deps[0]
           : { atom, cache: null }
 
       if (dep.cache !== depPatch) {
@@ -200,10 +195,12 @@ async function start() {
   const cellxLogs = []
   const molLogs = []
 
-  const iterations = 1000
+  const iterations = 20000
   var i = 0
   while (i++ < iterations) {
-    // if (i % (iterations / 10) === 0) await new Promise((r) => setTimeout(r, 10))
+    if (i % (iterations / 10) === 0) {
+      // await new Promise((r) => setTimeout(r, 10))
+    }
 
     const startReatom = performance.now()
     entry.dispatch(i)
@@ -232,12 +229,12 @@ async function start() {
     molLogs.push(performance.now() - startMol)
   }
 
+  console.log(`Median on one call in ms from ${iterations} iterations`)
+
   if (new Set([res, /* rRes, */ eRes, wRes, cRes, mRes]).size !== 1) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
   }
-
-  console.log(`Median on one call in ms from ${iterations} iterations`)
 
   console.log(`reatom`)
   console.log(log(reatomLogs) /*  */)
@@ -264,7 +261,7 @@ function med(values: Array<number>) {
 
   values = values.map((v) => +v)
 
-  values.sort((a, b) => (a - b ? 1 : -1))
+  values.sort((a, b) => (a - b < 0 ? 1 : -1))
 
   var half = Math.floor(values.length / 2)
 
@@ -278,9 +275,11 @@ function min(values: Array<number>) {
 
   values = values.map((v) => +v)
 
-  values.sort((a, b) => (a - b ? -1 : 1))
+  values.sort((a, b) => (a - b < 0 ? -1 : 1))
 
   const limit = Math.floor(values.length / 20)
+
+  values //?
 
   return values[limit].toFixed(3)
 }
@@ -290,7 +289,7 @@ function max(values: Array<number>) {
 
   values = values.map((v) => +v)
 
-  values.sort((a, b) => (a - b ? -1 : 1))
+  values.sort((a, b) => (a - b < 0 ? -1 : 1))
 
   const limit = values.length - 1 - Math.floor(values.length / 20)
 

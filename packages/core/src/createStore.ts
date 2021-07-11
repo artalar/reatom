@@ -40,6 +40,12 @@ import {
 //   setInterval(() => (i = 0), 3000)
 // }
 
+function isTypesChange(depsOld: Cache['deps'], depsNew: Cache['deps']): boolean {
+  return depsOld.length != depsNew.length || depsOld.some(({ cache }, i) =>
+    cache.types != depsNew[i].cache.types || isTypesChange(cache.deps, depsNew[i].cache.deps)
+  )
+}
+
 export function createStore(snapshot: Record<string, any> = {}): Store {
   const actionsComputers = new Map<ActionType, Set<Atom>>()
   const actionsListeners = new Map<ActionType, Set<Fn>>()
@@ -47,11 +53,24 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   const atomsListeners = new Map<Atom, Set<Fn>>()
   const transactionListeners = new Set<Fn<[TransactionResult]>>()
 
+  function addComputer(atom: Atom, cache: Cache) {
+    cache.types.forEach((type) =>
+      addToSetsMap(actionsComputers, type, atom),
+    )
+    cache.deps.forEach(dep => addComputer(atom, dep.cache))
+  }
+  function delComputer(atom: Atom, cache: Cache) {
+    cache.types.forEach((type) =>
+      delFromSetsMap(actionsComputers, type, atom),
+    )
+    cache.deps.forEach(dep => delComputer(atom, dep.cache))
+  }
+
   function collect(atom: Atom, result: Rec = {}) {
     const { state, deps } = getCache(atom)!
 
     result[atom.id] = state
-    deps.forEach((dep) => !isActionCreator(dep) && collect(dep.atom, result))
+    deps.forEach((dep) => collect(dep.atom, result))
 
     return result
   }
@@ -63,21 +82,11 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   ) {
     const atomCache = getCache(atom)
     if (atomsListeners.has(atom)) {
-      if (atomCache === undefined) {
-        patch.types.forEach((type) =>
-          addToSetsMap(actionsComputers, type, atom),
-        )
-      } else if (atomCache.types !== patch.types) {
-        patch.types.forEach(
-          (type) =>
-            atomCache.types.has(type) ||
-            addToSetsMap(actionsComputers, type, atom),
-        )
-        atomCache.types.forEach(
-          (type) =>
-            patch.types.has(type) ||
-            delFromSetsMap(actionsComputers, type, atom),
-        )
+      if (atomCache == undefined) {
+        addComputer(atom, patch)
+      } else if (atomCache.types != patch.types || isTypesChange(atomCache.deps, patch.deps)) {
+        delComputer(atom, patch)
+        addComputer(atom, patch)
       }
     }
 
@@ -194,9 +203,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       listeners!.delete(cb)
       if (listeners!.size === 0) {
         atomsListeners.delete(atom)
-        atomsCache
-          .get(atom)!
-          .types.forEach((type) => delFromSetsMap(actionsComputers, type, atom))
+        delComputer(atom, atomsCache.get(atom)!)
       }
     }
 
@@ -204,9 +211,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       getState(atom)
 
       if (shouldInvalidateTypes) {
-        getCache(atom)!.types.forEach((type) =>
-          addToSetsMap(actionsComputers, type, atom),
-        )
+        addComputer(atom, getCache(atom)!)
       }
 
       return unsubscribe
@@ -245,10 +250,10 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     return a.length === 1 && isFunction(a[0])
       ? subscribeTransaction(a[0])
       : isAtom(a[0]) && isFunction(a[1])
-      ? subscribeAtom(a[0], a[1])
-      : isActionCreator(a[0]) && isFunction(a[1])
-      ? subscribeAction(a[0], a[1])
-      : invalid(true, `subscribe arguments`)
+        ? subscribeAtom(a[0], a[1])
+        : isActionCreator(a[0]) && isFunction(a[1])
+          ? subscribeAction(a[0], a[1])
+          : invalid(true, `subscribe arguments`)
   }
 
   const store = {

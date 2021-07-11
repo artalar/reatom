@@ -22,7 +22,7 @@ export type ActionType = string
 
 export type Unsubscribe = () => void
 
-export type AtomDep = AC | { atom: Atom; cache: Cache }
+export type CacheDep = {atom: Atom, cache: Cache}
 
 export type Cache<State = any> = {
   /** Local mutable context */
@@ -30,17 +30,17 @@ export type Cache<State = any> = {
 
   /**
    * Deps useful for testing and debugging.
-   * Also this helps to test the case when cache was created
+   * Also this helps to handle the case when cache was created
    * then all listeners / children was removed
    * then deps change their value
    * then atom returns to active
    * and may been stale.
    */
-  readonly deps: Array<AtomDep>
-
-  readonly types: Set<ActionType>
+  readonly deps: Array<CacheDep>
 
   readonly state: State
+
+  readonly types: Array<ActionType>
 }
 
 export type CacheAsArgument<State = any> = {

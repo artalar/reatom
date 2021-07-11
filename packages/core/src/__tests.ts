@@ -11,9 +11,9 @@ import {
   isFunction,
   Store,
 } from '.'
-import { declareResource } from '../build/experiments'
+import { declareResource } from './experiments'
 
-let noop: Fn = () => {}
+let noop: Fn = () => { }
 
 const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
@@ -163,12 +163,16 @@ test(`action mapper`, () => {
 
 test(`atom filter`, () => {
   const track = mockFn()
-  const aAtom = declareAtom(0)
+  const a1Atom = declareAtom(0, undefined, `a1Atom`)
+  const a2Atom = declareAtom(0, undefined, `a2Atom`)
   const bAtom = declareAtom(($, s = 0) => {
     track()
 
-    const a = $(aAtom)
+    const a = $(a1Atom)
     if (a % 2) s = a
+
+    $(a2Atom, v => s = v)
+
     return s
   })
 
@@ -179,16 +183,25 @@ test(`atom filter`, () => {
   const bCache2 = bAtom(createTransaction([]), bCache1)
   assert.is(track.calls.length, 1)
   assert.is(bCache1, bCache2)
+  assert.is(bCache1, bCache2)
 
-  const bCache3 = bAtom(createTransaction([aAtom.update(0)]), bCache2)
+  const bCache3 = bAtom(createTransaction([a1Atom.update(0)]), bCache2)
   assert.is(track.calls.length, 1)
   assert.is(bCache2, bCache3)
+  assert.is(bCache3.state, 0)
   assert.is(bCache2.state, bCache3.state)
 
-  const bCache4 = bAtom(createTransaction([aAtom.update(1)]), bCache3)
+  const bCache4 = bAtom(createTransaction([a1Atom.update(1)]), bCache3)
   assert.is(track.calls.length, 2)
   assert.is.not(bCache3, bCache4)
+  assert.is(bCache4.state, 1)
   assert.is.not(bCache3.state, bCache4.state)
+
+  const bCache5 = bAtom(createTransaction([a1Atom.update(s => s + 2)]), bCache4)
+  assert.is(track.calls.length, 3)
+  assert.is.not(bCache4, bCache5)
+  assert.is(bCache5.state, 3)
+  assert.is.not(bCache4.state, bCache5.state)
 
   console.log(`👍`)
 })
