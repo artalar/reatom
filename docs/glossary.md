@@ -54,7 +54,7 @@ const fetchUserDone = declareAction()
 const fetchUser = declareAction(
   name, // or type - optional
   (payload, store) =>
-    fetch('/user', payload).then(response =>
+    fetch('/user', payload).then((response) =>
       store.dispatch(fetchUserDone(response)),
     ),
 )
@@ -81,15 +81,15 @@ import { declareAtom } from '@reatom/core'
 const countAtom = declareAtom(
   'count', // name (optional!)
   0, // initial state
-  on => [
+  (on) => [
     // reducers definitions:
     // `on(dependedDeclaredActionOrAtom, reducer)`
     // reducer: (oldState, dependedValues) => newState
-    on(increment, state => state + 1),
+    on(increment, (state) => state + 1),
     on(add, (state, payload) => state + payload),
   ],
 )
-const countDoubledAtom = declareAtom(0, on => [
+const countDoubledAtom = declareAtom(0, (on) => [
   on(countAtom, (state, count) => count * 2),
 ])
 // shortcut:
@@ -111,7 +111,7 @@ If you need to dynamically generate atom state (on subscription) you can derive 
 ```js
 import { init } from '@reatom/core'
 
-const dateAtom = declareAtom(Date.now(), on => [on(init, () => Date.now())])
+const dateAtom = declareAtom(Date.now(), (on) => [on(init, () => Date.now())])
 ```
 
 > **NOTE**. See FAQ on [why declare\*](/faq?id=why-declare)
@@ -138,8 +138,8 @@ store.dispatch(declaredAction(payload))
 
 /* SUBSCRIBING */
 
-store.subscribe(atom, atomValue => 'side effect')
-store.subscribe(declaredAction, actionPayload => 'side effect')
+store.subscribe(atom, (atomValue) => 'side effect')
+store.subscribe(declaredAction, (actionPayload) => 'side effect')
 store.subscribe((dispatchedAction, stateDiff) => 'side effect')
 
 /* STATE */
