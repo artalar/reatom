@@ -8,7 +8,7 @@ const logData = JSON.parse(
 function median(values) {
   if (values.length === 0) return 0
 
-  values = values.map(v => +v)
+  values = values.map((v) => +v)
 
   values.sort((a, b) => a - b)
 
@@ -26,7 +26,7 @@ function average(values) {
 function targetsAverage(targetsValues) {
   const targetsValuesAverage = targetsValues.map(median)
   const min = Math.min(...targetsValuesAverage)
-  return targetsValuesAverage.map(v => `${((min / +v) * 100).toFixed(0)}%`)
+  return targetsValuesAverage.map((v) => `${((min / +v) * 100).toFixed(0)}%`)
 }
 
 let times = 0

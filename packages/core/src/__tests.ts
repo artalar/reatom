@@ -13,7 +13,7 @@ import {
 } from '.'
 import { declareResource } from './experiments'
 
-let noop: Fn = () => { }
+let noop: Fn = () => {}
 
 const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
@@ -171,7 +171,7 @@ test(`atom filter`, () => {
     const a = $(a1Atom)
     if (a % 2) s = a
 
-    $(a2Atom, v => s = v)
+    $(a2Atom, (v) => (s = v))
 
     return s
   })
@@ -197,7 +197,10 @@ test(`atom filter`, () => {
   assert.is(bCache4.state, 1)
   assert.is.not(bCache3.state, bCache4.state)
 
-  const bCache5 = bAtom(createTransaction([a1Atom.update(s => s + 2)]), bCache4)
+  const bCache5 = bAtom(
+    createTransaction([a1Atom.update((s) => s + 2)]),
+    bCache4,
+  )
   assert.is(track.calls.length, 3)
   assert.is.not(bCache4, bCache5)
   assert.is(bCache5.state, 3)

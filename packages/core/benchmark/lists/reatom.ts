@@ -18,30 +18,30 @@ export const changeHouse = declareAction<{
 }>()
 export const changeInput = declareAction<string>()
 
-export const AddressesIdsList = declareAtom<Addresses['ids']>([], reduce => [
+export const AddressesIdsList = declareAtom<Addresses['ids']>([], (reduce) => [
   reduce(fetchAddressesDone, (state, { ids }) => ids),
 ])
-export const Cities = declareAtom<Addresses['cities']>({}, reduce => [
+export const Cities = declareAtom<Addresses['cities']>({}, (reduce) => [
   reduce(fetchAddressesDone, (state, { cities }) => cities),
 ])
-export const Streets = declareAtom<Addresses['streets']>({}, reduce => [
+export const Streets = declareAtom<Addresses['streets']>({}, (reduce) => [
   reduce(fetchAddressesDone, (state, { streets }) => streets),
 ])
-export const Houses = declareAtom<Addresses['houses']>({}, reduce => [
+export const Houses = declareAtom<Addresses['houses']>({}, (reduce) => [
   reduce(fetchAddressesDone, (state, { houses }) => houses),
   reduce(changeHouse, (state, { id, value }) => ({ ...state, [id]: value })),
 ])
-export const Input = declareAtom('', reduce => [
+export const Input = declareAtom('', (reduce) => [
   reduce(changeInput, (state, input) => input),
 ])
 
 const Root = combine([AddressesIdsList, Cities, Streets, Houses, Input])
 
 export const declareCitiesCell = (id: string) =>
-  map(Cities, cities => cities[id])
+  map(Cities, (cities) => cities[id])
 export const declareStreetsCell = (id: string) =>
-  map(Streets, streets => streets[id])
+  map(Streets, (streets) => streets[id])
 export const declareHousesCell = (id: string) =>
-  map(Houses, houses => houses[id])
+  map(Houses, (houses) => houses[id])
 
 export const initializeStore = () => createStore(Root)

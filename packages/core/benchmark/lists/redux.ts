@@ -78,7 +78,7 @@ export const createSelectorCitiesCell = (id, cb: () => any) =>
   createSelector(
     createSelector(
       (state: RootState) => state.cities,
-      value => value[id],
+      (value) => value[id],
     ),
     cb,
   )
@@ -87,7 +87,7 @@ export const createSelectorStreetsCell = (id, cb: () => any) =>
   createSelector(
     createSelector(
       (state: RootState) => state.streets,
-      value => value[id],
+      (value) => value[id],
     ),
     cb,
   )
@@ -96,7 +96,7 @@ export const createSelectorHousesCell = (id, cb: () => any) =>
   createSelector(
     createSelector(
       (state: RootState) => state.houses,
-      value => value[id],
+      (value) => value[id],
     ),
     cb,
   )

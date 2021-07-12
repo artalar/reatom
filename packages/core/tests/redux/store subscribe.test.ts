@@ -111,7 +111,7 @@ describe('@reatom/core', () => {
 
       const unsubscribeHandles: any[] = []
       const doUnsubscribeAll = () =>
-        unsubscribeHandles.forEach(unsubscribe => unsubscribe())
+        unsubscribeHandles.forEach((unsubscribe) => unsubscribe())
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -212,9 +212,9 @@ describe('@reatom/core', () => {
       expect(listener3.mock.calls.length).toBe(3)
       expect(listener4.mock.calls.length).toBe(1)
     })
-    test('provides an up-to-date state when a subscriber is notified', done => {
+    test('provides an up-to-date state when a subscriber is notified', (done) => {
       const action = declareAction<any>()
-      const todoList = declareAtom<any[]>('text', [], on => [
+      const todoList = declareAtom<any[]>('text', [], (on) => [
         on(action, (state, payload) => [...state, payload]),
       ])
       const store = createStore(todoList)

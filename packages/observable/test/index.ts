@@ -4,7 +4,7 @@ import { observe } from '../src'
 describe('@reatom/observable', () => {
   test('Symbol.observable', () => {
     const action = declareAction()
-    const atom = declareAtom(0, on => [on(action, () => 1)])
+    const atom = declareAtom(0, (on) => [on(action, () => 1)])
     const store = createStore(atom)
 
     const observable = observe(store, atom)
@@ -14,7 +14,7 @@ describe('@reatom/observable', () => {
   describe('observe store', () => {
     test('subscribe function', () => {
       const action = declareAction()
-      const atom = declareAtom(0, on => [on(action, () => 1)])
+      const atom = declareAtom(0, (on) => [on(action, () => 1)])
       const store = createStore(atom)
 
       const fn = jest.fn()
@@ -29,7 +29,7 @@ describe('@reatom/observable', () => {
     })
     test('subscribe observer', () => {
       const action = declareAction()
-      const atom = declareAtom(0, on => [on(action, () => 1)])
+      const atom = declareAtom(0, (on) => [on(action, () => 1)])
       const store = createStore(atom)
 
       const fn = jest.fn()
@@ -44,7 +44,7 @@ describe('@reatom/observable', () => {
     })
     test('unsubscribe', () => {
       const action = declareAction()
-      const atom = declareAtom(0, on => [on(action, () => 1)])
+      const atom = declareAtom(0, (on) => [on(action, () => 1)])
       const store = createStore(atom)
 
       const fn = jest.fn()
@@ -71,7 +71,7 @@ describe('@reatom/observable', () => {
   describe('observe atom', () => {
     test('subscribe function', () => {
       const action = declareAction()
-      const atom = declareAtom(0, on => [on(action, () => 1)])
+      const atom = declareAtom(0, (on) => [on(action, () => 1)])
       const store = createStore(atom)
 
       const fn = jest.fn()
@@ -86,7 +86,7 @@ describe('@reatom/observable', () => {
     })
     test('subscribe observer', () => {
       const action = declareAction()
-      const atom = declareAtom(0, on => [on(action, () => 1)])
+      const atom = declareAtom(0, (on) => [on(action, () => 1)])
       const store = createStore(atom)
 
       const fn = jest.fn()
@@ -101,7 +101,7 @@ describe('@reatom/observable', () => {
     })
     test('unsubscribe', () => {
       const action = declareAction()
-      const atom = declareAtom(0, on => [on(action, () => 1)])
+      const atom = declareAtom(0, (on) => [on(action, () => 1)])
       const store = createStore(atom)
 
       const fn = jest.fn()

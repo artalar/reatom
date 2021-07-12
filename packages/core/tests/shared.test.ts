@@ -4,7 +4,7 @@ import { nameToId } from '../src/shared'
 describe('@reatom/core', () => {
   describe('shared', () => {
     test('setNameToId', () => {
-      setNameToId(name => `${name}10`)
+      setNameToId((name) => `${name}10`)
       const at = declareAtom('pep', {}, () => {})
       const act = declareAction('peps')
 

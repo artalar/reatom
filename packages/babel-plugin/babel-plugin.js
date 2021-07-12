@@ -58,7 +58,7 @@ module.exports = function babelPlugin(babel) {
 
 function findCandidateNameForExpression(path) {
   let id
-  path.find(subPath => {
+  path.find((subPath) => {
     if (subPath.isAssignmentExpression()) {
       id = subPath.node.left
     } else if (subPath.isObjectProperty()) {
@@ -80,7 +80,7 @@ function pushNameToArgs(path, nameNodeId, t, name) {
   if (!displayName) {
     return
   }
-  const callExp = path.find(subPath => subPath.isCallExpression())
+  const callExp = path.find((subPath) => subPath.isCallExpression())
 
   if (!callExp) {
     return

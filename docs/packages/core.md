@@ -40,8 +40,10 @@ const increment = declareAction()
  * Step 2.
  * Declare atoms (like reducers or models)
  */
-const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
-const counterDoubledAtom = map(counterAtom, value => value * 2)
+const counterAtom = declareAtom(0, (on) => [
+  on(increment, (state) => state + 1),
+])
+const counterDoubledAtom = map(counterAtom, (value) => value * 2)
 const countersShapeAtom = combine({
   counter: counterAtom,
   counterDoubled: counterDoubledAtom,

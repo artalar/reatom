@@ -65,7 +65,7 @@ import { declareAction, declareAtom } from '@reatom/core'
 
 export const setVisibilityFilter = declareAction()
 
-export const todoAppAtom = declareAtom(initialState, on => [
+export const todoAppAtom = declareAtom(initialState, (on) => [
   on(setVisibilityFilter, (state, payload) => ({
     ...state,
     visibilityFilter: payload,
@@ -84,8 +84,8 @@ If your used [reselect](https://github.com/reduxjs/reselect) for creating memoiz
 ```js
 import { createSelector } from 'reselect'
 
-const getVisibilityFilter = state => state.visibilityFilter
-const getTodos = state => state.todos
+const getVisibilityFilter = (state) => state.visibilityFilter
+const getTodos = (state) => state.todos
 
 export const getVisibleTodos = createSelector(
   [getVisibilityFilter, getTodos],
@@ -94,9 +94,9 @@ export const getVisibleTodos = createSelector(
       case 'SHOW_ALL':
         return todos
       case 'SHOW_COMPLETED':
-        return todos.filter(t => t.completed)
+        return todos.filter((t) => t.completed)
       case 'SHOW_ACTIVE':
-        return todos.filter(t => !t.completed)
+        return todos.filter((t) => !t.completed)
     }
   },
 )
@@ -114,9 +114,9 @@ export const visibleTodosAtom = map(
       case 'SHOW_ALL':
         return todos
       case 'SHOW_COMPLETED':
-        return todos.filter(t => t.completed)
+        return todos.filter((t) => t.completed)
       case 'SHOW_ACTIVE':
-        return todos.filter(t => !t.completed)
+        return todos.filter((t) => !t.completed)
     }
   },
 )
@@ -175,7 +175,7 @@ Subscribing to the store is similar to how you did it in Redux, but with small d
 ```js
 import { createSelector } from 'reselect'
 
-const onVisibleTodosUpdate = createSelector(getVisibleTodos, todosState => {
+const onVisibleTodosUpdate = createSelector(getVisibleTodos, (todosState) => {
   // ...do something
 })
 
@@ -191,7 +191,7 @@ unsubscribe()
 Subscribing to the atoms
 
 ```js
-const unsubscribe = store.subscribe(visibleTodosAtom, todosState => {
+const unsubscribe = store.subscribe(visibleTodosAtom, (todosState) => {
   // Will be called after update atom state
   // ...do something
 })
@@ -204,7 +204,7 @@ Subscribing to the actions
 ```js
 // If you has some logic in middlewares now you can using it here
 
-const unsubscribe = store.subscribe(action => {
+const unsubscribe = store.subscribe((action) => {
   // Always called after dispatch (but after updating atoms)
   // ...do something
 })
@@ -260,7 +260,7 @@ const store = createStore(reducer, applyMiddleware(thunk))
 store.dispatch({ type: 'INCREMENT' })
 
 // But with thunk middleware, it also recognizes functions
-store.dispatch(function(dispatch) {
+store.dispatch(function (dispatch) {
   // ... which themselves may dispatch many times
   dispatch({ type: 'INCREMENT' })
   dispatch({ type: 'INCREMENT' })
@@ -323,7 +323,7 @@ const counterReducer = (state = 0, action) => {
       return state
   }
 }
-const counterSelector = state => state.counter
+const counterSelector = (state) => state.counter
 
 function* logCounterSaga() {
   while (true) {
@@ -367,7 +367,7 @@ import { take, select } from 'redux-saga/effects'
 /**
  * helper effect
  */
-const selectAtom = atom => select(getState => getState(atom))
+const selectAtom = (atom) => select((getState) => getState(atom))
 
 /**
  * main code
@@ -375,7 +375,9 @@ const selectAtom = atom => select(getState => getState(atom))
 const increment = declareAction()
 const logCounter = declareAction()
 
-const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
+const counterAtom = declareAtom(0, (on) => [
+  on(increment, (state) => state + 1),
+])
 
 function* logCounterSaga() {
   while (true) {
@@ -483,7 +485,9 @@ const increment = declareAction()
 const logCounter = declareAction()
 const noopAction = declareAction()
 
-const counterAtom = declareAtom(0, on => [on(increment, state => state + 1)])
+const counterAtom = declareAtom(0, (on) => [
+  on(increment, (state) => state + 1),
+])
 
 const rootEpic = (action$, state$) =>
   action$.pipe(
@@ -544,10 +548,10 @@ import { createStore } from '@reatom/core'
 
 const store = createStore()
 
-import('my/feature').then(module => {
+import('my/feature').then((module) => {
   // Async connection of the atom to the store and subscribe to it
   // All deps of atom will be connected too
-  store.subscribe(module.myAtom, atomState => {})
+  store.subscribe(module.myAtom, (atomState) => {})
 })
 ```
 

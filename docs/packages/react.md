@@ -34,7 +34,7 @@ const atomValue = useAtom(atom)
 #### Retrieve atom state and apply dynamic selector
 
 ```ts
-const atomValue = useAtom(atom, atomState => atomState[props.id], [props.id])
+const atomValue = useAtom(atom, (atomState) => atomState[props.id], [props.id])
 ```
 
 > NOTE. You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
@@ -59,7 +59,7 @@ const handleDoSome = useAction(doSome)
 
 ```ts
 const handleDoSome = useAction(
-  value =>
+  (value) =>
     doSome({
       id: props.id,
       value,
@@ -73,7 +73,7 @@ const handleDoSome = useAction(
 Dispatch is not called if action creator doesn't return an action.
 
 ```ts
-const handleDoSome = useAction(payload => {
+const handleDoSome = useAction((payload) => {
   if (condition) return doSome(payload)
 }, [])
 ```
@@ -115,13 +115,13 @@ import { declareAction, declareAtom } from '@reatom/core'
 import { useAction, useAtom } from '@reatom/react'
 
 const changeName = declareAction()
-const nameAtom = declareAtom('', on => [
+const nameAtom = declareAtom('', (on) => [
   on(changeName, (state, payload) => payload),
 ])
 
 export const Form = () => {
   const name = useAtom(nameAtom)
-  const handleChangeName = useAction(e => changeName(e.target.value))
+  const handleChangeName = useAction((e) => changeName(e.target.value))
 
   return (
     <form>

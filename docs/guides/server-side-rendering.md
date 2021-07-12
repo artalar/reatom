@@ -49,7 +49,7 @@ declareAtom(['greeting'], '', () => [])
 import { declareAction, declareAtom, createStore } from '@reatom/core'
 
 const setText = declareAction()
-const greetingAtom = declareAtom(['greeting'], '', on => [
+const greetingAtom = declareAtom(['greeting'], '', (on) => [
   on(setText, (state, payload) => payload),
 ])
 
@@ -73,7 +73,7 @@ store.dispatch(setText('Hello Reatom!'))
 import { declareAction, declareAtom, createStore } from '@reatom/core'
 
 const setText = declareAction()
-const greetingAtom = declareAtom(['greeting'], '', on => [
+const greetingAtom = declareAtom(['greeting'], '', (on) => [
   on(setText, (state, payload) => payload),
 ])
 
@@ -96,12 +96,12 @@ If you don't want use initial data without atom names you can use custom _getIni
 ```js
 import { declareAction, declareAtom, combine, createStore } from '@reatom/core'
 const setTitle = declareAction()
-const titleAtom = declareAtom('title', on => [
+const titleAtom = declareAtom('title', (on) => [
   on(setTitle, (_, payload) => payload),
 ])
 
 const setMode = declareAction()
-const modeAtom = declareAtom('desktop', on => [
+const modeAtom = declareAtom('desktop', (on) => [
   on(setMode, (_, payload) => payload),
 ])
 
@@ -125,12 +125,18 @@ store.dispatch(setMode('mobile'))
 **Browser**
 
 ```js
-import { declareAction, declareAtom, combine, createStore, getTree } from '@reatom/core'
+import {
+  declareAction,
+  declareAtom,
+  combine,
+  createStore,
+  getTree,
+} from '@reatom/core'
 
 function getInitialStoreState(rootAtom, state) {
   const depsShape = getDepsShape(rootAtom)
   if (depsShape) {
-    const states = Object.keys(depsShape).map(id =>
+    const states = Object.keys(depsShape).map((id) =>
       getInitialStoreState(depsShape[id], state[id]),
     )
 
@@ -143,12 +149,12 @@ function getInitialStoreState(rootAtom, state) {
 }
 
 const setTitle = declareAction()
-const titleAtom = declareAtom('title', on => [
+const titleAtom = declareAtom('title', (on) => [
   on(setTitle, (_, payload) => payload),
 ])
 
 const setMode = declareAction()
-const modeAtom = declareAtom('desktop', on => [
+const modeAtom = declareAtom('desktop', (on) => [
   on(setMode, (_, payload) => payload),
 ])
 

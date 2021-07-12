@@ -13,8 +13,8 @@ import {
   Fn,
   Transaction,
   Unsubscribe,
-  // } from '../'
-} from '.'
+} from '../'
+// } from '.'
 
 function map<T, Dep>(
   depAtom: Atom<Dep>,
@@ -25,9 +25,7 @@ function map<T, Dep>(
     (t: Transaction, cache?: CacheAsArgument<T>): Cache<T> => {
       const depPatch = t.process(depAtom)
       const dep =
-        cache?.deps.length === 1
-          ? cache.deps[0]
-          : { atom, cache: null }
+        cache?.deps.length === 1 ? cache.deps[0] : { atom, cache: null }
 
       if (dep.cache !== depPatch) {
         cache = {
@@ -195,7 +193,7 @@ async function start() {
   const cellxLogs = []
   const molLogs = []
 
-  const iterations = 20000
+  const iterations = 1_000
   var i = 0
   while (i++ < iterations) {
     if (i % (iterations / 10) === 0) {

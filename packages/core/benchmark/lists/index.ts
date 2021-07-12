@@ -111,7 +111,7 @@ function bench({
     houses: {},
   }
 
-  repeat(i => {
+  repeat((i) => {
     const id = getId(i)
     addresses.ids.push(id)
     addresses.cities[id] = `city with id ${i}`
@@ -130,7 +130,7 @@ function bench({
   )
 
   log(type, `subscribe to ${(ITEMS / 2) * 3} items [1]`, () =>
-    repeat(i => subscribe(store, getId(i), logList), ITEMS / 2),
+    repeat((i) => subscribe(store, getId(i), logList), ITEMS / 2),
   )
 
   log(type, `subscribe to input`, () => subscribeToInput(store, logList))
@@ -148,7 +148,7 @@ function bench({
   )
 
   log(type, `subscribe to ${(ITEMS / 2) * 3} items [2]`, () =>
-    repeat(i => subscribe(store, getId(i + ITEMS / 2), logList), ITEMS / 2),
+    repeat((i) => subscribe(store, getId(i + ITEMS / 2), logList), ITEMS / 2),
   )
 
   log(type, `dispatch unknown action [4]`, () =>
@@ -167,7 +167,7 @@ function bench({
   log(type, `change input`, () => store.dispatch(changeInput('input')))
 
   log(type, `change step by step ${ITEMS} items`, () =>
-    repeat(i => store.dispatch(changeHouse({ id: getId(i), value: 10 + i }))),
+    repeat((i) => store.dispatch(changeHouse({ id: getId(i), value: 10 + i }))),
   )
 
   writeLog({ type, name: 'subscriptions calls', result: logList.length })
@@ -180,7 +180,7 @@ while (++i < times) suites.forEach(bench)
 function median(values: number[]) {
   if (values.length === 0) return 0
 
-  values = values.map(v => +v)
+  values = values.map((v) => +v)
 
   values.sort((a, b) => (a - b ? 1 : -1))
 

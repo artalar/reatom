@@ -1,6 +1,6 @@
 # Changelog
 
-## v2*
+## v2
 
 - Atoms state is no longer autocleaning after dependent subscriptions clear.
   > It use `WeakMap` so it is safe to memory leaks and more predictable (intuitive)

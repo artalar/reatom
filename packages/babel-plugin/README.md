@@ -44,7 +44,7 @@ import { declateAction, declareAtom, map, combine } from '@reatom/core'
 
 const myAction = declareAction()
 const myAtom = declareAtom({}, () => [])
-const mySelector = map(myAtom, atomState => atomState)
+const mySelector = map(myAtom, (atomState) => atomState)
 const myCombine = combine([myAtom, mySelector])
 ```
 
@@ -55,6 +55,6 @@ import { declateAction, declareAtom, map, combine } from '@reatom/core'
 
 const myAction = declareAction('myAction')
 const myAtom = declareAtom('myAtom', {}, () => [])
-const mySelector = map('mySelector', myAtom, atomState => atomState)
+const mySelector = map('mySelector', myAtom, (atomState) => atomState)
 const myCombine = combine('myCombine', [myAtom, mySelector])
 ```

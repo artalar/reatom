@@ -4,7 +4,7 @@ describe('@reatom/core', () => {
   describe('createStore Redux compatible tests', () => {
     test('supports multiple subscriptions', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
       const listenerA = jest.fn()
       const listenerB = jest.fn()
@@ -52,7 +52,7 @@ describe('@reatom/core', () => {
     })
     test('only removes listener once when unsubscribe is called', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
       const listenerA = jest.fn()
       const listenerB = jest.fn()
@@ -69,7 +69,7 @@ describe('@reatom/core', () => {
     })
     test('only removes relevant listener when unsubscribe is called', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
       const listener = jest.fn()
 
@@ -84,7 +84,7 @@ describe('@reatom/core', () => {
     })
     test('supports removing a subscription within a subscription', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
       const listenerA = jest.fn()
       const listenerB = jest.fn()
@@ -106,12 +106,12 @@ describe('@reatom/core', () => {
     })
     test('notifies all subscribers about current dispatch regardless if any of them gets unsubscribed in the process', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
 
       const unsubscribeHandles: any[] = []
       const doUnsubscribeAll = () =>
-        unsubscribeHandles.forEach(unsubscribe => unsubscribe())
+        unsubscribeHandles.forEach((unsubscribe) => unsubscribe())
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -138,7 +138,7 @@ describe('@reatom/core', () => {
     })
     test('notifies only subscribers active at the moment of current dispatch', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
 
       const listener1 = jest.fn()
@@ -171,7 +171,7 @@ describe('@reatom/core', () => {
     })
     test('uses the last snapshot of subscribers during nested dispatch', () => {
       const action = declareAction()
-      const atom = declareAtom('myAtom', {}, on => [on(action, () => ({}))])
+      const atom = declareAtom('myAtom', {}, (on) => [on(action, () => ({}))])
       const store = createStore(atom)
 
       const listener1 = jest.fn()
@@ -212,9 +212,9 @@ describe('@reatom/core', () => {
       expect(listener3.mock.calls.length).toBe(3)
       expect(listener4.mock.calls.length).toBe(1)
     })
-    test('provides an up-to-date state when a subscriber is notified', done => {
+    test('provides an up-to-date state when a subscriber is notified', (done) => {
       const action = declareAction<any>()
-      const todoList = declareAtom<any[]>('text', [], on => [
+      const todoList = declareAtom<any[]>('text', [], (on) => [
         on(action, (state, payload) => [...state, payload]),
       ])
       const store = createStore(todoList)

@@ -29,7 +29,7 @@ export function connectReduxDevtools(store: Store, config = {}) {
 
     if (keys.length) {
       state = { ...state }
-      keys.forEach(k => {
+      keys.forEach((k) => {
         if (
           typeof k === 'symbol' &&
           (k.toString().startsWith('Symbol({') ||

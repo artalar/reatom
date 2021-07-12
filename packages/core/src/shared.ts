@@ -11,7 +11,7 @@ import {
 
 export const IS_DEV = /* TODO: `process.env.NODE_ENV === 'development'` */ true
 
-export const noop: Fn = () => { }
+export const noop: Fn = () => {}
 
 export function callSafety<I extends any[], O, This = any>(
   this: This,
@@ -114,12 +114,12 @@ export function createTransaction(
         atomPatch = atom(
           transaction,
           getCache(atom) ??
-          cache ?? {
-            ctx: undefined,
-            deps: [],
-            state: snapshot[atom.id],
-            types: [],
-          },
+            cache ?? {
+              ctx: undefined,
+              deps: [],
+              state: snapshot[atom.id],
+              types: [],
+            },
         )
 
         patch.set(atom, atomPatch)

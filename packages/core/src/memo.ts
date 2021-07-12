@@ -55,7 +55,9 @@ export function memo<State, Ctx extends Rec = Rec>(
   }
 
   function calcResult(): Cache<State> {
-    return deps == cache.deps && Object.is(state, cache.state) && types == cache.types
+    return deps == cache.deps &&
+      Object.is(state, cache.state) &&
+      types == cache.types
       ? cache
       : { ctx: cache.ctx, deps, state, types }
   }
@@ -83,7 +85,6 @@ export function memo<State, Ctx extends Rec = Rec>(
 
   deps = cache.deps
 
-
   function scheduleEffect(effect: any) {
     if (isFunction(effect)) {
       transaction.effects.push((store) => effect(store, cache.ctx))
@@ -91,13 +92,20 @@ export function memo<State, Ctx extends Rec = Rec>(
   }
 
   function trackAtom(depAtom: Atom, cb?: Fn) {
-    const dep = nesting == 1 && cache.deps.length > depsCount ? cache.deps[depsCount] : null
+    const dep =
+      nesting == 1 && cache.deps.length > depsCount
+        ? cache.deps[depsCount]
+        : null
     const isDepChange = dep?.atom != depAtom
-    const depPatch = transaction.process(depAtom, isDepChange ? undefined : dep!.cache)
+    const depPatch = transaction.process(
+      depAtom,
+      isDepChange ? undefined : dep!.cache,
+    )
 
     if (nesting == 1) {
       const isDepPatchChange = isDepChange || dep!.cache != depPatch
-      const isDepStateChange = isDepChange || !Object.is(dep!.cache.state, depPatch.state)
+      const isDepStateChange =
+        isDepChange || !Object.is(dep!.cache.state, depPatch.state)
 
       if (isDepPatchChange || deps != cache.deps) {
         getMutableDeps(depsCount).push({ atom: depAtom, cache: depPatch })
@@ -108,7 +116,6 @@ export function memo<State, Ctx extends Rec = Rec>(
       if (isDepStateChange && cb) {
         scheduleEffect(cb(depPatch.state))
       }
-
     } else {
       // this is wrong coz we not storing previous value of the atom
       // and can't compare it with the actual value
@@ -123,7 +130,11 @@ export function memo<State, Ctx extends Rec = Rec>(
     if (nesting == 1) {
       invalid(!cb, `action track without callback`)
 
-      if (types.length <= typesCount || types[typesCount] != type || types != cache.types) {
+      if (
+        types.length <= typesCount ||
+        types[typesCount] != type ||
+        types != cache.types
+      ) {
         getMutableTypes().push(type)
       }
 
@@ -142,7 +153,10 @@ export function memo<State, Ctx extends Rec = Rec>(
 
   let track: Track<State, Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
     // TODO: how to pass the `id` of atom here?
-    invalid(Number.isNaN(nesting), `outdated track call, use \`store.getState\` in an effect.`)
+    invalid(
+      Number.isNaN(nesting),
+      `outdated track call, use \`store.getState\` in an effect.`,
+    )
 
     try {
       nesting++

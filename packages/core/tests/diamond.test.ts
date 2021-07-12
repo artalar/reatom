@@ -25,26 +25,26 @@ describe('diamond problem (declareAtom)', () => {
 
     const firstNameUpdated = declareAction<string>()
 
-    const firstName = declareAtom('@firstName', 'John', handle =>
+    const firstName = declareAtom('@firstName', 'John', (handle) =>
       handle(firstNameUpdated, (_, name) => name),
     )
     const lastName = declareAtom('@lastName', 'Doe', () => [])
 
-    const isFirstNameShort = declareAtom('@isFirstNameShort', false, handle =>
+    const isFirstNameShort = declareAtom('@isFirstNameShort', false, (handle) =>
       handle(firstName, (state, v) => {
         isFirstNameShortMap(v)
         return v.length < 10
       }),
     )
 
-    const fullName = declareAtom('@fullName', '', handle =>
+    const fullName = declareAtom('@fullName', '', (handle) =>
       handle(combine({ firstName, lastName }), (state, dep) => {
         fullNameMap(dep.firstName, dep.lastName)
         return `${dep.firstName} ${dep.lastName}`
       }),
     )
 
-    const displayName = declareAtom('@displayName', '', handle =>
+    const displayName = declareAtom('@displayName', '', (handle) =>
       handle(
         combine({ firstName, isFirstNameShort, fullName }),
         (state, dep) => {
@@ -76,16 +76,16 @@ describe('diamond problem (declareAtom)', () => {
     const action = declareAction<string>()
 
     const r01Map = jest.fn((state, payload) => state + payload)
-    const r01 = declareAtom('@r01', '01', handle => handle(action, r01Map))
+    const r01 = declareAtom('@r01', '01', (handle) => handle(action, r01Map))
     const r02Map = jest.fn((state, payload) => state + payload)
-    const r02 = declareAtom('@r02', '02', handle => handle(action, r02Map))
+    const r02 = declareAtom('@r02', '02', (handle) => handle(action, r02Map))
     const r012 = combine({ r01, r02 })
-    const r11Map = jest.fn(state => state.r01)
+    const r11Map = jest.fn((state) => state.r01)
     const r11 = map(r012, r11Map)
-    const r12Map = jest.fn(state => state.r02)
+    const r12Map = jest.fn((state) => state.r02)
     const r12 = map(r012, r12Map)
     const r112 = combine({ r11, r12 })
-    const rootMap = jest.fn(_ => _)
+    const rootMap = jest.fn((_) => _)
     const root = map(r112, rootMap)
 
     let state = root()

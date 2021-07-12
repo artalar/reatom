@@ -47,9 +47,9 @@ const [atomValue] = useAtom(atom)
 #### Depended value by selector
 
 ```ts
-const [atomPropValue] = useAtom(useMemo(
-  () => declareAtom(($) => $(atom)[props.id]),
-  [props.id]))
+const [atomPropValue] = useAtom(
+  useMemo(() => declareAtom(($) => $(atom)[props.id]), [props.id]),
+)
 ```
 
 #### Mount without subscription (for subscribing atoms to actions)
@@ -72,8 +72,8 @@ const handleDoSome = useAction(doSome)
 
 ```ts
 const handleDoSome = useAction(
-  value => doSome({ id: props.id, value }),
-  [props.id]
+  (value) => doSome({ id: props.id, value }),
+  [props.id],
 )
 ```
 
@@ -82,7 +82,7 @@ const handleDoSome = useAction(
 If action creator don't return an action dispatch not calling.
 
 ```ts
-const handleDoSome = useAction(payload => {
+const handleDoSome = useAction((payload) => {
   if (condition) return doSome(payload)
 }, [])
 ```
@@ -122,7 +122,7 @@ import { declareAction, declareAtom } from '@reatom/core'
 import { useAtom } from '@reatom/react'
 
 const nameAtom = declareAtom('', {
-  onChange: (e) => e.currentTarget.value
+  onChange: (e) => e.currentTarget.value,
 })
 
 export const Form = () => {
@@ -160,7 +160,7 @@ export const Form = () => {
 }
 ```
 
-<!-- 
+<!--
 ## Why React so unfriendly for state-managers
 
 - github.com/facebook/react/issues/14259#issuecomment-439632622

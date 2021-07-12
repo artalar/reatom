@@ -22,7 +22,7 @@ export type ActionType = string
 
 export type Unsubscribe = () => void
 
-export type CacheDep = {atom: Atom, cache: Cache}
+export type CacheDep = { atom: Atom; cache: Cache }
 
 export type Cache<State = any> = {
   /** Local mutable context */

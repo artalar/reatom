@@ -57,23 +57,15 @@ const handleDoSome = useAction(doSome)
 // app.module.ts
 
 @NgModule({
-    declarations: [
-        AppComponent,
-    ],
-    imports: [
-        BrowserModule,
-        HttpClientModule,
-        NgReatomModule.forRoot(),
-    ],
-    providers: [],
-    bootstrap: [
-        AppComponent,
-    ],
+  declarations: [AppComponent],
+  imports: [BrowserModule, HttpClientModule, NgReatomModule.forRoot()],
+  providers: [],
+  bootstrap: [AppComponent],
 })
 export class AppModule {
-    constructor(ngReatom: NgReatom) {
-        const unsubscribeDevTools = connectReduxDevtools(ngReatom.store, {});
-    }
+  constructor(ngReatom: NgReatom) {
+    const unsubscribeDevTools = connectReduxDevtools(ngReatom.store, {})
+  }
 }
 ```
 
@@ -85,27 +77,27 @@ export class AppModule {
 import { useAction, useAtom, requireAtom } from '@reatom/angular'
 
 @Component({
-    selector   : 'app-root',
-    templateUrl: './app.component.html',
-    styleUrls  : ['./app.component.scss'],
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit, OnDestroy {
-    public count$ = useAtom(TodoList, 'count');
-    public list$ = useAtom(TodoList, 'list');
+  public count$ = useAtom(TodoList, 'count')
+  public list$ = useAtom(TodoList, 'list')
 
-    public addItem = useAction(addItem);
+  public addItem = useAction(addItem)
 
-    private atoms = requireAtom(TodoList);
+  private atoms = requireAtom(TodoList)
 
-    constructor(private reatom: NgReatom) { }
+  constructor(private reatom: NgReatom) {}
 
-    ngOnInit() {
-        this.atoms.subscribe();
-    }
+  ngOnInit() {
+    this.atoms.subscribe()
+  }
 
-    ngOnDestroy() {
-        this.atoms.unsubscribe();
-    }
+  ngOnDestroy() {
+    this.atoms.unsubscribe()
+  }
 }
 ```
 
@@ -127,17 +119,10 @@ export class AppComponent implements OnInit, OnDestroy {
 // feature.module.ts
 
 @NgModule({
-    declarations: [
-        FeatureComponent,
-    ],
-    imports: [
-        CommonModule,
-        NgReatomModule.forChild(),
-    ],
-    providers: [],
-    bootstrap: [
-        FeatureComponent,
-    ],
+  declarations: [FeatureComponent],
+  imports: [CommonModule, NgReatomModule.forChild()],
+  providers: [],
+  bootstrap: [FeatureComponent],
 })
 export class FeatureModule {}
 ```
@@ -148,17 +133,10 @@ export class FeatureModule {}
 // shared.module.ts
 
 @NgModule({
-    declarations: [
-        SharedComponent,
-    ],
-    imports: [
-        CommonModule,
-        NgReatomModule,
-    ],
-    providers: [],
-    bootstrap: [
-        SharedComponent,
-    ],
+  declarations: [SharedComponent],
+  imports: [CommonModule, NgReatomModule],
+  providers: [],
+  bootstrap: [SharedComponent],
 })
 export class SharedModule {}
 ```

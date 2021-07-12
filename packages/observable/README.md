@@ -34,7 +34,7 @@ yarn add @reatom/observable
 import { declareAtom, declareAction, createStore } from '@reatom/core'
 
 const action = declareAction()
-const atom = declareAtom(0, on => [on(action, (state, payload) => payload)])
+const atom = declareAtom(0, (on) => [on(action, (state, payload) => payload)])
 
 const store = createStore(atom)
 ```
@@ -45,7 +45,7 @@ const store = createStore(atom)
 import { observe } from '@reatom/observable'
 
 const observableStore = observe(store)
-const subscription = observableStore.subscribe(action => console.log(action))
+const subscription = observableStore.subscribe((action) => console.log(action))
 
 subscription.unsubscribe() // unsubscribes
 ```
@@ -66,7 +66,7 @@ const subscription = observableStore.subscribe({
 import { observe } from '@reatom/observable'
 
 const observableAtom = observe(store, atom)
-const subscription = observableAtom.subscribe(state => console.log(state))
+const subscription = observableAtom.subscribe((state) => console.log(state))
 
 subscription.unsubscribe() // unsubscribes
 ```

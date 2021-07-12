@@ -32,7 +32,7 @@ const counterAtom = declareAtom(0, (atom) =>
       $(shouldSyncCounterAtom) ? $(globalCounterAtom) : state,
     )
     .assign({
-      inc: (value:void, state) => state + 1,
+      inc: (value: void, state) => state + 1,
     })
     .change((state, store, meta) =>
       console.log(
@@ -56,7 +56,7 @@ const counterAtom = declareAtom(0, {
     ($, state) => ($(shouldSyncCounterAtom) ? $(globalCounterAtom) : state),
   ],
   assign: {
-    inc: (value:void, state) => state + 1,
+    inc: (value: void, state) => state + 1,
   },
   change: [
     (state, store, meta) =>
@@ -78,7 +78,7 @@ const counterAtom = declareAtom(
   [`id`, `counter`],
   [`meta`, { updates: 0 }],
   [add, (value, state) => state + value],
-  [`inc`, (value:void, state) => state + 1],
+  [`inc`, (value: void, state) => state + 1],
   ($, state) => ($(shouldSyncCounterAtom) ? $(globalCounterAtom) : state),
   [
     `*`,

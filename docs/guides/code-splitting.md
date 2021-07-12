@@ -47,11 +47,11 @@ Lazy connect atoms is a very flexible approach to building the architecture of y
 import { messagesListAtom } from './features/messages/model'
 import { discountAtom } from './features/profile/model'
 
-const unsubscribe1 = store.subscribe(messagesListAtom, atomState => {
+const unsubscribe1 = store.subscribe(messagesListAtom, (atomState) => {
   // ...do something
 })
 
-const unsubscribe2 = store.subscribe(discountAtom, atomState => {
+const unsubscribe2 = store.subscribe(discountAtom, (atomState) => {
   // ...do something
 })
 ```

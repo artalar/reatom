@@ -18,7 +18,7 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
 - ⚡ **performance**: performant updates for partial state changes
-- 🧯 **reliable**: [atomicity](https://en.wikipedia.org/wiki/Atomicity_(database_systems)) guaranties
+- 🧯 **reliable**: [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) guaranties
 - ❗️ **static typed**: best type inferences
 - 🗜 **small size**: [2 KB](https://bundlephobia.com/result?p=@reatom/core@alpha) gzipped
 - 📦 **modular**: reusable instances (SSR)
@@ -74,15 +74,12 @@ yarn add @reatom/core@alpha
 ```ts
 import { declareAction, declareAtom } from '@reatom/core'
 
-const counterAtom = declareAtom(
-  0,
-  {
-    add: (value: number, state) => state + value,
-    inc: (_: void, state) => state + 1,
-  }
-)
+const counterAtom = declareAtom(0, {
+  add: (value: number, state) => state + value,
+  inc: (_: void, state) => state + 1,
+})
 
-counterAtom.subscribe(counter => console.log(counter))
+counterAtom.subscribe((counter) => console.log(counter))
 // -> 0
 
 counterAtom.inc.dispatch()
@@ -111,12 +108,12 @@ const add = declareAction<number>()
  */
 const counterAtom = declareAtom(($, state = 0) => {
   // handle new action from action creator
-  $(add, (payload) => state += payload)
+  $(add, (payload) => (state += payload))
   return state
 })
 const counterDoubledAtom = declareAtom(
   // handle new data from other atom
-  ($) => $(counterAtom) * 2
+  ($) => $(counterAtom) * 2,
 )
 
 /**
@@ -130,7 +127,7 @@ const store = createStore()
 /**
  * Step 4. Subscribe to needed atoms.
  */
-store.subscribe(counterDoubledAtom, atomState => console.log(atomState))
+store.subscribe(counterDoubledAtom, (atomState) => console.log(atomState))
 // -> 0
 
 /**
@@ -179,7 +176,10 @@ const add = declareAction<number>()
 add(42)
 // -> { type: 'action [2]', payload: 42 }
 
-const set = declareAction((payload: number, meta: string) => ({ payload, meta }))
+const set = declareAction((payload: number, meta: string) => ({
+  payload,
+  meta,
+}))
 set(42, 'from somewhere')
 // -> { type: 'action [3]', payload: 42, meta: 'from somewhere' }
 
@@ -254,7 +254,7 @@ const counterDumbAtom = declareAtom(
   {
     // create context (it leave in a store) as an mutable data for effects
     createCtx = () => ({ updates: 0 })
-    onChange: (oldState, state, store, ctx) => 
+    onChange: (oldState, state, store, ctx) =>
       console.log(`Counter ${++ctx.updates} update with ${state}`)
     id: `dump counter with onChange effect`
   }
@@ -308,9 +308,8 @@ store.subscribe((transaction) => console.log('transaction', transaction))
 // () => void
 
 // Subscribe to new state of an atom
-store.subscribe(
-  counterAtom,
-  (counter) => console.log('counterAtom new state', counter)
+store.subscribe(counterAtom, (counter) =>
+  console.log('counterAtom new state', counter),
 )
 // -> 'counterAtom new state', 10
 // () => void
@@ -323,10 +322,10 @@ store.subscribe(add, (action) => console.log('add', action.payload))
 // You may dispatch a single action or array of actions for batching of it.
 store.dispatch([add(1), add(2)])
 // -> 'transaction', {
-// ->   actions: [ { payload: 1, type: 'add' }, { payload: 2, type: 'add' } ], 
-// ->   getCache: Function, 
+// ->   actions: [ { payload: 1, type: 'add' }, { payload: 2, type: 'add' } ],
+// ->   getCache: Function,
 // ->   patch: Map<Atom, AtomCache>
-// ->   snapshot: { counter: 10 }, 
+// ->   snapshot: { counter: 10 },
 // ->   effects: []
 // -> }
 // ->
@@ -361,7 +360,7 @@ If you fill limit of immutable data structures and need to increase performance 
 
 ### Action VS Event
 
-One of the biggest feature and goal of the Reatom is [atomicity](https://en.wikipedia.org/wiki/Atomicity_(database_systems)) guarantees for processed state (from atoms). It is achieved by separating calculations for two consecutive stages: pure computations and side-effects. If first stage (pure computations) throws an error, accumulated patch from touched atoms will disappear, state will not changed and the second stage (side-effects calls) will not processed. It is the difference between events and actions: event is statement of happened fact, but action is intentions to do something (change state) so we may react to it only after it (state changing) happen.
+One of the biggest feature and goal of the Reatom is [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) guarantees for processed state (from atoms). It is achieved by separating calculations for two consecutive stages: pure computations and side-effects. If first stage (pure computations) throws an error, accumulated patch from touched atoms will disappear, state will not changed and the second stage (side-effects calls) will not processed. It is the difference between events and actions: event is statement of happened fact, but action is intentions to do something (change state) so we may react to it only after it (state changing) happen.
 
 ### Lazy branches
 
