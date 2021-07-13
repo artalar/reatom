@@ -13,18 +13,23 @@ import {
   Transaction,
 } from './internal'
 
-export type Computer<State = any, Ctx extends Rec = Rec> = {
+export type Reducer<State = any, Ctx extends Rec = Rec> = {
   ($: Track<State, Ctx>, state: State): State
 }
 
 export type Track<State, Ctx extends Rec> = {
+  /** Subscribe to the atom state changes and receive it */
   <T>(atom: Atom<T>): T
+  /** Subscribe to the atom state changes and react to it */
   <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
+  /** Subscribe to the atom state changes and react to it */
   <T>(atom: Atom<T>, cb: Fn<[T], any>): void
+  /** Subscribe to dispatch an action of the action creator and react to it */
   <T extends AC>(
     actionCreator: T,
     cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
   ): void
+  /** Subscribe to dispatch an action of the action creator and react to it */
   <T extends AC>(
     actionCreator: T,
     cb: Fn<[ActionPayload<T>, ReturnType<T>], any>,
@@ -34,7 +39,7 @@ export type Track<State, Ctx extends Rec> = {
 export function memo<State, Ctx extends Rec = Rec>(
   transaction: Transaction,
   cache: Cache<State>,
-  computer: Computer<State, Ctx>,
+  reducer: Reducer<State, Ctx>,
 ): Cache<State> {
   let { deps, state, types } = cache
   let depsCount = 0
@@ -62,7 +67,7 @@ export function memo<State, Ctx extends Rec = Rec>(
       : { ctx: cache.ctx, deps, state, types }
   }
 
-  const shouldSkipComputer =
+  const shouldSkipReducer =
     (deps.length > 0 || types.length > 0) &&
     transaction.actions.every((action) => !types.includes(action.type)) &&
     deps.every(({ atom: depAtom, cache: depCache }, i) => {
@@ -79,7 +84,7 @@ export function memo<State, Ctx extends Rec = Rec>(
       return false
     })
 
-  if (shouldSkipComputer) {
+  if (shouldSkipReducer) {
     return calcResult()
   }
 
@@ -170,7 +175,7 @@ export function memo<State, Ctx extends Rec = Rec>(
     }
   }
 
-  state = computer(track, cache.state)
+  state = reducer(track, cache.state)
 
   nesting = NaN
 

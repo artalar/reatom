@@ -1,7 +1,7 @@
 import {
   AC,
   Action,
-  ActionData,
+  ActionCreatorData,
   ActionType,
   addToSetsMap,
   Atom,
@@ -55,19 +55,19 @@ function isTypesChange(
 }
 
 export function createStore(snapshot: Record<string, any> = {}): Store {
-  const actionsComputers = new Map<ActionType, Set<Atom>>()
+  const actionsReducers = new Map<ActionType, Set<Atom>>()
   const actionsListeners = new Map<ActionType, Set<Fn>>()
   const atomsCache = new WeakMap<Atom, Cache>()
   const atomsListeners = new Map<Atom, Set<Fn>>()
   const transactionListeners = new Set<Fn<[TransactionResult]>>()
 
-  function addComputer(atom: Atom, cache: Cache) {
-    cache.types.forEach((type) => addToSetsMap(actionsComputers, type, atom))
-    cache.deps.forEach((dep) => addComputer(atom, dep.cache))
+  function addReducer(atom: Atom, cache: Cache) {
+    cache.types.forEach((type) => addToSetsMap(actionsReducers, type, atom))
+    cache.deps.forEach((dep) => addReducer(atom, dep.cache))
   }
-  function delComputer(atom: Atom, cache: Cache) {
-    cache.types.forEach((type) => delFromSetsMap(actionsComputers, type, atom))
-    cache.deps.forEach((dep) => delComputer(atom, dep.cache))
+  function delReducer(atom: Atom, cache: Cache) {
+    cache.types.forEach((type) => delFromSetsMap(actionsReducers, type, atom))
+    cache.deps.forEach((dep) => delReducer(atom, dep.cache))
   }
 
   function collect(atom: Atom, result: Rec = {}) {
@@ -87,13 +87,13 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     const atomCache = getCache(atom)
     if (atomsListeners.has(atom)) {
       if (atomCache == undefined) {
-        addComputer(atom, patch)
+        addReducer(atom, patch)
       } else if (
         atomCache.types != patch.types ||
         isTypesChange(atomCache.deps, patch.deps)
       ) {
-        delComputer(atom, patch)
-        addComputer(atom, patch)
+        delReducer(atom, patch)
+        addReducer(atom, patch)
       }
     }
 
@@ -121,9 +121,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
         targets?.forEach((atom) => transaction.process(atom)),
       )
       actions.forEach(({ type }) =>
-        actionsComputers
-          .get(type)
-          ?.forEach((atom) => transaction.process(atom)),
+        actionsReducers.get(type)?.forEach((atom) => transaction.process(atom)),
       )
 
       patch.forEach((atomPatch, atom) =>
@@ -210,7 +208,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       listeners!.delete(cb)
       if (listeners!.size === 0) {
         atomsListeners.delete(atom)
-        delComputer(atom, atomsCache.get(atom)!)
+        delReducer(atom, atomsCache.get(atom)!)
       }
     }
 
@@ -218,7 +216,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       getState(atom)
 
       if (shouldInvalidateTypes) {
-        addComputer(atom, getCache(atom)!)
+        addReducer(atom, getCache(atom)!)
       }
 
       return unsubscribe
@@ -230,7 +228,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
   function subscribeAction<T extends AC>(
     actionCreator: T,
-    cb: Fn<[ActionData<AC>]>,
+    cb: Fn<[ActionCreatorData<AC>]>,
   ): Unsubscribe {
     addToSetsMap(actionsListeners, actionCreator.type, cb)
 
@@ -249,7 +247,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   function subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
   function subscribe<T extends AC>(
     actionCreator: T,
-    cb: Fn<[action: ActionData<AC>]>,
+    cb: Fn<[action: ActionCreatorData<AC>]>,
   ): Unsubscribe
   function subscribe(
     ...a: [Fn<[TransactionResult]>] | [Atom, Fn] | [AC, Fn]
@@ -260,7 +258,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       ? subscribeAtom(a[0], a[1])
       : isActionCreator(a[0]) && isFunction(a[1])
       ? subscribeAction(a[0], a[1])
-      : invalid(true, `subscribe arguments`)
+      : (invalid(1, `subscribe arguments`) as never)
   }
 
   const store = {
@@ -270,7 +268,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     init,
     subscribe,
     __DO_NOT_USE_IT_OR_YOU_WILL_BE_FIRED: {
-      actionsComputers,
+      actionsReducers,
       actionsListeners,
       atomsCache,
       atomsListeners,

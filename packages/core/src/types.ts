@@ -1,8 +1,10 @@
 /* UTILITY */
 
-export type Fn<I extends any[] = any[], O = any> = (...a: I) => O
+export type Fn<Args extends any[] = any[], Return = any> = (
+  ...a: Args
+) => Return
 
-export type Rec<T = any> = Record<string, T>
+export type Rec<Values = any> = Record<string, Values>
 
 export type Merge<Intersection> = Intersection extends (...a: any[]) => any
   ? Intersection
@@ -38,24 +40,29 @@ export type Cache<State = any> = {
    */
   readonly deps: Array<CacheDep>
 
+  /** Immutable public data */
   readonly state: State
 
+  /** Types of action creators in the reducer */
   readonly types: Array<ActionType>
 }
 
-export type CacheAsArgument<State = any> = {
+export type CacheTemplate<State = any> = {
   [K in keyof Cache<State>]: K extends `ctx` | `state`
     ? Cache<State>[K] | undefined
     : Cache<State>[K]
 }
 
 export type Atom<State = any> = {
-  (transaction: Transaction, cache?: CacheAsArgument<State>): Cache<State>
+  /** Reducer */
+  (transaction: Transaction, cache?: CacheTemplate<State>): Cache<State>
 
   /** Unique ID */
   id: string
+}
 
-  /** Noop subscription to initiate actions handling (`defaultStore`) */
+export type AtomBindings<State = any> = {
+  /** Noop subscription to initiate readonly  handling (`defaultStore`) */
   init(): Unsubscribe
 
   /** Read (or recalculate) state (`defaultStore`) */
@@ -65,62 +72,80 @@ export type Atom<State = any> = {
   subscribe(cb: Fn<[state: State]>): Unsubscribe
 }
 
+export type AtomBinded<State = any> = Atom<State> & AtomBindings<State>
+
 export type Action<Payload = any> = {
+  /** Payload data from userspace */
   payload: Payload
 
+  /** Action indeteficator */
   type: ActionType
 
-  /** Atoms which achieves  */
+  /** Atoms which will forced achieve this action  */
   targets?: Array<Atom>
 
   [K: string]: unknown
 }
 
-type CustomAction<ActionData extends Rec> = Merge<ActionData & { type: string }>
+export type ActionData<Payload = any> = Omit<Action<Payload>, 'type'> & {
+  type?: never
+}
+
+type CustomAction<Data extends Rec> = Merge<Data & { type: string }>
+
+type A1 = ActionCreator<[], { payload: 1 }>
 
 export type ActionCreator<
-  Arguments extends any[] = any[],
-  ActionData extends {
-    payload: any
-    type?: never
-    targets?: Array<Atom>
-  } = {
-    payload: Arguments[0]
-  },
+  Args extends any[] = any[],
+  Data extends ActionData = { payload: Args[0] },
 > = {
-  (...a: Arguments): CustomAction<ActionData>
-
-  /** Create the action creator action and dispatch it to `defaultStore` */
-  dispatch(...args: Arguments): ReturnType<Store['dispatch']>
-
-  /** Subscribe to dispatches of the action to `defaultStore` */
-  subscribe(cb: Fn<[action: CustomAction<ActionData>]>): Unsubscribe
+  (...a: Args): CustomAction<Data>
 
   type: ActionType
 }
+
+export type ActionCreatorBindings<
+  Args extends any[] = any[],
+  Data extends ActionData = { payload: Args[0] },
+> = {
+  /** Create the action creator action and dispatch it to the `defaultStore` */
+  dispatch(...args: Args): ReturnType<Store['dispatch']>
+
+  /** Subscribe to dispatches of the action creator action to the `defaultStore` */
+  subscribe(cb: Fn<[action: CustomAction<Data>]>): Unsubscribe
+}
+
+export type ActionCreatorBinded<
+  Args extends any[] = any[],
+  Data extends ActionData = { payload: Args[0] },
+> = ActionCreator<Args, Data> & ActionCreatorBindings<Args, Data>
 
 /** Shortcut to typed ActionCreator */
 export type AC<T = any> = ActionCreator<any[], { payload: T }>
 
 export type Store = {
-  /** Accept action or pack of actions for a batch
-   * and return Promise which resolves when all effects resolves
+  /**
+   * Accept action or pack of actions for a batch.
+   * Return a promise which resolves when all effects resolves
    */
-  dispatch(action: Action | Array<Action>): Promise<unknown>
+  dispatch(action: Action | ReadonlyArray<Action>): Promise<unknown>
 
   /** Collect states from all active atoms */
   getState<T>(): Record<string, any>
-  /** Get stored or calculate new state from atom */
+  /** Get stored atom state or calculate the new */
   getState<T>(atom: Atom<T>): T
 
   /** Connect atoms to store for actions handling */
   init(...atoms: Array<Atom>): Unsubscribe
 
+  /** Subscribe to every dispatch result */
   subscribe<T>(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
+  /** Subscribe to atom change (called once immediately) */
   subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
+  /** Subscribe to dispatch a action of the action creator*/
   subscribe<T extends AC>(
     actionCreator: T,
-    cb: Fn<[action: ActionData<AC>]>,
+    cb: Fn<[action: ActionCreatorData<AC>]>,
   ): Unsubscribe
 }
 
@@ -132,21 +157,18 @@ export type Store = {
 export type Transaction = {
   readonly actions: ReadonlyArray<Action>
 
-  readonly effects: Array<Fn<[Store]>>
+  readonly effects: Array<Fn<[store: Store]>>
 
-  /**
-   * - memoize atom recalculation during transaction
-   * - allow to redeclare target cache for scoping
-   */
+  /** Memoize atom recalculation during transaction */
   process<T>(atom: Atom<T>, cache?: Cache<T>): Cache<T>
 }
 
 export type TransactionResult = {
-  actions: ReadonlyArray<Action>
+  readonly actions: ReadonlyArray<Action>
 
-  error: Error | null
+  readonly error: Error | null
 
-  patch: Patch
+  readonly patch: Patch
 }
 
 export type Effect<Ctx extends Rec = Rec> = Fn<[Store, Ctx]>
@@ -167,9 +189,5 @@ export type ActionPayload<T extends AC | Action> = T extends AC<infer Payload>
   ? Payload
   : never
 
-export type ActionData<T extends AC> = T extends ActionCreator<
-  any[],
-  infer Action
->
-  ? Action
-  : never
+export type ActionCreatorData<T extends ActionCreator> =
+  T extends ActionCreator<any[], infer Data> ? Data : never

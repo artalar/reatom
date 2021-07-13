@@ -9,8 +9,6 @@ import {
   Transaction,
 } from './internal'
 
-export const IS_DEV = /* TODO: `process.env.NODE_ENV === 'development'` */ true
-
 export const noop: Fn = () => {}
 
 export function callSafety<I extends any[], O, This = any>(
@@ -65,35 +63,18 @@ export function isFunction(thing: any): thing is Function {
   return typeof thing === 'function'
 }
 
-export function safeFunction(thing: any, name = thing): Fn {
-  invalid(!isFunction(thing), `${name}, expected function`)
-  return thing
-}
-
 export function isAtom(thing: any): thing is Atom<unknown> {
   return isFunction(thing) && isFunction(thing.getState)
-}
-
-export function safeAtom(thing: any, name = thing): Atom {
-  invalid(!isAtom(thing), `${name}, expected atom`)
-  return thing
 }
 
 export function isActionCreator(thing: any): thing is ActionCreator {
   return isFunction(thing) && isFunction(thing.dispatch)
 }
 
-export function safeActionCreator(thing: any, name = thing): ActionCreator {
-  invalid(!isActionCreator(thing), `${name}, expected action`)
-  return thing
-}
-
 export function isAction(thing: any): thing is Action {
   return isObject(thing) && isString(thing.type) && 'payload' in thing
 }
 
-export function invalid<T extends true>(predicate: T, msg: string): never
-export function invalid(predicate: any, msg: string): unknown
 export function invalid(predicate: any, msg: string) {
   if (predicate) throw new Error(`Reatom: invalid ${msg}`)
 }
@@ -111,16 +92,15 @@ export function createTransaction(
       let atomPatch = patch.get(atom)
 
       if (!atomPatch) {
-        atomPatch = atom(
-          transaction,
-          getCache(atom) ??
-            cache ?? {
-              ctx: undefined,
-              deps: [],
-              state: snapshot[atom.id],
-              types: [],
-            },
-        )
+        const atomCache = getCache(atom) ??
+          cache ?? {
+            ctx: undefined,
+            deps: [],
+            state: snapshot[atom.id],
+            types: [],
+          }
+
+        atomPatch = atom(transaction, atomCache)
 
         patch.set(atom, atomPatch)
       }

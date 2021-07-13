@@ -1,12 +1,12 @@
 import {
-  ActionCreator,
+  ActionCreatorBinded,
   Atom,
   defaultStore,
   Fn,
   invalid,
-  IS_DEV,
   isFunction,
   isString,
+  ActionData,
 } from './internal'
 
 const defaultMapper = (payload: any) => ({
@@ -15,32 +15,27 @@ const defaultMapper = (payload: any) => ({
 
 let actionsCount = 0
 
-export function declareAction(type?: string): ActionCreator<[]>
-export function declareAction<Payload>(type?: string): ActionCreator<[Payload]>
-export function declareAction<
-  Arguments extends any[] = [],
-  ActionData extends { payload: any; type?: never; targets?: Array<Atom> } = {
-    payload: Arguments[0]
-  },
->(
-  mapper: (...a: Arguments) => ActionData,
+export function declareAction(type?: string): ActionCreatorBinded<[]>
+export function declareAction<Payload>(
   type?: string,
-): ActionCreator<Arguments, ActionData>
+): ActionCreatorBinded<[Payload]>
+export function declareAction<
+  Args extends any[] = [],
+  Data extends ActionData = { payload: Args[0] },
+>(mapper: (...a: Args) => Data, type?: string): ActionCreatorBinded<Args, Data>
 export function declareAction(
   typeOrMapper?: string | Fn,
   type = isString(typeOrMapper) ? typeOrMapper : `action [${++actionsCount}]`,
 ) {
   const mapper = isFunction(typeOrMapper) ? typeOrMapper : defaultMapper
-  const actionCreator: ActionCreator = (...a) => {
+  const actionCreator: ActionCreatorBinded = (...a) => {
     const action = mapper(...a)
 
-    if (IS_DEV) {
-      invalid(`type` in action, `action type in created action data`)
-      invalid(
-        `payload` in action === false,
-        `missing payload in created action data`,
-      )
-    }
+    invalid(`type` in action, `action type in created action data`)
+    invalid(
+      `payload` in action === false,
+      `missing payload in created action data`,
+    )
 
     return Object.assign({}, action, { type })
   }

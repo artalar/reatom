@@ -1,14 +1,13 @@
 import {
   ActionCreator,
-  Atom,
+  AtomBinded,
   Cache,
-  CacheAsArgument,
-  Computer,
+  CacheTemplate,
+  Reducer,
   declareAction,
   defaultStore,
   Fn,
   invalid,
-  IS_DEV,
   isFunction,
   isString,
   memo,
@@ -22,10 +21,10 @@ import {
 } from './internal'
 
 export type AtomOptions<State, Ctx extends Rec> =
-  | Atom['id']
+  | AtomBinded['id']
   | {
       createCtx?: () => Ctx
-      id?: Atom['id']
+      id?: AtomBinded['id']
       onChange?: (
         oldState: State | undefined,
         state: State,
@@ -52,7 +51,7 @@ export type DumbAtomMethods<State> = {
   update: AtomMethod<State, State | ((prevState: State) => State)>
 }
 
-export type DumbAtom<State> = Atom<State> & DumbAtomMethods<State>
+export type DumbAtom<State> = AtomBinded<State> & DumbAtomMethods<State>
 
 let atomsCount = 0
 export function declareAtom<
@@ -60,10 +59,10 @@ export function declareAtom<
   Ctx extends Rec,
   Methods extends Rec<AtomMethod<State>>,
 >(
-  computer: ($: Track<unknown, Ctx>) => State,
+  reducer: ($: Track<unknown, Ctx>) => State,
   methods?: Methods,
   options?: AtomOptions<State, Ctx>,
-): Atom<State> & Merge<ActionCreatorsMethods<Methods>>
+): AtomBinded<State> & Merge<ActionCreatorsMethods<Methods>>
 export function declareAtom<
   State,
   Ctx extends Rec,
@@ -72,7 +71,7 @@ export function declareAtom<
   initState: NotFn<State>,
   methods?: Methods,
   options?: AtomOptions<State, Ctx>,
-): Atom<State> &
+): AtomBinded<State> &
   Merge<
     ActionCreatorsMethods<
       Methods extends undefined ? DumbAtomMethods<State> : Methods
@@ -83,10 +82,10 @@ export function declareAtom<
   Ctx extends Rec,
   Methods extends Rec<AtomMethod<State>>,
 >(
-  initialStateOrComputer: NotFn<State> | (($: Track<unknown, Ctx>) => State),
+  initialStateOrReducer: NotFn<State> | (($: Track<unknown, Ctx>) => State),
   methods: Methods = {} as Methods,
   options: AtomOptions<State, Ctx> = {},
-): Atom<State> {
+): AtomBinded<State> {
   options = isString(options) ? { id: options } : options
 
   const {
@@ -95,9 +94,9 @@ export function declareAtom<
     onChange,
   } = options
 
-  let userComputer = initialStateOrComputer as Computer<State, Ctx>
-  if (!isFunction(initialStateOrComputer)) {
-    userComputer = ($, state = initialStateOrComputer) => state
+  let userReducer = initialStateOrReducer as Reducer<State, Ctx>
+  if (!isFunction(initialStateOrReducer)) {
+    userReducer = ($, state = initialStateOrReducer) => state
 
     if (Object.keys(methods).length === 0) {
       // @ts-expect-error
@@ -116,26 +115,24 @@ export function declareAtom<
     )),
   }))
 
-  const computer: Computer<State, Ctx> = ($, state) =>
+  const reducer: Reducer<State, Ctx> = ($, state) =>
     methodsDecoupled.reduce((state, { reducer, actionCreator }) => {
       $(actionCreator, (payload) => (state = reducer(payload, state)))
       return state
-    }, userComputer($, state))
+    }, userReducer($, state))
 
-  if (IS_DEV) {
-    invalid(
-      initialStateOrComputer === undefined ||
-        !isFunction(userComputer) ||
-        !isString(id) ||
-        !isFunction(createCtx) ||
-        !Object.values(methods).every(isFunction),
-      `atom arguments`,
-    )
-  }
+  invalid(
+    initialStateOrReducer === undefined ||
+      !isFunction(userReducer) ||
+      !isString(id) ||
+      !isFunction(createCtx) ||
+      !Object.values(methods).every(isFunction),
+    `atom arguments`,
+  )
 
   function atom(
     transaction: Transaction,
-    cache: CacheAsArgument<State> = {
+    cache: CacheTemplate<State> = {
       deps: [],
       ctx: undefined,
       state: undefined,
@@ -144,7 +141,7 @@ export function declareAtom<
   ): Cache<State> {
     if (cache.ctx === undefined) cache.ctx = createCtx()
 
-    const patch = memo(transaction, cache as Cache<State>, computer)
+    const patch = memo(transaction, cache as Cache<State>, reducer)
 
     if (onChange !== undefined && !Object.is(patch.state, cache.state)) {
       transaction.effects.push((store) =>

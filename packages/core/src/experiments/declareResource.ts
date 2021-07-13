@@ -1,5 +1,5 @@
 // import { AC, Atom, AtomState, declareAtom, isObject, Track } from '@reatom/core'
-import { AC, Atom, AtomState, declareAtom, isObject, Track } from '../'
+import { AC, BindedAtom, AtomState, declareAtom, isObject, Track } from '../'
 
 function shallowEqual(a: any, b: any) {
   if (isObject(a) && isObject(b)) {
@@ -13,7 +13,7 @@ function shallowEqual(a: any, b: any) {
 
 let resourcesCount = 0
 export function declareResource<State, Params = void>(
-  computer: ($: Track<any, {}>) => State,
+  reducer: ($: Track<any, {}>) => State,
   fetcher: (
     params: Params,
     state: State extends any ? State : never,
@@ -24,12 +24,12 @@ export function declareResource<State, Params = void>(
     ($, state?: { data: State; error: null | Error; isLoading: boolean }) => {
       if (state === undefined) {
         state = {
-          data: computer($),
+          data: reducer($),
           error: null,
           isLoading: false,
         }
       } else {
-        const data = computer(
+        const data = reducer(
           $,
           // @ts-expect-error
           state.data,
@@ -152,7 +152,7 @@ function example() {
     return null as any
   }
 
-  function useAtom<T extends Atom<any>>(
+  function useAtom<T extends BindedAtom<any>>(
     atom: T,
   ): [
     AtomState<T>,

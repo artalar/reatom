@@ -355,12 +355,12 @@ test(`Batched dispatch`, () => {
 })
 
 test(`Batched dispatch dynamic types change`, () => {
-  let computerCalls = 0
+  let reducerCalls = 0
   const doSome = declareAction<any>()
   const addAction = declareAction<ActionCreator>()
   const actionsCacheAtom = declareAtom(
     ($, state = new Array<readonly [ActionCreator, any]>()) => {
-      computerCalls++
+      reducerCalls++
       $(
         addAction,
         (actionCreator) => (state = [...state, [actionCreator, null]]),
@@ -375,11 +375,11 @@ test(`Batched dispatch dynamic types change`, () => {
   const store = createStore()
 
   store.init(actionsCacheAtom)
-  assert.is(computerCalls, 1)
+  assert.is(reducerCalls, 1)
 
   store.dispatch([addAction(doSome), doSome(0)])
   assert.equal(store.getState(actionsCacheAtom), [[doSome, 0]])
-  assert.is(computerCalls, 2)
+  assert.is(reducerCalls, 2)
 
   console.log(`👍`)
 })
