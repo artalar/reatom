@@ -6,6 +6,7 @@ import {
   addToSetsMap,
   Atom,
   Cache,
+  CacheDep,
   callSafety,
   createTransaction,
   delFromSetsMap,
@@ -79,11 +80,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     return result
   }
 
-  function mergePatch(
-    atom: Atom,
-    patch: Cache,
-    changedAtoms: Array<[Atom, Cache]>,
-  ) {
+  function mergePatch(atom: Atom, patch: Cache, changedAtoms: Array<CacheDep>) {
     const atomCache = getCache(atom)
     if (atomsListeners.has(atom)) {
       if (atomCache == undefined) {
@@ -100,7 +97,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     atomsCache.set(atom, patch)
 
     if (!Object.is(atomCache?.state, patch.state)) {
-      changedAtoms.push([atom, patch])
+      changedAtoms.push({ atom, cache: patch })
     }
   }
 
@@ -113,7 +110,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
     const patch = new Map<Atom, Cache>()
     const transaction = createTransaction(actions, patch, getCache, snapshot)
-    const changedAtoms = new Array<[Atom, Cache]>()
+    const changedAtoms = new Array<CacheDep>()
     let error: Error | null = null
 
     try {
@@ -135,10 +132,10 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
     transactionListeners.forEach((cb) => callSafety(cb, transactionResult))
 
-    changedAtoms.forEach((change) =>
-      atomsListeners
-        .get(change[0])
-        ?.forEach((cb) => callSafety(cb, change[1].state)),
+    if (error) throw error
+
+    changedAtoms.forEach(({ atom, cache: { state } }) =>
+      atomsListeners.get(atom)?.forEach((cb) => callSafety(cb, state)),
     )
 
     actions.forEach((action) =>
@@ -149,7 +146,7 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
     return Promise.allSettled(
       transaction.effects.map((cb) => new Promise((res) => res(cb(store)))),
-    )
+    ).then(noop, noop)
   }
 
   function getCache<T>(atom: Atom<T>): Cache<T> | undefined {
@@ -195,10 +192,8 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
 
   function subscribeAtom<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe {
     let listeners = atomsListeners.get(atom)
-    let shouldInvalidateTypes = false
 
     if (listeners === undefined) {
-      shouldInvalidateTypes = atomsCache.has(atom)
       atomsListeners.set(atom, (listeners = new Set()))
     }
 
@@ -212,11 +207,14 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       }
     }
 
+    const atomCache = getCache(atom)
+
     try {
       getState(atom)
 
-      if (shouldInvalidateTypes) {
-        addReducer(atom, getCache(atom)!)
+      const { state } = getCache(atom)!
+      if (Object.is(atomCache?.state, state)) {
+        cb(state)
       }
 
       return unsubscribe
@@ -267,13 +265,6 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     getState,
     init,
     subscribe,
-    __DO_NOT_USE_IT_OR_YOU_WILL_BE_FIRED: {
-      actionsReducers,
-      actionsListeners,
-      atomsCache,
-      atomsListeners,
-      transactionListeners,
-    },
   }
 
   return store

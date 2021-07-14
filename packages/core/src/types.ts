@@ -22,6 +22,8 @@ export type NotFn<T> = T extends Fn ? never : T
 
 export type ActionType = string
 
+export type AtomId = string
+
 export type Unsubscribe = () => void
 
 export type CacheDep = { atom: Atom; cache: Cache }
@@ -58,7 +60,7 @@ export type Atom<State = any> = {
   (transaction: Transaction, cache?: CacheTemplate<State>): Cache<State>
 
   /** Unique ID */
-  id: string
+  id: AtomId
 }
 
 export type AtomBindings<State = any> = {
@@ -91,7 +93,7 @@ export type ActionData<Payload = any> = Omit<Action<Payload>, 'type'> & {
   type?: never
 }
 
-type CustomAction<Data extends Rec> = Merge<Data & { type: string }>
+type CustomAction<Data extends Rec> = Merge<Data & { type: ActionType }>
 
 type A1 = ActionCreator<[], { payload: 1 }>
 
@@ -131,7 +133,7 @@ export type Store = {
   dispatch(action: Action | ReadonlyArray<Action>): Promise<unknown>
 
   /** Collect states from all active atoms */
-  getState<T>(): Record<string, any>
+  getState<T>(): Record<AtomId, any>
   /** Get stored atom state or calculate the new */
   getState<T>(atom: Atom<T>): T
 
@@ -148,6 +150,8 @@ export type Store = {
     cb: Fn<[action: ActionCreatorData<AC>]>,
   ): Unsubscribe
 }
+
+export type Snapshot = Rec<any>
 
 /**
  * Transaction is a dispatch context

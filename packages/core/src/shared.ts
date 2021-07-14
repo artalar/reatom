@@ -64,11 +64,11 @@ export function isFunction(thing: any): thing is Function {
 }
 
 export function isAtom(thing: any): thing is Atom<unknown> {
-  return isFunction(thing) && isFunction(thing.getState)
+  return isFunction(thing) && `id` in thing
 }
 
 export function isActionCreator(thing: any): thing is ActionCreator {
-  return isFunction(thing) && isFunction(thing.dispatch)
+  return isFunction(thing) && `type` in thing
 }
 
 export function isAction(thing: any): thing is Action {

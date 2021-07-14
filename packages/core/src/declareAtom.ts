@@ -1,5 +1,5 @@
 import {
-  ActionCreator,
+  ActionCreatorBinded,
   AtomBinded,
   Cache,
   CacheTemplate,
@@ -43,7 +43,7 @@ export type AtomMethod<State = any, Payload = any> = (
 
 export type ActionCreatorsMethods<Methods extends Rec<AtomMethod<any>>> = {
   [K in keyof Methods]: Methods[K] extends Fn<[infer Payload, any]>
-    ? ActionCreator<[payload: Payload]>
+    ? ActionCreatorBinded<[payload: Payload]>
     : never
 }
 
