@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "moduleResolution": "node",
-    "target": "esnext",       
-    "module": "commonjs",     
-    "declaration": true,      
-    "strict": true,     
+    "target": "esnext",
+    "module": "commonjs",
+    "declaration": true,
+    "strict": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true   
-  }
+    "esModuleInterop": true
+  },
+  "exclude": ["node_modules", "build"]
 }

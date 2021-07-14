@@ -14,7 +14,7 @@
     "prepublishOnly": "npm run rebuild",
     "postpublish": "npm run clean",
     "build-src": "cross-env fixme=fixme microbundle",
-    "build-experiments": "cross-env fixme=fixme microbundle --cwd src/experiments",
+    "build-experiments": "cross-env fixme=fixme microbundle --cwd experiments",
     "build": "npm run build-src && npm run build-experiments",
     "clean": "cross-env fixme=fixme rimraf build/",
     "rebuild": "npm run clean && npm run build",
@@ -72,6 +72,7 @@
     "/README.md",
     "/package.json",
     "/src",
+    "/experiments",
     "/build"
   ]
 }
