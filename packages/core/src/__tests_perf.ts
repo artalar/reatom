@@ -6,7 +6,7 @@ import { $mol_atom2 } from 'mol_atom2_all'
 import {
   Atom,
   Cache,
-  CacheAsArgument,
+  CacheTemplate,
   declareAction,
   declareAtom,
   defaultStore,
@@ -22,7 +22,7 @@ function map<T, Dep>(
   id: string = ``,
 ): Atom<T> {
   const atom = Object.assign(
-    (t: Transaction, cache?: CacheAsArgument<T>): Cache<T> => {
+    (t: Transaction, cache?: CacheTemplate<T>): Cache<T> => {
       const depPatch = t.process(depAtom)
       const dep =
         cache?.deps.length === 1 ? cache.deps[0] : { atom, cache: null }

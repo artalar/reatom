@@ -1,12 +1,11 @@
 import {
   ActionCreatorBinded,
-  Atom,
+  ActionData,
   defaultStore,
   Fn,
   invalid,
   isFunction,
   isString,
-  ActionData,
 } from './internal'
 
 const defaultMapper = (payload: any) => ({

@@ -1,5 +1,11 @@
-// import { AC, Atom, AtomState, declareAtom, isObject, Track } from '@reatom/core'
-import { AC, BindedAtom, AtomState, declareAtom, isObject, Track } from '../'
+import {
+  ActionCreatorBinded,
+  AtomBinded,
+  AtomState,
+  declareAtom,
+  isObject,
+  Track,
+} from '@reatom/core'
 
 function shallowEqual(a: any, b: any) {
   if (isObject(a) && isObject(b)) {
@@ -152,12 +158,14 @@ function example() {
     return null as any
   }
 
-  function useAtom<T extends BindedAtom<any>>(
+  function useAtom<T extends AtomBinded<any>>(
     atom: T,
   ): [
     AtomState<T>,
     {
-      [K in keyof T]: T[K] extends AC ? T[K]['dispatch'] : never
+      [K in keyof T]: T[K] extends ActionCreatorBinded
+        ? T[K]['dispatch']
+        : never
     },
   ] {
     return null as any

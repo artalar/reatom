@@ -1,9 +1,9 @@
 import {
   ActionCreatorBinded,
   AtomBinded,
+  AtomId,
   Cache,
   CacheTemplate,
-  Reducer,
   declareAction,
   defaultStore,
   Fn,
@@ -14,6 +14,7 @@ import {
   Merge,
   NotFn,
   Rec,
+  Reducer,
   Store,
   Track,
   Transaction,
@@ -21,10 +22,10 @@ import {
 } from './internal'
 
 export type AtomOptions<State, Ctx extends Rec> =
-  | AtomBinded['id']
+  | AtomId
   | {
       createCtx?: () => Ctx
-      id?: AtomBinded['id']
+      id?: AtomId
       onChange?: (
         oldState: State | undefined,
         state: State,

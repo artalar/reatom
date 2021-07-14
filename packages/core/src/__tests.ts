@@ -482,4 +482,30 @@ test(`declareResource`, async () => {
   console.log(`👍`)
 })
 
+test(`subscription to in-cache atom`, () => {
+  const a = declareAtom(0)
+  const b = declareAtom(($) => $(a))
+
+  const trackA = mockFn()
+  const trackB = mockFn()
+
+  b.subscribe(trackB)
+
+  assert.is(trackA.calls.length, 0)
+  assert.is(trackB.calls.length, 1)
+
+  a.update.dispatch((s) => s + 1)
+  assert.is(trackB.calls.length, 2)
+
+  a.subscribe(trackA)
+  assert.is(trackA.calls.length, 1)
+  assert.is(trackB.calls.length, 2)
+
+  a.update.dispatch((s) => s + 1)
+  assert.is(trackA.calls.length, 2)
+  assert.is(trackB.calls.length, 3)
+
+  console.log(`👍`)
+})
+
 test.run()
