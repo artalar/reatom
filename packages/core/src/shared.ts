@@ -3,6 +3,7 @@ import {
   ActionCreator,
   Atom,
   AtomsCache,
+  CacheTemplate,
   Fn,
   Patch,
   Rec,
@@ -27,22 +28,14 @@ export function callSafety<I extends any[], O, This = any>(
   }
 }
 
-export function addToSetsMap<T>(
-  map: Map<string, Set<T>>,
-  key: string,
-  value: T,
-) {
+export function addToSetsMap<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
   let set = map.get(key)
 
   if (set === undefined) map.set(key, (set = new Set()))
 
   set.add(value)
 }
-export function delFromSetsMap<T>(
-  map: Map<string, Set<T>>,
-  key: string,
-  value: T,
-) {
+export function delFromSetsMap<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
   const set = map.get(key)
 
   if (set !== undefined) {
@@ -63,7 +56,7 @@ export function isFunction(thing: any): thing is Function {
   return typeof thing === 'function'
 }
 
-export function isAtom(thing: any): thing is Atom<unknown> {
+export function isAtom<State>(thing: any): thing is Atom<State> {
   return isFunction(thing) && `id` in thing
 }
 
@@ -79,6 +72,18 @@ export function invalid(predicate: any, msg: string) {
   if (predicate) throw new Error(`Reatom: invalid ${msg}`)
 }
 
+export function createTemplateCache<State>(
+  state?: State,
+): CacheTemplate<State> {
+  return {
+    ctx: undefined,
+    deps: [],
+    state: undefined,
+    toSnapshot: undefined,
+    types: [],
+  }
+}
+
 export function createTransaction(
   actions: Array<Action>,
   patch: Patch = new Map(),
@@ -92,13 +97,8 @@ export function createTransaction(
       let atomPatch = patch.get(atom)
 
       if (!atomPatch) {
-        const atomCache = getCache(atom) ??
-          cache ?? {
-            ctx: undefined,
-            deps: [],
-            state: snapshot[atom.id],
-            types: [],
-          }
+        const atomCache =
+          getCache(atom) ?? cache ?? createTemplateCache(snapshot[atom.id])
 
         atomPatch = atom(transaction, atomCache)
 

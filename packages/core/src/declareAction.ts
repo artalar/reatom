@@ -41,8 +41,6 @@ export function declareAction(
 
   actionCreator.dispatch = (...a) => defaultStore.dispatch(actionCreator(...a))
 
-  actionCreator.subscribe = (cb) => defaultStore.subscribe(actionCreator, cb)
-
   actionCreator.type = type
 
   return actionCreator

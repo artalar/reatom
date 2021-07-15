@@ -4,6 +4,7 @@ import {
   AtomState,
   declareAtom,
   isObject,
+  Rec,
   Track,
 } from '@reatom/core'
 
@@ -17,9 +18,15 @@ function shallowEqual(a: any, b: any) {
   }
 }
 
+export type ResourceState<State> = {
+  data: State
+  error: null | Error
+  isLoading: boolean
+}
+
 let resourcesCount = 0
 export function declareResource<State, Params = void>(
-  reducer: ($: Track<any, {}>) => State,
+  reducer: ($: Track<Rec<unknown>>) => State,
   fetcher: (
     params: Params,
     state: State extends any ? State : never,
@@ -27,28 +34,34 @@ export function declareResource<State, Params = void>(
   id = `resource [${++resourcesCount}]`,
 ) {
   const atom = declareAtom(
-    ($, state?: { data: State; error: null | Error; isLoading: boolean }) => {
-      if (state === undefined) {
-        state = {
-          data: reducer($),
-          error: null,
-          isLoading: false,
-        }
-      } else {
-        const data = reducer(
-          $,
-          // @ts-expect-error
-          state.data,
-        )
-
-        state = Object.is(data, state.data)
-          ? state
-          : {
-              data,
-              error: state.error,
-              isLoading: state.isLoading,
-            }
-      }
+    {
+      /** Action for data request. Memoized by fetcher params */
+      request: (params: Params) => params,
+      /** Action for forced data request */
+      fetch: (params: Params) => params,
+      /** Action for fetcher response */
+      response: (data: State) => data,
+      /** Action for fetcher error */
+      error: (error: Error) => error,
+      /** Action for cancel pending request */
+      cancel: () => null,
+    },
+    (
+      $,
+      state: ResourceState<State> = {
+        data: undefined as any,
+        error: null,
+        isLoading: false,
+      },
+    ) => {
+      const data = reducer(
+        $,
+        // @ts-expect-error
+        state.data,
+      )
+      state = Object.is(data, state.data)
+        ? state
+        : { data, error: state.error, isLoading: state.isLoading }
 
       $(atom.request, (params) => ({ dispatch }, ctx) => {
         const isParamsNew =
@@ -56,50 +69,45 @@ export function declareResource<State, Params = void>(
         if (isParamsNew) dispatch(atom.fetch(params))
       })
 
-      $(atom.fetch, (params) => ({ dispatch }, ctx) => {
-        const version = ++ctx.version
-        ctx.params = params
-        return fetcher(params, state!.data).then(
-          (data) => {
-            if (ctx.version === version) dispatch(atom.response(data))
-          },
-          (error) => {
-            error = error instanceof Error ? error : new Error(error)
-            if (ctx.version === version) dispatch(atom.error(error))
-          },
-        )
+      $(atom.fetch, (params) => {
+        state = state.isLoading
+          ? state
+          : { data: state.data, error: null, isLoading: true }
+
+        return ({ dispatch }, ctx) => {
+          const version = ++ctx.version
+          ctx.params = params
+          return fetcher(params, state!.data).then(
+            (data) => {
+              if (ctx.version === version) dispatch(atom.response(data))
+            },
+            (error) => {
+              error = error instanceof Error ? error : new Error(error)
+              if (ctx.version === version) dispatch(atom.error(error))
+            },
+          )
+        }
       })
 
-      $(atom.cancel, () => (store, ctx) => ctx.version++)
+      $(
+        atom.response,
+        (data) => (state = { data, error: null, isLoading: false }),
+      )
+
+      $(
+        atom.error,
+        (error) => (state = { data: state.data, error, isLoading: false }),
+      )
+
+      $(atom.cancel, () => {
+        state = state.isLoading
+          ? { data: state.data, error: null, isLoading: false }
+          : state
+
+        return (store, ctx) => ctx.version++
+      })
 
       return state
-    },
-    {
-      /** Action for data request. Memoized by fetcher params */
-      request: (params: Params, state) => state,
-
-      /** Action for forced data request */
-      fetch: (params: Params, state) =>
-        state.isLoading
-          ? state
-          : {
-              data: state.data,
-              error: null,
-              isLoading: true,
-            },
-
-      /** Action for fetcher response */
-      response: (data: State) => ({ data, error: null, isLoading: false }),
-
-      /** Action for fetcher error */
-      error: (error: Error, state) => ({
-        data: state.data,
-        error,
-        isLoading: false,
-      }),
-
-      /** Action for cancel pending request */
-      cancel: (payload: void, state) => ({ ...state, isLoading: false }),
     },
     {
       id,
@@ -122,20 +130,22 @@ function example() {
   )
 
   const pageAtom = declareAtom(
-    0,
     {
-      next: (payload: void, state) => state + 1,
-      prev: (payload: void, state) => Math.max(0, state - 1),
+      next: () => null,
+      prev: () => null,
     },
-    {
-      onChange: (oldState, state, { dispatch }) =>
-        dispatch(productsAtom.request(state)),
-      id: `paging`,
+    ($, state = 0) => {
+      $(pageAtom.next, () => (state += 1))
+      $(pageAtom.prev, () => (state = Math.max(0, state - 1)))
+      $(({ dispatch }) => dispatch(productsAtom.request(state)))
+
+      return state
     },
+    { id: `paging` },
   )
 
   function Products() {
-    const [{ data, isLoading }, { fetch: req }] = useAtom(productsAtom)
+    const [{ data, isLoading }] = useAtom(productsAtom)
     const [page, { next, prev }] = useAtom(pageAtom)
 
     return html`

@@ -1,7 +1,5 @@
 import {
-  AC,
   Action,
-  ActionCreatorData,
   ActionType,
   addToSetsMap,
   Atom,
@@ -13,7 +11,6 @@ import {
   Fn,
   invalid,
   isAction,
-  isActionCreator,
   isAtom,
   isFunction,
   noop,
@@ -22,24 +19,6 @@ import {
   TransactionResult,
   Unsubscribe,
 } from './internal'
-
-// TODO: tsdx
-// if (process.env.NODE_ENV !== 'production') {
-//   let i = 0
-
-//   var incrementGetStateOveruse = () => {
-//     if (i++ < 3) return
-
-//   incrementGetStateOveruse = () => {}
-
-//     console.warn(
-//       `Full state requests too often, it may slow down the application`,
-//       `Use subscription to patch instead or request partial state by \`getState(atom)\``,
-//     )
-//   }
-
-//   setInterval(() => (i = 0), 3000)
-// }
 
 function isTypesChange(
   depsOld: Cache['deps'],
@@ -57,7 +36,6 @@ function isTypesChange(
 
 export function createStore(snapshot: Record<string, any> = {}): Store {
   const actionsReducers = new Map<ActionType, Set<Atom>>()
-  const actionsListeners = new Map<ActionType, Set<Fn>>()
   const atomsCache = new WeakMap<Atom, Cache>()
   const atomsListeners = new Map<Atom, Set<Fn>>()
   const transactionListeners = new Set<Fn<[TransactionResult]>>()
@@ -71,11 +49,11 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     cache.deps.forEach((dep) => delReducer(atom, dep.cache))
   }
 
-  function collect(atom: Atom, result: Rec = {}) {
-    const { state, deps } = getCache(atom)!
+  function collectSnapshot(atom: Atom, result: Rec = {}) {
+    const cache = getCache(atom)!
 
-    result[atom.id] = state
-    deps.forEach((dep) => collect(dep.atom, result))
+    result[atom.id] = cache.toSnapshot(store)
+    cache.deps.forEach((dep) => collectSnapshot(dep.atom, result))
 
     return result
   }
@@ -138,12 +116,6 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
       atomsListeners.get(atom)?.forEach((cb) => callSafety(cb, state)),
     )
 
-    actions.forEach((action) =>
-      actionsListeners
-        .get(action.type)
-        ?.forEach((cb) => callSafety(cb, action)),
-    )
-
     return Promise.allSettled(
       transaction.effects.map((cb) => new Promise((res) => res(cb(store)))),
     ).then(noop, noop)
@@ -157,13 +129,9 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
   function getState<T>(atom: Atom<T>): T
   function getState<T>(atom?: Atom<T>) {
     if (atom === undefined) {
-      // if (process.env.NODE_ENV !== 'production') {
-      //   incrementGetStateOveruse()
-      // }
-
       const result: Rec = {}
 
-      atomsListeners.forEach((_, atom) => collect(atom, result))
+      atomsListeners.forEach((_, atom) => collectSnapshot(atom, result))
 
       return result
     }
@@ -185,85 +153,54 @@ export function createStore(snapshot: Record<string, any> = {}): Store {
     return atomCache.state
   }
 
-  function init(...atoms: Array<Atom>) {
-    const unsubscribers = atoms.map((atom) => subscribeAtom(atom, noop))
-    return () => unsubscribers.forEach((un) => un())
-  }
+  function subscribe<State>(
+    atom: Fn<[transactionResult: TransactionResult]> | Atom<State>,
+    cb?: Fn<[state: State]>,
+  ): Unsubscribe {
+    if (isAtom<State>(atom) && isFunction(cb)) {
+      let listeners = atomsListeners.get(atom)
 
-  function subscribeAtom<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe {
-    let listeners = atomsListeners.get(atom)
-
-    if (listeners === undefined) {
-      atomsListeners.set(atom, (listeners = new Set()))
-    }
-
-    listeners.add(cb)
-
-    function unsubscribe() {
-      listeners!.delete(cb)
-      if (listeners!.size === 0) {
-        atomsListeners.delete(atom)
-        delReducer(atom, atomsCache.get(atom)!)
+      if (listeners === undefined) {
+        atomsListeners.set(atom, (listeners = new Set()))
       }
-    }
 
-    const atomCache = getCache(atom)
+      listeners.add(cb)
 
-    try {
-      getState(atom)
+      function unsubscribe() {
+        listeners!.delete(cb as Fn)
+        if (listeners!.size === 0) {
+          atomsListeners.delete(atom as Atom)
+          delReducer(atom as Atom, atomsCache.get(atom as Atom)!)
+        }
+      }
 
-      const { state } = getCache(atom)!
-      if (Object.is(atomCache?.state, state)) {
-        cb(state)
+      const atomCache = getCache(atom)
+
+      try {
+        const state = getState(atom)
+
+        if (Object.is(atomCache?.state, state)) {
+          cb(state)
+        }
+      } catch (error) {
+        unsubscribe()
+        throw error
       }
 
       return unsubscribe
-    } catch (error) {
-      unsubscribe()
-      throw error
     }
-  }
 
-  function subscribeAction<T extends AC>(
-    actionCreator: T,
-    cb: Fn<[ActionCreatorData<AC>]>,
-  ): Unsubscribe {
-    addToSetsMap(actionsListeners, actionCreator.type, cb)
+    invalid(!isFunction(atom), `subscribe arguments`) as never
 
-    return () => delFromSetsMap(actionsListeners, actionCreator.type, cb)
-  }
+    transactionListeners.add(atom as Fn)
 
-  function subscribeTransaction(cb: Fn<[TransactionResult]>): Unsubscribe {
-    transactionListeners.add(cb)
-
-    return () => transactionListeners.delete(cb)
-  }
-
-  function subscribe<T>(
-    cb: Fn<[transactionResult: TransactionResult]>,
-  ): Unsubscribe
-  function subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
-  function subscribe<T extends AC>(
-    actionCreator: T,
-    cb: Fn<[action: ActionCreatorData<AC>]>,
-  ): Unsubscribe
-  function subscribe(
-    ...a: [Fn<[TransactionResult]>] | [Atom, Fn] | [AC, Fn]
-  ): Unsubscribe {
-    return a.length === 1 && isFunction(a[0])
-      ? subscribeTransaction(a[0])
-      : isAtom(a[0]) && isFunction(a[1])
-      ? subscribeAtom(a[0], a[1])
-      : isActionCreator(a[0]) && isFunction(a[1])
-      ? subscribeAction(a[0], a[1])
-      : (invalid(1, `subscribe arguments`) as never)
+    return () => transactionListeners.delete(atom as Fn)
   }
 
   const store = {
     dispatch,
     getCache,
     getState,
-    init,
     subscribe,
   }
 

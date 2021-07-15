@@ -22,6 +22,10 @@ export type NotFn<T> = T extends Fn ? never : T
 
 export type ActionType = string
 
+/**
+ * Unique identifier of the atom.
+ * It is used to read a snapshot data.
+ */
 export type AtomId = string
 
 export type Unsubscribe = () => void
@@ -47,26 +51,28 @@ export type Cache<State = any> = {
 
   /** Types of action creators in the reducer */
   readonly types: Array<ActionType>
+
+  /**
+   * Data preparation function for snapshoting.
+   * Should return a valid value for `JSON.stringify`.
+   */
+  toSnapshot(this: Cache<State>, store: Store): any
 }
 
 export type CacheTemplate<State = any> = {
-  [K in keyof Cache<State>]: K extends `ctx` | `state`
+  [K in keyof Cache<State>]: K extends `ctx` | `state` | `toSnapshot`
     ? Cache<State>[K] | undefined
     : Cache<State>[K]
 }
 
 export type Atom<State = any> = {
-  /** Reducer */
+  /** Transaction reducer */
   (transaction: Transaction, cache?: CacheTemplate<State>): Cache<State>
 
-  /** Unique ID */
   id: AtomId
 }
 
 export type AtomBindings<State = any> = {
-  /** Noop subscription to initiate readonly  handling (`defaultStore`) */
-  init(): Unsubscribe
-
   /** Read (or recalculate) state (`defaultStore`) */
   getState(): State
 
@@ -75,6 +81,33 @@ export type AtomBindings<State = any> = {
 }
 
 export type AtomBinded<State = any> = Atom<State> & AtomBindings<State>
+
+export type Reducer<State = any, Ctx extends Rec = Rec> = {
+  ($: Track<Ctx>): State
+  // TODO: how to infer type from default value of optional argument?
+  // ($: Track<Ctx>, state?: undefined | State): State
+}
+
+export type Track<Ctx extends Rec> = {
+  /** Subscribe to the atom state changes and receive it */
+  <T>(atom: Atom<T>): T
+  /** Subscribe to the atom state changes and react to it */
+  <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
+  /** Subscribe to the atom state changes and react to it */
+  <T>(atom: Atom<T>, cb: Fn<[T], any>): void
+  /** Subscribe to dispatch an action of the action creator and react to it */
+  <T extends AC>(
+    actionCreator: T,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
+  ): void
+  /** Subscribe to dispatch an action of the action creator and react to it */
+  <T extends AC>(
+    actionCreator: T,
+    cb: Fn<[ActionPayload<T>, ReturnType<T>], any>,
+  ): void
+  /** Schedule effect (for every reducer rerun) */
+  (cb: Effect<Ctx>): void
+}
 
 export type Action<Payload = any> = {
   /** Payload data from userspace */
@@ -106,21 +139,15 @@ export type ActionCreator<
   type: ActionType
 }
 
-export type ActionCreatorBindings<
-  Args extends any[] = any[],
-  Data extends ActionData = { payload: Args[0] },
-> = {
+export type ActionCreatorBindings<Args extends any[] = any[]> = {
   /** Create the action creator action and dispatch it to the `defaultStore` */
   dispatch(...args: Args): ReturnType<Store['dispatch']>
-
-  /** Subscribe to dispatches of the action creator action to the `defaultStore` */
-  subscribe(cb: Fn<[action: CustomAction<Data>]>): Unsubscribe
 }
 
 export type ActionCreatorBinded<
   Args extends any[] = any[],
   Data extends ActionData = { payload: Args[0] },
-> = ActionCreator<Args, Data> & ActionCreatorBindings<Args, Data>
+> = ActionCreator<Args, Data> & ActionCreatorBindings<Args>
 
 /** Shortcut to typed ActionCreator */
 export type AC<T = any> = ActionCreator<any[], { payload: T }>
@@ -133,22 +160,14 @@ export type Store = {
   dispatch(action: Action | ReadonlyArray<Action>): Promise<unknown>
 
   /** Collect states from all active atoms */
-  getState<T>(): Record<AtomId, any>
+  getState(): Record<AtomId, any>
   /** Get stored atom state or calculate the new */
   getState<T>(atom: Atom<T>): T
 
-  /** Connect atoms to store for actions handling */
-  init(...atoms: Array<Atom>): Unsubscribe
-
   /** Subscribe to every dispatch result */
-  subscribe<T>(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
+  subscribe(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
   /** Subscribe to atom change (called once immediately) */
   subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
-  /** Subscribe to dispatch a action of the action creator*/
-  subscribe<T extends AC>(
-    actionCreator: T,
-    cb: Fn<[action: ActionCreatorData<AC>]>,
-  ): Unsubscribe
 }
 
 export type Snapshot = Rec<any>

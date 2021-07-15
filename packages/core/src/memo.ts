@@ -1,6 +1,5 @@
 import {
   AC,
-  ActionPayload,
   Atom,
   Cache,
   Effect,
@@ -10,31 +9,10 @@ import {
   isAtom,
   isFunction,
   Rec,
+  Reducer,
+  Track,
   Transaction,
 } from './internal'
-
-export type Reducer<State = any, Ctx extends Rec = Rec> = {
-  ($: Track<State, Ctx>, state: State): State
-}
-
-export type Track<State, Ctx extends Rec> = {
-  /** Subscribe to the atom state changes and receive it */
-  <T>(atom: Atom<T>): T
-  /** Subscribe to the atom state changes and react to it */
-  <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
-  /** Subscribe to the atom state changes and react to it */
-  <T>(atom: Atom<T>, cb: Fn<[T], any>): void
-  /** Subscribe to dispatch an action of the action creator and react to it */
-  <T extends AC>(
-    actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
-  ): void
-  /** Subscribe to dispatch an action of the action creator and react to it */
-  <T extends AC>(
-    actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>], any>,
-  ): void
-}
 
 export function memo<State, Ctx extends Rec = Rec>(
   transaction: Transaction,
@@ -64,7 +42,7 @@ export function memo<State, Ctx extends Rec = Rec>(
       Object.is(state, cache.state) &&
       types == cache.types
       ? cache
-      : { ctx: cache.ctx, deps, state, types }
+      : { ctx: cache.ctx, deps, state, toSnapshot: cache.toSnapshot, types }
   }
 
   const shouldSkipReducer =
@@ -156,7 +134,7 @@ export function memo<State, Ctx extends Rec = Rec>(
     }
   }
 
-  let track: Track<State, Ctx> = (atomOrAction: Atom | AC, cb?: Fn) => {
+  let track: Track<Ctx> = (target: AC | Atom | Effect<Ctx>, cb?: Fn) => {
     // TODO: how to pass the `id` of atom here?
     invalid(
       Number.isNaN(nesting),
@@ -166,16 +144,22 @@ export function memo<State, Ctx extends Rec = Rec>(
     try {
       nesting++
 
-      if (isAtom(atomOrAction)) return trackAtom(atomOrAction, cb)
-      if (isActionCreator(atomOrAction)) return trackAction(atomOrAction, cb)
+      if (isAtom(target)) return trackAtom(target, cb)
+      if (isActionCreator(target)) return trackAction(target, cb)
 
-      invalid(1, `track arguments`)
+      invalid(isFunction(cb), `track arguments`)
+
+      scheduleEffect(target)
     } finally {
       nesting--
     }
   }
 
-  state = reducer(track, cache.state)
+  state = reducer(
+    track,
+    // @ts-expect-error
+    cache.state,
+  )
 
   nesting = NaN
 
