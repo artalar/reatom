@@ -317,7 +317,7 @@ test(`Store preloaded state`, () => {
   const atom = declareAtom(0)
   const snapshotLessStore = createStore()
   const snapshotFullStore = createStore({
-    [atom.id]: 42,
+    snapshot: { [a.id]: 42 },
   })
 
   assert.is(snapshotLessStore.getState(atom), 0)

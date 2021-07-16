@@ -34,7 +34,9 @@ function isTypesChange(
   )
 }
 
-export function createStore(snapshot: Record<string, any> = {}): Store {
+export function createStore({
+  snapshot = {},
+}: { snapshot?: Record<string, any> } = {}): Store {
   const actionsReducers = new Map<ActionType, Set<Atom>>()
   const atomsCache = new WeakMap<Atom, Cache>()
   const atomsListeners = new Map<Atom, Set<Fn>>()
