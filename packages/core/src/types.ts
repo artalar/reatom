@@ -92,18 +92,21 @@ export type Track<Ctx extends Rec> = {
   /** Subscribe to the atom state changes and receive it */
   <T>(atom: Atom<T>): T
   /** Subscribe to the atom state changes and react to it */
-  <T>(atom: Atom<T>, cb: Fn<[T], Effect<Ctx>>): void
+  <T>(
+    atom: Atom<T>,
+    cb: Fn<[newState: T, oldState: T | undefined], Effect<Ctx>>,
+  ): void
   /** Subscribe to the atom state changes and react to it */
-  <T>(atom: Atom<T>, cb: Fn<[T], any>): void
+  <T>(atom: Atom<T>, cb: Fn<[newState: T, oldState: T | undefined], any>): void
   /** Subscribe to dispatch an action of the action creator and react to it */
   <T extends AC>(
     actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>], Effect<Ctx>>,
+    cb: Fn<[payload: ActionPayload<T>, action: ReturnType<T>], Effect<Ctx>>,
   ): void
   /** Subscribe to dispatch an action of the action creator and react to it */
   <T extends AC>(
     actionCreator: T,
-    cb: Fn<[ActionPayload<T>, ReturnType<T>], any>,
+    cb: Fn<[payload: ActionPayload<T>, action: ReturnType<T>], any>,
   ): void
   /** Schedule effect (for every reducer rerun) */
   (cb: Effect<Ctx>): void

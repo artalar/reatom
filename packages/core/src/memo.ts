@@ -97,7 +97,9 @@ export function memo<State, Ctx extends Rec = Rec>(
       depsCount++
 
       if (isDepStateChange && cb) {
-        scheduleEffect(cb(depPatch.state))
+        scheduleEffect(
+          cb(depPatch.state, isDepChange ? undefined : dep!.cache.state),
+        )
       }
     } else {
       // this is wrong coz we not storing previous value of the atom
@@ -158,7 +160,7 @@ export function memo<State, Ctx extends Rec = Rec>(
   state = reducer(
     track,
     // @ts-expect-error
-    cache.state,
+    state,
   )
 
   nesting = NaN
