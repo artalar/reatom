@@ -9,12 +9,9 @@ import {
   CacheTemplate,
   declareAction,
   declareAtom,
-  defaultStore,
   Fn,
   Transaction,
-  Unsubscribe,
-} from '../'
-// } from '.'
+} from '@reatom/core'
 
 function map<T, Dep>(
   depAtom: Atom<Dep>,
@@ -34,6 +31,9 @@ function map<T, Dep>(
           state: Object.is(dep.cache?.state, depPatch.state)
             ? cache!.state
             : cb(depPatch.state /* , cache.state */),
+          toSnapshot() {
+            return this.state
+          },
           types: depPatch.types,
         }
       }
@@ -42,17 +42,13 @@ function map<T, Dep>(
     },
     {
       id,
-      init: (): Unsubscribe => defaultStore.init(atom),
-      getState: (): T => defaultStore.getState(atom),
-      subscribe: (cb: Fn<[T]>): Unsubscribe => defaultStore.subscribe(atom, cb),
     },
   )
 
   return atom
 }
 
-start()
-async function start() {
+async function start(iterations = 1_000) {
   // const reatomV1 = await import('https://cdn.skypack.dev/@reatom/core')
 
   const w_combine = <A, B>(
@@ -65,18 +61,22 @@ async function start() {
   }
 
   const entry = declareAction<number>()
-  const a = declareAtom(($, state = 0) => {
-    // $(entry.handle(v => (state = v % 2 ? state : v + 1)))
-    $(entry, (v) => (state = v))
-    return state
-  }, {})
+  const a = declareAtom(
+    {},
+    ($, state = 0) => {
+      // $(entry.handle(v => (state = v % 2 ? state : v + 1)))
+      $(entry, (v) => (state = v))
+      return state
+    },
+    {},
+  )
   const b = map(a, (v) => v + 1)
   const c = map(a, (v) => v + 1)
-  const d = declareAtom(($) => $(b) + $(c))
+  const d = declareAtom({}, ($) => $(b) + $(c))
   const e = map(d, (v) => v + 1)
-  const f = declareAtom(($) => $(d) + $(e))
-  const g = declareAtom(($) => $(d) + $(e))
-  const h = declareAtom(($) => $(f) + $(g))
+  const f = declareAtom({}, ($) => $(d) + $(e))
+  const g = declareAtom({}, ($) => $(d) + $(e))
+  const h = declareAtom({}, ($) => $(f) + $(g))
   let res = 0
   h.subscribe((v) => {
     res += v
@@ -193,13 +193,8 @@ async function start() {
   const cellxLogs = []
   const molLogs = []
 
-  const iterations = 1_000
   var i = 0
   while (i++ < iterations) {
-    if (i % (iterations / 10) === 0) {
-      // await new Promise((r) => setTimeout(r, 10))
-    }
-
     const startReatom = performance.now()
     entry.dispatch(i)
     reatomLogs.push(performance.now() - startReatom)
@@ -245,6 +240,7 @@ async function start() {
   console.log(`wonka`)
   console.log(log(wonkaLogs) /*   */)
 }
+start(100)
 
 function log(values: Array<number>) {
   return {

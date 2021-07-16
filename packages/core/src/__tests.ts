@@ -10,8 +10,8 @@ import {
   Fn,
   isFunction,
   Store,
-} from '.'
-import { declareResource } from './experiments'
+} from '@reatom/core'
+import { declareResource, atom, init } from '@reatom/core/experiments'
 
 let noop: Fn = () => {}
 
@@ -43,16 +43,17 @@ export function mockFn<I extends any[], O>(
 }
 
 test(`displayName`, () => {
-  const firstNameAtom = declareAtom(
+  const firstNameAtom = atom(
     'John',
     {
-      set: (name: string) => name,
-      setFullName: (fullName: string) => fullName.split(' ')[0],
+      set: (state, name: string) => name,
+      setFullName: (state, fullName: string) => fullName.split(' ')[0],
     },
-    `firstName`,
+    { id: `firstName` },
   )
 
   const lastNameAtom = declareAtom(
+    {},
     ($, state = 'Doe') => {
       $(
         firstNameAtom.setFullName,
@@ -60,26 +61,25 @@ test(`displayName`, () => {
       )
       return state
     },
-    {},
-    `lastName`,
+    { id: `lastName` },
   )
 
   const isFirstNameShortAtom = declareAtom(
-    ($) => $(firstNameAtom).length < 10,
     {},
-    `isFirstNameShort`,
+    ($) => $(firstNameAtom).length < 10,
+    { id: `isFirstNameShort` },
   )
 
   const fullNameAtom = declareAtom(
-    ($) => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
     {},
-    `fullName`,
+    ($) => `${$(firstNameAtom)} ${$(lastNameAtom)}`,
+    { id: `fullName` },
   )
 
   const displayNameAtom = declareAtom(
-    ($) => ($(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom)),
     {},
-    `displayName`,
+    ($) => ($(isFirstNameShortAtom) ? $(fullNameAtom) : $(firstNameAtom)),
+    { id: `displayName` },
   )
 
   const store = createStore()
@@ -111,15 +111,16 @@ test(`displayName`, () => {
 })
 
 test(`combine`, () => {
-  const aAtom = declareAtom(0)
-  const bAtom = declareAtom(($) => $(aAtom) % 2)
-  const cAtom = declareAtom(($) => $(aAtom) % 2)
-  const bcAtom = declareAtom(($) => ({
+  const aAtom = atom(0)
+  const bAtom = declareAtom({}, ($) => $(aAtom) % 2)
+  const cAtom = declareAtom({}, ($) => $(aAtom) % 2)
+  const bcAtom = declareAtom({}, ($) => ({
     b: $(bAtom),
     c: $(cAtom),
   }))
   const store = createStore()
-  store.init(bcAtom)
+
+  init(store, bcAtom)
 
   const bsState1 = store.getState(bcAtom)
   assert.is(store.getState(aAtom), 0)
@@ -140,12 +141,12 @@ test(`combine`, () => {
 })
 
 test(`atom id`, () => {
-  const a = declareAtom(1, {}, `a`)
-  const b = declareAtom(($, s = 2) => s, {}, `b`)
-  const c = declareAtom(($) => $(a), {}, `c`)
+  const a = atom(1, null, { id: `a` })
+  const b = declareAtom({}, ($, s = 2) => s, { id: `b` })
+  const c = declareAtom({}, ($) => $(a), { id: `c` })
   const store = createStore()
 
-  store.init(a, b, c)
+  init(store, a, b, c)
 
   assert.equal(store.getState(), { a: 1, b: 2, c: 1 })
 
@@ -163,9 +164,9 @@ test(`action mapper`, () => {
 
 test(`atom filter`, () => {
   const track = mockFn()
-  const a1Atom = declareAtom(0, undefined, `a1Atom`)
-  const a2Atom = declareAtom(0, undefined, `a2Atom`)
-  const bAtom = declareAtom(($, s = 0) => {
+  const a1Atom = atom(0, null, { id: `a1Atom` })
+  const a2Atom = atom(0, null, { id: `a2Atom` })
+  const bAtom = declareAtom({}, ($, s = 0) => {
     track()
 
     const a = $(a1Atom)
@@ -211,28 +212,32 @@ test(`atom filter`, () => {
 
 test(`in atom action effect`, async () => {
   function declareResource<I, O>(fetcher: (params: I) => Promise<O>) {
-    const request = declareAction<I>()
-    const response = declareAction<O | Error>()
-
-    return Object.assign(
-      declareAtom(($, state = null as null | O | Error) => {
+    const atom = declareAtom(
+      {
+        request: (payload: I) => payload,
+        response: (payload: O | Error) => payload,
+      },
+      ($, state = null as null | O | Error) => {
         $(
-          request,
+          atom.request,
           (payload) =>
             ({ dispatch }) =>
               fetcher(payload)
-                .then((data) => dispatch(response(data)))
+                .then((data) => dispatch(atom.response(data)))
                 .catch((e) =>
-                  dispatch(response(e instanceof Error ? e : new Error(e))),
+                  dispatch(
+                    atom.response(e instanceof Error ? e : new Error(e)),
+                  ),
                 ),
         )
 
-        $(response, (payload) => (state = payload))
+        $(atom.response, (payload) => (state = payload))
 
         return state
-      }),
-      { request },
+      },
     )
+
+    return atom
   }
 
   const dataAtom = declareResource((params: void) => Promise.resolve([]))
@@ -281,12 +286,12 @@ test(`Atom store dependency states`, () => {
   const aTrack = mockFn()
   const incrementA = declareAction()
   const noopAction = declareAction()
-  const aAtom = declareAtom(($, state = 1) => {
+  const aAtom = declareAtom({}, ($, state = 1) => {
     aTrack()
     $(incrementA, () => (state += 1))
     return state
   })
-  const bAtom = declareAtom(($) => $(aAtom) + 1)
+  const bAtom = declareAtom({}, ($) => $(aAtom) + 1)
 
   const bCache1 = bAtom(createTransaction([noopAction()]))
   assert.is(aTrack.calls.length, 1)
@@ -304,50 +309,50 @@ test(`Atom store dependency states`, () => {
 })
 
 test(`Atom from`, () => {
-  const atom = declareAtom(42)
+  const a = atom(42)
 
-  assert.is(atom(createTransaction([declareAction()()])).state, 42)
-  assert.is(atom(createTransaction([atom.update(43)])).state, 43)
-  assert.is(atom(createTransaction([atom.update((s) => s + 2)])).state, 44)
+  assert.is(a(createTransaction([declareAction()()])).state, 42)
+  assert.is(a(createTransaction([a.update(43)])).state, 43)
+  assert.is(a(createTransaction([a.update((s) => s + 2)])).state, 44)
 
   console.log(`👍`)
 })
 
 test(`Store preloaded state`, () => {
-  const atom = declareAtom(0)
+  const a = atom(0)
   const snapshotLessStore = createStore()
   const snapshotFullStore = createStore({
     snapshot: { [a.id]: 42 },
   })
 
-  assert.is(snapshotLessStore.getState(atom), 0)
-  assert.is(snapshotFullStore.getState(atom), 42)
+  assert.is(snapshotLessStore.getState(a), 0)
+  assert.is(snapshotFullStore.getState(a), 42)
 
-  snapshotLessStore.init(atom)
-  snapshotFullStore.init(atom)
+  init(snapshotLessStore, a)
+  init(snapshotFullStore, a)
 
-  assert.is(snapshotLessStore.getState(atom), 0)
-  assert.is(snapshotFullStore.getState(atom), 42)
+  assert.is(snapshotLessStore.getState(a), 0)
+  assert.is(snapshotFullStore.getState(a), 42)
 
-  snapshotLessStore.dispatch(atom.update((s) => s + 1))
-  snapshotFullStore.dispatch(atom.update((s) => s + 1))
+  snapshotLessStore.dispatch(a.update((s) => s + 1))
+  snapshotFullStore.dispatch(a.update((s) => s + 1))
 
-  assert.is(snapshotLessStore.getState(atom), 1)
-  assert.is(snapshotFullStore.getState(atom), 43)
+  assert.is(snapshotLessStore.getState(a), 1)
+  assert.is(snapshotFullStore.getState(a), 43)
 
   console.log(`👍`)
 })
 
 test(`Batched dispatch`, () => {
-  const atom = declareAtom(0)
+  const a = atom(0)
   const store = createStore()
   const cb = mockFn()
 
-  store.subscribe(atom, cb)
+  store.subscribe(a, cb)
 
   assert.is(cb.calls.length, 1)
 
-  store.dispatch([atom.update((s) => s + 1), atom.update((s) => s + 1)])
+  store.dispatch([a.update((s) => s + 1), a.update((s) => s + 1)])
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 2)
 
@@ -359,6 +364,7 @@ test(`Batched dispatch dynamic types change`, () => {
   const doSome = declareAction<any>()
   const addAction = declareAction<ActionCreator>()
   const actionsCacheAtom = declareAtom(
+    {},
     ($, state = new Array<readonly [ActionCreator, any]>()) => {
       reducerCalls++
       $(
@@ -374,7 +380,7 @@ test(`Batched dispatch dynamic types change`, () => {
   )
   const store = createStore()
 
-  store.init(actionsCacheAtom)
+  init(store, actionsCacheAtom)
   assert.is(reducerCalls, 1)
 
   store.dispatch([addAction(doSome), doSome(0)])
@@ -388,8 +394,8 @@ test(`async collection of transaction.effectsResult`, async () => {
   const doA = declareAction()
   const doB = declareAction()
 
-  const resourceDataAtom = declareAtom(0)
-  const resourceAtom = declareAtom(($) => {
+  const resourceDataAtom = atom(0)
+  const resourceAtom = declareAtom({}, ($) => {
     $(doA, () => async ({ dispatch }) => {
       await sleep(10)
       await dispatch(doB())
@@ -406,7 +412,7 @@ test(`async collection of transaction.effectsResult`, async () => {
   const store = createStore()
   const cb = mockFn()
 
-  store.init(resourceAtom)
+  init(store, resourceAtom)
 
   store.dispatch(doA()).then(cb)
 
@@ -483,8 +489,8 @@ test(`declareResource`, async () => {
 })
 
 test(`subscription to in-cache atom`, () => {
-  const a = declareAtom(0)
-  const b = declareAtom(($) => $(a))
+  const a = atom(0)
+  const b = declareAtom({}, ($) => $(a))
 
   const trackA = mockFn()
   const trackB = mockFn()

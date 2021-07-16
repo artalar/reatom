@@ -26,8 +26,8 @@ export type AtomOptions<State = any, Ctx extends Rec = Rec> = {
 }
 
 export type DeclaredAtom<
-  State,
-  ActionPayloadCreators extends Rec<Fn>,
+  State = any,
+  ActionPayloadCreators extends Rec<Fn> = {},
 > = AtomBinded<State> &
   {
     [K in keyof ActionPayloadCreators]: ActionCreatorBinded<
