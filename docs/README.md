@@ -13,6 +13,8 @@
 
 Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications.
 
+**This docs is for first (LTS) version of Reatom. You should take a look the next majore version [here](https://github.com/artalar/reatom/tree/v2/packages/core).**
+
 ## Goals and features
 
 - 🐣 **simple abstraction** and friendly DX: minimum boilerplate and tiny API
