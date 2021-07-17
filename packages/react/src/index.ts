@@ -5,7 +5,7 @@ import {
   defaultStore,
   isActionCreator,
   Store,
-} from '@reatom/core'
+} from '@reatom/core/'
 import React from 'react'
 import ReactDOM from 'react-dom'
 import { useSubscription } from 'use-subscription'
@@ -68,10 +68,4 @@ export function useAtom<T extends Atom>(
   )
 
   return [useSubscription(result[0]), result[1]]
-}
-
-export function useInit(atoms: Array<Atom>, deps: any[] = []) {
-  const store = React.useContext(reatomContext)
-
-  React.useEffect(() => store.init(...atoms), deps)
 }

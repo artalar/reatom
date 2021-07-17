@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "2.0.0-alpha5",
+  "version": "2.0.0-alpha6",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
@@ -30,7 +30,7 @@
     "update": "npx npm-check-updates -u"
   },
   "peerDependencies": {
-    "@reatom/core": "^2.0.0-alpha11",
+    "@reatom/core": "^2.0.0-alpha12",
     "@types/use-subscription": "^1.0.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
@@ -75,9 +75,9 @@
     "hooks"
   ],
   "files": [
-    "/README.md",
-    "/package.json",
-    "/index.ts",
-    "/build"
+    "README.md",
+    "package.json",
+    "src",
+    "build"
   ]
 }
