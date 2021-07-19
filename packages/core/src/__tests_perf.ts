@@ -31,9 +31,6 @@ function map<T, Dep>(
           state: Object.is(dep.cache?.state, depPatch.state)
             ? cache!.state
             : cb(depPatch.state /* , cache.state */),
-          toSnapshot() {
-            return this.state
-          },
           types: depPatch.types,
         }
       }

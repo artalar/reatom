@@ -22,7 +22,6 @@ export type AtomOptions<State = any, Ctx extends Rec = Rec> = {
   /** Create mutable object for storing effects data. */
   createCtx?: () => Ctx
   id?: AtomId
-  toSnapshot?: Cache<State>['toSnapshot']
 }
 
 export type DeclaredAtom<
@@ -51,20 +50,14 @@ export function declareAtom<
   reducer: Reducer<State, Ctx>,
   options: AtomOptions<State, Ctx> = {},
 ): DeclaredAtom<State, ActionPayloadCreators> {
-  const {
-    createCtx = () => ({} as Ctx),
-    id = `atom [${++atomsCount}]`,
-    toSnapshot = function toSnapshot(this: Cache) {
-      return this.state
-    },
-  } = options
+  const { createCtx = () => ({} as Ctx), id = `atom [${++atomsCount}]` } =
+    options
 
   invalid(
     !isFunction(reducer) ||
       !Object.values(actions).every(isFunction) ||
       !isFunction(createCtx) ||
-      !isString(id) ||
-      !isFunction(toSnapshot),
+      !isString(id),
     `atom arguments`,
   )
 
@@ -87,7 +80,6 @@ export function declareAtom<
   ): Cache<State> {
     if (cache.ctx === undefined) {
       cache.ctx = createCtx()
-      cache.toSnapshot = toSnapshot
     }
 
     const patch = memo(transaction, cache as Cache<State>, reducer)

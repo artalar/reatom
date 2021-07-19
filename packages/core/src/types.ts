@@ -51,16 +51,10 @@ export type Cache<State = any> = {
 
   /** Types of action creators in the reducer */
   readonly types: Array<ActionType>
-
-  /**
-   * Data preparation function for snapshoting.
-   * Should return a valid value for `JSON.stringify`.
-   */
-  toSnapshot(this: Cache<State>, store: Store): any
 }
 
 export type CacheTemplate<State = any> = {
-  [K in keyof Cache<State>]: K extends `ctx` | `state` | `toSnapshot`
+  [K in keyof Cache<State>]: K extends `ctx` | `state`
     ? Cache<State>[K] | undefined
     : Cache<State>[K]
 }

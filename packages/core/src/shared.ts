@@ -79,7 +79,6 @@ export function createTemplateCache<State>(
     ctx: undefined,
     deps: [],
     state,
-    toSnapshot: undefined,
     types: [],
   }
 }

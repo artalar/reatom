@@ -54,7 +54,7 @@ export function createStore({
   function collectSnapshot(atom: Atom, result: Rec = {}) {
     const cache = getCache(atom)!
 
-    result[atom.id] = cache.toSnapshot(store)
+    result[atom.id] = cache.state
     cache.deps.forEach((dep) => collectSnapshot(dep.atom, result))
 
     return result

@@ -42,7 +42,7 @@ export function memo<State, Ctx extends Rec = Rec>(
       Object.is(state, cache.state) &&
       types == cache.types
       ? cache
-      : { ctx: cache.ctx, deps, state, toSnapshot: cache.toSnapshot, types }
+      : { ctx: cache.ctx, deps, state, types }
   }
 
   const shouldSkipReducer =
