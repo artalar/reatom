@@ -14,10 +14,11 @@
   "module": "build/index.es.js",
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
+  "react-native": "build/react-native/index.js",
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "postpublish": "npm run clean",
-    "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core",
+    "build": "cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core --define process.env.REACT_NATIVE=false && cross-env fixme=fixme ../../node_modules/.bin/microbundle --external=react,@reatom/core -o ./build/react-native/index.js -f cjs --define process.env.REACT_NATIVE=true",
     "clean": "cross-env fixme=fixme ../../node_modules/.bin/rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test": "cross-env fixme=fixme ../../node_modules/.bin/jest tests/*",
@@ -32,9 +33,11 @@
   "peerDependencies": {
     "@reatom/core": "^1.1.1",
     "react": "^16.8.0",
-    "react-dom": "^16.13.1"
+    "react-dom": "^16.13.1",
+    "react-native": "^0.64.2"
   },
   "devDependencies": {
+    "@types/react-native": "^0.64.10",
     "@babel/preset-react": "^7.8.3",
     "@reatom/core": "^1.1.1",
     "@testing-library/jest-dom": "^4.1.0",

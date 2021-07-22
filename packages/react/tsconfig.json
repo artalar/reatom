@@ -3,6 +3,7 @@
   "compilerOptions": {
     "moduleResolution": "node",
     "rootDir": "./src",
+    "skipLibCheck": true
   },
   "exclude": ["./tests"]
 }

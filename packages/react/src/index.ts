@@ -10,7 +10,6 @@ import {
 } from 'react'
 
 import { Store, Atom, Action } from '@reatom/core'
-import ReactDOM from 'react-dom'
 
 function noop() {}
 
@@ -20,7 +19,7 @@ export const { Provider } = context
 
 function useForceUpdate() {
   // dispatch don't have action and don't changes between rerenders
-  return useReducer<Reducer<number, null>>(s => s + 1, 0)[1] as () => void
+  return useReducer<Reducer<number, null>>((s) => s + 1, 0)[1] as () => void
 }
 
 const lifeCycleStatus = {
@@ -53,11 +52,11 @@ export function createAtomHook(ctx: Context<Store | null> = context) {
 
     const { current: that } = useRef({
       store,
-      atom: (undefined as any) as Atom<TI>,
+      atom: undefined as any as Atom<TI>,
       selector,
       deps,
-      atomValue: (undefined as any) as TI,
-      selectorValue: (undefined as any) as TO,
+      atomValue: undefined as any as TI,
+      selectorValue: undefined as any as TO,
       unsubscribe: noop,
       mountStatus: lifeCycleStatus.init as keyof typeof lifeCycleStatus,
     })
@@ -123,6 +122,10 @@ export const useAtom = createAtomHook()
 
 type AnyActionCreator = (...args: any[]) => Action<any> | void
 
+const unstable_batchedUpdates = process.env.REACT_NATIVE
+  ? require('react-native').unstable_batchedUpdates
+  : require('react-dom').unstable_batchedUpdates
+
 /**
  * @param ctx react context for your store.
  * @returns A `useAction` hook bound to the context.
@@ -153,14 +156,12 @@ export function createActionHook(ctx: Context<Store | null> = context) {
         const storeFixed = Object.assign({}, store, {
           dispatch(nextAction: Action<any>) {
             const actionFixed = Object.assign({}, nextAction, {
-              reactions: (
-                nextAction.reactions || []
-              ).map(reaction => (payload: any) =>
-                reaction(payload, storeFixed),
+              reactions: (nextAction.reactions || []).map(
+                (reaction) => (payload: any) => reaction(payload, storeFixed),
               ),
             })
 
-            ReactDOM.unstable_batchedUpdates(() => store.dispatch(actionFixed))
+            unstable_batchedUpdates(() => store.dispatch(actionFixed))
           },
         })
 
