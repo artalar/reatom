@@ -514,4 +514,23 @@ test(`subscription to in-cache atom`, () => {
   console.log(`👍`)
 })
 
+test(`getState of stale atom`, () => {
+  const a = atom(0)
+  const b = declareAtom({}, ($) => $(a))
+
+  const un = b.subscribe(noop)
+
+  assert.is(a.getState(), 0)
+  assert.is(b.getState(), 0)
+
+  a.update.dispatch(1)
+  assert.is(a.getState(), 1)
+  assert.is(b.getState(), 1)
+
+  un()
+  a.update.dispatch(2)
+  assert.is(a.getState(), 2)
+  assert.is(b.getState(), 2)
+})
+
 test.run()

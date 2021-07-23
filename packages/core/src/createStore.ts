@@ -150,6 +150,14 @@ export function createStore({
       })
 
       atomCache = getCache(atom)!
+    } else if (!atomsListeners.has(atom)) {
+      dispatch({
+        type: `invalidate "${atom.id}" ~${Math.random().toString(36)}`,
+        payload: null,
+        targets: [atom],
+      })
+
+      atomCache = getCache(atom)!
     }
 
     return atomCache.state
