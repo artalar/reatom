@@ -20,18 +20,26 @@ import {
   Unsubscribe,
 } from './internal'
 
-function isTypesChange(
-  depsOld: Cache['deps'],
-  depsNew: Cache['deps'],
-): boolean {
-  return (
-    depsOld.length != depsNew.length ||
-    depsOld.some(
-      ({ cache }, i) =>
-        cache.types != depsNew[i].cache.types ||
-        isTypesChange(cache.deps, depsNew[i].cache.deps),
-    )
-  )
+type DepsDiff = [depsOld: Cache['deps'], depsNew: Cache['deps']]
+
+function isTypesChange(...diff: DepsDiff): boolean {
+  const stack: Array<DepsDiff> = []
+
+  for (; diff !== undefined; diff = stack.pop()!) {
+    const { 0: depsOld, 1: depsNew } = diff
+
+    if (depsOld.length != depsNew.length) return true
+
+    for (let i = 0; i < depsOld.length; i++) {
+      const { cache: cacheOld } = depsOld[i]
+      const { cache: cacheNew } = depsNew[i]
+
+      if (cacheOld.types != cacheNew.types) return true
+
+      stack.push([cacheOld.deps, cacheNew.deps])
+    }
+  }
+  return false
 }
 
 export function createStore({
