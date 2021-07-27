@@ -72,12 +72,19 @@ yarn add @reatom/core@alpha
 ### Short example
 
 ```ts
-import { atom } from '@reatom/core/experiments'
+import { createAtom } from '@reatom/core'
 
-const counterAtom = atom(0, {
-  add: (value: number, state) => state + value,
-  inc: (_: void, state) => state + 1,
-})
+const
+
+const counterAtom = createAtom(
+  // map payload for generated action creators
+  { inc: () => null, add: (value: number) => value },
+  // describe reducer for action and other atoms handling
+  ($, state = 0) => {
+    $({ inc: () => (state += 1), add: (value) => (state += value) })
+    return state
+  },
+)
 
 counterAtom.subscribe((counter) => console.log(counter))
 // -> 0
@@ -92,11 +99,18 @@ counterAtom.add.dispatch(2)
 ### Detailed example
 
 ```ts
-import { declareAtom, createStore } from '@reatom/core'
+import { createAtom, createStore } from '@reatom/core'
 
-const add = declareAction<number>()
+const logTargetAtom = createAtom(
+  { update: (logTarget: (number) => void) => logTarget },
+  ($, state (logTarget: number) => {}) => {
+    $({ update: (logTarget) => (state = logTarget) })
 
-const counterAtom = declareAtom(
+    return state
+  },
+)
+
+const counterAtom = createAtom(
   /**
    * 1. Describe payload mappers for creating action creators.
    * You may do it right with atom initialization,
@@ -108,21 +122,27 @@ const counterAtom = declareAtom(
   },
   /**
    * 2. Describe computation and action handlers.
-   * `declareAtom` accepts an advanced version of the classic reducer,
+   * `createAtom` accepts an advanced version of the classic reducer,
    * which rerun on every dependency action dispatch.
    * Instead of action, atom reducer receives track function (`$`),
    * which accepts an any action creator or a atom
    * for subscribing to it and new data processing.
    */
   ($, state = 0 /* <- don't forget to pass a default value */) => {
-    // react to `add` dispatch and process its payload.
-    $(counterAtom.add, (payload) => (state += payload))
+  // handle new data from other atom and use it \ compute a new one.
+    const logTarget = $(logTargetAtom)
+
+    $({
+      // react to `add` dispatch and process its payload.
+      add: (payload) => (state += payload),
+    })
+
+    $.effect((store, ctx) => {
+      logTarget(state)
+    })
+
     return state
   },
-)
-const counterDoubledAtom = declareAtom(
-  // handle new data from other atom and compute a new one.
-  ($) => $(counterAtom) * 2,
 )
 
 /**
@@ -136,21 +156,32 @@ const store = createStore()
 /**
  * 4. Subscribe to needed atoms.
  */
-store.subscribe(counterDoubledAtom, (atomState) => console.log(atomState))
+store.subscribe(counterAtom, (atomState) => console.log(atomState))
 // -> 0
 
 /**
  * 5. Dispatch action and receive results.
  */
-store.dispatch(add(1))
+store.dispatch(counterAtom.add(1))
 // -> 2
 
 /**
- * 6. Read data manually, if you need it.
+ * 6. Test it!
  */
-store.getState(counterAtom)
-// -> 1
+let counterEffectData
+const testStore = createStore({
+  snapshot: {
+    [logTargetAtom.id]: (counter) => counterEffectData = counter
+  }
+})
+
+testStore.subscribe(counterAtom, noop)
+testStore.dispatch(counterAtom.add(1))
+
+assert.is(counterEffectData, 1)
 ```
+
+> Want a more complex example of a full power of the Reatom? [Check this helper method `createResource`](https://github.com/artalar/reatom/tree/v2/packages/core/experiments).
 
 As you may see, Reatom flow looks like Redux flow, but reducers and selectors is unified to atoms, which allows you to describe data receiving naturally, as in MobX. Also, atoms have an API for handling side-effects declarative, but flexible, see below.
 
@@ -168,48 +199,51 @@ Those problem you may solve by other ways too: streams / services / classes, but
 
 ## API
 
-### declareAction
+### createActionCreator
 
-`declareAction` returns action creator. Optionally you may pass an payload mapper and used type.
-You rarely need to use this manually, best practice for create action creators is describe it in a first argument of `declareAtom`.
+`createActionCreator` returns action creator. Optionally you may pass an payload mapper and used type.
+You rarely need to use this manually, best practice for create action creators is describe it in a first argument of `createAtom`.
 
-#### declareAction overloads
+#### createActionCreator overloads
 
 ```ts
-import { declareAction } from '@reatom/core'
+import { createActionCreator } from '@reatom/core'
 
-const increment = declareAction()
+const increment = createActionCreator()
 increment()
 // -> { type: 'action [1]', payload: undefined }
 
-const add = declareAction<number>()
+const add = createActionCreator<number>()
 add(42)
 // -> { type: 'action [2]', payload: 42 }
 
-const set = declareAction((payload: number, meta: string) => ({
+const set = createActionCreator((payload: number, meta: string) => ({
   payload,
   meta,
 }))
 set(42, 'from somewhere')
 // -> { type: 'action [3]', payload: 42, meta: 'from somewhere' }
 
-const push = declareAction<string>('ROUTER_PUSH')
+const push = createActionCreator<string>('ROUTER_PUSH')
 // OR
-const push = declareAction((payload: string) => ({ payload }), 'ROUTER_PUSH')
+const push = createActionCreator(
+  (payload: string) => ({ payload }),
+  'ROUTER_PUSH',
+)
 push('/main')
 // -> { type: 'ROUTER_PUSH', payload: '/main' }
 ```
 
-#### declareAction action targets
+#### createActionCreator action targets
 
 You may pass property `targets` with array of atoms which receive the action even if they have no any dependent subscriptions
 
-#### declareAction methods and properties
+#### createActionCreator methods and properties
 
 ```ts
-import { declareAction } from '@reatom/core'
+import { createActionCreator } from '@reatom/core'
 
-const doSome = declareAction()
+const doSome = createActionCreator()
 
 // <string>
 // The type of creating action
@@ -221,17 +255,17 @@ doSome.type
 doSome.dispatch
 ```
 
-### declareAtom
+### createAtom
 
-`declareAtom` create atom - a handler thats receive immutable cache from store, process it and returns a new immutable version of cache. Also it may handle effect witch called only after successful recalculation of all touched atoms in the dispatch. Optionally you may pass `id` for better debugging or specification of snapshot key.
+`createAtom` create atom - a handler thats receive immutable cache from store, process it and returns a new immutable version of cache. Also it may handle effect witch called only after successful recalculation of all touched atoms in the dispatch. Optionally you may pass `id` for better debugging or specification of snapshot key.
 
-#### declareAtom overloads
+#### createAtom overloads
 
 ```ts
-import { declareAction, declareAtom } from '@reatom/core'
+import { createActionCreator, createAtom } from '@reatom/core'
 
 // classic atom (describe some action creators and how to process it)
-const counterAtom = declareAtom(
+const counterAtom = createAtom(
   { add: (value: number) => value },
   ($, state = 0) => {
     $(counterAtom.add, (value) => (state += value))
@@ -241,14 +275,14 @@ const counterAtom = declareAtom(
 )
 
 // computed atom (compute state from other atoms)
-const counterNameAtom = declareAtom({}, ($, state = 'zero') => {
+const counterNameAtom = createAtom({}, ($, state = 'zero') => {
   const counter = $(counterAtom)
 
   return toWord(counter)
 })
 
 // module atom (public atom which combine all module atoms and handle effects)
-export const counterRootAtom = declareAtom({}, ($, state = 'zero') => {
+export const counterRootAtom = createAtom({}, ($, state = 'zero') => {
   const counter = $(counterAtom)
   const counterName = $(counterNameAtom)
 
@@ -266,9 +300,9 @@ export const counterRootAtom = declareAtom({}, ($, state = 'zero') => {
 TODO
 ```ts
 // dumb atom (it has build in `update` action creator with binded method(reducer))
-const counterDumbAtom = declareAtom(0)
-const counterDumbAtom = declareAtom(0, undefined, `dump counter`)
-const counterDumbAtom = declareAtom(
+const counterDumbAtom = createAtom(0)
+const counterDumbAtom = createAtom(0, undefined, `dump counter`)
+const counterDumbAtom = createAtom(
   0,
   undefined,
   {
@@ -287,12 +321,12 @@ counterDumbAtom.update((state) => state + 1)
 ```
 -->
 
-#### declareAtom methods and properties
+#### createAtom methods and properties
 
 ```ts
-import { declareAtom } from '@reatom/core'
+import { createAtom } from '@reatom/core'
 
-const dataAtom = declareAtom({}, ($, state = []) => state)
+const dataAtom = createAtom({}, ($, state = []) => state)
 
 // <string>
 // The unique id of the atom
@@ -320,7 +354,9 @@ import { createStore } from '@reatom/core'
 const store = createStore({ snapshot: { [counterAtom.id]: 10 } })
 
 // Subscribe to transactions (dispatch)
-store.subscribe((transactionResult) => console.log('transaction', transactionResult))
+store.subscribe((transactionResult) =>
+  console.log('transaction', transactionResult),
+)
 // -> void
 // () => void
 
