@@ -6,7 +6,7 @@ import {
   Cache,
   CacheTemplate,
   createTemplateCache,
-  declareAction,
+  createActionCreator,
   defaultStore,
   Fn,
   invalid,
@@ -27,7 +27,7 @@ export type AtomOptions<State = any> = {
   // fromSnapshot: Fn
 }
 
-export type DeclaredAtom<
+export type AtomSelfBinded<
   State = any,
   ActionPayloadCreators extends Rec<Fn> = {},
 > = AtomBinded<State> &
@@ -52,7 +52,7 @@ export type DeclaredAtom<
   }
 
 let atomsCount = 0
-export function declareAtom<State, ActionPayloadCreators extends Rec<Fn> = {}>(
+export function createAtom<State, ActionPayloadCreators extends Rec<Fn> = {}>(
   /**
    * Collection of named action payload creators
    * which will the part of the created atom
@@ -61,7 +61,7 @@ export function declareAtom<State, ActionPayloadCreators extends Rec<Fn> = {}>(
   actions: ActionPayloadCreators,
   reducer: TrackedReducer<State, ActionPayloadCreators>,
   options: AtomOptions<State> = {},
-): DeclaredAtom<State, ActionPayloadCreators> {
+): AtomSelfBinded<State, ActionPayloadCreators> {
   const { id = `atom [${++atomsCount}]` } = options
 
   invalid(
@@ -76,7 +76,7 @@ export function declareAtom<State, ActionPayloadCreators extends Rec<Fn> = {}>(
   const actionCreators = Object.keys(actions).reduce((acc, name) => {
     const payloadCreator = actions[name]
 
-    acc[name] = declareAction(
+    acc[name] = createActionCreator(
       (...a: any[]) => ({
         payload: { data: payloadCreator(...a), name },
         targets,

@@ -1,7 +1,7 @@
 import {
   AtomOptions,
-  declareAtom,
-  DeclaredAtom,
+  createAtom,
+  AtomSelfBinded,
   Fn,
   isFunction,
   Rec,
@@ -11,24 +11,24 @@ export type UpdatePayload<State = any> = State | ((state: State) => State)
 
 // FIXME
 // @ts-ignore
-export function declareSimpleAtom<State>(
+export function createSimpleAtom<State>(
   initState: State,
   actions?: null,
   options?: AtomOptions<State>,
-): DeclaredAtom<
+): AtomSelfBinded<
   State,
   {
     update: (payload: UpdatePayload<State>) => UpdatePayload<State>
   }
 >
-export function declareSimpleAtom<
+export function createSimpleAtom<
   State,
   ActionCreators extends Rec<Fn<[State, ...any[]], State>>,
 >(
   initState: State,
   actions: ActionCreators,
   options?: AtomOptions<State>,
-): DeclaredAtom<
+): AtomSelfBinded<
   State,
   {
     [K in keyof ActionCreators]: ActionCreators[K] extends Fn<
@@ -38,17 +38,17 @@ export function declareSimpleAtom<
       : never
   }
 >
-export function declareSimpleAtom(
+export function createSimpleAtom(
   initState: any,
   actions?: null | Rec<Fn>,
   options?: AtomOptions<any>,
-): DeclaredAtom {
+): AtomSelfBinded {
   actions ??= {
     update: (state: any, payload: UpdatePayload) =>
       isFunction(payload) ? payload(state) : payload,
   }
   const keys = Object.keys(actions)
-  const atom = declareAtom(
+  const atom = createAtom(
     keys.reduce((acc, k) => {
       // @ts-expect-error
       acc[k] = (payload) => payload
@@ -70,4 +70,4 @@ export function declareSimpleAtom(
   return atom
 }
 
-export const atom = declareSimpleAtom
+export const atom = createSimpleAtom

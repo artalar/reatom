@@ -14,15 +14,15 @@ const defaultMapper = (payload: any) => ({
 
 let actionsCount = 0
 
-export function declareAction(type?: string): ActionCreatorBinded<[]>
-export function declareAction<Payload>(
+export function createActionCreator(type?: string): ActionCreatorBinded<[]>
+export function createActionCreator<Payload>(
   type?: string,
 ): ActionCreatorBinded<[Payload]>
-export function declareAction<
+export function createActionCreator<
   Args extends any[] = [],
   Data extends ActionData = { payload: Args[0] },
 >(mapper: (...a: Args) => Data, type?: string): ActionCreatorBinded<Args, Data>
-export function declareAction(
+export function createActionCreator(
   typeOrMapper?: string | Fn,
   type = isString(typeOrMapper) ? typeOrMapper : `action [${++actionsCount}]`,
 ) {

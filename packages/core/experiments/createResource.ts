@@ -2,7 +2,7 @@ import {
   ActionCreatorBinded,
   AtomBinded,
   AtomState,
-  declareAtom,
+  createAtom,
   isObject,
   Track,
 } from '@reatom/core'
@@ -24,7 +24,7 @@ export type ResourceState<State> = {
 }
 
 let resourcesCount = 0
-export function declareResource<State, Params = void>(
+export function createResource<State, Params = void>(
   reducer: ($: Track<{}>) => State,
   fetcher: (
     params: Params,
@@ -34,7 +34,7 @@ export function declareResource<State, Params = void>(
 ) {
   type ResourceContext = { version?: number; params?: Params }
 
-  const atom = declareAtom(
+  const atom = createAtom(
     {
       /** Action for data request. Memoized by fetcher params */
       fetch: (params: Params) => params,
@@ -125,14 +125,14 @@ export function declareResource<State, Params = void>(
 function example() {
   type Product = {}
 
-  const productsAtom = declareResource(
+  const productsAtom = createResource(
     ($, state = new Array<Product>()) => state,
     (page: number = 0) =>
       fetch(`/api/products?page=${page}`).then((r) => r.json()),
     `products`,
   )
 
-  const pageAtom = declareAtom(
+  const pageAtom = createAtom(
     {
       next: () => null,
       prev: () => null,

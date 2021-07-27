@@ -7,8 +7,8 @@ import {
   Atom,
   Cache,
   CacheTemplate,
-  declareAction,
-  declareAtom,
+  createActionCreator,
+  createAtom,
   Fn,
   Transaction,
 } from '@reatom/core'
@@ -55,8 +55,8 @@ async function start(iterations = 1_000) {
     return w.pipe(source, w.sample(source))
   }
 
-  const entry = declareAction<number>()
-  const a = declareAtom(
+  const entry = createActionCreator<number>()
+  const a = createAtom(
     {},
     ($, state = 0) => {
       // $(entry.handle(v => (state = v % 2 ? state : v + 1)))
@@ -67,19 +67,19 @@ async function start(iterations = 1_000) {
   )
   const b = map(a, (v) => v + 1)
   const c = map(a, (v) => v + 1)
-  const d = declareAtom({}, ($) => $(b) + $(c))
+  const d = createAtom({}, ($) => $(b) + $(c))
   const e = map(d, (v) => v + 1)
-  const f = declareAtom({}, ($) => $(d) + $(e))
-  const g = declareAtom({}, ($) => $(d) + $(e))
-  const h = declareAtom({}, ($) => $(f) + $(g))
+  const f = createAtom({}, ($) => $(d) + $(e))
+  const g = createAtom({}, ($) => $(d) + $(e))
+  const h = createAtom({}, ($) => $(f) + $(g))
   let res = 0
   h.subscribe((v) => {
     res += v
   })
   res = 0
 
-  // const rEntry = reatomV1.declareAction()
-  // const rA = reatomV1.declareAtom(0, on => [on(rEntry, v => v)])
+  // const rEntry = reatomV1.createActionCreator()
+  // const rA = reatomV1.createAtom(0, on => [on(rEntry, v => v)])
   // const rB = reatomV1.map(rA, a => a + 1)
   // const rC = reatomV1.map(rA, a => a + 1)
   // const rD = reatomV1.map(reatomV1.combine([rB, rC]), ([b, c]) => b + c)

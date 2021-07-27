@@ -1,3 +1,3 @@
-export * from './declareResource'
-export * from './declareSimpleAtom'
+export * from './createResource'
+export * from './createSimpleAtom'
 export * from './init'
