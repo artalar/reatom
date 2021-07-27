@@ -199,62 +199,6 @@ Those problem you may solve by other ways too: streams / services / classes, but
 
 ## API
 
-### createActionCreator
-
-`createActionCreator` returns action creator. Optionally you may pass an payload mapper and used type.
-You rarely need to use this manually, best practice for create action creators is describe it in a first argument of `createAtom`.
-
-#### createActionCreator overloads
-
-```ts
-import { createActionCreator } from '@reatom/core'
-
-const increment = createActionCreator()
-increment()
-// -> { type: 'action [1]', payload: undefined }
-
-const add = createActionCreator<number>()
-add(42)
-// -> { type: 'action [2]', payload: 42 }
-
-const set = createActionCreator((payload: number, meta: string) => ({
-  payload,
-  meta,
-}))
-set(42, 'from somewhere')
-// -> { type: 'action [3]', payload: 42, meta: 'from somewhere' }
-
-const push = createActionCreator<string>('ROUTER_PUSH')
-// OR
-const push = createActionCreator(
-  (payload: string) => ({ payload }),
-  'ROUTER_PUSH',
-)
-push('/main')
-// -> { type: 'ROUTER_PUSH', payload: '/main' }
-```
-
-#### createActionCreator action targets
-
-You may pass property `targets` with array of atoms which receive the action even if they have no any dependent subscriptions
-
-#### createActionCreator methods and properties
-
-```ts
-import { createActionCreator } from '@reatom/core'
-
-const doSome = createActionCreator()
-
-// <string>
-// The type of creating action
-doSome.type
-
-// <(...arguments) => Action>
-// Create an action by passed arguments
-// and dispatch it to the `defaultStore`
-doSome.dispatch
-```
-
 ### createAtom
 
 `createAtom` create atom - a handler thats receive immutable cache from store, process it and returns a new immutable version of cache. Also it may handle effect witch called only after successful recalculation of all touched atoms in the dispatch. Optionally you may pass `id` for better debugging or specification of snapshot key.
@@ -380,6 +324,62 @@ store.dispatch([add(1), add(2)])
 
 store.getState(counterAtom)
 // 13
+```
+
+### createActionCreator
+
+`createActionCreator` returns action creator. Optionally you may pass an payload mapper and used type.
+You rarely need to use this manually, best practice for create action creators is describe it in a first argument of `createAtom`.
+
+#### createActionCreator overloads
+
+```ts
+import { createActionCreator } from '@reatom/core'
+
+const increment = createActionCreator()
+increment()
+// -> { type: 'action [1]', payload: undefined }
+
+const add = createActionCreator<number>()
+add(42)
+// -> { type: 'action [2]', payload: 42 }
+
+const set = createActionCreator((payload: number, meta: string) => ({
+  payload,
+  meta,
+}))
+set(42, 'from somewhere')
+// -> { type: 'action [3]', payload: 42, meta: 'from somewhere' }
+
+const push = createActionCreator<string>('ROUTER_PUSH')
+// OR
+const push = createActionCreator(
+  (payload: string) => ({ payload }),
+  'ROUTER_PUSH',
+)
+push('/main')
+// -> { type: 'ROUTER_PUSH', payload: '/main' }
+```
+
+#### createActionCreator action targets
+
+You may pass property `targets` with array of atoms which receive the action even if they have no any dependent subscriptions
+
+#### createActionCreator methods and properties
+
+```ts
+import { createActionCreator } from '@reatom/core'
+
+const doSome = createActionCreator()
+
+// <string>
+// The type of creating action
+doSome.type
+
+// <(...arguments) => Action>
+// Create an action by passed arguments
+// and dispatch it to the `defaultStore`
+doSome.dispatch
 ```
 
 ## Guides
