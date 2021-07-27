@@ -181,7 +181,7 @@ testStore.dispatch(counterAtom.add(1))
 assert.is(counterEffectData, 1)
 ```
 
-> Want a more complex example of a full power of the Reatom? [Check this helper method `createResource`](https://github.com/artalar/reatom/tree/v2/packages/core/experiments).
+> Want a more complex example of a full power of the Reatom? [Check this helper method `createResource`](https://github.com/artalar/reatom/tree/v2/packages/core/experiments/createResource.ts) and [example](https://codesandbox.io/s/reatom-createresource-k00fq) with it.
 
 As you may see, Reatom flow looks like Redux flow, but reducers and selectors is unified to atoms, which allows you to describe data receiving naturally, as in MobX. Also, atoms have an API for handling side-effects declarative, but flexible, see below.
 
