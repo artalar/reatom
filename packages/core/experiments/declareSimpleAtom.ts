@@ -50,16 +50,20 @@ export function declareSimpleAtom(
   const keys = Object.keys(actions)
   const atom = declareAtom(
     keys.reduce((acc, k) => {
-      // @ts-ignore
+      // @ts-expect-error
       acc[k] = (payload) => payload
       return acc
     }, {}),
-    ($, state = initState) =>
-      keys.reduce((acc, k) => {
-        // @ts-ignore
-        $(atom[k], (payload) => (acc = actions[k](acc, payload)))
-        return acc
-      }, state),
+    ($, state = initState) => {
+      $(
+        keys.reduce((acc, k) => {
+          // @ts-expect-error
+          acc[k] = (payload) => (state = actions[k](state, payload))
+          return acc
+        }, {}),
+      )
+      return state
+    },
     options,
   )
 

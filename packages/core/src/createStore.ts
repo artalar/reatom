@@ -4,7 +4,6 @@ import {
   addToSetsMap,
   Atom,
   Cache,
-  CacheDep,
   callSafety,
   createTransaction,
   delFromSetsMap,
@@ -31,12 +30,9 @@ function isTypesChange(...diff: DepsDiff): boolean {
     if (depsOld.length != depsNew.length) return true
 
     for (let i = 0; i < depsOld.length; i++) {
-      const { cache: cacheOld } = depsOld[i]
-      const { cache: cacheNew } = depsNew[i]
+      if (depsOld[i].types != depsNew[i].types) return true
 
-      if (cacheOld.types != cacheNew.types) return true
-
-      stack.push([cacheOld.deps, cacheNew.deps])
+      stack.push([depsOld[i].deps, depsNew[i].deps])
     }
   }
   return false
@@ -52,11 +48,11 @@ export function createStore({
 
   function addReducer(atom: Atom, cache: Cache) {
     cache.types.forEach((type) => addToSetsMap(actionsReducers, type, atom))
-    cache.deps.forEach((dep) => addReducer(atom, dep.cache))
+    cache.deps.forEach((dep) => addReducer(atom, dep))
   }
   function delReducer(atom: Atom, cache: Cache) {
     cache.types.forEach((type) => delFromSetsMap(actionsReducers, type, atom))
-    cache.deps.forEach((dep) => delReducer(atom, dep.cache))
+    cache.deps.forEach((dep) => delReducer(atom, dep))
   }
 
   function collectSnapshot(atom: Atom, result: Rec = {}) {
@@ -68,7 +64,7 @@ export function createStore({
     return result
   }
 
-  function mergePatch(atom: Atom, patch: Cache, changedAtoms: Array<CacheDep>) {
+  function mergePatch(atom: Atom, patch: Cache, changedAtoms: Array<Cache>) {
     const atomCache = getCache(atom)
     if (atomsListeners.has(atom)) {
       if (atomCache == undefined) {
@@ -85,7 +81,7 @@ export function createStore({
     atomsCache.set(atom, patch)
 
     if (!Object.is(atomCache?.state, patch.state)) {
-      changedAtoms.push({ atom, cache: patch })
+      changedAtoms.push(patch)
     }
   }
 
@@ -98,7 +94,7 @@ export function createStore({
 
     const patch = new Map<Atom, Cache>()
     const transaction = createTransaction(actions, patch, getCache, snapshot)
-    const changedAtoms = new Array<CacheDep>()
+    const changedAtoms = new Array<Cache>()
     let error: Error | null = null
 
     try {
@@ -122,13 +118,15 @@ export function createStore({
 
     if (error) throw error
 
-    changedAtoms.forEach(({ atom, cache: { state } }) =>
+    const effectsResults = transaction.effects.map(
+      (cb) => new Promise((res) => res(cb(store))),
+    )
+
+    changedAtoms.forEach(({ atom, state }) =>
       atomsListeners.get(atom)?.forEach((cb) => callSafety(cb, state)),
     )
 
-    return Promise.allSettled(
-      transaction.effects.map((cb) => new Promise((res) => res(cb(store)))),
-    ).then(noop, noop)
+    return Promise.allSettled(effectsResults).then(noop, noop)
   }
 
   function getCache<T>(atom: Atom<T>): Cache<T> | undefined {

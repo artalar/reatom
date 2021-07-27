@@ -13,34 +13,32 @@ import {
   Transaction,
 } from '@reatom/core'
 
+let mapsCount = 0
 function map<T, Dep>(
   depAtom: Atom<Dep>,
   cb: Fn<[depState: Dep], T>,
-  id: string = ``,
+  id: string = `map of "${depAtom.id}" [${++mapsCount}]`,
 ): Atom<T> {
-  const atom = Object.assign(
-    (t: Transaction, cache?: CacheTemplate<T>): Cache<T> => {
-      const depPatch = t.process(depAtom)
-      const dep =
-        cache?.deps.length === 1 ? cache.deps[0] : { atom, cache: null }
+  const atom = (t: Transaction, cache?: CacheTemplate<T>): Cache<T> => {
+    const depPatch = t.process(depAtom)
+    const dep = cache?.deps.length === 1 ? cache.deps[0] : null
 
-      if (dep.cache !== depPatch) {
-        cache = {
-          deps: [{ atom: depAtom, cache: depPatch }],
-          ctx: {},
-          state: Object.is(dep.cache?.state, depPatch.state)
-            ? cache!.state
-            : cb(depPatch.state /* , cache.state */),
-          types: depPatch.types,
-        }
+    if (dep !== depPatch) {
+      cache = {
+        atom,
+        ctx: {},
+        deps: [depPatch],
+        state: Object.is(dep?.state, depPatch.state)
+          ? cache!.state
+          : cb(depPatch.state /* , cache.state */),
+        types: depPatch.types,
       }
+    }
 
-      return cache as Cache<T>
-    },
-    {
-      id,
-    },
-  )
+    return cache as Cache<T>
+  }
+
+  atom.id = id
 
   return atom
 }
@@ -237,7 +235,7 @@ async function start(iterations = 1_000) {
   console.log(`wonka`)
   console.log(log(wonkaLogs) /*   */)
 }
-start(100)
+start(1000)
 
 function log(values: Array<number>) {
   return {

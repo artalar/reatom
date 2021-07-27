@@ -1,12 +1,17 @@
 import {
   Action,
   ActionCreator,
+  ActionCreatorBindings,
   Atom,
+  AtomBindings,
   AtomsCache,
+  AtomState,
   CacheTemplate,
+  defaultStore,
   Fn,
   Patch,
   Rec,
+  Store,
   Transaction,
 } from './internal'
 
@@ -73,10 +78,12 @@ export function invalid(predicate: any, msg: string) {
 }
 
 export function createTemplateCache<State>(
+  atom: Atom<State>,
   state?: State,
 ): CacheTemplate<State> {
   return {
-    ctx: undefined,
+    atom,
+    ctx: {},
     deps: [],
     state,
     types: [],
@@ -97,7 +104,7 @@ export function createTransaction(
 
       if (!atomPatch) {
         const atomCache =
-          getCache(atom) ?? cache ?? createTemplateCache(snapshot[atom.id])
+          getCache(atom) ?? cache ?? createTemplateCache(atom, snapshot[atom.id])
 
         atomPatch = atom(transaction, atomCache)
 

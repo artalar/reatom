@@ -4,6 +4,7 @@ import {
   AtomBinded,
   AtomId,
   Cache,
+  CacheTemplate,
   createTemplateCache,
   declareAction,
   defaultStore,
@@ -13,15 +14,17 @@ import {
   isString,
   memo,
   Rec,
-  Reducer,
+  TrackedReducer,
   Transaction,
   Unsubscribe,
+  Values,
 } from './internal'
 
-export type AtomOptions<State = any, Ctx extends Rec = Rec> = {
-  /** Create mutable object for storing effects data. */
-  createCtx?: () => Ctx
+export type AtomOptions<State = any> = {
   id?: AtomId
+  // TODO(?)
+  // toSnapshot: Fn
+  // fromSnapshot: Fn
 }
 
 export type DeclaredAtom<
@@ -31,44 +34,54 @@ export type DeclaredAtom<
   {
     [K in keyof ActionPayloadCreators]: ActionCreatorBinded<
       Parameters<ActionPayloadCreators[K]>,
-      { payload: ReturnType<ActionPayloadCreators[K]>; targets: [Atom] }
+      {
+        // All self actions use the same type literal for performance reasons
+        // AND to complicate subscribing to thats actions coz it not preferred codestyle
+        // (coz of `targets` behavior and so on)
+        payload: Values<
+          {
+            [K in keyof ActionPayloadCreators]: {
+              data: ReturnType<ActionPayloadCreators[K]>
+              name: K
+            }
+          }
+        >
+        name: K
+      }
     >
   }
 
 let atomsCount = 0
-export function declareAtom<
-  State,
-  Ctx extends Rec = Rec<unknown>,
-  ActionPayloadCreators extends Rec<Fn> = {},
->(
+export function declareAtom<State, ActionPayloadCreators extends Rec<Fn> = {}>(
   /**
    * Collection of named action payload creators
    * which will the part of the created atom
    * and always be handled by it.
    */
   actions: ActionPayloadCreators,
-  reducer: Reducer<State, Ctx>,
-  options: AtomOptions<State, Ctx> = {},
+  reducer: TrackedReducer<State, ActionPayloadCreators>,
+  options: AtomOptions<State> = {},
 ): DeclaredAtom<State, ActionPayloadCreators> {
-  const { createCtx = () => ({} as Ctx), id = `atom [${++atomsCount}]` } =
-    options
+  const { id = `atom [${++atomsCount}]` } = options
 
   invalid(
     !isFunction(reducer) ||
       !Object.values(actions).every(isFunction) ||
-      !isFunction(createCtx) ||
       !isString(id),
     `atom arguments`,
   )
 
   const targets = [atom]
-  const actionCreators = Object.keys(actions).reduce((acc, k) => {
-    const type = `${k} of "${id}"`
-    const payloadCreator = actions[k]
+  const selfActionType = `"${id}" self action`
+  const actionCreators = Object.keys(actions).reduce((acc, name) => {
+    const payloadCreator = actions[name]
 
-    acc[k] = declareAction(
-      (...a: any[]) => ({ payload: payloadCreator(...a), targets }),
-      type,
+    acc[name] = declareAction(
+      (...a: any[]) => ({
+        payload: { data: payloadCreator(...a), name },
+        targets,
+      }),
+      selfActionType,
     )
 
     return acc
@@ -76,12 +89,8 @@ export function declareAtom<
 
   function atom(
     transaction: Transaction,
-    cache = createTemplateCache<State>(),
+    cache: CacheTemplate<State> = createTemplateCache(atom),
   ): Cache<State> {
-    if (cache.ctx === undefined) {
-      cache.ctx = createCtx()
-    }
-
     const patch = memo(transaction, cache as Cache<State>, reducer)
 
     return patch

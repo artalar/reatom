@@ -4,7 +4,6 @@ import {
   AtomState,
   declareAtom,
   isObject,
-  Rec,
   Track,
 } from '@reatom/core'
 
@@ -26,21 +25,23 @@ export type ResourceState<State> = {
 
 let resourcesCount = 0
 export function declareResource<State, Params = void>(
-  reducer: ($: Track<Rec<unknown>>) => State,
+  reducer: ($: Track<{}>) => State,
   fetcher: (
     params: Params,
     state: State extends any ? State : never,
   ) => Promise<State extends any ? State : never>,
   id = `resource [${++resourcesCount}]`,
 ) {
+  type ResourceContext = { version?: number; params?: Params }
+
   const atom = declareAtom(
     {
       /** Action for data request. Memoized by fetcher params */
-      request: (params: Params) => params,
-      /** Action for forced data request */
       fetch: (params: Params) => params,
+      /** Action for forced data request */
+      invalidate: (params: Params) => params,
       /** Action for fetcher response */
-      response: (data: State) => data,
+      done: (data: State) => data,
       /** Action for fetcher error */
       error: (error: Error) => error,
       /** Action for cancel pending request */
@@ -63,62 +64,64 @@ export function declareResource<State, Params = void>(
         ? state
         : { data, error: state.error, isLoading: state.isLoading }
 
-      $(atom.request, (params) => ({ dispatch }, ctx) => {
-        const isParamsNew =
-          'params' in ctx === false || !shallowEqual(ctx.params, params)
-        if (isParamsNew) dispatch(atom.fetch(params))
-      })
+      $({
+        fetch(params) {
+          $.effect(({ dispatch }, ctx) => {
+            const isParamsNew =
+              'params' in ctx === false || !shallowEqual(ctx.params, params)
+            if (isParamsNew) dispatch($.action('invalidate', params))
+          })
+        },
 
-      $(atom.fetch, (params) => {
-        state = state.isLoading
-          ? state
-          : { data: state.data, error: null, isLoading: true }
+        invalidate(params) {
+          state = state.isLoading
+            ? state
+            : { data: state.data, error: null, isLoading: true }
 
-        return ({ dispatch }, ctx) => {
-          const version = ++ctx.version
-          ctx.params = params
-          return fetcher(params, state!.data).then(
-            (data) => {
-              if (ctx.version === version) dispatch(atom.response(data))
-            },
-            (error) => {
-              error = error instanceof Error ? error : new Error(error)
-              if (ctx.version === version) dispatch(atom.error(error))
-            },
-          )
-        }
-      })
+          $.effect(({ dispatch }, ctx: ResourceContext) => {
+            const version = (ctx.version ?? 0) + 1
+            ctx.version = version
+            ctx.params = params
+            return fetcher(params, state!.data).then(
+              (data) => {
+                if (ctx.version === version) dispatch($.action('done', data))
+              },
+              (error) => {
+                error = error instanceof Error ? error : new Error(error)
+                if (ctx.version === version) dispatch($.action('error', error))
+              },
+            )
+          })
+        },
 
-      $(
-        atom.response,
-        (data) => (state = { data, error: null, isLoading: false }),
-      )
+        done(data) {
+          state = { data, error: null, isLoading: false }
+        },
 
-      $(
-        atom.error,
-        (error) => (state = { data: state.data, error, isLoading: false }),
-      )
+        error(error) {
+          state = { data: state.data, error, isLoading: false }
+        },
 
-      $(atom.cancel, () => {
-        state = state.isLoading
-          ? { data: state.data, error: null, isLoading: false }
-          : state
+        cancel() {
+          state = state.isLoading
+            ? { data: state.data, error: null, isLoading: false }
+            : state
 
-        return (store, ctx) => ctx.version++
+          $.effect((store, ctx: ResourceContext) => ctx.version!++)
+        },
       })
 
       return state
     },
     {
       id,
-      createCtx: (): { version: number; params?: Params } => ({ version: 0 }),
     },
   )
 
   return atom
 }
 
-// This will throw by terser
+// This will be trowed by terser
 function example() {
   type Product = {}
 
@@ -135,9 +138,11 @@ function example() {
       prev: () => null,
     },
     ($, state = 0) => {
-      $(pageAtom.next, () => (state += 1))
-      $(pageAtom.prev, () => (state = Math.max(0, state - 1)))
-      $(({ dispatch }) => dispatch(productsAtom.request(state)))
+      $({
+        next: () => (state += 1),
+        prev: () => (state = Math.max(0, state - 1)),
+      })
+      $.effect(({ dispatch }) => dispatch(productsAtom.fetch(state)))
 
       return state
     },

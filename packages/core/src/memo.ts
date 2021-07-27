@@ -2,59 +2,69 @@ import {
   AC,
   Atom,
   Cache,
-  Effect,
   Fn,
   invalid,
   isActionCreator,
   isAtom,
   isFunction,
+  isObject,
+  noop,
   Rec,
-  Reducer,
   Track,
+  TrackedReducer,
   Transaction,
 } from './internal'
 
-export function memo<State, Ctx extends Rec = Rec>(
+function getImmutableListRef<T>(list: Array<T>) {
+  return {
+    count: 0,
+    isChanged: false,
+    list,
+    push(el: T) {
+      if (
+        !this.isChanged &&
+        (this.count >= list.length || list[this.count] != el)
+      ) {
+        this.isChanged = true
+        this.list = list.slice(0, this.count)
+      }
+      if (this.isChanged) {
+        this.list.push(el)
+      }
+      this.count++
+    },
+  }
+}
+
+export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
   transaction: Transaction,
   cache: Cache<State>,
-  reducer: Reducer<State, Ctx>,
+  reducer: TrackedReducer<State, ActionPayloadCreators>,
 ): Cache<State> {
-  let { deps, state, types } = cache
-  let depsCount = 0
-  let typesCount = 0
+  let { atom, ctx, deps, state, types } = cache
+  let depsRef = getImmutableListRef(deps)
+  let typesRef = getImmutableListRef(types)
   let nesting = 0
-
-  function getMutableDeps(to?: number) {
-    if (deps == cache.deps) {
-      deps = deps.slice(0, to)
-    }
-
-    return deps
-  }
-
-  function getMutableTypes() {
-    if (types == cache.types) types = types.slice(0, typesCount)
-    return types
-  }
+  let outdatedTrack = noop
+  // FIXME: infer from atom?
+  const selfActionType = `"${atom.id}" self action`
 
   function calcResult(): Cache<State> {
-    return deps == cache.deps &&
+    return !depsRef.isChanged &&
       Object.is(state, cache.state) &&
-      types == cache.types
+      !typesRef.isChanged
       ? cache
-      : { ctx: cache.ctx, deps, state, types }
+      : { atom, ctx, deps: depsRef.list, state, types: typesRef.list }
   }
 
   const shouldSkipReducer =
     (deps.length > 0 || types.length > 0) &&
     transaction.actions.every((action) => !types.includes(action.type)) &&
-    deps.every(({ atom: depAtom, cache: depCache }, i) => {
-      const depPatch = transaction.process(depAtom, depCache)
+    deps.every((depCache, i) => {
+      const depPatch = transaction.process(depCache.atom, depCache)
 
       if (Object.is(depCache.state, depPatch.state)) {
-        if (depPatch != depCache) {
-          getMutableDeps()[i] = { atom: depAtom, cache: depPatch }
-        }
+        depsRef.push(depPatch)
 
         return true
       }
@@ -66,40 +76,22 @@ export function memo<State, Ctx extends Rec = Rec>(
     return calcResult()
   }
 
-  deps = cache.deps
-
-  function scheduleEffect(effect: any) {
-    if (isFunction(effect)) {
-      transaction.effects.push((store) => effect(store, cache.ctx))
-    }
-  }
+  depsRef = getImmutableListRef(deps)
 
   function trackAtom(depAtom: Atom, cb?: Fn) {
     const dep =
-      nesting == 1 && cache.deps.length > depsCount
-        ? cache.deps[depsCount]
-        : null
+      nesting == 1 && deps.length > depsRef.count ? deps[depsRef.count] : null
     const isDepChange = dep?.atom != depAtom
     const depPatch = transaction.process(
       depAtom,
-      isDepChange ? undefined : dep!.cache,
+      isDepChange ? undefined : dep!,
     )
 
     if (nesting == 1) {
-      const isDepPatchChange = isDepChange || dep!.cache != depPatch
-      const isDepStateChange =
-        isDepChange || !Object.is(dep!.cache.state, depPatch.state)
+      depsRef.push(depPatch)
 
-      if (isDepPatchChange || deps != cache.deps) {
-        getMutableDeps(depsCount).push({ atom: depAtom, cache: depPatch })
-      }
-
-      depsCount++
-
-      if (isDepStateChange && cb) {
-        scheduleEffect(
-          cb(depPatch.state, isDepChange ? undefined : dep!.cache.state),
-        )
+      if (cb && (isDepChange || !Object.is(dep!.state, depPatch.state))) {
+        cb(depPatch.state, isDepChange ? undefined : dep!.state)
       }
     } else {
       // this is wrong coz we not storing previous value of the atom
@@ -115,19 +107,11 @@ export function memo<State, Ctx extends Rec = Rec>(
     if (nesting == 1) {
       invalid(!cb, `action track without callback`)
 
-      if (
-        types.length <= typesCount ||
-        types[typesCount] != type ||
-        types != cache.types
-      ) {
-        getMutableTypes().push(type)
-      }
-
-      typesCount++
+      typesRef.push(type)
 
       transaction.actions.forEach((action) => {
         if (action.type == type) {
-          scheduleEffect(cb!(action.payload, action))
+          cb!(action.payload, action)
         }
       })
     } else {
@@ -136,12 +120,12 @@ export function memo<State, Ctx extends Rec = Rec>(
     }
   }
 
-  let track: Track<Ctx> = (target: AC | Atom | Effect<Ctx>, cb?: Fn) => {
-    // TODO: how to pass the `id` of atom here?
-    invalid(
-      Number.isNaN(nesting),
-      `outdated track call, use \`store.getState\` in an effect.`,
-    )
+  // @ts-expect-error
+  const track: Track<ActionPayloadCreators> = (
+    target: AC | Atom | Rec<Fn>,
+    cb?: Fn,
+  ) => {
+    outdatedTrack()
 
     try {
       nesting++
@@ -149,12 +133,34 @@ export function memo<State, Ctx extends Rec = Rec>(
       if (isAtom(target)) return trackAtom(target, cb)
       if (isActionCreator(target)) return trackAction(target, cb)
 
-      invalid(isFunction(cb), `track arguments`)
+      if (isObject(target)) {
+        typesRef.push(selfActionType)
+        return Object.keys(target).forEach((name) => {
+          transaction.actions.forEach((action) => {
+            if (action.type == selfActionType && action.payload.name == name) {
+              target[name](action.payload.data, action)
+            }
+          })
+        })
+      }
 
-      scheduleEffect(target)
+      invalid(1, `track arguments`)
     } finally {
       nesting--
     }
+  }
+
+  track.effect = (effect) => {
+    outdatedTrack()
+    invalid(!isFunction(effect), `effect, should be a function`)
+    transaction.effects.push((store) => effect(store, cache.ctx))
+  }
+
+  track.action = (name, ...payload: any[]) => {
+    // @ts-expect-error
+    const ac = atom[name] || (() => ({ payload, name, type: selfActionType }))
+
+    return ac(...payload)
   }
 
   state = reducer(
@@ -163,7 +169,7 @@ export function memo<State, Ctx extends Rec = Rec>(
     state,
   )
 
-  nesting = NaN
+  outdatedTrack = () => invalid(1, `outdated track call for ${atom.id}.`)
 
   return calcResult()
 }

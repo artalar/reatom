@@ -16,7 +16,7 @@ export type Merge<Intersection> = Intersection extends (...a: any[]) => any
     }
   : Intersection
 
-export type NotFn<T> = T extends Fn ? never : T
+export type Values<T> = Merge<T[keyof T]>
 
 /* DOMAIN */
 
@@ -30,9 +30,10 @@ export type AtomId = string
 
 export type Unsubscribe = () => void
 
-export type CacheDep = { atom: Atom; cache: Cache }
-
 export type Cache<State = any> = {
+  /** The source of this cache */
+  readonly atom: Atom<State>
+
   /** Local mutable context */
   ctx: Rec<unknown>
 
@@ -44,25 +45,29 @@ export type Cache<State = any> = {
    * then atom returns to active
    * and may been stale.
    */
-  readonly deps: Array<CacheDep>
+  readonly deps: Array<Cache>
 
   /** Immutable public data */
   readonly state: State
 
-  /** Types of action creators in the reducer */
+  /** Types of tracked action creators in the reducer */
   readonly types: Array<ActionType>
+
+  [k: string]: unknown
 }
 
 export type CacheTemplate<State = any> = {
-  [K in keyof Cache<State>]: K extends `ctx` | `state`
+  [K in keyof Cache<State>]: K extends `state`
     ? Cache<State>[K] | undefined
     : Cache<State>[K]
 }
 
-export type Atom<State = any> = {
+export type CacheReducer<State = any> = {
   /** Transaction reducer */
   (transaction: Transaction, cache?: CacheTemplate<State>): Cache<State>
+}
 
+export type Atom<State = any> = CacheReducer<State> & {
   id: AtomId
 }
 
@@ -70,40 +75,57 @@ export type AtomBindings<State = any> = {
   /** Read (or recalculate) state (`defaultStore`) */
   getState(): State
 
-  /** Immediately receive current state and all new (`defaultStore`) */
+  /** Immediately receive current state and subscribe to it changes (`defaultStore`) */
   subscribe(cb: Fn<[state: State]>): Unsubscribe
 }
 
 export type AtomBinded<State = any> = Atom<State> & AtomBindings<State>
 
-export type Reducer<State = any, Ctx extends Rec = Rec> = {
-  ($: Track<Ctx>): State
+export type TrackedReducer<
+  State = any,
+  ActionPayloadCreators extends Rec<Fn> = Rec<Fn>,
+> = {
+  (track: Track<ActionPayloadCreators>): State
   // TODO: how to infer type from default value of optional argument?
-  // ($: Track<Ctx>, state?: undefined | State): State
+  // (track: Track<ActionPayloadCreators>, state?: undefined | State): State
 }
 
-export type Track<Ctx extends Rec> = {
+export type Track<ActionPayloadCreators extends Rec<Fn> = Rec<Fn>> = {
   /** Subscribe to the atom state changes and receive it */
   <T>(atom: Atom<T>): T
+
   /** Subscribe to the atom state changes and react to it */
-  <T>(
-    atom: Atom<T>,
-    cb: Fn<[newState: T, oldState: T | undefined], Effect<Ctx>>,
-  ): void
-  /** Subscribe to the atom state changes and react to it */
-  <T>(atom: Atom<T>, cb: Fn<[newState: T, oldState: T | undefined], any>): void
+  <T>(atom: Atom<T>, reaction: Fn<[newState: T, oldState?: T]>): void
+
   /** Subscribe to dispatch an action of the action creator and react to it */
   <T extends AC>(
     actionCreator: T,
-    cb: Fn<[payload: ActionPayload<T>, action: ReturnType<T>], Effect<Ctx>>,
+    reaction: Fn<[payload: ActionPayload<T>, action: ReturnType<T>]>,
   ): void
-  /** Subscribe to dispatch an action of the action creator and react to it */
-  <T extends AC>(
-    actionCreator: T,
-    cb: Fn<[payload: ActionPayload<T>, action: ReturnType<T>], any>,
+
+  /** React to self actions dispatch */
+  (
+    actionsReactions: {
+      [K in keyof ActionPayloadCreators]?: Fn<
+        [
+          payload: ReturnType<ActionPayloadCreators[K]>,
+          action: Action<{
+            data: ReturnType<ActionPayloadCreators[K]>
+            name: K
+          }>,
+        ]
+      >
+    },
   ): void
-  /** Schedule effect (for every reducer rerun) */
-  (cb: Effect<Ctx>): void
+
+  /** Schedule effect */
+  effect: (effect: Effect) => void
+
+  /** Create self action */
+  action: <Name extends keyof ActionPayloadCreators>(
+    name: Name,
+    ...params: Parameters<ActionPayloadCreators[Name]>
+  ) => /* You shouldn't think about this action data, the point only in the name */ Action
 }
 
 export type Action<Payload = any> = {
@@ -124,8 +146,6 @@ export type ActionData<Payload = any> = Omit<Action<Payload>, 'type'> & {
 }
 
 type CustomAction<Data extends Rec> = Merge<Data & { type: ActionType }>
-
-type A1 = ActionCreator<[], { payload: 1 }>
 
 export type ActionCreator<
   Args extends any[] = any[],
@@ -161,7 +181,7 @@ export type Store = {
   /** Get stored atom state or calculate the new */
   getState<T>(atom: Atom<T>): T
 
-  /** Subscribe to every dispatch result */
+  /** Subscribe to every dispatch result. Used it carefully, for logging primary.  */
   subscribe(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
   /** Subscribe to atom change (called once immediately) */
   subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
@@ -191,7 +211,7 @@ export type TransactionResult = {
   readonly patch: Patch
 }
 
-export type Effect<Ctx extends Rec = Rec> = Fn<[Store, Ctx]>
+export type Effect = Fn<[Store, Cache['ctx']]>
 
 export type Patch = Map<Atom, Cache>
 
