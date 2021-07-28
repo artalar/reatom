@@ -24,7 +24,7 @@ type DepsDiff = [depsOld: Cache['deps'], depsNew: Cache['deps']]
 function isTypesChange(...diff: DepsDiff): boolean {
   const stack: Array<DepsDiff> = []
 
-  for (; diff !== undefined; diff = stack.pop()!) {
+  for (; diff != undefined; diff = stack.pop()!) {
     const { 0: depsOld, 1: depsNew } = diff
 
     if (depsOld.length != depsNew.length) return true
@@ -64,67 +64,77 @@ export function createStore({
     return result
   }
 
-  function mergePatch(atom: Atom, patch: Cache, changedAtoms: Array<Cache>) {
+  function mergePatch(atom: Atom, patch: Cache, effect: Array<Fn<[Store]>>) {
     const atomCache = getCache(atom)
-    if (atomsListeners.has(atom)) {
+    const atomListeners = atomsListeners.get(atom)
+
+    if (atomListeners != undefined) {
       if (atomCache == undefined) {
         addReducer(atom, patch)
       } else if (
         atomCache.types != patch.types ||
         isTypesChange(atomCache.deps, patch.deps)
       ) {
-        delReducer(atom, patch)
+        delReducer(atom, atomCache)
         addReducer(atom, patch)
+      }
+
+      if (!Object.is(atomCache?.state, patch.state)) {
+        effect.push(() =>
+          atomListeners.forEach((cb) => callSafety(cb, patch.state)),
+        )
       }
     }
 
     atomsCache.set(atom, patch)
-
-    if (!Object.is(atomCache?.state, patch.state)) {
-      changedAtoms.push(patch)
-    }
   }
 
-  const dispatch: Store['dispatch'] = (action: Action | Array<Action>) => {
+  const dispatch: Store['dispatch'] = (
+    action: Action | Array<Action>,
+    stack,
+  ) => {
     const actions = Array.isArray(action) ? action : [action]
+
     invalid(
-      actions.length === 0 || actions.every(isAction) === false,
+      actions.length == 0 || !actions.every(isAction),
       `dispatch arguments`,
     )
 
     const patch = new Map<Atom, Cache>()
-    const transaction = createTransaction(actions, patch, getCache, snapshot)
-    const changedAtoms = new Array<Cache>()
+    const effects: Array<Fn<[store: Store]>> = []
+    const transaction = createTransaction(actions, {
+      patch,
+      getCache,
+      effects,
+      snapshot,
+      stack,
+    })
+    const { process } = transaction
     let error: Error | null = null
 
     try {
-      actions.forEach(({ targets }) =>
-        targets?.forEach((atom) => transaction.process(atom)),
-      )
-      actions.forEach(({ type }) =>
-        actionsReducers.get(type)?.forEach((atom) => transaction.process(atom)),
-      )
+      actions.forEach(({ type, targets }) => {
+        actionsReducers.get(type)?.forEach((atom) => process(atom))
+        targets?.forEach((atom) => process(atom))
+      })
 
-      patch.forEach((atomPatch, atom) =>
-        mergePatch(atom, atomPatch, changedAtoms),
-      )
+      patch.forEach((atomPatch, atom) => mergePatch(atom, atomPatch, effects))
     } catch (e) {
       error = e instanceof Error ? e : new Error(e)
     }
 
-    const transactionResult: TransactionResult = { actions, error, patch }
+    const transactionResult: TransactionResult = {
+      actions,
+      error,
+      patch,
+      stack: transaction.stack,
+    }
 
     transactionListeners.forEach((cb) => callSafety(cb, transactionResult))
 
     if (error) throw error
 
-    const effectsResults = transaction.effects.map(
-      (cb) => new Promise((res) => res(cb(store))),
-    )
-
-    changedAtoms.forEach(({ atom, state }) =>
-      atomsListeners.get(atom)?.forEach((cb) => callSafety(cb, state)),
-    )
+    const effectsResults = effects.map((cb) => callSafety(cb, store))
 
     return Promise.allSettled(effectsResults).then(noop, noop)
   }
@@ -136,7 +146,7 @@ export function createStore({
   function getState<T>(): Record<string, any>
   function getState<T>(atom: Atom<T>): T
   function getState<T>(atom?: Atom<T>) {
-    if (atom === undefined) {
+    if (atom == undefined) {
       const result: Rec = {}
 
       atomsListeners.forEach((_, atom) => collectSnapshot(atom, result))
@@ -144,29 +154,17 @@ export function createStore({
       return result
     }
 
-    invalid(!isAtom(atom), `"getState" argument`)
+    invalid(!isAtom(atom), `'getState' argument`)
 
-    let atomCache = getCache(atom)
-
-    if (atomCache === undefined) {
+    if (getCache(atom) == undefined || !atomsListeners.has(atom)) {
       dispatch({
-        type: `init "${atom.id}" ~${Math.random().toString(36)}`,
+        type: `invalidate ${atom.id} [~${Math.random().toString(36)}]`,
         payload: null,
         targets: [atom],
       })
-
-      atomCache = getCache(atom)!
-    } else if (!atomsListeners.has(atom)) {
-      dispatch({
-        type: `invalidate "${atom.id}" ~${Math.random().toString(36)}`,
-        payload: null,
-        targets: [atom],
-      })
-
-      atomCache = getCache(atom)!
     }
 
-    return atomCache.state
+    return getCache(atom)!.state
   }
 
   function subscribe<State>(
@@ -176,7 +174,7 @@ export function createStore({
     if (isAtom<State>(atom) && isFunction(cb)) {
       let listeners = atomsListeners.get(atom)
 
-      if (listeners === undefined) {
+      if (listeners == undefined) {
         atomsListeners.set(atom, (listeners = new Set()))
       }
 
@@ -184,7 +182,7 @@ export function createStore({
 
       function unsubscribe() {
         listeners!.delete(cb as Fn)
-        if (listeners!.size === 0) {
+        if (listeners!.size == 0) {
           atomsListeners.delete(atom as Atom)
           delReducer(atom as Atom, atomsCache.get(atom as Atom)!)
         }

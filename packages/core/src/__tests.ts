@@ -55,9 +55,11 @@ test(`displayName`, () => {
   const lastNameAtom = createAtom(
     {},
     ($, state = 'Doe') => {
-      $(firstNameAtom.setFullName, ({ data: fullName, name }) => {
-        if (name === 'setFullName') state = fullName.split(' ')[1]
-      })
+      $(
+        firstNameAtom.setFullName,
+        (fullName) => (state = fullName.split(' ')[1]),
+      )
+
       return state
     },
     { id: `lastName` },
@@ -537,5 +539,33 @@ test(`getState of stale atom`, () => {
   assert.is(a.getState(), 2)
   assert.is(b.getState(), 2)
 })
+
+// test(`stack`, async () => {
+//   type TrafficLight = { delay: number; isOn: boolean, state: 'red' | 'yellow' | 'green' }
+//   const trafficLightAtom = createAtom(
+//     {
+//       setDelay: (delay: number) => delay,
+//       turnOff: () => null,
+//       turnOn: () => null,
+//     },
+//     ($, state: TrafficLight = { delay: 100, isOn: true, state: 'red' }) => {
+
+//       $({
+//         setDelay: (delay) => state = {...state, delay}
+//         toggle: () => state = {...state, delay}
+//       })
+
+//       return state
+//     },
+//   )
+
+//   const store = createStore()
+
+//   // store.subscribe(({ actions }) => {
+//   //   console.log(actions)
+//   // })
+
+//   store.dispatch(dataAtom.fetch(2))
+// })
 
 test.run()

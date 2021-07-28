@@ -41,13 +41,12 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
   cache: Cache<State>,
   reducer: TrackedReducer<State, ActionPayloadCreators>,
 ): Cache<State> {
+  const { actions, stack, process, schedule } = transaction
   let { atom, ctx, deps, state, types } = cache
   let depsRef = getImmutableListRef(deps)
   let typesRef = getImmutableListRef(types)
   let nesting = 0
   let outdatedTrack = noop
-  // FIXME: infer from atom?
-  const selfActionType = `"${atom.id}" self action`
 
   function calcResult(): Cache<State> {
     return !depsRef.isChanged &&
@@ -59,17 +58,13 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
 
   const shouldSkipReducer =
     (deps.length > 0 || types.length > 0) &&
-    transaction.actions.every((action) => !types.includes(action.type)) &&
-    deps.every((depCache, i) => {
-      const depPatch = transaction.process(depCache.atom, depCache)
+    !actions.some((action) => types.includes(action.type)) &&
+    !deps.some((depCache, i) => {
+      const depPatch = process(depCache.atom, depCache)
 
-      if (Object.is(depCache.state, depPatch.state)) {
-        depsRef.push(depPatch)
+      depsRef.push(depPatch)
 
-        return true
-      }
-
-      return false
+      return !Object.is(depCache.state, depPatch.state)
     })
 
   if (shouldSkipReducer) {
@@ -82,16 +77,15 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
     const dep =
       nesting == 1 && deps.length > depsRef.count ? deps[depsRef.count] : null
     const isDepChange = dep?.atom != depAtom
-    const depPatch = transaction.process(
-      depAtom,
-      isDepChange ? undefined : dep!,
-    )
+    const depPatch = process(depAtom, isDepChange ? undefined : dep!)
 
     if (nesting == 1) {
       depsRef.push(depPatch)
 
       if (cb && (isDepChange || !Object.is(dep!.state, depPatch.state))) {
+        stack.push([depAtom.id + ` - handler`])
         cb(depPatch.state, isDepChange ? undefined : dep!.state)
+        stack.pop()
       }
     } else {
       // this is wrong coz we not storing previous value of the atom
@@ -109,9 +103,11 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
 
       typesRef.push(type)
 
-      transaction.actions.forEach((action) => {
+      actions.forEach((action) => {
         if (action.type == type) {
+          stack.push([type + ` - handler`])
           cb!(action.payload, action)
+          stack.pop()
         }
       })
     } else {
@@ -134,14 +130,13 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
       if (isActionCreator(target)) return trackAction(target, cb)
 
       if (isObject(target)) {
-        typesRef.push(selfActionType)
-        return Object.keys(target).forEach((name) => {
-          transaction.actions.forEach((action) => {
-            if (action.type == selfActionType && action.payload.name == name) {
-              target[name](action.payload.data, action)
-            }
-          })
-        })
+        return Object.keys(target).forEach((name) =>
+          trackAction(
+            // @ts-expect-error
+            { type: atom[name]?.type },
+            target[name],
+          ),
+        )
       }
 
       invalid(1, `track arguments`)
@@ -153,15 +148,11 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
   track.effect = (effect) => {
     outdatedTrack()
     invalid(!isFunction(effect), `effect, should be a function`)
-    transaction.effects.push((store) => effect(store, cache.ctx))
+    schedule((store) => effect(store, cache.ctx))
   }
 
-  track.action = (name, ...payload: any[]) => {
-    // @ts-expect-error
-    const ac = atom[name] || (() => ({ payload, name, type: selfActionType }))
-
-    return ac(...payload)
-  }
+  // @ts-expect-error
+  track.action = (name, ...payload: any[]) => atom[name](...payload)
 
   state = reducer(
     track,

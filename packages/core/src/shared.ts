@@ -11,6 +11,7 @@ import {
   Fn,
   Patch,
   Rec,
+  Stack,
   Store,
   Transaction,
 } from './internal'
@@ -92,26 +93,56 @@ export function createTemplateCache<State>(
 
 export function createTransaction(
   actions: Array<Action>,
-  patch: Patch = new Map(),
-  getCache: AtomsCache['get'] = () => undefined,
-  snapshot: Rec = {},
+  {
+    patch = new Map(),
+    getCache = () => undefined,
+    effects = [],
+    snapshot = {},
+    stack = [actions.map((action) => action.type)],
+  }: {
+    patch?: Patch
+    getCache?: AtomsCache['get']
+    effects?: Array<Fn<[store: Store]>>
+    snapshot?: Rec
+    stack?: Stack
+  } = {},
 ): Transaction {
   const transaction: Transaction = {
     actions,
-    effects: [],
+    stack,
     process(atom, cache) {
       let atomPatch = patch.get(atom)
 
       if (!atomPatch) {
         const atomCache =
-          getCache(atom) ?? cache ?? createTemplateCache(atom, snapshot[atom.id])
+          getCache(atom) ??
+          cache ??
+          createTemplateCache(atom, snapshot[atom.id])
 
+        stack.push([atom.id])
         atomPatch = atom(transaction, atomCache)
+        stack.pop()
 
         patch.set(atom, atomPatch)
       }
 
       return atomPatch
+    },
+    schedule(cb: Fn<[store: Store]>) {
+      const _stack = stack.concat([[]])
+      effects.push((store) => {
+        const dispatch: Store['dispatch'] = (actions, s?) => {
+          actions = Array.isArray(actions) ? actions : [actions]
+          const step = actions.map(({ type }) => type)
+          if (s) {
+            step.unshift(JSON.stringify(s))
+          }
+
+          return store.dispatch(actions, _stack.concat([step]))
+        }
+
+        return cb(Object.assign({}, store, { dispatch }))
+      })
     },
   }
 

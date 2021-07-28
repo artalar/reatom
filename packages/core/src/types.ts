@@ -109,10 +109,7 @@ export type Track<ActionPayloadCreators extends Rec<Fn> = Rec<Fn>> = {
       [K in keyof ActionPayloadCreators]?: Fn<
         [
           payload: ReturnType<ActionPayloadCreators[K]>,
-          action: Action<{
-            data: ReturnType<ActionPayloadCreators[K]>
-            name: K
-          }>,
+          action: Action<ReturnType<ActionPayloadCreators[K]>>,
         ]
       >
     },
@@ -125,7 +122,7 @@ export type Track<ActionPayloadCreators extends Rec<Fn> = Rec<Fn>> = {
   action: <Name extends keyof ActionPayloadCreators>(
     name: Name,
     ...params: Parameters<ActionPayloadCreators[Name]>
-  ) => /* You shouldn't think about this action data, the point only in the name */ Action
+  ) => Action<ReturnType<ActionPayloadCreators[Name]>>
 }
 
 export type Action<Payload = any> = {
@@ -169,12 +166,20 @@ export type ActionCreatorBinded<
 /** Shortcut to typed ActionCreator */
 export type AC<T = any> = ActionCreator<any[], { payload: T }>
 
+export type Snapshot = Rec<any>
+
+export type StackStep = Array<string>
+export type Stack = Array<StackStep>
+
 export type Store = {
   /**
    * Accept action or pack of actions for a batch.
    * Return a promise which resolves when all effects resolves
    */
-  dispatch(action: Action | ReadonlyArray<Action>): Promise<unknown>
+  dispatch(
+    action: Action | ReadonlyArray<Action>,
+    stack?: Stack,
+  ): Promise<unknown>
 
   /** Collect states from all active atoms */
   getState(): Record<AtomId, any>
@@ -187,8 +192,6 @@ export type Store = {
   subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
 }
 
-export type Snapshot = Rec<any>
-
 /**
  * Transaction is a dispatch context
  * with pack of actions (batch)
@@ -197,10 +200,12 @@ export type Snapshot = Rec<any>
 export type Transaction = {
   readonly actions: ReadonlyArray<Action>
 
-  readonly effects: Array<Fn<[store: Store]>>
+  readonly stack: Stack
 
   /** Memoize atom recalculation during transaction */
   process<T>(atom: Atom<T>, cache?: Cache<T>): Cache<T>
+
+  schedule(cb: Fn<[store: Store]>): void
 }
 
 export type TransactionResult = {
@@ -209,6 +214,8 @@ export type TransactionResult = {
   readonly error: Error | null
 
   readonly patch: Patch
+
+  readonly stack: Stack
 }
 
 export type Effect = Fn<[Store, Cache['ctx']]>

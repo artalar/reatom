@@ -1,6 +1,5 @@
 import {
   ActionCreatorBinded,
-  Atom,
   AtomBinded,
   AtomId,
   Cache,
@@ -17,7 +16,6 @@ import {
   TrackedReducer,
   Transaction,
   Unsubscribe,
-  Values,
 } from './internal'
 
 export type AtomOptions<State = any> = {
@@ -34,20 +32,7 @@ export type AtomSelfBinded<
   {
     [K in keyof ActionPayloadCreators]: ActionCreatorBinded<
       Parameters<ActionPayloadCreators[K]>,
-      {
-        // All self actions use the same type literal for performance reasons
-        // AND to complicate subscribing to thats actions coz it not preferred codestyle
-        // (coz of `targets` behavior and so on)
-        payload: Values<
-          {
-            [K in keyof ActionPayloadCreators]: {
-              data: ReturnType<ActionPayloadCreators[K]>
-              name: K
-            }
-          }
-        >
-        name: K
-      }
+      { payload: ReturnType<ActionPayloadCreators[K]> }
     >
   }
 
@@ -72,16 +57,12 @@ export function createAtom<State, ActionPayloadCreators extends Rec<Fn> = {}>(
   )
 
   const targets = [atom]
-  const selfActionType = `"${id}" self action`
   const actionCreators = Object.keys(actions).reduce((acc, name) => {
     const payloadCreator = actions[name]
 
     acc[name] = createActionCreator(
-      (...a: any[]) => ({
-        payload: { data: payloadCreator(...a), name },
-        targets,
-      }),
-      selfActionType,
+      (...a: any[]) => ({ payload: payloadCreator(...a), targets }),
+      `${id} - ${name}`,
     )
 
     return acc

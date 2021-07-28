@@ -17,7 +17,7 @@ let mapsCount = 0
 function map<T, Dep>(
   depAtom: Atom<Dep>,
   cb: Fn<[depState: Dep], T>,
-  id: string = `map of "${depAtom.id}" [${++mapsCount}]`,
+  id: string = `map ${depAtom.id} [${++mapsCount}]`,
 ): Atom<T> {
   const atom = (t: Transaction, cache?: CacheTemplate<T>): Cache<T> => {
     const depPatch = t.process(depAtom)
