@@ -98,7 +98,7 @@ export function createTransaction(
     getCache = () => undefined,
     effects = [],
     snapshot = {},
-    stack = [actions.map((action) => action.type)],
+    stack = [],
   }: {
     patch?: Patch
     getCache?: AtomsCache['get']
@@ -107,6 +107,8 @@ export function createTransaction(
     stack?: Stack
   } = {},
 ): Transaction {
+  stack = stack.concat([['DISPATCH'], actions.map((action) => action.type)])
+
   const transaction: Transaction = {
     actions,
     stack,
@@ -129,17 +131,13 @@ export function createTransaction(
       return atomPatch
     },
     schedule(cb: Fn<[store: Store]>) {
-      const _stack = stack.concat([[]])
+      const _stack = stack.slice(0)
       effects.push((store) => {
-        const dispatch: Store['dispatch'] = (actions, s?) => {
-          actions = Array.isArray(actions) ? actions : [actions]
-          const step = actions.map(({ type }) => type)
-          if (s) {
-            step.unshift(JSON.stringify(s))
-          }
-
-          return store.dispatch(actions, _stack.concat([step]))
-        }
+        const dispatch: Store['dispatch'] = (actions, s?) =>
+          store.dispatch(
+            actions,
+            s ? _stack.concat([[JSON.stringify(s)]]) : _stack,
+          )
 
         return cb(Object.assign({}, store, { dispatch }))
       })
