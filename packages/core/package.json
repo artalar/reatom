@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "2.0.0-alpha14",
+  "version": "2.0.0-alpha15",
   "description": "State Manager with a focus on all needs",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -11,8 +11,7 @@
   "types": "build/index.d.ts",
   "sideEffects": false,
   "scripts": {
-    "prepublishOnly": "npm run rebuild",
-    "postpublish": "npm run clean",
+    "prepublishOnly": "npm run rebuild && npm run test",
     "build-src": "cross-env fixme=fixme microbundle",
     "build-experiments": "npm run build --prefix experiments",
     "build": "npm run build-src && npm run build-experiments",

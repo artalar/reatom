@@ -3,10 +3,12 @@ import {
   ActionType,
   addToSetsMap,
   Atom,
+  AtomListener,
   Cache,
   callSafety,
   createTransaction,
   delFromSetsMap,
+  Effect,
   Fn,
   invalid,
   isAction,
@@ -41,17 +43,16 @@ function isTypesChange(...diff: DepsDiff): boolean {
 export function createStore({
   snapshot = {},
 }: { snapshot?: Record<string, any> } = {}): Store {
-  const actionsReducers = new Map<ActionType, Set<Atom>>()
+  const actionsAtoms = new Map<ActionType, Set<Atom>>()
   const atomsCache = new WeakMap<Atom, Cache>()
-  const atomsListeners = new Map<Atom, Set<Fn>>()
   const transactionListeners = new Set<Fn<[TransactionResult]>>()
 
   function addReducer(atom: Atom, cache: Cache) {
-    cache.types.forEach((type) => addToSetsMap(actionsReducers, type, atom))
+    cache.types.forEach((type) => addToSetsMap(actionsAtoms, type, atom))
     cache.deps.forEach((dep) => addReducer(atom, dep))
   }
   function delReducer(atom: Atom, cache: Cache) {
-    cache.types.forEach((type) => delFromSetsMap(actionsReducers, type, atom))
+    cache.types.forEach((type) => delFromSetsMap(actionsAtoms, type, atom))
     cache.deps.forEach((dep) => delReducer(atom, dep))
   }
 
@@ -64,25 +65,17 @@ export function createStore({
     return result
   }
 
-  function mergePatch(atom: Atom, patch: Cache, effect: Array<Fn<[Store]>>) {
-    const atomCache = getCache(atom)
-    const atomListeners = atomsListeners.get(atom)
+  function mergePatch(patch: Cache, atom: Atom) {
+    const { listeners } = patch
+    if (listeners.size > 0) {
+      const atomCache = getCache(atom)!
 
-    if (atomListeners != undefined) {
-      if (atomCache == undefined) {
-        addReducer(atom, patch)
-      } else if (
+      if (
         atomCache.types != patch.types ||
         isTypesChange(atomCache.deps, patch.deps)
       ) {
         delReducer(atom, atomCache)
         addReducer(atom, patch)
-      }
-
-      if (!Object.is(atomCache?.state, patch.state)) {
-        effect.push(() =>
-          atomListeners.forEach((cb) => callSafety(cb, patch.state)),
-        )
       }
     }
 
@@ -101,7 +94,7 @@ export function createStore({
     )
 
     const patch = new Map<Atom, Cache>()
-    const effects: Array<Fn<[store: Store]>> = []
+    const effects: Array<Effect> = []
     const transaction = createTransaction(actions, {
       patch,
       getCache,
@@ -114,11 +107,12 @@ export function createStore({
 
     try {
       actions.forEach(({ type, targets }) => {
-        actionsReducers.get(type)?.forEach((atom) => process(atom))
+        actionsAtoms.get(type)?.forEach((atom) => process(atom))
         targets?.forEach((atom) => process(atom))
       })
+      transaction.stack.pop()
 
-      patch.forEach((atomPatch, atom) => mergePatch(atom, atomPatch, effects))
+      patch.forEach(mergePatch)
     } catch (e) {
       error = e instanceof Error ? e : new Error(e)
     }
@@ -134,7 +128,9 @@ export function createStore({
 
     if (error) throw error
 
-    const effectsResults = effects.map((cb) => callSafety(cb, store))
+    const effectsResults = effects.map((cb) =>
+      callSafety(cb, dispatch, transactionResult),
+    )
 
     return Promise.allSettled(effectsResults).then(noop, noop)
   }
@@ -149,16 +145,20 @@ export function createStore({
     if (atom == undefined) {
       const result: Rec = {}
 
-      atomsListeners.forEach((_, atom) => collectSnapshot(atom, result))
+      actionsAtoms.forEach((atoms) =>
+        atoms.forEach((atom) => collectSnapshot(atom, result)),
+      )
 
       return result
     }
 
-    invalid(!isAtom(atom), `'getState' argument`)
+    invalid(!isAtom(atom), `getState argument`)
 
-    if (getCache(atom) == undefined || !atomsListeners.has(atom)) {
+    const atomCache = getCache(atom)
+
+    if (atomCache == undefined || atomCache.listeners.size == 0) {
       dispatch({
-        type: `invalidate ${atom.id} [~${Math.random().toString(36)}]`,
+        type: `invalidate ${atom.id} [~${Math.random()}]`,
         payload: null,
         targets: [atom],
       })
@@ -169,39 +169,29 @@ export function createStore({
 
   function subscribe<State>(
     atom: Fn<[transactionResult: TransactionResult]> | Atom<State>,
-    cb?: Fn<[state: State]>,
+    cb?: AtomListener<State>,
   ): Unsubscribe {
     if (isAtom<State>(atom) && isFunction(cb)) {
-      let listeners = atomsListeners.get(atom)
+      const stateOld = getState(atom)
 
-      if (listeners == undefined) {
-        atomsListeners.set(atom, (listeners = new Set()))
-      }
+      const atomCache = getCache(atom)!
+      const { listeners, state } = atomCache
 
       listeners.add(cb)
 
-      function unsubscribe() {
-        listeners!.delete(cb as Fn)
-        if (listeners!.size == 0) {
-          atomsListeners.delete(atom as Atom)
-          delReducer(atom as Atom, atomsCache.get(atom as Atom)!)
-        }
+      if (listeners.size == 1) {
+        addReducer(atom, atomCache)
+        cb(state)
+      } else if (Object.is(state, stateOld)) {
+        cb(state)
       }
 
-      const atomCache = getCache(atom)
-
-      try {
-        const state = getState(atom)
-
-        if (Object.is(atomCache?.state, state)) {
-          cb(state)
+      return function unsubscribe() {
+        listeners.delete(cb!)
+        if (listeners.size == 0) {
+          delReducer(atom as Atom, getCache(atom as Atom)!)
         }
-      } catch (error) {
-        unsubscribe()
-        throw error
       }
-
-      return unsubscribe
     }
 
     invalid(!isFunction(atom), `subscribe arguments`) as never

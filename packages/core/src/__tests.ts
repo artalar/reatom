@@ -10,6 +10,7 @@ import {
   Fn,
   isFunction,
   Store,
+  Stack,
 } from '@reatom/core'
 import { createResource, atom, init } from '@reatom/core/experiments'
 
@@ -31,10 +32,10 @@ export function mockFn<I extends any[], O>(
     },
     {
       calls: new Array<{ i: I; o: O }>(),
-      lastInput(): I[0] {
+      lastInput(index = 0): I[number] {
         const { length } = _fn.calls
         if (length === 0) throw new TypeError(`Array is empty`)
-        return _fn.calls[length - 1].i[0]
+        return _fn.calls[length - 1].i[index]
       },
     },
   )
@@ -143,13 +144,14 @@ test(`combine`, () => {
 
 test(`atom id`, () => {
   const a = atom(1, null, { id: `a` })
+  // atom without action types in dependencies will ignored
   const b = createAtom({}, ($, s = 2) => s, { id: `b` })
   const c = createAtom({}, ($) => $(a), { id: `c` })
   const store = createStore()
 
   init([a, b, c], store)
 
-  assert.equal(store.getState(), { a: 1, b: 2, c: 1 })
+  assert.equal(store.getState(), { a: 1, c: 1 })
 
   console.log(`👍`)
 })
@@ -221,7 +223,7 @@ test(`in atom action effect`, async () => {
       ($, state = null as null | O | Error) => {
         $({
           request(payload: I) {
-            $.effect(({ dispatch }) =>
+            $.effect((dispatch) =>
               fetcher(payload)
                 .then((data) => dispatch($.action('response', data)))
                 .catch((e) =>
@@ -400,14 +402,14 @@ test(`async collection of transaction.effectsResult`, async () => {
   const resourceDataAtom = atom(0)
   const resourceAtom = createAtom({}, ($) => {
     $(doA, () =>
-      $.effect(async ({ dispatch }) => {
+      $.effect(async (dispatch) => {
         await sleep(10)
         await dispatch(doB())
       }),
     )
 
     $(doB, () =>
-      $.effect(async ({ dispatch }) => {
+      $.effect(async (dispatch) => {
         await sleep(10)
         await dispatch(resourceDataAtom.update((s) => s + 1))
       }),
@@ -443,6 +445,7 @@ test(`createResource`, async () => {
       typeof param === 'number'
         ? Promise.resolve([param])
         : Promise.reject(new Error(param)),
+    `testResource`,
   )
 
   const store = createStore()
@@ -483,6 +486,9 @@ test(`createResource`, async () => {
     isLoading: false,
   })
 
+  let stack: Stack
+  store.subscribe((t) => (stack = t.stack))
+
   // concurrent requests should proceed only one response
   store.dispatch(resourceAtom.invalidate(1))
   store.dispatch(resourceAtom.invalidate(2))
@@ -491,6 +497,15 @@ test(`createResource`, async () => {
   await sleep()
   assert.is(cb.calls.length, 9)
   assert.equal(cb.lastInput(), { data: [3], error: null, isLoading: false })
+
+  assert.equal(stack!, [
+    ['DISPATCH'],
+    ['testResource - invalidate'],
+    ['testResource'],
+    ['testResource - invalidate - handler'],
+    ['DISPATCH'],
+    ['testResource - done'],
+  ])
 
   console.log(`👍`)
 })
@@ -538,34 +553,55 @@ test(`getState of stale atom`, () => {
   a.update.dispatch(2)
   assert.is(a.getState(), 2)
   assert.is(b.getState(), 2)
+
+  console.log(`👍`)
 })
 
-// test(`stack`, async () => {
-//   type TrafficLight = { delay: number; isOn: boolean, state: 'red' | 'yellow' | 'green' }
-//   const trafficLightAtom = createAtom(
-//     {
-//       setDelay: (delay: number) => delay,
-//       turnOff: () => null,
-//       turnOn: () => null,
-//     },
-//     ($, state: TrafficLight = { delay: 100, isOn: true, state: 'red' }) => {
+test(`subscription call cause`, () => {
+  const counterAtom = createAtom(
+    { inc: () => null, add: (v: number) => v },
+    ($, counter = 1) => {
+      $({ inc: () => counter++, add: (v) => (counter += v) })
+      return counter
+    },
+    { id: `counter` },
+  )
+  const counterIsEvenAtom = createAtom({}, ($) => $(counterAtom) % 2 === 0, {
+    id: `counterIsEven`,
+  })
+  const counterIsHugeAtom = createAtom({}, ($) => $(counterAtom) > 10_000, {
+    id: `counterIsHuge`,
+  })
+  const titleAtom = createAtom(
+    {},
+    ($, title = 'counter') => {
+      $(counterIsEvenAtom, () => (title = 'counter is even'))
+      $(counterIsHugeAtom, () => (title = 'counter is huge'))
+      return title
+    },
+    { id: `title` },
+  )
 
-//       $({
-//         setDelay: (delay) => state = {...state, delay}
-//         toggle: () => state = {...state, delay}
-//       })
+  const cb = mockFn()
+  const store = createStore()
 
-//       return state
-//     },
-//   )
+  store.subscribe(titleAtom, cb)
 
-//   const store = createStore()
+  store.dispatch(counterAtom.inc())
+  assert.equal(cb.lastInput(1).stack, [
+    ['DISPATCH'],
+    ['counter - inc'],
+    ['counterIsEven'],
+  ])
 
-//   // store.subscribe(({ actions }) => {
-//   //   console.log(actions)
-//   // })
+  store.dispatch(counterAtom.add(100_000))
+  assert.equal(cb.lastInput(1).stack, [
+    ['DISPATCH'],
+    ['counter - add'],
+    ['counterIsHuge'],
+  ])
 
-//   store.dispatch(dataAtom.fetch(2))
-// })
+  console.log(`👍`)
+})
 
 test.run()

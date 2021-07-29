@@ -66,7 +66,7 @@ export function createResource<State, Params = void>(
 
       $({
         fetch(params) {
-          $.effect(({ dispatch }, ctx) => {
+          $.effect((dispatch, ctx) => {
             const isParamsNew =
               'params' in ctx === false || !shallowEqual(ctx.params, params)
             if (isParamsNew) dispatch($.action('invalidate', params))
@@ -78,7 +78,7 @@ export function createResource<State, Params = void>(
             ? state
             : { data: state.data, error: null, isLoading: true }
 
-          $.effect(({ dispatch }, ctx: ResourceContext) => {
+          $.effect((dispatch, ctx: ResourceContext) => {
             const version = (ctx.version ?? 0) + 1
             ctx.version = version
             ctx.params = params
@@ -142,7 +142,7 @@ function example() {
         next: () => (state += 1),
         prev: () => (state = Math.max(0, state - 1)),
       })
-      $.effect(({ dispatch }) => dispatch(productsAtom.fetch(state)))
+      $.effect((dispatch) => dispatch(productsAtom.fetch(state)))
 
       return state
     },

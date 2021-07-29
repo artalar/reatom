@@ -6,12 +6,15 @@ import {
   AtomBindings,
   AtomsCache,
   AtomState,
+  Cache,
   CacheTemplate,
   defaultStore,
+  Effect,
   Fn,
   Patch,
   Rec,
   Stack,
+  StackStep,
   Store,
   Transaction,
 } from './internal'
@@ -86,6 +89,7 @@ export function createTemplateCache<State>(
     atom,
     ctx: {},
     deps: [],
+    listeners: new Set(),
     state,
     types: [],
   }
@@ -102,12 +106,13 @@ export function createTransaction(
   }: {
     patch?: Patch
     getCache?: AtomsCache['get']
-    effects?: Array<Fn<[store: Store]>>
+    effects?: Array<Effect>
     snapshot?: Rec
     stack?: Stack
   } = {},
 ): Transaction {
-  stack = stack.concat([['DISPATCH'], actions.map((action) => action.type)])
+  stack = stack.concat([['DISPATCH'], actions.map((action) => action.type), []])
+  const stackLastIndex = stack.length - 1
 
   const transaction: Transaction = {
     actions,
@@ -121,28 +126,44 @@ export function createTransaction(
           cache ??
           createTemplateCache(atom, snapshot[atom.id])
 
-        stack.push([atom.id])
+        stack[stackLastIndex] = [atom.id]
         atomPatch = atom(transaction, atomCache)
-        stack.pop()
 
         patch.set(atom, atomPatch)
       }
 
       return atomPatch
     },
-    schedule(cb: Fn<[store: Store]>) {
+    schedule(cb) {
       const _stack = stack.slice(0)
-      effects.push((store) => {
-        const dispatch: Store['dispatch'] = (actions, s?) =>
-          store.dispatch(
-            actions,
-            s ? _stack.concat([[JSON.stringify(s)]]) : _stack,
-          )
-
-        return cb(Object.assign({}, store, { dispatch }))
-      })
+      effects.push((dispatch, transactionResult) =>
+        cb(
+          (actions, s?) =>
+            dispatch(
+              actions,
+              s ? _stack.concat([[JSON.stringify(s)]]) : _stack,
+            ),
+          transactionResult,
+        ),
+      )
     },
   }
 
   return transaction
+}
+
+export function scheduleAtomListeners<State>(
+  { listeners, state }: Cache<State>,
+  newState: State,
+  schedule: Transaction['schedule'],
+  causes: StackStep,
+) {
+  if (!Object.is(newState, state)) {
+    schedule((dispatch, transactionResult) => {
+      const tr = Object.assign({}, transactionResult, {
+        stack: transactionResult.stack.concat([causes]),
+      })
+      listeners.forEach((cb) => callSafety(cb, newState, tr))
+    })
+  }
 }

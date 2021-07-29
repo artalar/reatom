@@ -9,7 +9,9 @@ import {
   CacheTemplate,
   createActionCreator,
   createAtom,
+  createTemplateCache,
   Fn,
+  scheduleAtomListeners,
   Transaction,
 } from '@reatom/core'
 
@@ -19,20 +21,26 @@ function map<T, Dep>(
   cb: Fn<[depState: Dep], T>,
   id: string = `map ${depAtom.id} [${++mapsCount}]`,
 ): Atom<T> {
-  const atom = (t: Transaction, cache?: CacheTemplate<T>): Cache<T> => {
+  const atom: Atom<T> = (t, cache = createTemplateCache<T>(atom)) => {
     const depPatch = t.process(depAtom)
     const dep = cache?.deps.length === 1 ? cache.deps[0] : null
 
     if (dep !== depPatch) {
+      const oldCache = cache
       cache = {
         atom,
         ctx: {},
         deps: [depPatch],
+        listeners: new Set(),
         state: Object.is(dep?.state, depPatch.state)
           ? cache!.state
           : cb(depPatch.state /* , cache.state */),
         types: depPatch.types,
       }
+
+      scheduleAtomListeners(oldCache as Cache, cache.state, t.schedule, [
+        depAtom.id,
+      ])
     }
 
     return cache as Cache<T>

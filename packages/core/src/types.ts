@@ -47,6 +47,8 @@ export type Cache<State = any> = {
    */
   readonly deps: Array<Cache>
 
+  readonly listeners: Set<AtomListener<State>>
+
   /** Immutable public data */
   readonly state: State
 
@@ -55,6 +57,10 @@ export type Cache<State = any> = {
 
   [k: string]: unknown
 }
+
+export type AtomListener<State = any> = Fn<
+  [newState: State, transactionResult?: TransactionResult]
+>
 
 export type CacheTemplate<State = any> = {
   [K in keyof Cache<State>]: K extends `state`
@@ -90,6 +96,8 @@ export type TrackedReducer<
   // (track: Track<ActionPayloadCreators>, state?: undefined | State): State
 }
 
+export type AtomEffect = Fn<[Store['dispatch'], Cache['ctx']]>
+
 export type Track<ActionPayloadCreators extends Rec<Fn> = Rec<Fn>> = {
   /** Subscribe to the atom state changes and receive it */
   <T>(atom: Atom<T>): T
@@ -116,7 +124,7 @@ export type Track<ActionPayloadCreators extends Rec<Fn> = Rec<Fn>> = {
   ): void
 
   /** Schedule effect */
-  effect: (effect: Effect) => void
+  effect: (effect: AtomEffect) => void
 
   /** Create self action */
   action: <Name extends keyof ActionPayloadCreators>(
@@ -171,6 +179,10 @@ export type Snapshot = Rec<any>
 export type StackStep = Array<string>
 export type Stack = Array<StackStep>
 
+export type Effect = Fn<
+  [dispatch: Store['dispatch'], transactionResult: TransactionResult]
+>
+
 export type Store = {
   /**
    * Accept action or pack of actions for a batch.
@@ -189,7 +201,7 @@ export type Store = {
   /** Subscribe to every dispatch result. Used it carefully, for logging primary.  */
   subscribe(cb: Fn<[transactionResult: TransactionResult]>): Unsubscribe
   /** Subscribe to atom change (called once immediately) */
-  subscribe<T>(atom: Atom<T>, cb: Fn<[state: T]>): Unsubscribe
+  subscribe<T>(atom: Atom<T>, cb: AtomListener<T>): Unsubscribe
 }
 
 /**
@@ -205,7 +217,7 @@ export type Transaction = {
   /** Memoize atom recalculation during transaction */
   process<T>(atom: Atom<T>, cache?: Cache<T>): Cache<T>
 
-  schedule(cb: Fn<[store: Store]>): void
+  schedule(cb: Effect): void
 }
 
 export type TransactionResult = {
@@ -217,8 +229,6 @@ export type TransactionResult = {
 
   readonly stack: Stack
 }
-
-export type Effect = Fn<[Store, Cache['ctx']]>
 
 export type Patch = Map<Atom, Cache>
 

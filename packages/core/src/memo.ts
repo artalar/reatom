@@ -2,6 +2,7 @@ import {
   AC,
   Atom,
   Cache,
+  callSafety,
   Fn,
   invalid,
   isActionCreator,
@@ -10,6 +11,8 @@ import {
   isObject,
   noop,
   Rec,
+  scheduleAtomListeners,
+  StackStep,
   Track,
   TrackedReducer,
   Transaction,
@@ -42,18 +45,26 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
   reducer: TrackedReducer<State, ActionPayloadCreators>,
 ): Cache<State> {
   const { actions, stack, process, schedule } = transaction
-  let { atom, ctx, deps, state, types } = cache
+  let { atom, ctx, deps, listeners, state, types } = cache
   let depsRef = getImmutableListRef(deps)
   let typesRef = getImmutableListRef(types)
   let nesting = 0
   let outdatedTrack = noop
+  const recalculationCauses: StackStep = []
 
   function calcResult(): Cache<State> {
     return !depsRef.isChanged &&
       Object.is(state, cache.state) &&
       !typesRef.isChanged
       ? cache
-      : { atom, ctx, deps: depsRef.list, state, types: typesRef.list }
+      : {
+          atom,
+          ctx,
+          deps: depsRef.list,
+          listeners,
+          state,
+          types: typesRef.list,
+        }
   }
 
   const shouldSkipReducer =
@@ -82,7 +93,13 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
     if (nesting == 1) {
       depsRef.push(depPatch)
 
-      if (cb && (isDepChange || !Object.is(dep!.state, depPatch.state))) {
+      const isChange = isDepChange || !Object.is(dep!.state, depPatch.state)
+
+      if (isChange) {
+        recalculationCauses.push(depAtom.id)
+      }
+
+      if (isChange && cb) {
         stack.push([depAtom.id + ` - handler`])
         cb(depPatch.state, isDepChange ? undefined : dep!.state)
         stack.pop()
@@ -105,6 +122,8 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
 
       actions.forEach((action) => {
         if (action.type == type) {
+          recalculationCauses.push(type)
+
           stack.push([type + ` - handler`])
           cb!(action.payload, action)
           stack.pop()
@@ -148,7 +167,7 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
   track.effect = (effect) => {
     outdatedTrack()
     invalid(!isFunction(effect), `effect, should be a function`)
-    schedule((store) => effect(store, cache.ctx))
+    schedule((dispatch) => effect(dispatch, cache.ctx))
   }
 
   // @ts-expect-error
@@ -159,6 +178,8 @@ export function memo<State, ActionPayloadCreators extends Rec<Fn> = Rec<Fn>>(
     // @ts-expect-error
     state,
   )
+
+  scheduleAtomListeners(cache, state, schedule, recalculationCauses)
 
   outdatedTrack = () => invalid(1, `outdated track call for ${atom.id}.`)
 
