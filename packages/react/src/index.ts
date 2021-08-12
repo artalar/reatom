@@ -3,6 +3,7 @@ import {
   Atom,
   AtomState,
   defaultStore,
+  getState,
   isActionCreator,
   Store,
 } from '@reatom/core/'
@@ -55,7 +56,7 @@ export function useAtom<T extends Atom>(
     () =>
       [
         {
-          getCurrentValue: () => store.getState(atom),
+          getCurrentValue: () => getState(atom, store),
           subscribe: (cb: () => any) => store.subscribe(atom, cb),
         },
         Object.entries(atom).reduce((acc, [k, ac]) => {

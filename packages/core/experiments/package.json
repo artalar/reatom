@@ -1,6 +1,6 @@
 {
   "name": "@reatom/experiments",
-  "version": "0.0.0-alpha",
+  "version": "2.0.0-rc1",
   "private": true,
   "sideEffects": false,
   "description": "Experimented helpers for reatom",
@@ -14,6 +14,6 @@
     "build": "cross-env fixme=fixme microbundle"
   },
   "peerDependencies": {
-    "@reatom/core": "^2.0.0-alpha15"
+    "@reatom/core": "^2.0.0-rc1"
   }
 }
