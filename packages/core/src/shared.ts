@@ -1,21 +1,17 @@
 import {
   Action,
   ActionCreator,
-  ActionCreatorBindings,
   Atom,
-  AtomBindings,
   AtomsCache,
-  AtomState,
   Cache,
   CacheTemplate,
+  Cause,
+  Causes,
   defaultStore,
   Effect,
   Fn,
   Patch,
   Rec,
-  Stack,
-  StackStep,
-  Store,
   Transaction,
 } from './internal'
 
@@ -37,6 +33,32 @@ export function callSafety<I extends any[], O, This = any>(
   }
 }
 
+export function isString(thing: any): thing is string {
+  return typeof thing === 'string'
+}
+
+export function isObject(thing: any): thing is Record<keyof any, any> {
+  return typeof thing === 'object' && thing !== null
+}
+
+export function isFunction(thing: any): thing is Function {
+  return typeof thing === 'function'
+}
+
+export function isAtom<State>(thing: Atom<State>): thing is Atom<State>
+export function isAtom(thing: any): thing is Atom
+export function isAtom(thing: any): thing is Atom {
+  return isFunction(thing) && `id` in thing
+}
+
+export function isActionCreator(thing: any): thing is ActionCreator {
+  return isFunction(thing) && `type` in thing
+}
+
+export function isAction(thing: any): thing is Action {
+  return isObject(thing) && isString(thing.type) && 'payload' in thing
+}
+
 export function addToSetsMap<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
   let set = map.get(key)
 
@@ -53,98 +75,70 @@ export function delFromSetsMap<K, V>(map: Map<K, Set<V>>, key: K, value: V) {
   }
 }
 
-export function isString(thing: any): thing is string {
-  return typeof thing === 'string'
+export function pushUnique<T>(list: Array<T>, el: T): void {
+  if (!list.includes(el)) list.push(el)
 }
 
-export function isObject(thing: any): thing is Record<keyof any, any> {
-  return typeof thing === 'object' && thing !== null
-}
-
-export function isFunction(thing: any): thing is Function {
-  return typeof thing === 'function'
-}
-
-export function isAtom<State>(thing: any): thing is Atom<State> {
-  return isFunction(thing) && `id` in thing
-}
-
-export function isActionCreator(thing: any): thing is ActionCreator {
-  return isFunction(thing) && `type` in thing
-}
-
-export function isAction(thing: any): thing is Action {
-  return isObject(thing) && isString(thing.type) && 'payload' in thing
-}
-
-export function invalid(predicate: any, msg: string) {
-  if (predicate) throw new Error(`Reatom: invalid ${msg}`)
+// `ReatomError extends Error` add bundle overhead for old environments
+export function createReatomError(msg: string, data?: any) {
+  return Object.assign(new Error(`Reatom: ${msg}`), { data })
 }
 
 export function createTemplateCache<State>(
   atom: Atom<State>,
-  state?: State,
 ): CacheTemplate<State> {
   return {
     atom,
     ctx: {},
-    deps: [],
-    listeners: new Set(),
-    state,
-    types: [],
+    tracks: undefined,
+    state: undefined,
   }
 }
 
 export function createTransaction(
-  actions: Array<Action>,
+  actions: ReadonlyArray<Action>,
   {
     patch = new Map(),
     getCache = () => undefined,
     effects = [],
-    snapshot = {},
-    stack = [],
+    causes = [] as any as Causes,
   }: {
     patch?: Patch
     getCache?: AtomsCache['get']
     effects?: Array<Effect>
-    snapshot?: Rec
-    stack?: Stack
+    causes?: Causes
   } = {},
 ): Transaction {
-  stack = stack.concat([['DISPATCH'], actions.map((action) => action.type), []])
-  const stackLastIndex = stack.length - 1
+  causes = causes.concat({ actions, patch })
+
+  let processedAtomId: undefined | string
 
   const transaction: Transaction = {
     actions,
-    stack,
+    getCache,
     process(atom, cache) {
       let atomPatch = patch.get(atom)
 
-      if (!atomPatch) {
-        const atomCache =
-          getCache(atom) ??
-          cache ??
-          createTemplateCache(atom, snapshot[atom.id])
-
-        stack[stackLastIndex] = [atom.id]
-        atomPatch = atom(transaction, atomCache)
+      if (atomPatch == undefined) {
+        processedAtomId = atom.id
+        atomPatch = atom(
+          transaction,
+          getCache(atom) ?? cache ?? createTemplateCache(atom),
+        )
+        processedAtomId = undefined
 
         patch.set(atom, atomPatch)
       }
 
       return atomPatch
     },
-    schedule(cb) {
-      const _stack = stack.slice(0)
-      effects.push((dispatch, transactionResult) =>
-        cb(
-          (actions, s?) =>
-            dispatch(
-              actions,
-              s ? _stack.concat([[JSON.stringify(s)]]) : _stack,
-            ),
-          transactionResult,
-        ),
+    schedule(cb, cause = processedAtomId) {
+      const _causes = causes.concat([])
+
+      if (cause != undefined) _causes.push(cause)
+
+      effects.push((dispatch) =>
+        cb((actions) => dispatch(actions, _causes), _causes),
       )
     },
   }
@@ -156,14 +150,26 @@ export function scheduleAtomListeners<State>(
   { listeners, state }: Cache<State>,
   newState: State,
   schedule: Transaction['schedule'],
-  causes: StackStep,
+  cause?: Cause,
 ) {
-  if (!Object.is(newState, state)) {
-    schedule((dispatch, transactionResult) => {
-      const tr = Object.assign({}, transactionResult, {
-        stack: transactionResult.stack.concat([causes]),
-      })
-      listeners.forEach((cb) => callSafety(cb, newState, tr))
-    })
+  if (
+    listeners != undefined &&
+    listeners?.size > 0 &&
+    !Object.is(newState, state)
+  ) {
+    schedule(
+      (dispatch, causes) =>
+        listeners.forEach((cb) => callSafety(cb, newState, causes)),
+      cause,
+    )
   }
+}
+
+export function getState<State>(
+  atom: Atom<State>,
+  store = defaultStore,
+): State {
+  let state: State
+  store.subscribe(atom, (_state) => (state = _state))()
+  return state!
 }

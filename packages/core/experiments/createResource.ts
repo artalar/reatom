@@ -22,6 +22,18 @@ export type ResourceState<State> = {
   error: null | Error
   isLoading: boolean
 }
+export type ResourceDeps<State, Params> = {
+  /** Action for data request. Memoized by fetcher params */
+  refetch: (params: Params) => Params
+  /** Action for forced data request */
+  fetch: (params: Params) => Params
+  /** Action for fetcher response */
+  done: (data: State) => State
+  /** Action for fetcher error */
+  error: (error: Error) => Error
+  /** Action for cancel pending request */
+  cancel: () => null
+}
 
 let resourcesCount = 0
 export function createResource<State, Params = void>(
@@ -30,25 +42,22 @@ export function createResource<State, Params = void>(
     params: Params,
     state: State extends any ? State : never,
   ) => Promise<State extends any ? State : never>,
+  // TODO
+  // `options: { id?: string, paramsTTL?: number, paramsSize?: number, ... }`
   id = `resource [${++resourcesCount}]`,
 ) {
-  type ResourceContext = { version?: number; params?: Params }
+  type ResourceCtx = { version?: number; params?: Params }
 
-  const atom = createAtom(
+  const atom = createAtom<ResourceState<State>, ResourceDeps<State, Params>>(
     {
-      /** Action for data request. Memoized by fetcher params */
+      refetch: (params: Params) => params,
       fetch: (params: Params) => params,
-      /** Action for forced data request */
-      invalidate: (params: Params) => params,
-      /** Action for fetcher response */
       done: (data: State) => data,
-      /** Action for fetcher error */
       error: (error: Error) => error,
-      /** Action for cancel pending request */
       cancel: () => null,
     },
     (
-      $,
+      track,
       state: ResourceState<State> = {
         data: undefined as any,
         error: null,
@@ -56,7 +65,7 @@ export function createResource<State, Params = void>(
       },
     ) => {
       const data = reducer(
-        $,
+        track,
         // @ts-expect-error
         state.data,
       )
@@ -64,51 +73,50 @@ export function createResource<State, Params = void>(
         ? state
         : { data, error: state.error, isLoading: state.isLoading }
 
-      $({
-        fetch(params) {
-          $.effect((dispatch, ctx) => {
-            const isParamsNew =
-              'params' in ctx === false || !shallowEqual(ctx.params, params)
-            if (isParamsNew) dispatch($.action('invalidate', params))
-          })
-        },
+      track.onAction(`refetch`, (params) => {
+        track.schedule((dispatch, ctx) => {
+          const isParamsNew =
+            'params' in ctx === false || !shallowEqual(ctx.params, params)
+          if (isParamsNew) dispatch(track.create('fetch', params))
+        })
+      })
 
-        invalidate(params) {
-          state = state.isLoading
-            ? state
-            : { data: state.data, error: null, isLoading: true }
+      track.onAction(`fetch`, (params) => {
+        state = state.isLoading
+          ? state
+          : { data: state.data, error: null, isLoading: true }
 
-          $.effect((dispatch, ctx: ResourceContext) => {
-            const version = (ctx.version ?? 0) + 1
-            ctx.version = version
-            ctx.params = params
-            return fetcher(params, state!.data).then(
-              (data) => {
-                if (ctx.version === version) dispatch($.action('done', data))
-              },
-              (error) => {
-                error = error instanceof Error ? error : new Error(error)
-                if (ctx.version === version) dispatch($.action('error', error))
-              },
-            )
-          })
-        },
+        track.schedule((dispatch, ctx: ResourceCtx) => {
+          const version = (ctx.version ?? 0) + 1
+          ctx.version = version
+          ctx.params = params
+          return fetcher(params, state!.data).then(
+            (data) => {
+              if (ctx.version === version) dispatch(track.create('done', data))
+            },
+            (error) => {
+              error = error instanceof Error ? error : new Error(error)
+              if (ctx.version === version)
+                dispatch(track.create('error', error))
+            },
+          )
+        })
+      })
 
-        done(data) {
-          state = { data, error: null, isLoading: false }
-        },
+      track.onAction(`done`, (data) => {
+        state = { data, error: null, isLoading: false }
+      })
 
-        error(error) {
-          state = { data: state.data, error, isLoading: false }
-        },
+      track.onAction(`error`, (error) => {
+        state = { data: state.data, error, isLoading: false }
+      })
 
-        cancel() {
-          state = state.isLoading
-            ? { data: state.data, error: null, isLoading: false }
-            : state
+      track.onAction(`cancel`, () => {
+        state = state.isLoading
+          ? { data: state.data, error: null, isLoading: false }
+          : state
 
-          $.effect((store, ctx: ResourceContext) => ctx.version!++)
-        },
+        track.schedule((store, ctx: ResourceCtx) => ctx.version!++)
       })
 
       return state
@@ -126,7 +134,7 @@ function example() {
   type Product = {}
 
   const productsAtom = createResource(
-    ($, state = new Array<Product>()) => state,
+    (track, state = new Array<Product>()) => state,
     (page: number = 0) =>
       fetch(`/api/products?page=${page}`).then((r) => r.json()),
     `products`,
@@ -137,12 +145,11 @@ function example() {
       next: () => null,
       prev: () => null,
     },
-    ($, state = 0) => {
-      $({
-        next: () => (state += 1),
-        prev: () => (state = Math.max(0, state - 1)),
-      })
-      $.effect((dispatch) => dispatch(productsAtom.fetch(state)))
+    ({ onAction, schedule }, state = 0) => {
+      onAction(`next`, () => (state += 1))
+      onAction(`prev`, () => (state = Math.max(0, state - 1)))
+
+      schedule((dispatch) => dispatch(productsAtom.refetch(state)))
 
       return state
     },
@@ -168,6 +175,10 @@ function example() {
       <button onClick=${prev}>prev</button>
     `
   }
+
+  // ...
+  // ...
+  // ...
 
   function Product(props: { data: Product }): string {
     return null as any

@@ -3,57 +3,10 @@ import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
-import {
-  Atom,
-  Cache,
-  CacheTemplate,
-  createActionCreator,
-  createAtom,
-  createTemplateCache,
-  Fn,
-  scheduleAtomListeners,
-  Transaction,
-} from '@reatom/core'
-
-let mapsCount = 0
-function map<T, Dep>(
-  depAtom: Atom<Dep>,
-  cb: Fn<[depState: Dep], T>,
-  id: string = `map ${depAtom.id} [${++mapsCount}]`,
-): Atom<T> {
-  const atom: Atom<T> = (t, cache = createTemplateCache<T>(atom)) => {
-    const depPatch = t.process(depAtom)
-    const dep = cache?.deps.length === 1 ? cache.deps[0] : null
-
-    if (dep !== depPatch) {
-      const oldCache = cache
-      cache = {
-        atom,
-        ctx: {},
-        deps: [depPatch],
-        listeners: new Set(),
-        state: Object.is(dep?.state, depPatch.state)
-          ? cache!.state
-          : cb(depPatch.state /* , cache.state */),
-        types: depPatch.types,
-      }
-
-      scheduleAtomListeners(oldCache as Cache, cache.state, t.schedule, [
-        depAtom.id,
-      ])
-    }
-
-    return cache as Cache<T>
-  }
-
-  atom.id = id
-
-  return atom
-}
+import { createAtom, defaultStore, Fn } from '@reatom/core'
+import { combine, map } from '@reatom/core/experiments'
 
 async function start(iterations = 1_000) {
-  // const reatomV1 = await import('https://cdn.skypack.dev/@reatom/core')
-
   const w_combine = <A, B>(
     sourceA: w.Source<A>,
     sourceB: w.Source<B>,
@@ -63,44 +16,54 @@ async function start(iterations = 1_000) {
     return w.pipe(source, w.sample(source))
   }
 
-  const entry = createActionCreator<number>()
   const a = createAtom(
-    {},
-    ($, state = 0) => {
-      // $(entry.handle(v => (state = v % 2 ? state : v + 1)))
-      $(entry, (v) => (state = v))
+    { entry: (payload: number) => payload },
+    ({ onAction }, state = 0) => {
+      // onAction(`entry`, (v) => (state = v % 2 ? state : v + 1))
+      onAction(`entry`, (v) => (state = v))
       return state
     },
     {},
   )
-  const b = map(a, (v) => v + 1)
-  const c = map(a, (v) => v + 1)
-  const d = createAtom({}, ($) => $(b) + $(c))
-  const e = map(d, (v) => v + 1)
-  const f = createAtom({}, ($) => $(d) + $(e))
-  const g = createAtom({}, ($) => $(d) + $(e))
-  const h = createAtom({}, ($) => $(f) + $(g))
+
+  const b = createAtom({ a }, ({ get }) => get(`a`) + 1)
+  const c = createAtom({ a }, ({ get }) => get(`a`) + 1)
+  const d = createAtom({ b, c }, ({ get }) => get(`b`) + get(`c`))
+  const e = createAtom({ d }, ({ get }) => get(`d`) + 1)
+  const f = createAtom({ d, e }, ({ get }) => get(`d`) + get(`e`))
+  const g = createAtom({ d, e }, ({ get }) => get(`d`) + get(`e`))
+
+  const h = createAtom({ f, g }, ({ get }) => get(`f`) + get(`g`))
+
   let res = 0
-  h.subscribe((v) => {
+  defaultStore.subscribe(h, (v) => {
     res += v
   })
   res = 0
 
-  // const rEntry = reatomV1.createActionCreator()
-  // const rA = reatomV1.createAtom(0, on => [on(rEntry, v => v)])
-  // const rB = reatomV1.map(rA, a => a + 1)
-  // const rC = reatomV1.map(rA, a => a + 1)
-  // const rD = reatomV1.map(reatomV1.combine([rB, rC]), ([b, c]) => b + c)
-  // const rE = reatomV1.map(rD, d => d + 1)
-  // const rF = reatomV1.map(reatomV1.combine([rD, rE]), ([d, e]) => d + e)
-  // const rG = reatomV1.map(reatomV1.combine([rD, rE]), ([d, e]) => d + e)
-  // const rH = reatomV1.map(reatomV1.combine([rF, rG]), ([h1, h2]) => h1 + h2)
-  // const rStore = reatomV1.createStore()
-  // let rRes = 0
-  // rStore.subscribe(rH, v => {
-  //   rRes += v
-  // })
-  // rRes = 0
+  const aV1 = createAtom(
+    { entry: (payload: number) => payload },
+    ({ onAction }, state = 0) => {
+      // onAction(`entry`, (v) => (state = v % 2 ? state : v + 1))
+      onAction(`entry`, (v) => (state = v))
+      return state
+    },
+    {},
+  )
+
+  const bV1 = map(aV1, (v) => v + 1)
+  const cV1 = map(aV1, (v) => v + 1)
+  const dV1 = combine([bV1, cV1], ([b, c]) => b + c)
+  const eV1 = map(dV1, (v) => v + 1)
+  const fV1 = combine([dV1, eV1], ([d, e]) => d + e)
+  const gV1 = combine([dV1, eV1], ([d, e]) => d + e)
+  const hV1 = combine([fV1, gV1], ([f, g]) => f + g)
+
+  let resV1 = 0
+  defaultStore.subscribe(hV1, (v) => {
+    resV1 += v
+  })
+  resV1 = 0
 
   const eEntry = effector.createEvent<number>()
   const eA = effector
@@ -189,22 +152,22 @@ async function start(iterations = 1_000) {
   const mH = mAtom(() => mF.get() + mG.get())
   let mRes = 0
 
-  const reatomLogs = []
-  const reatomV1Logs = []
-  const effectorLogs = []
-  const wonkaLogs = []
-  const cellxLogs = []
-  const molLogs = []
+  const reatomLogs = new Array<number>()
+  const reatomV1Logs = new Array<number>()
+  const effectorLogs = new Array<number>()
+  const wonkaLogs = new Array<number>()
+  const cellxLogs = new Array<number>()
+  const molLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
     const startReatom = performance.now()
-    entry.dispatch(i)
+    defaultStore.dispatch(a.entry(i))
     reatomLogs.push(performance.now() - startReatom)
 
-    // const startReatomV1 = performance.now()
-    // rStore.dispatch(rEntry(i))
-    // reatomV1Logs.push(performance.now() - startReatomV1)
+    const startReatomV1 = performance.now()
+    defaultStore.dispatch(aV1.entry(i))
+    reatomV1Logs.push(performance.now() - startReatomV1)
 
     const startEffector = performance.now()
     eEntry(i)
@@ -227,13 +190,16 @@ async function start(iterations = 1_000) {
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  if (new Set([res, /* rRes, */ eRes, wRes, cRes, mRes]).size !== 1) {
+  if (new Set([res, resV1, /* rRes, */ eRes, wRes, cRes, mRes]).size !== 1) {
+    ;({ res, res1: resV1, /* rRes, */ eRes, wRes, cRes, mRes }) //?
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
   }
 
   console.log(`reatom`)
   console.log(log(reatomLogs) /*  */)
+  console.log(`reatomV1`)
+  console.log(log(reatomV1Logs) /*  */)
   console.log(`effector`)
   console.log(log(effectorLogs) /**/)
   console.log(`mol`)
@@ -243,7 +209,10 @@ async function start(iterations = 1_000) {
   console.log(`wonka`)
   console.log(log(wonkaLogs) /*   */)
 }
+// start(100)
 start(1000)
+// start(10000)
+// start(100000)
 
 function log(values: Array<number>) {
   return {
@@ -275,8 +244,6 @@ function min(values: Array<number>) {
   values.sort((a, b) => (a - b < 0 ? -1 : 1))
 
   const limit = Math.floor(values.length / 20)
-
-  values //?
 
   return values[limit].toFixed(3)
 }

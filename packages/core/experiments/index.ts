@@ -1,3 +1,6 @@
+export * from './createAtomShort'
 export * from './createResource'
-export * from './createSimpleAtom'
+export * from './debounce'
 export * from './init'
+export * from './persist'
+export * from './v1'

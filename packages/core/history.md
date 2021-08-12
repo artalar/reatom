@@ -1,24 +1,14 @@
 # History of API / architecture choices
 
-## Notes
+## Atom options
 
-- API like `$(doSome): Action<Some>` is impossible API because an dispatch may includes a few same actions with different payload
+Main problems
 
-## Options variants
+- Execution order
+- Type inference
+- Calculation sharing
 
 ### Options builder
-
-Features
-
-- good looking (positive feedback)
-- easy to reuse methods (`on` / `meta` etc)
-- customizable execution order
-
-Problems
-
-- Support of custom execution order
-- Support of partial methods availability (to prevent redeclarations)
-- How to read other atoms in reducers?
 
 ```ts
 const add = declareAction<number>()
@@ -43,7 +33,7 @@ const counterAtom = declareAtom(0, (atom) =>
 )
 ```
 
-### Options object 1
+### Options declarative properties
 
 ```ts
 const add = declareAction<number>()
@@ -116,12 +106,7 @@ const counterAtom = declareAtom(
 )
 ```
 
-### Options object 2
-
-Limitations
-
-- Can't handle both state and effect in methods
-- Can't choose the order of execution between methods and computer
+### Options function properties
 
 ```ts
 const add = declareAction<number>()
@@ -149,7 +134,7 @@ const counterAtom = declareAtom(0, {
 })
 ```
 
-### Options object 3
+### Options method properties
 
 ```ts
 const add = declareAction<number>()
@@ -177,4 +162,59 @@ const counterAtom = declareAtom(0, {
     return state
   }
 })
+```
+
+### Options single function
+
+```ts
+const add = declareAction<number>()
+
+const counterAtom = declareAtom({ inc: () => null }, ($, state = 0) => {
+  const oldState = state
+
+  $((store, ctx) =>
+    console.log(
+      `counterAtom receive new value: ${state}.`,
+      `It is ${(ctx.updates = (ctx.updates ?? 0) + 1)} update`,
+    ),
+  )
+
+  $({ inc: () => state++ })
+
+  $(add, (value) => (state += value))
+
+  if ($(shouldSyncCounterAtom)) {
+    $(globalCounterAtom, (globalCounter) => (state = globalCounter))
+  }
+
+  return state
+})
+```
+
+### Options static dependencies
+
+```ts
+// decline outer actionCreators support
+
+const counterAtom = declareAtom(
+  { shouldSyncCounterAtom, globalCounterAtom, inc: () => null },
+  ({ get, onAction, onChange, schedule }, state = 0) => {
+    const oldState = state
+
+    schedule((dispatch, ctx) =>
+      console.log(
+        `counterAtom receive new value: ${state}.`,
+        `It is ${(ctx.updates = (ctx.updates ?? 0) + 1)} update`,
+      ),
+    )
+
+    onAction(`inc`, () => state++)
+
+    if (get(`shouldSyncCounterAtom`)) {
+      onChange(`globalCounterAtom`, (globalCounter) => (state = globalCounter))
+    }
+
+    return state
+  },
+)
 ```

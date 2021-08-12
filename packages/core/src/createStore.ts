@@ -1,210 +1,132 @@
 import {
   Action,
-  ActionType,
   addToSetsMap,
   Atom,
-  AtomListener,
-  Cache,
-  callSafety,
+  AtomsCache,
+  callSafety as callSafetyDefault,
+  createReatomError,
   createTransaction,
   delFromSetsMap,
   Effect,
   Fn,
-  invalid,
   isAction,
   isAtom,
   isFunction,
   noop,
+  Patch,
   Rec,
   Store,
   TransactionResult,
-  Unsubscribe,
 } from './internal'
 
-type DepsDiff = [depsOld: Cache['deps'], depsNew: Cache['deps']]
+function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
+  const cache = getCache(atom)
 
-function isTypesChange(...diff: DepsDiff): boolean {
-  const stack: Array<DepsDiff> = []
+  if (cache == undefined) return false
 
-  for (; diff != undefined; diff = stack.pop()!) {
-    const { 0: depsOld, 1: depsNew } = diff
+  // @ts-expect-error
+  if (cache.listeners?.size > 0) return true
 
-    if (depsOld.length != depsNew.length) return true
-
-    for (let i = 0; i < depsOld.length; i++) {
-      if (depsOld[i].types != depsNew[i].types) return true
-
-      stack.push([depsOld[i].deps, depsNew[i].deps])
+  const stack = [cache.tracks]
+  while (stack.length > 0) {
+    const deps = stack.pop()!
+    for (let i = 0; i < deps.length; i++) {
+      const dep = deps[i]
+      if (dep != getCache(dep.atom)) return false
+      stack.push(dep.tracks)
     }
   }
-  return false
+
+  return true
 }
 
 export function createStore({
-  snapshot = {},
-}: { snapshot?: Record<string, any> } = {}): Store {
-  const actionsAtoms = new Map<ActionType, Set<Atom>>()
-  const atomsCache = new WeakMap<Atom, Cache>()
-  const transactionListeners = new Set<Fn<[TransactionResult]>>()
+  callSafety = callSafetyDefault,
+  onError = noop,
+  onPatch = noop,
+}: {
+  callSafety?: typeof callSafetyDefault
+  onError?: Fn<[error: unknown, transactionData: TransactionResult]>
+  onPatch?: Fn<[transactionResult: TransactionResult]>
+  // TODO:
+  // createTransaction
+} = {}): Store {
+  const atomsByAction = new Map<Action['type'], Set<Atom>>()
+  const cache: AtomsCache = new WeakMap()
 
-  function addReducer(atom: Atom, cache: Cache) {
-    cache.types.forEach((type) => addToSetsMap(actionsAtoms, type, atom))
-    cache.deps.forEach((dep) => addReducer(atom, dep))
-  }
-  function delReducer(atom: Atom, cache: Cache) {
-    cache.types.forEach((type) => delFromSetsMap(actionsAtoms, type, atom))
-    cache.deps.forEach((dep) => delReducer(atom, dep))
-  }
-
-  function collectSnapshot(atom: Atom, result: Rec = {}) {
-    const cache = getCache(atom)!
-
-    result[atom.id] = cache.state
-    cache.deps.forEach((dep) => collectSnapshot(dep.atom, result))
-
-    return result
-  }
-
-  function mergePatch(patch: Cache, atom: Atom) {
-    const { listeners } = patch
-    if (listeners.size > 0) {
-      const atomCache = getCache(atom)!
-
-      if (
-        atomCache.types != patch.types ||
-        isTypesChange(atomCache.deps, patch.deps)
-      ) {
-        delReducer(atom, atomCache)
-        addReducer(atom, patch)
-      }
-    }
-
-    atomsCache.set(atom, patch)
-  }
-
-  const dispatch: Store['dispatch'] = (
-    action: Action | Array<Action>,
-    stack,
-  ) => {
+  const dispatch: Store['dispatch'] = (action, causes) => {
     const actions = Array.isArray(action) ? action : [action]
 
-    invalid(
-      actions.length == 0 || !actions.every(isAction),
-      `dispatch arguments`,
-    )
+    if (actions.length == 0 || !actions.every(isAction)) {
+      throw createReatomError(`dispatch arguments`)
+    }
 
-    const patch = new Map<Atom, Cache>()
+    const patch: Patch = new Map()
     const effects: Array<Effect> = []
     const transaction = createTransaction(actions, {
       patch,
       getCache,
       effects,
-      snapshot,
-      stack,
+      causes,
     })
-    const { process } = transaction
-    let error: Error | null = null
+    const transactionResult = { actions, patch }
 
     try {
       actions.forEach(({ type, targets }) => {
-        actionsAtoms.get(type)?.forEach((atom) => process(atom))
-        targets?.forEach((atom) => process(atom))
+        targets?.forEach((atom) => transaction.process(atom))
+        atomsByAction.get(type)?.forEach((atom) => transaction.process(atom))
       })
-      transaction.stack.pop()
 
-      patch.forEach(mergePatch)
-    } catch (e) {
-      error = e instanceof Error ? e : new Error(e)
+      patch.forEach((atomPatch, atom) => cache.set(atom, atomPatch))
+    } catch (error) {
+      onError(error, transactionResult)
+      throw error
     }
 
-    const transactionResult: TransactionResult = {
-      actions,
-      error,
-      patch,
-      stack: transaction.stack,
-    }
+    onPatch(transactionResult)
 
-    transactionListeners.forEach((cb) => callSafety(cb, transactionResult))
-
-    if (error) throw error
-
-    const effectsResults = effects.map((cb) =>
-      callSafety(cb, dispatch, transactionResult),
-    )
-
-    return Promise.allSettled(effectsResults).then(noop, noop)
+    effects.forEach((cb) => callSafety(cb, dispatch))
   }
 
-  function getCache<T>(atom: Atom<T>): Cache<T> | undefined {
-    return atomsCache.get(atom)
-  }
+  const getCache: Store['getCache'] = (atom) => cache.get(atom)
 
-  function getState<T>(): Record<string, any>
-  function getState<T>(atom: Atom<T>): T
-  function getState<T>(atom?: Atom<T>) {
-    if (atom == undefined) {
-      const result: Rec = {}
-
-      actionsAtoms.forEach((atoms) =>
-        atoms.forEach((atom) => collectSnapshot(atom, result)),
-      )
-
-      return result
+  const subscribe: Store['subscribe'] = (atom, cb) => {
+    if (!isAtom(atom) || !isFunction(cb)) {
+      throw createReatomError(`subscribe argument`)
     }
 
-    invalid(!isAtom(atom), `getState argument`)
-
-    const atomCache = getCache(atom)
-
-    if (atomCache == undefined || atomCache.listeners.size == 0) {
-      dispatch({
+    if (!isCacheFresh(atom, store.getCache)) {
+      store.dispatch({
         type: `invalidate ${atom.id} [~${Math.random()}]`,
         payload: null,
         targets: [atom],
       })
     }
 
-    return getCache(atom)!.state
-  }
+    const cache = getCache(atom)!
 
-  function subscribe<State>(
-    atom: Fn<[transactionResult: TransactionResult]> | Atom<State>,
-    cb?: AtomListener<State>,
-  ): Unsubscribe {
-    if (isAtom<State>(atom) && isFunction(cb)) {
-      const stateOld = getState(atom)
+    // @ts-expect-error
+    const listeners: Set<AtomListener> = (cache.listeners ??= new Set())
 
-      const atomCache = getCache(atom)!
-      const { listeners, state } = atomCache
-
-      listeners.add(cb)
-
-      if (listeners.size == 1) {
-        addReducer(atom, atomCache)
-        cb(state)
-      } else if (Object.is(state, stateOld)) {
-        cb(state)
-      }
-
-      return function unsubscribe() {
-        listeners.delete(cb!)
-        if (listeners.size == 0) {
-          delReducer(atom as Atom, getCache(atom as Atom)!)
-        }
-      }
+    if (listeners.size == 0) {
+      atom.types.forEach((type) => addToSetsMap(atomsByAction, type, atom))
     }
 
-    invalid(!isFunction(atom), `subscribe arguments`) as never
+    listeners.add(cb)
 
-    transactionListeners.add(atom as Fn)
+    callSafety(cb, cache.state, [])
 
-    return () => transactionListeners.delete(atom as Fn)
+    return () => {
+      listeners.delete(cb)
+      if (listeners.size == 0) {
+        atom.types.forEach((type) => delFromSetsMap(atomsByAction, type, atom))
+      }
+    }
   }
 
   const store = {
     dispatch,
     getCache,
-    getState,
     subscribe,
   }
 
