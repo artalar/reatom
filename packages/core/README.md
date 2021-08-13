@@ -147,13 +147,17 @@ As you may see, Reatom flow looks like Redux flow, but reducers and selectors is
 
 Example above is a basic and don't show all cool features of Reatom. See [API section](#API) or [Guides](#Guides) to learn more about how to solve your tasks fast and efficient.
 
-#### Real world example
+#### Timer example
+
+[![codesandbox with timerAtom example](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/timeratom-example-vdtc0)
 
 ```ts
 import { createAtom } from '@reatom/core'
 
+type TimerCtx = { intervalId?: number | NodeJS.Timer | any }
+
 /** Timer update interval */
-const intervalAtom = createAtom(
+export const intervalAtom = createAtom(
   { setSeconds: (seconds: number) => seconds },
   ({ onAction }, state = 1000) => {
     onAction(`setSeconds`, (seconds) => (state = seconds * 1000))
@@ -161,9 +165,7 @@ const intervalAtom = createAtom(
   },
 )
 
-type TimerCtx = { intervalId?: number | NodeJS.Timer | any }
-
-const timerAtom = createAtom(
+export const timerAtom = createAtom(
   {
     interval: intervalAtom,
     start: (delayInSeconds: number) => delayInSeconds,
@@ -200,6 +202,8 @@ const timerAtom = createAtom(
     }
 
     onAction(`stop`, () => {
+      state = 0
+
       schedule((dispatch, ctx: TimerCtx) => clearInterval(ctx.intervalId))
     })
 
@@ -216,9 +220,9 @@ const timerAtom = createAtom(
 )
 ```
 
-#### createResource example
+#### Async resource example
 
-[![lists-with-ref](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-createresource-k00fq)
+[![codesandbox with createResource example](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-createresource-k00fq)
 
 #### Primitives
 
@@ -242,6 +246,8 @@ isModelOpenAtom.change((state) => !state)
 // -> { payload: Function, type: `isModelOpen - change` }
 ```
 
+<!--
+
 ### Increase performance by ref pattern
 
 > This is an ADVANCED pattern! We do not recommend to use it in regular development as it add extra complexity.
@@ -249,6 +255,8 @@ isModelOpenAtom.change((state) => !state)
 If you fill limits of immutable data structures and need to increase performance of partial updates of a huge lists / collections you may use _ref pattern_ and wrap every element of collection in an atom. With this you may change the atom value and it will not affect a collection reference. But when you will need to get plain data / JSON of collection you should unwrap every element from atoms as write you own serialize.
 
 [![lists-with-ref](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/github/artalar/reatom2-lists-example)
+
+-->
 
 ### Write you own atom creator
 
