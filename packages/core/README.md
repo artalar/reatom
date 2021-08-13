@@ -220,6 +220,28 @@ const timerAtom = createAtom(
 
 [![lists-with-ref](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-createresource-k00fq)
 
+#### Primitives
+
+Primitives is a pack of helpers around primitive data structures, which helps you reduce boilerplate. It not included in `2kb` main bundle, but tiny by it selfs and do not includes into your application bundle if you not importing it.
+
+> Available primitives: `createBooleanAtom`, `createMapAtom`, `createNumberAtom`, `createStringAtom`, `createSetAtom` (`crateArrayAtom` will added soon).
+
+```ts
+import { createBooleanAtom } from '@reatom/core/primitives'
+
+export const isModelOpenAtom = createBooleanAtom(false, isModelOpen)
+
+// Available action creators:
+isModelOpenAtom.toggle()
+// -> { payload: null, type: `isModelOpen - toggle` }
+isModelOpenAtom.setTrue()
+// -> { payload: null, type: `isModelOpen - setTrue` }
+isModelOpenAtom.setFalse()
+// -> { payload: null, type: `isModelOpen - setFalse` }
+isModelOpenAtom.change((state) => !state)
+// -> { payload: Function, type: `isModelOpen - change` }
+```
+
 ### Increase performance by ref pattern
 
 > This is an ADVANCED pattern! We do not recommend to use it in regular development as it add extra complexity.

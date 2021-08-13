@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "2.0.0-rc1",
+  "version": "2.0.0-rc2",
   "description": "State manager for both simple and complex applications",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -14,7 +14,8 @@
     "prepublishOnly": "npm run rebuild && npm run test",
     "build-src": "cross-env fixme=fixme microbundle",
     "build-experiments": "cross-env fixme=fixme microbundle --cwd experiments",
-    "build": "npm run build-src && npm run build-experiments",
+    "build-primitives": "cross-env fixme=fixme microbundle --cwd primitives",
+    "build": "npm run build-src && npm run build-experiments && npm run build-primitives",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test-src": "cross-env fixme=fixme ts-node src/index.test.ts",
@@ -66,6 +67,7 @@
     "/package.json",
     "/src",
     "/experiments",
+    "/primitives",
     "/build"
   ]
 }
