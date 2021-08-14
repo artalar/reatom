@@ -1,12 +1,17 @@
 import { AtomOptions, createAtom } from '@reatom/core'
 
-export function createToggleAtom(initState = ``, options: AtomOptions) {
+export function createStringAtom<T extends string = string>(
+  initState: T = `` as T,
+  options?: AtomOptions,
+) {
   return createAtom(
     {
-      change: (newState: string) => newState,
+      change: (cb: (state: T) => T) => cb,
+      set: (newState: T) => newState,
     },
     ({ onAction }, state = initState) => {
-      onAction(`change`, (newState) => (state = newState))
+      onAction(`change`, (cb) => (state = cb(state)))
+      onAction(`set`, (newState) => (state = newState))
 
       return state
     },

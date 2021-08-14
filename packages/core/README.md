@@ -233,17 +233,27 @@ Primitives is a pack of helpers around primitive data structures, which helps yo
 ```ts
 import { createBooleanAtom } from '@reatom/core/primitives'
 
-export const isModelOpenAtom = createBooleanAtom(false, isModelOpen)
+export const isModelOpenAtom = createBooleanAtom(false, 'isModelOpen')
 
 // Available action creators:
 isModelOpenAtom.toggle()
-// -> { payload: null, type: `isModelOpen - toggle` }
+// -> { payload: null, type: 'isModelOpen - toggle' }
 isModelOpenAtom.setTrue()
-// -> { payload: null, type: `isModelOpen - setTrue` }
+// -> { payload: null, type: 'isModelOpen - setTrue' }
 isModelOpenAtom.setFalse()
-// -> { payload: null, type: `isModelOpen - setFalse` }
+// -> { payload: null, type: 'isModelOpen - setFalse' }
 isModelOpenAtom.change((state) => !state)
-// -> { payload: Function, type: `isModelOpen - change` }
+// -> { payload: Function, type: 'isModelOpen - change' }
+```
+
+A string atom is useful to describe an enum.
+
+```ts
+import { createStringAtom } from '@reatom/core/primitives'
+
+export type Statuses = 'init' | 'loading' | 'loaded' | 'error'
+
+export const statusAtom = createStringAtom<Statuses>('init')
 ```
 
 <!--
