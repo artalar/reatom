@@ -41,8 +41,8 @@ export function useAction<T = void>(
 }
 
 type ActionCreators<T extends any> = {
-  [K in keyof T]: T[K] extends (payload: infer Payload) => Action
-    ? (payload: Payload) => unknown
+  [K in keyof T]: T[K] extends (...a: infer Args) => Action
+    ? (...args: Args) => void
     : never
 }
 
