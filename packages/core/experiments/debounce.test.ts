@@ -2,15 +2,15 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
 import { createAtom, createStore, getState } from '@reatom/core'
+import { createPrimitiveAtom } from '@reatom/core/primitives'
 
 import { mockFn, sleep } from '../test_utils'
 
 import { debounce } from './debounce'
-import { atom } from './createAtomShort'
 
 test(`debounce atom without tracks`, async () => {
   const delay = 10
-  const a = atom(0, null, { decorators: [debounce(delay)] })
+  const a = createPrimitiveAtom(0, null, { decorators: [debounce(delay)] })
   const store = createStore()
   const cb = mockFn()
 
@@ -19,7 +19,7 @@ test(`debounce atom without tracks`, async () => {
   assert.is(cb.calls.length, 1)
   assert.is(cb.lastInput(), 0)
 
-  store.dispatch(a.update((s) => s + 1))
+  store.dispatch(a.change((s) => s + 1))
 
   assert.is(cb.calls.length, 1)
   assert.is(cb.lastInput(), 0)
@@ -33,7 +33,7 @@ test(`debounce atom without tracks`, async () => {
 
 test(`behavior of middle (warm) atom besides leafs atom and debounced atom`, async () => {
   const delay = 10
-  const a = atom(0)
+  const a = createPrimitiveAtom(0)
   const bTrack = mockFn()
   const b = createAtom({ a }, ({ get }) => {
     bTrack()
@@ -51,7 +51,7 @@ test(`behavior of middle (warm) atom besides leafs atom and debounced atom`, asy
   assert.is(bTrack.calls.length, 1)
   assert.is(bCb.calls.length, 1)
 
-  store.dispatch(a.update((s) => s + 1))
+  store.dispatch(a.change((s) => s + 1))
   assert.is(getState(a, store), 1)
   assert.is(
     bTrack.calls.length,
@@ -71,7 +71,7 @@ test(`behavior of middle (warm) atom besides leafs atom and debounced atom`, asy
 
   un()
 
-  store.dispatch(a.update((s) => s + 1))
+  store.dispatch(a.change((s) => s + 1))
   assert.is(getState(a, store), 2)
   assert.is(
     bTrack.calls.length,

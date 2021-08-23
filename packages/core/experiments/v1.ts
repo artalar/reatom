@@ -5,7 +5,6 @@ import {
   createTemplateCache,
   Fn,
   pushUnique,
-  scheduleAtomListeners,
 } from '@reatom/core'
 
 let mapsCount = 0
@@ -24,10 +23,9 @@ export function map<T, Dep>(
     if (!Object.is(dep?.state, depPatch.state)) {
       const state = cb(depPatch.state /* , cache.state */)
 
-      scheduleAtomListeners(cache as Cache, state, schedule, depAtom.id)
-
       cache = {
         atom,
+        cause: depAtom.id,
         ctx: cache.ctx,
         tracks: [depPatch],
         state,
@@ -58,21 +56,34 @@ export function combine<Atoms extends Array<Atom>, Result>(
     { process, schedule },
     cache = createTemplateCache<Result>(atom),
   ) => {
-    const tracks = atoms.map((a) => process(a))
-    let { atom, ctx, state, listeners } = cache
+    let causes: Array<string> = []
+    let { atom, cause, ctx, state, tracks, listeners } = cache
 
-    // TODO: improve
-    const causes = cache.tracks
-      ?.filter(({ state }, i) => !Object.is(state, tracks[i].state))
-      .map(({ atom }) => atom.id) ?? ['init']
+    if (tracks === undefined) {
+      causes.push(`init`)
+    }
+
+    tracks = atoms.map((a, i) => {
+      const patch = process(a)
+
+      if (
+        // @ts-expect-error
+        tracks?.length > 0 &&
+        !Object.is(patch.state, tracks![i].state)
+      ) {
+        causes.push(a.id)
+      }
+
+      return patch
+    })
 
     if (causes.length > 0) {
       state = map(tracks.map(({ state }) => state) as any)
 
-      scheduleAtomListeners(cache as Cache, state, schedule, causes.join(`, `))
+      cause = causes.join(`, `)
     }
 
-    return { atom, ctx, tracks, state: state!, listeners }
+    return { atom, cause, ctx, tracks, state: state!, listeners }
   }
 
   atom.id = id

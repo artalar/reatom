@@ -12,17 +12,13 @@ import {
   getState,
   Rec,
 } from '@reatom/core'
-import {
-  atom,
-  createPersist,
-  createResource,
-  init,
-} from '@reatom/core/experiments'
+import { createPrimitiveAtom } from '@reatom/core/primitives'
+import { createPersist, init } from '@reatom/core/experiments'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
 
 test(`displayName`, () => {
-  const firstNameAtom = atom(
+  const firstNameAtom = createPrimitiveAtom(
     'John',
     {
       set: (state, name: string) => name,
@@ -85,7 +81,7 @@ test(`displayName`, () => {
 })
 
 test(`combine`, () => {
-  const aAtom = atom(0)
+  const aAtom = createPrimitiveAtom(0)
   const bAtom = createAtom({ aAtom }, ({ get }) => get(`aAtom`) % 2)
   const cAtom = createAtom({ aAtom }, ({ get }) => get(`aAtom`) % 2)
   const bcAtom = createAtom({ b: bAtom, c: cAtom }, ({ get }) => ({
@@ -100,12 +96,12 @@ test(`combine`, () => {
   assert.is(store.getCache(aAtom)!.state, 0)
   assert.equal(bsState1, { b: 0, c: 0 })
 
-  store.dispatch(aAtom.update((s) => s + 1))
+  store.dispatch(aAtom.change((s) => s + 1))
   const bsState2 = store.getCache(bcAtom)!.state
   assert.is(store.getCache(aAtom)!.state, 1)
   assert.equal(bsState2, { b: 1, c: 1 })
 
-  store.dispatch(aAtom.update((s) => s + 2))
+  store.dispatch(aAtom.change((s) => s + 2))
   const bsState3 = store.getCache(bcAtom)!.state
   assert.is(store.getCache(aAtom)!.state, 3)
   assert.equal(bsState3, { b: 1, c: 1 })
@@ -115,8 +111,8 @@ test(`combine`, () => {
 
 test(`atom filter`, () => {
   const track = mockFn()
-  const a1Atom = atom(0, null, `a1Atom`)
-  const a2Atom = atom(0, null, `a2Atom`)
+  const a1Atom = createPrimitiveAtom(0, null, `a1Atom`)
+  const a2Atom = createPrimitiveAtom(0, null, `a2Atom`)
   const bAtom = createAtom({ a1Atom, a2Atom }, ({ get, onChange }, s = 0) => {
     track()
 
@@ -136,20 +132,20 @@ test(`atom filter`, () => {
   assert.is(track.calls.length, 1)
   assert.equal(bCache1, bCache2)
 
-  const bCache3 = bAtom(createTransaction([a1Atom.update(0)]), bCache2)
+  const bCache3 = bAtom(createTransaction([a1Atom.set(0)]), bCache2)
   assert.is(track.calls.length, 1)
   assert.equal(bCache2, bCache3)
   assert.equal(bCache3.state, 0)
   assert.equal(bCache2.state, bCache3.state)
 
-  const bCache4 = bAtom(createTransaction([a1Atom.update(1)]), bCache3)
+  const bCache4 = bAtom(createTransaction([a1Atom.set(1)]), bCache3)
   assert.equal(track.calls.length, 2)
   assert.not.equal(bCache3, bCache4)
   assert.equal(bCache4.state, 1)
   assert.not.equal(bCache3.state, bCache4.state)
 
   const bCache5 = bAtom(
-    createTransaction([a1Atom.update((s) => s + 2)]),
+    createTransaction([a1Atom.change((s) => s + 2)]),
     bCache4,
   )
   assert.equal(track.calls.length, 3)
@@ -243,18 +239,21 @@ test(`Atom store dependency states`, () => {
 })
 
 test(`Atom from`, () => {
-  const a = atom(42)
+  const a = createPrimitiveAtom(42)
 
   assert.is(a(createTransaction([{ type: `noooop`, payload: null }])).state, 42)
-  assert.is(a(createTransaction([a.update(43)])).state, 43)
-  assert.is(a(createTransaction([a.update((s) => s + 2)])).state, 44)
+  assert.is(a(createTransaction([a.set(43)])).state, 43)
+  assert.is(a(createTransaction([a.change((s) => s + 2)])).state, 44)
   ;`👍` //?
 })
 
 test(`Persist`, () => {
   const snapshot: Rec = { TEST: 42 }
   const persist = createPersist({ get: (key) => snapshot[key] })
-  const a = atom(0, null, { id: `TEST`, decorators: [persist()] })
+  const a = createPrimitiveAtom(0, null, {
+    id: `TEST`,
+    decorators: [persist()],
+  })
 
   const { state } = a(createTransaction([]))
 
@@ -263,7 +262,7 @@ test(`Persist`, () => {
 })
 
 test(`Batched dispatch`, () => {
-  const a = atom(0)
+  const a = createPrimitiveAtom(0)
   const store = createStore()
   const cb = mockFn()
 
@@ -271,7 +270,7 @@ test(`Batched dispatch`, () => {
 
   assert.is(cb.calls.length, 1)
 
-  store.dispatch([a.update((s) => s + 1), a.update((s) => s + 1)])
+  store.dispatch([a.change((s) => s + 1), a.change((s) => s + 1)])
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 2)
   ;`👍` //?
@@ -279,7 +278,7 @@ test(`Batched dispatch`, () => {
 
 test(`Manage dynamic dependencies`, () => {
   let reducerCalls = 0
-  const a = atom(0)
+  const a = createPrimitiveAtom(0)
   const b = createAtom(
     { add: (atom: Atom) => atom },
     (
@@ -301,7 +300,7 @@ test(`Manage dynamic dependencies`, () => {
   init([b], store)
   assert.is(reducerCalls, 1)
 
-  store.dispatch([b.add(a), a.update(1)])
+  store.dispatch([b.add(a), a.set(1)])
   assert.equal(store.getCache(b)!.state, [[a, 1]])
   assert.is(reducerCalls, 2)
   ;`👍` //?
@@ -326,7 +325,7 @@ test(`await all effect`, async () => {
     return result
   }
 
-  const resourceDataAtom = atom(0)
+  const resourceDataAtom = createPrimitiveAtom(0)
   const resourceAtom = createAtom(
     { resourceDataAtom, doA: () => null, doB: () => null },
     ({ create, get, onAction, schedule }) => {
@@ -340,7 +339,7 @@ test(`await all effect`, async () => {
       onAction(`doB`, () =>
         schedule(async (dispatch) => {
           await sleep(10)
-          await dispatch(resourceDataAtom.update((s) => s + 1))
+          await dispatch(resourceDataAtom.change((s) => s + 1))
         }),
       )
 
@@ -370,7 +369,7 @@ test(`await all effect`, async () => {
 })
 
 test(`subscription to in-cache atom`, () => {
-  const a = atom(0)
+  const a = createPrimitiveAtom(0)
   const b = createAtom({ a }, ({ get }) => get(`a`))
 
   const trackA = mockFn()
@@ -381,21 +380,21 @@ test(`subscription to in-cache atom`, () => {
   assert.is(trackA.calls.length, 0)
   assert.is(trackB.calls.length, 1)
 
-  a.update.dispatch((s) => s + 1)
+  a.change.dispatch((s) => s + 1)
   assert.is(trackB.calls.length, 2)
 
   a.subscribe(trackA)
   assert.is(trackA.calls.length, 1)
   assert.is(trackB.calls.length, 2)
 
-  a.update.dispatch((s) => s + 1)
+  a.change.dispatch((s) => s + 1)
   assert.is(trackA.calls.length, 2)
   assert.is(trackB.calls.length, 3)
   ;`👍` //?
 })
 
 test(`getState of stale atom`, () => {
-  const a = atom(0)
+  const a = createPrimitiveAtom(0)
   const b = createAtom({ a }, ({ get }) => get(`a`))
 
   const store = createStore()
@@ -405,12 +404,12 @@ test(`getState of stale atom`, () => {
   assert.is(getState(a, store), 0)
   assert.is(getState(b, store), 0)
 
-  store.dispatch(a.update(1))
+  store.dispatch(a.set(1))
   assert.is(getState(a, store), 1)
   assert.is(getState(b, store), 1)
 
   un()
-  store.dispatch(a.update(2))
+  store.dispatch(a.set(2))
   assert.is(getState(a, store), 2)
   assert.is(getState(b, store), 2)
   ;`👍` //?

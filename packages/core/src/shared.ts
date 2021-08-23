@@ -3,15 +3,12 @@ import {
   ActionCreator,
   Atom,
   AtomsCache,
-  Cache,
   CacheTemplate,
-  Cause,
   Causes,
   defaultStore,
   Effect,
   Fn,
   Patch,
-  Rec,
   Transaction,
 } from './internal'
 
@@ -48,7 +45,7 @@ export function isFunction(thing: any): thing is Function {
 export function isAtom<State>(thing: Atom<State>): thing is Atom<State>
 export function isAtom(thing: any): thing is Atom
 export function isAtom(thing: any): thing is Atom {
-  return isFunction(thing) && `id` in thing
+  return isFunction(thing) && `types` in thing
 }
 
 export function isActionCreator(thing: any): thing is ActionCreator {
@@ -89,9 +86,10 @@ export function createTemplateCache<State>(
 ): CacheTemplate<State> {
   return {
     atom,
+    cause: `init`,
     ctx: {},
-    tracks: undefined,
     state: undefined,
+    tracks: undefined,
   }
 }
 
@@ -111,7 +109,7 @@ export function createTransaction(
 ): Transaction {
   causes = causes.concat({ actions, patch })
 
-  let processedAtomId: undefined | string
+  const defaultCause = actions.map(({ type }) => type).join(`, `)
 
   const transaction: Transaction = {
     actions,
@@ -120,22 +118,30 @@ export function createTransaction(
       let atomPatch = patch.get(atom)
 
       if (atomPatch == undefined) {
-        processedAtomId = atom.id
-        atomPatch = atom(
-          transaction,
-          getCache(atom) ?? cache ?? createTemplateCache(atom),
-        )
-        processedAtomId = undefined
+        cache = getCache(atom) ?? cache ?? createTemplateCache(atom)
+        atomPatch = atom(transaction, cache)
+
+        const { cause, state, listeners } = atomPatch
 
         patch.set(atom, atomPatch)
+
+        if (
+          // @ts-expect-error
+          listeners?.size > 0 &&
+          !Object.is(state, cache.state)
+        ) {
+          transaction.schedule(
+            (dispatch, causes) =>
+              listeners!.forEach((cb) => callSafety(cb, state, causes)),
+            cause,
+          )
+        }
       }
 
       return atomPatch
     },
-    schedule(cb, cause = processedAtomId) {
-      const _causes = causes.concat([])
-
-      if (cause != undefined) _causes.push(cause)
+    schedule(cb, cause = defaultCause) {
+      const _causes = causes.concat([cause])
 
       effects.push((dispatch) =>
         cb((actions) => dispatch(actions, _causes), _causes),
@@ -144,25 +150,6 @@ export function createTransaction(
   }
 
   return transaction
-}
-
-export function scheduleAtomListeners<State>(
-  { listeners, state }: Cache<State>,
-  newState: State,
-  schedule: Transaction['schedule'],
-  cause?: Cause,
-) {
-  if (
-    listeners != undefined &&
-    listeners?.size > 0 &&
-    !Object.is(newState, state)
-  ) {
-    schedule(
-      (dispatch, causes) =>
-        listeners.forEach((cb) => callSafety(cb, newState, causes)),
-      cause,
-    )
-  }
 }
 
 export function getState<State>(

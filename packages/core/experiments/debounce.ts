@@ -1,4 +1,4 @@
-import { AtomDecorator, Cache, CacheReducer } from '@reatom/core'
+import { AtomDecorator, Cache } from '@reatom/core'
 
 let count = 0
 export function debounce<T>(

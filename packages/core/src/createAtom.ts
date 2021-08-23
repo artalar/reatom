@@ -20,7 +20,6 @@ import {
   noop,
   pushUnique,
   Rec,
-  scheduleAtomListeners,
   Track,
   TrackReducer,
   Transaction,
@@ -152,24 +151,24 @@ function createDynamicallyTrackedCacheReducer<
   selfTypes: Array<string>,
   actionCreators: Rec<ActionCreator>,
 ): CacheReducer<State> {
+  const create: Track<Deps>['create'] = (name, ...args) =>
+    actionCreators[name as string](...args)
+
   return (
     { actions, process, schedule }: Transaction,
     cache: CacheTemplate<State>,
   ): Cache<State> => {
     let { atom, ctx, state, listeners } = cache
     let tracks: Array<Cache> = []
-    let cause: undefined | Cause
+    let effectCause: undefined | Cause
     let outdatedCall = noop
-
-    const create: Track<Deps>['create'] = (name, ...args) =>
-      actionCreators[name as string](...args)
 
     const _get = (depAtom: Atom, atomCache?: Cache): Cache => {
       outdatedCall()
 
       const atomPatch = process(depAtom, atomCache)
 
-      if (cause == undefined) {
+      if (effectCause == undefined) {
         if (tracks.every((cache) => cache.atom.id != depAtom.id)) {
           tracks.push(atomPatch)
         }
@@ -189,7 +188,7 @@ function createDynamicallyTrackedCacheReducer<
     const onAction: Track<Deps>['onAction'] = (name, reaction) => {
       outdatedCall()
 
-      if (cause != undefined) {
+      if (effectCause != undefined) {
         throw createReatomError(
           `Can not react to action inside another reaction`,
         )
@@ -199,9 +198,9 @@ function createDynamicallyTrackedCacheReducer<
 
       actions.forEach((action) => {
         if (type == action.type) {
-          cause = `${type} handler`
+          effectCause = `${type} handler`
           reaction(action.payload)
-          cause = undefined
+          effectCause = undefined
         }
       })
     }
@@ -209,7 +208,7 @@ function createDynamicallyTrackedCacheReducer<
     const onChange: Track<Deps>['onChange'] = (name, reaction) => {
       outdatedCall()
 
-      if (cause != undefined) {
+      if (effectCause != undefined) {
         throw createReatomError(
           `Can not react to atom changes inside another reaction`,
         )
@@ -225,16 +224,16 @@ function createDynamicallyTrackedCacheReducer<
         atomCache == undefined ||
         !Object.is(atomCache.state, atomPatch.state)
       ) {
-        cause = `${depAtom.id} handler`
+        effectCause = `${depAtom.id} handler`
         reaction(atomPatch.state, atomCache?.state)
-        cause = undefined
+        effectCause = undefined
       }
     }
 
     const _schedule = (effect: AtomEffect) => {
       outdatedCall()
 
-      schedule((dispatch, causes) => effect(dispatch, ctx, causes), cause)
+      schedule((dispatch, causes) => effect(dispatch, ctx, causes), effectCause)
     }
 
     const track: Track<Deps> = {
@@ -246,31 +245,28 @@ function createDynamicallyTrackedCacheReducer<
       schedule: _schedule,
     }
 
-    let reducerCallCause: undefined | Cause
+    let cause = `init`
     let shouldCallReducer =
       cache.tracks == undefined ||
       actions.some(
-        ({ type }) =>
-          selfTypes.includes(type) && ((reducerCallCause = type), true),
+        ({ type }) => selfTypes.includes(type) && ((cause = type), true),
       ) ||
       cache.tracks.some(
         (depCache) =>
           !Object.is(depCache.state, _get(depCache.atom, depCache).state) &&
-          ((reducerCallCause = depCache.atom.id), true),
+          ((cause = depCache.atom.id), true),
       )
 
     if (shouldCallReducer) {
       tracks.length = 0
       // @ts-expect-error
       state = reducer(track, state)
-
-      scheduleAtomListeners(cache as Cache, state, schedule, reducerCallCause)
     }
 
     outdatedCall = () => {
       throw createReatomError(`Outdated track call`)
     }
 
-    return { atom, ctx, state: state!, tracks, listeners }
+    return { atom, cause, ctx, state: state!, tracks, listeners }
   }
 }
