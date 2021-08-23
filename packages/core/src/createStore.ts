@@ -44,10 +44,20 @@ export function createStore({
   callSafety = callSafetyDefault,
   onError = noop,
   onPatch = noop,
+  now = Date.now.bind(Date),
 }: {
   callSafety?: typeof callSafetyDefault
-  onError?: Fn<[error: unknown, transactionData: TransactionResult]>
-  onPatch?: Fn<[transactionResult: TransactionResult]>
+  onError?: Fn<
+    [
+      error: unknown,
+      transactionData: TransactionResult & { start: number; end: number },
+    ]
+  >
+  onPatch?: Fn<
+    [transactionResult: TransactionResult & { start: number; end: number }]
+  >
+  /** Current time getter. Tip: use `performance.now` to accurate tracking */
+  now?: typeof Date.now
   // TODO:
   // createTransaction
 } = {}): Store {
@@ -55,6 +65,8 @@ export function createStore({
   const cache: AtomsCache = new WeakMap()
 
   const dispatch: Store['dispatch'] = (action, causes) => {
+    const start = now()
+
     const actions = Array.isArray(action) ? action : [action]
 
     if (actions.length == 0 || !actions.every(isAction)) {
@@ -69,7 +81,7 @@ export function createStore({
       effects,
       causes,
     })
-    const transactionResult = { actions, patch }
+    const getTransactionResult = () => ({ actions, patch, start, end: now() })
 
     try {
       actions.forEach(({ type, targets }) => {
@@ -79,11 +91,11 @@ export function createStore({
 
       patch.forEach((atomPatch, atom) => cache.set(atom, atomPatch))
     } catch (error) {
-      onError(error, transactionResult)
+      onError(error, getTransactionResult())
       throw error
     }
 
-    onPatch(transactionResult)
+    onPatch(getTransactionResult())
 
     effects.forEach((cb) => callSafety(cb, dispatch))
   }
