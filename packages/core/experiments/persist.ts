@@ -3,7 +3,7 @@ import { AtomDecorator } from '@reatom/core'
 export type PersistStorage = {
   get: (key: string) => unknown
   set?: (key: string, data: unknown) => void
-  setDebounce?: number
+  throttle?: number
 }
 
 let count = 0
@@ -19,12 +19,12 @@ let count = 0
  * }
  * ```
  */
-export function createPersist({ get, set, setDebounce = 0 }: PersistStorage) {
+export function createPersist({ get, set, throttle = 0 }: PersistStorage) {
   return function persist<T>(
     /** Unique stable key */
     key?: string,
   ): AtomDecorator<T> {
-    const timeoutKey = `__SNAPSHOT [${++count}]`
+    const intervalIdKey = `__persistIntervalId [${++count}]`
 
     return (reducer) => (transaction, cacheTemplate) => {
       const { id } = cacheTemplate.atom
@@ -38,14 +38,17 @@ export function createPersist({ get, set, setDebounce = 0 }: PersistStorage) {
 
       if (set != undefined) {
         transaction.schedule(() => {
-          if (setDebounce == 0) {
+          if (throttle == 0) {
             set(key ?? id, cache.state)
           } else {
-            clearInterval(cache.ctx[timeoutKey] as number)
-            cache.ctx[timeoutKey] = setTimeout(
-              () => set(key ?? id, cache.state),
-              150,
-            )
+            const intervalId = (cache.ctx[intervalIdKey] as number) ?? null
+
+            if (intervalId === null) {
+              cache.ctx[intervalIdKey] = setTimeout(() => {
+                cache.ctx[intervalIdKey] = null
+                set(key ?? id, transaction.getCache(cache.atom)!.state)
+              }, 150)
+            }
           }
         })
       }
@@ -56,10 +59,13 @@ export function createPersist({ get, set, setDebounce = 0 }: PersistStorage) {
 }
 
 export const localStoragePersistStorage: PersistStorage = {
-  get: (key) => JSON.parse(globalThis.localStorage?.getItem(key) ?? ''),
+  get: (key) => {
+    const dataStr = globalThis.localStorage?.getItem(key)
+    return dataStr ? JSON.parse(dataStr) : undefined
+  },
   set: (key, data) =>
     globalThis.localStorage?.setItem(key, JSON.stringify(data)),
-  setDebounce: 150,
+  throttle: 150,
 }
 
 /** Persist with localStorage */
