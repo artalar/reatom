@@ -26,8 +26,14 @@ export type Cache<State = any> = {
   /** The source of this cache */
   readonly atom: Atom<State>
 
+  /** Cause of the state update */
+  readonly cause: Cause
+
   /** Local mutable context */
   readonly ctx: Rec<unknown>
+
+  /** Immutable public data */
+  readonly state: State
 
   /**
    * tracks useful for testing and debugging.
@@ -39,17 +45,15 @@ export type Cache<State = any> = {
    */
   readonly tracks: Array<Cache>
 
-  /** Immutable public data */
-  readonly state: State
-
   readonly listeners?: Set<AtomListener<State>>
 }
 
-export type CacheTemplate<State = any> = {
-  [K in keyof Cache<State>]: K extends `state` | `tracks`
-    ? Cache<State>[K] | undefined
-    : Cache<State>[K]
-}
+export type CacheTemplate<State = any> = Merge<
+  Omit<Cache<State>, `state` | `tracks`> & {
+    state: undefined | State
+    tracks: undefined | Array<Cache>
+  }
+>
 
 export type Atom<State = any> = {
   /** Transaction reducer */
@@ -223,7 +227,7 @@ export type Transaction = {
   readonly getCache: Store['getCache']
 
   /** Memoize atom recalculation during transaction */
-  process<T>(atom: Atom<T>, cache?: Cache<T>): Cache<T>
+  process<T>(atom: Atom<T>, cache?: Cache<T> | CacheTemplate<T>): Cache<T>
 
   /** Schedule effect */
   schedule(cb: TransactionEffect, cause?: Cause): void

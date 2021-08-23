@@ -1,4 +1,3 @@
-export * from './createAtomShort'
 export * from './createResource'
 export * from './debounce'
 export * from './init'

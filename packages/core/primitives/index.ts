@@ -3,5 +3,6 @@
 export * from './createBooleanAtom'
 export * from './createMapAtom'
 export * from './createNumberAtom'
-export * from './createStringAtom'
+export * from './createPrimitiveAtom'
 export * from './createSetAtom'
+export * from './createStringAtom'

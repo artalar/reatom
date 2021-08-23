@@ -1,35 +1,24 @@
-import { AtomOptions, createAtom } from '@reatom/core'
+import { AtomOptions } from '@reatom/core'
+import { createPrimitiveAtom } from '.'
 
+let count = 0
 export function createMapAtom<Key, Element>(
   initState = new Map<Key, Element>(),
-  options?: AtomOptions<Map<Key, Element>>,
+  options: AtomOptions<Map<Key, Element>> = `map atom [${++count}]`,
 ) {
-  const mapAtom = createAtom(
+  type State = Map<Key, Element>
+  return createPrimitiveAtom(
+    initState,
     {
-      set: (key: Key, el: Element) => ({ key, el }),
-      delete: (key: Key) => key,
-      clear: () => null,
-
-      change: (cb: (stateCopy: Map<Key, Element>) => void) => cb,
-    },
-    ({ onAction }, state = initState) => {
-      let newState = state
-
-      const getMutState = () =>
-        newState === state ? (newState = new Map(state)) : newState
-
-      onAction(`set`, ({ key, el }) => getMutState().set(key, el))
-
-      onAction(`delete`, (key) => getMutState().delete(key))
-
-      onAction(`clear`, () => getMutState().clear())
-
-      onAction(`change`, (cb) => cb(getMutState()))
-
-      return newState
+      set: (state, key: Key, el: Element) => new Map(state).set(key, el),
+      delete: (state, key: Key) => {
+        const newState = (state = new Map(state))
+        if (!newState.delete(key)) return state
+        return newState
+      },
+      clear: () => new Map(),
+      change: (state, cb: (stateCopy: State) => State) => cb(new Map(state)),
     },
     options,
   )
-
-  return mapAtom
 }
