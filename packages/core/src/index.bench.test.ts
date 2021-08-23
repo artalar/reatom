@@ -3,9 +3,12 @@ import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
+import { observable, computed, autorun, configure } from 'mobx'
 import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { combine, map } from '@reatom/core/experiments'
+
+configure({ enforceActions: 'never' })
 
 async function start(iterations: number) {
   const w_combine = <A, B>(
@@ -145,12 +148,26 @@ async function start(iterations: number) {
   const mH = mAtom(() => mF.get() + mG.get())
   let mRes = 0
 
+  const xEntry = observable.box(0)
+  const xA = computed(() => xEntry.get())
+  const xB = computed(() => xA.get() + 1)
+  const xC = computed(() => xA.get() + 1)
+  const xD = computed(() => xB.get() + xC.get())
+  const xE = computed(() => xD.get() + 1)
+  const xF = computed(() => xD.get() + xE.get())
+  const xG = computed(() => xD.get() + xE.get())
+  const xH = computed(() => xF.get() + xG.get())
+  let xRes = 0
+  autorun(() => (xRes += xH.get()))
+  xRes = 0
+
   const reatomLogs = new Array<number>()
   const reatomV1Logs = new Array<number>()
   const effectorLogs = new Array<number>()
   const wonkaLogs = new Array<number>()
   const cellxLogs = new Array<number>()
   const molLogs = new Array<number>()
+  const mobxLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
@@ -179,11 +196,15 @@ async function start(iterations: number) {
     mEntry.push(i)
     mRes += mH.get()
     molLogs.push(performance.now() - startMol)
+
+    const startMobx = performance.now()
+    xEntry.set(i)
+    mobxLogs.push(performance.now() - startMobx)
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  if (new Set([res, resV1, eRes, wRes, cRes, mRes]).size !== 1) {
+  if (new Set([res, resV1, eRes, wRes, cRes, mRes, xRes]).size !== 1) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
   }
@@ -195,8 +216,10 @@ async function start(iterations: number) {
     mol: log(molLogs),
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
+    mobx: log(mobxLogs),
   })
 }
+
 start(100)
 start(1_000)
 start(10_000)
