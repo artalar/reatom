@@ -35,9 +35,9 @@ export function createPrimitiveAtom<
   State,
   {
     [K in keyof ActionsMappers]: ActionsMappers[K] extends Fn<
-      [any, infer Payload]
+      [any, ...infer Payload]
     >
-      ? (payload: Payload) => Payload
+      ? (...payload: Payload) => Payload
       : never
   }
 >
@@ -71,7 +71,10 @@ export function createPrimitiveAtom<State>(
           cache = Object.assign({}, cache)
         }
 
-        cache.state = actions![keys[idx]](cache.state as State, action.payload)
+        cache.state = actions![keys[idx]](
+          cache.state as State,
+          ...action.payload,
+        )
       }
     })
 
@@ -82,7 +85,7 @@ export function createPrimitiveAtom<State>(
 
   const atom = createAtom(
     keys.reduce(
-      (acc, key) => ((acc[key] = (payload) => payload), acc),
+      (acc, key) => ((acc[key] = (...payload) => payload), acc),
       {} as Rec<Fn>,
     ),
 
