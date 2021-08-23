@@ -3,10 +3,11 @@ import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
-import { createAtom, defaultStore, Fn } from '@reatom/core'
+import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
+import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { combine, map } from '@reatom/core/experiments'
 
-async function start(iterations = 1_000) {
+async function start(iterations: number) {
   const w_combine = <A, B>(
     sourceA: w.Source<A>,
     sourceB: w.Source<B>,
@@ -41,15 +42,7 @@ async function start(iterations = 1_000) {
   })
   res = 0
 
-  const aV1 = createAtom(
-    { entry: (payload: number) => payload },
-    ({ onAction }, state = 0) => {
-      // onAction(`entry`, (v) => (state = v % 2 ? state : v + 1))
-      onAction(`entry`, (v) => (state = v))
-      return state
-    },
-    {},
-  )
+  const aV1 = createPrimitiveAtom(0)
 
   const bV1 = map(aV1, (v) => v + 1)
   const cV1 = map(aV1, (v) => v + 1)
@@ -166,7 +159,7 @@ async function start(iterations = 1_000) {
     reatomLogs.push(performance.now() - startReatom)
 
     const startReatomV1 = performance.now()
-    defaultStore.dispatch(aV1.entry(i))
+    defaultStore.dispatch(aV1.set(i))
     reatomV1Logs.push(performance.now() - startReatomV1)
 
     const startEffector = performance.now()
@@ -190,29 +183,46 @@ async function start(iterations = 1_000) {
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  if (new Set([res, resV1, /* rRes, */ eRes, wRes, cRes, mRes]).size !== 1) {
-    ;({ res, res1: resV1, /* rRes, */ eRes, wRes, cRes, mRes }) //?
+  if (new Set([res, resV1, eRes, wRes, cRes, mRes]).size !== 1) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
   }
 
-  console.log(`reatom`)
-  console.log(log(reatomLogs) /*  */)
-  console.log(`reatomV1`)
-  console.log(log(reatomV1Logs) /*  */)
-  console.log(`effector`)
-  console.log(log(effectorLogs) /**/)
-  console.log(`mol`)
-  console.log(log(molLogs) /*     */)
-  console.log(`cellx`)
-  console.log(log(cellxLogs) /*   */)
-  console.log(`wonka`)
-  console.log(log(wonkaLogs) /*   */)
+  printLogs({
+    reatom: log(reatomLogs),
+    reatomV1: log(reatomV1Logs),
+    effector: log(effectorLogs),
+    mol: log(molLogs),
+    cellx: log(cellxLogs),
+    wonka: log(wonkaLogs),
+  })
 }
-// start(100)
-start(1000)
-// start(10000)
-// start(100000)
+start(100)
+start(1_000)
+start(10_000)
+
+function printLogs(results: Rec<ReturnType<typeof log>>) {
+  const medFastest = Math.min(...Object.values(results).map(({ med }) => med))
+
+  Object.entries(results)
+    .sort(([, { med: a }], [, { med: b }]) => a - b)
+    .forEach(([name, { min, med, max }]) => {
+      console.log(
+        name + ` `.repeat(12 - name.length),
+        formatPercent(medFastest / med),
+        `   `,
+        `(${med.toFixed(3)}ms)`,
+        `   `,
+        { min: min.toFixed(5), med: med.toFixed(5), max: max.toFixed(5) },
+      )
+    })
+
+  console.log(`\n`)
+}
+
+function formatPercent(n = 0) {
+  return `${n < 1 ? ` ` : ``}${(n * 100).toFixed(0)}%`
+}
 
 function log(values: Array<number>) {
   return {
@@ -233,7 +243,7 @@ function med(values: Array<number>) {
 
   if (values.length % 2) return values[half]
 
-  return ((values[half - 1] + values[half]) / 2.0).toFixed(3)
+  return (values[half - 1] + values[half]) / 2.0
 }
 
 function min(values: Array<number>) {
@@ -245,7 +255,7 @@ function min(values: Array<number>) {
 
   const limit = Math.floor(values.length / 20)
 
-  return values[limit].toFixed(3)
+  return values[limit]
 }
 
 function max(values: Array<number>) {
@@ -257,5 +267,5 @@ function max(values: Array<number>) {
 
   const limit = values.length - 1 - Math.floor(values.length / 20)
 
-  return values[limit].toFixed(3)
+  return values[limit]
 }
