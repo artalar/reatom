@@ -47,9 +47,9 @@ export type AtomSelfBinded<
   }
 
 export type AtomOptions<State = any> =
-  | Atom['id']
+  | Atom[`id`]
   | {
-      id?: Atom['id']
+      id?: Atom[`id`]
       decorators?: Array<AtomDecorator<State>>
     }
 
@@ -72,7 +72,7 @@ export function createAtom<State, Deps extends Rec<PayloadMapper | Atom>>(
   const selfTypes: Array<string> = []
   const types: Array<string> = []
   const actionCreators: Rec<ActionCreator> = {}
-  const create: Track<Deps>['create'] = (name, ...args) =>
+  const create: Track<Deps>[`create`] = (name, ...args) =>
     actionCreators[name as string](...args)
 
   if (!isFunction(reducer) || !isString(id)) {
@@ -151,7 +151,7 @@ function createDynamicallyTrackedCacheReducer<
   selfTypes: Array<string>,
   actionCreators: Rec<ActionCreator>,
 ): CacheReducer<State> {
-  const create: Track<Deps>['create'] = (name, ...args) =>
+  const create: Track<Deps>[`create`] = (name, ...args) =>
     actionCreators[name as string](...args)
 
   return (
@@ -177,15 +177,15 @@ function createDynamicallyTrackedCacheReducer<
       return atomPatch
     }
 
-    const get: Track<Deps>['get'] = (name) =>
+    const get: Track<Deps>[`get`] = (name) =>
       _get(dependencies[name as string] as Atom).state
 
-    const getUnlistedState: Track<Deps>['getUnlistedState'] = (targetAtom) => {
+    const getUnlistedState: Track<Deps>[`getUnlistedState`] = (targetAtom) => {
       outdatedCall()
       return process(targetAtom).state
     }
 
-    const onAction: Track<Deps>['onAction'] = (name, reaction) => {
+    const onAction: Track<Deps>[`onAction`] = (name, reaction) => {
       outdatedCall()
 
       if (effectCause != undefined) {
@@ -205,7 +205,7 @@ function createDynamicallyTrackedCacheReducer<
       })
     }
 
-    const onChange: Track<Deps>['onChange'] = (name, reaction) => {
+    const onChange: Track<Deps>[`onChange`] = (name, reaction) => {
       outdatedCall()
 
       if (effectCause != undefined) {
@@ -230,7 +230,13 @@ function createDynamicallyTrackedCacheReducer<
       }
     }
 
-    const _schedule = (effect: AtomEffect) => {
+    const onInit: Track<Deps>[`onInit`] = (effect) => {
+      if (cache.tracks == undefined) {
+        _schedule(effect)
+      }
+    }
+
+    const _schedule: Track<Deps>[`schedule`] = (effect) => {
       outdatedCall()
 
       schedule((dispatch, causes) => effect(dispatch, ctx, causes), effectCause)
@@ -242,6 +248,7 @@ function createDynamicallyTrackedCacheReducer<
       getUnlistedState,
       onAction,
       onChange,
+      onInit,
       schedule: _schedule,
     }
 
