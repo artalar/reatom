@@ -40,6 +40,17 @@ function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
   return true
 }
 
+export type StoreOnPatch = Fn<
+  [transactionResult: TransactionResult & { start: number; end: number }]
+>
+
+export type StoreOnError = Fn<
+  [
+    error: unknown,
+    transactionData: TransactionResult & { start: number; end: number },
+  ]
+>
+
 export function createStore({
   callSafety = callSafetyDefault,
   onError = noop,
@@ -47,15 +58,8 @@ export function createStore({
   now = Date.now.bind(Date),
 }: {
   callSafety?: typeof callSafetyDefault
-  onError?: Fn<
-    [
-      error: unknown,
-      transactionData: TransactionResult & { start: number; end: number },
-    ]
-  >
-  onPatch?: Fn<
-    [transactionResult: TransactionResult & { start: number; end: number }]
-  >
+  onError?: StoreOnError
+  onPatch?: StoreOnPatch
   /** Current time getter. Tip: use `performance.now` to accurate tracking */
   now?: typeof Date.now
   // TODO:
