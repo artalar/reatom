@@ -230,9 +230,9 @@ function createDynamicallyTrackedCacheReducer<
       }
     }
 
-    const onInit: Track<Deps>[`onInit`] = (effect) => {
+    const onInit: Track<Deps>[`onInit`] = (cb) => {
       if (cache.tracks == undefined) {
-        _schedule(effect)
+        cb()
       }
     }
 

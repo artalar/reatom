@@ -142,8 +142,8 @@ export type Track<Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>> = {
     >,
   ): void
 
-  /** Schedule effect only at first reducer call */
-  onInit(effect: AtomEffect): void
+  /** React only at first reducer call */
+  onInit(reaction: Fn): void
 
   /** Schedule effect */
   schedule(effect: AtomEffect): void
