@@ -32,7 +32,28 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 - awkward to write bad code
 - easy to write good code
 
-Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow predictable, but granular and performant.
+Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow predictable, but granular and efficient.
+
+### Short example
+
+```ts
+import { createAtom } from '@reatom/core'
+
+export const amountAtom = createAtom(
+  { clear: () => null, add: (value: number) => value },
+  ({ onAction, schedule }, state = 0) => {
+    onAction('clear', () => (state = 0))
+    onAction('add', (value) => (state = state + value))
+    schedule(() => render(`Amount is ${state}`))
+    return state
+  },
+)
+amountAtom.getState()
+// -> 0
+amountAtom.add.dispatch(7)
+amountAtom.getState()
+// -> 7
+```
 
 ### Comparison
 
