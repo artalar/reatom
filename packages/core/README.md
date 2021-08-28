@@ -5,7 +5,7 @@
 
 </div>
 
-Reatom is **declarative** state manager, designed for both simple and complex applications.
+Reatom is state manager for both simple and complex applications.
 
 # @reatom/core
 
@@ -32,11 +32,11 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 - awkward to write bad code
 - easy to write good code
 
-Reatom is a mix of all best from MobX and Redux. It processes immutable data and use single global store, which totally predictable, but makes it granular, which allows you to not think about any performance overhead and use it for an any kind of task.
+Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow predictable, but granular and performant.
 
 ### Comparison
 
-> PR welcome for other managers, but it should be framework agnostic.
+> PR welcome for other framework agnostic managers.
 
 | Name       | Bundle size | Granularity | API strictness | Lifetime      | Atomicity | Effects managements | API      | Direction | Glitch free | Immutability |
 | ---------- | ----------- | ----------- | -------------- | ------------- | --------- | ------------------- | -------- | --------- | ----------- | ------------ |
@@ -68,15 +68,19 @@ or
 yarn add @reatom/core
 ```
 
-## What is state management?
+## Motivation
+
+### Reatom goals
+
+The [features](#features) list is reflect our vision of perfectly balanced tool for any kind of application data management. But most important goals probably are **performance**, **atomicity guaranties** and [tiny basic API](#Write-you-own-atom-creator) with **immutable principles**.
+
+### What is state management?
 
 `State` is a term from [FSA](https://en.wikipedia.org/wiki/Finite-state_machine) thats mean a consistent data with predicted shape (and literals) in some time slice of application lifetime.
 
-State manager provides an API for describe and transform application state in a right way, you may solve a most class of problems with it, management domain data (user profile, entities editing...) or environment data (routing, network cache...).
+State manager provides an API for describe and transform application state in a right way, you may solve a most class of problems with it, management domain data (user profile, entities editing...) or environment data (routing, network cache...). Also it has a reactive interface witch helps to decouple application modules / components.
 
 Those problem you may solve by other ways too: streams / services / classes, but if you want more reliability guaranties and better debugging experience state manager do it best.
-
-> this part will be updated, I have a lot to say.
 
 ## Guides
 
@@ -322,6 +326,23 @@ We want to grow a huge ecosystem around Reatom and make it qualitative. We are w
 This approach increase domain package size in `node_modules` whe you install it, but 100% treeshakable so it looks a good way.
 
 ## FAQ
+
+### Why you recommend to mutate `state` variable in `createAtom` reducers?
+
+There is no sense to write all code with immutable principles, [Clojure docs](https://clojure.org/reference/transients) describe it better. If you still woried about this you may use aditional mutable variable.
+
+```ts
+const counterAtom = createAtom(
+  { inc: () => null },
+  ({ onAction }, state = 0) => {
+    let newState = state
+
+    onAction('inc', () => newState++)
+
+    return newState
+  },
+)
+```
 
 ### How to handle one action in a few atoms?
 
