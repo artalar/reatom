@@ -21,13 +21,13 @@ React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 ## Install
 
 ```
-npm i @reatom/react@alpha
+npm i @reatom/react
 ```
 
 or
 
 ```sh
-yarn add @reatom/react@alpha
+yarn add @reatom/react
 ```
 
 > `@reatom/react` depends on and works with `@reatom/core` and `use-subscription`. You should install this packages too.
@@ -41,21 +41,17 @@ Connects the atom to the store represented in context and returns the state of t
 #### Basic (useAtom)
 
 ```ts
-const [atomValue] = useAtom(atom)
+const [data] = useAtom(dataAtom)
 ```
 
 #### Depended value by selector
 
 ```ts
-const [atomPropValue] = useAtom(
-  useMemo(() => declareAtom(($) => $(atom)[props.id]), [props.id]),
+const [propAtom] = useMemo(
+  () => createAtom({ dataAtom }, ({ get }) => get('dataAtom')[props.id]),
+  [props.id],
 )
-```
-
-#### Mount without subscription (for subscribing atoms to actions)
-
-```ts
-useInit([atom])
+const [propValue] = useAtom(propAtom)
 ```
 
 ### useAction
@@ -65,14 +61,14 @@ Binds action with dispatch to the store provided in the context.
 #### Basic (useAction)
 
 ```ts
-const handleDoSome = useAction(doSome)
+const handleUpdateData = useAction(dataAtom.update)
 ```
 
 #### Prepare payload for dispatch
 
 ```ts
-const handleDoSome = useAction(
-  (value) => doSome({ id: props.id, value }),
+const handleUpdateData = useAction(
+  (value) => dataAtom.update({ id: props.id, value }),
   [props.id],
 )
 ```
@@ -82,14 +78,16 @@ const handleDoSome = useAction(
 If action creator don't return an action dispatch not calling.
 
 ```ts
-const handleDoSome = useAction((payload) => {
-  if (condition) return doSome(payload)
+const handleUpdateData = useAction((payload) => {
+  if (condition) return dataAtom.update(payload)
 }, [])
 ```
 
 ## Usage
 
-### Step 1. Create store
+### Step 0 - OPTIONAL. Create store.
+
+This step is required only for SSR, when one node.js process may handle a few requests at the time.
 
 ```jsx
 // App
@@ -115,13 +113,15 @@ export const App = () => {
 }
 ```
 
+### Step 1. Bind your atoms.
+
 ```jsx
 // components/Form
 
-import { declareAction, declareAtom } from '@reatom/core'
+import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { useAtom } from '@reatom/react'
 
-const nameAtom = declareAtom('', {
+const nameAtom = createPrimitiveAtom('', {
   onChange: (e) => e.currentTarget.value,
 })
 
@@ -137,28 +137,7 @@ export const Form = () => {
 }
 ```
 
-OR
-
-```jsx
-// components/Form
-
-import { declareAction, declareAtom } from '@reatom/core'
-import { useAction, useAtom } from '@reatom/react'
-
-const nameAtom = declareAtom('')
-
-export const Form = () => {
-  const [name] = useAtom(nameAtom)
-  const handleChange = useAction((e) => nameAtom.update(e.currentTarget.value))
-
-  return (
-    <form>
-      <label htmlFor="name">Enter your name</label>
-      <input id="name" value={name} onChange={handleChange} />
-    </form>
-  )
-}
-```
+### Step 3. You are gorgeous
 
 <!--
 ## Why React so unfriendly for state-managers
