@@ -4,6 +4,7 @@ import {
   Atom,
   AtomsCache,
   callSafety as callSafetyDefault,
+  Causes,
   createReatomError,
   createTransaction,
   delFromSetsMap,
@@ -14,7 +15,6 @@ import {
   isFunction,
   noop,
   Patch,
-  Rec,
   Store,
   TransactionResult,
 } from './internal'
@@ -41,13 +41,23 @@ function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
 }
 
 export type StoreOnPatch = Fn<
-  [transactionResult: TransactionResult & { start: number; end: number }]
+  [
+    transactionResult: TransactionResult & {
+      causes: Causes
+      start: number
+      end: number
+    },
+  ]
 >
 
 export type StoreOnError = Fn<
   [
     error: unknown,
-    transactionData: TransactionResult & { start: number; end: number },
+    transactionData: TransactionResult & {
+      causes: Causes
+      start: number
+      end: number
+    },
   ]
 >
 
@@ -68,6 +78,20 @@ export function createStore({
   const atomsByAction = new Map<Action['type'], Set<Atom>>()
   const cache: AtomsCache = new WeakMap()
 
+  function invalidateAtomCache(atom: Atom) {
+    if (isAtom(atom)) {
+      if (!isCacheFresh(atom, store.getCache)) {
+        store.dispatch({
+          type: `invalidate ${atom.id} [~${Math.random()}]`,
+          payload: null,
+          targets: [atom],
+        })
+      }
+    } else {
+      throw createReatomError(`passed thing is not an atom`)
+    }
+  }
+
   const dispatch: Store['dispatch'] = (action, causes) => {
     const start = now()
 
@@ -85,7 +109,13 @@ export function createStore({
       effects,
       causes,
     })
-    const getTransactionResult = () => ({ actions, patch, start, end: now() })
+    const getTransactionResult = () => ({
+      actions,
+      patch,
+      causes: causes ?? [],
+      start,
+      end: now(),
+    })
 
     try {
       actions.forEach(({ type, targets }) => {
@@ -106,18 +136,18 @@ export function createStore({
 
   const getCache: Store['getCache'] = (atom) => cache.get(atom)
 
+  const getState: Store['getState'] = (atom) => {
+    invalidateAtomCache(atom)
+
+    return getCache(atom)!.state
+  }
+
   const subscribe: Store['subscribe'] = (atom, cb) => {
-    if (!isAtom(atom) || !isFunction(cb)) {
-      throw createReatomError(`subscribe argument`)
+    if (!isFunction(cb)) {
+      throw createReatomError(`subscribe callback is not a function`)
     }
 
-    if (!isCacheFresh(atom, store.getCache)) {
-      store.dispatch({
-        type: `invalidate ${atom.id} [~${Math.random()}]`,
-        payload: null,
-        targets: [atom],
-      })
-    }
+    invalidateAtomCache(atom)
 
     const cache = getCache(atom)!
 
@@ -143,6 +173,7 @@ export function createStore({
   const store = {
     dispatch,
     getCache,
+    getState,
     subscribe,
   }
 

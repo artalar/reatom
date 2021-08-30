@@ -3,7 +3,6 @@ import {
   ActionCreator,
   Atom,
   AtomBinded,
-  AtomEffect,
   Cache,
   CacheReducer,
   CacheTemplate,
@@ -12,7 +11,6 @@ import {
   createTemplateCache,
   defaultStore,
   Fn,
-  getState,
   isAtom,
   isFunction,
   isString,
@@ -132,7 +130,7 @@ export function createAtom<State, Deps extends Rec<PayloadMapper | Atom>>(
 
   atom.id = id
 
-  atom.getState = () => getState(atom)
+  atom.getState = () => defaultStore.getState(atom)
 
   atom.subscribe = (cb: Fn) => defaultStore.subscribe(atom, cb)
 

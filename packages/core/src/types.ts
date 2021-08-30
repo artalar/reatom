@@ -143,7 +143,7 @@ export type Track<Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>> = {
   ): void
 
   /** React only at first reducer call */
-  onInit(reaction: Fn): void
+  onInit(reaction: Fn<[]>): void
 
   /** Schedule effect */
   schedule(effect: AtomEffect): void
@@ -213,6 +213,8 @@ export type Store = {
   dispatch(action: Action | Array<Action>, causes?: Causes): void
 
   getCache<State>(atom: Atom<State>): undefined | Cache<State>
+
+  getState<State>(atom: Atom<State>): State
 
   /** Subscribe to dispatch */
   subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe

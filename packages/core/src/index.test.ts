@@ -4,7 +4,6 @@ import * as assert from 'uvu/assert'
 import {
   Atom,
   callSafety,
-  Causes,
   createAtom,
   createStore,
   createTransaction,
@@ -307,22 +306,20 @@ test(`Manage dynamic dependencies`, () => {
 })
 
 test(`await all effect`, async () => {
-  let count = 0
-  const subscriptions = new Set<Fn>()
-  const callSafetyTracked: typeof callSafety = (...a: any[]) => {
-    // @ts-expect-error
-    const result: any = callSafety(...a)
+  function createCallSafetyTracked(cb: Fn) {
+    let count = 0
+    const callSafetyTracked: typeof callSafety = (...a: any[]) => {
+      // @ts-expect-error
+      const result: any = callSafety(...a)
 
-    if (result instanceof Promise) {
-      count++
-      result.finally(() => {
-        if (--count === 0) {
-          subscriptions.forEach((cb) => cb())
-        }
-      })
+      if (result instanceof Promise) {
+        count++
+        result.finally(() => --count === 0 && cb())
+      }
+
+      return result
     }
-
-    return result
+    return callSafetyTracked
   }
 
   const resourceDataAtom = createPrimitiveAtom(0)
@@ -347,12 +344,11 @@ test(`await all effect`, async () => {
     },
   )
 
-  const store = createStore({ callSafety: callSafetyTracked })
   const cb = mockFn()
+  const callSafetyTracked = createCallSafetyTracked(cb)
+  const store = createStore({ callSafety: callSafetyTracked })
 
   init([resourceAtom], store)
-
-  subscriptions.add(cb)
 
   store.dispatch(resourceAtom.doA())
 

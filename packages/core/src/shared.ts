@@ -125,16 +125,19 @@ export function createTransaction(
 
         patch.set(atom, atomPatch)
 
-        if (
-          // @ts-expect-error
-          listeners?.size > 0 &&
-          !Object.is(state, cache.state)
-        ) {
-          transaction.schedule(
-            (dispatch, causes) =>
-              listeners!.forEach((cb) => callSafety(cb, state, causes)),
-            cause,
-          )
+        if (Object.is(state, cache.state)) {
+          atomPatch.cause == cache.cause
+        } else {
+          if (
+            // @ts-expect-error
+            listeners?.size > 0
+          ) {
+            transaction.schedule(
+              (dispatch, causes) =>
+                listeners!.forEach((cb) => callSafety(cb, state, causes)),
+              cause,
+            )
+          }
         }
       }
 
@@ -156,7 +159,5 @@ export function getState<State>(
   atom: Atom<State>,
   store = defaultStore,
 ): State {
-  let state: State
-  store.subscribe(atom, (_state) => (state = _state))()
-  return state!
+  return store.getState(atom)
 }
