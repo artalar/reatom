@@ -11,6 +11,7 @@ import {
   createTemplateCache,
   defaultStore,
   Fn,
+  isActionCreator,
   isAtom,
   isFunction,
   isString,
@@ -30,18 +31,15 @@ export type AtomSelfBinded<
   {
     [K in keyof Deps]: Deps[K] extends Atom
       ? never
+      : Deps[K] extends ActionCreator
+      ? never
       : K extends `_${string}`
       ? never
-      : Merge<
-          ActionCreator<
-            Parameters<Deps[K]>,
-            { payload: ReturnType<Deps[K]> }
-          > & {
-            dispatch: (
-              ...args: Parameters<Deps[K]>
-            ) => Action<ReturnType<Deps[K]>>
-          }
-        >
+      : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
+          dispatch: (
+            ...args: Parameters<Deps[K]>
+          ) => Action<ReturnType<Deps[K]>>
+        }
   }
 
 export type AtomOptions<State = any> =
@@ -59,7 +57,10 @@ export type AtomDecorator<State> = Fn<
 type PayloadMapper = Fn
 
 let atomsCount = 0
-export function createAtom<State, Deps extends Rec<PayloadMapper | Atom>>(
+export function createAtom<
+  State,
+  Deps extends Rec<PayloadMapper | Atom | ActionCreator>,
+>(
   dependencies: Deps,
   reducer: TrackReducer<State, Deps>,
   options: AtomOptions<State> = {},
@@ -67,11 +68,10 @@ export function createAtom<State, Deps extends Rec<PayloadMapper | Atom>>(
   let { decorators = [], id = `atom [${++atomsCount}]` } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
-  const selfTypes: Array<string> = []
+  const trackedTypes: Array<string> = []
   const types: Array<string> = []
   const actionCreators: Rec<ActionCreator> = {}
-  const create: Track<Deps>[`create`] = (name, ...args) =>
-    actionCreators[name as string](...args)
+  const externalActions: Rec<string> = {}
 
   if (!isFunction(reducer) || !isString(id)) {
     throw createReatomError(`Atom arguments`)
@@ -88,25 +88,31 @@ export function createAtom<State, Deps extends Rec<PayloadMapper | Atom>>(
     if (isAtom(dep)) {
       dep.types.forEach((type) => pushUnique(types, type))
     } else {
-      const type = `${id} - ${name}`
+      let type: string
 
-      const actionCreator = (...a: any[]) => ({
-        payload: dep(...a),
-        type,
-        targets: [atom],
-      })
-      actionCreator.type = type
-      actionCreator.dispatch = (...a: any[]) =>
-        defaultStore.dispatch(actionCreator(...a))
+      if (isActionCreator(dep)) {
+        externalActions[name] = type = dep.type
+      } else {
+        type = `${id} - ${name}`
 
-      actionCreators[name] = actionCreator
+        const actionCreator = (...a: any[]) => ({
+          payload: dep(...a),
+          type,
+          targets: [atom],
+        })
+        actionCreator.type = type
+        actionCreator.dispatch = (...a: any[]) =>
+          defaultStore.dispatch(actionCreator(...a))
 
-      if (type[0] != `_`) {
-        // @ts-expect-error
-        atom[name] = actionCreator
+        actionCreators[name] = actionCreator
+
+        if (type[0] != `_`) {
+          // @ts-expect-error
+          atom[name] = actionCreator
+        }
       }
 
-      pushUnique(selfTypes, type)
+      pushUnique(trackedTypes, type)
       pushUnique(types, type)
     }
   })
@@ -116,8 +122,9 @@ export function createAtom<State, Deps extends Rec<PayloadMapper | Atom>>(
     createDynamicallyTrackedCacheReducer<State, Deps>(
       reducer,
       dependencies,
-      selfTypes,
+      trackedTypes,
       actionCreators,
+      externalActions,
     ),
   )
 
@@ -146,8 +153,9 @@ function createDynamicallyTrackedCacheReducer<
 >(
   reducer: TrackReducer<State, Deps>,
   dependencies: Deps,
-  selfTypes: Array<string>,
+  trackedTypes: Array<string>,
   actionCreators: Rec<ActionCreator>,
+  externalActions: Rec<string>,
 ): CacheReducer<State> {
   const create: Track<Deps>[`create`] = (name, ...args) =>
     actionCreators[name as string](...args)
@@ -192,7 +200,12 @@ function createDynamicallyTrackedCacheReducer<
         )
       }
 
-      const { type } = actionCreators[name as string]
+      const type =
+        externalActions[name as string] ?? actionCreators[name as string]?.type
+
+      if (type == undefined) {
+        throw createReatomError(`Unknown action`, { name })
+      }
 
       actions.forEach((action) => {
         if (type == action.type) {
@@ -254,7 +267,7 @@ function createDynamicallyTrackedCacheReducer<
     let shouldCallReducer =
       cache.tracks == undefined ||
       actions.some(
-        ({ type }) => selfTypes.includes(type) && ((cause = type), true),
+        ({ type }) => trackedTypes.includes(type) && ((cause = type), true),
       ) ||
       cache.tracks.some(
         (depCache) =>

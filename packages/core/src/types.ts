@@ -102,15 +102,31 @@ export type AtomEffect<Ctx extends Cache['ctx'] = Cache['ctx']> = Fn<
   [dispatch: Store['dispatch'], ctx: Ctx, causes: Causes]
 >
 
-export type DepsPayloadMappers<Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>> = {
-  [K in keyof Deps]: Deps[K] extends Atom ? never : Deps[K]
+export type DepsPayloadMappers<
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom | ActionCreator>,
+> = {
+  [K in keyof Deps]: Deps[K] extends Atom
+    ? never
+    : Deps[K] extends ActionCreator
+    ? never
+    : Deps[K]
 }
 
-export type DepsAtoms<Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>> = {
+export type DepsActionCreators<
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
+> = {
+  [K in keyof Deps]: Deps[K] extends ActionCreator ? Deps[K] : never
+}
+
+export type DepsAtoms<
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
+> = {
   [K in keyof Deps]: Deps[K] extends Atom ? Deps[K] : never
 }
 
-export type Track<Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>> = {
+export type Track<
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
+> = {
   /** Create action */
   create: <Name extends keyof DepsPayloadMappers<Deps>>(
     name: Name,
@@ -129,6 +145,14 @@ export type Track<Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>> = {
   onAction<Name extends keyof DepsPayloadMappers<Deps>>(
     name: Name,
     reaction: Fn<[payload: ReturnType<DepsPayloadMappers<Deps>[Name]>]>,
+  ): void
+  /** React to action dispatch */
+  onAction<
+    Name extends keyof DepsActionCreators<Deps> &
+      keyof DepsActionCreators<Deps>,
+  >(
+    name: Name,
+    reaction: Fn<[payload: ActionPayload<DepsActionCreators<Deps>[Name]>]>,
   ): void
 
   /** Subscribe to atom state changes and react to it */

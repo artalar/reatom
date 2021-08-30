@@ -108,6 +108,33 @@ test(`combine`, () => {
   ;`👍` //?
 })
 
+test(`atom external action subscribe`, () => {
+  const a1 = createAtom(
+    { add: (value: number) => value },
+    (track, state = 0) => {
+      track.onAction('add', (value) => (state += value))
+      return state
+    },
+  )
+  const a2 = createAtom({ add: a1.add }, (track, state = 0) => {
+    track.onAction('add', (value) => (state += value))
+    // @ts-expect-error
+    if (false as any) track.create('add', 0)
+    return state
+  })
+
+  const store = createStore()
+  init([a1, a2], store)
+
+  assert.is(store.getState(a1), 0)
+  assert.is(store.getState(a2), 0)
+
+  store.dispatch(a1.add(10))
+  assert.is(store.getState(a1), 10)
+  assert.is(store.getState(a2), 10)
+  ;`👍` //?
+})
+
 test(`atom filter`, () => {
   const track = mockFn()
   const a1Atom = createPrimitiveAtom(0, null, `a1Atom`)
