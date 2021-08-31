@@ -18,6 +18,28 @@ export type Merge<Intersection> = Intersection extends (...a: any[]) => any
 
 export type Values<T> = Merge<T[keyof T]>
 
+export type OmitValues<Collection, Target> = Merge<
+  Omit<
+    Collection,
+    Values<
+      {
+        [K in keyof Collection]: Collection[K] extends Target ? K : never
+      }
+    >
+  >
+>
+
+export type PickValues<Collection, Target> = Merge<
+  Pick<
+    Collection,
+    Values<
+      {
+        [K in keyof Collection]: Collection[K] extends Target ? K : never
+      }
+    >
+  >
+>
+
 /* DOMAIN */
 
 export type Unsubscribe = () => void
@@ -104,13 +126,7 @@ export type AtomEffect<Ctx extends Cache['ctx'] = Cache['ctx']> = Fn<
 
 export type DepsPayloadMappers<
   Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom | ActionCreator>,
-> = {
-  [K in keyof Deps]: Deps[K] extends Atom
-    ? never
-    : Deps[K] extends ActionCreator
-    ? never
-    : Deps[K]
-}
+> = OmitValues<Deps, Atom | ActionCreator>
 
 export type DepsActionCreators<
   Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
@@ -142,17 +158,19 @@ export type Track<
   getUnlistedState<State>(atom: Atom<State>): State
 
   /** React to action dispatch */
-  onAction<Name extends keyof DepsPayloadMappers<Deps>>(
+  onAction<Name extends keyof OmitValues<Deps, Atom>>(
     name: Name,
-    reaction: Fn<[payload: ReturnType<DepsPayloadMappers<Deps>[Name]>]>,
-  ): void
-  /** React to action dispatch */
-  onAction<
-    Name extends keyof DepsActionCreators<Deps> &
-      keyof DepsActionCreators<Deps>,
-  >(
-    name: Name,
-    reaction: Fn<[payload: ActionPayload<DepsActionCreators<Deps>[Name]>]>,
+    reaction: Fn<
+      [
+        payload: Name extends keyof PickValues<Deps, ActionCreator>
+          ? // TODO
+            // @ts-ignore
+            ActionPayload<Deps[Name]>
+          : // TODO
+            // @ts-ignore
+            ReturnType<Deps[Name]>,
+      ]
+    >,
   ): void
 
   /** Subscribe to atom state changes and react to it */

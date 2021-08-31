@@ -17,6 +17,7 @@ import {
   isString,
   Merge,
   noop,
+  OmitValues,
   pushUnique,
   Rec,
   Track,
@@ -64,7 +65,7 @@ export function createAtom<
   dependencies: Deps,
   reducer: TrackReducer<State, Deps>,
   options: AtomOptions<State> = {},
-): AtomSelfBinded<State, Deps> {
+): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
   let { decorators = [], id = `atom [${++atomsCount}]` } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
@@ -158,6 +159,8 @@ function createDynamicallyTrackedCacheReducer<
   externalActions: Rec<string>,
 ): CacheReducer<State> {
   const create: Track<Deps>[`create`] = (name, ...args) =>
+    // TODO
+    // @ts-expect-error
     actionCreators[name as string](...args)
 
   return (
