@@ -28,10 +28,10 @@ function bindActionCreator<Args extends any[]>(
   }
 }
 
-export function useAction<T = void>(
-  actionCreator: (payload: T) => Action | Action[] | void,
+export function useAction<Args extends any[] = []>(
+  actionCreator: (...args: Args) => Action | Action[] | void,
   deps: any[] = [],
-) {
+): (...args: Args) => void {
   const store = React.useContext(reatomContext)
 
   return React.useCallback(
