@@ -13,12 +13,12 @@ import { useSubscription } from 'use-subscription'
 
 export const reatomContext = React.createContext(defaultStore)
 
-function bindActionCreator<T>(
+function bindActionCreator<Args extends any[]>(
   store: Store,
-  actionCreator: (payload: T) => Action | Action[] | void,
+  actionCreator: (...args: Args) => Action | Action[] | void,
 ) {
-  return (payload: T) => {
-    const action = actionCreator(payload)
+  return (...args: Args) => {
+    const action = actionCreator(...args)
 
     if (action) {
       ReactDOM.unstable_batchedUpdates(() => {
