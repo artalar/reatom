@@ -253,7 +253,7 @@ export const timerAtom = createAtom(
 
 Primitives is a pack of helpers around primitive data structures, which helps you reduce boilerplate. It not included in `2kb` main bundle, but tiny by it selfs and do not includes into your application bundle if you not importing it.
 
-> Available primitives: `createBooleanAtom`, `createMapAtom`, `createNumberAtom`, `createStringAtom`, `createSetAtom` (`crateArrayAtom` will added soon).
+> Available primitives: `createBooleanAtom`, `createEnumAtom`, `createMapAtom`, `createNumberAtom`, `createStringAtom`, `createSetAtom` (`crateArrayAtom` will added soon).
 
 ```ts
 import { createBooleanAtom } from '@reatom/core/primitives'
@@ -279,6 +279,42 @@ import { createStringAtom } from '@reatom/core/primitives'
 export type Statuses = 'init' | 'loading' | 'loaded' | 'error'
 
 export const statusAtom = createStringAtom<Statuses>('init')
+```
+
+But a better way is use the `createEnumAtom`.
+
+```ts
+import { createEnumAtom } from '@reatom/core/primitives'
+
+const githubRepoSortFilterAtom = createEnumAtom(
+  ['full_name', 'created', 'updated', 'pushed'] as const,
+  { format: 'snake_case' },
+)
+
+console.log(sortFilterAtom.getState())
+// -> 'full_name'
+
+sortFilterAtom.set_updated.dispatch()
+
+console.log(sortFilterAtom.getState())
+// -> 'updated'
+
+/* OR use default `camelCase` format */
+
+const statusesAtom = createEnumAtom([
+  'init',
+  'loading',
+  'loaded',
+  'error',
+] as const)
+
+console.log(statusesAtom.getState())
+// -> 'init'
+
+statusesAtom.setLoading.dispatch()
+
+console.log(statusesAtom.getState())
+// -> 'loading'
 ```
 
 <!--
