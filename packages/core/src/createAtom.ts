@@ -212,7 +212,9 @@ function createDynamicallyTrackedCacheReducer<
 
       actions.forEach((action) => {
         if (type == action.type) {
-          effectCause = `${type} handler`
+          effectCause = name as string
+          if (name != type) effectCause += ` (${type})`
+          effectCause += ' handler'
           reaction(action.payload)
           effectCause = undefined
         }
@@ -238,7 +240,9 @@ function createDynamicallyTrackedCacheReducer<
         atomCache == undefined ||
         !Object.is(atomCache.state, atomPatch.state)
       ) {
-        effectCause = `${depAtom.id} handler`
+        effectCause = name as string
+        if (name != atom.id) effectCause += ` (${atom.id})`
+        effectCause += ' handler'
         reaction(atomPatch.state, atomCache?.state)
         effectCause = undefined
       }

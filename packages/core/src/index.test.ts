@@ -233,9 +233,9 @@ test(`in atom action effect`, async () => {
 
   assert.equal(parseCauses(cb.lastInput(1)), [
     'DISPATCH: data - request',
-    'data - request handler',
+    'request·(data·-·request)·handler',
     'DISPATCH: data - response',
-    'data - response',
+    'request·(data·-response)·handler',
   ])
   ;`👍` //?
 })
