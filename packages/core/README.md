@@ -93,13 +93,13 @@ yarn add @reatom/core
 
 ### Reatom goals
 
-The [features](#features) list is reflect our vision of perfectly balanced tool for any kind of application data management. But most important goals probably are **performance**, **atomicity guaranties** and [tiny basic API](#Write-you-own-atom-creator) with **immutable principles**.
+The [features](#features) list is reflect our vision of perfectly balanced tool for any kind of application data management. But most important goals probably are **performance**, **atomicity guaranties** and [tiny basic API](#Write-you-own-atom-creator) with **immutable principles** for predictable debugging .
 
 ### What is state management?
 
-`State` is a term from [FSA](https://en.wikipedia.org/wiki/Finite-state_machine) thats mean a consistent data with predicted shape (and literals) in some time slice of application lifetime.
+`State` is a term from [FSA](https://en.wikipedia.org/wiki/Finite-state_machine) thats mean a consistent data with predicted shape (and literals) in some time slice of application lifetime. Most libraries for data manipulation which calls itself _state manager_ don't give you atomicity guaranties. But if we take a look at the innovator of this approach React.js we found that without `componentDidCatch` your application may be destroyed by any error in a render phase. Reatom follow same principles, but instead of throwing a whole state at an error it cancel accumulated state and leave only previous valid state.
 
-State manager provides an API for describe and transform application state in a right way, you may solve a most class of problems with it, management domain data (user profile, entities editing...) or environment data (routing, network cache...). Also it has a reactive interface witch helps to decouple application modules / components.
+Also, state manager provides an API for describe and transform application state in a right way, you may solve a most class of problems with it, management domain data (user profile, entities editing...) or environment data (routing, network cache...). Also it has a reactive interface witch helps to decouple application modules / components.
 
 Those problem you may solve by other ways too: streams / services / classes, but if you want more reliability guaranties and better debugging experience state manager do it best.
 
