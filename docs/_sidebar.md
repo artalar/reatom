@@ -1,3 +1,5 @@
+- Docs for LTS version
+
 - Getting started
 
   - [Introduction](/)

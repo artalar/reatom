@@ -1,3 +1,5 @@
+## **This docs for LTS (1.\*) version of Reatom**
+
 <div align="center">
 
 [![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
