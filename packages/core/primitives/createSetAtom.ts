@@ -3,7 +3,7 @@ import { AtomOptions, createAtom } from '@reatom/core'
 let count = 0
 export function createSetAtom<Element>(
   initState = new Set<Element>(),
-  options: AtomOptions<Set<Element>> = `set atom [${++count}]`,
+  options: AtomOptions<Set<Element>> = `set${++count}`,
 ) {
   const mapAtom = createAtom(
     {

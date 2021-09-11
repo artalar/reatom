@@ -12,7 +12,7 @@ export function createEnumAtom<
     | Atom['id']
     | (Exclude<AtomOptions, string> & {
         format?: Format
-      }) = `enum atom [${++count}] (${variants.join(', ')})`,
+      }) = `enum${++count}`,
 ): PrimitiveAtom<
   T[number],
   {

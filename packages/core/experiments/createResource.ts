@@ -44,7 +44,7 @@ export function createResource<State, Params = void>(
   ) => Promise<State extends any ? State : never>,
   // TODO
   // `options: { id?: string, paramsTTL?: number, paramsSize?: number, ... }`
-  id = `resource [${++resourcesCount}]`,
+  id = `resource${++resourcesCount}`,
 ) {
   type ResourceCtx = { version?: number; params?: Params }
 

@@ -232,10 +232,10 @@ test(`in atom action effect`, async () => {
   assert.equal(cb.lastInput(), [])
 
   assert.equal(parseCauses(cb.lastInput(1)), [
-    'DISPATCH: data - request',
-    'request·(data·-·request)·handler',
-    'DISPATCH: data - response',
-    'request·(data·-response)·handler',
+    'DISPATCH: request_data',
+    'request (request_data) handler',
+    'DISPATCH: response_data',
+    'response_data action',
   ])
   ;`👍` //?
 })
@@ -475,14 +475,14 @@ test(`subscription call cause`, () => {
 
   store.dispatch(counterAtom.inc())
   assert.equal(parseCauses(cb.lastInput(1)), [
-    'DISPATCH: counter - inc',
-    'counterIsEven',
+    'DISPATCH: inc_counter',
+    'counterIsEven atom',
   ])
 
   store.dispatch(counterAtom.add(100_000))
   assert.equal(parseCauses(cb.lastInput(1)), [
-    'DISPATCH: counter - add',
-    'counterIsHuge',
+    'DISPATCH: add_counter',
+    'counterIsHuge atom',
   ])
   ;`👍` //?
 })

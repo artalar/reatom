@@ -4,7 +4,7 @@ import { createPrimitiveAtom } from '.'
 let count = 0
 export function createNumberAtom(
   initState = 0,
-  options: AtomOptions = `number atom [${++count}]`,
+  options: AtomOptions = `number${++count}`,
 ) {
   return createPrimitiveAtom(
     initState,

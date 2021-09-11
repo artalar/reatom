@@ -44,7 +44,7 @@ export function createPrimitiveAtom<
 export function createPrimitiveAtom<State>(
   initState: State,
   actions?: null | undefined | Rec<Fn<[State, ...any[]], State>>,
-  options: AtomOptions<State> = `primitive atom [${++count}]`,
+  options: AtomOptions<State> = `primitive${++count}`,
 ): AtomBinded<State> {
   actions ??= {
     set: (state: State, payload: State): State => payload,

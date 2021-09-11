@@ -12,7 +12,7 @@ export function createStringAtom<T extends string>(
 ): PrimitiveAtom<T>
 export function createStringAtom(
   initState = ``,
-  options: AtomOptions = `string atom [${++count}]`,
+  options: AtomOptions = `string${++count}`,
 ) {
   return createPrimitiveAtom(initState, null, options)
 }

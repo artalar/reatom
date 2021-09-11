@@ -4,7 +4,7 @@ import { createPrimitiveAtom } from '.'
 let count = 0
 export function createMapAtom<Key, Element>(
   initState = new Map<Key, Element>(),
-  options: AtomOptions<Map<Key, Element>> = `map atom [${++count}]`,
+  options: AtomOptions<Map<Key, Element>> = `map${++count}`,
 ) {
   type State = Map<Key, Element>
   return createPrimitiveAtom(

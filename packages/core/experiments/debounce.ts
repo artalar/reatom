@@ -5,7 +5,7 @@ export function debounce<T>(
   /** Delay in milliseconds */
   delay: number,
 ): AtomDecorator<T> {
-  const timeoutKey = `__DEBOUNCE [${++count}]`
+  const timeoutKey = `__DEBOUNCE${++count}`
   const invalidateType = `invalidate ${timeoutKey}`
 
   return (reducer) => (transaction, cache) => {

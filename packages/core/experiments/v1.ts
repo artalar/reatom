@@ -11,7 +11,7 @@ let mapsCount = 0
 export function map<T, Dep>(
   depAtom: Atom<Dep>,
   cb: Fn<[depState: Dep], T>,
-  id: string = `map ${depAtom.id} [${++mapsCount}]`,
+  id: string = `map ${depAtom.id}${++mapsCount}`,
 ): Atom<T> {
   const atom: Atom<T> = (
     { process, schedule },
@@ -50,7 +50,7 @@ export function combine<Atoms extends Array<Atom>, Result>(
     [{ [K in keyof Atoms]: K extends number ? AtomState<Atoms[K]> : never }],
     Result
   >,
-  id: string = `combine [${++combineCount}]`,
+  id: string = `combine${++combineCount}`,
 ): Atom<Result> {
   const atom: Atom<Result> = (
     { process, schedule },

@@ -21,7 +21,7 @@ export function callSafety<I extends any[], O, This = any>(
 ): O | Error {
   try {
     return fn.apply(this, args)
-  } catch (error) {
+  } catch (error: any) {
     error = error instanceof Error ? error : new Error(error)
     setTimeout(() => {
       throw error

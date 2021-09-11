@@ -65,10 +65,12 @@ test(`createResource`, async () => {
   assert.equal(cb.lastInput(), { data: [3], error: null, isLoading: false })
 
   assert.equal(parseCauses(cb.lastInput(1)), [
-    'DISPATCH: testResource - fetch',
-    'testResource - fetch handler',
-    'DISPATCH: testResource - done',
-    'testResource - done',
+    'DISPATCH: fetch_testResource',
+    'fetch (fetch_testResource) handler',
+    'DISPATCH: done_testResource',
+    'done_testResource action',
   ])
   ;`👍` //?
 })
+
+test.run()

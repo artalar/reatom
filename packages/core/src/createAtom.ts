@@ -66,7 +66,7 @@ export function createAtom<
   reducer: TrackReducer<State, Deps>,
   options: AtomOptions<State> = {},
 ): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
-  let { decorators = [], id = `atom [${++atomsCount}]` } = isString(options)
+  let { decorators = [], id = `atom${++atomsCount}` } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
   const trackedTypes: Array<string> = []
@@ -94,7 +94,7 @@ export function createAtom<
       if (isActionCreator(dep)) {
         externalActions[name] = type = dep.type
       } else {
-        type = `${id} - ${name}`
+        type = `${name}_${id}`
 
         const actionCreator = (...a: any[]) => ({
           payload: dep(...a),
@@ -107,7 +107,7 @@ export function createAtom<
 
         actionCreators[name] = actionCreator
 
-        if (type[0] != `_`) {
+        if (name[0] != `_`) {
           // @ts-expect-error
           atom[name] = actionCreator
         }
@@ -274,12 +274,13 @@ function createDynamicallyTrackedCacheReducer<
     let shouldCallReducer =
       cache.tracks == undefined ||
       actions.some(
-        ({ type }) => trackedTypes.includes(type) && ((cause = type), true),
+        ({ type }) =>
+          trackedTypes.includes(type) && ((cause = `${type} action`), true),
       ) ||
       cache.tracks.some(
         (depCache) =>
           !Object.is(depCache.state, _get(depCache.atom, depCache).state) &&
-          ((cause = depCache.atom.id), true),
+          ((cause = `${depCache.atom.id} atom`), true),
       )
 
     if (shouldCallReducer) {

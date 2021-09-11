@@ -24,7 +24,7 @@ export function createPersist({ get, set, throttle = 0 }: PersistStorage) {
     /** Unique stable key */
     key?: string,
   ): AtomDecorator<T> {
-    const intervalIdKey = `__persistIntervalId [${++count}]`
+    const intervalIdKey = `__persistIntervalId${++count}`
 
     return (reducer) => (transaction, cacheTemplate) => {
       const { id } = cacheTemplate.atom
