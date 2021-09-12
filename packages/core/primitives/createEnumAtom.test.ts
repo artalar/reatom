@@ -9,7 +9,7 @@ test(`camelCase`, async () => {
     'created',
     'updated',
     'pushed',
-  ] as const)
+  ])
 
   assert.is(sortFilterAtom.getState(), 'fullName')
 
@@ -21,7 +21,7 @@ test(`camelCase`, async () => {
 
 test(`snake_case`, async () => {
   const sortFilterAtom = createEnumAtom(
-    ['full_name', 'created', 'updated', 'pushed'] as const,
+    ['full_name', 'created', 'updated', 'pushed'],
     { format: 'snake_case' },
   )
 

@@ -287,7 +287,7 @@ But a better way is use the `createEnumAtom`.
 import { createEnumAtom } from '@reatom/core/primitives'
 
 const githubRepoSortFilterAtom = createEnumAtom(
-  ['full_name', 'created', 'updated', 'pushed'] as const,
+  ['full_name', 'created', 'updated', 'pushed'],
   { format: 'snake_case' },
 )
 
@@ -301,12 +301,7 @@ console.log(sortFilterAtom.getState())
 
 /* OR use default `camelCase` format */
 
-const statusesAtom = createEnumAtom([
-  'init',
-  'loading',
-  'loaded',
-  'error',
-] as const)
+const statusesAtom = createEnumAtom(['init', 'loading', 'loaded', 'error'])
 
 console.log(statusesAtom.getState())
 // -> 'init'

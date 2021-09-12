@@ -4,19 +4,19 @@ import { createPrimitiveAtom, PrimitiveAtom } from '.'
 
 let count = 0
 export function createEnumAtom<
-  T extends ReadonlyArray<string>,
+  T extends string,
   Format extends 'camelCase' | 'snake_case' = 'camelCase',
 >(
-  variants: T,
+  variants: ReadonlyArray<T>,
   options:
     | Atom['id']
     | (Exclude<AtomOptions, string> & {
         format?: Format
       }) = `enum${++count}`,
 ): PrimitiveAtom<
-  T[number],
+  T,
   {
-    [K in T[number] as Format extends 'camelCase'
+    [K in T as Format extends 'camelCase'
       ? `set${Capitalize<K>}`
       : Format extends 'snake_case'
       ? `set_${K}`
