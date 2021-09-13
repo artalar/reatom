@@ -40,11 +40,13 @@ Reatom is a mix of all best from MobX and Redux. It processes immutable data by 
 import { createAtom } from '@reatom/core'
 
 export const amountAtom = createAtom(
-  { clear: () => null, add: (value: number) => value },
+  { clear: () => {}, add: (value: number) => value },
   ({ onAction, schedule }, state = 0) => {
     onAction('clear', () => (state = 0))
     onAction('add', (value) => (state = state + value))
-    schedule(() => render(`Amount is ${state}`))
+
+    schedule(() => console.log(`Amount is ${state}`))
+
     return state
   },
 )
@@ -121,7 +123,9 @@ As any computations, it results and effects processed by a store, it easy for de
 import { createAtom } from '@reatom/core'
 
 const inputAtom = createAtom(
-  // Plain function in dependencies converting to action creators,
+  // Plain function in dependencies are used as mappers
+  // (calls to convert AC arguments to action payload)
+  // for action creators (AC) with same names,
   // which you may handle in the reducer
   { change: (text: string) => text },
   // Reducer is a function which recall on every related dispatch.
@@ -194,7 +198,7 @@ export const timerAtom = createAtom(
   {
     interval: intervalAtom,
     start: (delayInSeconds: number) => delayInSeconds,
-    stop: () => null,
+    stop: () => {},
     // Action mappers which name starts with underscore
     // is not allowed as action creators by atom static properties
     // and may be used only as part of internal logic
@@ -344,8 +348,92 @@ Transaction is a context witch includes list of actions and two functions: `proc
 
 Cache is a immutable data of an atom which includes state, actual dependencies and other meta (check typings).
 
-<!-- FIXME -->
-<!-- ## API -->
+## API
+
+### createAtom API
+
+`createAtom` accept three argument: dependencies, reducer function and optional options
+
+#### createAtom API dependencies
+
+In the first argument of createAtom you may describe three kind of entities: other atoms, payload mappers for bind action creators and other action creators.
+
+```ts
+import { createAtom } from '@reatom/core'
+import { createStringAtom } from '@reatom/core/primitives'
+
+const emailAtom = createStringAtom()
+const passwordAtom = createStringAtom()
+
+const formAtom = createAtom(
+  {
+    emailAtom,
+    passwordAtom,
+    onEmailChange: emailAtom.change,
+    submit: () => {},
+    _fetch: (email, password) => ({ email, password }),
+  },
+  reducer,
+  options,
+)
+```
+
+> If payload mapper name starts with underscore it is not available as atom property, only in reducer.
+> `formAtom.submit` is action creator function.
+> `formAtom._fetch` is undefined.
+
+The second argument of `createAtom` is reducer function which accepts the `track` collection and optional state, which should change immutably and returns from the reducer.
+
+`track` collections is a set of helpers to process and subscribe to dependencies, it includes:
+
+- `create` - call payload mapper from dependencies and create action object.
+- `get` - read and subscribe dependency atom value. Don't subscribing in other tracks, just read..
+- `getUnlistedState` - read state of atom outside dependencies.
+- `onAction` - react to dependency action.
+- `onChange` - react to change of state of dependency atom.
+- `onInit` - react only to first reducer call.
+- `schedule` - schedule side effect. The only way to receive `dispatch` for set effect result.
+
+```ts
+const formAtom = createAtom(
+  {
+    emailAtom,
+    passwordAtom,
+    onEmailChange: emailAtom.change,
+    submit: () => {},
+    _fetch: (email, password) => ({ email, password }),
+  },
+  (track, state = { isLoading: false, error: null as null | string }) => {
+    track.onAction('onEmailChange', (email) => {
+      // email === track.get('emailAtom')
+    })
+
+    passwordAtom.onChange('passwordAtom', (password, prevPassword) => {
+      // TODO: validate password
+    })
+
+    track.onAction('submit', () => {
+      schedule((dispatch) =>
+        dispatch(
+          // ERROR here: `Outdated track call`
+          track.create(
+            '_fetch',
+            track.get('emailAtom'),
+            track.get('passwordAtom'),
+          ),
+        ),
+      )
+    })
+
+    return state
+  },
+  options,
+)
+```
+
+> `Outdated track call` is throwed when you try to use reactive handlers outside synchronous reducer call. For example, `schedule` is called only after all atoms recalculation.
+
+> TODO: `options`
 
 ## Internal architecture
 
@@ -384,16 +472,13 @@ This approach increase domain package size in `node_modules` whe you install it,
 There is no sense to write all code with immutable principles, [Clojure docs](https://clojure.org/reference/transients) describe it better. If you still woried about this you may use aditional mutable variable.
 
 ```ts
-const counterAtom = createAtom(
-  { inc: () => null },
-  ({ onAction }, state = 0) => {
-    let newState = state
+const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = 0) => {
+  let newState = state
 
-    onAction('inc', () => newState++)
+  onAction('inc', () => newState++)
 
-    return newState
-  },
-)
+  return newState
+})
 ```
 
 ### How to handle one action in a few atoms?
