@@ -8,10 +8,14 @@ import {
   Store,
 } from '@reatom/core/'
 import React from 'react'
-import ReactDOM from 'react-dom'
 import { useSubscription } from 'use-subscription'
 
 export const reatomContext = React.createContext(defaultStore)
+
+let batchedUpdates = (f: () => any) => f()
+export const setBatchedUpdates = (f: (callback: () => any) => void) => {
+  batchedUpdates = f
+}
 
 function bindActionCreator<Args extends any[]>(
   store: Store,
@@ -21,7 +25,7 @@ function bindActionCreator<Args extends any[]>(
     const action = actionCreator(...args)
 
     if (action) {
-      ReactDOM.unstable_batchedUpdates(() => {
+      batchedUpdates(() => {
         store.dispatch(action)
       })
     }
