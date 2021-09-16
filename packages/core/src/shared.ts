@@ -9,6 +9,7 @@ import {
   Effect,
   Fn,
   Patch,
+  Store,
   Transaction,
 } from './internal'
 
@@ -97,12 +98,12 @@ export function createTransaction(
   actions: ReadonlyArray<Action>,
   {
     patch = new Map(),
-    getCache = () => undefined,
+    getCache = (atom, fallback) => fallback ?? createTemplateCache(atom),
     effects = [],
     causes = [] as any as Causes,
   }: {
     patch?: Patch
-    getCache?: AtomsCache['get']
+    getCache?: Store['getCache']
     effects?: Array<Effect>
     causes?: Causes
   } = {},
@@ -118,7 +119,7 @@ export function createTransaction(
       let atomPatch = patch.get(atom)
 
       if (atomPatch == undefined) {
-        cache = getCache(atom) ?? cache ?? createTemplateCache(atom)
+        cache = getCache(atom, cache)
         atomPatch = atom(transaction, cache)
 
         const { cause, state, listeners } = atomPatch

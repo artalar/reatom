@@ -6,12 +6,13 @@ import {
   callSafety,
   createAtom,
   createStore,
+  createTemplateCache,
   createTransaction,
   Fn,
   getState,
   Rec,
 } from '@reatom/core'
-import { createPrimitiveAtom } from '@reatom/core/primitives'
+import { createNumberAtom, createPrimitiveAtom } from '@reatom/core/primitives'
 import { createPersist, init } from '@reatom/core/experiments'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
@@ -91,18 +92,18 @@ test(`combine`, () => {
 
   init([bcAtom], store)
 
-  const bsState1 = store.getCache(bcAtom)!.state
-  assert.is(store.getCache(aAtom)!.state, 0)
+  const bsState1 = store.getState(bcAtom)
+  assert.is(store.getState(aAtom), 0)
   assert.equal(bsState1, { b: 0, c: 0 })
 
   store.dispatch(aAtom.change((s) => s + 1))
-  const bsState2 = store.getCache(bcAtom)!.state
-  assert.is(store.getCache(aAtom)!.state, 1)
+  const bsState2 = store.getState(bcAtom)
+  assert.is(store.getState(aAtom), 1)
   assert.equal(bsState2, { b: 1, c: 1 })
 
   store.dispatch(aAtom.change((s) => s + 2))
-  const bsState3 = store.getCache(bcAtom)!.state
-  assert.is(store.getCache(aAtom)!.state, 3)
+  const bsState3 = store.getState(bcAtom)
+  assert.is(store.getState(aAtom), 3)
   assert.equal(bsState3, { b: 1, c: 1 })
   assert.is(bsState2, bsState3)
   ;`👍` //?
@@ -327,7 +328,7 @@ test(`Manage dynamic dependencies`, () => {
   assert.is(reducerCalls, 1)
 
   store.dispatch([b.add(a), a.set(1)])
-  assert.equal(store.getCache(b)!.state, [[a, 1]])
+  assert.equal(store.getState(b), [[a, 1]])
   assert.is(reducerCalls, 2)
   ;`👍` //?
 })
@@ -484,6 +485,22 @@ test(`subscription call cause`, () => {
     'DISPATCH: add_counter',
     'counterIsHuge atom',
   ])
+  ;`👍` //?
+})
+
+test(`createTemplateCache`, () => {
+  const atomWithoutSnapshot = createNumberAtom(0)
+  const atomWithSnapshot = createNumberAtom(0)
+
+  const snapshot = { [atomWithSnapshot.id]: 42 }
+
+  const store = createStore({
+    createTemplateCache: (atom) =>
+      Object.assign(createTemplateCache(atom), { state: snapshot[atom.id] }),
+  })
+
+  assert.is(store.getState(atomWithoutSnapshot), 0)
+  assert.is(store.getState(atomWithSnapshot), 42)
   ;`👍` //?
 })
 

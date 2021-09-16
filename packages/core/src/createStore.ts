@@ -6,6 +6,7 @@ import {
   callSafety as callSafetyDefault,
   Causes,
   createReatomError,
+  createTemplateCache as createTemplateCacheDefault,
   createTransaction,
   delFromSetsMap,
   Effect,
@@ -15,6 +16,7 @@ import {
   isFunction,
   noop,
   Patch,
+  Rec,
   Store,
   TransactionResult,
 } from './internal'
@@ -22,7 +24,7 @@ import {
 function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
   const cache = getCache(atom)
 
-  if (cache == undefined) return false
+  if (cache.tracks === undefined) return false
 
   // @ts-expect-error
   if (cache.listeners?.size > 0) return true
@@ -63,11 +65,13 @@ export type StoreOnError = Fn<
 
 export function createStore({
   callSafety = callSafetyDefault,
+  createTemplateCache = createTemplateCacheDefault,
   onError = noop,
   onPatch = noop,
   now = Date.now.bind(Date),
 }: {
   callSafety?: typeof callSafetyDefault
+  createTemplateCache?: typeof createTemplateCacheDefault
   onError?: StoreOnError
   onPatch?: StoreOnPatch
   /** Current time getter. Tip: use `performance.now` to accurate tracking */
@@ -134,12 +138,13 @@ export function createStore({
     effects.forEach((cb) => callSafety(cb, dispatch))
   }
 
-  const getCache: Store['getCache'] = (atom) => cache.get(atom)
+  const getCache: Store['getCache'] = (atom, fallback) =>
+    cache.get(atom) ?? fallback ?? createTemplateCache(atom)
 
   const getState: Store['getState'] = (atom) => {
     invalidateAtomCache(atom)
 
-    return getCache(atom)!.state
+    return getCache(atom).state!
   }
 
   const subscribe: Store['subscribe'] = (atom, cb) => {
@@ -149,7 +154,7 @@ export function createStore({
 
     invalidateAtomCache(atom)
 
-    const cache = getCache(atom)!
+    const cache = getCache(atom)
 
     // @ts-expect-error
     const listeners: Set<AtomListener> = (cache.listeners ??= new Set())
@@ -160,7 +165,7 @@ export function createStore({
 
     listeners.add(cb)
 
-    callSafety(cb, cache.state, [])
+    callSafety(cb, cache.state!, [])
 
     return () => {
       listeners.delete(cb)

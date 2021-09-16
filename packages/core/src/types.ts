@@ -254,7 +254,10 @@ export type Store = {
    */
   dispatch(action: Action | Array<Action>, causes?: Causes): void
 
-  getCache<State>(atom: Atom<State>): undefined | Cache<State>
+  getCache<State>(
+    atom: Atom<State>,
+    fallback?: Cache<State> | CacheTemplate<State>,
+  ): Cache<State> | CacheTemplate<State>
 
   getState<State>(atom: Atom<State>): State
 
