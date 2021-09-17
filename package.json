@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/artalar/reatom/tree/v2",
   "devDependencies": {
+    "@jsdevtools/npm-publish": "^1.4.3",
     "@size-limit/preset-small-lib": "^4.11.0",
     "@types/jest": "^26.0.23",
     "cross-env": "^7.0.3",
@@ -31,7 +32,8 @@
     "rimraf": "^3.0.2",
     "size-limit": "^4.11.0",
     "ts-node": "^10.0.0",
-    "typescript": "^4.3.2"
+    "typescript": "^4.3.2",
+    "zx": "^4.1.1"
   },
   "keywords": [
     "state",
