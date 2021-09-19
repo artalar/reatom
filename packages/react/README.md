@@ -34,6 +34,12 @@ yarn add @reatom/react
 
 ## Hooks Api
 
+> If you use React 16 or 17 you should setup batch bindings for React by yourself. Just import `@reatom/react/react-dom-batched-updates` or `@reatom/react/react-native-batched-updates` on the top (root) of your project to make it work before any hook call.
+
+> ```ts
+> import '@reatom/react/react-dom-batched-updates'
+> ```
+
 ### useAtom
 
 Connects the atom to the store represented in context and returns the state of the atom from the store (or default atom state).
