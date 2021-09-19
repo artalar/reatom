@@ -22,13 +22,18 @@ export function createEnumAtom<
       ? `set_${K}`
       : never]: () => K
   }
-> {
+> & {
+  enum: { [K in T]: K }
+} {
   // @ts-expect-error
   const format: Format = options.format ?? 'camelCase'
+  const cases = {} as { [K in T]: K }
 
-  return createPrimitiveAtom(
+  const atom = createPrimitiveAtom(
     variants[0],
     variants.reduce((acc, variant) => {
+      cases[variant] = variant
+
       const actionCreatorName = variant.replace(
         /^./,
         (firstLetter) =>
@@ -42,4 +47,8 @@ export function createEnumAtom<
     }, {} as Rec),
     options,
   ) as any
+
+  atom.enum = cases
+
+  return atom
 }

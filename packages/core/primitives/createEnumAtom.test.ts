@@ -3,6 +3,13 @@ import * as assert from 'uvu/assert'
 
 import { createEnumAtom } from './createEnumAtom'
 
+test(`enum object`, async () => {
+  const enumAtom = createEnumAtom(['a', 'b'])
+
+  assert.equal(enumAtom.enum, { a: 'a', b: 'b' })
+  ;`👍` //?
+})
+
 test(`camelCase`, async () => {
   const sortFilterAtom = createEnumAtom([
     'fullName',
@@ -10,8 +17,6 @@ test(`camelCase`, async () => {
     'updated',
     'pushed',
   ])
-
-  assert.is(sortFilterAtom.getState(), 'fullName')
 
   sortFilterAtom.setUpdated.dispatch()
 
@@ -24,6 +29,8 @@ test(`snake_case`, async () => {
     ['full_name', 'created', 'updated', 'pushed'],
     { format: 'snake_case' },
   )
+
+  sortFilterAtom.enum
 
   assert.is(sortFilterAtom.getState(), 'full_name')
 

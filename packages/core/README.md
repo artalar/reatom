@@ -316,6 +316,18 @@ console.log(statusesAtom.getState())
 // -> 'loading'
 ```
 
+Every enum atom includes `enum` property with object of the variants.
+
+```ts
+export const STATUSES = statusesAtom.enum
+// ...
+statusesAtom.subscribe((status) => {
+  if (status === STATUSES.error) {
+    log('Error happen')
+  }
+})
+```
+
 <!--
 
 ### Increase performance by ref pattern
