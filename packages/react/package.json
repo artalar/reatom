@@ -33,9 +33,7 @@
     "@reatom/core": "^2.0.0-rc1",
     "@types/use-subscription": "^1.0.0",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "use-subscription": "^1.5.1",
-    "react-native": "^0.65.0"
+    "use-subscription": "^1.5.1"
   },
   "devDependencies": {
     "@reatom/core": "^2.0.0-rc1",
