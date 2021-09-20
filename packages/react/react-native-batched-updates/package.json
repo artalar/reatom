@@ -1,0 +1,18 @@
+{
+  "name": "@reatom/react-native-batched-updates",
+  "version": "2.0.0-rc1",
+  "private": true,
+  "sideEffects": false,
+  "source": "index.ts",
+  "main": "build/react-native-batched-updates.js",
+  "module": "build/react-native-batched-updates.module.js",
+  "umd:main": "build/react-native-batched-updates.umd.js",
+  "types": "build/react-native-batched-updates.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "cross-env fixme=fixme microbundle"
+  },
+  "peerDependencies": {
+    "@reatom/react": "^2.0.0-rc5"
+  }
+}

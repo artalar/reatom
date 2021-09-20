@@ -17,7 +17,10 @@
   "scripts": {
     "prepublishOnly": "npm run rebuild",
     "postpublish": "npm run clean",
-    "build": "cross-env fixme=fixme microbundle --external=react,@reatom/core -e ./src/react-dom-batched-updates.ts -e ./src/react-native-batched-updates.ts -e ./src/index.ts",
+    "build": "npm run build-src && npm run build-dom-bindings && npm run build-native-bindings",
+    "build-src": "cross-env fixme=fixme microbundle --external=react,use-subscription,@reatom/core",
+    "build-dom-bindings": "cross-env fixme=fixme microbundle --cwd=react-dom-batched-updates --external=react-dom,@reatom/react",
+    "build-native-bindings": "cross-env fixme=fixme microbundle --cwd=react-native-batched-updates --external=react-native,@reatom/react",
     "clean": "cross-env fixme=fixme rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test": "cross-env fixme=fixme jest tests/*",
@@ -42,10 +45,7 @@
     "@testing-library/react-hooks": "^7.0.0",
     "@types/react": "^17.0.8",
     "@types/use-subscription": "^1.0.0",
-    "@types/react-native": "^0.65.0",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-native": "^0.65.0",
     "react-test-renderer": "^17.0.2",
     "use-subscription": "^1.5.1"
   },
