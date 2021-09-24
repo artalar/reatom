@@ -1,15 +1,17 @@
 import { AtomDecorator, isObject } from '@reatom/core'
 
 export function isShallowEqual(a: any, b: any) {
+  if (Object.is(a, b)) {
+    return true
+  }
   if (isObject(a) && isObject(b)) {
     const aKeys = Object.keys(a)
     const bKeys = Object.keys(b)
     return (
       aKeys.length == bKeys.length && aKeys.every((k) => Object.is(a[k], b[k]))
     )
-  } else {
-    return Object.is(a, b)
   }
+  return false
 }
 
 export function memo<T>(
