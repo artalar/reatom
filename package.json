@@ -7,8 +7,7 @@
     "prettify:watch": "onchange **/*.{js,ts,md} !**/babel-plugin/test/** -- prettier --write {{changed}}"
   },
   "workspaces": [
-    "packages/core",
-    "packages/react"
+    "packages/*"
   ],
   "author": "artalar",
   "license": "MIT",
@@ -16,6 +15,9 @@
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "engines": {
+    "npm": ">=7.0.0"
   },
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
