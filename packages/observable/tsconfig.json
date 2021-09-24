@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "moduleResolution": "node",
-    "rootDir": "./src"
-  },
-  "exclude": ["./test"]
-}
