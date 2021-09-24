@@ -16,6 +16,9 @@
     "type": "git",
     "url": "git+ssh://git@github.com/artalar/reatom.git"
   },
+  "engines": {
+    "npm": ">=7.0.0"
+  },
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
