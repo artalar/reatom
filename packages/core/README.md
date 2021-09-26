@@ -399,7 +399,7 @@ The second argument of `createAtom` is reducer function which accepts the `track
 `track` collections is a set of helpers to process and subscribe to dependencies, it includes:
 
 - `create` - call payload mapper from dependencies and create action object.
-- `get` - read and subscribe dependency atom value. Don't subscribing in other tracks, just read..
+- `get` - read and subscribe dependency atom value. It doesn't subscribe in `onAction` \ `onChange`, just read.
 - `getUnlistedState` - read state of atom outside dependencies.
 - `onAction` - react to dependency action.
 - `onChange` - react to change of state of dependency atom.
@@ -417,17 +417,23 @@ const formAtom = createAtom(
   },
   (track, state = { isLoading: false, error: null as null | string }) => {
     track.onAction('onEmailChange', (email) => {
-      // email === track.get('emailAtom')
+      // Here `email === track.get('emailAtom')`
     })
 
-    passwordAtom.onChange('passwordAtom', (password, prevPassword) => {
+    track.onChange('passwordAtom', (password, prevPassword) => {
       // TODO: validate password
     })
 
     track.onAction('submit', () => {
+      const email = track.get('emailAtom')
+      const password = track.get('passwordAtom')
+
       schedule((dispatch) =>
         dispatch(
           // ERROR here: `Outdated track call`
+          // you should't call `track.get` async
+          // (scheduled callback calls async after all atoms)
+          // (use `email` and `password` variables instead)
           track.create(
             '_fetch',
             track.get('emailAtom'),
