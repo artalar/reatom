@@ -493,9 +493,28 @@ There is no sense to write all code with immutable principles, [Clojure docs](ht
 const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = 0) => {
   let newState = state
 
-  onAction('inc', () => newState++)
+  onAction('inc', () => {
+    newState++
+  })
 
   return newState
+})
+```
+
+Important note. Feel free to mutate **variable**, not a value. Reducer functions should not mutate any input values.
+
+```ts
+const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = { count: 0 }) => {
+  // WRONG
+  onAction('inc', () => {
+    state.count++
+  })
+  // Right
+  onAction('inc', () => {
+    state = { count: state.count + 1 }
+  })
+
+  return state
 })
 ```
 
