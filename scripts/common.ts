@@ -1,6 +1,11 @@
 import fs from 'fs'
-import { promises as fsp } from 'fs'
+import { fileURLToPath } from 'url'
 import * as path from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+export const INTERNAL_PACKAGE_PREFIX = '.'
 
 export const ROOT_PATH = path.resolve(__dirname, '..')
 
@@ -8,7 +13,7 @@ export const PACKAGES_PATH = path.resolve(ROOT_PATH, 'packages')
 
 export const PACKAGES = fs
   .readdirSync(PACKAGES_PATH)
-  .filter((packageName) => !packageName.startsWith('.'))
+  .filter((packageName) => !packageName.startsWith(INTERNAL_PACKAGE_PREFIX))
 
 export const PACKAGES_PATHS = PACKAGES.map((packageName) =>
   path.resolve(PACKAGES_PATH, packageName),

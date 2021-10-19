@@ -127,7 +127,8 @@ export function createTransaction(
         patch.set(atom, atomPatch)
 
         if (Object.is(state, cache.state)) {
-          atomPatch.cause == cache.cause
+          // @ts-ignore
+          atomPatch.cause = cache.cause
         } else {
           if (
             // @ts-expect-error

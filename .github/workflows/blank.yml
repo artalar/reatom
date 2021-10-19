@@ -3,27 +3,19 @@ name: CI
 on:
   pull_request:
     branches:
-    - master
+    - v2
 
 jobs:
-  test:
-
+  preview-publish:
     runs-on: ubuntu-latest
-
     steps:
-
-    - uses: actions/checkout@v1
-
-    - name: use node
-      uses: actions/setup-node@v1
+    - uses: actions/setup-node@v2
       with:
-        node-version: 10
-
-    - name: install deps
+        node-version: 16
+        cache: npm
+    - uses: actions/github-script@v5
+    - name: install dependencies
       run: npm i
-
-    - name: tests
-      run: npm run test
-
-    - name: size limit
-      run: npm run size
+    - name: publish preview version
+      run: echo 'Not ready yet'
+      # run: npx tsm scripts/run_publish.ts
