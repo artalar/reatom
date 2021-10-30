@@ -1,5 +1,6 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom } from '.'
+
+import { createPrimitiveAtom } from './'
 
 let count = 0
 export function createMapAtom<Key, Element>(

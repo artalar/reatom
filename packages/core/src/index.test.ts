@@ -1,6 +1,3 @@
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
-
 import {
   Atom,
   callSafety,
@@ -12,8 +9,10 @@ import {
   getState,
   Rec,
 } from '@reatom/core'
-import { createNumberAtom, createPrimitiveAtom } from '@reatom/core/primitives'
 import { createPersist, init } from '@reatom/core/experiments'
+import { createNumberAtom, createPrimitiveAtom } from '@reatom/core/primitives'
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
 
@@ -77,6 +76,7 @@ test(`displayName`, () => {
   store.dispatch(firstNameAtom.set('Joooooooooooooooooooe'))
   assert.is(cb.calls.length, 3)
   assert.is(cb.lastInput(), 'Joooooooooooooooooooe')
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -106,6 +106,7 @@ test(`combine`, () => {
   assert.is(store.getState(aAtom), 3)
   assert.equal(bsState3, { b: 1, c: 1 })
   assert.is(bsState2, bsState3)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -133,6 +134,7 @@ test(`atom external action subscribe`, () => {
   store.dispatch(a1.add(10))
   assert.is(store.getState(a1), 10)
   assert.is(store.getState(a2), 10)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -179,6 +181,7 @@ test(`atom filter`, () => {
   assert.not.equal(bCache4, bCache5)
   assert.equal(bCache5.state, 3)
   assert.not.equal(bCache4.state, bCache5.state)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -238,6 +241,7 @@ test(`in atom action effect`, async () => {
     'DISPATCH: response_data',
     'response_data action',
   ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -262,6 +266,7 @@ test(`Atom store dependency states`, () => {
   const bCache3 = bAtom(createTransaction([aAtom.inc()]), bCache1)
   assert.is(aTrack.calls.length, 2)
   assert.is(bCache3.state, 3)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -271,6 +276,7 @@ test(`Atom from`, () => {
   assert.is(a(createTransaction([{ type: `noooop`, payload: null }])).state, 42)
   assert.is(a(createTransaction([a.set(43)])).state, 43)
   assert.is(a(createTransaction([a.change((s) => s + 2)])).state, 44)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -285,6 +291,7 @@ test(`Persist`, () => {
   const { state } = a(createTransaction([]))
 
   assert.is(state, 42)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -300,6 +307,7 @@ test(`Batched dispatch`, () => {
   store.dispatch([a.change((s) => s + 1), a.change((s) => s + 1)])
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 2)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -330,6 +338,7 @@ test(`Manage dynamic dependencies`, () => {
   store.dispatch([b.add(a), a.set(1)])
   assert.equal(store.getState(b), [[a, 1]])
   assert.is(reducerCalls, 2)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -389,6 +398,7 @@ test(`await all effect`, async () => {
   await sleep(10)
 
   assert.is(cb.calls.length, 1)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -414,6 +424,7 @@ test(`subscription to in-cache atom`, () => {
   a.change.dispatch((s) => s + 1)
   assert.is(trackA.calls.length, 2)
   assert.is(trackB.calls.length, 3)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -436,6 +447,7 @@ test(`getState of stale atom`, () => {
   store.dispatch(a.set(2))
   assert.is(getState(a, store), 2)
   assert.is(getState(b, store), 2)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -485,6 +497,7 @@ test(`subscription call cause`, () => {
     'DISPATCH: add_counter',
     'counterIsHuge atom',
   ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -501,6 +514,7 @@ test(`createTemplateCache`, () => {
 
   assert.is(store.getState(atomWithoutSnapshot), 0)
   assert.is(store.getState(atomWithSnapshot), 42)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 

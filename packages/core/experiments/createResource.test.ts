@@ -1,7 +1,6 @@
+import { createStore } from '@reatom/core'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-
-import { createStore } from '@reatom/core'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
 
@@ -70,6 +69,7 @@ test(`createResource`, async () => {
     'DISPATCH: done_testResource',
     'done_testResource action',
   ])
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 

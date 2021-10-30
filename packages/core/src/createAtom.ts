@@ -15,7 +15,6 @@ import {
   isAtom,
   isFunction,
   isString,
-  Merge,
   noop,
   OmitValues,
   pushUnique,
@@ -28,20 +27,17 @@ import {
 export type AtomSelfBinded<
   State = any,
   Deps extends Rec<PayloadMapper | Atom> = Rec<PayloadMapper | Atom>,
-> = AtomBinded<State> &
-  {
-    [K in keyof Deps]: Deps[K] extends Atom
-      ? never
-      : Deps[K] extends ActionCreator
-      ? never
-      : K extends `_${string}`
-      ? never
-      : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
-          dispatch: (
-            ...args: Parameters<Deps[K]>
-          ) => Action<ReturnType<Deps[K]>>
-        }
-  }
+> = AtomBinded<State> & {
+  [K in keyof Deps]: Deps[K] extends Atom
+    ? never
+    : Deps[K] extends ActionCreator
+    ? never
+    : K extends `_${string}`
+    ? never
+    : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
+        dispatch: (...args: Parameters<Deps[K]>) => Action<ReturnType<Deps[K]>>
+      }
+}
 
 export type AtomOptions<State = any> =
   | Atom[`id`]
@@ -66,7 +62,7 @@ export function createAtom<
   reducer: TrackReducer<State, Deps>,
   options: AtomOptions<State> = {},
 ): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
-  let { decorators = [], id = `atom${++atomsCount}` } = isString(options)
+  const { decorators = [], id = `atom${++atomsCount}` } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
   const trackedTypes: Array<string> = []
@@ -167,8 +163,9 @@ function createDynamicallyTrackedCacheReducer<
     { actions, process, schedule }: Transaction,
     cache: CacheTemplate<State>,
   ): Cache<State> => {
+    // eslint-disable-next-line prefer-const
     let { atom, ctx, state, listeners } = cache
-    let tracks: Array<Cache> = []
+    const tracks: Array<Cache> = []
     let effectCause: undefined | Cause
     let outdatedCall = noop
 
@@ -271,7 +268,7 @@ function createDynamicallyTrackedCacheReducer<
     }
 
     let cause = `init`
-    let shouldCallReducer =
+    const shouldCallReducer =
       cache.tracks == undefined ||
       actions.some(
         ({ type }) =>

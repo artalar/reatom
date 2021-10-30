@@ -56,7 +56,8 @@ export function combine<Atoms extends Array<Atom>, Result>(
     { process, schedule },
     cache = createTemplateCache<Result>(atom),
   ) => {
-    let causes: Array<string> = []
+    const causes: Array<string> = []
+    // eslint-disable-next-line prefer-const
     let { atom, cause, ctx, state, tracks, listeners } = cache
 
     if (tracks === undefined) {

@@ -16,7 +16,6 @@ import {
   isFunction,
   noop,
   Patch,
-  Rec,
   Store,
   TransactionResult,
 } from './internal'

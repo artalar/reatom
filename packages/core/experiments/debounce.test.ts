@@ -1,8 +1,7 @@
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
-
 import { createAtom, createStore, getState } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
 
 import { mockFn, sleep } from '../test_utils'
 
@@ -28,6 +27,7 @@ test(`debounce atom without tracks`, async () => {
 
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 1)
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -87,6 +87,7 @@ test(`behavior of middle (warm) atom besides leafs atom and debounced atom`, asy
     3,
     `cold atom should receive dispatch from child atom invalidation`,
   )
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 

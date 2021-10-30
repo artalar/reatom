@@ -7,6 +7,7 @@ test(`enum object`, async () => {
   const enumAtom = createEnumAtom(['a', 'b'])
 
   assert.equal(enumAtom.enum, { a: 'a', b: 'b' })
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -21,6 +22,7 @@ test(`camelCase`, async () => {
   sortFilterAtom.setUpdated.dispatch()
 
   assert.is(sortFilterAtom.getState(), 'updated')
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 
@@ -30,6 +32,7 @@ test(`snake_case`, async () => {
     { format: 'snake_case' },
   )
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   sortFilterAtom.enum
 
   assert.is(sortFilterAtom.getState(), 'full_name')
@@ -37,6 +40,7 @@ test(`snake_case`, async () => {
   sortFilterAtom.set_updated.dispatch()
 
   assert.is(sortFilterAtom.getState(), 'updated')
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 

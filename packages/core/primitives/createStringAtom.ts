@@ -1,5 +1,6 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom, PrimitiveAtom } from '.'
+
+import { createPrimitiveAtom, PrimitiveAtom } from './'
 
 let count = 0
 export function createStringAtom(

@@ -2,7 +2,6 @@ import {
   Action,
   ActionCreator,
   Atom,
-  AtomsCache,
   CacheTemplate,
   Causes,
   defaultStore,

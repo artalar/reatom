@@ -1,7 +1,5 @@
 import { createAtom } from '@reatom/core'
 import { memo, isShallowEqual } from '@reatom/core/experiments'
-import { useAction, useAtom } from '@reatom/react'
-import React, { ReactElement, ReactNode, useContext } from 'react'
 import {
   createForm,
   CreateFormParams,
@@ -11,6 +9,8 @@ import {
   FormState,
   mapFieldToMeta,
 } from '@reatom/form'
+import { useAction, useAtom } from '@reatom/react'
+import React, { ReactElement, ReactNode, useContext } from 'react'
 
 export type FieldInputProps<FieldValue> = {
   name: string
@@ -230,6 +230,7 @@ export const Form: React.VFC<
   )
   React.useEffect(() => {
     if (debug) {
+      // eslint-disable-next-line no-console
       return form.subscribe(console.log)
     }
   }, [debug, form])

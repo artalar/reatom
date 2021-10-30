@@ -1,12 +1,13 @@
 import { performance } from 'perf_hooks'
-import * as effector from 'effector'
-import w from 'wonka'
-import { cellx } from 'cellx'
-import { $mol_atom2 } from 'mol_atom2_all'
-import { observable, computed, autorun, configure } from 'mobx'
+
 import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
-import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { combine, map } from '@reatom/core/experiments'
+import { createPrimitiveAtom } from '@reatom/core/primitives'
+import { cellx } from 'cellx'
+import * as effector from 'effector'
+import { observable, computed, autorun, configure } from 'mobx'
+import { $mol_atom2 } from 'mol_atom2_all'
+import w from 'wonka'
 
 configure({ enforceActions: 'never' })
 
@@ -202,10 +203,13 @@ async function start(iterations: number) {
     mobxLogs.push(performance.now() - startMobx)
   }
 
+  // eslint-disable-next-line no-console
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
   if (new Set([res, resV1, eRes, wRes, cRes, mRes, xRes]).size !== 1) {
+    // eslint-disable-next-line no-console
     console.log(`ERROR!`)
+    // eslint-disable-next-line no-console
     console.error(`Results is not equal`)
   }
 
@@ -230,6 +234,7 @@ function printLogs(results: Rec<ReturnType<typeof log>>) {
   Object.entries(results)
     .sort(([, { med: a }], [, { med: b }]) => a - b)
     .forEach(([name, { min, med, max }]) => {
+      // eslint-disable-next-line no-console
       console.log(
         name + ` `.repeat(12 - name.length),
         formatPercent(medFastest / med),
@@ -240,6 +245,7 @@ function printLogs(results: Rec<ReturnType<typeof log>>) {
       )
     })
 
+  // eslint-disable-next-line no-console
   console.log(`\n`)
 }
 

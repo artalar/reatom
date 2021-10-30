@@ -1,8 +1,7 @@
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
-
 import { createTransaction } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
 
 import { isShallowEqual, memo } from './memo'
 
@@ -33,6 +32,7 @@ test(``, () => {
       setMemoCache,
     ).state,
   )
+  // eslint-disable-next-line @typescript-eslint/no-unused-expressions
   ;`👍` //?
 })
 

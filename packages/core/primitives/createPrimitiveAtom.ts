@@ -5,7 +5,6 @@ import {
   createAtom,
   Fn,
   isString,
-  Merge,
   noop,
   Rec,
 } from '@reatom/core'
@@ -52,6 +51,7 @@ export function createPrimitiveAtom<State>(
       payload(state),
   }
 
+  // eslint-disable-next-line prefer-const
   let { decorators = [], id } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options

@@ -1,8 +1,12 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom } from '.'
+
+import { createPrimitiveAtom } from './'
 
 let count = 0
-export function createBooleanAtom(initState = false, options: AtomOptions = `boolean${++count}`) {
+export function createBooleanAtom(
+  initState = false,
+  options: AtomOptions = `boolean${++count}`,
+) {
   return createPrimitiveAtom(
     initState,
     {

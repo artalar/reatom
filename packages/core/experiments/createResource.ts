@@ -130,6 +130,7 @@ export function createResource<State, Params = void>(
 }
 
 // This will be trowed by terser
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function example() {
   type Product = {}
 
@@ -156,6 +157,7 @@ function example() {
     { id: `paging` },
   )
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function Products() {
     const [{ data, isLoading }] = useAtom(productsAtom)
     const [page, { next, prev }] = useAtom(pageAtom)
