@@ -9,7 +9,7 @@ import {
   Cause,
   createReatomError,
   createTemplateCache,
-  defaultStore as originalStore,
+  defaultStore as originalDefaultStore,
   Fn,
   isActionCreator,
   isAtom,
