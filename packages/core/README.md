@@ -454,7 +454,7 @@ const formAtom = createAtom(
 The third argument `options` allows you to override the default atom settings:
 id - setup id for this atom
 decorators - array of (atom decorators)[#atom-decorators] 
-defaultStore - redefine store for this atom
+defaultStore - redefine store bindings for `dispatch`, `getState` and `subscribe` of this atom
 
 ### Atom decorators 
 > TODO: Add example
