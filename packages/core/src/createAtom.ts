@@ -9,16 +9,16 @@ import {
   Cause,
   createReatomError,
   createTemplateCache,
-  defaultStore,
+  defaultStore as originalStore,
   Fn,
   isActionCreator,
   isAtom,
   isFunction,
   isString,
-  Merge,
   noop,
   OmitValues,
   pushUnique,
+  Store,
   Rec,
   Track,
   TrackReducer,
@@ -47,7 +47,8 @@ export type AtomOptions<State = any> =
   | Atom[`id`]
   | {
       id?: Atom[`id`]
-      decorators?: Array<AtomDecorator<State>>
+      decorators?: Array<AtomDecorator<State>>,
+      defaultStore?: Store
     }
 
 export type AtomDecorator<State> = Fn<
@@ -66,7 +67,11 @@ export function createAtom<
   reducer: TrackReducer<State, Deps>,
   options: AtomOptions<State> = {},
 ): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
-  let { decorators = [], id = `atom${++atomsCount}` } = isString(options)
+  let {
+    decorators = [],
+    id = `atom${++atomsCount}`,
+    defaultStore = originalStore,
+  } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
   const trackedTypes: Array<string> = []
