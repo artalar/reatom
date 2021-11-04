@@ -224,6 +224,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   <tr>
     <td align="center"><a href="https://binjo.ru"><img src="https://avatars2.githubusercontent.com/u/8722478?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Viktor Pasynok</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=binjospookie" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/BataevDaniil"><img src="https://avatars.githubusercontent.com/u/31391383?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Daniil Bataev</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=BataevDaniil" title="Code">💻</a></td>
+    <td align="center"><a href="http://kontur.io"><img src="https://avatars.githubusercontent.com/u/6587585?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Alexander CherryTea</b></sub></a><br /><a href="https://github.com/artalar/reatom/commits?author=Akiyamka" title="Code">💻</a></td>
   </tr>
 </table>
 
