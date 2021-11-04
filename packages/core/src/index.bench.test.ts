@@ -4,6 +4,15 @@ import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
 import { observable, computed, autorun, configure } from 'mobx'
+import {
+  createAction,
+  createReducer,
+  createSelector,
+  on,
+  props,
+  Store,
+} from '@ngrx/store'
+
 import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { combine, map } from '@reatom/core/experiments'
@@ -160,6 +169,26 @@ async function start(iterations: number) {
   let xRes = 0
   autorun(() => (xRes += xH.get()))
   xRes = 0
+
+  const nEntry = createAction('entry', props<{ payload: number }>())
+  const nA = createReducer(
+    0,
+    on(nEntry, (state, { payload }) => payload),
+  )
+  const nB = createSelector(
+    ({ entry }: { entry: number }) => entry,
+    (v) => v + 1,
+  )
+  // const nC = createSelector(nB, (v) => v + 1)
+  // const nD = createSelector([nB, nC], (b, c) => b + c)
+  // const nE = createSelector(nD, (v) => v + 1)
+  // const nF = createSelector([nD, nE], (d, e) => d + e)
+  // const nG = createSelector([nD, nE], (d, e) => d + e)
+  // const nH = createSelector([nF, nG], (f, g) => f + g)
+  // const nStore = new Store({ entry: 0 }, nEntry, nA)
+  // let nRes = 0
+  // nStore.subscribe(nH, (value) => (nRes = value))
+  // nRes = 0
 
   const reatomLogs = new Array<number>()
   const reatomV1Logs = new Array<number>()

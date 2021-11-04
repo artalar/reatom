@@ -26,6 +26,7 @@
   "devDependencies": {
     "@actions/github": "^5.0.0",
     "@jsdevtools/npm-publish": "^1.4.3",
+    "@ngrx/store": "^12.5.1",
     "@size-limit/preset-small-lib": "^4.11.0",
     "@types/jest": "^26.0.23",
     "cross-env": "^7.0.3",
