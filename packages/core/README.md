@@ -34,6 +34,15 @@ Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 
 Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow predictable, but granular and efficient.
 
+### Who use Reatom
+
+<details>
+ <summary>List of companies</summary>
+
+- [ГК «Астрал»](https://astral.ru/about/) <!-- ![](https://astral.ru/local/templates/astral/img/logo-w.png) -->
+
+</details>
+
 ### Short example
 
 ```ts
