@@ -1,3 +1,10 @@
 import { publish } from './publish'
 
-publish()
+const changedPackages = [
+  ...new Set(process.argv
+    .slice(2)
+    .map((path) => path.split('/')[1])
+  ),
+]
+
+publish(changedPackages)

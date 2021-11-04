@@ -6,7 +6,7 @@ import { PACKAGES_PATHS } from './common'
 import { install } from './install'
 import { test } from './test'
 
-export async function publish() {
+export async function publish(changedPackages: string[]) {
   const login = github.context.payload.pull_request?.user?.login
 
   if (!login) {
@@ -21,24 +21,26 @@ export async function publish() {
   console.log('publish')
   console.time('publish')
 
-  const packages = PACKAGES_PATHS.map((packagesPath) =>
-    path.resolve(packagesPath, 'package.json'),
-  )
+  const packages = PACKAGES_PATHS.filter((packagePath) =>
+    changedPackages.some((name) => path.basename(packagePath) === name),
+  ).map((packagesPath) => path.resolve(packagesPath, 'package.json'))
 
-  const result = await Promise.all(
-    packages.map((packagePath) =>
-      npmPublish({
-        access: 'public',
-        package: packagePath,
-        tag,
-        token: process.env.NPM_TOKEN,
+  console.log({ packages })
 
-        // FIXME after tests
-        dryRun: true,
-        debug: console.debug,
-      }),
-    ),
-  )
+  // const result = await Promise.all(
+  //   packages.map((packagePath) =>
+  //     npmPublish({
+  //       access: 'public',
+  //       package: packagePath,
+  //       tag,
+  //       token: process.env.NPM_TOKEN,
+
+  //       // FIXME after tests
+  //       dryRun: true,
+  //       debug: console.debug,
+  //     }),
+  //   ),
+  // )
 
   console.timeEnd('publish')
 }
