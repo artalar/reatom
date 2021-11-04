@@ -461,9 +461,10 @@ const formAtom = createAtom(
 > `Outdated track call` is throwed when you try to use reactive handlers outside synchronous reducer call. For example, `schedule` is called only after all atoms recalculation.
 
 The third argument `options` allows you to override the default atom settings:
-id - setup id for this atom
-decorators - array of (atom decorators)[#atom-decorators]
-defaultStore - redefine store bindings for `dispatch`, `getState` and `subscribe` of this atom
+
+- `id` - setup id for this atom
+- `decorators` - array of (atom decorators)[#atom-decorators]
+- `store` - redefine store bindings for `dispatch`, `getState` and `subscribe` of this atom (by default `defaultStore` using)
 
 ### Atom decorators
 

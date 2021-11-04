@@ -9,7 +9,7 @@ import {
   Cause,
   createReatomError,
   createTemplateCache,
-  defaultStore as originalDefaultStore,
+  defaultStore,
   Fn,
   isActionCreator,
   isAtom,
@@ -48,7 +48,7 @@ export type AtomOptions<State = any> =
   | {
       id?: Atom[`id`]
       decorators?: Array<AtomDecorator<State>>,
-      defaultStore?: Store
+      store?: Store
     }
 
 export type AtomDecorator<State> = Fn<
@@ -70,7 +70,7 @@ export function createAtom<
   let {
     decorators = [],
     id = `atom${++atomsCount}`,
-    defaultStore = originalStore,
+    store = defaultStore,
   } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
@@ -108,7 +108,7 @@ export function createAtom<
         })
         actionCreator.type = type
         actionCreator.dispatch = (...a: any[]) =>
-          defaultStore.dispatch(actionCreator(...a))
+          store.dispatch(actionCreator(...a))
 
         actionCreators[name] = actionCreator
 
@@ -143,9 +143,9 @@ export function createAtom<
 
   atom.id = id
 
-  atom.getState = () => defaultStore.getState(atom)
+  atom.getState = () => store.getState(atom)
 
-  atom.subscribe = (cb: Fn) => defaultStore.subscribe(atom, cb)
+  atom.subscribe = (cb: Fn) => store.subscribe(atom, cb)
 
   atom.types = types
 
