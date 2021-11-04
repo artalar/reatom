@@ -3,10 +3,10 @@ import {
   addToSetsMap,
   Atom,
   AtomsCache,
-  callSafety as callSafetyDefault,
+  callSafety as originalCallSafety,
   Causes,
   createReatomError,
-  createTemplateCache as createTemplateCacheDefault,
+  createTemplateCache as originalCreateTemplateCache,
   createTransaction,
   delFromSetsMap,
   Effect,
@@ -64,14 +64,14 @@ export type StoreOnError = Fn<
 >
 
 export function createStore({
-  callSafety = callSafetyDefault,
-  createTemplateCache = createTemplateCacheDefault,
+  callSafety = originalCallSafety,
+  createTemplateCache = originalCreateTemplateCache,
   onError = noop,
   onPatch = noop,
   now = Date.now.bind(Date),
 }: {
-  callSafety?: typeof callSafetyDefault
-  createTemplateCache?: typeof createTemplateCacheDefault
+  callSafety?: typeof originalCallSafety
+  createTemplateCache?: typeof originalCreateTemplateCache
   onError?: StoreOnError
   onPatch?: StoreOnPatch
   /** Current time getter. Tip: use `performance.now` to accurate tracking */
