@@ -133,15 +133,15 @@ import { createAtom } from '@reatom/core'
 
 const inputAtom = createAtom(
   // Plain function in dependencies are used as mappers
-  // (calls to convert AC arguments to action payload)
-  // for action creators (AC) with same names,
+  // (calls to convert action creator (AC) arguments to action payload)
+  // for AC with same names,
   // which you may handle in the reducer
   { change: (text: string) => text },
   // Reducer is a function which recall on every related dispatch.
   // The `track` parameter includes handlers
   // to subscribe and react to dependencies actions and atoms
-  (track, state = ``) => {
-    track.onAction(`change`, (text) => (state = text))
+  (track, state = '') => {
+    track.onAction('change', (text) => (state = text))
     return state
   },
 )
@@ -407,13 +407,13 @@ The second argument of `createAtom` is reducer function which accepts the `track
 
 `track` collections is a set of helpers to process and subscribe to dependencies, it includes:
 
-- `create` - call payload mapper from dependencies and create action object.
-- `get` - read and subscribe dependency atom value. It doesn't subscribe in `onAction` \ `onChange`, just read.
-- `getUnlistedState` - read state of atom outside dependencies.
+- `get` - read and subscribe dependency atom value. It doesn't subscribe inside `onAction` \ `onChange`, just read it. If you describe an atom in dependencies, but didn't use it by `get` the reducer function will not rerun to it changes
 - `onAction` - react to dependency action.
 - `onChange` - react to change of state of dependency atom.
-- `onInit` - react only to first reducer call.
 - `schedule` - schedule side effect. The only way to receive `dispatch` for set effect result.
+- `create` - call payload mapper from dependencies and create action object.
+- `onInit` - react only to first reducer call.
+- `getUnlistedState` - read state of atom outside dependencies without subscribing to it.
 
 ```ts
 const formAtom = createAtom(
@@ -462,10 +462,11 @@ const formAtom = createAtom(
 
 The third argument `options` allows you to override the default atom settings:
 id - setup id for this atom
-decorators - array of (atom decorators)[#atom-decorators] 
+decorators - array of (atom decorators)[#atom-decorators]
 defaultStore - redefine store bindings for `dispatch`, `getState` and `subscribe` of this atom
 
-### Atom decorators 
+### Atom decorators
+
 > TODO: Add example
 
 ## Internal architecture
@@ -519,18 +520,21 @@ const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = 0) => {
 Important note. Feel free to mutate **variable**, not a value. Reducer functions should not mutate any input values.
 
 ```ts
-const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = { count: 0 }) => {
-  // WRONG
-  onAction('inc', () => {
-    state.count++
-  })
-  // Right
-  onAction('inc', () => {
-    state = { count: state.count + 1 }
-  })
+const counterAtom = createAtom(
+  { inc: () => {} },
+  ({ onAction }, state = { count: 0 }) => {
+    // WRONG
+    onAction('inc', () => {
+      state.count++
+    })
+    // Right
+    onAction('inc', () => {
+      state = { count: state.count + 1 }
+    })
 
-  return state
-})
+    return state
+  },
+)
 ```
 
 ### How to handle one action in a few atoms?
