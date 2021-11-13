@@ -2,15 +2,16 @@ import {
   Action,
   Atom,
   AtomState,
-  defaultStore,
   getState,
   isActionCreator,
   Store,
+  subscribe,
+  dispatch,
 } from '@reatom/core/'
 import React from 'react'
 import { useSubscription } from 'use-subscription'
 
-export const reatomContext = React.createContext(defaultStore)
+export const reatomContext = React.createContext()
 
 let batchedUpdates = (f: () => any) => f()
 export const setBatchedUpdates = (f: (callback: () => any) => void) => {
@@ -18,15 +19,16 @@ export const setBatchedUpdates = (f: (callback: () => any) => void) => {
 }
 
 function bindActionCreator<Args extends any[]>(
-  store: Store,
+  atom,
   actionCreator: (...args: Args) => Action | Action[] | void,
+  store: Store,
 ) {
   return (...args: Args) => {
     const action = actionCreator(...args)
 
     if (action) {
       batchedUpdates(() => {
-        store.dispatch(action)
+        dispatch(atom, action, store)
       })
     }
   }
@@ -35,11 +37,12 @@ function bindActionCreator<Args extends any[]>(
 export function useAction<Args extends any[] = []>(
   actionCreator: (...args: Args) => Action | Action[] | void,
   deps: any[] = [],
+  atom?: Atom,
 ): (...args: Args) => void {
   const store = React.useContext(reatomContext)
 
   return React.useCallback(
-    bindActionCreator(store, actionCreator),
+    bindActionCreator(atom, actionCreator, store),
     deps.concat(store),
   )
 }
@@ -61,11 +64,11 @@ export function useAtom<T extends Atom>(
       [
         {
           getCurrentValue: () => getState(atom, store),
-          subscribe: (cb: () => any) => store.subscribe(atom, cb),
+          subscribe: (cb: () => any) => subscribe(atom, cb, store),
         },
         Object.entries(atom).reduce((acc, [k, ac]) => {
           // @ts-expect-error
-          if (isActionCreator(ac)) acc[k] = bindActionCreator(store, ac)
+          if (isActionCreator(ac)) acc[k] = bindActionCreator(atom, ac, store)
           return acc
         }, {} as ActionCreators<T>),
       ] as const,

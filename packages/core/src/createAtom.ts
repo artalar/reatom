@@ -9,7 +9,6 @@ import {
   Cause,
   createReatomError,
   createTemplateCache,
-  defaultStore,
   Fn,
   isActionCreator,
   isAtom,
@@ -23,31 +22,31 @@ import {
   Track,
   TrackReducer,
   Transaction,
+  getState,
+  subscribe,
+  dispatch,
 } from './internal'
 
 export type AtomSelfBinded<
   State = any,
   Deps extends Rec<PayloadMapper | Atom> = Rec<PayloadMapper | Atom>,
-> = AtomBinded<State> &
-  {
-    [K in keyof Deps]: Deps[K] extends Atom
-      ? never
-      : Deps[K] extends ActionCreator
-      ? never
-      : K extends `_${string}`
-      ? never
-      : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
-          dispatch: (
-            ...args: Parameters<Deps[K]>
-          ) => Action<ReturnType<Deps[K]>>
-        }
-  }
+> = AtomBinded<State> & {
+  [K in keyof Deps]: Deps[K] extends Atom
+    ? never
+    : Deps[K] extends ActionCreator
+    ? never
+    : K extends `_${string}`
+    ? never
+    : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
+        dispatch: (...args: Parameters<Deps[K]>) => Action<ReturnType<Deps[K]>>
+      }
+}
 
 export type AtomOptions<State = any> =
   | Atom[`id`]
   | {
       id?: Atom[`id`]
-      decorators?: Array<AtomDecorator<State>>,
+      decorators?: Array<AtomDecorator<State>>
       store?: Store
     }
 
@@ -70,7 +69,7 @@ export function createAtom<
   let {
     decorators = [],
     id = `atom${++atomsCount}`,
-    store = defaultStore,
+    store,
   } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
@@ -108,7 +107,7 @@ export function createAtom<
         })
         actionCreator.type = type
         actionCreator.dispatch = (...a: any[]) =>
-          store.dispatch(actionCreator(...a))
+          dispatch(atom, actionCreator(...a))
 
         actionCreators[name] = actionCreator
 
@@ -143,9 +142,11 @@ export function createAtom<
 
   atom.id = id
 
-  atom.getState = () => store.getState(atom)
+  atom.store = store
 
-  atom.subscribe = (cb: Fn) => store.subscribe(atom, cb)
+  atom.getState = () => getState(atom)
+
+  atom.subscribe = (cb: Fn) => subscribe(atom, cb)
 
   atom.types = types
 

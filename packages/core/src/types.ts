@@ -21,22 +21,18 @@ export type Values<T> = Merge<T[keyof T]>
 export type OmitValues<Collection, Target> = Merge<
   Omit<
     Collection,
-    Values<
-      {
-        [K in keyof Collection]: Collection[K] extends Target ? K : never
-      }
-    >
+    Values<{
+      [K in keyof Collection]: Collection[K] extends Target ? K : never
+    }>
   >
 >
 
 export type PickValues<Collection, Target> = Merge<
   Pick<
     Collection,
-    Values<
-      {
-        [K in keyof Collection]: Collection[K] extends Target ? K : never
-      }
-    >
+    Values<{
+      [K in keyof Collection]: Collection[K] extends Target ? K : never
+    }>
   >
 >
 
@@ -91,6 +87,8 @@ export type Atom<State = any> = {
    * Set of all dependency types which this atom should handle
    */
   types: Array<Action['type']>
+
+  store?: Store
 }
 
 export type AtomBindings<State = any> = {

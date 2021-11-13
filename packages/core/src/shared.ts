@@ -157,9 +157,16 @@ export function createTransaction(
   return transaction
 }
 
-export function getState<State>(
-  atom: Atom<State>,
-  store = defaultStore,
-): State {
-  return store.getState(atom)
+const getStoreByAtom = (atom) => atom?.store ?? defaultStore
+
+export function getState<State>(atom: Atom<State>, store): State {
+  return (store ?? getStoreByAtom(atom)).getState(atom)
+}
+
+export function subscribe<State>(atom: Atom<State>, cb, store): State {
+  return (store ?? getStoreByAtom(atom)).subscribe(atom, cb)
+}
+
+export function dispatch<State>(atom: Atom<State>, action, store): State {
+  return (store ?? getStoreByAtom(atom)).dispatch(action)
 }
