@@ -22,9 +22,7 @@ import {
   Track,
   TrackReducer,
   Transaction,
-  getState,
-  subscribe,
-  dispatch,
+  getStoreByAtom,
 } from './internal'
 
 export type AtomSelfBinded<
@@ -107,7 +105,7 @@ export function createAtom<
         })
         actionCreator.type = type
         actionCreator.dispatch = (...a: any[]) =>
-          dispatch(atom, actionCreator(...a))
+          getStoreByAtom(atom).dispatch(actionCreator(...a))
 
         actionCreators[name] = actionCreator
 
@@ -144,9 +142,9 @@ export function createAtom<
 
   atom.store = store
 
-  atom.getState = () => getState(atom)
+  atom.getState = () => getStoreByAtom(atom).getState(atom)
 
-  atom.subscribe = (cb: Fn) => subscribe(atom, cb)
+  atom.subscribe = (cb: Fn) => getStoreByAtom(atom).subscribe(atom, cb)
 
   atom.types = types
 

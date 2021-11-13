@@ -5,8 +5,7 @@ import {
   getState,
   isActionCreator,
   Store,
-  subscribe,
-  dispatch,
+  getStoreByAtom,
 } from '@reatom/core/'
 import React from 'react'
 import { useSubscription } from 'use-subscription'
@@ -28,7 +27,7 @@ function bindActionCreator<Args extends any[]>(
 
     if (action) {
       batchedUpdates(() => {
-        dispatch(atom, action, store)
+        getStoreByAtom(atom, store).dispatch(action)
       })
     }
   }
@@ -63,8 +62,9 @@ export function useAtom<T extends Atom>(
     () =>
       [
         {
-          getCurrentValue: () => getState(atom, store),
-          subscribe: (cb: () => any) => subscribe(atom, cb, store),
+          getCurrentValue: () => getStoreByAtom(atom, store).getState(atom),
+          subscribe: (cb: () => any) =>
+            getStoreByAtom(atom, store).subscribe(atom, cb),
         },
         Object.entries(atom).reduce((acc, [k, ac]) => {
           // @ts-expect-error
