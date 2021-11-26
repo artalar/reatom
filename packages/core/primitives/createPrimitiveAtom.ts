@@ -67,14 +67,10 @@ export function createPrimitiveAtom<State>(
       const idx = actionCreatorsTypes.indexOf(action.type)
 
       if (idx != -1) {
-        if (cache == cache) {
-          cache = Object.assign({}, cache)
-        }
-
-        cache.state = actions![keys[idx]](
-          cache.state as State,
-          ...action.payload,
-        )
+        cache = Object.assign({}, cache, {
+          cause: `HANDLE: ${action.type}`,
+          state: actions![keys[idx]](cache.state!, ...action.payload),
+        })
       }
     })
 

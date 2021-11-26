@@ -34,7 +34,7 @@
     "@size-limit/preset-small-lib": "^2.1.4",
     "cellx": "^1.10.18",
     "cross-env": "^6.0.2",
-    "effector": "^21.8.12",
+    "effector": "^22.1.2",
     "mobx": "^6.3.2",
     "mol_atom2_all": "^2.2.3",
     "redux": "^4.0.5",

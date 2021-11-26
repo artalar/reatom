@@ -21,22 +21,17 @@ export type Values<T> = Merge<T[keyof T]>
 export type OmitValues<Collection, Target> = Merge<
   Omit<
     Collection,
-    Values<
-      {
-        [K in keyof Collection]: Collection[K] extends Target ? K : never
-      }
-    >
+    Values<{
+      [K in keyof Collection]: Collection[K] extends Target ? K : never
+    }>
   >
 >
-
 export type PickValues<Collection, Target> = Merge<
   Pick<
     Collection,
-    Values<
-      {
-        [K in keyof Collection]: Collection[K] extends Target ? K : never
-      }
-    >
+    Values<{
+      [K in keyof Collection]: Collection[K] extends Target ? K : never
+    }>
   >
 >
 
@@ -103,9 +98,11 @@ export type AtomBindings<State = any> = {
 
 export type AtomBinded<State = any> = Atom<State> & AtomBindings<State>
 
+export type PossibleDeps = Rec<Fn | Atom | ActionCreator>
+
 export type TrackReducer<
   State = any,
-  Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>,
+  Deps extends PossibleDeps = PossibleDeps,
 > = {
   (track: Track<Deps>): State
   // TODO: how to infer type from default value of optional argument?
@@ -124,34 +121,43 @@ export type AtomEffect<Ctx extends Cache['ctx'] = Cache['ctx']> = Fn<
   [dispatch: Store['dispatch'], ctx: Ctx, causes: Causes]
 >
 
-export type DepsPayloadMappers<
-  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom | ActionCreator>,
-> = OmitValues<Deps, Atom | ActionCreator>
+export type DepsPayloadMappers<Deps extends PossibleDeps = PossibleDeps> =
+  OmitValues<Deps, Atom | ActionCreator>
 
-export type DepsActionCreators<
-  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
-> = {
-  [K in keyof Deps]: Deps[K] extends ActionCreator ? Deps[K] : never
-}
+export type DepsActionCreators<Deps extends PossibleDeps = PossibleDeps> =
+  ActionCreators<Deps>
 
-export type DepsAtoms<
-  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
-> = {
-  [K in keyof Deps]: Deps[K] extends Atom ? Deps[K] : never
-}
+export type DepsAtoms<Deps extends PossibleDeps = PossibleDeps> = PickValues<
+  Deps,
+  Atom
+>
+export type DepsAtomsPrivate<Deps extends PossibleDeps = PossibleDeps> = Pick<
+  DepsAtoms<Deps>,
+  // @ts-ignore
+  `_${string}`
+>
 
-export type Track<
-  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
-> = {
+export type Track<Deps extends PossibleDeps = PossibleDeps> = {
   /** Create action */
-  create: <Name extends keyof DepsPayloadMappers<Deps>>(
+  create<Name extends keyof DepsPayloadMappers<Deps>>(
     name: Name,
     ...params: Parameters<DepsPayloadMappers<Deps>[Name]>
-  ) => Action<ReturnType<DepsPayloadMappers<Deps>[Name]>>
+  ): Action<ReturnType<DepsPayloadMappers<Deps>[Name]>>
+  create<
+    Name extends keyof DepsAtoms<Deps>,
+    Action extends keyof ActionCreators<DepsAtoms<Deps>>,
+  >(
+    // @ts-ignore
+    where: `${Name}.${Action}`,
+    // @ts-expect-error
+    ...params: Parameters<Deps[Name][Action]>
+  ): // @ts-ignore
+  ReturnType<Deps[Name][Action]>
 
   /** Subscribe to atom state changes and receive it */
   get<Name extends keyof DepsAtoms<Deps>>(
     name: Name,
+    // @ts-ignore
   ): AtomState<DepsAtoms<Deps>[Name]>
 
   /** Get atom state without subscribing to it! */
@@ -172,13 +178,24 @@ export type Track<
       ]
     >,
   ): void
+  onAction<
+    Name extends keyof DepsAtoms<Deps>,
+    Action extends keyof ActionCreators<DepsAtoms<Deps>[Name]>,
+  >(
+    // @ts-ignore
+    where: `${Name}.${Action}`,
+    // @ts-ignore
+    reaction: Fn<[ActionPayload<Deps[Name][Action]>]>,
+  ): void
 
   /** Subscribe to atom state changes and react to it */
   onChange<Name extends keyof DepsAtoms<Deps>>(
     name: Name,
     reaction: Fn<
       [
+        // @ts-ignore
         newState: AtomState<DepsAtoms<Deps>[Name]>,
+        // @ts-ignore
         oldState: undefined | AtomState<DepsAtoms<Deps>[Name]>,
       ]
     >,
@@ -189,6 +206,16 @@ export type Track<
 
   /** Schedule effect */
   schedule(effect: AtomEffect): void
+
+  transit<
+    Name extends keyof DepsAtomsPrivate<Deps>,
+    Action extends keyof ActionCreators<Deps[Name]>,
+  >(
+    // @ts-ignore
+    where: `${Name}.${Action}`,
+    // @ts-expect-error
+    ...args: Parameters<Deps[Name][Action]>
+  ): void
 }
 
 export type Action<Payload = any> = {
@@ -281,6 +308,8 @@ export type Transaction = {
 
   /** Schedule effect */
   schedule(cb: TransactionEffect, cause?: Cause): void
+
+  transit(action: Action | Array<Action>, cause?: Cause): void
 }
 
 export type TransactionResult = {
@@ -304,3 +333,5 @@ export type ActionPayload<T extends ActionCreator | Action> =
 
 export type ActionCreatorData<T extends ActionCreator> =
   T extends ActionCreator<any[], infer Data> ? Data : never
+
+export type ActionCreators<T> = PickValues<T, ActionCreator>

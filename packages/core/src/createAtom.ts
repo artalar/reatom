@@ -28,26 +28,29 @@ import {
 export type AtomSelfBinded<
   State = any,
   Deps extends Rec<PayloadMapper | Atom> = Rec<PayloadMapper | Atom>,
-> = AtomBinded<State> &
-  {
-    [K in keyof Deps]: Deps[K] extends Atom
-      ? never
-      : Deps[K] extends ActionCreator
-      ? never
-      : K extends `_${string}`
-      ? never
-      : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
-          dispatch: (
-            ...args: Parameters<Deps[K]>
-          ) => Action<ReturnType<Deps[K]>>
+> = AtomBinded<State> & {
+  [K in keyof Deps]: Deps[K] extends Atom
+    ? K extends `_${string}`
+      ? {
+          [P in keyof Deps[K]]: Deps[K][P] extends ActionCreator
+            ? Deps[K][P]
+            : never
         }
-  }
+      : never
+    : Deps[K] extends ActionCreator
+    ? never
+    : K extends `_${string}`
+    ? never
+    : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
+        dispatch: (...args: Parameters<Deps[K]>) => Action<ReturnType<Deps[K]>>
+      }
+}
 
 export type AtomOptions<State = any> =
   | Atom[`id`]
   | {
       id?: Atom[`id`]
-      decorators?: Array<AtomDecorator<State>>,
+      decorators?: Array<AtomDecorator<State>>
       store?: Store
     }
 
@@ -66,7 +69,7 @@ export function createAtom<
   dependencies: Deps,
   reducer: TrackReducer<State, Deps>,
   options: AtomOptions<State> = {},
-): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
+): AtomSelfBinded<State, OmitValues<Deps, ActionCreator>> {
   let {
     decorators = [],
     id = `atom${++atomsCount}`,
@@ -76,7 +79,7 @@ export function createAtom<
     : options
   const trackedTypes: Array<string> = []
   const types: Array<string> = []
-  const actionCreators: Rec<ActionCreator> = {}
+  const actionCreators: Rec<ActionCreator | Rec<ActionCreator>> = {}
   const externalActions: Rec<string> = {}
 
   if (!isFunction(reducer) || !isString(id)) {
@@ -92,6 +95,14 @@ export function createAtom<
     }
 
     if (isAtom(dep)) {
+      // TODO
+      // if (dep.isUnique) {
+      //   createReatomError()
+      // }
+      if (name[0] == `_`) {
+        // @ts-expect-error
+        atom[name] = actionCreators[name] = dep
+      }
       dep.types.forEach((type) => pushUnique(types, type))
     } else {
       let type: string
@@ -160,16 +171,19 @@ function createDynamicallyTrackedCacheReducer<
   reducer: TrackReducer<State, Deps>,
   dependencies: Deps,
   trackedTypes: Array<string>,
-  actionCreators: Rec<ActionCreator>,
+  actionCreators: Rec<ActionCreator | Rec<ActionCreator>>,
   externalActions: Rec<string>,
 ): CacheReducer<State> {
-  const create: Track<Deps>[`create`] = (name, ...args) =>
-    // TODO
+  const create: Track<Deps>[`create`] = (from: string, ...args: any[]) => {
+    const [dep, name] = from.split(`.`)
+
     // @ts-expect-error
-    actionCreators[name as string](...args)
+    const actionCreator = name ? actionCreators[dep][name] : actionCreators[dep]
+    return actionCreator(...args)
+  }
 
   return (
-    { actions, process, schedule }: Transaction,
+    { actions, process, schedule, transit }: Transaction,
     cache: CacheTemplate<State>,
   ): Cache<State> => {
     let { atom, ctx, state, listeners } = cache
@@ -199,7 +213,7 @@ function createDynamicallyTrackedCacheReducer<
       return process(targetAtom).state
     }
 
-    const onAction: Track<Deps>[`onAction`] = (name, reaction) => {
+    const onAction: Track<Deps>[`onAction`] = (from: string, reaction: Fn) => {
       outdatedCall()
 
       if (effectCause != undefined) {
@@ -207,8 +221,17 @@ function createDynamicallyTrackedCacheReducer<
           `Can not react to action inside another reaction`,
         )
       }
+      let type: string
+      let [dep, name] = from.split(`.`)
 
-      const type =
+      if (name) {
+        // @ts-expect-error
+        type = dependencies[dep][name].type
+      } else {
+        name = dep
+      }
+
+      type =
         externalActions[name as string] ?? actionCreators[name as string]?.type
 
       if (type == undefined) {
@@ -219,7 +242,7 @@ function createDynamicallyTrackedCacheReducer<
         if (type == action.type) {
           effectCause = name as string
           if (name != type) effectCause += ` (${type})`
-          effectCause += ' handler'
+          effectCause += ` handler (${atom.id})`
           reaction(action.payload)
           effectCause = undefined
         }
@@ -246,8 +269,8 @@ function createDynamicallyTrackedCacheReducer<
         !Object.is(atomCache.state, atomPatch.state)
       ) {
         effectCause = name as string
-        if (name != atom.id) effectCause += ` (${atom.id})`
-        effectCause += ' handler'
+        if (name != depAtom.id) effectCause += ` (${depAtom.id})`
+        effectCause += ` handler (${atom.id})`
         reaction(atomPatch.state, atomCache?.state)
         effectCause = undefined
       }
@@ -255,7 +278,9 @@ function createDynamicallyTrackedCacheReducer<
 
     const onInit: Track<Deps>[`onInit`] = (cb) => {
       if (cache.tracks == undefined) {
+        effectCause = 'init handler'
         cb()
+        effectCause = undefined
       }
     }
 
@@ -263,6 +288,17 @@ function createDynamicallyTrackedCacheReducer<
       outdatedCall()
 
       schedule((dispatch, causes) => effect(dispatch, ctx, causes), effectCause)
+    }
+
+    const _transit: Track<Deps>[`transit`] = (where, ...args) => {
+      outdatedCall()
+
+      const [depName, actionName] = where.split(`.`)
+      const depAtom = dependencies[depName] as Atom
+      // @ts-ignore
+      const action = depAtom[actionName](...args)
+
+      transit(action)
     }
 
     const track: Track<Deps> = {
@@ -273,6 +309,7 @@ function createDynamicallyTrackedCacheReducer<
       onChange,
       onInit,
       schedule: _schedule,
+      transit: _transit,
     }
 
     let cause = `init`
@@ -280,12 +317,12 @@ function createDynamicallyTrackedCacheReducer<
       cache.tracks == undefined ||
       actions.some(
         ({ type }) =>
-          trackedTypes.includes(type) && ((cause = `${type} action`), true),
+          trackedTypes.includes(type) && ((cause = `HANDLE: ${type}`), true),
       ) ||
       cache.tracks.some(
         (depCache) =>
           !Object.is(depCache.state, _get(depCache.atom, depCache).state) &&
-          ((cause = `${depCache.atom.id} atom`), true),
+          ((cause = `CHANGED: ${depCache.atom.id}`), true),
       )
 
     if (shouldCallReducer) {

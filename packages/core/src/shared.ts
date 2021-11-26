@@ -11,6 +11,7 @@ import {
   Patch,
   Store,
   Transaction,
+  TransactionResult,
 } from './internal'
 
 export const noop: Fn = () => {}
@@ -97,15 +98,17 @@ export function createTemplateCache<State>(
 export function createTransaction(
   actions: ReadonlyArray<Action>,
   {
-    patch = new Map(),
-    getCache = (atom, fallback) => fallback ?? createTemplateCache(atom),
-    effects = [],
     causes = [] as any as Causes,
+    effects = [],
+    getCache = (atom, fallback) => fallback ?? createTemplateCache(atom),
+    patch = new Map(),
+    top,
   }: {
-    patch?: Patch
-    getCache?: Store['getCache']
-    effects?: Array<Effect>
     causes?: Causes
+    effects?: Array<Effect>
+    getCache?: Store['getCache']
+    patch?: Patch
+    top?: TransactionResult
   } = {},
 ): Transaction {
   causes = causes.concat({ actions, patch })
@@ -119,8 +122,12 @@ export function createTransaction(
       let atomPatch = patch.get(atom)
 
       if (atomPatch == undefined) {
-        cache = getCache(atom, cache)
-        atomPatch = atom(transaction, cache)
+        const atomPrevPatch = top?.patch.get(atom)
+        cache = atomPrevPatch ?? getCache(atom, cache)
+        atomPatch = atom(
+          top && !atomPrevPatch ? flatTransaction : transaction,
+          cache,
+        )
 
         const { cause, state, listeners } = atomPatch
 
@@ -152,7 +159,28 @@ export function createTransaction(
         cb((actions) => dispatch(actions, _causes), _causes),
       )
     },
+    transit(_actions, cause = defaultCause) {
+      _actions = Array.isArray(_actions) ? _actions : [_actions]
+      const me = { actions, patch: new Map(patch) }
+      const _patch = new Map()
+      const { process } = createTransaction(_actions, {
+        causes: causes.concat(cause, me),
+        effects,
+        getCache,
+        patch: _patch,
+        top: me,
+      })
+      _actions.forEach(({ targets }) =>
+        targets?.forEach((atom) => process(atom)),
+      )
+
+      _patch.forEach((value, key) => patch.set(key, value))
+    },
   }
+
+  const flatTransaction = top
+    ? Object.assign({}, transaction, { actions: top?.actions.concat(actions) })
+    : transaction
 
   return transaction
 }

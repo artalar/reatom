@@ -11,9 +11,10 @@ import {
   Fn,
   getState,
   Rec,
-} from '@reatom/core'
+  } from '@reatom/core'
+// } from '.'
 import { createNumberAtom, createPrimitiveAtom } from '@reatom/core/primitives'
-import { createPersist, init } from '@reatom/core/experiments'
+import { createPersist, createResource, init } from '@reatom/core/experiments'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
 
@@ -501,6 +502,57 @@ test(`createTemplateCache`, () => {
 
   assert.is(store.getState(atomWithoutSnapshot), 0)
   assert.is(store.getState(atomWithSnapshot), 42)
+  ;`👍` //?
+})
+
+test(`nested dispatch`, async () => {
+  const delay = 10
+  const resourceAtom = createResource(
+    () => 0,
+    (_: void, state) =>
+      new Promise((resolve) => setTimeout(resolve, delay, state + 1)),
+  )
+
+  const lastRequestTimeAtom = createAtom(
+    {
+      a: () => {},
+      resource: resourceAtom,
+      _start: createNumberAtom(NaN),
+      _end: createNumberAtom(NaN),
+    },
+    ({ create, get, transit, onAction, onChange }, state = NaN) => {
+      onChange(`resource`, (next, prev) => {
+        if (next.isLoading && !prev?.isLoading) {
+          transit('_start.set', Date.now())
+        } else if (!next.isLoading && prev?.isLoading) {
+          transit('_end.set', Date.now())
+          state = get(`_end`) - get(`_start`)
+        }
+      })
+
+      return state || 0
+    },
+  )
+  lastRequestTimeAtom._start.increment.dispatch()
+  lastRequestTimeAtom._start.set
+
+  const store = createStore()
+  const fn = mockFn()
+  store.subscribe(lastRequestTimeAtom, fn)
+
+  store.subscribe(lastRequestTimeAtom, (v, c) => {
+    // @ts-ignore
+    console.log(v, parseCauses(c))
+  })
+
+  store.dispatch(resourceAtom.fetch())
+  assert.is(fn.calls.length, 1)
+
+  await sleep(delay)
+
+  assert.is(fn.calls.length, 2)
+  fn.lastInput() //?
+  assert.ok(fn.lastInput() >= delay)
   ;`👍` //?
 })
 

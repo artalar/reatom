@@ -108,10 +108,10 @@ export function createStore({
     const patch: Patch = new Map()
     const effects: Array<Effect> = []
     const transaction = createTransaction(actions, {
-      patch,
-      getCache,
-      effects,
       causes,
+      effects,
+      getCache,
+      patch,
     })
     const getTransactionResult = () => ({
       actions,
