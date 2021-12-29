@@ -30,11 +30,11 @@
     "update": "npx npm-check-updates -u"
   },
   "peerDependencies": {
-    "@reatom/core": "^2.0.0-rc13",
+    "@reatom/core": "^2.0.15",
     "@reatom/form": "^0.0.1"
   },
   "devDependencies": {
-    "@reatom/core": "^2.0.0-rc13",
+    "@reatom/core": "^2.0.15",
     "@reatom/form": "^0.0.1"
   },
   "author": "BataevDaniil",
