@@ -7,7 +7,15 @@ export function createMapAtom<Key, Element>(
   options: AtomOptions<Map<Key, Element>> = `map${++count}`,
 ) {
   type State = Map<Key, Element>
-  return createPrimitiveAtom(
+  return createPrimitiveAtom<
+    State,
+    {
+      set: (state: State, key: Key, el: Element) => State
+      delete: (state: State, key: Key) => State
+      clear: () => State
+      change: (state: State, cb: (stateCopy: State) => State) => State
+    }
+  >(
     initState,
     {
       set: (state, key: Key, el: Element) => new Map(state).set(key, el),
