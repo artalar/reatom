@@ -6,7 +6,17 @@ export function createNumberAtom(
   initState = 0,
   options: AtomOptions = `number${++count}`,
 ) {
-  return createPrimitiveAtom(
+  return createPrimitiveAtom<
+    number,
+    {
+      increment: (state: number) => number
+      decrement: (state: number) => number
+      add: (state: number, value: number) => number
+      subtract: (state: number, value: number) => number
+      change: (state: number, map: (state: number) => number) => number
+      set: (state: number, newState: number) => number
+    }
+  >(
     initState,
     {
       increment: (state) => state + 1,
