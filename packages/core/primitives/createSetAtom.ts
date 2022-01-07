@@ -1,36 +1,33 @@
-import { AtomOptions, createAtom } from '@reatom/core'
+import { AtomOptions } from '@reatom/core'
+import { createPrimitiveAtom } from '.'
 
 let count = 0
 export function createSetAtom<Element>(
   initState = new Set<Element>(),
   options: AtomOptions<Set<Element>> = `set${++count}`,
 ) {
-  const mapAtom = createAtom(
+  type State = Set<Element>
+
+  return createPrimitiveAtom<
+    State,
     {
-      add: (el: Element) => el,
-      delete: (el: Element) => el,
-      clear: () => null,
-
-      change: (cb: (stateCopy: Set<Element>) => void) => cb,
-    },
-    ({ onAction }, state = initState) => {
-      let newState = state
-
-      const getMutState = () =>
-        newState === state ? (newState = new Set(state)) : newState
-
-      onAction(`add`, (el) => getMutState().add(el))
-
-      onAction(`delete`, (key) => getMutState().delete(key))
-
-      onAction(`clear`, () => getMutState().clear())
-
-      onAction(`change`, (cb) => cb(getMutState()))
-
-      return newState
+      set: (state: State, el: Element) => State
+      delete: (state: State, el: Element) => State
+      clear: () => State
+      change: (state: State, cb: (stateCopy: State) => State) => State
+    }
+  >(
+    initState,
+    {
+      set: (state, el: Element) => new Set(state).add(el),
+      delete: (state, el: Element) => {
+        const newState = (state = new Set(state))
+        if (!newState.delete(el)) return state
+        return newState
+      },
+      clear: () => new Set(),
+      change: (state, cb: (stateCopy: State) => State) => cb(new Set(state)),
     },
     options,
   )
-
-  return mapAtom
 }
