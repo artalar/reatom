@@ -1,18 +1,24 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom, PrimitiveAtom } from '.'
+import { createPrimitiveAtom, PrimitiveAtom, PrimitiveAtomCreator } from '.'
+
+export type StringAtom<State extends string = string> = PrimitiveAtomCreator<
+  State,
+  { set: [State]; change: [map: (stateCopy: State) => State] }
+>
 
 let count = 0
 export function createStringAtom(
   initState?: string,
   options?: AtomOptions,
-): PrimitiveAtom<string>
+): StringAtom
 export function createStringAtom<T extends string>(
   initState: T,
   options?: AtomOptions,
-): PrimitiveAtom<T>
+): StringAtom<T>
 export function createStringAtom(
   initState = ``,
   options: AtomOptions = `string${++count}`,
-) {
+): StringAtom {
+  // @ts-ignore
   return createPrimitiveAtom(initState, null, options)
 }

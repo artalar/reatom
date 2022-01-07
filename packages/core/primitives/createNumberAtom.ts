@@ -1,22 +1,24 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom } from '.'
+import { createPrimitiveAtom, PrimitiveAtomCreator } from '.'
+
+export type NumberAtom = PrimitiveAtomCreator<
+  number,
+  {
+    increment: []
+    decrement: []
+    add: [value: number]
+    subtract: [value: number]
+    change: [map: (state: number) => number]
+    set: [newState: number]
+  }
+>
 
 let count = 0
 export function createNumberAtom(
   initState = 0,
   options: AtomOptions = `number${++count}`,
-) {
-  return createPrimitiveAtom<
-    number,
-    {
-      increment: (state: number) => number
-      decrement: (state: number) => number
-      add: (state: number, value: number) => number
-      subtract: (state: number, value: number) => number
-      change: (state: number, map: (state: number) => number) => number
-      set: (state: number, newState: number) => number
-    }
-  >(
+): NumberAtom {
+  return createPrimitiveAtom(
     initState,
     {
       increment: (state) => state + 1,
