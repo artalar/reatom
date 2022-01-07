@@ -1,6 +1,6 @@
 {
   "name": "@reatom/primitives",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "private": true,
   "sideEffects": false,
   "description": "Reatom helpers to create atoms around data primitives",
