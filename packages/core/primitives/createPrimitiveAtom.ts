@@ -18,6 +18,14 @@ export type PrimitiveAtom<
   },
 > = AtomSelfBinded<State, Reducers>
 
+export type PrimitiveAtomCreator<
+  State,
+  ActionsPayloads extends Rec<any[]>,
+> = PrimitiveAtom<
+  State,
+  { [K in keyof ActionsPayloads]: Fn<ActionsPayloads[K], ActionsPayloads[K]> }
+>
+
 let count = 0
 export function createPrimitiveAtom<State>(
   initState: State,

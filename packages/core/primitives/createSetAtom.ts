@@ -1,32 +1,35 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom } from '.'
+import { createPrimitiveAtom, PrimitiveAtomCreator } from '.'
+
+export type SetAtom<T> = PrimitiveAtomCreator<
+  Set<T>,
+  {
+    set: [el: T]
+    delete: [el: T]
+    clear: []
+    change: [map: (stateCopy: Set<T>) => Set<T>]
+  }
+>
 
 let count = 0
-export function createSetAtom<Element>(
-  initState = new Set<Element>(),
-  options: AtomOptions<Set<Element>> = `set${++count}`,
+export function createSetAtom<T>(
+  initState = new Set<T>(),
+  options: AtomOptions<Set<T>> = `set${++count}`,
 ) {
-  type State = Set<Element>
+  type State = Set<T>
 
-  return createPrimitiveAtom<
-    State,
-    {
-      set: (state: State, el: Element) => State
-      delete: (state: State, el: Element) => State
-      clear: () => State
-      change: (state: State, cb: (stateCopy: State) => State) => State
-    }
-  >(
+  return createPrimitiveAtom(
     initState,
     {
-      set: (state, el: Element) => new Set(state).add(el),
-      delete: (state, el: Element) => {
+      set: (state, el: T): State => new Set(state).add(el),
+      delete: (state, el: T): State => {
         const newState = (state = new Set(state))
         if (!newState.delete(el)) return state
         return newState
       },
-      clear: () => new Set(),
-      change: (state, cb: (stateCopy: State) => State) => cb(new Set(state)),
+      clear: (): State => new Set(),
+      change: (state, cb: (stateCopy: State) => State): State =>
+        cb(new Set(state)),
     },
     options,
   )

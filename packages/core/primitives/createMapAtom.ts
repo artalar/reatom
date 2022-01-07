@@ -1,21 +1,24 @@
 import { AtomOptions } from '@reatom/core'
-import { createPrimitiveAtom } from '.'
+import { createPrimitiveAtom, PrimitiveAtomCreator } from '.'
+
+export type MapAtom<Key, Element> = PrimitiveAtomCreator<
+  Map<Key, Element>,
+  {
+    set: [key: Key, el: Element]
+    delete: [key: Key]
+    clear: []
+    change: [map: (stateCopy: Map<Key, Element>) => Map<Key, Element>]
+  }
+>
 
 let count = 0
 export function createMapAtom<Key, Element>(
   initState = new Map<Key, Element>(),
   options: AtomOptions<Map<Key, Element>> = `map${++count}`,
-) {
+): MapAtom<Key, Element> {
   type State = Map<Key, Element>
-  return createPrimitiveAtom<
-    State,
-    {
-      set: (state: State, key: Key, el: Element) => State
-      delete: (state: State, key: Key) => State
-      clear: () => State
-      change: (state: State, cb: (stateCopy: State) => State) => State
-    }
-  >(
+
+  return createPrimitiveAtom(
     initState,
     {
       set: (state, key: Key, el: Element) => new Map(state).set(key, el),

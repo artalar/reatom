@@ -1,6 +1,21 @@
 import { Atom, AtomOptions, Rec } from '@reatom/core'
+import { createPrimitiveAtom, PrimitiveAtom, PrimitiveAtomCreator } from '.'
 
-import { createPrimitiveAtom, PrimitiveAtom } from '.'
+export type EnumAtom<
+  T extends string,
+  Format extends 'camelCase' | 'snake_case' = 'camelCase',
+> = PrimitiveAtomCreator<
+  T,
+  {
+    [K in T as Format extends 'camelCase'
+      ? `set${Capitalize<K>}`
+      : Format extends 'snake_case'
+      ? `set_${K}`
+      : never]: []
+  }
+> & {
+  enum: { [K in T]: K }
+}
 
 let count = 0
 export function createEnumAtom<
@@ -13,18 +28,7 @@ export function createEnumAtom<
     | (Exclude<AtomOptions, string> & {
         format?: Format
       }) = `enum${++count}`,
-): PrimitiveAtom<
-  T,
-  {
-    [K in T as Format extends 'camelCase'
-      ? `set${Capitalize<K>}`
-      : Format extends 'snake_case'
-      ? `set_${K}`
-      : never]: () => K
-  }
-> & {
-  enum: { [K in T]: K }
-} {
+): EnumAtom<T, Format> {
   // @ts-expect-error
   const format: Format = options.format ?? 'camelCase'
   const cases = {} as { [K in T]: K }
