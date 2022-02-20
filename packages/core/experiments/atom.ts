@@ -83,7 +83,7 @@ export type Trz = {
 }
 
 export type AtomInternals = {
-  __computers: Rec<{ fn: Fn<[Trz]>; deps: Array<AtomCache> }>
+  __computers: Array<{ fn: Fn<[Trz]>; deps: Array<AtomCache> }>
   __isAtom: true
   __isInspectable: boolean
   __name: string
@@ -129,7 +129,7 @@ export type Causes = Array<Trz[`patches`]>
 export type Unsubscribe = () => void
 
 // export function assertsFunction(thing: any, name: string): asserts thing is Fn {
-//   if (typeof thing != 'function') {
+//   if (typeof thing !== 'function') {
 //     throw new Error(`"${name}" should be a function`)
 //   }
 // }
@@ -157,7 +157,8 @@ export function createContext(): Ctx {
   }
 
   function run<T>(cb: Fn<[Trz], T>): T {
-    if (ctx.stage == `updates` || ctx.stage == `logs`) throwCtxRestriction(ctx)
+    if (ctx.stage === `updates` || ctx.stage === `logs`)
+      throwCtxRestriction(ctx)
 
     const trz: Trz = {
       __deps: null,
@@ -179,7 +180,7 @@ export function createContext(): Ctx {
       updates: [],
       version: ctx.version + 1,
     }
-    let isNotInProcess = ctx.stage == `idle`
+    let isNotInProcess = ctx.stage === `idle`
 
     ctx.stage = `updates`
 
@@ -211,6 +212,7 @@ export function createContext(): Ctx {
       })
       for (const children of stack) {
         for (const child of children) {
+          if (patches.has(child)) continue
           let cache = caches.get(child)!
           cache = { ...cache, __prev: cache }
           stack.push(cache.__children)
@@ -246,28 +248,17 @@ export function createContext(): Ctx {
         for (const [atom, patch] of patches) {
           ctx.caches.set(atom, patch)
 
-          const oldComputers = patch.__prev?.__computers ?? {}
-          const newComputers = patch.__computers
-          for (const key in oldComputers) {
-            const oldDeps = oldComputers[key]?.deps ?? []
-            const newDeps = newComputers[key].deps
-            for (const cache of oldDeps) {
-              if (!newDeps.includes(cache)) {
-                cache.__children.delete(atom)
-              }
+          const prev = patch.__prev
+          if (prev !== null) {
+            for (const { deps } of prev.__computers) {
+              for (const cache of deps) cache.__children.delete(atom)
             }
           }
-          for (const key in newComputers) {
-            const oldDeps = oldComputers[key]?.deps ?? []
-            const newDeps = newComputers[key].deps
-            for (const cache of newDeps) {
-              if (!oldDeps.includes(cache)) {
-                cache.__children.add(atom)
-              }
-            }
+          for (const { deps } of patch.__computers) {
+            for (const cache of deps) cache.__children.add(atom)
           }
 
-          if (!patch.__prev || !Object.is(patch.state, patch.__prev.state)) {
+          if (prev === null || !Object.is(patch.state, prev.state)) {
             for (const l of patch.__listeners) {
               effects.push(() => l(patch.state, patch, trz))
             }
@@ -287,14 +278,14 @@ export function createContext(): Ctx {
         const { effects } = transactions[trzEffectIdx]!
 
         if (effectIdx < effects.length) {
-          if (length != transactions.length) continue trz
+          if (length !== transactions.length) continue trz
 
           callSafety(effects[effectIdx++], trz)
         }
 
         effectIdx = 0
 
-        if (++trzEffectIdx == transactions.length) break
+        if (++trzEffectIdx === transactions.length) break
       }
     }
 
@@ -310,16 +301,16 @@ let atomsCount = 0
 export function atom<T extends AtomBase>(
   base: T & ThisType<Omit<T, `$${string}`>>,
 ): Merge<Omit<T, `$${string}` | `_${string}`>> & AtomInternals {
-  const __computers: Atom[`__computers`] = {}
+  const __computers: Atom[`__computers`] = []
   const origin: T & Atom = {} as any
 
   for (const key in base) {
     let el = base[key]
 
     if (typeof el === 'function') {
-      if (key[0] == '$') {
+      if (key[0] === '$') {
         // @ts-expect-error
-        __computers[key] = { fn: el, deps: [] }
+        __computers.push({ fn: el, deps: [] })
 
         continue
       } else {
@@ -339,7 +330,7 @@ export function atom<T extends AtomBase>(
             case `computes`: {
               let cache = getCache(this, trz)
 
-              if (cache.__version == trz.ctx.version) {
+              if (cache.__version === trz.ctx.version) {
                 cache = { ...cache }
                 trz.updates.push(cache)
               }
@@ -354,7 +345,7 @@ export function atom<T extends AtomBase>(
           }
         })
       }
-    } else if (key[0] == '$') {
+    } else if (key[0] === '$') {
       throw new Error(
         `Invalid property "${key}", only computed functions could starts with "$"`,
       )
@@ -379,11 +370,11 @@ export function atom<T extends AtomBase>(
 function getCache(atom: Atom | AtomCache, trz: Trz): AtomCache {
   let cache = `__prev` in atom ? atom : trz.patches.get(atom)
 
-  if (cache) return cache
+  if (cache !== undefined) return cache
 
   cache = trz.ctx.caches.get(atom)
 
-  if (cache) return { ...cache, __prev: cache }
+  if (cache !== undefined) return { ...cache, __prev: cache }
 
   return {
     ...atom,
@@ -400,7 +391,7 @@ export function invalidateAtom(atom: Atom | AtomCache, trz: Trz): AtomCache {
 
   trz.__deps?.push(cache)
 
-  if (cache.__version == trz.version) return cache
+  if (cache.__version === trz.version) return cache
 
   // mark atom as visited
   cache.__version = trz.version
@@ -408,14 +399,13 @@ export function invalidateAtom(atom: Atom | AtomCache, trz: Trz): AtomCache {
   trz.patches.set(cache.__origin, cache)
 
   const { __computers } = cache
-  const newComputers: AtomCache[`__computers`] = (cache.__computers = {})
+  const newComputers: AtomCache[`__computers`] = (cache.__computers = [])
 
-  for (const key in __computers) {
-    let { fn, deps } = __computers[key]
+  for (let { fn, deps } of __computers) {
     const trzComputed = { ...trz, __deps: [] }
 
     if (
-      deps.length == 0 ||
+      deps.length === 0 ||
       deps.some((dep) => {
         const depPatch = invalidateAtom(dep.__origin, trzComputed)
         return !Object.is(dep.state, depPatch.state)
@@ -425,7 +415,7 @@ export function invalidateAtom(atom: Atom | AtomCache, trz: Trz): AtomCache {
       fn.call(cache, trzComputed)
     }
 
-    newComputers[key] = { fn, deps }
+    newComputers.push({ fn, deps })
   }
 
   return cache
@@ -441,7 +431,7 @@ export function subscribe<T extends Atom>(
   cb: (state: T['state'], cache: AtomCache, trz: Trz) => void,
 ) {
   // TODO: prevent linking in `update` stage?
-  if (ctx.stage != `idle` && ctx.stage != `effects`) throwCtxRestriction(ctx)
+  if (ctx.stage !== `idle` && ctx.stage !== `effects`) throwCtxRestriction(ctx)
 
   ctx.run((trz) => {
     trz.effects.push(() => {
@@ -468,7 +458,7 @@ export function primitive<T>(initState: T) {
     update(trz, update: T | Fn<[T], T>): T {
       return (this.state =
         // @ts-expect-error
-        typeof update == 'function' ? update(this.state) : update)
+        typeof update === 'function' ? update(this.state) : update)
     },
   })
 }
@@ -518,7 +508,7 @@ function displayNameWithoutName() {
   )
 }
 
-displayNameWithName()
+// displayNameWithName()
 function displayNameWithName() {
   const ctx = createContext()
 
@@ -543,7 +533,7 @@ function displayNameWithName() {
   })
 
   subscribe(ctx, displayNameAtom, (v) => {
-    // v //?
+    v //?
   })
 
   ctx.run((trz) => firstNameAtom.update(trz, 'Joooooon'))
