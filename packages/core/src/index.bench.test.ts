@@ -15,7 +15,8 @@ import {
 
 import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
-import { combine, map } from '@reatom/core/experiments'
+import { combine, map /* , reatomV3 */ } from '@reatom/core/experiments'
+import * as reatomV3 from '../experiments/atom'
 
 configure({ enforceActions: 'never' })
 
@@ -54,21 +55,46 @@ async function start(iterations: number) {
   })
   res = 0
 
-  const aV1 = createPrimitiveAtom(0)
+  const aOpt = createPrimitiveAtom(0)
 
-  const bV1 = map(aV1, (v) => v + 1)
-  const cV1 = map(aV1, (v) => v + 1)
-  const dV1 = combine([bV1, cV1], ([b, c]) => b + c)
-  const eV1 = map(dV1, (v) => v + 1)
-  const fV1 = combine([dV1, eV1], ([d, e]) => d + e)
-  const gV1 = combine([dV1, eV1], ([d, e]) => d + e)
-  const hV1 = combine([fV1, gV1], ([f, g]) => f + g)
+  const bOpt = map(aOpt, (v) => v + 1)
+  const cOpt = map(aOpt, (v) => v + 1)
+  const dOpt = combine([bOpt, cOpt], ([b, c]) => b + c)
+  const eOpt = map(dOpt, (v) => v + 1)
+  const fOpt = combine([dOpt, eOpt], ([d, e]) => d + e)
+  const gOpt = combine([dOpt, eOpt], ([d, e]) => d + e)
+  const hOpt = combine([fOpt, gOpt], ([f, g]) => f + g)
 
-  let resV1 = 0
-  defaultStore.subscribe(hV1, (v) => {
-    resV1 += v
+  let resOpt = 0
+  defaultStore.subscribe(hOpt, (v) => {
+    resOpt += v
   })
-  resV1 = 0
+  resOpt = 0
+
+  const aV3 = reatomV3.atom(reatomV3.primitive(0))
+
+  const bV3 = reatomV3.atom(reatomV3.map(aV3, (v) => v + 1))
+  const cV3 = reatomV3.atom(reatomV3.map(aV3, (v) => v + 1))
+  const dV3 = reatomV3.atom(
+    reatomV3.computed((trz) => trz.spy(bV3) + trz.spy(cV3)),
+  )
+  const eV3 = reatomV3.atom(reatomV3.map(dV3, (v) => v + 1))
+  const fV3 = reatomV3.atom(
+    reatomV3.computed((trz) => trz.spy(dV3) + trz.spy(eV3)),
+  )
+  const gV3 = reatomV3.atom(
+    reatomV3.computed((trz) => trz.spy(dV3) + trz.spy(eV3)),
+  )
+  const hV3 = reatomV3.atom(
+    reatomV3.computed((trz) => trz.spy(fV3) + trz.spy(gV3)),
+  )
+
+  const ctxV3 = reatomV3.createContext()
+  let resV3 = 0
+  reatomV3.subscribe(ctxV3, hV3, (v) => {
+    resV3 += v
+  })
+  resV3 = 0
 
   const eEntry = effector.createEvent<number>()
   const eA = effector
@@ -191,7 +217,8 @@ async function start(iterations: number) {
   // nRes = 0
 
   const reatomLogs = new Array<number>()
-  const reatomV1Logs = new Array<number>()
+  const reatomOptLogs = new Array<number>()
+  const reatomV3Logs = new Array<number>()
   const effectorLogs = new Array<number>()
   const wonkaLogs = new Array<number>()
   const cellxLogs = new Array<number>()
@@ -204,9 +231,13 @@ async function start(iterations: number) {
     defaultStore.dispatch(a.entry(i))
     reatomLogs.push(performance.now() - startReatom)
 
-    const startReatomV1 = performance.now()
-    defaultStore.dispatch(aV1.set(i))
-    reatomV1Logs.push(performance.now() - startReatomV1)
+    const startReatomOpt = performance.now()
+    defaultStore.dispatch(aOpt.set(i))
+    reatomOptLogs.push(performance.now() - startReatomOpt)
+
+    const startReatomV3 = performance.now()
+    ctxV3.run((trz) => aV3.update(trz, i))
+    reatomV3Logs.push(performance.now() - startReatomV3)
 
     const startEffector = performance.now()
     eEntry(i)
@@ -233,14 +264,16 @@ async function start(iterations: number) {
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  if (new Set([res, resV1, eRes, wRes, cRes, mRes, xRes]).size !== 1) {
+  if (new Set([res, resOpt, resV3, eRes, wRes, cRes, mRes, xRes]).size !== 1) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
+    console.log({ res, resOpt, resV3, eRes, wRes, cRes, mRes, xRes })
   }
 
   printLogs({
     reatom: log(reatomLogs),
-    reatomV1: log(reatomV1Logs),
+    reatomOpt: log(reatomOptLogs),
+    reatomV3: log(reatomV3Logs),
     effector: log(effectorLogs),
     mol: log(molLogs),
     cellx: log(cellxLogs),
