@@ -210,15 +210,18 @@ export function createContext(): Ctx {
         patches.set(cache.__origin, cache)
         return cache.__children
       })
-      for (const children of stack) {
-        for (const child of children) {
-          if (patches.has(child)) continue
-          let cache = caches.get(child)!
-          cache = { ...cache, __prev: cache }
-          stack.push(cache.__children)
-          if (cache.__listeners.size > 0) queue.push(cache)
-          // mark atom as dirty
-          patches.set(child, cache)
+      fillStack()
+      function fillStack() {
+        for (const children of stack) {
+          for (const child of children) {
+            if (patches.has(child)) continue
+            let cache = caches.get(child)!
+            cache = { ...cache, __prev: cache }
+            stack.push(cache.__children)
+            if (cache.__listeners.size > 0) queue.push(cache)
+            // mark atom as dirty
+            patches.set(child, cache)
+          }
         }
       }
 
@@ -227,10 +230,13 @@ export function createContext(): Ctx {
 
       let error: Error | null = null
 
-      try {
-        for (const cache of queue) invalidateAtom(cache, trz)
-      } catch (err) {
-        error = err instanceof Error ? err : new Error(String(err))
+      invalidate()
+      function invalidate() {
+        try {
+          for (const cache of queue) invalidateAtom(cache, trz)
+        } catch (err) {
+          error = err instanceof Error ? err : new Error(String(err))
+        }
       }
 
       // STAGE `logs`
@@ -245,26 +251,29 @@ export function createContext(): Ctx {
       } else {
         // STAGE `commit` (internal)
 
-        for (const [atom, patch] of patches) {
-          ctx.caches.set(atom, patch)
+        commit()
+        function commit() {
+          for (const [atom, patch] of patches) {
+            ctx.caches.set(atom, patch)
 
-          const prev = patch.__prev
-          if (prev !== null) {
-            for (const { deps } of prev.__computers) {
-              for (const cache of deps) cache.__children.delete(atom)
+            const prev = patch.__prev
+            if (prev !== null) {
+              for (const { deps } of prev.__computers) {
+                for (const cache of deps) cache.__children.delete(atom)
+              }
             }
-          }
-          for (const { deps } of patch.__computers) {
-            for (const cache of deps) cache.__children.add(atom)
-          }
-
-          if (prev === null || !Object.is(patch.state, prev.state)) {
-            for (const l of patch.__listeners) {
-              effects.push(() => l(patch.state, patch, trz))
+            for (const { deps } of patch.__computers) {
+              for (const cache of deps) cache.__children.add(atom)
             }
-          }
 
-          patch.__prev = null
+            if (prev === null || !Object.is(patch.state, prev.state)) {
+              for (const l of patch.__listeners) {
+                effects.push(() => l(patch.state, patch, trz))
+              }
+            }
+
+            patch.__prev = null
+          }
         }
       }
 
