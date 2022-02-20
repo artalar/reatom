@@ -212,7 +212,7 @@ export function createContext(): Ctx {
       for (const children of stack) {
         for (const child of children) {
           let cache = caches.get(child)!
-          cache = {...cache, __prev: cache}
+          cache = { ...cache, __prev: cache }
           stack.push(cache.__children)
           if (cache.__listeners.size > 0) queue.push(cache)
           // mark atom as dirty
@@ -226,7 +226,7 @@ export function createContext(): Ctx {
       let error: Error | null = null
 
       try {
-        queue.forEach((cache) => invalidateAtom(cache, trz))
+        for (const cache of queue) invalidateAtom(cache, trz)
       } catch (err) {
         error = err instanceof Error ? err : new Error(String(err))
       }
@@ -236,13 +236,14 @@ export function createContext(): Ctx {
       ctx.stage = `logs`
 
       logs.forEach((log) => log(trz, error))
+      for (const log of logs) log(trz, error)
 
       if (error) {
         transactions.pop()
       } else {
         // STAGE `commit` (internal)
 
-        patches.forEach((patch, atom) => {
+        for (const [atom, patch] of patches) {
           ctx.caches.set(atom, patch)
 
           const oldComputers = patch.__prev?.__computers ?? {}
@@ -267,13 +268,13 @@ export function createContext(): Ctx {
           }
 
           if (!patch.__prev || !Object.is(patch.state, patch.__prev.state)) {
-            patch.__listeners.forEach((listener) =>
-              effects.push(() => listener(patch.state, patch, trz)),
-            )
+            for (const l of patch.__listeners) {
+              effects.push(() => l(patch.state, patch, trz))
+            }
           }
 
           patch.__prev = null
-        })
+        }
       }
 
       ctx.version++
