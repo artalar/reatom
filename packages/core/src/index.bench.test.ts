@@ -141,7 +141,7 @@ async function start(iterations: number) {
   const cH = cellx(() => cF() + cG())
   let cRes = 0
 
-  const mEntry = $mol_wire_fiber('mEntry', (next: 0) => next)
+  const mEntry = $mol_wire_fiber('mEntry', (next: 0) => next))
   const mA = $mol_wire_fiber('mA', () => mEntry.sync())
   const mB = $mol_wire_fiber('mB', () => mA.sync() + 1)
   const mC = $mol_wire_fiber('mC', () => mA.sync() + 1)
