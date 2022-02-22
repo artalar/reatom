@@ -248,7 +248,7 @@ async function start(iterations: number) {
     cellxLogs.push(performance.now() - startCellx)
 
     const startMol = performance.now()
-    mEntry.sync(i)
+    mEntry.recall(i)
     mRes += mH.sync()
     molLogs.push(performance.now() - startMol)
 
