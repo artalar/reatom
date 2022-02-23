@@ -60,7 +60,7 @@ export function createPrimitiveAtom<State>(
       payload(state),
   }
 
-  let { decorators = [], store, id } = isString(options)
+  let { decorators = [], ...restOptions } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
 
