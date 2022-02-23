@@ -99,7 +99,7 @@ export function createPrimitiveAtom<State>(
 
     noop,
 
-    { decorators, store, id },
+    { decorators, ...restOptions },
   )
 
   const actionCreatorsTypes = keys.map((key) => atom[key].type)
