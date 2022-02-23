@@ -4,14 +4,14 @@ import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
 import { observable, computed, autorun, configure } from 'mobx'
-import {
-  createAction,
-  createReducer,
-  createSelector,
-  on,
-  props,
-  Store,
-} from '@ngrx/store'
+// import {
+//   createAction,
+//   createReducer,
+//   createSelector,
+//   on,
+//   props,
+//   Store,
+// } from '@ngrx/store'
 
 import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
@@ -170,15 +170,15 @@ async function start(iterations: number) {
   autorun(() => (xRes += xH.get()))
   xRes = 0
 
-  const nEntry = createAction('entry', props<{ payload: number }>())
-  const nA = createReducer(
-    0,
-    on(nEntry, (state, { payload }) => payload),
-  )
-  const nB = createSelector(
-    ({ entry }: { entry: number }) => entry,
-    (v) => v + 1,
-  )
+  // const nEntry = createAction('entry', props<{ payload: number }>())
+  // const nA = createReducer(
+  //   0,
+  //   on(nEntry, (state, { payload }) => payload),
+  // )
+  // const nB = createSelector(
+  //   ({ entry }: { entry: number }) => entry,
+  //   (v) => v + 1,
+  // )
   // const nC = createSelector(nB, (v) => v + 1)
   // const nD = createSelector([nB, nC], (b, c) => b + c)
   // const nE = createSelector(nD, (v) => v + 1)
