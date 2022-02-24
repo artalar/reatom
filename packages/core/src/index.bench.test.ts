@@ -2,7 +2,7 @@ import { performance } from 'perf_hooks'
 import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
-import { $mol_wire_fiber } from 'mol_wire'
+import { $mol_wire_fiber } from 'mol_wire_lib'
 import { observable, computed, autorun, configure } from 'mobx'
 import {
   createAction,
