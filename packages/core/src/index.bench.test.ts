@@ -182,7 +182,6 @@ async function start(iterations: number) {
   const frptsG = FRPTS.combine(frptsD, frptsE, (d, e) => d + e)
   const frptsH = FRPTS.combine(frptsF, frptsG, (f, g) => f + g)
   let frptsResult = 0
-  frptsH.subscribe({ next: () => (frptsResult += frptsH.get()) })
   //#endregion
 
   // const nEntry = createAction('entry', props<{ payload: number }>())
@@ -248,6 +247,7 @@ async function start(iterations: number) {
 
     const startFRPTS = performance.now()
     frptsEntry.set(i)
+    frptsResult += frptsH.get()
     frptsLogs.push(performance.now() - startFRPTS)
   }
 
