@@ -16,6 +16,7 @@ import { observable, computed, autorun, configure } from 'mobx'
 import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
 import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { combine, map } from '@reatom/core/experiments'
+import * as FRPTS from '@frp-ts/core'
 
 configure({ enforceActions: 'never' })
 
@@ -170,6 +171,20 @@ async function start(iterations: number) {
   autorun(() => (xRes += xH.get()))
   xRes = 0
 
+  //#region @frp-ts/core
+  const frptsEntry = FRPTS.newAtom(0)
+  const frptsA = FRPTS.combine(frptsEntry, (v) => v)
+  const frptsB = FRPTS.combine(frptsA, (a) => a + 1)
+  const frptsC = FRPTS.combine(frptsA, (a) => a + 1)
+  const frptsD = FRPTS.combine(frptsB, frptsC, (b, c) => b + c)
+  const frptsE = FRPTS.combine(frptsD, (d) => d + 1)
+  const frptsF = FRPTS.combine(frptsD, frptsE, (d, e) => d + e)
+  const frptsG = FRPTS.combine(frptsD, frptsE, (d, e) => d + e)
+  const frptsH = FRPTS.combine(frptsF, frptsG, (f, g) => f + g)
+  let frptsResult = 0
+  frptsH.subscribe({ next: () => (frptsResult += frptsH.get()) })
+  //#endregion
+
   // const nEntry = createAction('entry', props<{ payload: number }>())
   // const nA = createReducer(
   //   0,
@@ -197,6 +212,7 @@ async function start(iterations: number) {
   const cellxLogs = new Array<number>()
   const molLogs = new Array<number>()
   const mobxLogs = new Array<number>()
+  const frptsLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
@@ -229,11 +245,17 @@ async function start(iterations: number) {
     const startMobx = performance.now()
     xEntry.set(i)
     mobxLogs.push(performance.now() - startMobx)
+
+    const startFRPTS = performance.now()
+    frptsEntry.set(i)
+    frptsLogs.push(performance.now() - startFRPTS)
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  if (new Set([res, resV1, eRes, wRes, cRes, mRes, xRes]).size !== 1) {
+  if (
+    new Set([res, resV1, eRes, wRes, cRes, mRes, xRes, frptsResult]).size !== 1
+  ) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
   }
@@ -246,6 +268,7 @@ async function start(iterations: number) {
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     mobx: log(mobxLogs),
+    frpts: log(frptsLogs),
   })
 }
 

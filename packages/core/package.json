@@ -31,6 +31,7 @@
     "size": "size-limit"
   },
   "devDependencies": {
+    "@frp-ts/core": "^1.0.0-alpha.13",
     "@size-limit/preset-small-lib": "^7.0.8",
     "cellx": "^1.10.26",
     "cross-env": "^7.0.3",
