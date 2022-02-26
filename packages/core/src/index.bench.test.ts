@@ -139,6 +139,7 @@ async function start(iterations: number) {
   const cF = cellx(() => cD() + cE())
   const cG = cellx(() => cD() + cE())
   const cH = cellx(() => cF() + cG())
+  cH()
   let cRes = 0
 
   const mEntry = new $mol_wire_fiber('mEntry', (next: number = 0) => next)
@@ -150,6 +151,7 @@ async function start(iterations: number) {
   const mF = new $mol_wire_fiber('mF', () => mD.sync() + mE.sync())
   const mG = new $mol_wire_fiber('mG', () => mD.sync() + mE.sync())
   const mH = new $mol_wire_fiber('mH', () => mF.sync() + mG.sync())
+  mH.sync()
   let mRes = 0
 
   const xEntry = observable.box(0)
@@ -217,7 +219,7 @@ async function start(iterations: number) {
     cellxLogs.push(performance.now() - startCellx)
 
     const startMol = performance.now()
-    mEntry.recall(i)
+    mEntry.put(i)
     mRes += mH.sync()
     molLogs.push(performance.now() - startMol)
 
@@ -237,7 +239,7 @@ async function start(iterations: number) {
     reatom: log(reatomLogs),
     reatomV1: log(reatomV1Logs),
     effector: log(effectorLogs),
-    mol: log(molLogs),
+    $mol_wire: log(molLogs),
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     mobx: log(mobxLogs),
