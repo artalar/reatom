@@ -141,15 +141,15 @@ async function start(iterations: number) {
   const cH = cellx(() => cF() + cG())
   let cRes = 0
 
-  const mEntry = $mol_wire_fiber('mEntry', (next = 0) => next)
-  const mA = $mol_wire_fiber('mA', () => mEntry.sync())
-  const mB = $mol_wire_fiber('mB', () => mA.sync() + 1)
-  const mC = $mol_wire_fiber('mC', () => mA.sync() + 1)
-  const mD = $mol_wire_fiber('mD', () => mB.sync() + mC.sync())
-  const mE = $mol_wire_fiber('mE', () => mD.sync() + 1)
-  const mF = $mol_wire_fiber('mF', () => mD.sync() + mE.sync())
-  const mG = $mol_wire_fiber('mG', () => mD.sync() + mE.sync())
-  const mH = $mol_wire_fiber('mH', () => mF.sync() + mG.sync())
+  const mEntry = new $mol_wire_fiber('mEntry', (next: number = 0) => next)
+  const mA = new $mol_wire_fiber('mA', () => mEntry.sync())
+  const mB = new $mol_wire_fiber('mB', () => mA.sync() + 1)
+  const mC = new $mol_wire_fiber('mC', () => mA.sync() + 1)
+  const mD = new $mol_wire_fiber('mD', () => mB.sync() + mC.sync())
+  const mE = new $mol_wire_fiber('mE', () => mD.sync() + 1)
+  const mF = new $mol_wire_fiber('mF', () => mD.sync() + mE.sync())
+  const mG = new $mol_wire_fiber('mG', () => mD.sync() + mE.sync())
+  const mH = new $mol_wire_fiber('mH', () => mF.sync() + mG.sync())
   let mRes = 0
 
   const xEntry = observable.box(0)
