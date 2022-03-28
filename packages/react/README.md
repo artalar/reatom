@@ -14,9 +14,7 @@ React bindings package for [Reatom](https://github.com/artalar/reatom) store.
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/react?style=flat-square)](https://bundlephobia.com/result?p=@reatom/react)
 ![GitHub](https://img.shields.io/github/license/artalar/reatom?style=flat-square)
 
-[Open in docs](https://reatom.js.org/#/packages/react)
-
-> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://reatom.js.org/).
+> Reatom is **declarative** and **reactive** state manager, designed for both simple and complex applications. See [docs](https://github.com/artalar/reatom).
 
 ## Install
 
@@ -128,7 +126,7 @@ import { createPrimitiveAtom } from '@reatom/core/primitives'
 import { useAtom } from '@reatom/react'
 
 const nameAtom = createPrimitiveAtom('', {
-  onChange: (e) => e.currentTarget.value,
+  onChange: (state, e) => e.currentTarget.value,
 })
 
 export const Form = () => {
