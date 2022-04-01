@@ -25,6 +25,7 @@
   "homepage": "https://github.com/artalar/reatom/tree/v2",
   "devDependencies": {
     "@actions/github": "^5.0.0",
+    "@babel/preset-typescript": "^7.16.7",
     "@jsdevtools/npm-publish": "^1.4.3",
     "@ngrx/store": "^13.0.2",
     "@size-limit/preset-small-lib": "^7.0.8",
@@ -33,6 +34,7 @@
     "jest": "^27.5.1",
     "microbundle": "^0.14.2",
     "prettier": "^2.5.1",
+    "react-dom": "^17.0.2",
     "rimraf": "^3.0.2",
     "size-limit": "^7.0.8",
     "ts-node": "^10.5.0",

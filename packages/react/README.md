@@ -28,7 +28,7 @@ or
 yarn add @reatom/react
 ```
 
-> `@reatom/react` depends on and works with `@reatom/core` and `use-subscription`. You should install this packages too.
+> `@reatom/react` depends on and works with `@reatom/core` and `react`. You should install this packages too.
 
 ## Hooks Api
 

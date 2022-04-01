@@ -2,13 +2,15 @@ import {
   Action,
   Atom,
   AtomState,
+  createAtom,
   defaultStore,
+  Fn,
   getState,
   isActionCreator,
+  Rec,
   Store,
 } from '@reatom/core/'
 import React from 'react'
-import { useSubscription } from 'use-subscription'
 
 export const reatomContext = React.createContext(defaultStore)
 
@@ -44,7 +46,7 @@ export function useAction<Args extends any[] = []>(
   )
 }
 
-type ActionCreators<T extends any> = {
+type ActionCreators<T extends Rec = {}> = {
   [K in keyof T]: T[K] extends (...a: infer Args) => Action
     ? (...args: Args) => void
     : never
@@ -52,25 +54,54 @@ type ActionCreators<T extends any> = {
 
 export function useAtom<T extends Atom>(
   atom: T,
-  deps: any[] = [],
-): [state: AtomState<T>, bindedActionCreators: ActionCreators<T>] {
+  deps?: any[],
+): [state: AtomState<T>, bindedActionCreators: ActionCreators<T>]
+export function useAtom<T extends Atom, Res>(
+  atom: T,
+  map: Fn<[AtomState<T>], Res>,
+  deps?: any[],
+): [state: Res, bindedActionCreators: ActionCreators<T>]
+export function useAtom(atom: Atom, mapOrDeps?: Fn | any[], deps?: any[]) {
+  const origin = atom
+  if (typeof mapOrDeps === 'function') {
+    deps ??= []
+    // FIXME: rewrite to useState
+    atom = React.useMemo(
+      () => createAtom({ origin }, ({ get }) => mapOrDeps(get(`origin`))),
+      deps.concat(origin),
+    )
+  } else {
+    deps = mapOrDeps ?? []
+  }
+
   const store = React.useContext(reatomContext)
 
-  const result = React.useMemo(
+  deps = deps.concat([atom, store])
+
+  let [state, setState] = React.useState(() => getState(atom, store))
+  const lastRef = React.useRef(state)
+  lastRef.current = state = getState(atom, store)
+
+  const bindedActionCreators = React.useMemo(
     () =>
-      [
-        {
-          getCurrentValue: () => getState(atom, store),
-          subscribe: (cb: () => any) => store.subscribe(atom, cb),
-        },
-        Object.entries(atom).reduce((acc, [k, ac]) => {
-          // @ts-expect-error
-          if (isActionCreator(ac)) acc[k] = bindActionCreator(store, ac)
-          return acc
-        }, {} as ActionCreators<T>),
-      ] as const,
-    deps.concat([atom, store]),
+      Object.entries(origin).reduce((acc, [k, ac]) => {
+        // @ts-expect-error
+        if (isActionCreator(ac)) acc[k] = bindActionCreator(store, ac)
+        return acc
+      }, {} as ActionCreators),
+    deps,
   )
 
-  return [useSubscription(result[0]), result[1]]
+  React.useEffect(() => {
+    return store.subscribe(
+      atom,
+      (newState) =>
+        Object.is(newState, lastRef.current) ||
+        setState((lastRef.current = newState)),
+    )
+  }, deps)
+
+  React.useDebugValue(state)
+
+  return [state, bindedActionCreators]
 }
