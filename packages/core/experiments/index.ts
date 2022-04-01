@@ -1,3 +1,4 @@
+export * as v3 from './atom'
 export * from './createResource'
 export * from './debounce'
 export * from './init'
