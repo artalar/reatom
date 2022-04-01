@@ -130,6 +130,10 @@ export interface Ctx {
   read<T>(atom: Atom<T>): undefined | AtomCache<T>
   run<T>(cb: Fn<[], T>): T
   schedule<T>(fn?: Fn<[], T>): Promise<T>
+  subscribe<T>(
+    action: Action<any, T>,
+    cb: Fn<[T, AtomCache<Array<T>>]>,
+  ): Unsubscribe
   subscribe<T>(atom: Atom<T>, cb: Fn<[T, AtomCache<T>]>): Unsubscribe
   top: null | AtomCache
   [ACTUALIZE]<T>(meta: AtomMeta<T>, mutator?: Fn<[AtomCache<T>]>): AtomCache<T>
@@ -179,6 +183,10 @@ export interface Action<Params extends any[] = any[], Res = any>
 }
 
 export type AtomState<T> = T extends Atom<infer State> ? State : never
+
+export type ActionResult<T> = T extends Action<any, infer Result>
+  ? Result
+  : never
 
 export interface Unsubscribe {
   (): void
@@ -388,11 +396,14 @@ export const createContext = (): Ctx => {
       caches.set(patch.meta, patch)
 
       if (patch.meta.isAction) {
-        const payloads = [...patch.state]
-        patch.state.length = 0
         for (const l of patch.listeners) {
-          Q.effects.add(() => l(payloads))
+          for (const value of patch.state) Q.effects.add(() => l(value, patch))
         }
+        // TODO ?
+        // for (const value of patch.state) {
+        //   for (const l of patch.listeners) Q.effects.add(() => l(value, patch))
+        // }
+        patch.state.length = 0
       } else {
         for (const l of patch.listeners) {
           Q.effects.add(() => {
@@ -455,14 +466,15 @@ export const createContext = (): Ctx => {
         Q.effects.add(() => new Promise((r) => r(effect?.())).then(res, rej))
       })
     },
-    subscribe(atom, cb) {
+    subscribe(atom: Atom<any>, cb: Fn) {
       asserts(atom, 'atom')
       asserts(cb, 'function')
 
       const { __reatom: meta } = atom
       let lastState = memoInitCache
       const fn: typeof cb = (state, cache) =>
-        Object.is(lastState, state) || cb((lastState = state), cache)
+        (!atom.__reatom.isAction && Object.is(lastState, state)) ||
+        cb((lastState = state), cache)
 
       let cache = caches.get(meta)
 
@@ -619,3 +631,14 @@ export const action: {
 
   return action
 }
+
+const ctx = createContext()
+
+const a = action(async () => 1243)
+
+ctx.subscribe(a, (data, cache) => {
+  console.log(data)
+  console.log(cache)
+})
+
+a(ctx)
