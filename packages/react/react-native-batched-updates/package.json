@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react-native-batched-updates",
-  "version": "2.0.15",
+  "version": "2.0.18",
   "private": true,
   "sideEffects": false,
   "source": "index.ts",
@@ -13,6 +13,6 @@
     "build": "cross-env fixme=fixme microbundle"
   },
   "peerDependencies": {
-    "@reatom/react": "^2.0.15"
+    "@reatom/react": "^2.0.18"
   }
 }
