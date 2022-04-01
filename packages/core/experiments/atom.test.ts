@@ -1,6 +1,7 @@
 import {
   action,
   Action,
+  ActionResult,
   atom,
   Atom,
   createContext,
@@ -29,6 +30,27 @@ export const patchesToCollection = (patches: Patches) =>
     (acc, [{ name }, { state }]) => ((acc[name] = state), acc),
     {} as Rec,
   )
+
+export const subscribeOnce: {
+  <T>(ctx: Ctx, action: Action<any, T>): Promise<T>
+} = (ctx, action) =>
+  new Promise((r) => {
+    const un = ctx.subscribe(action, (value) => {
+      r(value)
+      un()
+    })
+  })
+
+export const actionAtom: {
+  <T>(action: Action<any, T>): Atom<null | T>
+} = (action) => {
+  const a = atom<null | ActionResult<typeof action>>(null)
+  action.__reatom.onUpdate.push((ctx) =>
+    a.change(ctx, ctx.get(action).at(-1) ?? null),
+  )
+
+  return a
+}
 
 // -----------------------------------------------------------------------------
 // TESTS
@@ -149,29 +171,37 @@ async function resourceExample() {
       }
     })
 
-    const fetch = action(async (ctx, params: Params) => {
+    const refetchAtom = actionAtom(refetch)
+
+    const fetch = action(async (ctx, params: Params): Promise<State> => {
       return isEqual(ctx.get(paramsAtom), params)
-        ? ctx.read(dataAtom)
+        ? ctx.get(loadingAtom)
+          ? ctx.get(refetchAtom)!
+          : ctx.get(dataAtom)
         : refetch(ctx, params)
     })
 
-    const onDone = action((ctx, data: State) => {
+    const onDone = action((ctx, data: State): State => {
       loadingAtom.change(ctx, false)
       dataAtom.change(ctx, data)
+
+      return data
     })
 
-    const onError = action((ctx, err: Error) => {
+    const onError = action((ctx, err: Error): Error => {
       loadingAtom.change(ctx, false)
       errorAtom.change(ctx, err)
+
+      return err
     })
 
-    const cancel = action((ctx) => {
+    const cancel = action((ctx): void => {
       loadingAtom.change(ctx, false)
       versionAtom.change(ctx, (s) => s + 1)
     })
 
-    const retry = action((ctx) => {
-      refetch(ctx, ctx.get(paramsAtom))
+    const retry = action((ctx): Promise<State> => {
+      return refetch(ctx, ctx.get(paramsAtom))
     })
 
     // dataAtom.__reatom.onInit.push((ctx) => {
@@ -189,6 +219,7 @@ async function resourceExample() {
       onDone,
       onError,
       refetch,
+      refetchAtom,
       retry,
     })
   }
@@ -223,7 +254,7 @@ async function resourceExample() {
   const startAtom = atom(NaN)
   const endAtom = atom(NaN)
   const requestTimeAtom = atom((ctx, state = 0) => {
-    ctx.spy(imagesResource.refetch).forEach(() => {
+    ctx.spy(imagesResource.refetch).forEach((promise) => {
       startAtom.change(ctx, Date.now())
     })
 
@@ -247,13 +278,10 @@ async function resourceExample() {
 
   ctx.subscribe(requestTimeAtom, (requestTime, { cause }) => {
     console.log(cause)
-    // external call -> fetch__images -> refetch__images -> onError__images -> retry
-    //   -> retry__images -> refetch__images -> onDone__images
+    // onDone__images <- refetch__images <- retry__images
+    //  <- retry <- onError__images <- refetch__images <- fetch__images <- external call
   })
   ctx.subscribe(retryAtom, () => {})
 
-  imagesResource
-    .fetch(ctx)
-
-    .catch(() => null)
+  imagesResource.fetch(ctx).catch(() => null)
 }
