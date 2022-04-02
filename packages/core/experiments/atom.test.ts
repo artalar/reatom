@@ -235,6 +235,7 @@ async function resourceExample() {
     },
   })
 
+  // @ts-ignore
   const fetch = (await import('node-fetch')) as any as typeof globalThis.fetch
 
   let i = 0

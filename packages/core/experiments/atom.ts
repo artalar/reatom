@@ -196,6 +196,10 @@ export const isAtom = (thing: any): thing is Atom => {
   return Boolean(thing?.__reatom)
 }
 
+export const isAction = (thing: any): thing is Action => {
+  return IS.function(thing) && '__reatom' in thing
+}
+
 const isStale = (cache: AtomCache): boolean => {
   // TODO `cache.meta.computer !== null` ?
   return cache.children.size + cache.listeners.size === 0
@@ -390,7 +394,7 @@ export const createContext = (): Ctx => {
   }
 
   const updatesHandler = (patch: AtomCache) => {
-    error = patches = null
+    patches = error = null
 
     if (patch.error === null) {
       caches.set(patch.meta, patch)
@@ -448,13 +452,16 @@ export const createContext = (): Ctx => {
 
       try {
         var result = cb()
-        walk(queues)
-      } finally {
-        if (patches !== null) {
-          for (const log of logs) log(patches, error)
-        }
+        for (const value of Q.computers) Q.computers.handler(value)
+        for (const log of logs) log(patches, error)
+      } catch (e) {
+        error ??= e instanceof Error ? e : new Error(String(e))
+        for (const log of logs) log(patches, error)
         patches = error = null
+        throw e
       }
+
+      walk(queues)
 
       return result
     },
@@ -611,7 +618,7 @@ export const action: {
     fn: (ctx: Ctx, ...params: Params) => Res,
     name?: string,
   ): Action<Params, Res>
-} = (fn: Fn, name = `action${++atomsCount}`): Action<any, any> => {
+} = (fn: Fn, name = `action${++atomsCount}`): Action => {
   asserts(fn, 'function')
 
   const action = Object.assign(
@@ -631,14 +638,3 @@ export const action: {
 
   return action
 }
-
-const ctx = createContext()
-
-const a = action(async () => 1243)
-
-ctx.subscribe(a, (data, cache) => {
-  console.log(data)
-  console.log(cache)
-})
-
-a(ctx)
