@@ -42,38 +42,17 @@ function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
   return true
 }
 
-export type StoreOnPatch = Fn<
-  [
-    transactionResult: TransactionResult & {
-      causes: Causes
-      start: number
-      end: number
-    },
-  ]
->
-
-export type StoreOnError = Fn<
-  [
-    error: unknown,
-    transactionData: TransactionResult & {
-      causes: Causes
-      start: number
-      end: number
-    },
-  ]
->
-
 export function createStore({
   callSafety = originalCallSafety,
   createTemplateCache = originalCreateTemplateCache,
-  onError = noop,
-  onPatch = noop,
+  onError,
+  onPatch,
   now = Date.now.bind(Date),
 }: {
   callSafety?: typeof originalCallSafety
   createTemplateCache?: typeof originalCreateTemplateCache
-  onError?: StoreOnError
-  onPatch?: StoreOnPatch
+  onError?: Parameters<Store[`onError`]>[0]
+  onPatch?: Parameters<Store[`onPatch`]>[0]
   /** Current time getter. Tip: use `performance.now` to accurate tracking */
   now?: typeof Date.now
   // TODO:
@@ -81,6 +60,11 @@ export function createStore({
 } = {}): Store {
   const atomsByAction = new Map<Action['type'], Set<Atom>>()
   const cache: AtomsCache = new WeakMap()
+  let errorHandlers: Array<Parameters<Store[`onError`]>[0]> = []
+  let patchHandlers: Array<Parameters<Store[`onPatch`]>[0]> = []
+
+  if (onError) errorHandlers.push(onError)
+  if (onPatch) patchHandlers.push(onPatch)
 
   function invalidateAtomCache(atom: Atom) {
     if (isAtom(atom)) {
@@ -129,11 +113,13 @@ export function createStore({
 
       patch.forEach((atomPatch, atom) => cache.set(atom, atomPatch))
     } catch (error) {
-      onError(error, getTransactionResult())
+      const patchResult = getTransactionResult()
+      errorHandlers.forEach((cb) => cb(error, patchResult))
       throw error
     }
 
-    onPatch(getTransactionResult())
+    const patchResult = getTransactionResult()
+    patchHandlers.forEach((cb) => cb(patchResult))
 
     effects.forEach((cb) => callSafety(cb, dispatch))
   }
@@ -175,10 +161,18 @@ export function createStore({
     }
   }
 
-  const store = {
+  const store: Store = {
     dispatch,
     getCache,
     getState,
+    onError(cb) {
+      errorHandlers.push(cb)
+      return () => (errorHandlers = errorHandlers.filter((el) => el !== cb))
+    },
+    onPatch(cb) {
+      patchHandlers.push(cb)
+      return () => (patchHandlers = patchHandlers.filter((el) => el !== cb))
+    },
     subscribe,
   }
 
