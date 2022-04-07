@@ -258,29 +258,10 @@ export type Store = {
   getState<State>(atom: Atom<State>): State
 
   onError(
-    cb: Fn<
-      [
-        error: unknown,
-        transactionData: TransactionResult & {
-          causes: Causes
-          start: number
-          end: number
-        },
-      ]
-    >,
+    cb: Fn<[error: unknown, transactionData: TransactionData]>,
   ): Unsubscribe
 
-  onPatch(
-    cb: Fn<
-      [
-        transactionData: TransactionResult & {
-          causes: Causes
-          start: number
-          end: number
-        },
-      ]
-    >,
-  ): Unsubscribe
+  onPatch(cb: Fn<[transactionData: TransactionData]>): Unsubscribe
 
   /** Subscribe to dispatch */
   subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe
@@ -308,6 +289,12 @@ export type TransactionResult = {
   readonly actions: ReadonlyArray<Action>
 
   readonly patch: Patch
+}
+
+export type TransactionData = TransactionResult & {
+  causes: Causes
+  start: number
+  end: number
 }
 
 export type AtomState<T extends Atom | Cache<any>> = T extends Atom<infer State>
