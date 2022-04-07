@@ -1,0 +1,21 @@
+{
+  "name": "@reatom/redux-devtools",
+  "version": "2.0.22",
+  "sideEffects": false,
+  "description": "Reatom adapter for redux-devtools",
+  "source": "src/index.ts",
+  "main": "build/redux-devtools.js",
+  "module": "build/redux-devtools.module.js",
+  "umd:main": "build/redux-devtools.umd.js",
+  "types": "build/redux-devtools.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "prepublishOnly": "npm run rebuild",
+    "build": "cross-env fixme=fixme microbundle",
+    "clean": "rimraf build/",
+    "rebuild": "npm run clean && npm run build"
+  },
+  "peerDependencies": {
+    "@reatom/core": "^2.0.19"
+  }
+}
