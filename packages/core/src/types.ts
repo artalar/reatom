@@ -21,22 +21,18 @@ export type Values<T> = Merge<T[keyof T]>
 export type OmitValues<Collection, Target> = Merge<
   Omit<
     Collection,
-    Values<
-      {
-        [K in keyof Collection]: Collection[K] extends Target ? K : never
-      }
-    >
+    Values<{
+      [K in keyof Collection]: Collection[K] extends Target ? K : never
+    }>
   >
 >
 
 export type PickValues<Collection, Target> = Merge<
   Pick<
     Collection,
-    Values<
-      {
-        [K in keyof Collection]: Collection[K] extends Target ? K : never
-      }
-    >
+    Values<{
+      [K in keyof Collection]: Collection[K] extends Target ? K : never
+    }>
   >
 >
 
@@ -260,6 +256,31 @@ export type Store = {
   ): Cache<State> | CacheTemplate<State>
 
   getState<State>(atom: Atom<State>): State
+
+  onError(
+    cb: Fn<
+      [
+        error: unknown,
+        transactionData: TransactionResult & {
+          causes: Causes
+          start: number
+          end: number
+        },
+      ]
+    >,
+  ): Unsubscribe
+
+  onPatch(
+    cb: Fn<
+      [
+        transactionData: TransactionResult & {
+          causes: Causes
+          start: number
+          end: number
+        },
+      ]
+    >,
+  ): Unsubscribe
 
   /** Subscribe to dispatch */
   subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe

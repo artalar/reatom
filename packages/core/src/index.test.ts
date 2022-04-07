@@ -504,4 +504,38 @@ test(`createTemplateCache`, () => {
   ;`👍` //?
 })
 
+test(`onPatch / onError`, () => {
+  const a = createPrimitiveAtom(0)
+  const b = createAtom({ a }, (track) => {
+    const state = track.get(`a`)
+    if (state % 2) throw new Error(`test`)
+    return state
+  })
+  const store = createStore()
+  const listener = mockFn()
+  const onError = mockFn()
+  const onPatch = mockFn()
+  store.subscribe(b, listener)
+  store.onError(onError)
+  store.onPatch(onPatch)
+
+  store.dispatch(a.set(2))
+
+  assert.is(listener.lastInput(), 2)
+  assert.is(onPatch.calls.length, 1)
+
+  let error: any
+  try {
+    store.dispatch(a.set(1))
+  } catch (e) {
+    error = e
+  }
+
+  assert.is(onError.lastInput(), error)
+  assert.is(error.message, `test`)
+  assert.is(listener.lastInput(), 2)
+  assert.is(onPatch.calls.length, 1)
+  assert.is(store.getCache(a)!.state, 2)
+})
+
 test.run()
