@@ -121,7 +121,7 @@ const walk = (queues: Array<Queue>) => {
 
 // --- SOURCES
 
-const ACTUALIZE = Symbol('REATOM_ACTUALIZE')
+const ACTUALIZE = '🙈🙊🙉'
 
 /** Context */
 export interface Ctx {
@@ -341,7 +341,7 @@ export const createContext = (): Ctx => {
     //   return prevCache
     // }
 
-    if (!Object.is(state, patch.state)) {
+    if (!Object.is(state, patch.state) || !caches.has(meta)) {
       computersEnqueue(patch)
 
       for (const hook of meta.onUpdate) hook(ctx, patch)
@@ -533,10 +533,10 @@ export type AtomOptions = Merge<
 let atomsCount = 0
 // @ts-ignore
 export const atom: {
-  <State, Actions extends Rec<Fn<[State, ...any[]], State>>>(
+  <State, Reducers extends Rec<Fn<[State, ...any[]], State>>>(
     initState: Fn<[CtxSpy], State> | State,
-    options: AtomOptions & { reducers: Actions },
-  ): Atom<State> & ActionsReducers<State, Actions>
+    options: AtomOptions & { reducers: Reducers },
+  ): Atom<State> & ActionsReducers<State, Reducers>
   <State>(
     initState: Fn<[CtxSpy], State>,
     options?: string | AtomOptions,
@@ -614,11 +614,20 @@ export const atom: {
 }
 
 export const action: {
+  <T = void>(name?: string): Action<[T], T>
+
   <Params extends any[] = any[], Res = void>(
     fn: (ctx: Ctx, ...params: Params) => Res,
     name?: string,
   ): Action<Params, Res>
-} = (fn: Fn, name = `action${++atomsCount}`): Action => {
+} = (fn?: string | Fn, name?: string): Action => {
+  if (fn === undefined || typeof fn === 'string') {
+    name = fn
+    fn = (v?: any) => v
+  }
+
+  name ??= `action${++atomsCount}`
+
   asserts(fn, 'function')
 
   const action = Object.assign(
@@ -627,7 +636,7 @@ export const action: {
         const patch = ctx[ACTUALIZE](action.__reatom, (patch) => {
           patch.cause = ctx.top === null ? `external call` : getCause(ctx.top)
           patch.state = patch.state.concat([
-            fn({ ...ctx, top: patch }, ...params),
+            (fn as Fn)({ ...ctx, top: patch }, ...params),
           ])
         })
 
