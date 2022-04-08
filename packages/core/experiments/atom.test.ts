@@ -1,56 +1,11 @@
+import { action, Action, atom, Atom, createContext, Ctx, Rec } from './atom'
 import {
-  action,
-  Action,
-  ActionResult,
-  atom,
-  Atom,
-  createContext,
-  Ctx,
-  Patches,
-  Rec,
-} from './atom'
-
-export const isObject = (thing: any): thing is Record<keyof any, any> =>
-  typeof thing === 'object' && thing !== null
-
-export const shallowEqual = (a: any, b: any) => {
-  if (isObject(a) && isObject(b)) {
-    const aKeys = Object.keys(a)
-    const bKeys = Object.keys(b)
-    return (
-      aKeys.length === bKeys.length && aKeys.every((k) => Object.is(a[k], b[k]))
-    )
-  } else {
-    return Object.is(a, b)
-  }
-}
-
-export const patchesToCollection = (patches: Patches) =>
-  [...patches].reduce(
-    (acc, [{ name }, { state }]) => ((acc[name] = state), acc),
-    {} as Rec,
-  )
-
-export const subscribeOnce: {
-  <T>(ctx: Ctx, action: Action<any, T>): Promise<T>
-} = (ctx, action) =>
-  new Promise((r) => {
-    const un = ctx.subscribe(action, (value) => {
-      r(value)
-      un()
-    })
-  })
-
-export const actionAtom: {
-  <T>(action: Action<any, T>): Atom<null | T>
-} = (action) => {
-  const a = atom<null | ActionResult<typeof action>>(null)
-  action.__reatom.onUpdate.push((ctx) =>
-    a.change(ctx, ctx.get(action).at(-1) ?? null),
-  )
-
-  return a
-}
+  isObject,
+  shallowEqual,
+  patchesToCollection,
+  subscribeOnce,
+  actionAtom,
+} from './atom.utils'
 
 // -----------------------------------------------------------------------------
 // TESTS
@@ -60,8 +15,8 @@ export const getPrev = <T>(ctx: Ctx, atom: Atom<T>) => {
   return ctx.read(atom)?.state
 }
 
-displayNameWithoutName()
-function displayNameWithoutName() {
+displayNameExample()
+function displayNameExample() {
   const firstNameAtom = atom('John', `firstName`)
   const lastNameAtom = atom('Doe', `lastName`)
   const isFirstNameShortAtom = atom(
@@ -285,4 +240,46 @@ async function resourceExample() {
   ctx.subscribe(retryAtom, () => {})
 
   imagesResource.fetch(ctx).catch(() => null)
+}
+
+timerExample()
+function timerExample() {
+  const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
+
+  const timerAtom = atom(0)
+
+  const intervalAtom = atom(1000, {
+    reducers: {
+      setSeconds: (state, seconds: number) => seconds * 1000,
+    },
+  })
+
+  const versionAtom = atom(0)
+
+  const startTimer = action(async (ctx, delayInSeconds: number) => {
+    const version = versionAtom.change(ctx, (s) => s + 1)
+    const delay = delayInSeconds * 1000
+    const start = Date.now()
+    const target = delay + start
+    let remains = delay
+
+    timerAtom.change(ctx, remains)
+
+    await ctx.schedule()
+
+    while (remains > 0) {
+      await sleep(Math.min(remains, ctx.get(intervalAtom)))
+
+      if (version !== ctx.get(versionAtom)) return
+
+      timerAtom.change(ctx, (remains = target - Date.now()))
+    }
+
+    timerAtom.change(ctx, 0)
+  })
+
+  const stopTimer = action((ctx) => {
+    versionAtom.change(ctx, (s) => s + 1)
+    timerAtom.change(ctx, 0)
+  })
 }
