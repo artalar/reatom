@@ -1,19 +1,44 @@
 import { action, atom, isAtom, isAction, createContext } from './atom'
 
-export const getIsAtom = (thing) =>
-  isAtom(thing) && Boolean(thing.__reatom_atom)
-export const getIsAction = (thing) =>
-  isAction(thing) && Boolean(thing.__reatom_action)
+export const getIsAtom = (thing) => thing?.__reatom_atom === true
+export const getIsAction = (thing) => thing?.__reatom_action === true
 
 export const getState = (obj, atom) => obj[atom.__reatom.name]
 
 const ctxToStore = (ctx) => {
+  if ('v1store' in ctx) return ctx.v1store
+
+  const allCaches = new Map()
+
+  ctx.onPatch(({ patch }) =>
+    patch.forEach((cache, atom) => allCaches.set(atom, cache)),
+  )
+
   const store = {
-    dispatch: (action) => ctx.run(() => action.v3action(ctx, action.payload)),
-    subscribe: ctx.subscribe,
-    getState: (atom) => (atom ? ctx.get(atom) : {}),
-    bind: (action) => action.bind(null, ctx),
+    dispatch(action) {
+      ctx.run(() => action.v3action(ctx, action.payload))
+    },
+    subscribe(thing, cb) {
+      return ctx.subscribe(thing.v3atom ?? thing.v3action, cb)
+    },
+    getState: (atom) => {
+      if (atom) return ctx.get(atom)
+
+      cleanOutdated()
+
+      const result = {}
+
+      allCaches.forEach((cache, atom) => {
+        if (isStale(cache)) allCaches.delete(atom)
+        else result[cache.meta.id] = cache.state
+      })
+
+      return result
+    },
+    bind: (action) => Object.assign(action.bind(null, ctx), action),
   }
+
+  return (ctx.v1store = store)
 }
 
 export const createStore = () => ctxToStore(createContext())
