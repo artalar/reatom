@@ -4,14 +4,14 @@ Server rendering is a very useful way to speed up the transfer of content to the
 
 This process consists of 4 stages:
 
-1. Request from browser
-2. Building state and render page
+1. Request from the browser
+2. Build state and render the page
 3. Send page and state to the browser
-4. Hydration your app in browser
+4. Hydrate your app in the browser
 
 ![Example project](./server-sider-rendering.assets/requset-response.svg)
 
-If the States are different, there may be problems with the information displayed on the page. This can confuse users and cause unnecessary operations
+If the States are different, there can be problems with the information displayed on the page. This may confuse users and cause unnecessary operations
 
 ## Static atom names
 
@@ -89,7 +89,7 @@ We hope that from this guide you understand the purpose of static names of atoms
 
 ## custom function getInitialStoreState
 
-If you don't want use initial data without atom names you can use custom _getInitialStoreState_ function
+If you don't want to use initial data without atom names, you can use custom _getInitialStoreState_ function
 
 **Server**
 
