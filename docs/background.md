@@ -1,6 +1,6 @@
 ## Background
 
-Reactivity is a hard stuff - it bring us to new magical world thats automatically rules and maintain a code relations, but every atomatization has a price.
+Reactivity is a hard stuff - it brings us to new magical world thats automatically rules and maintaines code relations, but every atomatization has a price.
 
 Реактивность.
 

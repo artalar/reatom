@@ -1,6 +1,6 @@
 # @reatom/core
 
-Core package of Reatom state manager.
+Reatom's state manager core package.
 
 [![npm](https://img.shields.io/npm/v/@reatom/core?style=flat-square)](https://www.npmjs.com/package/@reatom/core)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/core?style=flat-square)](https://bundlephobia.com/result?p=@reatom/core)

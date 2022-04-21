@@ -2,7 +2,7 @@
 
 **Hello friends!**
 
-Happy to see your interest in the project! We would be grateful for any help in the development of Reatom.
+Happy to see your interest in the project! We will be grateful for any help in the development of Reatom.
 
 There are many ways to help the project:
 

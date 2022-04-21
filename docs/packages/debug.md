@@ -1,6 +1,6 @@
 # @reatom/debug
 
-Package of Reatom for generating dynamic names with contain source path
+Reatom's package for generating dynamic names with source path contained
 
 [![npm](https://img.shields.io/npm/v/@reatom/debug?style=flat-square)](https://www.npmjs.com/package/@reatom/debug)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@reatom/debug?style=flat-square)](https://bundlephobia.com/result?p=@reatom/debug)
@@ -54,7 +54,7 @@ function App() {
 }
 ```
 
-### add file path to names of actions and atoms declarations
+### add file path to the names of actions and atoms declarations
 
 ```js
 import { genIdFromLine } from '@reatom/debug'
