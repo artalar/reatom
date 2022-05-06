@@ -86,11 +86,7 @@ export interface Ctx {
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
 
   /** @private outside module */
-  [ACTUAL](
-    meta: AtomMeta,
-    mutator?: Fn<[AtomCache]>,
-    patch?: AtomCache,
-  ): AtomCache
+  [ACTUAL](meta: AtomMeta, mutator?: Fn<[AtomCache]>): AtomCache
   /** @private outside module */
   [CAUSE]: null | AtomCache
 }
@@ -117,6 +113,8 @@ export interface AtomMeta<State = any> {
   readonly onInit: Array<Fn<[Ctx]>>
   readonly onUpdate: Array<Fn<[Ctx, AtomCache]>>
   readonly schedule: Fn<[Ctx, AtomCache], void>
+  // temporal cache of the last patch during transaction
+  patch: null | AtomCache
 }
 
 // The order of properties is sorted by debugging purposes
@@ -181,7 +179,6 @@ const createTr = (): {
   lateEffects: Array<Fn>
   links: Array<AtomCache>
   logs: Array<AtomCache>
-  patches: Map<AtomMeta, AtomCache>
   rollbacks: Array<Fn>
   unlinks: Array<AtomCache>
 } => ({
@@ -191,7 +188,6 @@ const createTr = (): {
   lateEffects: [],
   links: [],
   logs: [],
-  patches: new Map(),
   rollbacks: [],
   unlinks: [],
 })
@@ -226,18 +222,23 @@ export const createContext = ({
   }
 
   const addPatch = (patch: AtomCache) => {
-    tr.patches.set(patch.meta, patch)
-    tr.logs.push(patch)
-    return patch
+    tr.logs.push()
+    return (patch.meta.patch = patch)
   }
 
   const computersEnqueue = (cache: AtomCache) => {
-    for (const childMeta of cache.children) {
-      const childCache = tr.patches.get(childMeta) ?? caches.get(childMeta)!
+    const stack = [cache.children]
+    while (stack.length > 0) {
+      for (const childMeta of stack.pop()!) {
+        const childCache = childMeta.patch ?? caches.get(childMeta)!
 
-      childCache.cause !== null &&
-        addPatch({ ...childCache, cause: null }).listeners.size === 0 &&
-        computersEnqueue(childCache)
+        if (
+          childCache.cause !== null &&
+          addPatch({ ...childCache, cause: null }).listeners.size === 0
+        ) {
+          stack.push(childCache.children)
+        }
+      }
     }
   }
 
@@ -279,28 +280,25 @@ export const createContext = ({
     return isParentsChanged
   }
 
-  const actualize: Ctx[typeof ACTUAL] = (
-    meta,
-    mutator,
-    patch = tr.patches.get(meta),
-  ) => {
-    const hasPatch = patch !== undefined
+  const actualize: Ctx[typeof ACTUAL] = (meta, mutator) => {
     const cache = caches.get(meta)
-    patch ??=
-      cache === undefined
-        ? addPatch({
-            state: meta.initState,
-            cause: null,
-            meta,
-            parents: [],
-            stale: true,
-            children: new Set(),
-            listeners: new Set(),
-          })
-        : cache
+    let patch =
+      meta.patch ??
+      cache ??
+      addPatch({
+        state: meta.initState,
+        cause: null,
+        meta,
+        parents: [],
+        stale: true,
+        children: new Set(),
+        listeners: new Set(),
+      })
 
     if (patch.cause !== null) {
-      if (mutator === undefined && (!patch.stale || hasPatch)) return patch
+      if (mutator === undefined && (!patch.stale || patch === meta.patch)) {
+        return patch
+      }
 
       patch = addPatch({ ...patch, cause: null })
     }
@@ -314,7 +312,7 @@ export const createContext = ({
     } catch (err) {
       // TODO 🤔
       patch.state = err = err instanceof Error ? err : new Error(String(err))
-      tr.patches.delete(meta)
+      patch.meta.patch = null
 
       throw err
     }
@@ -360,7 +358,7 @@ export const createContext = ({
       // try to prevent unnecessary work
       // for common case when we read internal atom
       // which have no children / listeners
-      const cache = tr.patches.get(meta) ?? caches.get(meta)
+      const cache = meta.patch ?? caches.get(meta)
       if (
         cache !== undefined &&
         cache.cause !== null &&
@@ -369,7 +367,7 @@ export const createContext = ({
         return cache.state
       }
 
-      return ctx.run(() => actualize(meta, undefined, cache).state)
+      return ctx.run(() => actualize(meta).state)
     },
     log(cb) {
       assertFunction(cb)
@@ -387,9 +385,8 @@ export const createContext = ({
         var result = cb()
 
         for (let patch of tr.logs) {
-          if (patch.listeners.size > 0) {
-            patch = tr.patches.get(patch.meta)!
-            if (patch.cause === null) actualize(patch.meta, undefined, patch)
+          if (patch.listeners.size > 0 && patch.meta.patch!.cause === null) {
+            actualize(patch.meta)
           }
         }
 
@@ -413,18 +410,23 @@ export const createContext = ({
           }
         }
 
-        for (const meta of tr.hooks) {
-          const patch = tr.patches.get(meta)!
-
-          if (patch.stale !== (patch.stale = isStale(patch))) {
-            const hooks = patch.stale ? patch.meta.onCleanup : patch.meta.onInit
+        for (const { patch } of tr.hooks) {
+          if (patch!.stale !== (patch!.stale = isStale(patch!))) {
+            const hooks = patch!.stale
+              ? patch!.meta.onCleanup
+              : patch!.meta.onInit
             for (const hook of hooks) effects.push(() => hook(ctx))
           }
         }
 
         for (const log of logListeners) log(tr.logs, tr.error)
 
-        for (const [meta, patch] of tr.patches) caches.set(meta, patch)
+        for (const { meta } of tr.logs) {
+          if (meta.patch !== null) {
+            caches.set(meta, meta.patch!)
+            meta.patch = null
+          }
+        }
 
         effects.push(...tr.effects)
         lateEffects.push(...tr.lateEffects)
@@ -432,6 +434,7 @@ export const createContext = ({
         tr.error = e = e instanceof Error ? e : new Error(String(e))
         for (const log of logListeners) log(tr.logs, e)
         for (const cb of tr.rollbacks) cb(e)
+        for (const { meta } of tr.logs) meta.patch = null
 
         throw e
       } finally {
@@ -565,6 +568,7 @@ export const atom: {
       patch.listeners.forEach((cb) =>
         ctx.scheduleLate(() => cb(ctx.read(patch.meta)!.state)).catch(noop),
       ),
+    patch: null,
   }
 
   const atom: Rec = { ...reducers, __reatom: meta }
@@ -619,6 +623,7 @@ export const action: {
     onUpdate: [],
     schedule: (ctx, { listeners, state }) =>
       listeners.forEach((cb) => ctx.schedule(() => cb(state)).catch(noop)),
+    patch: null,
   }
 
   return action
