@@ -33,7 +33,7 @@ const addTodo = declareAction()
 
 ## Reducers
 
-In Reatom world [atoms](/glossary?id=atom) act as reducers.
+In Reatom world [atoms](/glossary?id=atom) act as a reducers.
 
 **Redux**
 
@@ -77,7 +77,7 @@ export const todoAppAtom = declareAtom(initialState, (on) => [
 
 ## Selectors
 
-If your used [reselect](https://github.com/reduxjs/reselect) for creating memoized selectors, then you don't have to do it anymore. [Atoms](/glossary?id=atom) solve this problem.
+If your have used [reselect](https://github.com/reduxjs/reselect) for creating memoized selectors, you don't have anymore. [Atoms](/glossary?id=atom) solves this problem.
 
 **Redux**
 
@@ -244,7 +244,7 @@ store.dispatch({
 
 ## Async actions
 
-In Redux world your you need to use special libraries ([redux-thunk](github.com/reduxjs/redux-thunk), [redux-saga](https://github.com/redux-saga/redux-saga) or [redux-observable](https://github.com/redux-observable/redux-observable)) for creating async actions. In Reatom world you don't need to use it. This role is played by [reactions](/glossary?id=action-reactions).
+In Redux's world your you need to use special libraries ([redux-thunk](github.com/reduxjs/redux-thunk), [redux-saga](https://github.com/redux-saga/redux-saga) or [redux-observable](https://github.com/redux-observable/redux-observable)) for creating async actions, but not in Reatom's world. This role is played by [reactions](/glossary?id=action-reactions).
 
 ### for `redux-thunk` users
 
@@ -535,7 +535,7 @@ store.dispatch(logCounter()) // 1
 
 ## Async reducers
 
-Reatom has a built in solution for lazy connections of atoms.
+Reatom has a built in solution for lazy atoms connections.
 
 **Redux**
 
@@ -557,4 +557,4 @@ import('my/feature').then((module) => {
 
 ## Middleware
 
-Reatom don't use middleware, because he considers it an ambiguous pattern. You can use [subscribe to actions](#subscribing) for these purposes.
+Reatom don't use middleware, because it considers itself as an ambiguous pattern. You can use [subscribe to actions](#subscribing) for these purposes.

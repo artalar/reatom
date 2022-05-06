@@ -222,7 +222,7 @@ export const createContext = ({
   }
 
   const addPatch = (patch: AtomCache) => {
-    tr.logs.push()
+    tr.logs.push(patch)
     return (patch.meta.patch = patch)
   }
 

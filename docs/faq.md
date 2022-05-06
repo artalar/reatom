@@ -4,32 +4,32 @@
 
 > Definitely **no**! Reatom is built on top of [SSoT](https://en.wikipedia.org/wiki/Single_source_of_truth) idea and attempts to strictly follow it to ensure reliability. Therefore it prefers immutable global state and other limitations:
 >
-> - impossible to create cyclic dependencies
-> - If any reducer throws an error during a dispatching process, the accumulated new state is not applied (from previous reducers of current dispatch)
-> - necessarily of normalization and memory overhead as using immutable data-structures
+> - it's impossible to create cyclic dependencies
+> - if during a dispatching process any reducer throws an error, the new state's accumulation is not applied (from previous reducers of current dispatch)
+> - necessity of normalization and memory overhead as using immutable data-structures
 > - the necessity of global store and `.dispatch` method to make _atoms_ work
-> - initializations of an atom take a 2-5x more capacity than `reselect.createSelector`. It doesn't really affect the real performance, moreover, the performance of reaction (dispatch) is 2-10\*Nx much better, then redux
+> - atom's initializations are taking a 2-5x more capacity than `reselect.createSelector`. It doesn't really affect the real performance, moreover, the performance of reaction (dispatch) is 2-10\*Nx much better, then redux
 > - "React zombie children" is the problem for all framework-agnostic state-managers and for Reatom too. You can avoid it by using optional chaining or something similar in your dynamic atoms.
 >
 > All these limitations used intentionally to solve other, more critical, problems.
 
 ## Why is API so strange, can't it be simpler?
 
-> API was designed to better inference of static types (Flow, TS). For some developers it is necessary and we must to respect it.
+> API was designed for better inference of static types (Flow, TS). For some developers it is necessary and we must respect it.
 
 ## Why single global state?
 
-> Immutable data-structures and single entry point (SSoT) for reading and writing are most predictable and debuggable things ever. But most importantly, developer mostly read and debug existing code than write.
+> Immutable data-structures and single entry point (SSoT) for reading and writing are most predictable and debuggable things ever. But most importantly, developers are mostly reading and debugging an existing code than writing it.
 
 ## What about performance, how fast is the library?
 
-> Performance troubles in any state-managers are depended from unnecessary calls of subscribers. Redux is a good example of this problem because you must to use memoization (manually 🤦‍) for preventing unnecessary reactions.
+> Performance troubles in any state-managers are depended from unnecessary calls of subscribers. Redux is a good example of this problem because you must use memoization (manually 🤦‍) for preventing unnecessary reactions.
 
 > Reatom uses immutable data structures (see above) for tracking changes in every reducer call, but as every subscription is direct to each Atom, the library **is not needed of memoization**. This allows it to scale in terms of performance much better than redux (for many subscriptions or frequently updates).
 
 ## Why declare\*?
 
-> Atoms cannot exist outside the context of Store. To interact with the world, an atom must be connected to the store. Declaration describes all possible cases of reactions to actions in one place, but not creates instance of atom.
+> Atoms cannot exist outside the context of Store. To interact with the world, an atom must be connected to the store. Declaration describes all possible cases of reactions to actions in one place, but not creates instance of an atom.
 >
 > Ok. Why not use short name like **atom**?
 >
