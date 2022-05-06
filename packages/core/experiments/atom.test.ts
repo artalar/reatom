@@ -1,6 +1,21 @@
-import { action, Action, atom, Atom, createContext, Ctx, Rec } from './atom'
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
+import { mockFn } from '../test_utils'
+
 import {
-  isObject,
+  action,
+  Action,
+  atom,
+  Atom,
+  AtomCache,
+  AtomMeta,
+  AtomMutable,
+  createContext,
+  Ctx,
+  Rec,
+} from './atom'
+import {
+  getPrev,
   shallowEqual,
   patchesToCollection,
   subscribeOnce,
@@ -11,50 +26,97 @@ import {
 // TESTS
 // -----------------------------------------------------------------------------
 
-export const getPrev = <T>(ctx: Ctx, atom: Atom<T>) => {
-  return ctx.read(atom)?.state
-}
+test(`linking`, () => {
+  const a1 = atom(0, `a1`)
+  const a2 = atom((ctx) => ctx.spy(a1), `a2`)
+  const context = createContext()
+  const fn = mockFn()
 
-displayNameExample()
-function displayNameExample() {
-  const firstNameAtom = atom('John', `firstName`)
-  const lastNameAtom = atom('Doe', `lastName`)
-  const isFirstNameShortAtom = atom(
-    ({ spy }) => spy(firstNameAtom).length < 10,
-    `isFirstNameShort`,
-  )
-  const fullNameAtom = atom(
-    ({ spy }) => `${spy(firstNameAtom)} ${spy(lastNameAtom)}`,
-    {
-      name: `fullName`,
-      onInit: [() => console.log('init')],
-      onCleanup: [() => console.log('cleanup')],
-    },
-  )
-  const displayNameAtom = atom(
-    ({ spy }) =>
-      spy(isFirstNameShortAtom) ? spy(fullNameAtom) : spy(firstNameAtom),
-    `displayName`,
-  )
-
-  const ctx = createContext()
-
-  ctx.log((patches) => {
-    console.log(patchesToCollection(patches))
+  context.log((logs) => {
+    logs.forEach((patch) =>
+      assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
+    )
   })
 
-  const un = ctx.subscribe(displayNameAtom, (state) => {
-    console.log(state)
-  })
+  const un = context.subscribe(a2, fn)
+  var a1Cache = context.read(a1.__reatom)!
+  var a2Cache = context.read(a2.__reatom)!
 
-  firstNameAtom.change(ctx, 'Joooooooooooohn')
-
-  firstNameAtom.change(ctx, 'Jooohn')
+  assert.is(fn.calls.length, 1)
+  assert.is(fn.lastInput(), 0)
+  assert.is(a2Cache.parents[0], a1Cache)
+  assert.equal(a1Cache.children, new Set([a2.__reatom]))
 
   un()
-}
 
-resourceExample()
+  assert.is.not(a1Cache, context.read(a1.__reatom)!)
+  assert.is.not(a2Cache, context.read(a2.__reatom)!)
+
+  assert.is(context.read(a1.__reatom)!.children.size, 0)
+})
+
+test(`nested deps`, () => {
+  const a1 = atom(0, `a1`)
+  const a2 = atom((ctx) => ctx.spy(a1), `a2`)
+  const a3 = atom((ctx) => ctx.spy(a1), `a3`)
+  const a4 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a4`)
+  const a5 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a5`)
+  const a6 = atom((ctx) => ctx.spy(a4) + ctx.spy(a5), `a6`)
+  const context = createContext()
+  const fn = mockFn()
+  const touchedAtoms: Array<AtomMeta> = []
+
+  context.log((logs) => {
+    logs.forEach((patch) =>
+      assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
+    )
+  })
+
+  const un = context.subscribe(a6, fn)
+
+  for (const a of [a1, a2, a3, a4, a5, a6]) {
+    assert.is(
+      context.read(a.__reatom)!.stale,
+      false,
+      `"${a.__reatom.name}" should not be stale`,
+    )
+  }
+
+  assert.is(fn.calls.length, 1)
+  assert.equal(
+    context.read(a1.__reatom)!.children,
+    new Set([a2.__reatom, a3.__reatom]),
+  )
+  assert.equal(
+    context.read(a2.__reatom)!.children,
+    new Set([a4.__reatom, a5.__reatom]),
+  )
+  assert.equal(
+    context.read(a3.__reatom)!.children,
+    new Set([a4.__reatom, a5.__reatom]),
+  )
+
+  context.log((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
+
+  a1.change(context, 1)
+
+  assert.is(fn.calls.length, 2)
+  assert.is(touchedAtoms.length, new Set(touchedAtoms).size)
+
+  un()
+
+  for (const a of [a1, a2, a3, a4, a5, a6]) {
+    assert.is(
+      context.read(a.__reatom)!.stale,
+      true,
+      `"${a.__reatom.name}" should be stale`,
+    )
+  }
+})
+
+test.run()
+
+// resourceExample()
 async function resourceExample() {
   const model: {
     <T extends Rec<Atom>>(name: string, model: T): {
@@ -164,10 +226,9 @@ async function resourceExample() {
     // })
 
     return model(name, {
-      _paramsAtom: paramsAtom,
-      _versionAtom: versionAtom,
       cancel,
       dataAtom,
+      changeData: dataAtom.change,
       errorAtom,
       fetch,
       loadingAtom,
@@ -232,8 +293,8 @@ async function resourceExample() {
     return state
   }, `retry`)
 
-  ctx.subscribe(requestTimeAtom, (requestTime, { cause }) => {
-    console.log(cause)
+  ctx.subscribe(requestTimeAtom, (requestTime) => {
+    // console.log(cause)
     // onDone__images <- refetch__images <- retry__images
     //  <- retry <- onError__images <- refetch__images <- fetch__images <- external call
   })
@@ -242,7 +303,7 @@ async function resourceExample() {
   imagesResource.fetch(ctx).catch(() => null)
 }
 
-timerExample()
+// timerExample()
 function timerExample() {
   const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
@@ -282,4 +343,46 @@ function timerExample() {
     versionAtom.change(ctx, (s) => s + 1)
     timerAtom.change(ctx, 0)
   })
+}
+
+// displayNameExample()
+function displayNameExample() {
+  const firstNameAtom = atom('John', `firstName`)
+  const lastNameAtom = atom('Doe', `lastName`)
+  const isFirstNameShortAtom = atom(
+    ({ spy }) => spy(firstNameAtom).length < 10,
+    `isFirstNameShort`,
+  )
+  const fullNameAtom = atom(
+    ({ spy }) => `${spy(firstNameAtom)} ${spy(lastNameAtom)}`,
+    `fullName`,
+  )
+  const displayNameAtom = atom(
+    ({ spy }) =>
+      spy(isFirstNameShortAtom) ? spy(fullNameAtom) : spy(firstNameAtom),
+    `displayName`,
+  )
+
+  fullNameAtom.__reatom.onInit.push(() => {
+    console.log('init')
+  })
+  fullNameAtom.__reatom.onCleanup.push(() => {
+    console.log('cleanup')
+  })
+  displayNameAtom.__reatom.onInit.push(() => {
+    console.log('init')
+  })
+  displayNameAtom.__reatom.onCleanup.push(() => {
+    console.log('cleanup')
+  })
+
+  const ctx = createContext()
+
+  const un = ctx.subscribe(displayNameAtom, () => {})
+
+  firstNameAtom.change(ctx, 'Joooooooooooohn')
+
+  firstNameAtom.change(ctx, 'Jooohn')
+
+  un()
 }

@@ -7,8 +7,7 @@ import {
   Ctx,
   CtxSpy,
   Fn,
-  isAction,
-  Patches,
+  Logs,
   Rec,
   Unsubscribe,
 } from './atom'
@@ -28,25 +27,19 @@ export const shallowEqual = (a: any, b: any) => {
   }
 }
 
-export const patchesToCollection = (patches: Patches) =>
-  [...patches].reduce(
-    (acc, [{ name }, { state }]) => ((acc[name] = state), acc),
+export const patchesToCollection = (patches: Logs) =>
+  patches.reduce(
+    (acc, { state, meta: { name } }) => ((acc[name] = state), acc),
     {} as Rec,
   )
 
 export const subscribeOnce: {
-  <T>(ctx: Ctx, action: Action<any, T>): Promise<T>
   <T>(ctx: Ctx, atom: Atom<T>): Promise<T>
 } = (ctx, atom) =>
-  new Promise((r) => {
-    let skipFirst = !isAction(atom)
-    // FIXME
-    // @ts-ignore
+  new Promise<any>((r) => {
+    let skipFirst = true
     const un = ctx.subscribe(atom, (value) => {
-      if (skipFirst) {
-        skipFirst = false
-        return
-      }
+      if (skipFirst) return (skipFirst = false)
       r(value)
       un()
     })
@@ -68,7 +61,7 @@ export const onChange: {
 } = (ctx, atom, handler) => {
   const state = ctx.spy(atom)
   const prevCache = ctx
-    .read({ __reatom: ctx.top!.meta })
+    .read(ctx[`👀`]!.meta)
     ?.parents.find((parent) => parent.meta === atom.__reatom)
 
   if (prevCache === undefined || !Object.is(prevCache.state, state)) {
@@ -86,7 +79,7 @@ export const onUpdate: {
   <T>(atom: Atom<T>, handler: Fn<[Ctx, T]>, skipFirst?: boolean): Unsubscribe
 } = (atom, handler, skipFirst = true) => {
   const cb = (ctx: Ctx, cache: AtomCache) => {
-    const prevCache = ctx.read(atom)
+    const prevCache = ctx.read(atom.__reatom)
 
     if (prevCache === undefined && skipFirst) return
 
@@ -99,4 +92,8 @@ export const onUpdate: {
     const index = atom.__reatom.onUpdate.indexOf(cb)
     if (index > -1) atom.__reatom.onUpdate.splice(index, 1)
   }
+}
+
+export const getPrev = <T>(ctx: Ctx, atom: Atom<T>) => {
+  return ctx.read(atom.__reatom)?.state
 }
