@@ -27,7 +27,7 @@
 <div class='stars'>
 
 <div class='stars__message'>
-Your stars inspire us. Thank you!
+Your stars inspires us. Thank you!
 </div>
 
 <div class='stars__button'>

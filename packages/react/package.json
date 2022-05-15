@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "2.0.15",
+  "version": "2.0.18",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
@@ -18,7 +18,7 @@
     "prepublishOnly": "npm run rebuild",
     "postpublish": "npm run clean",
     "build": "npm run build-src && npm run build-dom-bindings && npm run build-native-bindings",
-    "build-src": "cross-env fixme=fixme microbundle --external=react,use-subscription,@reatom/core",
+    "build-src": "cross-env fixme=fixme microbundle --external=react,@reatom/core",
     "build-dom-bindings": "cross-env fixme=fixme microbundle --cwd=react-dom-batched-updates --external=react-dom,@reatom/react",
     "build-native-bindings": "cross-env fixme=fixme microbundle --cwd=react-native-batched-updates --external=react-native,@reatom/react",
     "clean": "cross-env fixme=fixme rimraf build/",
@@ -33,21 +33,17 @@
     "update": "npx npm-check-updates -u"
   },
   "peerDependencies": {
-    "@reatom/core": "^2.0.15",
-    "@types/use-subscription": "^1.0.0",
-    "react": "^17.0.2",
-    "use-subscription": "^1.5.1"
+    "@reatom/core": "^2.0.18",
+    "react": "^17.0.2"
   },
   "devDependencies": {
-    "@reatom/core": "^2.0.15",
+    "@reatom/core": "^2.0.18",
     "@testing-library/jest-dom": "^5.12.0",
     "@testing-library/react": "^11.2.7",
     "@testing-library/react-hooks": "^7.0.0",
     "@types/react": "^17.0.8",
-    "@types/use-subscription": "^1.0.0",
     "react": "^17.0.2",
-    "react-test-renderer": "^17.0.2",
-    "use-subscription": "^1.5.1"
+    "react-test-renderer": "^17.0.2"
   },
   "author": "artalar",
   "maintainers": [

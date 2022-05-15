@@ -82,7 +82,7 @@ test('side effects', async () => {
 
 ## How to move from redux/toolkit to Reatom
 
-[Here](https://github.com/artalar/rtk-github-issues-example/pull/1/commits) you can find the example of how to move from redux/toolkit to Reatom. Every commit name is describe a step to make a movement. The benefit of movement is: less bundlesize, more simple API (atom and reactions) and future opportunity to unlimited by performance code-base scaling.
+[Here](https://github.com/artalar/rtk-github-issues-example/pull/1/commits) you can find the example of how to migrate from redux/toolkit to Reatom. Every commit name describing a step to make a movement. The benefits of the movement are: less bundlesize, simplier API (atom and reactions) and a future opportunity of unlimited performance code-base scaling.
 
 ## Todo-list
 

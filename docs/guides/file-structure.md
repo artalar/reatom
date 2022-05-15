@@ -16,9 +16,9 @@ Reatom guarantees unique identifiers for entities, so you won't have conflicts w
 
 ## Multi file organization
 
-When there is a lot of code in a file, you can split your module into several. Each of which has its own function.
+When there is a lot of code in a file, you can split your module into several modules with it's own function.
 
-The need for partitioning may be necessary in the case of TypeScript to reduce the number of lines of code in file.
+The need of partitioning may be necessary at TypeScript's case: to reduce the number of lines of code in file.
 
 ```sh
 model
@@ -44,7 +44,7 @@ export * from './service'
 
 ## Feature slices
 
-In a large application is convenient to use atomic design / feature slices an approach for grouping entities by meaning.
+In a large application it is convenient to use atomic design / feature slices approach for grouping entities by it's meaning.
 
 ```sh
 src

@@ -37,7 +37,7 @@ const atomValue = useAtom(atom)
 const atomValue = useAtom(atom, (atomState) => atomState[props.id], [props.id])
 ```
 
-> NOTE. You need to pass a third argument to `useAtom` that is the array of values that the atom depends on. To make sure the state selector is reapplied and derived value is recalculated when dependencies change.
+> NOTE. You need to pass a third argument to `useAtom` which is an array of values that the atom should depend on. To make sure the state selector is reapplied and derived value is recalculated on dependencies change.
 
 #### Mount without subscription (for subscribing atoms to actions)
 

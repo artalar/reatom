@@ -1,6 +1,6 @@
 # @reatom/babel-plugin
 
-Babel plugin for automatically insert variable name to declarations of atoms or actions
+Babel plugin to automatically insert variable name to declarations of atoms or actions
 
 [![npm](https://img.shields.io/npm/v/@reatom/babel-plugin?style=flat-square)](https://www.npmjs.com/package/@reatom/babel-plugin)
 
