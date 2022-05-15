@@ -2,7 +2,7 @@ import { performance } from 'perf_hooks'
 import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
-import { $mol_wire_fiber } from 'mol_wire_lib'
+import { $mol_wire_atom } from 'mol_wire_lib'
 import { observable, computed, autorun, configure } from 'mobx'
 import {
   createAction,
@@ -160,15 +160,15 @@ async function start(iterations: number) {
   cH()
   let cRes = 0
 
-  const mEntry = new $mol_wire_fiber('mEntry', (next: number = 0) => next)
-  const mA = new $mol_wire_fiber('mA', () => mEntry.sync())
-  const mB = new $mol_wire_fiber('mB', () => mA.sync() + 1)
-  const mC = new $mol_wire_fiber('mC', () => mA.sync() + 1)
-  const mD = new $mol_wire_fiber('mD', () => mB.sync() + mC.sync())
-  const mE = new $mol_wire_fiber('mE', () => mD.sync() + 1)
-  const mF = new $mol_wire_fiber('mF', () => mD.sync() + mE.sync())
-  const mG = new $mol_wire_fiber('mG', () => mD.sync() + mE.sync())
-  const mH = new $mol_wire_fiber('mH', () => mF.sync() + mG.sync())
+  const mEntry = new $mol_wire_atom('mEntry', (next: number = 0) => next)
+  const mA = new $mol_wire_atom('mA', () => mEntry.sync())
+  const mB = new $mol_wire_atom('mB', () => mA.sync() + 1)
+  const mC = new $mol_wire_atom('mC', () => mA.sync() + 1)
+  const mD = new $mol_wire_atom('mD', () => mB.sync() + mC.sync())
+  const mE = new $mol_wire_atom('mE', () => mD.sync() + 1)
+  const mF = new $mol_wire_atom('mF', () => mD.sync() + mE.sync())
+  const mG = new $mol_wire_atom('mG', () => mD.sync() + mE.sync())
+  const mH = new $mol_wire_atom('mH', () => mF.sync() + mG.sync())
   mH.sync()
   let mRes = 0
 
