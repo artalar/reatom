@@ -71,21 +71,23 @@ export function callSafety<I extends any[], O>(
 
 // --- SOURCES
 
-const CAUSE = `👀`
-const ACTUAL = `🙊`
+const INTERNAL = `🙊`
+type INTERNAL = typeof INTERNAL
 
 /** Main context of data storing and effects processing */
 export interface Ctx {
   cause: null | AtomCache
   get<T>(atom: Atom<T>): T
-  read(meta: AtomMeta): undefined | AtomCache
-  run<T>(cb: Fn<[], T>): T
   schedule<T = void>(cb?: Fn<[Ctx], T>, isNearEffect?: boolean): Promise<T>
-  subscribe(cb: Fn<[patches: Logs, error: null | Error]>): Unsubscribe
-  subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
 
   /** @private  */
-  [ACTUAL](meta: AtomMeta, mutator?: Fn<[AtomCache]>): AtomCache
+  [INTERNAL]: {
+    actualize(meta: AtomMeta, mutator?: Fn<[AtomCache]>): AtomCache
+    log(cb: Fn<[patches: Logs, error: null | Error]>): Unsubscribe
+    read(meta: AtomMeta): undefined | AtomCache
+    subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
+    run<T>(cb: Fn<[], T>): T
+  }
 }
 
 export interface CtxSpy extends Ctx {
@@ -120,7 +122,6 @@ export interface AtomCache<State = any> {
   state: State
   readonly meta: AtomMeta
   cause: Ctx[`cause`]
-  stale: boolean
   parents: Array<AtomCache>
   readonly children: Set<AtomMeta>
   readonly listeners: Set<Fn>
@@ -169,30 +170,26 @@ const assertFunction = (thing: any) => {
   }
 }
 
-const copyCache = (
-  cache: AtomCache,
-  cause: AtomCache[`cause`],
-  stale = cache.stale,
-) => ({
+const copyCache = (cache: AtomCache, cause: AtomCache[`cause`]) => ({
   state: cache.state,
   meta: cache.meta,
   cause,
-  stale,
   parents: cache.parents,
   children: cache.children,
   listeners: cache.listeners,
 })
 
-const copyCtx = (ctx: Ctx, cause: Ctx[`cause`]): Ctx => ({
-  cause: cause,
-  get: ctx.get,
-  read: ctx.read,
-  run: ctx.run,
-  schedule: ctx.schedule,
-  subscribe: ctx.subscribe,
-  [ACTUAL]: ctx[ACTUAL],
+const copyCtx = (
+  ctx: Ctx,
+  cause: Ctx[`cause`],
   // @ts-expect-error
-  spy: ctx.spy,
+  spy = ctx.spy,
+): CtxSpy => ({
+  cause,
+  get: ctx.get,
+  schedule: ctx.schedule,
+  spy,
+  [INTERNAL]: ctx[INTERNAL],
 })
 
 export interface ContextOptions {
@@ -217,7 +214,6 @@ export const createContext = ({
   let inTr: boolean
   let trNearEffects: Array<Fn>
   let trError: Error | null
-  let trHooks: Set<AtomMeta>
   let trLateEffects: Array<Fn>
   let trLinks: Set<AtomMeta>
   let trLogs: Array<AtomCache>
@@ -227,7 +223,6 @@ export const createContext = ({
     inTr = false
     trNearEffects = []
     trError = null
-    trHooks = new Set()
     trLateEffects = []
     trLinks = new Set()
     trLogs = []
@@ -283,24 +278,25 @@ export const createContext = ({
     ) {
       patch.parents = []
 
-      // @ts-expect-error
-      const ctxSpy: CtxSpy = copyCtx(ctx, patch)
-      ctxSpy.spy = (atom: Atom) => {
-        if (done) {
-          throw new Error(
-            `async spy "${atom.__reatom.name}" in "${patch.meta.name}")`,
-          )
-        }
+      patch.meta.computer!(
+        copyCtx(ctx, patch, (atom: Atom) => {
+          if (done) {
+            throw new Error(
+              `async spy "${atom.__reatom.name}" in "${patch.meta.name}")`,
+            )
+          }
 
-        const depPatch = actualize(atom.__reatom)
-        const length = patch.parents.push(depPatch)
+          const depPatch = actualize(atom.__reatom)
+          const length = patch.parents.push(depPatch)
 
-        isParentsChanged ||=
-          length > parents.length || depPatch.meta !== parents[length - 1].meta
+          isParentsChanged ||=
+            length > parents.length ||
+            depPatch.meta !== parents[length - 1].meta
 
-        return depPatch.state
-      }
-      patch.meta.computer!(ctxSpy, patch)
+          return depPatch.state
+        }),
+        patch,
+      )
 
       done = true
 
@@ -310,7 +306,7 @@ export const createContext = ({
     return isParentsChanged
   }
 
-  const actualize: Ctx[typeof ACTUAL] = (meta, mutator) => {
+  const actualize: Ctx[INTERNAL][`actualize`] = (meta, mutator) => {
     let { patch } = meta
     if (patch !== null && patch!.cause !== null) return patch!
     let isPlain = meta.computer === null
@@ -321,7 +317,6 @@ export const createContext = ({
         state: meta.initState,
         meta,
         cause: null,
-        stale: true,
         parents: [],
         children: new Set(),
         listeners: new Set(),
@@ -338,7 +333,6 @@ export const createContext = ({
     if (isParentsChanged) {
       if (cache !== patch) trUnlinks.add(meta)
       trLinks.add(meta)
-      trHooks.add(meta)
     }
 
     if (!Object.is(state, patch.state)) {
@@ -354,165 +348,181 @@ export const createContext = ({
 
   const ctx: Ctx = {
     cause: null,
-    get: ({ __reatom: meta }) => ctx.run(() => actualize(meta).state),
-    read: (meta) => caches.get(meta),
-    run(cb) {
-      if (inTr) return cb()
-
-      inTr = true
-
-      try {
-        var result = cb()
-
-        if (trLogs.length === 0) return result
-
-        for (let patch of trLogs) {
-          if (patch.listeners.size > 0) actualize(patch.meta)
-        }
-
-        for (const meta of trUnlinks) {
-          const cache = caches.get(meta)!
-          for (const parentCache of cache.parents) {
-            parentCache.children.delete(meta)
-            if (isStale(parentCache)) {
-              parentCache.meta.patch ?? addPatch(copyCache(parentCache, cache))
-              trUnlinks.add(parentCache.meta)
-              trHooks.add(parentCache.meta)
-            }
-          }
-        }
-
-        for (const meta of trLinks) {
-          for (const parentPatch of meta.patch!.parents) {
-            if (isStale(parentPatch)) {
-              trLinks.add(parentPatch.meta)
-              trHooks.add(parentPatch.meta)
-            }
-            parentPatch.children.add(meta)
-          }
-        }
-
-        for (const meta of trHooks) {
-          let patch = meta.patch!
-          if (patch.stale !== (patch.stale = isStale(patch))) {
-            const hooks = patch.stale ? meta.onCleanup : meta.onInit
-            // TODO is it correct that lifecycle hook calls before `nearEffects`?
-            for (const hook of hooks) nearEffects.push(hook)
-          }
-        }
-
-        for (const log of logsListeners) log(trLogs, trError)
-
-        for (const {
-          meta,
-          meta: { patch },
-        } of trLogs) {
-          if (patch !== null) {
-            caches.set(meta, patch!)
-            meta.patch = null
-            const { state } = patch
-            const schedule: Fn<[Fn]> = meta.isAction
-              ? ((patch.state = []), (cb) => nearEffects.push(() => cb(state)))
-              : (cb) => lateEffects.push(() => cb(caches.get(meta)!.state))
-            patch.listeners.forEach(schedule)
-          }
-        }
-
-        nearEffects.push(...trNearEffects)
-        lateEffects.push(...trLateEffects)
-      } catch (e: any) {
-        trError = e = e instanceof Error ? e : new Error(String(e))
-        for (const log of logsListeners) log(trLogs, e)
-        for (const cb of trRollbacks) cb(e)
-        for (const { meta } of trLogs) meta.patch = null
-
-        throw e
-      } finally {
-        resetTr()
-      }
-
-      walkNearEffects()
-      callLateEffects(walkLateEffects)
-
-      return result
-    },
+    get: ({ __reatom: meta }) => ctx[INTERNAL].run(() => actualize(meta).state),
+    // FIXME: asserts `inTr`
     schedule(effect = noop, isNearEffect = true) {
       assertFunction(effect)
       const effects = isNearEffect ? nearEffects : lateEffects
 
-      return ctx.run(
-        () =>
-          new Promise<any>((res, rej) => {
-            trRollbacks.push(rej)
-            effects.push((ctx) => {
-              try {
-                res(effect(ctx))
-              } catch (error) {
-                rej(error)
-              }
-            })
-          }),
-      )
-    },
-    // @ts-expect-error
-    subscribe(atom: Atom, cb: Fn = atom) {
-      assertFunction(cb)
-      // @ts-expect-error
-      if (atom === cb) {
-        logsListeners.add(cb)
-        return () => logsListeners.delete(cb)
-      }
-
-      const { __reatom: meta } = atom
-
-      let lastState = impossible
-      const fn: typeof cb = (state) =>
-        Object.is(lastState, state) || cb((lastState = state))
-
-      let cache = caches.get(meta)
-
-      if (cache === undefined || cache.stale) {
-        ctx.run(() => {
-          trRollbacks.push(() => meta.patch!.listeners.delete(fn))
-          actualize(meta, (patch) => (patch.cause = patch).listeners.add(fn))
-        })
-      } else {
-        cache.listeners.add(fn)
-      }
-
-      fn(caches.get(meta)!.state)
-
-      return () => {
-        if (inTr)
-          throw new Error(`unsubscribe is not allowed during transaction`)
-
-        if ((cache = caches.get(meta)!).listeners.delete(fn)) {
-          if (isStale(cache)) {
-            const queue: Array<AtomCache> = [copyCache(cache, cache, true)]
-            for (const patch of queue) {
-              caches.set(patch.meta, patch)
-              nearEffects.push(...patch.meta.onCleanup)
-
-              for (const parentCache of patch.parents) {
-                parentCache.children.delete(patch.meta)
-                if (isStale(parentCache)) {
-                  queue.push(copyCache(parentCache, patch, true))
-                }
-              }
-            }
-            walkNearEffects()
-            callLateEffects(walkLateEffects)
+      return new Promise<any>((res, rej) => {
+        trRollbacks.push(rej)
+        effects.push((ctx) => {
+          try {
+            res(effect(ctx))
+          } catch (error) {
+            rej(error)
           }
-        }
-      }
+        })
+      })
     },
-    [ACTUAL]: (meta, mutator) => ctx.run(() => actualize(meta, mutator)),
     // @ts-ignore
     spy: null,
+    [INTERNAL]: {
+      actualize,
+      log(cb) {
+        assertFunction(cb)
+
+        logsListeners.add(cb)
+        return () => logsListeners.delete(cb)
+      },
+      read(meta) {
+        return caches.get(meta)
+      },
+      run(cb) {
+        if (inTr) return cb()
+
+        inTr = true
+
+        try {
+          var result = cb()
+
+          if (trLogs.length === 0) return result
+
+          for (let patch of trLogs) {
+            if (patch.listeners.size > 0) actualize(patch.meta)
+          }
+
+          for (const meta of trUnlinks) {
+            const cache = caches.get(meta)!
+            for (const parentCache of cache.parents) {
+              parentCache.children.delete(meta)
+              if (isStale(parentCache)) {
+                parentCache.meta.patch ??
+                  addPatch(copyCache(parentCache, cache))
+                trUnlinks.add(parentCache.meta)
+              }
+            }
+          }
+
+          for (const meta of trLinks) {
+            for (const parentPatch of meta.patch!.parents) {
+              if (isStale(parentPatch)) trLinks.add(parentPatch.meta)
+              parentPatch.children.add(meta)
+            }
+          }
+
+          for (const meta of trUnlinks) {
+            if (isStale(meta.patch!)) {
+              for (const hook of meta.onCleanup) nearEffects.push(hook)
+            }
+          }
+
+          for (const meta of trLinks) {
+            if (!isStale(meta.patch!) && !trUnlinks.has(meta)) {
+              for (const hook of meta.onInit) nearEffects.push(hook)
+            }
+          }
+
+          for (const log of logsListeners) log(trLogs, trError)
+
+          for (const {
+            meta,
+            meta: { patch },
+          } of trLogs) {
+            if (patch !== null) {
+              caches.set(meta, patch!)
+              meta.patch = null
+              const { state } = patch
+              const schedule: Fn<[Fn]> = meta.isAction
+                ? ((patch.state = []),
+                  (cb) => nearEffects.push(() => cb(state)))
+                : (cb) => lateEffects.push(() => cb(caches.get(meta)!.state))
+              patch.listeners.forEach(schedule)
+            }
+          }
+
+          nearEffects.push(...trNearEffects)
+          lateEffects.push(...trLateEffects)
+        } catch (e: any) {
+          trError = e = e instanceof Error ? e : new Error(String(e))
+          for (const log of logsListeners) log(trLogs, e)
+          for (const cb of trRollbacks) cb(e)
+          for (const { meta } of trLogs) meta.patch = null
+
+          throw e
+        } finally {
+          resetTr()
+        }
+
+        walkNearEffects()
+        callLateEffects(walkLateEffects)
+
+        return result
+      },
+      subscribe(atom, cb) {
+        assertFunction(cb)
+
+        const { __reatom: meta } = atom
+
+        let lastState = impossible
+        const fn: typeof cb = (state) =>
+          Object.is(lastState, state) || cb((lastState = state))
+
+        let cache = caches.get(meta)
+
+        if (cache === undefined || isStale(cache)) {
+          ctx[INTERNAL].run(() => {
+            trRollbacks.push(() => meta.patch!.listeners.delete(fn))
+            actualize(meta, (patch) => (patch.cause = patch).listeners.add(fn))
+          })
+        } else {
+          cache.listeners.add(fn)
+        }
+
+        fn(caches.get(meta)!.state)
+
+        return () => {
+          if (inTr)
+            throw new Error(`unsubscribe is not allowed during transaction`)
+
+          if ((cache = caches.get(meta)!).listeners.delete(fn)) {
+            if (isStale(cache)) {
+              const queue: Array<AtomCache> = [copyCache(cache, cache)]
+              for (const patch of queue) {
+                caches.set(patch.meta, patch)
+                nearEffects.push(...patch.meta.onCleanup)
+
+                for (const parentCache of patch.parents) {
+                  parentCache.children.delete(patch.meta)
+                  if (isStale(parentCache)) {
+                    queue.push(copyCache(parentCache, patch))
+                  }
+                }
+              }
+              walkNearEffects()
+              callLateEffects(walkLateEffects)
+            }
+          }
+        }
+      },
+    },
   }
 
   return ctx
 }
+
+export const log = (ctx: Ctx, cb: Fn<[patches: Logs, error: null | Error]>) =>
+  ctx[INTERNAL].log(cb)
+
+export const read = (ctx: Ctx, meta: AtomMeta) => ctx[INTERNAL].read(meta)
+
+export const run: {
+  <T>(ctx: Ctx, cb: Fn<[], T>): T
+} = (ctx, cb) => ctx[INTERNAL].run(cb)
+
+export const subscribe: {
+  <T>(ctx: Ctx, atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
+} = (ctx, atom, cb) => ctx[INTERNAL].subscribe(atom, cb)
 
 export type ActionsReducers<
   State = any,
@@ -583,7 +593,7 @@ export const atom: {
   for (const name in reducers) {
     atom[name] = action(
       (ctx, param) =>
-        ctx[ACTUAL](meta, (patch) => {
+        ctx[INTERNAL].actualize(meta, (patch) => {
           patch.cause = ctx.cause
           patch.state = reducers[name](patch.state, param)
         }).state,
@@ -625,8 +635,8 @@ export const action: {
   }
 
   const action: Action = (ctx: Ctx, ...params: any[]) =>
-    ctx.run(() =>
-      ctx[ACTUAL](meta, (patch) => {
+    ctx[INTERNAL].run(() =>
+      ctx[INTERNAL].actualize(meta, (patch) => {
         patch.cause = ctx.cause ?? patch
         patch.state = [
           ...patch.state,

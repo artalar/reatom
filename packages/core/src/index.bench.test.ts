@@ -86,7 +86,7 @@ async function start(iterations: number) {
 
   const ctxV3 = v3.createContext()
   let resV3 = 0
-  ctxV3.subscribe(hV3, (v) => {
+  v3.subscribe(ctxV3, hV3, (v) => {
     resV3 += v //?
   })
   resV3 = 0

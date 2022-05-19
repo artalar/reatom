@@ -2,7 +2,17 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { mockFn } from '../test_utils'
 
-import { action, atom, AtomMeta, createContext, Fn } from './atom'
+import {
+  action,
+  atom,
+  AtomMeta,
+  createContext,
+  Fn,
+  isStale,
+  log,
+  read,
+  subscribe,
+} from './atom'
 import { shallowEqual, init, atomizeActionLastResult } from './atom.utils'
 
 const getDuration = async (cb: Fn) => {
@@ -23,7 +33,7 @@ test(`action`, () => {
   })
   const ctx = createContext()
 
-  ctx.subscribe(a2, () => {})
+  subscribe(ctx, a2, () => {})
   assert.is(fn.calls.length, 0)
 
   act1(ctx)
@@ -49,15 +59,15 @@ test(`linking`, () => {
   const context = createContext()
   const fn = mockFn()
 
-  context.subscribe((logs) => {
+  log(context, (logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = context.subscribe(a2, fn)
-  var a1Cache = context.read(a1.__reatom)!
-  var a2Cache = context.read(a2.__reatom)!
+  const un = subscribe(context, a2, fn)
+  var a1Cache = read(context, a1.__reatom)!
+  var a2Cache = read(context, a2.__reatom)!
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
@@ -66,10 +76,10 @@ test(`linking`, () => {
 
   un()
 
-  assert.is.not(a1Cache, context.read(a1.__reatom)!)
-  assert.is.not(a2Cache, context.read(a2.__reatom)!)
+  assert.is.not(a1Cache, read(context, a1.__reatom)!)
+  assert.is.not(a2Cache, read(context, a2.__reatom)!)
 
-  assert.is(context.read(a1.__reatom)!.children.size, 0)
+  assert.is(read(context, a1.__reatom)!.children.size, 0)
 })
 
 test(`nested deps`, () => {
@@ -83,17 +93,17 @@ test(`nested deps`, () => {
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
-  context.subscribe((logs) => {
+  log(context, (logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = context.subscribe(a6, fn)
+  const un = subscribe(context, a6, fn)
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      context.read(a.__reatom)!.stale,
+      isStale(read(context, a.__reatom)!),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -101,19 +111,19 @@ test(`nested deps`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.equal(
-    context.read(a1.__reatom)!.children,
+    read(context, a1.__reatom)!.children,
     new Set([a2.__reatom, a3.__reatom]),
   )
   assert.equal(
-    context.read(a2.__reatom)!.children,
+    read(context, a2.__reatom)!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
   assert.equal(
-    context.read(a3.__reatom)!.children,
+    read(context, a3.__reatom)!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  context.subscribe((logs) =>
+  log(context, (logs) =>
     logs.forEach(({ meta }) => touchedAtoms.push(meta)),
   )
 
@@ -128,7 +138,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      context.read(a.__reatom)!.stale,
+      isStale(read(context, a.__reatom)!),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
@@ -141,7 +151,7 @@ test(`async batch`, async () => {
     callLateEffects: (cb) => setTimeout(cb),
   })
   const fn = mockFn()
-  context.subscribe(a, fn)
+  subscribe(context, a, fn)
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
@@ -191,7 +201,7 @@ test(`display name`, () => {
 
   const ctx = createContext()
 
-  const un = ctx.subscribe(displayNameAtom, () => {})
+  const un = subscribe(ctx, displayNameAtom, () => {})
 
   firstNameAtom.change(ctx, 'Joooooooooooohn')
 
@@ -373,9 +383,9 @@ test(`resource`, async () => {
   }, `retry`)
   init(ctx, retryAtom)
 
-  ctx.subscribe(requestTimeAtom, (requestTime) => {
+  subscribe(ctx, requestTimeAtom, (requestTime) => {
     let log = '',
-      { cause } = ctx.read(requestTimeAtom.__reatom)!
+      { cause } = read(ctx, requestTimeAtom.__reatom)!
     while (cause) {
       log += `${cause.meta.name}`
       cause = cause === cause.cause ? null : cause.cause
