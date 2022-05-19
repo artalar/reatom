@@ -67,7 +67,7 @@ export const onChange: {
 } = (ctx, atom, handler) => {
   const state = ctx.spy(atom)
   const prevCache = ctx
-    .read(ctx[`👀`]!.meta)
+    .read(ctx.cause!.meta)
     ?.parents.find((parent) => parent.meta === atom.__reatom)
 
   if (prevCache === undefined || !Object.is(prevCache.state, state)) {

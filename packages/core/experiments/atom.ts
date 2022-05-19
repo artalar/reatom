@@ -76,6 +76,7 @@ const ACTUAL = `🙊`
 
 /** Main context of data storing and effects processing */
 export interface Ctx {
+  cause: null | AtomCache
   get<T>(atom: Atom<T>): T
   read(meta: AtomMeta): undefined | AtomCache
   run<T>(cb: Fn<[], T>): T
@@ -85,8 +86,6 @@ export interface Ctx {
 
   /** @private  */
   [ACTUAL](meta: AtomMeta, mutator?: Fn<[AtomCache]>): AtomCache
-  /** @private  */
-  [CAUSE]: null | AtomCache
 }
 
 export interface CtxSpy extends Ctx {
@@ -120,7 +119,7 @@ export interface AtomMeta<State = any> {
 export interface AtomCache<State = any> {
   state: State
   readonly meta: AtomMeta
-  cause: Ctx[typeof CAUSE]
+  cause: Ctx[`cause`]
   stale: boolean
   parents: Array<AtomCache>
   readonly children: Set<AtomMeta>
@@ -169,6 +168,32 @@ const assertFunction = (thing: any) => {
     throw new Error(`Invalid "${typeof thing}", function expected`)
   }
 }
+
+const copyCache = (
+  cache: AtomCache,
+  cause: AtomCache[`cause`],
+  stale = cache.stale,
+) => ({
+  state: cache.state,
+  meta: cache.meta,
+  cause,
+  stale,
+  parents: cache.parents,
+  children: cache.children,
+  listeners: cache.listeners,
+})
+
+const copyCtx = (ctx: Ctx, cause: Ctx[`cause`]): Ctx => ({
+  cause: cause,
+  get: ctx.get,
+  read: ctx.read,
+  run: ctx.run,
+  schedule: ctx.schedule,
+  subscribe: ctx.subscribe,
+  [ACTUAL]: ctx[ACTUAL],
+  // @ts-expect-error
+  spy: ctx.spy,
+})
 
 export interface ContextOptions {
   /** Use it to delay late effects such as subscriptions notification */
@@ -238,7 +263,7 @@ export const createContext = ({
 
         if (
           childCache.cause !== null &&
-          addPatch({ ...childCache, cause: null }).listeners.size === 0
+          addPatch(copyCache(childCache, null)).listeners.size === 0
         )
           queue.push(childCache.children)
       })
@@ -258,29 +283,24 @@ export const createContext = ({
     ) {
       patch.parents = []
 
-      patch.meta.computer!(
-        {
-          ...ctx,
-          [CAUSE]: patch,
-          spy(atom: Atom) {
-            if (done) {
-              throw new Error(
-                `async spy "${atom.__reatom.name}" in "${patch.meta.name}")`,
-              )
-            }
+      // @ts-expect-error
+      const ctxSpy: CtxSpy = copyCtx(ctx, patch)
+      ctxSpy.spy = (atom: Atom) => {
+        if (done) {
+          throw new Error(
+            `async spy "${atom.__reatom.name}" in "${patch.meta.name}")`,
+          )
+        }
 
-            const depPatch = actualize(atom.__reatom)
-            const length = patch.parents.push(depPatch)
+        const depPatch = actualize(atom.__reatom)
+        const length = patch.parents.push(depPatch)
 
-            isParentsChanged ||=
-              length > parents.length ||
-              depPatch.meta !== parents[length - 1].meta
+        isParentsChanged ||=
+          length > parents.length || depPatch.meta !== parents[length - 1].meta
 
-            return depPatch.state
-          },
-        },
-        patch,
-      )
+        return depPatch.state
+      }
+      patch.meta.computer!(ctxSpy, patch)
 
       done = true
 
@@ -307,7 +327,7 @@ export const createContext = ({
         listeners: new Set(),
       }))
 
-    patch ??= addPatch({ ...cache!, cause: null })
+    patch ??= addPatch(copyCache(cache, null))
 
     let { state } = patch
     let isParentsChanged = false
@@ -333,6 +353,7 @@ export const createContext = ({
   }
 
   const ctx: Ctx = {
+    cause: null,
     get: ({ __reatom: meta }) => ctx.run(() => actualize(meta).state),
     read: (meta) => caches.get(meta),
     run(cb) {
@@ -350,14 +371,11 @@ export const createContext = ({
         }
 
         for (const meta of trUnlinks) {
-          const cache = caches.get(meta)
-          if (cache === undefined) continue
-          for (let parentCache of cache.parents) {
+          const cache = caches.get(meta)!
+          for (const parentCache of cache.parents) {
             parentCache.children.delete(meta)
             if (isStale(parentCache)) {
-              if (parentCache.meta.patch === null) {
-                addPatch({ ...caches.get(parentCache.meta)!, cause: cache })
-              }
+              parentCache.meta.patch ?? addPatch(copyCache(parentCache, cache))
               trUnlinks.add(parentCache.meta)
               trHooks.add(parentCache.meta)
             }
@@ -470,9 +488,7 @@ export const createContext = ({
 
         if ((cache = caches.get(meta)!).listeners.delete(fn)) {
           if (isStale(cache)) {
-            const queue: Array<AtomCache> = [
-              { ...cache, stale: true, cause: cache },
-            ]
+            const queue: Array<AtomCache> = [copyCache(cache, cache, true)]
             for (const patch of queue) {
               caches.set(patch.meta, patch)
               nearEffects.push(...patch.meta.onCleanup)
@@ -480,7 +496,7 @@ export const createContext = ({
               for (const parentCache of patch.parents) {
                 parentCache.children.delete(patch.meta)
                 if (isStale(parentCache)) {
-                  queue.push({ ...parentCache, stale: true, cause: patch })
+                  queue.push(copyCache(parentCache, patch, true))
                 }
               }
             }
@@ -491,7 +507,6 @@ export const createContext = ({
       }
     },
     [ACTUAL]: (meta, mutator) => ctx.run(() => actualize(meta, mutator)),
-    [CAUSE]: null,
     // @ts-ignore
     spy: null,
   }
@@ -563,18 +578,20 @@ export const atom: {
     patch: null,
   }
 
-  const atom: Rec = { ...reducers, __reatom: meta }
+  const atom: Rec = {}
 
   for (const name in reducers) {
     atom[name] = action(
       (ctx, param) =>
         ctx[ACTUAL](meta, (patch) => {
-          patch.cause = ctx[CAUSE]
+          patch.cause = ctx.cause
           patch.state = reducers[name](patch.state, param)
         }).state,
       `${meta.name}.${name}`,
     )
   }
+
+  atom.__reatom = meta
 
   // @ts-ignore
   return atom
@@ -610,10 +627,10 @@ export const action: {
   const action: Action = (ctx: Ctx, ...params: any[]) =>
     ctx.run(() =>
       ctx[ACTUAL](meta, (patch) => {
-        patch.cause = ctx[CAUSE] ?? patch
+        patch.cause = ctx.cause ?? patch
         patch.state = [
           ...patch.state,
-          (fn as Fn)({ ...ctx, [CAUSE]: patch }, ...params),
+          (fn as Fn)(copyCtx(ctx, patch), ...params),
         ]
       }).state.at(-1),
     )
