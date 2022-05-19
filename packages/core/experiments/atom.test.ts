@@ -2,29 +2,46 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { mockFn } from '../test_utils'
 
-import {
-  action,
-  Action,
-  atom,
-  Atom,
-  AtomCache,
-  AtomMeta,
-  AtomMutable,
-  createContext,
-  Ctx,
-  Rec,
-} from './atom'
-import {
-  getPrev,
-  shallowEqual,
-  patchesToCollection,
-  subscribeOnce,
-  actionAtom,
-} from './atom.utils'
+import { action, atom, AtomMeta, createContext, Fn } from './atom'
+import { shallowEqual, init, atomizeActionLastResult } from './atom.utils'
 
-// -----------------------------------------------------------------------------
-// TESTS
-// -----------------------------------------------------------------------------
+const getDuration = async (cb: Fn) => {
+  const start = Date.now()
+  await cb()
+  return Date.now() - start
+}
+
+test(`action`, () => {
+  const act1 = action()
+  const act2 = action()
+  const fn = mockFn()
+  const a1 = atom(0)
+  const a2 = atom((ctx) => {
+    ctx.spy(a1)
+    ctx.spy(act1).forEach(() => fn(1))
+    ctx.spy(act2).forEach(() => fn(2))
+  })
+  const ctx = createContext()
+
+  ctx.subscribe(a2, () => {})
+  assert.is(fn.calls.length, 0)
+
+  act1(ctx)
+  assert.is(fn.calls.length, 1)
+
+  act1(ctx)
+  assert.is(fn.calls.length, 2)
+
+  act2(ctx)
+  assert.is(fn.calls.length, 3)
+  assert.equal(
+    fn.calls.map(({ i }) => i[0]),
+    [1, 1, 2],
+  )
+
+  a1.change(ctx, (s) => s + 1)
+  assert.is(fn.calls.length, 3)
+})
 
 test(`linking`, () => {
   const a1 = atom(0, `a1`)
@@ -32,7 +49,7 @@ test(`linking`, () => {
   const context = createContext()
   const fn = mockFn()
 
-  context.log((logs) => {
+  context.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
@@ -66,7 +83,7 @@ test(`nested deps`, () => {
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
-  context.log((logs) => {
+  context.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
@@ -96,9 +113,13 @@ test(`nested deps`, () => {
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  context.log((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
+  context.subscribe((logs) =>
+    logs.forEach(({ meta }) => touchedAtoms.push(meta)),
+  )
 
-  a1.change(context, 1)
+  try {
+    a1.change(context, 1)
+  } catch (error) {}
 
   assert.is(fn.calls.length, 2)
   assert.is(touchedAtoms.length, new Set(touchedAtoms).size)
@@ -114,66 +135,118 @@ test(`nested deps`, () => {
   }
 })
 
-test.run()
+test(`async batch`, async () => {
+  const a = atom(0)
+  const context = createContext({
+    callLateEffects: (cb) => setTimeout(cb),
+  })
+  const fn = mockFn()
+  context.subscribe(a, fn)
 
-// resourceExample()
-async function resourceExample() {
-  const model: {
-    <T extends Rec<Atom>>(name: string, model: T): {
-      // make all atoms readonly
-      [K in keyof T]: T[K] extends Action<any, any>
-        ? T[K]
-        : T[K] extends Atom<infer State>
-        ? Atom<State>
-        : T[K]
-    }
-  } = (name, model) => {
-    for (const key in model) {
-      const el = model[key]
+  assert.is(fn.calls.length, 1)
+  assert.is(fn.lastInput(), 0)
 
-      // @ts-expect-error
-      el.__reatom.name = `${key}__${name}`
+  a.change(context, (s) => s + 1)
+  a.change(context, (s) => s + 1)
+  await Promise.resolve()
+  a.change(context, (s) => s + 1)
 
-      if (typeof el !== 'function') {
-        // @ts-expect-error
-        model[key] = { __reatom: el.__reatom }
+  assert.is(fn.calls.length, 1)
 
-        for (const k in el) {
-          if (typeof el[k] === 'function') {
-            // @ts-expect-error
-            el[k].__reatom.name = `${k}__${el.__reatom.name}`
-          }
-        }
-      }
-    }
+  await new Promise((r) => setTimeout(r))
 
-    return model as any
-  }
+  assert.is(fn.calls.length, 2)
+  assert.is(fn.lastInput(), 3)
+})
 
+test(`display name`, () => {
+  const firstNameAtom = atom('John', `firstName`)
+  const lastNameAtom = atom('Doe', `lastName`)
+  const isFirstNameShortAtom = atom(
+    ({ spy }) => spy(firstNameAtom).length < 10,
+    `isFirstNameShort`,
+  )
+  const fullNameAtom = atom(
+    ({ spy }) => `${spy(firstNameAtom)} ${spy(lastNameAtom)}`,
+    `fullName`,
+  )
+  const displayNameAtom = atom(
+    ({ spy }) =>
+      spy(isFirstNameShortAtom) ? spy(fullNameAtom) : spy(firstNameAtom),
+    `displayName`,
+  )
+
+  fullNameAtom.__reatom.onInit.push(() => {
+    'init' //?
+  })
+  fullNameAtom.__reatom.onCleanup.push(() => {
+    'cleanup' //?
+  })
+  displayNameAtom.__reatom.onInit.push(() => {
+    'init' //?
+  })
+  displayNameAtom.__reatom.onCleanup.push(() => {
+    'cleanup' //?
+  })
+
+  const ctx = createContext()
+
+  const un = ctx.subscribe(displayNameAtom, () => {})
+
+  firstNameAtom.change(ctx, 'Joooooooooooohn')
+
+  try {
+    firstNameAtom.change(ctx, 'Jooohn')
+  } catch (error) {}
+
+  un()
+})
+
+test(`resource`, async () => {
   const resource = <State, Params>(
     name: string,
     initState: State,
     fetcher: (state: State, params: Params) => Promise<State>,
-    isEqual = shallowEqual,
+    {
+      isEqual = shallowEqual,
+      fetchOnInit = false,
+    }: {
+      isEqual?: typeof shallowEqual
+      fetchOnInit?: Params extends undefined ? boolean : false
+    } = {},
   ) => {
-    const paramsAtom = atom(Symbol() as any as Params)
-    const versionAtom = atom(0)
-    const dataAtom = atom(initState)
-    const loadingAtom = atom(false)
-    const errorAtom = atom<null | Error>(null)
+    const initParams = Symbol() as any
+    const paramsAtom = atom(initParams as Params, {
+      name: `${name}ResourceParams`,
+      isInspectable: false,
+    })
+    const versionAtom = atom(0, {
+      name: `${name}ResourceVersion`,
+      isInspectable: false,
+    })
+    const dataAtom = atom(initState, `${name}ResourceData`)
+    const loadingAtom = atom(false, {
+      reducers: { start: () => true, end: () => false },
+      name: `${name}ResourceLoading`,
+    })
+    const errorAtom = atom<null | Error>(null, `${name}ResourceError`)
 
     const refetch = action(async (ctx, params: Params) => {
       paramsAtom.change(ctx, params)
       const version = versionAtom.change(ctx, (s) => s + 1)
       const isLast = () => version === ctx.get(versionAtom)
 
-      loadingAtom.change(ctx, true)
+      loadingAtom.start(ctx)
       errorAtom.change(ctx, null)
 
       await ctx.schedule()
 
       try {
-        const newState = await fetcher(ctx.get(dataAtom), params)
+        const newState = await fetcher(
+          ctx.get(dataAtom),
+          // @ts-expect-error
+          params === initParams ? undefined : params,
+        )
 
         if (isLast()) onDone(ctx, newState)
 
@@ -186,46 +259,49 @@ async function resourceExample() {
 
         throw err
       }
-    })
+    }, `${name}Resource.refetch`)
 
-    const refetchAtom = actionAtom(refetch)
+    const refetchPromiseAtom = atomizeActionLastResult(refetch)
 
     const fetch = action(async (ctx, params: Params): Promise<State> => {
       return isEqual(ctx.get(paramsAtom), params)
         ? ctx.get(loadingAtom)
-          ? ctx.get(refetchAtom)!
+          ? ctx.get(refetchPromiseAtom)!
           : ctx.get(dataAtom)
         : refetch(ctx, params)
-    })
+    }, `${name}Resource.fetch`)
 
     const onDone = action((ctx, data: State): State => {
-      loadingAtom.change(ctx, false)
+      loadingAtom.end(ctx)
       dataAtom.change(ctx, data)
 
       return data
-    })
+    }, `${name}Resource.onDone`)
 
     const onError = action((ctx, err: Error): Error => {
-      loadingAtom.change(ctx, false)
+      loadingAtom.end(ctx)
       errorAtom.change(ctx, err)
 
       return err
-    })
+    }, `${name}Resource.onError`)
 
     const cancel = action((ctx): void => {
-      loadingAtom.change(ctx, false)
+      loadingAtom.end(ctx)
       versionAtom.change(ctx, (s) => s + 1)
-    })
+    }, `${name}Resource.cancel`)
 
     const retry = action((ctx): Promise<State> => {
       return refetch(ctx, ctx.get(paramsAtom))
-    })
+    }, `${name}Resource.retry`)
 
-    // dataAtom.__reatom.onInit.push((ctx) => {
-    //   refetch(ctx)
-    // })
+    if (fetchOnInit) {
+      dataAtom.__reatom.onInit.push((ctx) => {
+        // @ts-expect-error
+        refetch(ctx)
+      })
+    }
 
-    return model(name, {
+    return {
       cancel,
       dataAtom,
       changeData: dataAtom.change,
@@ -235,9 +311,9 @@ async function resourceExample() {
       onDone,
       onError,
       refetch,
-      refetchAtom,
+      refetchAtom: refetchPromiseAtom,
       retry,
-    })
+    }
   }
 
   const ctx = createContext()
@@ -260,22 +336,24 @@ async function resourceExample() {
     new Array<ImageData>(),
     async (state, page: void | number = 0) => {
       if (i++ === 0) throw new Error(`just for test`)
-      return fetch(
+      const result = await fetch(
         `https://api.artic.edu/api/v1/artworks?fields=image_id,title&page=${page}&limit=${10}`,
       )
         .then<{ data: Array<ImageData> }>((r) => r.json())
         .then(({ data }) => data.filter((el) => el.image_id))
+
+      return result
     },
   )
 
-  const startAtom = atom(NaN)
-  const endAtom = atom(NaN)
+  const startAtom = atom(NaN, `requestTimeStartAtom`)
+  const endAtom = atom(NaN, `requestTimeEndAtom`)
   const requestTimeAtom = atom((ctx, state = 0) => {
-    ctx.spy(imagesResource.refetch).forEach((promise) => {
+    ctx.spy(imagesResource.refetch).forEach((refetchData) => {
       startAtom.change(ctx, Date.now())
     })
 
-    ctx.spy(imagesResource.onDone).forEach(() => {
+    ctx.spy(imagesResource.onDone).forEach((onDoneData) => {
       state = endAtom.change(ctx, Date.now()) - ctx.get(startAtom)
     })
 
@@ -283,106 +361,100 @@ async function resourceExample() {
   }, `requestTime`)
 
   const retryAtom = atom((ctx, state = 0) => {
-    if (ctx.spy(imagesResource.onError).some(() => true) && state < 3) {
+    if (ctx.spy(imagesResource.onError).length && state < 3) {
+      ctx.spy(imagesResource.onError) //?
       state++
       imagesResource.retry(ctx)
     }
-    if (ctx.spy(imagesResource.onDone).some(() => true)) {
+    if (ctx.spy(imagesResource.onDone).length) {
       state = 0
     }
     return state
   }, `retry`)
+  init(ctx, retryAtom)
 
   ctx.subscribe(requestTimeAtom, (requestTime) => {
-    // console.log(cause)
-    // onDone__images <- refetch__images <- retry__images
-    //  <- retry <- onError__images <- refetch__images <- fetch__images <- external call
-  })
-  ctx.subscribe(retryAtom, () => {})
-
-  imagesResource.fetch(ctx).catch(() => null)
-}
-
-// timerExample()
-function timerExample() {
-  const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
-
-  const timerAtom = atom(0)
-
-  const intervalAtom = atom(1000, {
-    reducers: {
-      setSeconds: (state, seconds: number) => seconds * 1000,
-    },
-  })
-
-  const versionAtom = atom(0)
-
-  const startTimer = action(async (ctx, delayInSeconds: number) => {
-    const version = versionAtom.change(ctx, (s) => s + 1)
-    const delay = delayInSeconds * 1000
-    const start = Date.now()
-    const target = delay + start
-    let remains = delay
-
-    timerAtom.change(ctx, remains)
-
-    await ctx.schedule()
-
-    while (remains > 0) {
-      await sleep(Math.min(remains, ctx.get(intervalAtom)))
-
-      if (version !== ctx.get(versionAtom)) return
-
-      timerAtom.change(ctx, (remains = target - Date.now()))
+    let log = '',
+      { cause } = ctx.read(requestTimeAtom.__reatom)!
+    while (cause) {
+      log += `${cause.meta.name}`
+      cause = cause === cause.cause ? null : cause.cause
+      if (cause) log += ` <-- `
     }
 
-    timerAtom.change(ctx, 0)
+    console.log(log)
   })
 
-  const stopTimer = action((ctx) => {
-    versionAtom.change(ctx, (s) => s + 1)
-    timerAtom.change(ctx, 0)
-  })
-}
+  await imagesResource.fetch(ctx).catch(() => null)
+})
 
-// displayNameExample()
-function displayNameExample() {
-  const firstNameAtom = atom('John', `firstName`)
-  const lastNameAtom = atom('Doe', `lastName`)
-  const isFirstNameShortAtom = atom(
-    ({ spy }) => spy(firstNameAtom).length < 10,
-    `isFirstNameShort`,
-  )
-  const fullNameAtom = atom(
-    ({ spy }) => `${spy(firstNameAtom)} ${spy(lastNameAtom)}`,
-    `fullName`,
-  )
-  const displayNameAtom = atom(
-    ({ spy }) =>
-      spy(isFirstNameShortAtom) ? spy(fullNameAtom) : spy(firstNameAtom),
-    `displayName`,
-  )
+test(`timer`, async () => {
+  const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
-  fullNameAtom.__reatom.onInit.push(() => {
-    console.log('init')
-  })
-  fullNameAtom.__reatom.onCleanup.push(() => {
-    console.log('cleanup')
-  })
-  displayNameAtom.__reatom.onInit.push(() => {
-    console.log('init')
-  })
-  displayNameAtom.__reatom.onCleanup.push(() => {
-    console.log('cleanup')
-  })
+  const createTimerModel = (name: string) => {
+    const timerAtom = atom(0, `${name}Timer`)
 
+    const intervalAtom = atom(1000, {
+      reducers: {
+        setSeconds: (state, seconds: number) => seconds * 1000,
+      },
+      name: `${name}TimerInterval`,
+    })
+
+    const versionAtom = atom(0, `${name}TimerVersion`)
+
+    const startTimer = action(async (ctx, delayInSeconds: number) => {
+      const version = versionAtom.change(ctx, (s) => s + 1)
+      const delay = delayInSeconds * 1000
+      const start = Date.now()
+      const target = delay + start
+      let remains = delay
+
+      timerAtom.change(ctx, remains)
+
+      await ctx.schedule()
+
+      while (remains > 0) {
+        await sleep(Math.min(remains, ctx.get(intervalAtom)))
+
+        if (version !== ctx.get(versionAtom)) return
+
+        timerAtom.change(ctx, (remains = target - Date.now()))
+      }
+
+      timerAtom.change(ctx, 0)
+    }, `${name}StartTimer`)
+
+    const stopTimer = action((ctx) => {
+      versionAtom.change(ctx, (s) => s + 1)
+      timerAtom.change(ctx, 0)
+    }, `${name}StopTimer`)
+
+    return {
+      timerAtom,
+      intervalAtom,
+      startTimer,
+      stopTimer,
+    }
+  }
+
+  const timerModel = createTimerModel(`test`)
   const ctx = createContext()
 
-  const un = ctx.subscribe(displayNameAtom, () => {})
+  timerModel.intervalAtom.setSeconds(ctx, 0.001)
 
-  firstNameAtom.change(ctx, 'Joooooooooooohn')
+  var target = 50
+  var duration = await getDuration(() =>
+    timerModel.startTimer(ctx, target / 1000),
+  )
+  assert.ok(duration >= target)
 
-  firstNameAtom.change(ctx, 'Jooohn')
+  var target = 50
+  var [duration] = await Promise.all([
+    getDuration(() => timerModel.startTimer(ctx, target / 1000)),
+    sleep(target / 2).then(() => timerModel.stopTimer(ctx)),
+  ])
+  assert.ok(duration >= target / 2 && duration < target)
+})
 
-  un()
-}
+test.run()

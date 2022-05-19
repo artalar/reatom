@@ -12,6 +12,23 @@ import {
   Unsubscribe,
 } from './atom'
 
+export const init = (ctx: Ctx, atom: Atom): Unsubscribe =>
+  ctx.subscribe(atom, () => {})
+
+export const atomizeActionLastResult: {
+  <T>(action: Action<any, T>): Atom<undefined | T>
+} = (action) => {
+  const lastResultAtom = atom<undefined | ActionResult<typeof action>>(
+    undefined,
+    `${action.__reatom.name}.lastResultAtom`,
+  )
+  action.__reatom.onUpdate.push((ctx) =>
+    lastResultAtom.change(ctx, action.__reatom.patch!.state.at(-1)),
+  )
+
+  return lastResultAtom
+}
+
 export const isObject = (thing: any): thing is Record<keyof any, any> =>
   typeof thing === 'object' && thing !== null
 
@@ -44,17 +61,6 @@ export const subscribeOnce: {
       un()
     })
   })
-
-export const actionAtom: {
-  <T>(action: Action<any, T>): Atom<null | T>
-} = (action) => {
-  const a = atom<null | ActionResult<typeof action>>(null)
-  action.__reatom.onUpdate.push((ctx) =>
-    a.change(ctx, ctx.get(action).at(-1) ?? null),
-  )
-
-  return a
-}
 
 export const onChange: {
   <T>(ctx: CtxSpy, atom: Atom<T>, handler: Fn<[T, undefined | T]>): void
