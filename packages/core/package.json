@@ -10,6 +10,9 @@
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "sideEffects": false,
+  "browserslist": [
+    "last 4 chrome versions"
+  ],
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "build": "cross-env fixme=fixme microbundle",
