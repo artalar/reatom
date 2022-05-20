@@ -3,7 +3,13 @@ import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_atom2 } from 'mol_atom2_all'
-import { observable, computed, autorun, configure } from 'mobx'
+import {
+  observable,
+  computed,
+  autorun,
+  configure,
+  makeAutoObservable,
+} from 'mobx'
 // @ts-ignore
 import * as solid from 'solid-js/dist/solid.cjs'
 import S, { DataSignal } from 's-js'
@@ -196,6 +202,40 @@ async function start(iterations: number) {
   autorun(() => (xRes += xH.get()))
   xRes = 0
 
+  const xProxy = new (class {
+    constructor() {
+      makeAutoObservable(this)
+    }
+    entry = 0
+    get a() {
+      return this.entry
+    }
+    get b() {
+      return this.a + 1
+    }
+    get c() {
+      return this.a + 1
+    }
+    get d() {
+      return this.b + this.c
+    }
+    get e() {
+      return this.d + 1
+    }
+    get f() {
+      return this.d + this.e
+    }
+    get g() {
+      return this.d + this.e
+    }
+    get h() {
+      return this.f + this.g
+    }
+  })()
+  let xpRes = 0
+  autorun(() => (xpRes += xProxy.h))
+  xpRes = 0
+
   const [solidEntry, solidSet] = solid.createSignal(0)
   const solidA = solid.createMemo(() => solidEntry())
   const solidB = solid.createMemo(() => solidA() + 1)
@@ -256,6 +296,7 @@ async function start(iterations: number) {
   const cellxLogs = new Array<number>()
   const molLogs = new Array<number>()
   const mobxLogs = new Array<number>()
+  const mobxProxyLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
@@ -306,6 +347,13 @@ async function start(iterations: number) {
     const startMobx = performance.now()
     xEntry.set(i)
     mobxLogs.push(performance.now() - startMobx)
+
+    const startMobxProxy = performance.now()
+    xProxy.entry = i
+    mobxProxyLogs.push(performance.now() - startMobxProxy)
+
+    // uncomment to see interesting results (:
+    // await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
@@ -323,6 +371,7 @@ async function start(iterations: number) {
       cRes,
       mRes,
       xRes,
+      xpRes,
     ]).size !== 1
   ) {
     console.log(`ERROR!`)
@@ -339,6 +388,7 @@ async function start(iterations: number) {
       cRes,
       mRes,
       xRes,
+      xpRes,
     })
   }
 
@@ -355,6 +405,7 @@ async function start(iterations: number) {
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     mobx: log(mobxLogs),
+    mobxProxy: log(mobxProxyLogs),
   })
 }
 
