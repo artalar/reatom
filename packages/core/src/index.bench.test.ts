@@ -13,6 +13,7 @@ import {
 // @ts-ignore
 import * as solid from 'solid-js/dist/solid.cjs'
 import S, { DataSignal } from 's-js'
+import * as frpts from '@frp-ts/core'
 import {
   createAction,
   createReducer,
@@ -118,6 +119,17 @@ async function start(iterations: number) {
     }),
   )
   wRes = 0
+
+  const frptsEntry = frpts.newAtom(0)
+  const frptsA = frpts.combine(frptsEntry, (v) => v)
+  const frptsB = frpts.combine(frptsA, (a) => a + 1)
+  const frptsC = frpts.combine(frptsA, (a) => a + 1)
+  const frptsD = frpts.combine(frptsB, frptsC, (b, c) => b + c)
+  const frptsE = frpts.combine(frptsD, (d) => d + 1)
+  const frptsF = frpts.combine(frptsD, frptsE, (d, e) => d + e)
+  const frptsG = frpts.combine(frptsD, frptsE, (d, e) => d + e)
+  const frptsH = frpts.combine(frptsF, frptsG, (f, g) => f + g)
+  let frptsRes = 0
 
   const cEntry = cellx(0)
   const cA = cellx(() => cEntry())
@@ -245,6 +257,7 @@ async function start(iterations: number) {
   const solidLogs = new Array<number>()
   const sLogs = new Array<number>()
   const wonkaLogs = new Array<number>()
+  const frptsLogs = new Array<number>()
   const cellxLogs = new Array<number>()
   const molLogs = new Array<number>()
   const mobxLogs = new Array<number>()
@@ -278,6 +291,11 @@ async function start(iterations: number) {
     wEntry.next(i)
     wonkaLogs.push(performance.now() - startWonka)
 
+    const startFrpts = performance.now()
+    frptsEntry.set(i)
+    frptsRes += frptsH.get()
+    frptsLogs.push(performance.now() - startFrpts)
+
     const startCellx = performance.now()
     cEntry(i)
     cRes += cH()
@@ -310,6 +328,7 @@ async function start(iterations: number) {
       solidRes,
       sRes,
       wRes,
+      frptsRes,
       cRes,
       mRes,
       xRes,
@@ -325,6 +344,7 @@ async function start(iterations: number) {
       solidRes,
       sRes,
       wRes,
+      frptsRes,
       cRes,
       mRes,
       xRes,
@@ -342,6 +362,7 @@ async function start(iterations: number) {
     // s: log(sLogs),
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
+    frpts: log(frptsLogs),
     mobx: log(mobxLogs),
     // this result is not so interesting
     // mobxProxy: log(mobxProxyLogs),

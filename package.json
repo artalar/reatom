@@ -26,6 +26,7 @@
   "devDependencies": {
     "@actions/github": "^5.0.0",
     "@babel/preset-typescript": "^7.16.7",
+    "@frp-ts/core": "^1.0.0-alpha.15",
     "@jsdevtools/npm-publish": "^1.4.3",
     "@ngrx/store": "^13.0.2",
     "@size-limit/preset-small-lib": "^7.0.8",
