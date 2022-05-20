@@ -340,7 +340,6 @@ async function start(iterations: number) {
     solid: log(solidLogs),
     // TODO s-js is too fast, we missed something?
     // s: log(sLogs),
-    mol: log(molLogs),
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     mobx: log(mobxLogs),
