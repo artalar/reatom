@@ -2,7 +2,7 @@ import { performance } from 'perf_hooks'
 import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
-import { $mol_atom2 } from 'mol_atom2_all'
+import { $mol_wire_atom } from 'mol_wire_lib'
 import {
   observable,
   computed,
@@ -128,22 +128,19 @@ async function start(iterations: number) {
   const cF = cellx(() => cD() + cE())
   const cG = cellx(() => cD() + cE())
   const cH = cellx(() => cF() + cG())
+  cH()
   let cRes = 0
 
-  function mAtom<T>(calc: () => T) {
-    const a = new $mol_atom2<T>()
-    a.calculate = calc
-    return a
-  }
-  const mEntry = mAtom(() => 0)
-  const mA = mAtom(() => mEntry.get())
-  const mB = mAtom(() => mA.get() + 1)
-  const mC = mAtom(() => mA.get() + 1)
-  const mD = mAtom(() => mB.get() + mC.get())
-  const mE = mAtom(() => mD.get() + 1)
-  const mF = mAtom(() => mD.get() + mE.get())
-  const mG = mAtom(() => mD.get() + mE.get())
-  const mH = mAtom(() => mF.get() + mG.get())
+  const mEntry = new $mol_wire_atom('mEntry', (next: number = 0) => next)
+  const mA = new $mol_wire_atom('mA', () => mEntry.sync())
+  const mB = new $mol_wire_atom('mB', () => mA.sync() + 1)
+  const mC = new $mol_wire_atom('mC', () => mA.sync() + 1)
+  const mD = new $mol_wire_atom('mD', () => mB.sync() + mC.sync())
+  const mE = new $mol_wire_atom('mE', () => mD.sync() + 1)
+  const mF = new $mol_wire_atom('mF', () => mD.sync() + mE.sync())
+  const mG = new $mol_wire_atom('mG', () => mD.sync() + mE.sync())
+  const mH = new $mol_wire_atom('mH', () => mF.sync() + mG.sync())
+  mH.sync()
   let mRes = 0
 
   const xEntry = observable.box(0)
@@ -287,8 +284,8 @@ async function start(iterations: number) {
     cellxLogs.push(performance.now() - startCellx)
 
     const startMol = performance.now()
-    mEntry.push(i)
-    mRes += mH.get()
+    mEntry.put(i)
+    mRes += mH.sync()
     molLogs.push(performance.now() - startMol)
 
     const startMobx = performance.now()
@@ -338,6 +335,7 @@ async function start(iterations: number) {
   printLogs({
     reatom3: log(reatomV3Logs),
     effector: log(effectorLogs),
+    $mol_wire: log(molLogs),
     effectorScope: log(effectorScopeLogs),
     solid: log(solidLogs),
     // TODO s-js is too fast, we missed something?
