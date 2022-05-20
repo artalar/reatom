@@ -3,7 +3,16 @@ import * as effector from 'effector'
 import w from 'wonka'
 import { cellx } from 'cellx'
 import { $mol_wire_atom } from 'mol_wire_lib'
-import { observable, computed, autorun, configure } from 'mobx'
+import {
+  observable,
+  computed,
+  autorun,
+  configure,
+  makeAutoObservable,
+} from 'mobx'
+// @ts-ignore
+import * as solid from 'solid-js/dist/solid.cjs'
+import S, { DataSignal } from 's-js'
 import {
   createAction,
   createReducer,
@@ -13,10 +22,8 @@ import {
   Store,
 } from '@ngrx/store'
 
-import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
-import { createPrimitiveAtom } from '@reatom/core/primitives'
-import { combine, map, v3 } from '@reatom/core/experiments'
-// import * as v3 from '../experiments/atom'
+// import * as v3 from '../'
+import * as v3 from '@reatom/core'
 
 configure({ enforceActions: 'never' })
 
@@ -30,47 +37,6 @@ async function start(iterations: number) {
     return w.pipe(source, w.sample(source))
   }
 
-  const a = createAtom(
-    { entry: (payload: number) => payload },
-    ({ onAction }, state = 0) => {
-      // onAction(`entry`, (v) => (state = v % 2 ? state : v + 1))
-      onAction(`entry`, (v) => (state = v))
-      return state
-    },
-    {},
-  )
-
-  const b = createAtom({ a }, ({ get }) => get(`a`) + 1)
-  const c = createAtom({ a }, ({ get }) => get(`a`) + 1)
-  const d = createAtom({ b, c }, ({ get }) => get(`b`) + get(`c`))
-  const e = createAtom({ d }, ({ get }) => get(`d`) + 1)
-  const f = createAtom({ d, e }, ({ get }) => get(`d`) + get(`e`))
-  const g = createAtom({ d, e }, ({ get }) => get(`d`) + get(`e`))
-
-  const h = createAtom({ f, g }, ({ get }) => get(`f`) + get(`g`))
-
-  let res = 0
-  defaultStore.subscribe(h, (v) => {
-    res += v
-  })
-  res = 0
-
-  const aOpt = createPrimitiveAtom(0)
-
-  const bOpt = map(aOpt, (v) => v + 1)
-  const cOpt = map(aOpt, (v) => v + 1)
-  const dOpt = combine([bOpt, cOpt], ([b, c]) => b + c)
-  const eOpt = map(dOpt, (v) => v + 1)
-  const fOpt = combine([dOpt, eOpt], ([d, e]) => d + e)
-  const gOpt = combine([dOpt, eOpt], ([d, e]) => d + e)
-  const hOpt = combine([fOpt, gOpt], ([f, g]) => f + g)
-
-  let resOpt = 0
-  defaultStore.subscribe(hOpt, (v) => {
-    resOpt += v
-  })
-  resOpt = 0
-
   const aV3 = v3.atom(0)
 
   const bV3 = v3.atom(({ spy }) => spy(aV3) + 1)
@@ -83,7 +49,7 @@ async function start(iterations: number) {
 
   const ctxV3 = v3.createContext()
   let resV3 = 0
-  ctxV3.subscribe(hV3, (v) => {
+  v3.subscribe(ctxV3, hV3, (v) => {
     resV3 += v //?
   })
   resV3 = 0
@@ -101,10 +67,15 @@ async function start(iterations: number) {
   const eG = effector.combine(eD, eE, (d, e) => d + e)
   const eH = effector.combine(eF, eG, (h1, h2) => h1 + h2)
   let eRes = 0
-  eH.subscribe((v) => {
-    eRes += v
-  })
+  // // Effector graphs are hot, so all calculations will be performed on each event
+  // // `getState` will be enough
+  // eH.subscribe((v) => {
+  //   eRes += v
+  // })
   eRes = 0
+
+  const eScope = effector.fork()
+  let eScopeRes = 0
 
   const wEntry = w.makeSubject<number>()
   const wA = w.pipe(
@@ -185,6 +156,69 @@ async function start(iterations: number) {
   autorun(() => (xRes += xH.get()))
   xRes = 0
 
+  const xProxy = new (class {
+    constructor() {
+      makeAutoObservable(this)
+    }
+    entry = 0
+    get a() {
+      return this.entry
+    }
+    get b() {
+      return this.a + 1
+    }
+    get c() {
+      return this.a + 1
+    }
+    get d() {
+      return this.b + this.c
+    }
+    get e() {
+      return this.d + 1
+    }
+    get f() {
+      return this.d + this.e
+    }
+    get g() {
+      return this.d + this.e
+    }
+    get h() {
+      return this.f + this.g
+    }
+  })()
+  let xpRes = 0
+  autorun(() => (xpRes += xProxy.h))
+  xpRes = 0
+
+  const [solidEntry, solidSet] = solid.createSignal(0)
+  const solidA = solid.createMemo(() => solidEntry())
+  const solidB = solid.createMemo(() => solidA() + 1)
+  const solidC = solid.createMemo(() => solidA() + 1)
+  const solidD = solid.createMemo(() => solidB() + solidC())
+  const solidE = solid.createMemo(() => solidD() + 1)
+  const solidF = solid.createMemo(() => solidD() + solidE())
+  const solidG = solid.createMemo(() => solidD() + solidE())
+  const solidH = solid.createMemo(() => solidF() + solidG())
+  let solidRes = 0
+  solid.createEffect(() => (solidRes += solidH()))
+  solidRes = 0
+
+  let sRes = 0
+  let sEntry: DataSignal<number>
+  S.root(() => {
+    sEntry = S.data(0)
+    const sA = S(() => sEntry())
+    const sB = S(() => sA() + 1)
+    const sC = S(() => sA() + 1)
+    const sD = S(() => sB() + sC())
+    const sE = S(() => sD() + 1)
+    const sF = S(() => sD() + sE())
+    const sG = S(() => sD() + sE())
+    const sH = S(() => sF() + sG())
+    S(() => (sRes += sH()))
+  })
+  sRes = 0
+
   // const nEntry = createAction('entry', props<{ payload: number }>())
   // const nA = createReducer(
   //   0,
@@ -205,32 +239,40 @@ async function start(iterations: number) {
   // nStore.subscribe(nH, (value) => (nRes = value))
   // nRes = 0
 
-  const reatomLogs = new Array<number>()
-  const reatomOptLogs = new Array<number>()
   const reatomV3Logs = new Array<number>()
   const effectorLogs = new Array<number>()
+  const effectorScopeLogs = new Array<number>()
+  const solidLogs = new Array<number>()
+  const sLogs = new Array<number>()
   const wonkaLogs = new Array<number>()
   const cellxLogs = new Array<number>()
   const molLogs = new Array<number>()
   const mobxLogs = new Array<number>()
+  const mobxProxyLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
-    const startReatom = performance.now()
-    defaultStore.dispatch(a.entry(i))
-    reatomLogs.push(performance.now() - startReatom)
-
-    const startReatomOpt = performance.now()
-    defaultStore.dispatch(aOpt.set(i))
-    reatomOptLogs.push(performance.now() - startReatomOpt)
-
     const startReatomV3 = performance.now()
     aV3.change(ctxV3, i)
     reatomV3Logs.push(performance.now() - startReatomV3)
 
     const startEffector = performance.now()
     eEntry(i)
+    eRes += eH.getState()
     effectorLogs.push(performance.now() - startEffector)
+
+    const startEffectorScope = performance.now()
+    effector.allSettled(eEntry, { scope: eScope, params: i })
+    eScopeRes += eScope.getState(eH)
+    effectorScopeLogs.push(performance.now() - startEffectorScope)
+
+    const startSolid = performance.now()
+    solidSet(i)
+    solidLogs.push(performance.now() - startSolid)
+
+    const sSolid = performance.now()
+    sEntry!(i)
+    sLogs.push(performance.now() - sSolid)
 
     const startWonka = performance.now()
     wEntry.next(i)
@@ -249,25 +291,60 @@ async function start(iterations: number) {
     const startMobx = performance.now()
     xEntry.set(i)
     mobxLogs.push(performance.now() - startMobx)
+
+    const startMobxProxy = performance.now()
+    xProxy.entry = i
+    mobxProxyLogs.push(performance.now() - startMobxProxy)
+
+    // uncomment to see interesting results (:
+    // await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
 
-  if (new Set([res, resOpt, resV3, eRes, wRes, cRes, mRes, xRes]).size !== 1) {
+  if (
+    new Set([
+      resV3,
+      eRes,
+      eScopeRes,
+      solidRes,
+      sRes,
+      wRes,
+      cRes,
+      mRes,
+      xRes,
+      xpRes,
+    ]).size !== 1
+  ) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
-    console.log({ res, resOpt, resV3, eRes, wRes, cRes, mRes, xRes })
+    console.log({
+      resV3,
+      eRes,
+      eScopeRes,
+      solidRes,
+      sRes,
+      wRes,
+      cRes,
+      mRes,
+      xRes,
+      xpRes,
+    })
   }
 
   printLogs({
-    reatom: log(reatomLogs),
-    reatomOpt: log(reatomOptLogs),
-    v3: log(reatomV3Logs),
+    reatom3: log(reatomV3Logs),
     effector: log(effectorLogs),
     $mol_wire: log(molLogs),
+    effectorScope: log(effectorScopeLogs),
+    solid: log(solidLogs),
+    // TODO s-js is too fast, we missed something?
+    // s: log(sLogs),
+    mol: log(molLogs),
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     mobx: log(mobxLogs),
+    mobxProxy: log(mobxProxyLogs),
   })
 }
 
@@ -276,14 +353,14 @@ start(100)
 start(1_000)
 start(10_000)
 
-function printLogs(results: Rec<ReturnType<typeof log>>) {
+function printLogs(results: v3.Rec<ReturnType<typeof log>>) {
   const medFastest = Math.min(...Object.values(results).map(({ med }) => med))
 
   Object.entries(results)
     .sort(([, { med: a }], [, { med: b }]) => a - b)
     .forEach(([name, { min, med, max }]) => {
       console.log(
-        name + ` `.repeat(12 - name.length),
+        name + ` `.repeat(15 - name.length),
         formatPercent(medFastest / med),
         `   `,
         `(${med.toFixed(3)}ms)`,

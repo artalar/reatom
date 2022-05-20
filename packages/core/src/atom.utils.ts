@@ -8,9 +8,28 @@ import {
   CtxSpy,
   Fn,
   Logs,
+  read,
   Rec,
+  subscribe,
   Unsubscribe,
 } from './atom'
+
+export const init = (ctx: Ctx, atom: Atom): Unsubscribe =>
+  subscribe(ctx, atom, () => {})
+
+export const atomizeActionLastResult: {
+  <T>(action: Action<any, T>): Atom<undefined | T>
+} = (action) => {
+  const lastResultAtom = atom<undefined | ActionResult<typeof action>>(
+    undefined,
+    `${action.__reatom.name}.lastResultAtom`,
+  )
+  action.__reatom.onUpdate.push((ctx) =>
+    lastResultAtom.change(ctx, action.__reatom.patch!.state.at(-1)),
+  )
+
+  return lastResultAtom
+}
 
 export const isObject = (thing: any): thing is Record<keyof any, any> =>
   typeof thing === 'object' && thing !== null
@@ -38,31 +57,20 @@ export const subscribeOnce: {
 } = (ctx, atom) =>
   new Promise<any>((r) => {
     let skipFirst = true
-    const un = ctx.subscribe(atom, (value) => {
+    const un = subscribe(ctx, atom, (value) => {
       if (skipFirst) return (skipFirst = false)
       r(value)
       un()
     })
   })
 
-export const actionAtom: {
-  <T>(action: Action<any, T>): Atom<null | T>
-} = (action) => {
-  const a = atom<null | ActionResult<typeof action>>(null)
-  action.__reatom.onUpdate.push((ctx) =>
-    a.change(ctx, ctx.get(action).at(-1) ?? null),
-  )
-
-  return a
-}
-
 export const onChange: {
   <T>(ctx: CtxSpy, atom: Atom<T>, handler: Fn<[T, undefined | T]>): void
 } = (ctx, atom, handler) => {
   const state = ctx.spy(atom)
-  const prevCache = ctx
-    .read(ctx[`👀`]!.meta)
-    ?.parents.find((parent) => parent.meta === atom.__reatom)
+  const prevCache = read(ctx, ctx.cause!.meta)?.parents.find(
+    (parent) => parent.meta === atom.__reatom,
+  )
 
   if (prevCache === undefined || !Object.is(prevCache.state, state)) {
     handler(state, prevCache?.state)
@@ -79,7 +87,7 @@ export const onUpdate: {
   <T>(atom: Atom<T>, handler: Fn<[Ctx, T]>, skipFirst?: boolean): Unsubscribe
 } = (atom, handler, skipFirst = true) => {
   const cb = (ctx: Ctx, cache: AtomCache) => {
-    const prevCache = ctx.read(atom.__reatom)
+    const prevCache = read(ctx, atom.__reatom)
 
     if (prevCache === undefined && skipFirst) return
 
@@ -95,5 +103,5 @@ export const onUpdate: {
 }
 
 export const getPrev = <T>(ctx: Ctx, atom: Atom<T>) => {
-  return ctx.read(atom.__reatom)?.state
+  return read(ctx, atom.__reatom)?.state
 }

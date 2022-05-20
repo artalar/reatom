@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "2.0.19",
+  "version": "3.0.0-beta.1",
   "description": "State manager for both simple and complex applications",
   "source": "src/index.ts",
   "main": "build/index.js",
@@ -12,16 +12,12 @@
   "sideEffects": false,
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
-    "build-src": "cross-env fixme=fixme microbundle",
+    "build": "cross-env fixme=fixme microbundle",
     "build-primitives": "cross-env fixme=fixme microbundle --cwd primitives",
-    "build-experiments": "cross-env fixme=fixme microbundle --cwd experiments",
-    "build": "npm run build-src && npm run build-experiments && npm run build-primitives",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test-src": "cross-env fixme=fixme ts-node src/index.test.ts",
+    "test": "cross-env fixme=fixme ts-node src/atom.test.ts",
     "test-primitives": "cross-env fixme=fixme ts-node primitives/index.test.ts",
-    "test-experiments": "cross-env fixme=fixme ts-node experiments/index.test.ts",
-    "test": "npm run test-src && npm run test-primitives && npm run test-experiments",
     "bench": "cross-env fixme=fixme ts-node src/index.bench.test.ts",
     "prettify": "cross-env fixme=fixme prettier --write '**/*.{js,ts,md}'",
     "prettify:watch": "cross-env fixme=fixme onchange '**/*.{js,ts,md}' -- prettier --write {{changed}}",
@@ -68,7 +64,6 @@
     "/README.md",
     "/package.json",
     "/src",
-    "/experiments",
     "/primitives",
     "/build"
   ]

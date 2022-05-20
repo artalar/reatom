@@ -1,5 +1,3 @@
-import type { Causes } from '@reatom/core'
-
 export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
 export function mockFn<I extends any[], O>(
@@ -25,12 +23,4 @@ export function mockFn<I extends any[], O>(
   )
 
   return _fn
-}
-
-export function parseCauses(causes: Causes): Array<string> {
-  return causes.map((cause) =>
-    typeof cause === 'string'
-      ? cause
-      : `DISPATCH: ${cause.actions.map(({ type }) => type).join(`, `)}`,
-  )
 }
