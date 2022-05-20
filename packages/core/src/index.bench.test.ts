@@ -22,10 +22,8 @@ import {
   Store,
 } from '@ngrx/store'
 
-import { createAtom, defaultStore, Fn, Rec } from '@reatom/core'
-import { createPrimitiveAtom } from '@reatom/core/primitives'
-import { combine, map, v3 } from '@reatom/core/experiments'
-// import * as v3 from '../experiments/atom'
+// import * as v3 from '../'
+import * as v3 from '@reatom/core'
 
 configure({ enforceActions: 'never' })
 
@@ -38,47 +36,6 @@ async function start(iterations: number) {
     // return source
     return w.pipe(source, w.sample(source))
   }
-
-  const a = createAtom(
-    { entry: (payload: number) => payload },
-    ({ onAction }, state = 0) => {
-      // onAction(`entry`, (v) => (state = v % 2 ? state : v + 1))
-      onAction(`entry`, (v) => (state = v))
-      return state
-    },
-    {},
-  )
-
-  const b = createAtom({ a }, ({ get }) => get(`a`) + 1)
-  const c = createAtom({ a }, ({ get }) => get(`a`) + 1)
-  const d = createAtom({ b, c }, ({ get }) => get(`b`) + get(`c`))
-  const e = createAtom({ d }, ({ get }) => get(`d`) + 1)
-  const f = createAtom({ d, e }, ({ get }) => get(`d`) + get(`e`))
-  const g = createAtom({ d, e }, ({ get }) => get(`d`) + get(`e`))
-
-  const h = createAtom({ f, g }, ({ get }) => get(`f`) + get(`g`))
-
-  let res = 0
-  defaultStore.subscribe(h, (v) => {
-    res += v
-  })
-  res = 0
-
-  const aOpt = createPrimitiveAtom(0)
-
-  const bOpt = map(aOpt, (v) => v + 1)
-  const cOpt = map(aOpt, (v) => v + 1)
-  const dOpt = combine([bOpt, cOpt], ([b, c]) => b + c)
-  const eOpt = map(dOpt, (v) => v + 1)
-  const fOpt = combine([dOpt, eOpt], ([d, e]) => d + e)
-  const gOpt = combine([dOpt, eOpt], ([d, e]) => d + e)
-  const hOpt = combine([fOpt, gOpt], ([f, g]) => f + g)
-
-  let resOpt = 0
-  defaultStore.subscribe(hOpt, (v) => {
-    resOpt += v
-  })
-  resOpt = 0
 
   const aV3 = v3.atom(0)
 
@@ -173,7 +130,7 @@ async function start(iterations: number) {
   const cH = cellx(() => cF() + cG())
   let cRes = 0
 
-  function mAtom<T>(calc: Fn<[], T>) {
+  function mAtom<T>(calc: () => T) {
     const a = new $mol_atom2<T>()
     a.calculate = calc
     return a
@@ -285,8 +242,6 @@ async function start(iterations: number) {
   // nStore.subscribe(nH, (value) => (nRes = value))
   // nRes = 0
 
-  const reatomLogs = new Array<number>()
-  const reatomOptLogs = new Array<number>()
   const reatomV3Logs = new Array<number>()
   const effectorLogs = new Array<number>()
   const effectorScopeLogs = new Array<number>()
@@ -303,14 +258,6 @@ async function start(iterations: number) {
     const startReatomV3 = performance.now()
     aV3.change(ctxV3, i)
     reatomV3Logs.push(performance.now() - startReatomV3)
-
-    const startReatom = performance.now()
-    defaultStore.dispatch(a.entry(i))
-    reatomLogs.push(performance.now() - startReatom)
-
-    const startReatomOpt = performance.now()
-    defaultStore.dispatch(aOpt.set(i))
-    reatomOptLogs.push(performance.now() - startReatomOpt)
 
     const startEffector = performance.now()
     eEntry(i)
@@ -360,8 +307,6 @@ async function start(iterations: number) {
 
   if (
     new Set([
-      res,
-      resOpt,
       resV3,
       eRes,
       eScopeRes,
@@ -377,8 +322,6 @@ async function start(iterations: number) {
     console.log(`ERROR!`)
     console.error(`Results is not equal`)
     console.log({
-      res,
-      resOpt,
       resV3,
       eRes,
       eScopeRes,
@@ -393,8 +336,6 @@ async function start(iterations: number) {
   }
 
   printLogs({
-    reatom2: log(reatomLogs),
-    reatom2Opt: log(reatomOptLogs),
     reatom3: log(reatomV3Logs),
     effector: log(effectorLogs),
     effectorScope: log(effectorScopeLogs),
@@ -414,7 +355,7 @@ start(100)
 start(1_000)
 start(10_000)
 
-function printLogs(results: Rec<ReturnType<typeof log>>) {
+function printLogs(results: v3.Rec<ReturnType<typeof log>>) {
   const medFastest = Math.min(...Object.values(results).map(({ med }) => med))
 
   Object.entries(results)

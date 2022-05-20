@@ -1,5 +1,6 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
+import { mockFn } from '../test_utils'
 
 import {
   declareAction,
@@ -57,15 +58,13 @@ test('main api, declareAtom, basics', () => {
   const atom = declareAtom(name, initialState, () => {})
   const state = atom({}, initAction)
 
-  getState(state, atom) === initialState//?
-
   assert.is(getState(state, atom), initialState)
-  expect(
+  assert.ok(
     (() => {
       const keys = Object.keys(state)
       return keys.length === 1 && keys[0].includes(name)
     })(),
-  ).toBe(true)
+  )
   assert.equal(declareAtom([name], initialState, () => {})(), {
     [name]: initialState,
   })
@@ -99,29 +98,29 @@ test('main api, declareAtom, strict uid', () => {
 test('main api, declareAtom, throw error if declareAtom called with an undefined initial state', () => {
   const run = () => declareAtom(['test'], undefined, () => [])
 
-  expect(run).toThrowError(
-    `[reatom] Atom "test". Initial state can't be undefined`,
-  )
+  assert.throws(run, `[reatom] Atom "test". Initial state can't be undefined`)
 })
 
 test('main api, declareAtom, throw error if atom produced undefined value', () => {
   const action = declareAction()
 
-  expect(() =>
-    declareAtom(['myAtom'], {}, (on) => on(action, () => undefined as any))(
-      {},
-      action(),
-    ),
-  ).toThrowError(
+  assert.throws(
+    () =>
+      declareAtom(['myAtom'], {}, (on) => on(action, () => undefined as any))(
+        {},
+        action(),
+      ),
+
     '[reatom] Invalid state. Reducer number 1 in "myAtom" atom returns undefined',
   )
 
-  expect(() =>
-    declareAtom(['test'], 0, (on) => [
-      on(declareAction(), () => 0),
-      on(action, () => undefined as any),
-    ])({}, action()),
-  ).toThrowError(
+  assert.throws(
+    () =>
+      declareAtom(['test'], 0, (on) => [
+        on(declareAction(), () => 0),
+        on(action, () => undefined as any),
+      ])({}, action()),
+
     '[reatom] Invalid state. Reducer number 2 in "test" atom returns undefined',
   )
 })
@@ -136,14 +135,14 @@ test('main api, declareAtom, reducers collisions', () => {
   ])
 
   const store = createStore(counter)
-  const sideEffect = jest.fn()
+  const sideEffect = mockFn()
   store.subscribe(counter, sideEffect)
 
-  expect(sideEffect).toBeCalledTimes(0)
+  assert.is(sideEffect.calls.length, 0)
 
   store.dispatch(increment())
-  expect(sideEffect).toBeCalledTimes(1)
-  expect(sideEffect).toBeCalledWith(3)
+  assert.is(sideEffect.calls.length, 1)
+  assert.is(sideEffect.lastInput(), 3)
 })
 
 test('main api, createStore', () => {
@@ -179,10 +178,10 @@ test('main api, createStore', () => {
   assert.is(store.getState(countDoubled), 0)
   assert.is(store.getState(count), 0)
 
-  expect(
+  assert.ok(
     store.getState(root) !==
       (store.dispatch(increment()), store.getState(root)),
-  ).toBe(true)
+  )
   assert.equal(store.getState(root), {
     count: 1,
     countDoubled: 2,
@@ -196,12 +195,12 @@ test('main api, createStore', () => {
   assert.is(store.getState(countDoubled), 2)
   assert.is(store.getState(count), 1)
 
-  const storeSubscriber = jest.fn()
-  const subscriberToggled = jest.fn()
+  const storeSubscriber = mockFn()
+  const subscriberToggled = mockFn()
   store.subscribe(storeSubscriber)
   store.subscribe(toggled, subscriberToggled)
-  assert.is(storeSubscriber.mock.calls.length, 0)
-  assert.is(subscriberToggled.mock.calls.length, 0)
+  assert.is(storeSubscriber.calls.length, 0)
+  assert.is(subscriberToggled.calls.length, 0)
 
   store.dispatch(increment())
   assert.equal(store.getState(root), {
@@ -219,9 +218,9 @@ test('main api, createStore', () => {
       toggled: false,
     },
   })
-  assert.is(storeSubscriber.mock.calls.length, 1)
-  assert.equal(storeSubscriber.mock.calls[0][0], increment())
-  assert.is(subscriberToggled.mock.calls.length, 0)
+  assert.is(storeSubscriber.calls.length, 1)
+  assert.equal(storeSubscriber.calls[0].i[0], increment())
+  assert.is(subscriberToggled.calls.length, 0)
 
   store.dispatch(toggle())
   assert.equal(store.getState(root), {
@@ -229,29 +228,29 @@ test('main api, createStore', () => {
     countDoubled: 4,
     toggled: true,
   })
-  assert.is(storeSubscriber.mock.calls.length, 2)
-  assert.equal(storeSubscriber.mock.calls[1][0], toggle())
-  assert.is(subscriberToggled.mock.calls.length, 1)
-  assert.is(subscriberToggled.mock.calls[0][0], true)
+  assert.is(storeSubscriber.calls.length, 2)
+  assert.equal(storeSubscriber.calls[1].i[0], toggle())
+  assert.is(subscriberToggled.calls.length, 1)
+  assert.is(subscriberToggled.calls[0].i[0], true)
 
-  expect(
+  assert.ok(
     store.getState(root) ===
       (store.dispatch({ type: 'random', payload: null }), store.getState(root)),
-  ).toBe(true)
-  assert.is(storeSubscriber.mock.calls.length, 3)
-  assert.is(subscriberToggled.mock.calls.length, 1)
+  )
+  assert.is(storeSubscriber.calls.length, 3)
+  assert.is(subscriberToggled.calls.length, 1)
 })
 
 test('main api, createStore lazy selectors', () => {
-  const storeSubscriber = jest.fn()
-  const subscriberCount1 = jest.fn()
-  const count2Subscriber1 = jest.fn()
-  const count2Subscriber2 = jest.fn()
+  const storeSubscriber = mockFn()
+  const subscriberCount1 = mockFn()
+  const count2Subscriber1 = mockFn()
+  const count2Subscriber2 = mockFn()
   const increment = declareAction('increment')
   const set = declareAction<number>('set')
 
   const count1 = declareAtom(0, (on) => on(increment, (state) => state + 1))
-  const count2SetMap = jest.fn((state, payload) => payload)
+  const count2SetMap = mockFn((state, payload) => payload)
   const count2 = declareAtom(0, (on) => [
     on(increment, (state) => state + 1),
     on(set, count2SetMap),
@@ -265,13 +264,13 @@ test('main api, createStore lazy selectors', () => {
   store.subscribe(count1, subscriberCount1)
 
   store.dispatch(increment())
-  assert.is(storeSubscriber.mock.calls.length, 1)
-  assert.is(subscriberCount1.mock.calls.length, 1)
+  assert.is(storeSubscriber.calls.length, 1)
+  assert.is(subscriberCount1.calls.length, 1)
 
   store.dispatch(set(1))
-  assert.is(storeSubscriber.mock.calls.length, 2)
-  assert.is(subscriberCount1.mock.calls.length, 1)
-  assert.is(count2SetMap.mock.calls.length, 0)
+  assert.is(storeSubscriber.calls.length, 2)
+  assert.is(subscriberCount1.calls.length, 1)
+  assert.is(count2SetMap.calls.length, 0)
 
   assert.is(store.getState(count2), 0)
   const count2Unsubscriber1 = store.subscribe(count2, count2Subscriber1)
@@ -280,40 +279,40 @@ test('main api, createStore lazy selectors', () => {
 
   store.dispatch(increment())
   assert.is(store.getState(count2), 1)
-  assert.is(storeSubscriber.mock.calls.length, 3)
-  assert.is(subscriberCount1.mock.calls.length, 2)
-  assert.is(count2Subscriber1.mock.calls[0][0], 1)
-  assert.is(count2Subscriber2.mock.calls.length, 1)
-  assert.is(count2SetMap.mock.calls.length, 0)
+  assert.is(storeSubscriber.calls.length, 3)
+  assert.is(subscriberCount1.calls.length, 2)
+  assert.is(count2Subscriber1.calls[0].i[0], 1)
+  assert.is(count2Subscriber2.calls.length, 1)
+  assert.is(count2SetMap.calls.length, 0)
 
   store.dispatch(set(5))
   assert.is(store.getState(count2), 5)
-  assert.is(storeSubscriber.mock.calls.length, 4)
-  assert.is(subscriberCount1.mock.calls.length, 2)
-  assert.is(count2Subscriber1.mock.calls.length, 2)
-  assert.is(count2Subscriber1.mock.calls[1][0], 5)
-  assert.is(count2Subscriber2.mock.calls.length, 2)
-  assert.is(count2SetMap.mock.calls.length, 1)
+  assert.is(storeSubscriber.calls.length, 4)
+  assert.is(subscriberCount1.calls.length, 2)
+  assert.is(count2Subscriber1.calls.length, 2)
+  assert.is(count2Subscriber1.calls[1].i[0], 5)
+  assert.is(count2Subscriber2.calls.length, 2)
+  assert.is(count2SetMap.calls.length, 1)
 
   count2Unsubscriber1()
   store.dispatch(set(10))
-  assert.is(storeSubscriber.mock.calls.length, 5)
+  assert.is(storeSubscriber.calls.length, 5)
   assert.is(store.getState(count2), 10)
-  assert.is(count2SetMap.mock.calls.length, 2)
-  assert.is(count2Subscriber1.mock.calls.length, 2)
-  assert.is(count2Subscriber2.mock.calls.length, 3)
+  assert.is(count2SetMap.calls.length, 2)
+  assert.is(count2Subscriber1.calls.length, 2)
+  assert.is(count2Subscriber2.calls.length, 3)
 
   count2Unsubscriber2()
   assert.is(store.getState(count2), 0)
   store.dispatch(set(15))
-  assert.is(storeSubscriber.mock.calls.length, 6)
+  assert.is(storeSubscriber.calls.length, 6)
   assert.is(store.getState(count2), 0)
-  assert.is(count2Subscriber2.mock.calls.length, 3)
-  assert.is(count2SetMap.mock.calls.length, 2)
+  assert.is(count2Subscriber2.calls.length, 3)
+  assert.is(count2SetMap.calls.length, 2)
 })
 
 test('main api, createStore lazy computed', () => {
-  const storeSubscriber = jest.fn()
+  const storeSubscriber = mockFn()
   const increment1 = declareAction()
   const increment2 = declareAction()
 
@@ -341,7 +340,7 @@ test('main api, createStore lazy computed', () => {
 })
 
 test('main api, createStore lazy resubscribes', () => {
-  const storeSubscriber = jest.fn()
+  const storeSubscriber = mockFn()
   const increment = declareAction()
 
   const count = declareAtom('count', 0, (on) =>
@@ -461,44 +460,56 @@ test('main api, createStore reactions state diff', () => {
   store.subscribe(count1Atom, noop)
   store.subscribe(count2Atom, noop)
 
-  const reaction = jest.fn()
+  const reaction = mockFn()
   store.subscribe(reaction)
 
   let action = declareAction()()
   store.dispatch(action)
 
-  expect(reaction).toBeCalledWith(action, {})
+  assert.equal([reaction.lastInput(0), reaction.lastInput(1)], [action, {}])
 
   action = increment1()
   store.dispatch(action)
-  expect(reaction).toBeCalledWith(action, {
-    [getTree(count1Atom).id]: 1,
-  })
+  assert.equal(
+    [reaction.lastInput(0), reaction.lastInput(1)],
+    [
+      action,
+      {
+        [getTree(count1Atom).id]: 1,
+      },
+    ],
+  )
 
   action = increment2()
   store.dispatch(action)
-  expect(reaction).toBeCalledWith(action, {
-    [getTree(count2Atom).id]: 1,
-  })
+  assert.equal(
+    [reaction.lastInput(0), reaction.lastInput(1)],
+    [
+      action,
+      {
+        [getTree(count2Atom).id]: 1,
+      },
+    ],
+  )
 })
 
 test('main api, createStore subscribe to action', () => {
   const action = declareAction<null>()
-  const trackAction = jest.fn()
-  const trackActions = jest.fn()
+  const trackAction = mockFn()
+  const trackActions = mockFn()
   const store = createStore()
 
   store.subscribe(action, trackAction)
   store.subscribe(trackActions)
 
   store.dispatch(declareAction()())
-  expect(trackAction).toBeCalledTimes(0)
-  expect(trackActions).toBeCalledTimes(1)
+  assert.is(trackAction.calls.length, 0)
+  assert.is(trackActions.calls.length, 1)
 
   store.dispatch(action(null))
-  expect(trackAction).toBeCalledTimes(1)
-  expect(trackAction).toBeCalledWith(null)
-  expect(trackActions).toBeCalledTimes(2)
+  assert.is(trackAction.calls.length, 1)
+  assert.is(trackAction.lastInput(), null)
+  assert.is(trackActions.calls.length, 2)
 })
 
 test('atom id as symbol', () => {
@@ -515,14 +526,15 @@ test('atom id as symbol', () => {
     getTree(atomCombine).id.toString(),
     'Symbol([my atom,my atom [map]])',
   )
-  expect(
+  assert.is(
     getTree(
       map(
         declareAtom(Symbol('123'), 0, () => []),
         (v) => v,
       ),
     ).id.toString(),
-  ).toBe('Symbol(123 [map])')
+    'Symbol(123 [map])',
+  )
 })
 
 test('IoC example', () => {
@@ -547,7 +559,7 @@ test('createStore replace state', () => {
   const countAtom = declareAtom(0, (on) => [
     on(increment, (state) => state + 1),
   ])
-  const listener = jest.fn()
+  const listener = mockFn()
   const store = createStore(countAtom)
 
   store.subscribe(countAtom, listener)
@@ -559,27 +571,28 @@ test('createStore replace state', () => {
   const state = store.getState()
 
   assert.is(store.getState(countAtom), 2)
-  expect(listener).toHaveBeenLastCalledWith(2)
+  assert.is(listener.lastInput(), 2)
 
   store.dispatch(increment())
   store.dispatch(increment())
   assert.is(store.getState(countAtom), 4)
-  expect(listener).toHaveBeenLastCalledWith(4)
+  assert.is(listener.lastInput(), 4)
 
+  // @ts-ignore
   store.dispatch({ ...initAction, payload: state })
   assert.is(store.getState(countAtom), 2)
-  expect(listener).toHaveBeenLastCalledWith(2)
+  assert.is(listener.lastInput(), 2)
 })
 
 test('createStore().bind', () => {
   const a = declareAction<0>()
   const store = createStore()
-  const track = jest.fn()
+  const track = mockFn()
 
   store.subscribe(a, track)
   store.bind(a)(0)
 
-  expect(track).toBeCalledWith(0)
+  assert.is(track.lastInput(), 0)
 })
 
 test('declareAction reactions', async () => {
@@ -595,33 +608,33 @@ test('declareAction reactions', async () => {
     on(setValue, (state, payload) => payload),
   ])
   const store = createStore(valueAtom)
-  const valueSubscriber = jest.fn()
+  const valueSubscriber = mockFn()
   store.subscribe(valueAtom, valueSubscriber)
 
   store.dispatch(setValue(10))
-  expect(valueSubscriber).toBeCalledTimes(1)
-  expect(valueSubscriber).toBeCalledWith(10)
+  assert.is(valueSubscriber.calls.length, 1)
+  assert.is(valueSubscriber.lastInput(), 10)
 
   store.dispatch(setValueConcurrent(20))
-  expect(valueSubscriber).toBeCalledTimes(1)
+  assert.is(valueSubscriber.calls.length, 1)
   await delay()
-  expect(valueSubscriber).toBeCalledTimes(2)
-  expect(valueSubscriber).toBeCalledWith(20)
+  assert.is(valueSubscriber.calls.length, 2)
+  assert.is(valueSubscriber.lastInput(), 20)
 
   store.dispatch(setValueConcurrent(30))
   store.dispatch(setValueConcurrent(40))
   store.dispatch(setValueConcurrent(50))
-  expect(valueSubscriber).toBeCalledTimes(2)
+  assert.is(valueSubscriber.calls.length, 2)
   await delay()
-  expect(valueSubscriber).toBeCalledTimes(3)
-  expect(valueSubscriber).toBeCalledWith(50)
+  assert.is(valueSubscriber.calls.length, 3)
+  assert.is(valueSubscriber.lastInput(), 50)
 
   // ---
 
-  const fn = jest.fn()
+  const fn = mockFn()
   const action = declareAction<number>('!', fn)
   store.dispatch(action(0))
-  expect(fn).toBeCalledTimes(1)
+  assert.is(fn.calls.length, 1)
 })
 
 test('derived state, map + combine', () => {
@@ -675,10 +688,15 @@ test('derived state, should checks atoms with equal ids', () => {
   const bAtom = map(aAtom, (a) => a * 2)
   const cAtom = map(combine([aAtom, bAtom]), ([a, b]) => a + b)
 
-  expect(() => combine([aAtom, cAtom, bAtom])).not.toThrow()
-  expect(() =>
-    combine([map(['aAtom'], aAtom, (v) => v), map(['aAtom'], aAtom, (v) => v)]),
-  ).toThrowError('[reatom] One of dependencies has the equal id')
+  assert.not.throws(() => combine([aAtom, cAtom, bAtom]))
+  assert.throws(
+    () =>
+      combine([
+        map(['aAtom'], aAtom, (v) => v),
+        map(['aAtom'], aAtom, (v) => v),
+      ]),
+    '[reatom] One of dependencies has the equal id',
+  )
 })
 
 test('subscriber should not be called if returns previous state from atom reducer', () => {
@@ -689,8 +707,8 @@ test('subscriber should not be called if returns previous state from atom reduce
       counter: 1,
     },
   }
-  const dataReducerMock = jest.fn((state) => state.data)
-  const counterReducerMock = jest.fn((state) => state.counter)
+  const dataReducerMock = mockFn((state) => state.data)
+  const counterReducerMock = mockFn((state) => state.counter)
 
   const rootAtom = declareAtom(initialState, (on) => [
     on(increment, (state) => ({ ...state, counter: state.counter + 1 })),
@@ -700,13 +718,13 @@ test('subscriber should not be called if returns previous state from atom reduce
 
   const store = createStore(counterAtom)
 
-  expect(dataReducerMock).toBeCalledTimes(1)
-  expect(counterReducerMock).toBeCalledTimes(1)
+  assert.is(dataReducerMock.calls.length, 1)
+  assert.is(counterReducerMock.calls.length, 1)
 
   store.dispatch(increment())
 
-  expect(dataReducerMock).toBeCalledTimes(2)
-  expect(counterReducerMock).toBeCalledTimes(1)
+  assert.is(dataReducerMock.calls.length, 2)
+  assert.is(counterReducerMock.calls.length, 1)
 })
 
 test('subscriber should not be called if returns snapshot state from atom reducer', () => {
@@ -716,32 +734,32 @@ test('subscriber should not be called if returns snapshot state from atom reduce
     on(action, (state) => state - 1),
   ])
 
-  const subReducerMock = jest.fn((state) => state)
+  const subReducerMock = mockFn((state) => state)
   const subAtom = map(rootAtom, subReducerMock)
   const store = createStore(subAtom)
 
-  expect(subReducerMock).toBeCalledTimes(1)
+  assert.is(subReducerMock.calls.length, 1)
 
   store.dispatch(action())
 
-  expect(subReducerMock).toBeCalledTimes(1)
+  assert.is(subReducerMock.calls.length, 1)
 })
 
 test('subscriber should not be called if always returns NaN from atom reducer', () => {
   const action = declareAction()
   const rootAtom = declareAtom(0, (on) => [on(action, () => NaN)])
 
-  const counterReducerMock = jest.fn((state) => state)
+  const counterReducerMock = mockFn((state) => state)
   const counterAtom = map(rootAtom, counterReducerMock)
 
   const store = createStore(counterAtom)
-  expect(counterReducerMock).toBeCalledTimes(1)
+  assert.is(counterReducerMock.calls.length, 1)
 
   store.dispatch(action())
-  expect(counterReducerMock).toBeCalledTimes(2)
+  assert.is(counterReducerMock.calls.length, 2)
 
   store.dispatch(action())
-  expect(counterReducerMock).toBeCalledTimes(2)
+  assert.is(counterReducerMock.calls.length, 2)
 })
 
 test('state of initial atom with %s should not be cleared after unsubscribing', () => {
@@ -753,7 +771,7 @@ test('state of initial atom with %s should not be cleared after unsubscribing', 
     ] as [string, string | symbol | [string]][]
   ).forEach((_, name) => {
     const action = declareAction()
-    const atom = declareAtom(name, 0, (on) => [
+    const atom = declareAtom(name.toString(), 0, (on) => [
       on(action, (state) => state + 1),
     ])
 
@@ -769,10 +787,12 @@ test('state of initial atom with %s should not be cleared after unsubscribing', 
   })
 })
 
-function getInitialStoreState(rootAtom, state) {
+// @ts-ignore FIXME
+function getInitialStoreState(rootAtom, state): Record<string, any> {
   const depsShape = getDepsShape(rootAtom)
   if (depsShape) {
     const states = Object.keys(depsShape).map((id) =>
+      // @ts-ignore FIXME
       getInitialStoreState(depsShape[id], state[id]),
     )
 
@@ -785,12 +805,12 @@ function getInitialStoreState(rootAtom, state) {
 }
 
 test('getInitialStoreState init root atom with combine', () => {
-  const setTitle = declareAction()
+  const setTitle = declareAction<string>()
   const titleAtom = declareAtom('title', (on) => [
     on(setTitle, (_, payload) => payload),
   ])
 
-  const setMode = declareAction()
+  const setMode = declareAction<string>()
   const modeAtom = declareAtom('desktop', (on) => [
     on(setMode, (_, payload) => payload),
   ])
@@ -889,20 +909,26 @@ test('direct and wia combine subscription', () => {
   assert.equal(store.getState(), {})
 })
 
-// const sleep = (ms = 50) => new Promise((r) => setTimeout(r, ms))
-// const dateAtom = declareAtom(Date.now(), (on) => [
-//   on(declareAction([initAction.type]), () => Date.now()),
-// ])
-// const store = createStore()
-
 test('dynamic initialState, unsubscribed atom should recalculate on each `getState`', async () => {
+  const sleep = (ms = 50) => new Promise((r) => setTimeout(r, ms))
+  const dateAtom = declareAtom(Date.now(), (on) => [
+    on(declareAction([initAction.type]), () => Date.now()),
+  ])
+  const store = createStore()
+
   const date1 = store.getState(dateAtom)
   await sleep()
   const date2 = store.getState(dateAtom)
-  expect(date1).not.toBe(date2)
+  assert.is.not(date1, date2)
 })
 
 test('dynamic initialState, reducer of `initAction.type` should calling on each mount', async () => {
+  const sleep = (ms = 50) => new Promise((r) => setTimeout(r, ms))
+  const dateAtom = declareAtom(Date.now(), (on) => [
+    on(declareAction([initAction.type]), () => Date.now()),
+  ])
+  const store = createStore()
+
   const un = store.subscribe(dateAtom, () => {})
 
   const date1 = store.getState(dateAtom)
@@ -913,14 +939,14 @@ test('dynamic initialState, reducer of `initAction.type` should calling on each 
   un()
   store.subscribe(dateAtom, () => {})
   const date3 = store.getState(dateAtom)
-  expect(date1).not.toBe(date3)
+  assert.is.not(date1, date3)
 })
 
 /**
  * @see https://github.com/artalar/reatom/issues/348
  */
 test('unsubscribe from atom should not cancel the subscription from the action', () => {
-  const subscription = jest.fn()
+  const subscription = mockFn()
 
   const store = createStore()
   const increment = declareAction()
@@ -931,7 +957,7 @@ test('unsubscribe from atom should not cancel the subscription from the action',
   unsubscribeAtom()
 
   store.dispatch(increment())
-  expect(subscription).toBeCalledTimes(1)
+  assert.is(subscription.calls.length, 1)
 
   unsubscribeAction()
 })
