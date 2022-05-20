@@ -346,7 +346,8 @@ async function start(iterations: number) {
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     mobx: log(mobxLogs),
-    mobxProxy: log(mobxProxyLogs),
+    // this result is not so interesting
+    // mobxProxy: log(mobxProxyLogs),
   })
 }
 

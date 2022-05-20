@@ -7,7 +7,7 @@
     "prettify:watch": "onchange **/*.{js,ts,md} !**/babel-plugin/test/** -- prettier --write {{changed}}"
   },
   "workspaces": [
-    "packages/*"
+    "packages/core"
   ],
   "author": "artalar",
   "license": "MIT",
