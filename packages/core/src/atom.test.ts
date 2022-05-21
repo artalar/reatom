@@ -13,7 +13,7 @@ import {
   read,
   subscribe,
 } from './atom'
-import { shallowEqual, init, atomizeActionLastResult } from './atom.utils'
+import { shallowEqual, init, atomizeActionResult } from './atom.utils'
 
 const getDuration = async (cb: Fn) => {
   const start = Date.now()
@@ -123,9 +123,7 @@ test(`nested deps`, () => {
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  log(context, (logs) =>
-    logs.forEach(({ meta }) => touchedAtoms.push(meta)),
-  )
+  log(context, (logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
 
   try {
     a1.change(context, 1)
@@ -186,16 +184,16 @@ test(`display name`, () => {
     `displayName`,
   )
 
-  fullNameAtom.__reatom.onInit.push(() => {
+  fullNameAtom.__reatom.onInit.add(() => {
     'init' //?
   })
-  fullNameAtom.__reatom.onCleanup.push(() => {
+  fullNameAtom.__reatom.onCleanup.add(() => {
     'cleanup' //?
   })
-  displayNameAtom.__reatom.onInit.push(() => {
+  displayNameAtom.__reatom.onInit.add(() => {
     'init' //?
   })
-  displayNameAtom.__reatom.onCleanup.push(() => {
+  displayNameAtom.__reatom.onCleanup.add(() => {
     'cleanup' //?
   })
 
@@ -271,7 +269,7 @@ test(`resource`, async () => {
       }
     }, `${name}Resource.refetch`)
 
-    const refetchPromiseAtom = atomizeActionLastResult(refetch)
+    const refetchPromiseAtom = atomizeActionResult(refetch)
 
     const fetch = action(async (ctx, params: Params): Promise<State> => {
       return isEqual(ctx.get(paramsAtom), params)
@@ -305,7 +303,7 @@ test(`resource`, async () => {
     }, `${name}Resource.retry`)
 
     if (fetchOnInit) {
-      dataAtom.__reatom.onInit.push((ctx) => {
+      dataAtom.__reatom.onInit.add((ctx) => {
         // @ts-expect-error
         refetch(ctx)
       })

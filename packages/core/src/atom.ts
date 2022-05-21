@@ -109,9 +109,9 @@ export interface AtomMeta<State = any> {
   readonly isInspectable: boolean
   readonly initState: State
   readonly computer: null | Fn<[CtxSpy, AtomCache]>
-  readonly onCleanup: Array<Fn<[Ctx]>>
-  readonly onInit: Array<Fn<[Ctx]>>
-  readonly onUpdate: Array<Fn<[Ctx, AtomCache]>>
+  readonly onCleanup: Set<Fn<[Ctx]>>
+  readonly onInit: Set<Fn<[Ctx]>>
+  readonly onUpdate: Set<Fn<[Ctx, AtomCache]>>
   // temporal cache of the last patch during transaction
   patch: null | AtomCache
 }
@@ -412,14 +412,12 @@ export const createContext = ({
           }
 
           for (const meta of trUnlinks) {
-            if (isStale(meta.patch!)) {
-              for (const hook of meta.onCleanup) nearEffects.push(hook)
-            }
+            if (isStale(meta.patch!)) nearEffects.push(...meta.onCleanup)
           }
 
           for (const meta of trLinks) {
             if (!isStale(meta.patch!) && !trUnlinks.has(meta)) {
-              for (const hook of meta.onInit) nearEffects.push(hook)
+              nearEffects.push(...meta.onInit)
             }
           }
 
@@ -582,9 +580,9 @@ export const atom: {
     isInspectable,
     initState,
     computer,
-    onCleanup: [],
-    onInit: [],
-    onUpdate: [],
+    onCleanup: new Set(),
+    onInit: new Set(),
+    onUpdate: new Set(),
     patch: null,
   }
 
@@ -628,9 +626,9 @@ export const action: {
     isAction: true,
     initState: [],
     computer: null,
-    onCleanup: [],
-    onInit: [],
-    onUpdate: [],
+    onCleanup: new Set(),
+    onInit: new Set(),
+    onUpdate: new Set(),
     patch: null,
   }
 

@@ -17,16 +17,25 @@ import {
 export const init = (ctx: Ctx, atom: Atom): Unsubscribe =>
   subscribe(ctx, atom, () => {})
 
-export const atomizeActionLastResult: {
+const atomizeActionResultCacheKey = Symbol()
+export const atomizeActionResult: {
   <T>(action: Action<any, T>): Atom<undefined | T>
 } = (action) => {
+  if (atomizeActionResultCacheKey in action) {
+    // @ts-expect-error
+    return action[atomizeActionResultCacheKey]
+  }
+
   const lastResultAtom = atom<undefined | ActionResult<typeof action>>(
     undefined,
     `${action.__reatom.name}.lastResultAtom`,
   )
-  action.__reatom.onUpdate.push((ctx) =>
+  action.__reatom.onUpdate.add((ctx) =>
     lastResultAtom.change(ctx, action.__reatom.patch!.state.at(-1)),
   )
+
+  // @ts-expect-error
+  action[atomizeActionResultCacheKey] = lastResultAtom
 
   return lastResultAtom
 }
@@ -94,12 +103,9 @@ export const onUpdate: {
     handler(ctx, cache.state)
   }
 
-  atom.__reatom.onUpdate.push(cb)
+  atom.__reatom.onUpdate.add(cb)
 
-  return () => {
-    const index = atom.__reatom.onUpdate.indexOf(cb)
-    if (index > -1) atom.__reatom.onUpdate.splice(index, 1)
-  }
+  return () => atom.__reatom.onUpdate.delete(cb)
 }
 
 export const getPrev = <T>(ctx: Ctx, atom: Atom<T>) => {
