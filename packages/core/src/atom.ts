@@ -82,7 +82,10 @@ export interface Ctx {
 
   /** @private  */
   [INTERNAL]: {
-    actualize(meta: AtomMeta, mutator?: Fn<[AtomCache]>): AtomCache
+    actualize(
+      meta: AtomMeta,
+      mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
+    ): AtomCache
     log(cb: Fn<[patches: Logs, error: null | Error]>): Unsubscribe
     read(meta: AtomMeta): undefined | AtomCache
     subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
@@ -179,29 +182,26 @@ const copyCache = (cache: AtomCache, cause: AtomCache[`cause`]) => ({
   listeners: cache.listeners,
 })
 
-const copyCtx = (
-  ctx: Ctx,
-  cause: Ctx[`cause`],
-  // @ts-expect-error
-  spy = ctx.spy,
-): CtxSpy => ({
-  cause,
-  get: ctx.get,
-  schedule: ctx.schedule,
-  spy,
-  [INTERNAL]: ctx[INTERNAL],
-})
-
 export interface ContextOptions {
   /** Use it to delay late effects such as subscriptions notification */
   callLateEffects?: Fn<[Fn]>
   /** Use it to override catch behavior of failed effect */
   callSafety?: typeof callSafety
+
+  createCache?: Fn<[AtomMeta], AtomCache>
 }
 
 export const createContext = ({
   callLateEffects = (cb) => cb(),
   callSafety: _callSafety = callSafety,
+  createCache = (meta) => ({
+    state: meta.initState,
+    meta,
+    cause: null,
+    parents: [],
+    children: new Set(),
+    listeners: new Set(),
+  }),
 }: ContextOptions = {}): Ctx => {
   let caches = new WeakMap<AtomMeta, AtomCache>()
   let logsListeners = new Set<Fn<[Logs, null | Error]>>()
@@ -265,7 +265,7 @@ export const createContext = ({
     }
   }
 
-  const actualizeParents = (patch: AtomCache) => {
+  const actualizeParents = (ctx: CtxSpy, patch: AtomCache) => {
     let done = false
     let { cause, parents } = patch
     let isParentsChanged = parents.length === 0
@@ -278,25 +278,23 @@ export const createContext = ({
     ) {
       patch.parents = []
 
-      patch.meta.computer!(
-        copyCtx(ctx, patch, (atom: Atom) => {
-          if (done) {
-            throw new Error(
-              `async spy "${atom.__reatom.name}" in "${patch.meta.name}")`,
-            )
-          }
+      ctx.spy = (atom: Atom) => {
+        if (done) {
+          throw new Error(
+            `async spy "${atom.__reatom.name}" in "${patch.meta.name}")`,
+          )
+        }
 
-          const depPatch = actualize(atom.__reatom)
-          const length = patch.parents.push(depPatch)
+        const depPatch = actualize(atom.__reatom)
+        const length = patch.parents.push(depPatch)
 
-          isParentsChanged ||=
-            length > parents.length ||
-            depPatch.meta !== parents[length - 1].meta
+        isParentsChanged ||=
+          length > parents.length || depPatch.meta !== parents[length - 1].meta
 
-          return depPatch.state
-        }),
-        patch,
-      )
+        return depPatch.state
+      }
+
+      patch.meta.computer!(ctx, patch)
 
       done = true
 
@@ -311,24 +309,24 @@ export const createContext = ({
     if (patch !== null && patch!.cause !== null) return patch!
     let isPlain = meta.computer === null
 
-    let cache =
-      caches.get(meta) ??
-      (patch ??= addPatch({
-        state: meta.initState,
-        meta,
-        cause: null,
-        parents: [],
-        children: new Set(),
-        listeners: new Set(),
-      }))
+    let cache = caches.get(meta) ?? (patch ??= addPatch(createCache(meta)))
 
     patch ??= addPatch(copyCache(cache, null))
 
     let { state } = patch
     let isParentsChanged = false
 
-    mutator?.(patch)
-    isParentsChanged = !isPlain && actualizeParents(patch)
+    const patchCtx = {
+      cause: patch,
+      get: ctx.get,
+      schedule: ctx.schedule,
+      // @ts-expect-error
+      spy: ctx.spy,
+      [INTERNAL]: ctx[INTERNAL],
+    }
+
+    mutator?.(patchCtx, patch)
+    isParentsChanged = !isPlain && actualizeParents(patchCtx, patch)
 
     if (isParentsChanged) {
       if (cache !== patch) trUnlinks.add(meta)
@@ -352,7 +350,7 @@ export const createContext = ({
     // FIXME: asserts `inTr`
     schedule(effect = noop, isNearEffect = true) {
       assertFunction(effect)
-      const effects = isNearEffect ? nearEffects : lateEffects
+      const effects = isNearEffect ? trNearEffects : trLateEffects
 
       return new Promise<any>((res, rej) => {
         trRollbacks.push(rej)
@@ -471,7 +469,9 @@ export const createContext = ({
         if (cache === undefined || isStale(cache)) {
           ctx[INTERNAL].run(() => {
             trRollbacks.push(() => meta.patch!.listeners.delete(fn))
-            actualize(meta, (patch) => (patch.cause = patch).listeners.add(fn))
+            actualize(meta, (ctx, patch) =>
+              (patch.cause = patch).listeners.add(fn),
+            )
           })
         } else {
           cache.listeners.add(fn)
@@ -591,7 +591,7 @@ export const atom: {
   for (const name in reducers) {
     atom[name] = action(
       (ctx, param) =>
-        ctx[INTERNAL].actualize(meta, (patch) => {
+        ctx[INTERNAL].actualize(meta, (patchCtx, patch) => {
           patch.cause = ctx.cause
           patch.state = reducers[name](patch.state, param)
         }).state,
@@ -634,12 +634,9 @@ export const action: {
 
   const action: Action = (ctx: Ctx, ...params: any[]) =>
     ctx[INTERNAL].run(() =>
-      ctx[INTERNAL].actualize(meta, (patch) => {
+      ctx[INTERNAL].actualize(meta, (patchCtx, patch) => {
         patch.cause = ctx.cause ?? patch
-        patch.state = [
-          ...patch.state,
-          (fn as Fn)(copyCtx(ctx, patch), ...params),
-        ]
+        patch.state = [...patch.state, (fn as Fn)(patchCtx, ...params)]
       }).state.at(-1),
     )
 

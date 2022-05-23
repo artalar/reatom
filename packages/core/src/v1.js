@@ -5,6 +5,10 @@ const {
   isAction,
   createContext,
   isStale,
+  subscribe,
+  log,
+  read,
+  run,
 } = require('./atom')
 
 const TREE = Symbol('@@Reatom/TREE')
@@ -20,10 +24,7 @@ function getName(treeId) {
 }
 
 function getOwnKeys(obj) {
-  const keys = Object.keys(obj)
-  keys.push(...Object.getOwnPropertySymbols(obj))
-
-  return keys
+  return [...Object.keys(obj), ...Object.getOwnPropertySymbols(obj)]
 }
 
 const getIsAtom = (thing) => thing?.__reatom_atom === true
@@ -36,16 +37,34 @@ const ctxToStore = (ctx) => {
 
   const allCaches = new Map()
 
-  ctx.log((patches) =>
+  log(ctx, (patches) =>
     patches.forEach((cache, atom) => allCaches.set(atom, cache)),
   )
 
+  const actionsListeners = new Set()
   const store = {
     dispatch(action) {
-      ctx.run(() => action.v3action(ctx, action.payload))
+      run(ctx, () => {
+        ctx.schedule(() =>
+          actionsListeners.forEach((cb) => cb(action, /* TODO stateDiff */ {})),
+        )
+        action.v3action(ctx, action.payload)
+      })
     },
     subscribe(thing, cb) {
-      return ctx.subscribe(thing, cb)
+      if (cb === undefined) {
+        actionsListeners.add(thing)
+        return () => actionsListeners.delete(thing)
+      }
+
+      let skipFirst = true
+      return subscribe(ctx, thing, (v) => {
+        if (skipFirst) {
+          skipFirst = false
+          return
+        }
+        cb(v)
+      })
     },
     getState: (atom) => {
       if (atom) return ctx.get(atom)
@@ -62,36 +81,55 @@ const ctxToStore = (ctx) => {
     bind: (action) => Object.assign(action.bind(null, ctx), action),
   }
 
-  return (ctx.v1store = store)
+  store.v3ctx = ctx
+  ctx.v1store = store
+
+  return store
 }
 
 const createStore = (atomOrState, state) => {
-  const store = ctxToStore(createContext())
-
   if (!getIsAtom(atomOrState)) state = atomOrState
-  else {
-    store.subscribe(atomOrState, () => {})
-    if (state) store.dispatch(init(state))
-  }
+
+  const store = ctxToStore(
+    createContext(
+      state && {
+        createCache: (meta) => ({
+          state: meta.name in state ? state[meta.name] : meta.initState,
+          meta,
+          cause: null,
+          parents: [],
+          children: new Set(),
+          listeners: new Set(),
+        }),
+      },
+    ),
+    state,
+  )
+
+  if (getIsAtom(atomOrState)) store.subscribe(atomOrState, () => {})
+
+  if (state) store.dispatch(init(state))
+
   return store
 }
-3
+
 let i = 0
 const declareAction = (name, ...reactions) => {
+  let type
   if (typeof name === 'function') {
     reactions.unshift(name)
     name = undefined
   } else if (Array.isArray(name)) {
-    name = name[0]
-  } else if (typeof name === 'string') {
-    name = `${name}[${++i}]`
+    type = name = name[0]
   }
 
   const v3action = action((ctx, payload) => {
     ctx.schedule(() => reactions.forEach((cb) => cb(payload, ctxToStore(ctx))))
     return payload
   }, name)
-  const type = v3action.__reatom.name
+
+  if (type) v3action.__reatom.name = type
+  else type = v3action.__reatom.name
 
   return Object.assign((payload) => ({ payload, type, v3action }), v3action, {
     __reatom_action: true,
@@ -114,28 +152,26 @@ const declareAtom = (...a) => {
 
   let isInspectable = true
 
-  if (typeof name === 'string') {
-    name = `${name}[${++i}]`
-  } else if (typeof name === 'symbol') {
+  let id
+  if (typeof name === 'symbol') {
     isInspectable = false
     name = name.description || name.toString().replace(/Symbol\((.*)\)/, '$1')
   } else if (Array.isArray(name)) {
-    name = name[0]
+    id = name = name[0]
   }
 
   const v3atom = Object.assign(
-    (state, action = initAction) => {
-      const states = {}
-      const ctx = createContext()
-      ctx.log(
+    (states = {}, action = initAction) => {
+      const store = (createStore(states))
+      const { v3ctx: ctx } = store
+      log(
+        ctx,
         (patches, error) =>
           !error &&
           patches.forEach(({ meta, state }) => (states[meta.name] = state)),
       )
-      ctx.run(() => {
-        v3atom.change(ctx, state)
-        action.v3action(ctx, action.payload)
-      })
+      subscribe(ctx, v3atom, () => {})
+      action.v3action(ctx, action.payload)
 
       return states
     },
@@ -144,22 +180,28 @@ const declareAtom = (...a) => {
         const inits = ctx.spy(init)
 
         inits.forEach(
-          ({ [v3atom.__reatom.name]: newState = initState } = {}) =>
+          ({ [v3atom.__reatom.name]: newState = state } = {}) =>
             (state = newState),
         )
 
-        if (inits.length === 1 && !isStale(state) && !inits[0]) return state
+        if (
+          inits.length === 1 &&
+          !isStale(read(ctx, v3atom.__reatom)) &&
+          !inits[0]
+        ) {
+          return state
+        }
 
-        const prevCache = ctx.read(v3atom)
+        const prevCache = read(ctx, v3atom)
         let i = 0
         depMatcher((target, handler) => {
           const targetState = ctx.spy(target)
-          if (isAction(target)) {
+          if (getIsAction(target)) {
             targetState.forEach((payload) => (state = handler(state, payload)))
-          } else if (isAtom(target)) {
-            const targetPrevStat = prevCache?.parents[i].state
+          } else if (getIsAtom(target)) {
+            const targetPrevState = prevCache?.parents[i].state
 
-            if (!Object.is(targetState, targetPrevStat))
+            if (!Object.is(targetState, targetPrevState))
               state = handler(state, targetState)
           }
 
@@ -174,6 +216,8 @@ const declareAtom = (...a) => {
   )
 
   v3atom[TREE] = { id: v3atom.__reatom.name }
+
+  if (id) v3atom.__reatom.name = id
 
   return v3atom
 }
@@ -201,7 +245,9 @@ function combine(name, shape) {
   const atom = declareAtom(name, isArray ? [] : {}, (on) =>
     keys.forEach((key) =>
       on(shape[key], (state, payload) => {
-        const newState = isArray ? state.slice(0) : assign({}, state)
+        if (!Array.isArray(state) && isArray)
+          console.log('TEST', { name, state, shape })
+        const newState = isArray ? state.slice(0) : Object.assign({}, state)
         newState[key] = payload
         return newState
       }),
