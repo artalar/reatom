@@ -14,6 +14,7 @@ import {
 import * as solid from 'solid-js/dist/solid.cjs'
 import S, { DataSignal } from 's-js'
 import * as frpts from '@frp-ts/core'
+import * as whatsup from 'whatsup'
 import {
   createAction,
   createReducer,
@@ -168,6 +169,19 @@ async function start(iterations: number) {
   autorun(() => (xRes += xH.get()))
   xRes = 0
 
+  const uEntry = whatsup.observable(0)
+  const uA = whatsup.computed(() => uEntry.get())
+  const uB = whatsup.computed(() => uA.get() + 1)
+  const uC = whatsup.computed(() => uA.get() + 1)
+  const uD = whatsup.computed(() => uB.get() + uC.get())
+  const uE = whatsup.computed(() => uD.get() + 1)
+  const uF = whatsup.computed(() => uD.get() + uE.get())
+  const uG = whatsup.computed(() => uD.get() + uE.get())
+  const uH = whatsup.computed(() => uF.get() + uG.get())
+  let uRes = 0
+  whatsup.autorun(() => (uRes += uH.get()))
+  uRes = 0
+
   const xProxy = new (class {
     constructor() {
       makeAutoObservable(this)
@@ -261,6 +275,7 @@ async function start(iterations: number) {
   const cellxLogs = new Array<number>()
   const molLogs = new Array<number>()
   const mobxLogs = new Array<number>()
+  const whatsupLogs = new Array<number>()
   const mobxProxyLogs = new Array<number>()
 
   var i = 0
@@ -310,6 +325,10 @@ async function start(iterations: number) {
     xEntry.set(i)
     mobxLogs.push(performance.now() - startMobx)
 
+    const startWhatsup = performance.now()
+    uEntry.set(i)
+    whatsupLogs.push(performance.now() - startWhatsup)
+
     const startMobxProxy = performance.now()
     xProxy.entry = i
     mobxProxyLogs.push(performance.now() - startMobxProxy)
@@ -332,6 +351,7 @@ async function start(iterations: number) {
       cRes,
       mRes,
       xRes,
+      uRes,
       xpRes,
     ]).size !== 1
   ) {
@@ -348,6 +368,7 @@ async function start(iterations: number) {
       cRes,
       mRes,
       xRes,
+      uRes,
       xpRes,
     })
   }
@@ -364,6 +385,7 @@ async function start(iterations: number) {
     wonka: log(wonkaLogs),
     frpts: log(frptsLogs),
     mobx: log(mobxLogs),
+    whatsup: log(whatsupLogs),
     // this result is not so interesting
     // mobxProxy: log(mobxProxyLogs),
   })
