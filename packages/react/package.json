@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react",
-  "version": "2.0.18",
+  "version": "2.0.19",
   "description": "React bindings for @reatom/core",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
   "repository": {
@@ -34,7 +34,7 @@
   },
   "peerDependencies": {
     "@reatom/core": "^2.0.18",
-    "react": "^17.0.2"
+    "react": ">=16.8.0"
   },
   "devDependencies": {
     "@reatom/core": "^2.0.18",
