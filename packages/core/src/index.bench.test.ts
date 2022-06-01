@@ -358,14 +358,12 @@ async function start(iterations: number) {
     $mol_wire: log(molLogs),
     effectorScope: log(effectorScopeLogs),
     solid: log(solidLogs),
-    // TODO s-js is too fast, we missed something?
-    // s: log(sLogs),
+    s: log(sLogs),
     cellx: log(cellxLogs),
     wonka: log(wonkaLogs),
     frpts: log(frptsLogs),
     mobx: log(mobxLogs),
-    // this result is not so interesting
-    // mobxProxy: log(mobxProxyLogs),
+    mobxProxy: log(mobxProxyLogs),
   })
 }
 
@@ -373,6 +371,100 @@ start(10)
 start(100)
 start(1_000)
 start(10_000)
+
+testAggregateGrowing()
+async function testAggregateGrowing(count = 1_000) {
+  const molAtoms = [new $mol_wire_atom(`0`, (next: number = 0) => next)]
+  const reAtoms = [v3.atom(0, `${0}`)]
+
+  const molAtom = new $mol_wire_atom(`sum`, () =>
+    molAtoms.reduce((sum, atom) => sum + atom.sync(), 0),
+  )
+  const reAtom = v3.atom(
+    (ctx) => reAtoms.reduce((sum, atom) => sum + ctx.spy(atom), 0),
+    `sum`,
+  )
+  const ctx = v3.createContext()
+
+  v3.subscribe(ctx, reAtom, () => {})
+  molAtom.sync()
+
+  const reatomLogs = new Array<number>()
+  const molLogs = new Array<number>()
+  let i = 1
+  while (i++ < count) {
+    const startReatom = performance.now()
+    reAtoms.push(v3.atom(i, `${i}`))
+    reAtoms.at(-2)!.change(ctx, i)
+    reatomLogs.push(performance.now() - startReatom)
+
+    const startMol = performance.now()
+    molAtoms.push(new $mol_wire_atom(`${i}`, (next: number = i) => next))
+    molAtoms.at(-2)!.put(i)
+    molAtom.sync()
+    molLogs.push(performance.now() - startMol)
+
+    // await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+
+  if (molAtom.sync() !== ctx.get(reAtom)) {
+    throw new Error(`Mismatch: ${molAtom.sync()} !== ${ctx.get(reAtom)}`)
+  }
+
+  console.log(`Median of sum calc of reactive nodes in list from 1 to ${count}`)
+
+  printLogs({
+    reatom: log(reatomLogs),
+    $mol_wire: log(molLogs),
+  })
+}
+
+testDependentGrowing()
+async function testDependentGrowing(count = 1_000) {
+  const molAtoms = [new $mol_wire_atom(`0`, (next: number = 0) => next)]
+  const reAtoms = [v3.atom(0, `${0}`)]
+
+  const molAtom = new $mol_wire_atom(`sum`, () =>
+    molAtoms.reduce((sum, atom) => sum + atom.sync(), 0),
+  )
+  const reAtom = v3.atom(
+    (ctx) => reAtoms.reduce((sum, atom) => sum + ctx.spy(atom), 0),
+    `sum`,
+  )
+  const ctx = v3.createContext()
+
+  v3.subscribe(ctx, reAtom, () => {})
+  molAtom.sync()
+
+  const reatomLogs = new Array<number>()
+  const molLogs = new Array<number>()
+  let i = 1
+  while (i++ < count) {
+    const startReatom = performance.now()
+    reAtoms.push(v3.atom(i, `${i}`))
+    reAtoms.at(-2)!.change(ctx, i)
+    reatomLogs.push(performance.now() - startReatom)
+
+    const startMol = performance.now()
+    molAtoms.push(new $mol_wire_atom(`${i}`, (next: number = i) => next))
+    molAtoms.at(-2)!.put(i)
+    molAtom.sync()
+    molLogs.push(performance.now() - startMol)
+
+    // await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+
+  if (molAtom.sync() !== ctx.get(reAtom)) {
+    throw new Error(`Mismatch: ${molAtom.sync()} !== ${ctx.get(reAtom)}`)
+  }
+
+  console.log(`Median of sum calc of reactive nodes in list from 1 to ${count}`)
+
+  printLogs({
+    reatom: log(reatomLogs),
+    $mol_wire: log(molLogs),
+  })
+}
 
 function printLogs(results: v3.Rec<ReturnType<typeof log>>) {
   const medFastest = Math.min(...Object.values(results).map(({ med }) => med))
