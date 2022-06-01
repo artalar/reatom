@@ -86,10 +86,10 @@ export interface Ctx {
       meta: AtomMeta,
       mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
     ): AtomCache
+    caches: WeakMap<AtomMeta, AtomCache>
     log(cb: Fn<[patches: Logs, error: null | Error]>): Unsubscribe
-    read(meta: AtomMeta): undefined | AtomCache
-    subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
     run<T>(cb: Fn<[], T>): T
+    subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
   }
 }
 
@@ -191,6 +191,9 @@ export interface ContextOptions {
   createCache?: Fn<[AtomMeta], AtomCache>
 }
 
+const pushSpread = <T>(arr: Array<T>, iterable: Set<T> | Array<T>) =>
+  iterable.forEach((el) => arr.push(el))
+
 export const createContext = ({
   callLateEffects = (cb) => cb(),
   callSafety: _callSafety = callSafety,
@@ -232,8 +235,9 @@ export const createContext = ({
   resetTr()
 
   const walkNearEffects = () => {
-    while (nearEffectsIdx < nearEffects.length)
+    while (nearEffectsIdx < nearEffects.length) {
       _callSafety(nearEffects[nearEffectsIdx++], ctx)
+    }
     nearEffects = []
     nearEffectsIdx = 0
   }
@@ -350,11 +354,10 @@ export const createContext = ({
     // FIXME: asserts `inTr`
     schedule(effect = noop, isNearEffect = true) {
       assertFunction(effect)
-      const effects = isNearEffect ? trNearEffects : trLateEffects
 
       return new Promise<any>((res, rej) => {
         trRollbacks.push(rej)
-        effects.push((ctx) => {
+        ;(isNearEffect ? trNearEffects : trLateEffects).push((ctx) => {
           try {
             res(effect(ctx))
           } catch (error) {
@@ -367,14 +370,12 @@ export const createContext = ({
     spy: null,
     [INTERNAL]: {
       actualize,
+      caches,
       log(cb) {
         assertFunction(cb)
 
         logsListeners.add(cb)
         return () => logsListeners.delete(cb)
-      },
-      read(meta) {
-        return caches.get(meta)
       },
       run(cb) {
         if (inTr) return cb()
@@ -410,12 +411,12 @@ export const createContext = ({
           }
 
           for (const meta of trUnlinks) {
-            if (isStale(meta.patch!)) nearEffects.push(...meta.onCleanup)
+            if (isStale(meta.patch!)) pushSpread(nearEffects, meta.onCleanup)
           }
 
           for (const meta of trLinks) {
             if (!isStale(meta.patch!) && !trUnlinks.has(meta)) {
-              nearEffects.push(...meta.onInit)
+              pushSpread(nearEffects, meta.onInit)
             }
           }
 
@@ -429,25 +430,28 @@ export const createContext = ({
               caches.set(meta, patch!)
               meta.patch = null
               const { state } = patch
-              const schedule: Fn<[Fn]> = meta.isAction
-                ? ((patch.state = []),
-                  (cb) => nearEffects.push(() => cb(state)))
-                : (cb) => lateEffects.push(() => cb(caches.get(meta)!.state))
-              patch.listeners.forEach(schedule)
+              patch.listeners.forEach(
+                meta.isAction
+                  ? ((patch.state = []),
+                    (cb) => nearEffects.push(() => cb(state)))
+                  : (cb) => lateEffects.push(() => cb(caches.get(meta)!.state)),
+              )
             }
           }
 
-          nearEffects.push(...trNearEffects)
-          lateEffects.push(...trLateEffects)
+          pushSpread(nearEffects, trNearEffects)
+          pushSpread(lateEffects, trLateEffects)
+
+          resetTr()
         } catch (e: any) {
           trError = e = e instanceof Error ? e : new Error(String(e))
           for (const log of logsListeners) log(trLogs, e)
           for (const cb of trRollbacks) cb(e)
           for (const { meta } of trLogs) meta.patch = null
 
-          throw e
-        } finally {
           resetTr()
+
+          throw e
         }
 
         walkNearEffects()
@@ -477,7 +481,7 @@ export const createContext = ({
           cache.listeners.add(fn)
         }
 
-        fn(caches.get(meta)!.state)
+        if (lastState === impossible) fn(caches.get(meta)!.state)
 
         return () => {
           if (inTr)
@@ -488,7 +492,7 @@ export const createContext = ({
               const queue: Array<AtomCache> = [copyCache(cache, cache)]
               for (const patch of queue) {
                 caches.set(patch.meta, patch)
-                nearEffects.push(...patch.meta.onCleanup)
+                pushSpread(nearEffects, patch.meta.onCleanup)
 
                 for (const parentCache of patch.parents) {
                   parentCache.children.delete(patch.meta)
@@ -512,7 +516,8 @@ export const createContext = ({
 export const log = (ctx: Ctx, cb: Fn<[patches: Logs, error: null | Error]>) =>
   ctx[INTERNAL].log(cb)
 
-export const read = (ctx: Ctx, meta: AtomMeta) => ctx[INTERNAL].read(meta)
+export const read = (ctx: Ctx, meta: AtomMeta): AtomCache<any> | undefined =>
+  ctx[INTERNAL].caches.get(meta)
 
 export const run: {
   <T>(ctx: Ctx, cb: Fn<[], T>): T
@@ -636,7 +641,7 @@ export const action: {
     ctx[INTERNAL].run(() =>
       ctx[INTERNAL].actualize(meta, (patchCtx, patch) => {
         patch.cause = ctx.cause ?? patch
-        patch.state = [...patch.state, (fn as Fn)(patchCtx, ...params)]
+        patch.state = patch.state.concat([(fn as Fn)(patchCtx, ...params)])
       }).state.at(-1),
     )
 
