@@ -1,8 +1,6 @@
 const {
   action,
   atom,
-  isAtom,
-  isAction,
   createContext,
   isStale,
   subscribe,
@@ -37,8 +35,26 @@ const ctxToStore = (ctx) => {
 
   const allCaches = new Map()
 
-  log(ctx, (patches) =>
-    patches.forEach((cache, atom) => allCaches.set(atom, cache)),
+  const cleanup = (cache) => {
+    if (isStale(cache)) {
+      // TODO
+      // ctx[`🙊`].caches.set(cache.meta, {
+      //   state: cache.meta.initState,
+      //   meta,
+      //   cause: cache,
+      //   parents: [],
+      //   children: new Set(),
+      //   listeners: new Set(),
+      // })
+      allCaches.delete(cache.meta)
+      cache.parents.forEach((parentCache) => cleanup(parentCache))
+    }
+  }
+
+  log(ctx, (logs) =>
+    logs.forEach(
+      (cache) => !cache.meta.isAction && allCaches.set(cache.meta, cache),
+    ),
   )
 
   const actionsListeners = new Set()
@@ -48,7 +64,8 @@ const ctxToStore = (ctx) => {
         ctx.schedule(() =>
           actionsListeners.forEach((cb) => cb(action, /* TODO stateDiff */ {})),
         )
-        action.v3action(ctx, action.payload)
+        // FIXME: dispatch plain action not from action creator?
+        action.v3action?.(ctx, action.payload)
       })
     },
     subscribe(thing, cb) {
@@ -57,22 +74,45 @@ const ctxToStore = (ctx) => {
         return () => actionsListeners.delete(thing)
       }
 
-      let skipFirst = true
-      return subscribe(ctx, thing, (v) => {
-        if (skipFirst) {
-          skipFirst = false
-          return
-        }
-        cb(v)
+      var un = subscribe(ctx, thing, (v) => {
+        if (!un) return
+        cb(getIsAction(thing) ? v.at(-1) : v)
       })
+
+      const actualize = (cache) => {
+        cache.parents.forEach(actualize)
+        ctx[`🙊`].actualize(cache.meta)
+      }
+
+      run(ctx, () => {
+        const prevInitState = read(ctx, init.__reatom).state
+        const patch = ctx[`🙊`].actualize(init.__reatom)
+        patch.state = [{}]
+
+        actualize(read(ctx, thing.__reatom))
+
+        patch.state = prevInitState
+      })
+
+      return () => {
+        un()
+        cleanup(read(ctx, thing.__reatom))
+      }
     },
     getState: (atom) => {
-      if (atom) return ctx.get(atom)
+      if (atom) {
+        const state = ctx.get(atom)
+        cleanup(read(ctx, atom.__reatom))
+        return state
+      }
 
       const result = {}
 
-      allCaches.forEach((cache, atom) => {
-        if (isStale(cache)) allCaches.delete(atom)
+      allCaches.forEach((cache) => {
+        if (isStale(cache)) {
+          ctx[`🙊`].caches.delete(cache.meta)
+          allCaches.delete(atom)
+        }
         else result[cache.meta.name] = cache.state
       })
 
@@ -113,7 +153,7 @@ const createStore = (atomOrState, state) => {
   return store
 }
 
-let i = 0
+const actions = new Map()
 const declareAction = (name, ...reactions) => {
   let type
   if (typeof name === 'function') {
@@ -121,6 +161,13 @@ const declareAction = (name, ...reactions) => {
     name = undefined
   } else if (Array.isArray(name)) {
     type = name = name[0]
+    if (actions.has(type)) {
+      if (reactions.length === 0) {
+        return actions.get(type)
+      } else {
+        // TODO
+      }
+    }
   }
 
   const v3action = action((ctx, payload) => {
@@ -128,14 +175,24 @@ const declareAction = (name, ...reactions) => {
     return payload
   }, name)
 
-  if (type) v3action.__reatom.name = type
-  else type = v3action.__reatom.name
-
-  return Object.assign((payload) => ({ payload, type, v3action }), v3action, {
-    __reatom_action: true,
-    getType: () => type,
+  const actionCreator = Object.assign(
+    (payload) => ({ payload, type, v3action }),
     v3action,
-  })
+    {
+      __reatom_action: true,
+      getType: () => type,
+      v3action,
+    },
+  )
+
+  if (type) {
+    v3action.__reatom.name = type
+    actions.set(type, actionCreator)
+  } else {
+    type = v3action.__reatom.name
+  }
+
+  return actionCreator
 }
 
 const init = declareAction(['@@Reatom/init'])
@@ -162,13 +219,15 @@ const declareAtom = (...a) => {
 
   const v3atom = Object.assign(
     (states = {}, action = initAction) => {
-      const store = (createStore(states))
+      const store = createStore(states)
       const { v3ctx: ctx } = store
       log(
         ctx,
-        (patches, error) =>
+        (logs, error) =>
           !error &&
-          patches.forEach(({ meta, state }) => (states[meta.name] = state)),
+          logs.forEach(
+            ({ meta, state }) => !meta.isAction && (states[meta.name] = state),
+          ),
       )
       subscribe(ctx, v3atom, () => {})
       action.v3action(ctx, action.payload)
@@ -184,15 +243,17 @@ const declareAtom = (...a) => {
             (state = newState),
         )
 
-        if (
-          inits.length === 1 &&
-          !isStale(read(ctx, v3atom.__reatom)) &&
-          !inits[0]
-        ) {
-          return state
-        }
+        const prevCache = read(ctx, v3atom.__reatom)
 
-        const prevCache = read(ctx, v3atom)
+        // if (
+        //   inits.length === 1 &&
+        //   prevCache &&
+        //   !isStale(prevCache) &&
+        //   !inits[0]
+        // ) {
+        //   return state
+        // }
+
         let i = 0
         depMatcher((target, handler) => {
           const targetState = ctx.spy(target)
@@ -245,8 +306,6 @@ function combine(name, shape) {
   const atom = declareAtom(name, isArray ? [] : {}, (on) =>
     keys.forEach((key) =>
       on(shape[key], (state, payload) => {
-        if (!Array.isArray(state) && isArray)
-          console.log('TEST', { name, state, shape })
         const newState = isArray ? state.slice(0) : Object.assign({}, state)
         newState[key] = payload
         return newState

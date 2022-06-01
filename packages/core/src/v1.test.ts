@@ -45,11 +45,10 @@ test('main api, declareAction', () => {
   declareAction('TeSt')().type //?
   assert.is(declareAction('TeSt')().type.includes('TeSt'), true)
 
-  assert.equal(declareAction(['TeSt'])(), {
-    type: 'TeSt',
-    payload: undefined,
-    reactions: [],
-  })
+  {
+    const action = declareAction(['TeSt'])()
+    assert.ok(action.type === 'TeSt' && 'payload' in action)
+  }
 })
 
 test('main api, declareAtom, basics', () => {
@@ -235,7 +234,7 @@ test('main api, createStore', () => {
 
   assert.ok(
     store.getState(root) ===
-      (store.dispatch({ type: 'random', payload: null }), store.getState(root)),
+      (store.dispatch(declareAction()()), store.getState(root)),
   )
   assert.is(storeSubscriber.calls.length, 3)
   assert.is(subscriberToggled.calls.length, 1)
@@ -306,7 +305,7 @@ test('main api, createStore lazy selectors', () => {
   assert.is(store.getState(count2), 0)
   store.dispatch(set(15))
   assert.is(storeSubscriber.calls.length, 6)
-  assert.is(store.getState(count2), 0)
+  assert.is(store.getState(count2), 0) 
   assert.is(count2Subscriber2.calls.length, 3)
   assert.is(count2SetMap.calls.length, 2)
 })
@@ -368,9 +367,12 @@ test('main api, createStore lazy resubscribes', () => {
   assert.is(store.getState().countDoubled, undefined)
 
   unsubscriber = store.subscribe(countDoubled, () => {})
+  assert.is(store.getState(count), 3)
+  assert.is(store.getState().countDoubled, 0)
   store.dispatch(increment())
   assert.is(store.getState(count), 4)
   assert.is(store.getState().countDoubled, 8)
+  1
 })
 
 test('main api, createStore lazy derived resubscribes', () => {
@@ -655,7 +657,7 @@ test('derived state, map + combine', () => {
   assert.equal(getState(countState, count), 2)
 
   let rootState = root()
-  rootState = root(rootState, { type: 'any', payload: null })
+  rootState = root(rootState, declareAction()())
   assert.equal(getState(rootState, count), 0)
   assert.equal(getState(rootState, countDoubled), 0)
   assert.equal(getState(rootState, root), { count: 0, countDoubled: 0 })
@@ -920,6 +922,8 @@ test('dynamic initialState, unsubscribed atom should recalculate on each `getSta
   await sleep()
   const date2 = store.getState(dateAtom)
   assert.is.not(date1, date2)
+
+  1
 })
 
 test('dynamic initialState, reducer of `initAction.type` should calling on each mount', async () => {
