@@ -26,7 +26,10 @@
   "devDependencies": {
     "@frp-ts/core": "^1.0.0-alpha.16",
     "@ngrx/store": "^13.2.0",
+    "@nrwl/devkit": "14.1.9",
+    "@nrwl/workspace": "^14.1.9",
     "@size-limit/preset-small-lib": "^7.0.8",
+    "@types/node": "latest",
     "cellx": "^1.10.26",
     "cross-env": "^7.0.3",
     "cross-fetch": "^3.1.5",
@@ -34,6 +37,7 @@
     "microbundle": "^0.15.0",
     "mobx": "^6.5.0",
     "mol_wire_lib": "^1.0.162",
+    "nx": "14.1.9",
     "prettier": "^2.6.2",
     "redux": "^4.2.0",
     "reselect": "^4.1.5",
@@ -57,5 +61,6 @@
     "atom",
     "reatom",
     "@reatom"
-  ]
+  ],
+  "dependencies": {}
 }
