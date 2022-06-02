@@ -29,19 +29,6 @@
     "update": "npx npm-check-updates -u",
     "size": "size-limit"
   },
-  "devDependencies": {
-    "@size-limit/preset-small-lib": "^7.0.8",
-    "cellx": "^1.10.26",
-    "cross-env": "^7.0.3",
-    "effector": "^22.2.0",
-    "mobx": "^6.4.1",
-    "mol_wire_lib": "^1.0.161",
-    "redux": "^4.1.2",
-    "reselect": "^4.1.5",
-    "ts-node": "^10.5.0",
-    "uvu": "^0.5.3",
-    "wonka": "^4.0.15"
-  },
   "author": "artalar",
   "license": "MIT",
   "readme": "README.md",
