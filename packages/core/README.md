@@ -262,7 +262,15 @@ export const timerAtom = createAtom(
 
 [![codesandbox with createResource example](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/reatom-createresource-k00fq)
 
-#### Primitives
+#### SSR Next.js example
+
+[stackblitz](https://stackblitz.com/edit/reatom2-ssr-nextjs)
+
+The huge benefit of Reatom that you can await all async calls inside `schedule`, which allow you to write any kind of busines logic separated from react components.
+
+But be aware, React doesn't call `useEffect` on server, so you should dispatch all async actions manually, (in `getServerSideProps` for Next.js Do not mix side effects management between React and Reatom, it is a bad practice.
+
+### Primitives
 
 Primitives are a pack of helpers around primitive data structures, which helps you to reduce boilerplate. It's not included in `2kb` main bundle, but it's tiny by itself and will not be included into your application bundle until you will not import it.
 
