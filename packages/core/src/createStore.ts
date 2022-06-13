@@ -4,22 +4,20 @@ import {
   Atom,
   AtomsCache,
   callSafety as originalCallSafety,
-  Causes,
   createReatomError,
   createTemplateCache as originalCreateTemplateCache,
   createTransaction,
   delFromSetsMap,
   Effect,
-  Fn,
   isAction,
   isAtom,
   isFunction,
-  noop,
   Patch,
-  Rec,
   Store,
-  TransactionResult,
 } from './internal'
+
+export type StoreOnError = Parameters<Store[`onError`]>[0]
+export type StoreOnPatch = Parameters<Store[`onPatch`]>[0]
 
 function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
   const cache = getCache(atom)
@@ -51,8 +49,8 @@ export function createStore({
 }: {
   callSafety?: typeof originalCallSafety
   createTemplateCache?: typeof originalCreateTemplateCache
-  onError?: Parameters<Store[`onError`]>[0]
-  onPatch?: Parameters<Store[`onPatch`]>[0]
+  onError?: StoreOnError
+  onPatch?: StoreOnPatch
   /** Current time getter. Tip: use `performance.now` to accurate tracking */
   now?: typeof Date.now
   // TODO:
