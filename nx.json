@@ -4,13 +4,7 @@
     "default": {
       "runner": "nx/tasks-runners/default",
       "options": {
-        "cacheableOperations": [
-          "build",
-          "test",
-          "lint",
-          "package",
-          "prepare"
-        ]
+        "cacheableOperations": ["build", "test", "lint", "package", "prepare"]
       }
     }
   },
@@ -21,21 +15,19 @@
         "projects": "dependencies"
       }
     ],
-    "prepare": [
+    "test": [
       {
-        "target": "prepare",
+        "target": "build",
         "projects": "dependencies"
-      }
-    ],
-    "package": [
+      },
       {
-        "target": "package",
+        "target": "test",
         "projects": "dependencies"
       }
     ]
   },
   "affected": {
-    "defaultBase": "master"
+    "defaultBase": "v3"
   },
   "pluginsConfig": {
     "@nrwl/js": {

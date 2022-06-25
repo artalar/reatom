@@ -23,7 +23,7 @@ import {
   Store,
 } from '@ngrx/store'
 
-// import * as v3 from '../'
+// import * as v3 from '.'
 import * as v3 from '@reatom/core'
 
 configure({ enforceActions: 'never' })
@@ -50,7 +50,7 @@ async function start(iterations: number) {
 
   const ctxV3 = v3.createContext()
   let resV3 = 0
-  v3.subscribe(ctxV3, hV3, (v) => {
+  ctxV3.subscribe(hV3, (v) => {
     resV3 += v //?
   })
   resV3 = 0
@@ -266,7 +266,7 @@ async function start(iterations: number) {
   var i = 0
   while (i++ < iterations) {
     const startReatomV3 = performance.now()
-    aV3.change(ctxV3, i)
+    aV3(ctxV3, i)
     reatomV3Logs.push(performance.now() - startReatomV3)
 
     const startEffector = performance.now()
@@ -386,7 +386,7 @@ async function testAggregateGrowing(count = 1_000) {
   )
   const ctx = v3.createContext()
 
-  v3.subscribe(ctx, reAtom, () => {})
+  ctx.subscribe(reAtom, () => {})
   molAtom.sync()
 
   const reatomLogs = new Array<number>()
@@ -395,7 +395,7 @@ async function testAggregateGrowing(count = 1_000) {
   while (i++ < count) {
     const startReatom = performance.now()
     reAtoms.push(v3.atom(i, `${i}`))
-    reAtoms.at(-2)!.change(ctx, i)
+    reAtoms.at(-2)!(ctx, i)
     reatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
@@ -433,7 +433,7 @@ async function testDependentGrowing(count = 1_000) {
   )
   const ctx = v3.createContext()
 
-  v3.subscribe(ctx, reAtom, () => {})
+  ctx.subscribe(reAtom, () => {})
   molAtom.sync()
 
   const reatomLogs = new Array<number>()
@@ -442,7 +442,7 @@ async function testDependentGrowing(count = 1_000) {
   while (i++ < count) {
     const startReatom = performance.now()
     reAtoms.push(v3.atom(i, `${i}`))
-    reAtoms.at(-2)!.change(ctx, i)
+    reAtoms.at(-2)!(ctx, i)
     reatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()

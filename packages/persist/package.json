@@ -1,9 +1,9 @@
 {
-  "name": "@reatom/<%= name %>",
+  "name": "@reatom/persist",
   "version": "3.0.0",
-  "private": <%= private %>,
+  "private": false,
   "sideEffects": false,
-  "description": "Reatom for <%= name %>",
+  "description": "Reatom for persist",
   "type": "module",
   "source": "src/index.ts",
   "exports": {
@@ -36,7 +36,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/<%= name %>",
+  "homepage": "https://github.com/artalar/reatom/packages/persist",
   "files": [
     "/build",
     "/package.json",

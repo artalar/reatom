@@ -1,25 +1,18 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { mockFn } from '../test_utils'
+import { mockFn } from '@reatom/internal-utils'
 
 import {
   action,
+  Atom,
   atom,
   AtomMeta,
   createContext,
   Fn,
   isStale,
-  log,
-  read,
-  subscribe,
+  Rec,
 } from './atom'
-import { shallowEqual, init, atomizeActionResult } from './atom.utils'
 
-const getDuration = async (cb: Fn) => {
-  const start = Date.now()
-  await cb()
-  return Date.now() - start
-}
 
 test(`action`, () => {
   const act1 = action()
@@ -33,7 +26,7 @@ test(`action`, () => {
   })
   const ctx = createContext()
 
-  subscribe(ctx, a2, () => {})
+  ctx.subscribe(a2, () => {})
   assert.is(fn.calls.length, 0)
 
   act1(ctx)
@@ -49,8 +42,9 @@ test(`action`, () => {
     [1, 1, 2],
   )
 
-  a1.change(ctx, (s) => s + 1)
+  a1(ctx, (s) => s + 1)
   assert.is(fn.calls.length, 3)
+  ;`👍` //?
 })
 
 test(`linking`, () => {
@@ -59,15 +53,15 @@ test(`linking`, () => {
   const context = createContext()
   const fn = mockFn()
 
-  log(context, (logs) => {
+  context.log((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = subscribe(context, a2, fn)
-  var a1Cache = read(context, a1.__reatom)!
-  var a2Cache = read(context, a2.__reatom)!
+  const un = context.subscribe(a2, fn)
+  var a1Cache = context.read(a1.__reatom)!
+  var a2Cache = context.read(a2.__reatom)!
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
@@ -76,10 +70,11 @@ test(`linking`, () => {
 
   un()
 
-  assert.is.not(a1Cache, read(context, a1.__reatom)!)
-  assert.is.not(a2Cache, read(context, a2.__reatom)!)
+  assert.is.not(a1Cache, context.read(a1.__reatom)!)
+  assert.is.not(a2Cache, context.read(a2.__reatom)!)
 
-  assert.is(read(context, a1.__reatom)!.children.size, 0)
+  assert.is(context.read(a1.__reatom)!.children.size, 0)
+  ;`👍` //?
 })
 
 test(`nested deps`, () => {
@@ -93,17 +88,17 @@ test(`nested deps`, () => {
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
-  log(context, (logs) => {
+  context.log((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = subscribe(context, a6, fn)
+  const un = context.subscribe(a6, fn)
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      isStale(read(context, a.__reatom)!),
+      isStale(context.read(a.__reatom)!),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -111,23 +106,21 @@ test(`nested deps`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.equal(
-    read(context, a1.__reatom)!.children,
+    context.read(a1.__reatom)!.children,
     new Set([a2.__reatom, a3.__reatom]),
   )
   assert.equal(
-    read(context, a2.__reatom)!.children,
+    context.read(a2.__reatom)!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
   assert.equal(
-    read(context, a3.__reatom)!.children,
+    context.read(a3.__reatom)!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  log(context, (logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
+  context.log((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
 
-  try {
-    a1.change(context, 1)
-  } catch (error) {}
+  a1(context, 1)
 
   assert.is(fn.calls.length, 2)
   assert.is(touchedAtoms.length, new Set(touchedAtoms).size)
@@ -136,28 +129,71 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      isStale(read(context, a.__reatom)!),
+      isStale(context.read(a.__reatom)!),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
   }
+  ;`👍` //?
 })
 
-test(`async batch`, async () => {
+test(`transaction batch`, () => {
+  const track = mockFn()
+  const pushNumber = action<number>()
+  const numberAtom = atom((ctx) => {
+    ctx.spy(pushNumber).forEach(track)
+  })
+  const context = createContext()
+  context.subscribe(numberAtom, () => {})
+
+  assert.is(track.calls.length, 0)
+
+  pushNumber(context, 1)
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), 1)
+
+  context.run(() => {
+    pushNumber(context, 2)
+    assert.is(track.calls.length, 1)
+    pushNumber(context, 3)
+    assert.is(track.calls.length, 1)
+  })
+  assert.is(track.calls.length, 3)
+  assert.is(track.lastInput(), 3)
+
+  context.run(() => {
+    pushNumber(context, 4)
+    assert.is(track.calls.length, 3)
+    context.get(numberAtom)
+    assert.is(track.calls.length, 4)
+    pushNumber(context, 5)
+    assert.is(track.calls.length, 4)
+  })
+  assert.is(track.calls.length, 6)
+  assert.is(track.lastInput(), 5)
+  assert.equal(
+    track.calls.map(({ i }) => i[0]),
+    [1, 2, 3, 4, 4, 5],
+  )
+  1
+})
+
+test(`late effects batch`, async () => {
   const a = atom(0)
   const context = createContext({
-    callLateEffects: (cb) => setTimeout(cb),
+    // @ts-ignores
+    callLateEffect: (cb, ...a) => setTimeout(() => cb(...a)),
   })
   const fn = mockFn()
-  subscribe(context, a, fn)
+  context.subscribe(a, fn)
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
 
-  a.change(context, (s) => s + 1)
-  a.change(context, (s) => s + 1)
+  a(context, (s) => s + 1)
+  a(context, (s) => s + 1)
   await Promise.resolve()
-  a.change(context, (s) => s + 1)
+  a(context, (s) => s + 1)
 
   assert.is(fn.calls.length, 1)
 
@@ -165,11 +201,12 @@ test(`async batch`, async () => {
 
   assert.is(fn.calls.length, 2)
   assert.is(fn.lastInput(), 3)
+  ;`👍` //?
 })
 
 test(`display name`, () => {
-  const firstNameAtom = atom('John', `firstName`)
-  const lastNameAtom = atom('Doe', `lastName`)
+  const firstNameAtom = atom(`John`, `firstName`)
+  const lastNameAtom = atom(`Doe`, `lastName`)
   const isFirstNameShortAtom = atom(
     ({ spy }) => spy(firstNameAtom).length < 10,
     `isFirstNameShort`,
@@ -184,285 +221,29 @@ test(`display name`, () => {
     `displayName`,
   )
 
-  fullNameAtom.__reatom.onInit.add(() => {
-    'init' //?
+  fullNameAtom.__reatom.onConnect.add(() => {
+    ;`init` //?
   })
   fullNameAtom.__reatom.onCleanup.add(() => {
-    'cleanup' //?
+    ;`cleanup` //?
   })
-  displayNameAtom.__reatom.onInit.add(() => {
-    'init' //?
+  displayNameAtom.__reatom.onConnect.add(() => {
+    ;`init` //?
   })
   displayNameAtom.__reatom.onCleanup.add(() => {
-    'cleanup' //?
+    ;`cleanup` //?
   })
 
   const ctx = createContext()
 
-  const un = subscribe(ctx, displayNameAtom, () => {})
+  const un = ctx.subscribe(displayNameAtom, () => {})
 
-  firstNameAtom.change(ctx, 'Joooooooooooohn')
+  firstNameAtom(ctx, `Joooooooooooohn`)
 
-  try {
-    firstNameAtom.change(ctx, 'Jooohn')
-  } catch (error) {}
+  firstNameAtom(ctx, `Jooohn`)
 
   un()
-})
-
-test(`resource`, async () => {
-  const resource = <State, Params>(
-    name: string,
-    initState: State,
-    fetcher: (state: State, params: Params) => Promise<State>,
-    {
-      isEqual = shallowEqual,
-      fetchOnInit = false,
-    }: {
-      isEqual?: typeof shallowEqual
-      fetchOnInit?: Params extends undefined ? boolean : false
-    } = {},
-  ) => {
-    const initParams = Symbol() as any
-    const paramsAtom = atom(initParams as Params, {
-      name: `${name}ResourceParams`,
-      isInspectable: false,
-    })
-    const versionAtom = atom(0, {
-      name: `${name}ResourceVersion`,
-      isInspectable: false,
-    })
-    const dataAtom = atom(initState, `${name}ResourceData`)
-    const loadingAtom = atom(false, {
-      reducers: { start: () => true, end: () => false },
-      name: `${name}ResourceLoading`,
-    })
-    const errorAtom = atom<null | Error>(null, `${name}ResourceError`)
-
-    const refetch = action(async (ctx, params: Params) => {
-      paramsAtom.change(ctx, params)
-      const version = versionAtom.change(ctx, (s) => s + 1)
-      const isLast = () => version === ctx.get(versionAtom)
-
-      loadingAtom.start(ctx)
-      errorAtom.change(ctx, null)
-
-      await ctx.schedule()
-
-      try {
-        const newState = await fetcher(
-          ctx.get(dataAtom),
-          // @ts-expect-error
-          params === initParams ? undefined : params,
-        )
-
-        if (isLast()) onDone(ctx, newState)
-
-        return newState
-      } catch (err) {
-        err = err instanceof Error ? err : new Error(String(err))
-
-        // @ts-expect-error
-        if (isLast()) onError(ctx, err)
-
-        throw err
-      }
-    }, `${name}Resource.refetch`)
-
-    const refetchPromiseAtom = atomizeActionResult(refetch)
-
-    const fetch = action(async (ctx, params: Params): Promise<State> => {
-      return isEqual(ctx.get(paramsAtom), params)
-        ? ctx.get(loadingAtom)
-          ? ctx.get(refetchPromiseAtom)!
-          : ctx.get(dataAtom)
-        : refetch(ctx, params)
-    }, `${name}Resource.fetch`)
-
-    const onDone = action((ctx, data: State): State => {
-      loadingAtom.end(ctx)
-      dataAtom.change(ctx, data)
-
-      return data
-    }, `${name}Resource.onDone`)
-
-    const onError = action((ctx, err: Error): Error => {
-      loadingAtom.end(ctx)
-      errorAtom.change(ctx, err)
-
-      return err
-    }, `${name}Resource.onError`)
-
-    const cancel = action((ctx): void => {
-      loadingAtom.end(ctx)
-      versionAtom.change(ctx, (s) => s + 1)
-    }, `${name}Resource.cancel`)
-
-    const retry = action((ctx): Promise<State> => {
-      return refetch(ctx, ctx.get(paramsAtom))
-    }, `${name}Resource.retry`)
-
-    if (fetchOnInit) {
-      dataAtom.__reatom.onInit.add((ctx) => {
-        // @ts-expect-error
-        refetch(ctx)
-      })
-    }
-
-    return {
-      cancel,
-      dataAtom,
-      changeData: dataAtom.change,
-      errorAtom,
-      fetch,
-      loadingAtom,
-      onDone,
-      onError,
-      refetch,
-      refetchAtom: refetchPromiseAtom,
-      retry,
-    }
-  }
-
-  const ctx = createContext()
-
-  type ImageData = { image_id: string; title: string }
-
-  const pageAtom = atom(0, {
-    reducers: {
-      next: (state) => state + 1,
-      prev: (state) => (state = Math.max(1, state - 1)),
-    },
-  })
-
-  // @ts-ignore
-  const fetch = (await import('node-fetch')) as any as typeof globalThis.fetch
-
-  let i = 0
-  const imagesResource = resource(
-    `images`,
-    new Array<ImageData>(),
-    async (state, page: void | number = 0) => {
-      if (i++ === 0) throw new Error(`just for test`)
-      const result = await fetch(
-        `https://api.artic.edu/api/v1/artworks?fields=image_id,title&page=${page}&limit=${10}`,
-      )
-        .then<{ data: Array<ImageData> }>((r) => r.json())
-        .then(({ data }) => data.filter((el) => el.image_id))
-
-      return result
-    },
-  )
-
-  const startAtom = atom(NaN, `requestTimeStartAtom`)
-  const endAtom = atom(NaN, `requestTimeEndAtom`)
-  const requestTimeAtom = atom((ctx, state = 0) => {
-    ctx.spy(imagesResource.refetch).forEach((refetchData) => {
-      startAtom.change(ctx, Date.now())
-    })
-
-    ctx.spy(imagesResource.onDone).forEach((onDoneData) => {
-      state = endAtom.change(ctx, Date.now()) - ctx.get(startAtom)
-    })
-
-    return state
-  }, `requestTime`)
-
-  const retryAtom = atom((ctx, state = 0) => {
-    if (ctx.spy(imagesResource.onError).length && state < 3) {
-      ctx.spy(imagesResource.onError) //?
-      state++
-      imagesResource.retry(ctx)
-    }
-    if (ctx.spy(imagesResource.onDone).length) {
-      state = 0
-    }
-    return state
-  }, `retry`)
-  init(ctx, retryAtom)
-
-  subscribe(ctx, requestTimeAtom, (requestTime) => {
-    let log = '',
-      { cause } = read(ctx, requestTimeAtom.__reatom)!
-    while (cause) {
-      log += `${cause.meta.name}`
-      cause = cause === cause.cause ? null : cause.cause
-      if (cause) log += ` <-- `
-    }
-
-    console.log(log)
-  })
-
-  await imagesResource.fetch(ctx).catch(() => null)
-})
-
-test(`timer`, async () => {
-  const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
-
-  const createTimerModel = (name: string) => {
-    const timerAtom = atom(0, `${name}Timer`)
-
-    const intervalAtom = atom(1000, {
-      reducers: {
-        setSeconds: (state, seconds: number) => seconds * 1000,
-      },
-      name: `${name}TimerInterval`,
-    })
-
-    const versionAtom = atom(0, `${name}TimerVersion`)
-
-    const startTimer = action(async (ctx, delayInSeconds: number) => {
-      const version = versionAtom.change(ctx, (s) => s + 1)
-      const delay = delayInSeconds * 1000
-      const start = Date.now()
-      const target = delay + start
-      let remains = delay
-
-      timerAtom.change(ctx, remains)
-
-      await ctx.schedule()
-
-      while (remains > 0) {
-        await sleep(Math.min(remains, ctx.get(intervalAtom)))
-
-        if (version !== ctx.get(versionAtom)) return
-
-        timerAtom.change(ctx, (remains = target - Date.now()))
-      }
-
-      timerAtom.change(ctx, 0)
-    }, `${name}StartTimer`)
-
-    const stopTimer = action((ctx) => {
-      versionAtom.change(ctx, (s) => s + 1)
-      timerAtom.change(ctx, 0)
-    }, `${name}StopTimer`)
-
-    return {
-      timerAtom,
-      intervalAtom,
-      startTimer,
-      stopTimer,
-    }
-  }
-
-  const timerModel = createTimerModel(`test`)
-  const ctx = createContext()
-
-  timerModel.intervalAtom.setSeconds(ctx, 0.001)
-
-  var target = 50
-  var duration = await getDuration(() =>
-    timerModel.startTimer(ctx, target / 1000),
-  )
-  assert.ok(duration >= target)
-
-  var target = 50
-  var [duration] = await Promise.all([
-    getDuration(() => timerModel.startTimer(ctx, target / 1000)),
-    sleep(target / 2).then(() => timerModel.stopTimer(ctx)),
-  ])
-  assert.ok(duration >= target / 2 && duration < target)
+  ;`👍` //?
 })
 
 test.run()

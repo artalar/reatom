@@ -1,12 +1,16 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "3.0.0-beta.2",
+  "version": "3.0.0",
   "description": "State manager for both simple and complex applications",
+  "type": "module",
   "source": "src/index.ts",
+  "exports": {
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
   "main": "build/index.js",
-  "umd:main": "build/index.umd.js",
-  "module": "build/index.es.js",
+  "module": "build/index.module.js",
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "sideEffects": false,
@@ -16,11 +20,9 @@
   "scripts": {
     "prepublishOnly": "npm run rebuild && npm run test",
     "build": "cross-env fixme=fixme microbundle",
-    "build-primitives": "cross-env fixme=fixme microbundle --cwd primitives",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test": "cross-env fixme=fixme ts-node src/atom.test.ts",
-    "test-primitives": "cross-env fixme=fixme ts-node primitives/index.test.ts",
     "bench": "cross-env fixme=fixme ts-node src/index.bench.test.ts",
     "prettify": "cross-env fixme=fixme prettier --write '**/*.{js,ts,md}'",
     "prettify:watch": "cross-env fixme=fixme onchange '**/*.{js,ts,md}' -- prettier --write {{changed}}",
@@ -39,7 +41,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://reatom.js.org",
+  "homepage": "https://github.com/artalar/reatom",
   "keywords": [
     "state",
     "store",

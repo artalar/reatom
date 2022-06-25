@@ -81,7 +81,7 @@ const counterAtom = declareAtom(
 )
 ```
 
-## Options operators
+### Options operators
 
 ```ts
 const add = declareAction()
@@ -217,4 +217,72 @@ const counterAtom = declareAtom(
     return state
   },
 )
+```
+
+
+## Chained properties access
+
+I write it in times of this API: `atom(ctx => ctx.spy(dataAtom))`. Third version of Reatom is allow dynamic atoms creation which force to describe all data with atoms. Practically it means that we now have a lot of code with nested atom, like `type A = Atom<{ b: { c: Atom<{ d: Atom }> } }>`, which looks really ugly in reading: `ctx.spy(ctx.get(ctx.get(aAtom).b.c).d)` - it is not obvious which structure we inspect and how. The better way is moving data accessor to it source - atom, for example: `aAtom(ctx.get).b.c(ctx.get).d(ctx.spy)`.
+
+```js
+
+// a.b.c.d
+// ctx.spy(ctx.get(ctx.get(aAtom).b.c).d)
+// a(trz.ctx).b.c(trz.ctx).d(trz)
+// a.pipe(ctx.get).b.c.pipe(ctx.get).d(ctx.spy)
+
+const doOne = action();
+const doTwo = action((v /*: 0*/) => v);
+const a1 = atom(0);
+const a2 = atom(
+  // `trz` mean "transaction"
+  (trz) => {
+    // just read
+    a1(trz.ctx) * 2;
+    // read and subscribe
+    a1(trz) * 2;
+    // update - just pass the second argument
+    a1(trz, 123);
+    a1(trz, (s) => s + 1);
+
+    /*
+      actions are atoms too, but their state is
+      tmp array of payloads during dispatch
+    */
+
+    // just read
+    doOne(trz.ctx); // []
+    // read and subscribe
+    doOne(trz); // []
+
+    /*
+      the main question is how to describe
+      action call without payload - void - no arguments
+    */
+
+    // (1) undefined
+    doOne(trz, undefined);
+    doTwo(trz, 0);
+    // VS (2) arguments array
+    doOne(trz, []);
+    doTwo(trz, [0]);
+    // VS (3) `call` overload
+    doOne.call(trz);
+    doTwo.call(trz, 0);
+    // VS (4) separate `dispatch` method
+    doOne.dispatch(trz);
+    doTwo.dispatch(trz, 0);
+    // VS (5) trz `call`
+    trz.act(doOne);
+    trz.act(doTwo, 0);
+    // VS (6) old `dispatch` by action overload
+    trz.dispatch(doOne());
+    trz.dispatch(doTwo(0));
+
+    /* result of one call - array with one element */
+
+    doOne(trz.ctx); // [undefined]
+    doTwo(trz.ctx); // [0]
+  }
+);
 ```
