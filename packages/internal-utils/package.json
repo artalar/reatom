@@ -4,7 +4,6 @@
   "private": true,
   "sideEffects": false,
   "description": "Reatom internal utils",
-  "type": "module",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",

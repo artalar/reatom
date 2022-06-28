@@ -3,7 +3,6 @@
   "private": false,
   "version": "3.0.0",
   "description": "State manager for both simple and complex applications",
-  "type": "module",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",

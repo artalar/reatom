@@ -4,7 +4,6 @@
   "private": false,
   "sideEffects": false,
   "description": "Reatom for timer",
-  "type": "module",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",

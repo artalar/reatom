@@ -4,7 +4,6 @@
   "private": false,
   "sideEffects": false,
   "description": "Adapter for Reatom v1",
-  "type": "module",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",

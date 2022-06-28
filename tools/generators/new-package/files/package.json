@@ -4,7 +4,6 @@
   "private": <%= private %>,
   "sideEffects": false,
   "description": "Reatom for <%= name %>",
-  "type": "module",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
