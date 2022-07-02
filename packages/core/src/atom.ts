@@ -242,16 +242,18 @@ export const createContext = ({
   let trLogs: Array<AtomCache>
   let trRollbacks: Array<Fn>
   let trUnlinks: Set<AtomMeta>
-  let resetTr = () => {
-    inTr = false
-    trNearEffects = []
-    trError = null
-    trLateEffects = []
-    trLinks = new Set()
-    trLogs = []
-    trRollbacks = []
-    trUnlinks = new Set()
-  }
+  let resetTr = () =>
+    ([
+      inTr,
+      trNearEffects,
+      trError,
+      trLateEffects,
+      trLinks,
+      trLogs,
+      trRollbacks,
+      trUnlinks,
+    ] = [false, [], null, [], new Set(), [], [], new Set()])
+
   resetTr()
 
   const walkNearEffects = () => {
