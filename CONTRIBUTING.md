@@ -115,3 +115,9 @@ docs: fix typo in readme file
 fix(core): add check for atoms with equal ids
 docs(react): update redux migration guide
 ```
+
+## Tests rules
+
+In this repository we used Nx. Nx is a extensible build system. Learn more about [Nx](https://nx.dev/getting-started/intro).
+
+If you write new tests, you need to make `npx nx test @reatom/<dir>`. Nx will collect all the dependencies for you to run the test.
