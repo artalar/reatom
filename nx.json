@@ -15,7 +15,7 @@
         "projects": "dependencies"
       }
     ],
-    "test": [
+    "test:native": [
       {
         "target": "build",
         "projects": "dependencies"
