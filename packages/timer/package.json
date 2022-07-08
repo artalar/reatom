@@ -21,7 +21,7 @@
     "build": "cross-env fixme=fixme microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "nx test @reatom/timer",
+    "test": "nx test:native @reatom/timer",
     "test:native": "cross-env fixme=fixme ts-node src/index.test.ts"
   },
   "peerDependencies": {

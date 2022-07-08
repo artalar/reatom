@@ -21,7 +21,7 @@
     "build": "cross-env fixme=fixme microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "nx test @reatom/core",
+    "test": "nx test:native @reatom/core",
     "test:native": "cross-env fixme=fixme ts-node src/atom.test.ts",
     "bench": "cross-env fixme=fixme ts-node src/index.bench.test.ts",
     "prettify": "cross-env fixme=fixme prettier --write '**/*.{js,ts,md}'",

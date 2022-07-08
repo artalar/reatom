@@ -23,7 +23,7 @@
     "build-native-bindings": "cross-env fixme=fixme microbundle --cwd=react-native-batched-updates --external=react-native,@reatom/react",
     "clean": "cross-env fixme=fixme rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "nx test @reatom/react",
+    "test": "nx test:native @reatom/react",
     "test:native": "cross-env fixme=fixme jest tests/*",
     "test:watch": "cross-env fixme=fixme jest --watch",
     "test:debug": "node --inspect-brk jest --runInBand",
