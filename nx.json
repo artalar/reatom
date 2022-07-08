@@ -21,7 +21,7 @@
         "projects": "dependencies"
       },
       {
-        "target": "test",
+        "target": "test:native",
         "projects": "dependencies"
       }
     ]
