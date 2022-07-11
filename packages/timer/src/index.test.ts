@@ -16,6 +16,7 @@ test(`base API`, async () => {
   var duration = await getDuration(() =>
     timerModel.startTimer(ctx, target / 1000),
   )
+
   assert.ok(duration >= target)
 
   var target = 50

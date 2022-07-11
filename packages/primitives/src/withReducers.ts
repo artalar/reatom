@@ -17,7 +17,7 @@ export const withReducers =
       anAtom[k] = action(
         (ctx, ...args) =>
           ctx['🙊'](anAtom.__reatom, (ctx, patch) => {
-            patch.state = reducers[k](patch.state, ...args)
+            patch.state = reducers[k]!(patch.state, ...args)
           }).state,
       )
       return anAtom

@@ -62,7 +62,7 @@ test('main api, declareAtom, basics', () => {
   assert.ok(
     (() => {
       const keys = Object.keys(state)
-      return keys.length === 1 && keys[0].includes(name)
+      return keys.length === 1 && keys[0]!.includes(name)
     })(),
   )
   assert.equal(declareAtom([name], initialState, () => {})(), {
@@ -219,7 +219,7 @@ test('main api, createStore', () => {
     },
   })
   assert.is(storeSubscriber.calls.length, 1)
-  assert.equal(storeSubscriber.calls[0].i[0], increment())
+  assert.equal(storeSubscriber.calls[0]!.i[0], increment())
   assert.is(subscriberToggled.calls.length, 0)
 
   store.dispatch(toggle())
@@ -229,9 +229,9 @@ test('main api, createStore', () => {
     toggled: true,
   })
   assert.is(storeSubscriber.calls.length, 2)
-  assert.equal(storeSubscriber.calls[1].i[0], toggle())
+  assert.equal(storeSubscriber.calls[1]!.i[0], toggle())
   assert.is(subscriberToggled.calls.length, 1)
-  assert.is(subscriberToggled.calls[0].i[0], true)
+  assert.is(subscriberToggled.calls[0]!.i[0], true)
 
   assert.ok(
     store.getState(root) ===
@@ -281,7 +281,7 @@ test('main api, createStore lazy selectors', () => {
   assert.is(store.getState(count2), 1)
   assert.is(storeSubscriber.calls.length, 3)
   assert.is(subscriberCount1.calls.length, 2)
-  assert.is(count2Subscriber1.calls[0].i[0], 1)
+  assert.is(count2Subscriber1.calls[0]!.i[0], 1)
   assert.is(count2Subscriber2.calls.length, 1)
   assert.is(count2SetMap.calls.length, 0)
 
@@ -290,7 +290,7 @@ test('main api, createStore lazy selectors', () => {
   assert.is(storeSubscriber.calls.length, 4)
   assert.is(subscriberCount1.calls.length, 2)
   assert.is(count2Subscriber1.calls.length, 2)
-  assert.is(count2Subscriber1.calls[1].i[0], 5)
+  assert.is(count2Subscriber1.calls[1]!.i[0], 5)
   assert.is(count2Subscriber2.calls.length, 2)
   assert.is(count2SetMap.calls.length, 1)
 
@@ -974,7 +974,7 @@ test(`v3`, () => {
   const cbV3 = mockFn()
 
   store.subscribe(counter, cbV1)
-  v3.subscribe(store.v3ctx, counterDoubled, cbV3)
+  store.v3ctx.subscribe(counterDoubled, cbV3)
 
   assert.is(cbV1.calls.length, 0)
   assert.is(cbV3.calls.length, 1)

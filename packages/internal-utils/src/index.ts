@@ -17,7 +17,7 @@ export function mockFn<I extends any[], O>(
       lastInput(index = 0): I[number] {
         const { length } = _fn.calls
         if (length === 0) throw new TypeError(`Array is empty`)
-        return _fn.calls[length - 1].i[index]
+        return _fn.calls[length - 1]!.i[index]
       },
     },
   )
@@ -25,7 +25,7 @@ export function mockFn<I extends any[], O>(
   return _fn
 }
 
-export const getDuration = async (cb: Fn) => {
+export const getDuration = async (cb: () => void) => {
   const start = Date.now()
   await cb()
   return Date.now() - start

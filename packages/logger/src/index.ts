@@ -8,7 +8,7 @@ export const connectLogger = (
     log(
       logs.reduce((acc, patch) => {
         if (
-          patch.meta.isInspectable &&
+          patch.meta.name &&
           !Object.is(patch.state, ctx.read(patch.meta)?.state)
         ) {
           acc[patch.meta.name] = patch.state

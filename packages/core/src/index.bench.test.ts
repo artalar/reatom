@@ -1,8 +1,8 @@
 import { performance } from 'perf_hooks'
 import * as effector from 'effector'
-import w from 'wonka'
+import * as w from 'wonka'
 import { cellx } from 'cellx'
-import { $mol_wire_atom } from 'mol_wire_lib'
+import mol_wire_lib from 'mol_wire_lib'
 import {
   observable,
   computed,
@@ -25,6 +25,9 @@ import {
 
 // import * as v3 from '.'
 import * as v3 from '@reatom/core'
+import { Rec } from '@reatom/core'
+
+const { $mol_wire_atom } = mol_wire_lib
 
 configure({ enforceActions: 'never' })
 
@@ -469,20 +472,20 @@ async function testDependentGrowing(count = 1_000) {
 function printLogs(results: v3.Rec<ReturnType<typeof log>>) {
   const medFastest = Math.min(...Object.values(results).map(({ med }) => med))
 
-  Object.entries(results)
+  const tabledData = Object.entries(results)
     .sort(([, { med: a }], [, { med: b }]) => a - b)
-    .forEach(([name, { min, med, max }]) => {
-      console.log(
-        name + ` `.repeat(15 - name.length),
-        formatPercent(medFastest / med),
-        `   `,
-        `(${med.toFixed(3)}ms)`,
-        `   `,
-        { min: min.toFixed(5), med: med.toFixed(5), max: max.toFixed(5) },
-      )
-    })
+    .reduce((acc, [name, { min, med, max }]) => {
+      acc[name] = {
+        'pos %': ((medFastest / med) * 100).toFixed(0),
+        'avg ms': med.toFixed(3),
+        'min ms': min.toFixed(5),
+        'med ms': med.toFixed(5),
+        'max ms': max.toFixed(5),
+      }
+      return acc
+    }, {} as Rec<Rec>)
 
-  console.log(`\n`)
+  console.table(tabledData)
 }
 
 function formatPercent(n = 0) {
@@ -506,9 +509,9 @@ function med(values: Array<number>) {
 
   var half = Math.floor(values.length / 2)
 
-  if (values.length % 2) return values[half]
+  if (values.length % 2) return values[half]!
 
-  return (values[half - 1] + values[half]) / 2.0
+  return (values[half - 1]! + values[half]!) / 2.0
 }
 
 function min(values: Array<number>) {
@@ -520,7 +523,7 @@ function min(values: Array<number>) {
 
   const limit = Math.floor(values.length / 20)
 
-  return values[limit]
+  return values[limit]!
 }
 
 function max(values: Array<number>) {
@@ -532,5 +535,5 @@ function max(values: Array<number>) {
 
   const limit = values.length - 1 - Math.floor(values.length / 20)
 
-  return values[limit]
+  return values[limit]!
 }

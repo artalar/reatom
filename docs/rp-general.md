@@ -16,4 +16,4 @@ Proxies / lenses / pull or push are just an API, not a sense.
 
 ## Pitfalls
 
-In one to many data structures it is a perfect way to manage coupling by reactive programming: it is just a way to remove a bottle neck. But when you need to describe a step-by-step business flow you should do it in one place (one code part), otherwise it will be hard to inspect and debug it, specially with a complicated reproduction.
+In one to many data structures it is a perfect way to manage coupling by reactive programming: it is just a way to remove a bottle neck of code complexity. But when you need to describe a step-by-step business flow you should do it in one place (one code part), otherwise it will be hard to inspect and debug it, specially with a complicated reproduction.

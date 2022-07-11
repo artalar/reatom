@@ -1,4 +1,4 @@
-import { atom, AtomMut, AtomOptions } from '@reatom/core'
+import { atom, AtomMut } from '@reatom/core'
 import { withReducers, WithReducers } from './withReducers'
 
 export type BooleanReducers = {
@@ -10,17 +10,8 @@ export type BooleanReducers = {
 
 export type BooleanAtom = WithReducers<AtomMut<boolean>, BooleanReducers>
 
-export function atomizeBoolean(
-  initState = false,
-  options: string | AtomOptions = {},
-): BooleanAtom {
-  const { name, isInspectable = !!name }: AtomOptions =
-    typeof options === 'string' ? { name: options } : options
-
-  return atom(initState, {
-    name: name ?? `boolean`,
-    isInspectable,
-  }).pipe(
+export const atomizeBoolean = (initState = false, name?: string): BooleanAtom =>
+  atom(initState, name).pipe(
     withReducers({
       toggle: (state) => !state,
       setTrue: () => true,
@@ -28,4 +19,3 @@ export function atomizeBoolean(
       reset: () => initState,
     }),
   )
-}

@@ -1,4 +1,4 @@
-import { atom, AtomMut, AtomOptions } from '@reatom/core'
+import { atom, AtomMut } from '@reatom/core'
 import { withReducers, WithReducers } from './withReducers'
 
 export type SetAtom<T> = WithReducers<
@@ -11,17 +11,11 @@ export type SetAtom<T> = WithReducers<
   }
 >
 
-export function atomizeSet<T>(
+export const atomizeSet = <T>(
   initState = new Set<T>(),
-  options: string | AtomOptions = {},
-): SetAtom<T> {
-  const { name, isInspectable = !!name }: AtomOptions =
-    typeof options === 'string' ? { name: options } : options
-
-  return atom(initState, {
-    name: name ?? `set`,
-    isInspectable,
-  }).pipe(
+  name?: string,
+): SetAtom<T> =>
+  atom(initState, name).pipe(
     withReducers({
       set: (state, el) => (state.has(el) ? state : new Set(state).add(el)),
       delete: (state, el) => {
@@ -34,4 +28,3 @@ export function atomizeSet<T>(
       reset: () => initState,
     }),
   )
-}

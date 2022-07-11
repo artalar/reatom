@@ -1,4 +1,4 @@
-import { atom, AtomMut, AtomOptions } from '@reatom/core'
+import { atom, AtomMut } from '@reatom/core'
 import { withReducers, WithReducers } from './withReducers'
 
 export type MapAtomReducers<Key, Element> = {
@@ -13,17 +13,11 @@ export type MapAtom<Key, Element> = WithReducers<
   MapAtomReducers<Key, Element>
 >
 
-export function atomizeMap<Key, Element>(
+export const atomizeMap = <Key, Element>(
   initState = new Map<Key, Element>(),
-  options: string | AtomOptions = {},
-): MapAtom<Key, Element> {
-  const { name, isInspectable = !!name }: AtomOptions =
-    typeof options === 'string' ? { name: options } : options
-
-  return atom(initState, {
-    name: name ?? `map`,
-    isInspectable,
-  }).pipe(
+  name?: string,
+): MapAtom<Key, Element> =>
+  atom(initState, name).pipe(
     withReducers({
       set: (state, key, el) => {
         const prevEl = state.get(key)
@@ -44,4 +38,3 @@ export function atomizeMap<Key, Element>(
       reset: () => initState,
     }),
   )
-}

@@ -6,13 +6,33 @@ import {
   action,
   Atom,
   atom,
+  AtomCache,
   AtomMeta,
   createContext,
+  Ctx,
   Fn,
   isStale,
-  Rec,
 } from './atom'
 
+// FIXME: get it from @reatom/utils
+// (right now there is cyclic dependency, we should move tests to separate package probably)
+{
+  var onCleanup = (atom: Atom, cb: Fn<[Ctx]>) => {
+    const hooks = (atom.__reatom.onCleanup ??= new Set())
+    hooks.add(cb)
+    return () => hooks.delete(cb)
+  }
+  var onConnect = (atom: Atom, cb: Fn<[Ctx]>) => {
+    const hooks = (atom.__reatom.onConnect ??= new Set())
+    hooks.add(cb)
+    return () => hooks.delete(cb)
+  }
+  var onUpdate = (atom: Atom, cb: Fn<[Ctx, AtomCache]>) => {
+    const hooks = (atom.__reatom.onUpdate ??= new Set())
+    hooks.add(cb)
+    return () => hooks.delete(cb)
+  }
+}
 
 test(`action`, () => {
   const act1 = action()
@@ -175,7 +195,7 @@ test(`transaction batch`, () => {
     track.calls.map(({ i }) => i[0]),
     [1, 2, 3, 4, 4, 5],
   )
-  1
+  ;`👍` //?
 })
 
 test(`late effects batch`, async () => {
@@ -220,29 +240,42 @@ test(`display name`, () => {
       spy(isFirstNameShortAtom) ? spy(fullNameAtom) : spy(firstNameAtom),
     `displayName`,
   )
+  const effect = mockFn()
 
-  fullNameAtom.__reatom.onConnect.add(() => {
-    ;`init` //?
-  })
-  fullNameAtom.__reatom.onCleanup.add(() => {
-    ;`cleanup` //?
-  })
-  displayNameAtom.__reatom.onConnect.add(() => {
-    ;`init` //?
-  })
-  displayNameAtom.__reatom.onCleanup.add(() => {
-    ;`cleanup` //?
-  })
+  onConnect(fullNameAtom, () => effect(`fullNameAtom init`))
+  onCleanup(fullNameAtom, () => effect(`fullNameAtom cleanup`))
+  onConnect(displayNameAtom, () => effect(`displayNameAtom init`))
+  onCleanup(displayNameAtom, () => effect(`displayNameAtom cleanup`))
 
   const ctx = createContext()
 
   const un = ctx.subscribe(displayNameAtom, () => {})
 
+  assert.equal(
+    effect.calls.map(({ i }) => i[0]),
+    [`fullNameAtom init`, `displayNameAtom init`],
+  )
+  effect.calls = []
+
   firstNameAtom(ctx, `Joooooooooooohn`)
+  assert.equal(
+    effect.calls.map(({ i }) => i[0]),
+    [`fullNameAtom cleanup`],
+  )
+  effect.calls = []
 
   firstNameAtom(ctx, `Jooohn`)
+  assert.equal(
+    effect.calls.map(({ i }) => i[0]),
+    [`fullNameAtom init`],
+  )
+  effect.calls = []
 
   un()
+  assert.equal(
+    effect.calls.map(({ i }) => i[0]),
+    [`displayNameAtom cleanup`, `fullNameAtom cleanup`],
+  )
   ;`👍` //?
 })
 

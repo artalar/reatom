@@ -1,6 +1,17 @@
-import { action, atom } from '@reatom/core'
+import { Action, action, Atom, atom, AtomMut } from '@reatom/core'
 import { withReducers } from '@reatom/primitives'
-import { shallowEqual, atomizeActionResult } from '@reatom/utils'
+import { shallowEqual } from '@reatom/utils'
+
+export interface ResourceAtom<State, Params> extends AtomMut<State> {
+  cancel: Action<[], void>
+  errorAtom: Atom<null | Error>
+  fetch: Action<[params: Params], Promise<State>>
+  loadingAtom: Atom<boolean>
+  onDone: Atom<Array<State>>
+  onError: Atom<Array<Error>>
+  refetch: Action<[params: Params], Promise<State>>
+  retry: Action<[], Promise<State>>
+}
 
 export const atomizeResource = <State, Params>(
   name: string,
@@ -13,18 +24,12 @@ export const atomizeResource = <State, Params>(
     isEqual?: typeof shallowEqual
     fetchOnInit?: Params extends undefined ? boolean : false
   } = {},
-) => {
+): ResourceAtom<State, Params> => {
   const initParams = Symbol() as any
-  const paramsAtom = atom(initParams as Params, {
-    name: `${name}ResourceParams`,
-    isInspectable: false,
-  })
-  const versionAtom = atom(0, {
-    name: `${name}ResourceVersion`,
-    isInspectable: false,
-  })
-  const dataAtom = atom(initState, `${name}ResourceData`)
-  const loadingAtom = atom(false, `${name}ResourceLoading`).pipe(
+  const paramsAtom = atom(initParams as Params, `${name}Params`)
+  const versionAtom = atom(0)
+  const dataAtom = atom(initState, `${name}Atom`)
+  const loadingAtom = atom(false, `${name}LoadingAtom`).pipe(
     withReducers({
       start: () => true,
       end: () => false,
@@ -49,24 +54,23 @@ export const atomizeResource = <State, Params>(
         params === initParams ? undefined : params,
       )
 
-      if (isLast()) {
-        onDone(ctx, newState)
-      }
+      if (isLast()) onDone(ctx, newState)
 
       return newState
     } catch (err) {
       err = err instanceof Error ? err : new Error(String(err))
 
-      if (isLast()) {
-        // @ts-expect-error
-        onError(ctx, err)
-      }
+      // @ts-expect-error
+      if (isLast()) onError(ctx, err)
 
       throw err
     }
   }, `${name}Resource.refetch`)
 
-  const refetchPromiseAtom = atomizeActionResult(refetch)
+  const refetchPromiseAtom = atom<null | Promise<State>>(null)
+  ;(refetch.__reatom.onUpdate ??= new Set()).add((ctx, patch) =>
+    refetchPromiseAtom(ctx, patch.state.at(-1)),
+  )
 
   const fetch = action(async (ctx, params: Params): Promise<State> => {
     return isEqual(ctx.get(paramsAtom), params)
@@ -100,23 +104,20 @@ export const atomizeResource = <State, Params>(
   }, `${name}Resource.retry`)
 
   if (fetchOnInit) {
-    dataAtom.__reatom.onConnect.add((ctx) => {
+    ;(dataAtom.__reatom.onConnect ??= new Set()).add((ctx) => {
       // @ts-expect-error
       refetch(ctx)
     })
   }
 
-  return {
+  return Object.assign(dataAtom, {
     cancel,
-    dataAtom,
-    changeData: dataAtom,
     errorAtom,
     fetch,
     loadingAtom,
-    onDone,
-    onError,
+    onDone: { ...onDone },
+    onError: { ...onError },
     refetch,
-    refetchAtom: refetchPromiseAtom,
     retry,
-  }
+  })
 }

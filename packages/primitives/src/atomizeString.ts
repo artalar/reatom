@@ -1,27 +1,15 @@
-import { atom, AtomMut, AtomOptions } from '@reatom/core'
-import { withReducers, WithReducers, withReset } from './withReducers'
+import { atom, AtomMut } from '@reatom/core'
+import { withReset } from '@reatom/utils'
+import { withReducers, WithReducers } from './withReducers'
 
 export type StringAtom<State extends string = string> = WithReducers<
   AtomMut<State>,
-  { reset: () => State }
+  {
+    /* reset: () => State */
+  }
 >
 
-export function atomizeString(
-  initState?: string,
-  options?: AtomOptions,
-): StringAtom
-export function atomizeString<T extends string>(
-  initState: T,
-  options?: AtomOptions,
-): StringAtom<T>
-export function atomizeString(
-  initState = ``,
-  options: string | AtomOptions = {},
-): StringAtom {
-  const { name, isInspectable = !!name }: AtomOptions =
-    typeof options === 'string' ? { name: options } : options
-
-  return atom(initState, { name: name ?? `string`, isInspectable }).pipe(
-    withReset(),
-  )
-}
+export const atomizeString = <T extends string = string>(
+  initState: T = '' as T,
+  name?: string,
+): StringAtom<T> => atom(initState, name).pipe(withReset())

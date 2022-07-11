@@ -1,4 +1,4 @@
-import { atom, AtomMut, AtomOptions, Rec } from '@reatom/core'
+import { atom, AtomMut, Rec } from '@reatom/core'
 import { withReducers, WithReducers } from './withReducers'
 
 export type EnumAtom<
@@ -19,24 +19,27 @@ export type EnumAtom<
   enum: { [K in T]: K }
 }
 
-export function atomizeEnum<
+export type EnumAtomOptions<
+  T extends string,
+  Format extends 'camelCase' | 'snake_case' = 'camelCase',
+> = {
+  name?: string
+  format?: Format
+  initState?: T extends any ? T : never
+}
+
+export const atomizeEnum = <
   T extends string,
   Format extends 'camelCase' | 'snake_case' = 'camelCase',
 >(
   variants: ReadonlyArray<T>,
-  options:
-    | string
-    | (AtomOptions & {
-        format?: Format
-        initState?: T extends any ? T : never
-      }) = {},
-): EnumAtom<T, Format> {
+  options: string | EnumAtomOptions<T, Format> = {},
+): EnumAtom<T, Format> => {
   const {
     name,
-    isInspectable = !!name,
     format = 'camelCase' as Format,
     initState = variants[0],
-  }: Exclude<typeof options, string> = typeof options === 'string'
+  }: EnumAtomOptions<T, Format> = typeof options === 'string'
     ? { name: options }
     : options
   const cases = {} as Rec
@@ -59,11 +62,7 @@ export function atomizeEnum<
   reducers.reset = () => initState
 
   // @ts-expect-error
-  return Object.assign(
-    atom(initState, {
-      name: name ?? `enum`,
-      isInspectable,
-    }).pipe(withReducers(reducers)),
-    { enum: cases },
-  )
+  return Object.assign(atom(initState, name).pipe(withReducers(reducers)), {
+    enum: cases,
+  })
 }

@@ -1,4 +1,4 @@
-import { atom, AtomMut, AtomOptions } from '@reatom/core'
+import { atom, AtomMut } from '@reatom/core'
 import { withReducers, WithReducers } from './withReducers'
 
 // it would be better for semantic use additional `add` and `subtract`
@@ -12,17 +12,8 @@ export type NumberAtomReducers = {
 
 export type NumberAtom = WithReducers<AtomMut<number>, NumberAtomReducers>
 
-export function atomizeNumber(
-  initState = 0,
-  options: string | AtomOptions = {},
-): NumberAtom {
-  const { name, isInspectable = !!name }: AtomOptions =
-    typeof options === 'string' ? { name: options } : options
-
-  return atom(initState, {
-    name: name ?? `number`,
-    isInspectable,
-  }).pipe(
+export const atomizeNumber = (initState = 0, name?: string): NumberAtom =>
+  atom(initState, name).pipe(
     withReducers({
       increment: (state, value = 1) => state + value,
       decrement: (state, value = 1) => state - value,
@@ -30,4 +21,3 @@ export function atomizeNumber(
       reset: () => initState,
     }),
   )
-}

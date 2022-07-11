@@ -1,10 +1,8 @@
-import { Action, action, Atom, atom, AtomMut } from '@reatom/core'
+import { Action, action, atom, AtomMut } from '@reatom/core'
 import { withReducers } from '@reatom/primitives'
 import { sleep } from '@reatom/utils'
 
-// TODO
-export interface TimerModel {
-  timerAtom: AtomMut<number>
+export interface TimerAtom extends AtomMut<number> {
   intervalAtom: AtomMut<number> & {
     setSeconds: Action<[seconds: number], number>
   }
@@ -12,16 +10,16 @@ export interface TimerModel {
   stopTimer: Action<[], void>
 }
 
-export const atomizeTimer = (name: string): TimerModel => {
-  const timerAtom = atom(0, `${name}Timer`)
+export const atomizeTimer = (name: string): TimerAtom => {
+  const timerAtom = atom(0, `${name}Atom`)
 
-  const intervalAtom = atom(1000, `${name}TimerInterval`).pipe(
+  const intervalAtom = atom(1000, `${name}IntervalAtom`).pipe(
     withReducers({
       setSeconds: (state, seconds: number) => seconds * 1000,
     }),
   )
 
-  const versionAtom = atom(0, `${name}TimerVersion`)
+  const versionAtom = atom(0)
 
   const startTimer = action(async (ctx, delayInSeconds: number) => {
     const version = versionAtom(ctx, (s) => s + 1)
@@ -43,17 +41,16 @@ export const atomizeTimer = (name: string): TimerModel => {
     }
 
     timerAtom(ctx, 0)
-  }, `${name}StartTimer`)
+  }, `${name}.start`)
 
   const stopTimer = action((ctx) => {
     versionAtom(ctx, (s) => s + 1)
     timerAtom(ctx, 0)
-  }, `${name}StopTimer`)
+  }, `${name}.stop`)
 
-  return {
-    timerAtom,
+  return Object.assign(timerAtom, {
     intervalAtom,
     startTimer,
     stopTimer,
-  }
+  })
 }

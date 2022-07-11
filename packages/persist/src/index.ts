@@ -1,101 +1,61 @@
-import { atom, Atom } from '@reatom/core'
+import { atom, Atom, createContext, throwReatomError } from '@reatom/core'
+import { sleep } from '@reatom/utils'
 
 export interface PersistStorage {
-  get: (key: string) => unknown
-  set?: (key: string, data: unknown) => void
-  throttle?: number
+  get: (key: string) => null | { data: unknown; version?: number }
+  set: (key: string, payload: { data: unknown; version?: number }) => void
   // TODO:
   // subscribe
+  throttle: number
 }
 
-let count = 0
-
-/**
- * @example
- * ```ts
- * export const persist = createPersist({ get: key => snapshot[key] })
- * let snapshot: Record<string, any> = {}
- * // Process init before any atoms subscriptions
- * export function init(data) {
- *   snapshot = data
- * }
- * ```
- */
-export function createPersist({ get, set, throttle = 0 }: PersistStorage) {
-  const persist =
-    <T extends Atom>(
-      /** Unique stable key */
-      key?: string,
-    ) =>
-    (anAtom: T): T => {
-      const intervalIdKey = `__persistIntervalId${++count}`
-
-      return (reducer) => (transaction, cacheTemplate) => {
-        const { id } = cacheTemplate.atom
-
-        if (cacheTemplate.tracks == undefined) {
-          // @ts-expect-error
-          cacheTemplate.state = get(key ?? id)
-        }
-
-        const cache = reducer(transaction, cacheTemplate)
-
-        if (set != undefined) {
-          transaction.schedule(() => {
-            if (throttle == 0) {
-              set(key ?? id, cache.state)
-            } else {
-              const intervalId = (cache.ctx[intervalIdKey] as number) ?? null
-
-              if (intervalId === null) {
-                cache.ctx[intervalIdKey] = setTimeout(() => {
-                  cache.ctx[intervalIdKey] = null
-                  set(key ?? id, transaction.getCache(cache.atom)!.state)
-                }, 150)
-              }
-            }
-          })
-        }
-
-        return cache
-      }
-    }
-}
-
-export const localStoragePersistStorage: PersistStorage = {
+export const persistStorageAtom = atom<PersistStorage>({
   get: (key) => {
     const dataStr = globalThis.localStorage?.getItem(key)
     return dataStr ? JSON.parse(dataStr) : undefined
   },
-  set: (key, data) =>
-    globalThis.localStorage?.setItem(key, JSON.stringify(data)),
+  set: (key, payload) => {
+    globalThis.localStorage?.setItem(key, JSON.stringify(payload))
+  },
   throttle: 150,
-}
+})
 
-/** Persist with localStorage */
-export const persistLS = createPersist(localStoragePersistStorage)
+export const withPersist =
+  <A extends Atom>({
+    key,
+    version,
+    throttle,
+  }: {
+    key?: string
+    version?: number
+    throttle?: number
+    // TODO
+    // migration: Fn<[{ snapshot: unknown, version: undefined | number }], unknown>
+  } = {}) =>
+  (a: A): A => {
+    let { initState, name } = a.__reatom
 
-export const createWithPersist = (storage: PersistStorage) => {
-  const storageAtom = atom(storage)
+    name ??= key
 
-  const withPersist =
-    <T extends Atom>(name?: string) =>
-    (anAtom: T): T => {
-      name ??= anAtom.__reatom.name
+    throwReatomError(!name, 'key is required for persistence')
 
-      if (name in storage) {
-        // @ts-expect-error
-        anAtom.__reatom.initState = storage[name]
-      }
+    a.__reatom.initState = (ctx) => {
+      const persistData = ctx.get(persistStorageAtom).get(name!)
 
-      anAtom.__reatom.onUpdate.add((ctx, { state }) => {
-        storage[name!] = state
-        // @ts-expect-error
-        anAtom.__reatom.initState = state
-      })
-
-      return anAtom
+      return persistData !== null && persistData.version === version
+        ? persistData.data
+        : initState(ctx)
     }
+    ;(a.__reatom.onUpdate ??= new Set()).add((ctx, { state }) => {
+      const persistStorage = ctx.get(persistStorageAtom)
+      let _throttle = throttle ?? persistStorage.throttle
+      const set = () => persistStorage.set(name!, { data: state, version })
 
-  return withPersist
-}
+      if (persistStorage.get(name!)?.data !== state) {
+        // FIXME: make real throttle - skip outdated data
+        ctx.schedule(_throttle === 0 ? set : () => sleep(_throttle).then(set))
+      }
+    })
+
+    return a
+  }

@@ -196,7 +196,7 @@ export function createStore(
 
     if (changedIds.length > 0) {
       for (let i = 0; i < changedIds.length; i++) {
-        const id = changedIds[i]
+        const id = changedIds[i]!
         callFromList(listeners.get(id) || [], stateNew[id as string])
       }
     }
@@ -226,5 +226,5 @@ export function createStore(
 
 function callFromList(list: Function[], ...arg: any[]) {
   let i = -1
-  while (++i < list.length) list[i](...arg)
+  while (++i < list.length) list[i]!(...arg)
 }

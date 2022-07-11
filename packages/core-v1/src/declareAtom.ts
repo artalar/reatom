@@ -243,7 +243,7 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
     name = isArray
       ? Symbol(
           `[${keys
-            .map((k) => getName(getTree((shape as TupleOfAtoms)[k as any]).id))
+            .map((k) => getName(getTree((shape as TupleOfAtoms)[k as any]!).id))
             .join()}]`,
         )
       : Symbol(`{${keys.map(getName).join()}}`)

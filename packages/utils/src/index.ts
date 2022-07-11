@@ -1,7 +1,6 @@
 import {
   action,
   Action,
-  ActionResult,
   atom,
   Atom,
   AtomCache,
@@ -9,69 +8,98 @@ import {
   Ctx,
   CtxSpy,
   Fn,
-  Logs,
-  Rec,
   Unsubscribe,
 } from '@reatom/core'
 
-export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
+import { sleep, isObject, shallowEqual } from './common'
 
-export const init = (ctx: Ctx, atom: Atom): Unsubscribe =>
-  ctx.subscribe(atom, () => {})
+export { sleep, isObject, shallowEqual }
 
-const atomizeActionResultCacheKey = Symbol()
-export const atomizeActionResult: {
-  <T>(action: Action<any, T>): Atom<undefined | T>
-} = (action) => {
-  if (atomizeActionResultCacheKey in action) {
-    // @ts-expect-error
-    return action[atomizeActionResultCacheKey]
-  }
-
-  const lastResultAtom = atom<undefined | ActionResult<typeof action>>(
-    undefined,
-    `${action.__reatom.name}.lastResultAtom`,
-  )
-  action.__reatom.onUpdate.add((ctx) =>
-    lastResultAtom(ctx, action.__reatom.patch!.state.at(-1)),
-  )
-
-  // @ts-expect-error
-  action[atomizeActionResultCacheKey] = lastResultAtom
-
-  return lastResultAtom
+export const onCleanup = (atom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
+  const hooks = (atom.__reatom.onCleanup ??= new Set())
+  hooks.add(cb)
+  return () => hooks.delete(cb)
 }
 
-export const isObject = (thing: any): thing is Record<keyof any, any> =>
-  typeof thing === 'object' && thing !== null
+export const onConnect = (atom: Atom, hook: Fn<[Ctx]>): Unsubscribe => {
+  const connectHooks = (atom.__reatom.onConnect ??= new Set())
+  const cleanupHooks = (atom.__reatom.onCleanup ??= new Set())
+  const connectCleanups = new WeakMap<Ctx, Fn>()
 
-export const shallowEqual = (a: any, b: any) => {
-  if (isObject(a) && isObject(b)) {
-    const aKeys = Object.keys(a)
-    const bKeys = Object.keys(b)
-    return (
-      aKeys.length === bKeys.length && aKeys.every((k) => Object.is(a[k], b[k]))
-    )
-  } else {
-    return Object.is(a, b)
+  const connectCb = (ctx: Ctx) => {
+    const cleanup = hook(ctx)
+
+    if (typeof cleanup === 'function') {
+      connectCleanups.set(ctx, cleanup)
+    }
+  }
+  const cleanupCb = (ctx: Ctx) => {
+    const cleanup = connectCleanups.get(ctx)
+    if (typeof cleanup === 'function') {
+      connectCleanups.delete(ctx)
+      cleanup()
+    }
+  }
+
+  connectHooks.add(connectCb)
+  cleanupHooks.add(cleanupCb)
+
+  return () => {
+    connectHooks.delete(connectCb)
+    cleanupHooks.delete(cleanupCb)
   }
 }
 
-export const patchesToCollection = (patches: Logs) =>
-  patches.reduce(
-    (acc, { state, meta: { name } }) => ((acc[name] = state), acc),
-    {} as Rec,
-  )
+export const onUpdate = (atom: Atom, cb: Fn<[Ctx, AtomCache]>) => {
+  const hooks = (atom.__reatom.onUpdate ??= new Set())
+  hooks.add(cb)
+  return () => hooks.delete(cb)
+}
 
-export const subscribeOnce: {
-  <T>(ctx: Ctx, atom: Atom<T>): Promise<T>
-} = (ctx, atom) =>
-  new Promise<any>((r) => {
-    let skipFirst = true
-    const un = ctx.subscribe(atom, (value) => {
-      if (skipFirst) return (skipFirst = false)
-      r(value)
-      un()
+// export const withAssign =
+//   <Props extends Rec, Target>(props: Props) =>
+//   (target: Target): Target & Props =>
+//     Object.assign(target, props)
+
+// export const init = (ctx: Ctx, atom: Atom): Unsubscribe =>
+//   ctx.subscribe(atom, () => {})
+
+// const atomizeActionResultCacheKey = Symbol()
+// export const atomizeActionResult = <T>(
+//   action: Action<any, T>,
+//   name?: string,
+// ): Atom<undefined | T> => {
+//   if (atomizeActionResultCacheKey in action.__reatom) {
+//     // @ts-expect-error
+//     return action.__reatom[atomizeActionResultCacheKey]
+//   }
+
+//   const actionResultAtom = atom<undefined | ActionResult<typeof action>>(
+//     undefined,
+//     name,
+//   )
+//   action.__reatom.onUpdate.add((ctx, patch) =>
+//     actionResultAtom(ctx, patch.state.at(-1)),
+//   )
+
+//   // @ts-expect-error
+//   return (action[atomizeActionResultCacheKey] = actionResultAtom)
+// }
+
+export const promisifyUpdate = <T>(
+  anAtom: Atom<T>,
+  targetCtx?: Ctx,
+): Promise<[T, Ctx]> =>
+  new Promise((resolve) => {
+    const un = onUpdate(anAtom, (ctx, patch) => {
+      if (targetCtx !== undefined && targetCtx !== ctx) return
+
+      // multiple updates will be ignored
+      // and only first will accepted
+      ctx.schedule(() => {
+        un()
+        resolve([ctx.read(anAtom.__reatom)!.state, ctx])
+      })
     })
   })
 
@@ -79,9 +107,10 @@ export const onChange: {
   <T>(ctx: CtxSpy, atom: Atom<T>, handler: Fn<[T, undefined | T]>): void
 } = (ctx, atom, handler) => {
   const state = ctx.spy(atom)
-  const prevCache = ctx
-    .read(ctx.cause!.meta)
-    ?.parents.find((parent) => parent.meta === atom.__reatom)
+  // TODO find starts from the end?
+  const prevCache = ctx.cause!.parents.find(
+    (parent) => parent.meta === atom.__reatom,
+  )
 
   if (prevCache === undefined || !Object.is(prevCache.state, state)) {
     handler(state, prevCache?.state)
@@ -93,28 +122,6 @@ export const isChanged = (ctx: CtxSpy, atom: Atom): boolean => {
   onChange(ctx, atom, () => (changed = true))
   return changed
 }
-
-export const onUpdate: {
-  <T>(atom: Atom<T>, handler: Fn<[Ctx, T]>, skipFirst?: boolean): Unsubscribe
-} = (atom, handler, skipFirst = true) => {
-  const cb = (ctx: Ctx, cache: AtomCache) => {
-    const prevCache = ctx.read(atom.__reatom)
-
-    if (prevCache === undefined && skipFirst) return
-
-    handler(ctx, cache.state)
-  }
-
-  atom.__reatom.onUpdate.add(cb)
-
-  return () => atom.__reatom.onUpdate.delete(cb)
-}
-
-export const getPrev = <T>(ctx: Ctx, atom: Atom<T>) => {
-  return ctx.read(atom.__reatom)?.state
-}
-
-const impossibleValue = Symbol()
 
 export const withReset =
   <T extends Atom>() =>
@@ -132,8 +139,8 @@ export const withReset =
 export const filter =
   <T>(isChanged: Fn<[newState: T, prevState: T | undefined], boolean>) =>
   (anAtom: Atom<T>): Atom<T> =>
-    atom((ctx, state) => {
-      const data = ctx.spy(anAtom)
+    atom((ctx, state = undefined as undefined | T) => {
+      const data: T = ctx.spy(anAtom)
 
-      return isChanged(data, state) ? data : state
+      return isChanged(data, state) ? data : (state as T)
     })

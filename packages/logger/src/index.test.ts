@@ -18,9 +18,8 @@ test(`base API`, async () => {
     a2(ctx, 2)
   })
 
-  assert.equal(log.lastInput(), { [a2.__reatom.name]: 2 })
-
-  1
+  assert.equal(log.lastInput(), { [a2.__reatom.name!]: 2 })
+  ;`👍` //?
 })
 
 test.run()
