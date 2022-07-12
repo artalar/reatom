@@ -1,5 +1,5 @@
 {
-  "name": "@reatom/react-dom-batched-updates",
+  "name": "@reatom/react-dom-batched-updates-v2",
   "version": "3.0.0",
   "private": true,
   "sideEffects": false,
@@ -13,6 +13,6 @@
     "build": "cross-env fixme=fixme microbundle"
   },
   "peerDependencies": {
-    "@reatom/react": "^3.0.0"
+    "@reatom/react-v2": "^3.0.0"
   }
 }
