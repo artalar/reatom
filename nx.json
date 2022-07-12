@@ -4,7 +4,7 @@
     "default": {
       "runner": "nx/tasks-runners/default",
       "options": {
-        "cacheableOperations": ["build", "test", "lint", "package", "prepare"]
+        "cacheableOperations": ["build", "test:native", "lint", "package", "prepare"]
       }
     }
   },
@@ -15,13 +15,13 @@
         "projects": "dependencies"
       }
     ],
-    "test": [
+    "test:native": [
       {
         "target": "build",
         "projects": "dependencies"
       },
       {
-        "target": "test",
+        "target": "test:native",
         "projects": "dependencies"
       }
     ]
