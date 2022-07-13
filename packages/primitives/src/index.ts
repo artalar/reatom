@@ -1,5 +1,4 @@
-// TODO:
-// export * from './createArrayAtom'
+export * from './atomizeArray'
 export * from './atomizeBoolean'
 export * from './atomizeEnum'
 export * from './atomizeMap'
