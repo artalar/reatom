@@ -11,7 +11,7 @@ Reatom is state manager for both simple and complex applications.
 
 Core package of [Reatom](https://github.com/artalar/reatom) state manager.
 
-[![Open in vscode](https://open.vscode.dev/badges/open-in-vscode.svg)](https://github.dev/artalar/reatom)
+[![Open in vscode](https://img.shields.io/badge/Source-Open%20in%20editor-blue)](https://github.dev/artalar/reatom)
 [![open in gitpod](https://img.shields.io/badge/Gitpod-ready--to--code-orange)](https://gitpod.io/#https://github.com/artalar/reatom)
 
 ## Features
