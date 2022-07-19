@@ -25,7 +25,6 @@ import {
 
 // import * as v3 from '.'
 import * as v3 from '@reatom/core'
-import { Rec } from '@reatom/core'
 
 const { $mol_wire_atom } = mol_wire_lib
 
@@ -422,10 +421,13 @@ async function testAggregateGrowing(count = 1_000) {
   })
 }
 
-testDependentGrowing()
-async function testDependentGrowing(count = 1_000) {
-  const molAtoms = [new $mol_wire_atom(`0`, (next: number = 0) => next)]
-  const reAtoms = [v3.atom(0, `${0}`)]
+testAggregateShrinking()
+async function testAggregateShrinking(count = 1_000) {
+  const molAtoms = Array.from(
+    { length: 1000 },
+    (_, i) => new $mol_wire_atom(`${i}`, (next: number = 0) => next),
+  )
+  const reAtoms = Array.from({ length: 1000 }, (_, i) => v3.atom(0, `${i}`))
 
   const molAtom = new $mol_wire_atom(`sum`, () =>
     molAtoms.reduce((sum, atom) => sum + atom.sync(), 0),
@@ -444,13 +446,13 @@ async function testDependentGrowing(count = 1_000) {
   let i = 1
   while (i++ < count) {
     const startReatom = performance.now()
-    reAtoms.push(v3.atom(i, `${i}`))
-    reAtoms.at(-2)!(ctx, i)
+    reAtoms.splice(Math.floor(reAtoms.length / 2), 1)
+    reAtoms[0]!(ctx, i)
     reatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
-    molAtoms.push(new $mol_wire_atom(`${i}`, (next: number = i) => next))
-    molAtoms.at(-2)!.put(i)
+    molAtoms.splice(Math.floor(molAtoms.length / 2), 1)
+    molAtoms[0]!.put(i)
     molAtom.sync()
     molLogs.push(performance.now() - startMol)
 
@@ -483,7 +485,7 @@ function printLogs(results: v3.Rec<ReturnType<typeof log>>) {
         'max ms': max.toFixed(5),
       }
       return acc
-    }, {} as Rec<Rec>)
+    }, {} as v3.Rec<v3.Rec>)
 
   console.table(tabledData)
 }

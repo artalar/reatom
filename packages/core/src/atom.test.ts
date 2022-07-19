@@ -6,12 +6,11 @@ import {
   action,
   Atom,
   atom,
-  AtomCache,
   AtomMeta,
   createContext,
   Ctx,
   Fn,
-  isStale,
+  isConnected,
 } from './atom'
 
 // FIXME: get it from @reatom/utils
@@ -113,7 +112,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      isStale(context.read(a.__reatom)!),
+      !isConnected(context.read(a.__reatom)!),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -144,7 +143,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      isStale(context.read(a.__reatom)!),
+      !isConnected(context.read(a.__reatom)!),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
@@ -248,7 +247,7 @@ test(`display name`, () => {
 
   assert.equal(
     effect.calls.map(({ i }) => i[0]),
-    [`fullNameAtom init`, `displayNameAtom init`],
+    ['displayNameAtom init', 'fullNameAtom init'],
   )
   effect.calls = []
 
