@@ -99,6 +99,7 @@ export interface AtomMut<State = any> extends Atom<State> {
 
 export interface AtomMeta<State = any> {
   name: undefined | string
+  isAction: boolean
   // temporal cache of the last patch during transaction
   patch: null | AtomCache
   computer: null | Fn<[CtxSpy, AtomCache]>
@@ -143,7 +144,7 @@ export const isAtom = (thing: any): thing is Atom => {
 }
 
 export const isAction = (thing: any): thing is Action => {
-  return typeof thing === `function` && isAtom(thing)
+  return isAtom(thing) && thing.__reatom.isAction
 }
 
 export const isStale = (cache: AtomCache): boolean => {
@@ -294,7 +295,8 @@ export const createContext = ({
 
     let isComputed = meta.computer !== null
 
-    throwReatomError(isMutating && isComputed, `cannot mutate computed atom`)
+    // TODO ?
+    // throwReatomError(isMutating && isComputed, `cannot mutate computed atom`)
 
     let cache = hasPatch ? patch! : caches.get(meta)
     let isInit = cache === undefined
@@ -308,10 +310,16 @@ export const createContext = ({
         children: new Set(),
         listeners: new Set(),
       }
-    } else if (!isComputed && !isMutating) return (meta.patch = cache!)
+    } else if (!isComputed && !isMutating) {
+      ;(meta.patch = cache!).cause // FIXME write tests /* ??= ctx.cause ?? meta.patch */
+      return meta.patch
+    }
 
     // FIXME reassigned for right none nullable type inference
-    patch = !hasPatch || isActual ? addPatch(copyCache(cache!, cache!)) : patch!
+    patch =
+      !hasPatch || isActual
+        ? addPatch(isInit ? cache! : copyCache(cache!, cache!))
+        : patch!
 
     let { state } = patch
 
@@ -422,12 +430,12 @@ export const createContext = ({
           meta,
           meta: { patch },
         } of trLogs) {
-          if (patch !== null) {
+          if (patch !== null && patch.cause !== null) {
             caches.set(meta, patch!)
             meta.patch = null
             const { state } = patch
             patch.listeners.forEach(
-              meta.name?.endsWith('action')
+              meta.isAction
                 ? ((patch.state = []),
                   (cb) => nearEffects.push(() => cb(state)))
                 : (cb) => lateEffects.push(() => cb(caches.get(meta)!.state)),
@@ -541,6 +549,7 @@ export const atom: {
 
   atom.__reatom = {
     name,
+    isAction: false,
     initState: () => initState,
     computer,
     onCleanup: null,
@@ -585,6 +594,7 @@ export const action: {
     }, //?
     actionAtom,
   )
+  action.__reatom.isAction = true
 
   return action
 }

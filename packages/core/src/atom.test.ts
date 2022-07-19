@@ -27,11 +27,6 @@ import {
     hooks.add(cb)
     return () => hooks.delete(cb)
   }
-  var onUpdate = (atom: Atom, cb: Fn<[Ctx, AtomCache]>) => {
-    const hooks = (atom.__reatom.onUpdate ??= new Set())
-    hooks.add(cb)
-    return () => hooks.delete(cb)
-  }
 }
 
 test(`action`, () => {
