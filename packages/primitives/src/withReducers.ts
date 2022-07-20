@@ -1,4 +1,13 @@
-import { action, Action, Atom, AtomState, Fn, Rec } from '@reatom/core'
+import {
+  action,
+  Action,
+  Atom,
+  AtomCache,
+  AtomState,
+  CtxSpy,
+  Fn,
+  Rec,
+} from '@reatom/core'
 
 interface Reducers<A extends Atom>
   extends Rec<(state: AtomState<A>, ...args: Array<any>) => AtomState<A>> {}
@@ -14,11 +23,13 @@ export const withReducers =
   (anAtom: A): WithReducers<A, R> =>
     Object.keys(reducers).reduce((anAtom, k) => {
       // @ts-expect-error
-      anAtom[k] = action(
-        (ctx, ...args) =>
-          ctx['🙊'](anAtom.__reatom, (ctx, patch) => {
-            patch.state = reducers[k]!(patch.state, ...args)
-          }).state,
+      anAtom[k] = action((ctx, ...args) =>
+        ctx.get(
+          (read, actualize) =>
+            actualize!(anAtom.__reatom, (ctx: CtxSpy, patch: AtomCache) => {
+              patch.state = reducers[k]!(patch.state, ...args)
+            }).state,
+        ),
       )
       return anAtom
     }, anAtom) as any

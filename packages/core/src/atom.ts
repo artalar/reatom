@@ -54,25 +54,25 @@ export const throwReatomError = (condition: any, message: string) => {
 
 // --- SOURCES
 
-const ACTUALIZE = `🙊`
-type ACTUALIZE = typeof ACTUALIZE
-
 /** Main context of data storing and effects processing */
 export interface Ctx {
   get<T>(atom: Atom<T>): T
+  get<T>(
+    cb: Fn<
+      [read: Fn<[meta: AtomMeta], AtomCache<any> | undefined>, fn?: Fn],
+      T
+    >,
+  ): T
   spy?: <T>(atom: Atom<T>) => T
   schedule<T = void>(cb: Fn<[Ctx], T>, isNearEffect?: boolean): Promise<T>
 
-  run<T>(cb: Fn<[], T>): T
-  read(meta: AtomMeta): AtomCache<any> | undefined
-  log(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
+  subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
   cause: null | AtomCache
-  /** @private  */
-  [ACTUALIZE](
-    meta: AtomMeta,
-    mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
-  ): AtomCache
+  // [ACTUALIZE](
+  //   meta: AtomMeta,
+  //   mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
+  // ): AtomCache
 }
 
 export interface CtxSpy extends Required<Ctx> {}
@@ -178,6 +178,7 @@ export const createContext = ({
   callNearEffect = callSafety,
 }: ContextOptions = {}): Ctx => {
   let caches = new WeakMap<AtomMeta, AtomCache>()
+  const read = (meta: AtomMeta): undefined | AtomCache => caches.get(meta)
   let logsListeners = new Set<Fn<[Logs, Error?]>>()
 
   let nearEffects: Array<Fn<[Ctx]>> = []
@@ -275,7 +276,10 @@ export const createContext = ({
     }
   }
 
-  const actualize: Ctx[ACTUALIZE] = (meta, mutator) => {
+  const actualize = (
+    meta: AtomMeta,
+    mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
+  ): AtomCache => {
     let { patch } = meta
     let hasPatch = patch !== null
     let isActual = hasPatch && patch!.cause !== null
@@ -306,12 +310,9 @@ export const createContext = ({
         get: ctx.get,
         spy: undefined,
         schedule: ctx.schedule,
-        run: ctx.run,
-        read: ctx.read,
-        log: ctx.log,
         subscribe: ctx.subscribe,
         cause: patch,
-        [ACTUALIZE]: ctx[ACTUALIZE],
+        // [ACTUALIZE]: ctx[ACTUALIZE],
       }
 
       if (isMutating) mutator!(patchCtx, patch)
@@ -332,12 +333,6 @@ export const createContext = ({
   }
 
   const ctx: Ctx = {
-    get: ({ __reatom: meta }) =>
-      inTr
-        ? actualize(meta).state
-        : meta.computer === null && caches.has(meta)
-        ? caches.get(meta)!.state
-        : ctx.run(() => actualize(meta).state),
     spy: undefined,
     schedule(effect, isNearEffect = true) {
       throwReatomError(!inTr, `async schedule`)
@@ -355,17 +350,26 @@ export const createContext = ({
         })
       })
     },
-    run(cb) {
+    get(atomOrCb) {
+      if (isAtom(atomOrCb)) {
+        const meta = atomOrCb.__reatom
+        return inTr
+          ? actualize(meta).state
+          : meta.computer === null && caches.has(meta)
+          ? caches.get(meta)!.state
+          : ctx.get(() => actualize(meta).state)
+      }
+
       throwReatomError(trError !== null, `tr failed`)
 
-      if (inTr) return cb()
+      if (inTr) return atomOrCb(read, actualize)
 
       inTr = true
       trNearEffectsStart = nearEffects.length
       trLateEffectsStart = lateEffects.length
 
       try {
-        var result = cb()
+        var result = atomOrCb(read, actualize)
 
         if (trLogs.length === 0) return result
 
@@ -437,28 +441,25 @@ export const createContext = ({
 
       return result
     },
-    read(meta) {
-      return caches.get(meta)
-    },
-    log(cb) {
+    // @ts-ignore
+    subscribe(atom, cb = atom) {
       assertFunction(cb)
 
-      logsListeners.add(cb)
-      return () => logsListeners.delete(cb)
-    },
-    subscribe(atom, cb) {
-      assertFunction(cb)
+      if (atom === cb) {
+        logsListeners.add(cb)
+        return () => logsListeners.delete(cb)
+      }
 
       const { __reatom: meta } = atom
 
       let lastState = impossibleValue
-      const fn: typeof cb = (state) =>
+      const fn = (state: any) =>
         Object.is(lastState, state) || cb((lastState = state))
 
       let cache = caches.get(meta)
 
       if (cache === undefined || !isConnected(cache)) {
-        ctx.run(() => {
+        ctx.get(() => {
           trRollbacks.push(() => meta.patch!.listeners.delete(fn))
           actualize(meta).listeners.add(fn)
         })
@@ -473,13 +474,11 @@ export const createContext = ({
           (cache = caches.get(meta)!).listeners.delete(fn) &&
           !isConnected(cache)
         ) {
-          ctx.run(() => (addPatch((cache = copyCache(cache!))).cause = cache))
+          ctx.get(() => actualize(meta))
         }
       }
     },
     cause: null,
-    [ACTUALIZE]: (meta, mutator) =>
-      inTr ? actualize(meta, mutator) : ctx.run(() => actualize(meta, mutator)),
   }
 
   return ctx
@@ -494,11 +493,16 @@ export const atom: {
   name?: string,
 ): Atom => {
   let atom: any = (ctx: Ctx, update: any) =>
-    ctx[ACTUALIZE](atom.__reatom, (patchCtx, patch) => {
-      patch.cause = ctx.cause
-      patch.state =
-        typeof update === `function` ? update(patch.state, patchCtx) : update
-    }).state
+    ctx.get(
+      (read, actualize) =>
+        actualize!(atom.__reatom, (patchCtx: CtxSpy, patch: AtomCache) => {
+          patch.cause = ctx.cause
+          patch.state =
+            typeof update === `function`
+              ? update(patch.state, patchCtx)
+              : update
+        }).state,
+    )
   let computer = null
 
   if (typeof initState === `function`) {
@@ -546,16 +550,17 @@ export const action: {
 
   const actionAtom = atom([], `${name ?? ``}[${++actionsCount}]action`)
 
-  const action: Action = Object.assign(
-    (ctx: Ctx, ...params: any[]) => {
-      actionAtom(ctx, (state, patchCtx) =>
+  const action: Action = Object.assign((ctx: Ctx, ...params: any[]) => {
+    actionAtom(
+      ctx,
+      (state, patchCtx) => (
+        (patchCtx.spy = undefined),
         // @ts-ignore
-        state.concat([(params = (fn as Fn)(patchCtx, ...params))]),
-      )
-      return params
-    }, //?
-    actionAtom,
-  )
+        state.concat([(params = (fn as Fn)(patchCtx, ...params))])
+      ),
+    )
+    return params
+  }, actionAtom)
   action.__reatom.isAction = true
 
   return action

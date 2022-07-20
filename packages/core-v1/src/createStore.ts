@@ -178,7 +178,7 @@ export function createStore(
     const ctx = createCtx(state, action)
     const { changedIds, changedAtoms, stateNew } = ctx
 
-    v3ctx.run(() => {
+    v3ctx.get((read, actualize) => {
       storeTree.forEach(type, ctx)
 
       listeners = nextListeners
@@ -188,9 +188,12 @@ export function createStore(
       assign(state, stateNew)
 
       changedAtoms.forEach((atom) => {
-        v3ctx['🙊'](atom.v3atom.__reatom, (ctx, patch) => {
-          patch.state = stateNew[atom[TREE].id]
-        })
+        actualize!(
+          atom.v3atom.__reatom,
+          (ctx: v3.CtxSpy, patch: v3.AtomCache) => {
+            patch.state = stateNew[atom[TREE].id]
+          },
+        )
       })
     })
 

@@ -67,15 +67,15 @@ test(`linking`, () => {
   const context = createContext()
   const fn = mockFn()
 
-  context.log((logs) => {
+  context.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
   const un = context.subscribe(a2, fn)
-  var a1Cache = context.read(a1.__reatom)!
-  var a2Cache = context.read(a2.__reatom)!
+  var a1Cache = context.get((read) => read(a1.__reatom))!
+  var a2Cache = context.get((read) => read(a2.__reatom))!
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
@@ -84,10 +84,10 @@ test(`linking`, () => {
 
   un()
 
-  assert.is.not(a1Cache, context.read(a1.__reatom)!)
-  assert.is.not(a2Cache, context.read(a2.__reatom)!)
+  assert.is.not(a1Cache, context.get((read) => read(a1.__reatom))!)
+  assert.is.not(a2Cache, context.get((read) => read(a2.__reatom))!)
 
-  assert.is(context.read(a1.__reatom)!.children.size, 0)
+  assert.is(context.get((read) => read(a1.__reatom))!.children.size, 0)
   ;`👍` //?
 })
 
@@ -102,7 +102,7 @@ test(`nested deps`, () => {
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
-  context.log((logs) => {
+  context.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
@@ -112,7 +112,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      !isConnected(context.read(a.__reatom)!),
+      !isConnected(context.get((read) => read(a.__reatom))!),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -120,19 +120,21 @@ test(`nested deps`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.equal(
-    context.read(a1.__reatom)!.children,
+    context.get((read) => read(a1.__reatom))!.children,
     new Set([a2.__reatom, a3.__reatom]),
   )
   assert.equal(
-    context.read(a2.__reatom)!.children,
+    context.get((read) => read(a2.__reatom))!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
   assert.equal(
-    context.read(a3.__reatom)!.children,
+    context.get((read) => read(a3.__reatom))!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  context.log((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
+  context.subscribe((logs) =>
+    logs.forEach(({ meta }) => touchedAtoms.push(meta)),
+  )
 
   a1(context, 1)
 
@@ -143,7 +145,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      !isConnected(context.read(a.__reatom)!),
+      !isConnected(context.get((read) => read(a.__reatom))!),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
@@ -166,7 +168,7 @@ test(`transaction batch`, () => {
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), 1)
 
-  context.run(() => {
+  context.get(() => {
     pushNumber(context, 2)
     assert.is(track.calls.length, 1)
     pushNumber(context, 3)
@@ -175,7 +177,7 @@ test(`transaction batch`, () => {
   assert.is(track.calls.length, 3)
   assert.is(track.lastInput(), 3)
 
-  context.run(() => {
+  context.get(() => {
     pushNumber(context, 4)
     assert.is(track.calls.length, 3)
     context.get(numberAtom)
