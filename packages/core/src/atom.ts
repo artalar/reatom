@@ -237,7 +237,7 @@ export const createContext = ({
     if (
       parents.length === 0 ||
       parents.some(
-        ({ meta, state }) => !Object.is(state, (cause = actualize(meta)).state),
+        ({ meta, state }) => !Object.is(state, (cause = actualize(patchCtx, meta)).state),
       )
     ) {
       const newParents: typeof parents = []
@@ -245,7 +245,7 @@ export const createContext = ({
       patchCtx.spy = (atom: Atom) => {
         throwReatomError(patch.parents !== parents, `async spy`)
 
-        const depPatch = actualize(atom.__reatom)
+        const depPatch = actualize(patchCtx, atom.__reatom)
         const prevDepPatch = parents.at(newParents.push(depPatch) - 1)
 
         // TODO tests!
@@ -277,6 +277,7 @@ export const createContext = ({
   }
 
   const actualize = (
+    ctx: Ctx,
     meta: AtomMeta,
     mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
   ): AtomCache => {
@@ -354,10 +355,10 @@ export const createContext = ({
       if (isAtom(atomOrCb)) {
         const meta = atomOrCb.__reatom
         return inTr
-          ? actualize(meta).state
+          ? actualize(this, meta).state
           : meta.computer === null && caches.has(meta)
           ? caches.get(meta)!.state
-          : ctx.get(() => actualize(meta).state)
+          : this.get(() => actualize(this, meta).state)
       }
 
       throwReatomError(trError !== null, `tr failed`)
@@ -374,7 +375,7 @@ export const createContext = ({
         if (trLogs.length === 0) return result
 
         for (let patch of trLogs) {
-          if (patch.listeners.size > 0) actualize(patch.meta)
+          if (patch.listeners.size > 0) actualize(this, patch.meta)
         }
 
         for (const log of logsListeners) log(trLogs)
@@ -459,9 +460,9 @@ export const createContext = ({
       let cache = caches.get(meta)
 
       if (cache === undefined || !isConnected(cache)) {
-        ctx.get(() => {
+        this.get(() => {
           trRollbacks.push(() => meta.patch!.listeners.delete(fn))
-          actualize(meta).listeners.add(fn)
+          actualize(this, meta).listeners.add(fn)
         })
       } else {
         cache.listeners.add(fn)
@@ -474,7 +475,7 @@ export const createContext = ({
           (cache = caches.get(meta)!).listeners.delete(fn) &&
           !isConnected(cache)
         ) {
-          ctx.get(() => actualize(meta))
+          this.get(() => actualize(this, meta))
         }
       }
     },
@@ -495,7 +496,7 @@ export const atom: {
   let atom: any = (ctx: Ctx, update: any) =>
     ctx.get(
       (read, actualize) =>
-        actualize!(atom.__reatom, (patchCtx: CtxSpy, patch: AtomCache) => {
+        actualize!(ctx, atom.__reatom, (patchCtx: CtxSpy, patch: AtomCache) => {
           patch.cause = ctx.cause
           patch.state =
             typeof update === `function`
