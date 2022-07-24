@@ -14,8 +14,7 @@ export const persistStorageAtom = atom<PersistStorage>({
     const dataStr = globalThis.localStorage?.getItem(key)
     if (!dataStr) return undefined
     try {
-      const data = JSON.parse(dataStr)
-      return data
+      return JSON.parse(dataStr)
     } catch (error) {
       return undefined
     }
