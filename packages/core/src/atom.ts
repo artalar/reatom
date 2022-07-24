@@ -34,7 +34,7 @@ export interface Pipe<This> {
 
 const impossibleValue: any = Symbol()
 
-export const callSafety = <I extends any[], O>(
+export const callSafely = <I extends any[], O>(
   fn: (...a: I) => O,
   ...args: I
 ): O | Error => {
@@ -165,9 +165,9 @@ const copyCache = (
 
 export interface ContextOptions {
   /** Use it to delay or track late effects such as subscriptions notification */
-  callLateEffect?: typeof callSafety
+  callLateEffect?: typeof callSafely
   /** Use it to delay or track near effects such as API calls */
-  callNearEffect?: typeof callSafety
+  callNearEffect?: typeof callSafely
 }
 
 const pushIterable = <T>(arr: Array<T>, iterable: null | Set<T> | Array<T>) => {
@@ -175,8 +175,8 @@ const pushIterable = <T>(arr: Array<T>, iterable: null | Set<T> | Array<T>) => {
 }
 
 export const createContext = ({
-  callLateEffect = callSafety,
-  callNearEffect = callSafety,
+  callLateEffect = callSafely,
+  callNearEffect = callSafely,
 }: ContextOptions = {}): Ctx => {
   let caches = new WeakMap<AtomMeta, AtomCache>()
   const read = (meta: AtomMeta): undefined | AtomCache => caches.get(meta)
@@ -426,7 +426,7 @@ export const createContext = ({
       } catch (e: any) {
         trError = e = e instanceof Error ? e : new Error(String(e))
         for (const log of logsListeners) log(trLogs, e)
-        for (const cb of trRollbacks) callSafety(cb, e)
+        for (const cb of trRollbacks) callSafely(cb, e)
         for (const { meta } of trLogs) meta.patch = null
 
         nearEffects.length = trNearEffectsStart
