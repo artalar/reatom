@@ -554,14 +554,11 @@ export const action: {
   const actionAtom = atom([], `${name ?? ``}[${++actionsCount}]action`)
 
   const action: Action = Object.assign((ctx: Ctx, ...params: any[]) => {
-    actionAtom(
-      ctx,
-      (state, patchCtx) => (
-        (patchCtx.spy = undefined),
-        // @ts-ignore
-        state.concat([(params = (fn as Fn)(patchCtx, ...params))])
-      ),
+    actionAtom(ctx, (state, patchCtx) =>
+      // @ts-ignore
+      state.concat([(params = (fn as Fn)(patchCtx, ...params))]),
     )
+    // params was reassigned in the above line (save a couple of bytes)
     return params
   }, actionAtom)
   action.__reatom.isAction = true
