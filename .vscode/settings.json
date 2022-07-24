@@ -1,5 +1,5 @@
 {
-    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "typescript.tsdk": "node_modules/typescript/bin",
     "editor.tabSize": 2,
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
