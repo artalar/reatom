@@ -84,8 +84,9 @@ export interface Atom<State = any> {
   pipe: Pipe<this>
 }
 
-export interface AtomMut<State = any> extends Atom<State> {
-  (ctx: Ctx, update: State | Fn<[State, Ctx], State>): State
+type Update<State> = State | Fn<[State, Ctx], State>
+export interface AtomMut<State = any, U = Update<State>> extends Atom<State> {
+  (ctx: Ctx, update: U): State
 }
 
 export interface AtomMeta<State = any> {
@@ -237,7 +238,8 @@ export const createContext = ({
     if (
       parents.length === 0 ||
       parents.some(
-        ({ meta, state }) => !Object.is(state, (cause = actualize(patchCtx, meta)).state),
+        ({ meta, state }) =>
+          !Object.is(state, (cause = actualize(patchCtx, meta)).state),
       )
     ) {
       const newParents: typeof parents = []
