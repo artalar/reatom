@@ -1,35 +1,131 @@
-import { atom, createContext } from '@reatom/core'
+import { action, atom, createContext } from '@reatom/core'
+import { sleep } from '@reatom/utils'
+import { atomizeNumber } from '@reatom/primitives'
+import { mockFn } from '@reatom/internal-utils'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { lens } from './'
+import {
+  readonly,
+  map,
+  mapAwaited,
+  mapInput,
+  filter,
+  plain,
+  toAction,
+} from './'
 
-test(`lens`, async () => {
-  const a = atom(0)
-  const aGet = a.pipe(lens({ get: (v) => v + 1 }))
-  const aSet = a.pipe(lens({ set: (v: string) => Number(v) }))
-  const aGetSet = a.pipe(
-    lens({ get: (v) => v + 1, set: (v: string) => Number(v) }),
+test(`map and mapInput`, async () => {
+  const a = atomizeNumber(0)
+  const aMap = a.pipe(map((v) => v + 1))
+  const aMapInput = a.pipe(mapInput((v: string) => Number(v)))
+  const aMapMapInput = a.pipe(
+    map((v) => v + 1),
+    mapInput((v: string) => Number(v)),
   )
   const ctx = createContext()
 
-  assert.is(a.__reatom, aSet.__reatom)
+  assert.is(a.__reatom, aMapInput.__reatom)
   assert.is(ctx.get(a), 0)
-  assert.is(ctx.get(aGet), 1)
-  assert.is(ctx.get(aSet), 0)
-  assert.is(ctx.get(aGetSet), 1)
+  assert.is(ctx.get(aMap), 1)
+  assert.is(ctx.get(aMapInput), 0)
+  assert.is(ctx.get(aMapMapInput), 1)
 
-  aSet(ctx, '1')
+  aMapInput(ctx, '1')
   assert.is(ctx.get(a), 1)
-  assert.is(ctx.get(aGet), 2)
-  assert.is(ctx.get(aSet), 1)
-  assert.is(ctx.get(aGetSet), 2)
+  assert.is(ctx.get(aMap), 2)
+  assert.is(ctx.get(aMapInput), 1)
+  assert.is(ctx.get(aMapMapInput), 2)
 
-  aGetSet(ctx, '2')
+  aMapMapInput(ctx, '2')
   assert.is(ctx.get(a), 2)
-  assert.is(ctx.get(aGet), 3)
-  assert.is(ctx.get(aSet), 2)
-  assert.is(ctx.get(aGetSet), 3)
+  assert.is(ctx.get(aMap), 3)
+  assert.is(ctx.get(aMapInput), 2)
+  assert.is(ctx.get(aMapMapInput), 3)
+  ;`👍` //?
+})
+
+test(`map action`, () => {
+  // TODO
+})
+
+test(`readonly and plain`, () => {
+  const a = atomizeNumber(0)
+  const a1 = a.pipe(readonly, plain)
+  const ctx = createContext()
+  assert.is(a(ctx, 1), 1)
+  // @ts-expect-error
+  assert.throws(() => a1(ctx, 1))
+  assert.not.ok('increment' in a1)
+  ;`👍` //?
+})
+
+test(`mapAwaited`, async () => {
+  const a = action(() => sleep(10).then(() => 10), `a`)
+  const aMaybeString = a.pipe(
+    mapAwaited(undefined, (v) => v.toString(), `aMaybeString`),
+  )
+  const aString = a.pipe(mapAwaited('', (v) => v.toString(), `aString`))
+  const ctx = createContext()
+
+  ctx.subscribe(aMaybeString, (v) => {})
+  ctx.subscribe(aString, (v) => {})
+
+  assert.equal(ctx.get(a), [])
+  assert.is(ctx.get(aMaybeString), undefined)
+  assert.is(ctx.get(aString), '')
+
+  const promise = a(ctx)
+
+  assert.equal(ctx.get(a), [])
+  assert.is(ctx.get(aMaybeString), undefined)
+  assert.is(ctx.get(aString), '')
+
+  await promise
+
+  ctx.get(aMaybeString) //?
+  ctx.get(aString) //?
+  assert.is(ctx.get(aMaybeString), '10')
+  assert.is(ctx.get(aString), '10')
+  ;`👍` //?
+})
+
+test(`filter`, () => {
+  const a = atom(1)
+  const a1 = a.pipe(filter((v) => v !== 2))
+  const ctx = createContext()
+  const cb = mockFn()
+
+  ctx.subscribe(a1, cb)
+  assert.is(cb.calls.length, 1)
+  assert.equal(cb.lastInput(), 1)
+
+  a(ctx, 2)
+  assert.is(cb.calls.length, 1)
+  assert.equal(cb.lastInput(), 1)
+
+  a(ctx, 3)
+  assert.is(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), 3)
+  ;`👍` //?
+})
+
+test(`toAction`, () => {
+  const a = atom(0)
+  const a1 = a.pipe(toAction())
+  const ctx = createContext()
+  const cb = mockFn()
+
+  ctx.subscribe(a1, cb)
+  assert.equal(cb.lastInput(), [])
+
+  a(ctx, 0)
+  assert.equal(cb.calls.length, 1)
+  assert.equal(cb.lastInput(), [])
+
+  a(ctx, 1)
+  assert.equal(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), [1])
   ;`👍` //?
 })
 
