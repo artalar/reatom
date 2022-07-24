@@ -12,7 +12,13 @@ export interface PersistStorage {
 export const persistStorageAtom = atom<PersistStorage>({
   get: (key) => {
     const dataStr = globalThis.localStorage?.getItem(key)
-    return dataStr ? JSON.parse(dataStr) : undefined
+    if (!dataStr) return undefined
+    try {
+      const data = JSON.parse(dataStr)
+      return data
+    } catch (error) {
+      return undefined
+    }
   },
   set: (key, payload) => {
     globalThis.localStorage?.setItem(key, JSON.stringify(payload))
