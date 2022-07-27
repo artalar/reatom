@@ -69,10 +69,6 @@ export interface Ctx {
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
   cause: null | AtomCache
-  // [ACTUALIZE](
-  //   meta: AtomMeta,
-  //   mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
-  // ): AtomCache
 }
 
 export interface CtxSpy extends Required<Ctx> {}
@@ -85,8 +81,9 @@ export interface Atom<State = any> {
 }
 
 type Update<State> = State | Fn<[State, Ctx], State>
-export interface AtomMut<State = any, U = Update<State>> extends Atom<State> {
-  (ctx: Ctx, update: U): State
+export interface AtomMut<State = any, Args extends any[] = [Update<State>]>
+  extends Atom<State> {
+  (ctx: Ctx, ...args: Args): State
 }
 
 export interface AtomMeta<State = any> {
@@ -127,6 +124,13 @@ export type ActionParams<T> = T extends Action<infer Params, any>
 export type ActionResult<T> = T extends Action<any, infer Result>
   ? Result
   : never
+
+export type ActionIs<T> = T extends Action<
+  any,
+  AtomState<T> extends Array<infer T> ? T : T
+>
+  ? true
+  : false
 
 export interface Unsubscribe {
   (): void
@@ -315,7 +319,6 @@ export const createContext = ({
         schedule: ctx.schedule,
         subscribe: ctx.subscribe,
         cause: patch,
-        // [ACTUALIZE]: ctx[ACTUALIZE],
       }
 
       if (isMutating) mutator!(patchCtx, patch)
@@ -336,26 +339,10 @@ export const createContext = ({
   }
 
   const ctx: Ctx = {
-    spy: undefined,
-    schedule(effect, isNearEffect = true) {
-      throwReatomError(!inTr, `async schedule`)
-      assertFunction(effect)
-      throwReatomError(this === undefined, `missed context`)
-
-      return new Promise<any>((res, rej) => {
-        trRollbacks.push(rej)
-        ;(isNearEffect ? nearEffects : lateEffects).push(() => {
-          try {
-            res(effect(this))
-          } catch (error) {
-            rej(error)
-          }
-        })
-      })
-    },
     get(atomOrCb) {
       if (isAtom(atomOrCb)) {
         const meta = atomOrCb.__reatom
+        // TODO `caches.get(meta).isConnected`
         return inTr
           ? actualize(this, meta).state
           : meta.computer === null && caches.has(meta)
@@ -443,6 +430,23 @@ export const createContext = ({
       walkLateEffects()
 
       return result
+    },
+    spy: undefined,
+    schedule(effect, isNearEffect = true) {
+      throwReatomError(!inTr, `async schedule`)
+      assertFunction(effect)
+      throwReatomError(this === undefined, `missed context`)
+
+      return new Promise<any>((res, rej) => {
+        trRollbacks.push(rej)
+        ;(isNearEffect ? nearEffects : lateEffects).push(() => {
+          try {
+            res(effect(this))
+          } catch (error) {
+            rej(error)
+          }
+        })
+      })
     },
     // @ts-ignore
     subscribe(atom, cb = atom) {
@@ -553,14 +557,14 @@ export const action: {
 
   const actionAtom = atom([], `${name ?? ``}[${++actionsCount}]action`)
 
-  const action: Action = Object.assign((ctx: Ctx, ...params: any[]) => {
-    actionAtom(ctx, (state, patchCtx) =>
-      // @ts-ignore
-      state.concat([(params = (fn as Fn)(patchCtx, ...params))]),
-    )
-    // params was reassigned in the above line (save a couple of bytes)
-    return params
-  }, actionAtom)
+  const action: Action = Object.assign(
+    (ctx: Ctx, ...params: any[]) =>
+      actionAtom(ctx, (state, patchCtx) =>
+        // @ts-ignore
+        state.concat([fn(patchCtx, ...params)]),
+      ).at(-1),
+    actionAtom,
+  )
   action.__reatom.isAction = true
 
   return action
