@@ -7,21 +7,24 @@ import * as assert from 'uvu/assert'
 
 import {
   readonly,
-  map,
-  mapAwaited,
+  mapState,
+  mapAsync,
   mapInput,
   filter,
   plain,
   toAction,
+  toAtom,
 } from './'
 
 test(`map and mapInput`, async () => {
   const a = atomizeNumber(0)
-  const aMap = a.pipe(map((v) => v + 1))
-  const aMapInput = a.pipe(mapInput((v: string) => Number(v)))
+  const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
+  const aMapInput = a.pipe(
+    mapInput((ctx, v: string) => [ctx, Number(v)]),
+  )
   const aMapMapInput = a.pipe(
-    map((v) => v + 1),
-    mapInput((v: string) => Number(v)),
+    mapState((ctx, v) => v + 1),
+    mapInput((ctx, v: string) => [ctx, Number(v)]),
   )
   const ctx = createContext()
 
@@ -61,15 +64,23 @@ test(`readonly and plain`, () => {
 })
 
 test(`mapAwaited`, async () => {
-  const a = action(() => sleep(10).then(() => 10), `a`)
+  const a = action(() => sleep(10).then(() => 10))
   const aMaybeString = a.pipe(
-    mapAwaited(undefined, (v) => v.toString(), `aMaybeString`),
+    mapAsync((ctx, v) => v.toString()),
+    toAtom(),
   )
-  const aString = a.pipe(mapAwaited('', (v) => v.toString(), `aString`))
+  const aString = a.pipe(
+    mapAsync((ctx, v) => v.toString()),
+    toAtom(''),
+  )
   const ctx = createContext()
 
-  ctx.subscribe(aMaybeString, (v) => {})
-  ctx.subscribe(aString, (v) => {})
+  ctx.subscribe(aMaybeString, (v) => {
+    v //?
+  })
+  ctx.subscribe(aString, (v) => {
+    v //?
+  })
 
   assert.equal(ctx.get(a), [])
   assert.is(ctx.get(aMaybeString), undefined)
@@ -83,8 +94,6 @@ test(`mapAwaited`, async () => {
 
   await promise
 
-  ctx.get(aMaybeString) //?
-  ctx.get(aString) //?
   assert.is(ctx.get(aMaybeString), '10')
   assert.is(ctx.get(aString), '10')
   ;`👍` //?
