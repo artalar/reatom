@@ -8,6 +8,7 @@ import {
   Ctx,
   CtxSpy,
   Fn,
+  isAction,
   Unsubscribe,
 } from '@reatom/core'
 
@@ -98,7 +99,7 @@ export const promisifyUpdate = <T>(
       // and only first will accepted
       ctx.schedule(() => {
         un()
-        resolve([ctx.read(anAtom.__reatom)!.state, ctx])
+        resolve([ctx.get((read) => read(anAtom.__reatom)!.state), ctx])
       })
     })
   })
@@ -127,12 +128,15 @@ export const withReset =
   <T extends Atom>() =>
   (anAtom: T): T & { reset: Action<[], AtomState<T>> } =>
     Object.assign(anAtom, {
-      reset: action(
-        (ctx) =>
-          ctx['🙊'](
-            anAtom.__reatom,
-            (patchCtx, patch) => (patch.state = patch.meta.initState),
-          ).state,
+      reset: action((ctx) =>
+        ctx.get(
+          (read, actualize) =>
+            actualize!(
+              anAtom.__reatom,
+              (patchCtx: CtxSpy, patch: AtomCache) =>
+                (patch.state = patch.meta.initState(ctx)),
+            ).state,
+        ),
       ),
     })
 
