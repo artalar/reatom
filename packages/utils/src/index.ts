@@ -8,7 +8,6 @@ import {
   Ctx,
   CtxSpy,
   Fn,
-  isAction,
   Unsubscribe,
 } from '@reatom/core'
 
@@ -16,12 +15,7 @@ import { sleep, isObject, shallowEqual } from './common'
 
 export { sleep, isObject, shallowEqual }
 
-export const onCleanup = (atom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
-  const hooks = (atom.__reatom.onCleanup ??= new Set())
-  hooks.add(cb)
-  return () => hooks.delete(cb)
-}
-
+// TODO: separate package
 export const onConnect = (atom: Atom, hook: Fn<[Ctx]>): Unsubscribe => {
   const connectHooks = (atom.__reatom.onConnect ??= new Set())
   const cleanupHooks = (atom.__reatom.onCleanup ??= new Set())
@@ -65,45 +59,6 @@ export const onUpdate = (atom: Atom, cb: Fn<[Ctx, AtomCache]>) => {
 // export const init = (ctx: Ctx, atom: Atom): Unsubscribe =>
 //   ctx.subscribe(atom, () => {})
 
-// const atomizeActionResultCacheKey = Symbol()
-// export const atomizeActionResult = <T>(
-//   action: Action<any, T>,
-//   name?: string,
-// ): Atom<undefined | T> => {
-//   if (atomizeActionResultCacheKey in action.__reatom) {
-//     // @ts-expect-error
-//     return action.__reatom[atomizeActionResultCacheKey]
-//   }
-
-//   const actionResultAtom = atom<undefined | ActionResult<typeof action>>(
-//     undefined,
-//     name,
-//   )
-//   action.__reatom.onUpdate.add((ctx, patch) =>
-//     actionResultAtom(ctx, patch.state.at(-1)),
-//   )
-
-//   // @ts-expect-error
-//   return (action[atomizeActionResultCacheKey] = actionResultAtom)
-// }
-
-export const promisifyUpdate = <T>(
-  anAtom: Atom<T>,
-  targetCtx?: Ctx,
-): Promise<[T, Ctx]> =>
-  new Promise((resolve) => {
-    const un = onUpdate(anAtom, (ctx, patch) => {
-      if (targetCtx !== undefined && targetCtx !== ctx) return
-
-      // multiple updates will be ignored
-      // and only first will accepted
-      ctx.schedule(() => {
-        un()
-        resolve([ctx.get((read) => read(anAtom.__reatom)!.state), ctx])
-      })
-    })
-  })
-
 export const onChange: {
   <T>(ctx: CtxSpy, atom: Atom<T>, handler: Fn<[T, undefined | T]>): void
 } = (ctx, atom, handler) => {
@@ -133,18 +88,18 @@ export const withReset =
           (read, actualize) =>
             actualize!(
               anAtom.__reatom,
-              (patchCtx: CtxSpy, patch: AtomCache) =>
+              (patchCtx: Ctx, patch: AtomCache) =>
                 (patch.state = patch.meta.initState(ctx)),
             ).state,
         ),
       ),
     })
 
-export const filter =
-  <T>(isChanged: Fn<[newState: T, prevState: T | undefined], boolean>) =>
-  (anAtom: Atom<T>): Atom<T> =>
-    atom((ctx, state = undefined as undefined | T) => {
-      const data: T = ctx.spy(anAtom)
+// export const filter =
+//   <T>(isChanged: Fn<[newState: T, prevState: T | undefined], boolean>) =>
+//   (anAtom: Atom<T>): Atom<T> =>
+//     atom((ctx, state = undefined as undefined | T) => {
+//       const data: T = ctx.spy(anAtom)
 
-      return isChanged(data, state) ? data : (state as T)
-    })
+//       return isChanged(data, state) ? data : (state as T)
+//     })
