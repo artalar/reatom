@@ -7,18 +7,18 @@ import { mockFn, sleep } from '@reatom/internal-utils'
 import { connectLogger } from '.'
 
 test(`base`, async () => {
-  const a1 = atom(0)
+  const asyncResAtom = atom(0)
   const a2 = atom(0, `test`)
   const ctx = createContext()
   const log = mockFn()
 
-  ctx.get(a1)
+  ctx.get(asyncResAtom)
   ctx.get(a2)
 
   connectLogger(ctx, { log })
 
   ctx.get(() => {
-    a1(ctx, 1)
+    asyncResAtom(ctx, 1)
     a2(ctx, 2)
   })
 
@@ -43,28 +43,26 @@ test(`base`, async () => {
 test(`cause`, async () => {
   // should correct calculate cause for complex async transactions
   const doAsync = action(
-    (ctx, v: number) => ctx.schedule(() => sleep(5).then(() => v)),
+    (ctx, v: number) => ctx.schedule(() => Promise.resolve(v)),
     `doAsync`,
   )
-  const asyncRes = doAsync.pipe(mapAsync((ctx, v) => v, `asyncRes`))
-  const a1 = asyncRes.pipe(toAtom(0, (ctx, v) => v, `a1`))
+  const doAsyncRes = doAsync.pipe(mapAsync((ctx, v) => v, `doAsyncRes`))
+  const asyncResAtom = doAsyncRes.pipe(toAtom(0, (ctx, v) => v, `asyncResAtom`))
 
   const ctx = createContext()
   const log = mockFn()
 
   connectLogger(ctx, { log })
 
-  ctx.subscribe(a1, () => {})
+  ctx.subscribe(asyncResAtom, () => {})
 
   doAsync(ctx, 123)
 
   await sleep(5)
 
   assert.equal(log.lastInput().changes, {
-    [a1.__reatom.name!]: {
-      cause: `self <-- ${asyncRes.__reatom.name} <-- ${doAsync.__reatom.name}`,
-      state: [123],
-    },
+    doAsyncRes: { state: [123], cause: 'self <-- doAsync' },
+    asyncResAtom: { state: 123, cause: 'self <-- doAsyncRes <-- doAsync' },
   })
   ;`👍` //?
 })
