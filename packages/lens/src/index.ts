@@ -11,6 +11,7 @@ import {
   Fn,
   throwReatomError,
 } from '@reatom/core'
+import { onUpdate } from '@reatom/utils'
 
 declare const NEVER: unique symbol
 type NEVER = typeof NEVER
@@ -179,9 +180,7 @@ export const toAtom =
 
     const theAtom = atom(
       (ctx, state = fallback) =>
-        ctx
-          .spy(anAction)
-          .reduce((acc, v) => mapper(ctx, v /* , acc */), state),
+        ctx.spy(anAction).reduce((acc, v) => mapper(ctx, v /* , acc */), state),
       name,
     )
 
@@ -209,3 +208,20 @@ export const toAction =
   }
 // TODO
 // export const view = <T, K extends keyof T>
+
+export const toPromise = <T>(
+  anAtom: Atom<T>,
+  targetCtx?: Ctx,
+): Promise<[Ctx, T]> =>
+  new Promise((resolve) => {
+    const un = onUpdate(anAtom, (ctx, patch) => {
+      if (targetCtx !== undefined && targetCtx !== ctx) return
+
+      // multiple updates will be ignored
+      // and only first will accepted
+      ctx.schedule(() => {
+        resolve([ctx, ctx.get(anAtom)])
+        un()
+      })
+    })
+  })
