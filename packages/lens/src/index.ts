@@ -8,7 +8,6 @@ import {
   AtomMut,
   AtomState,
   Ctx,
-  CtxSpy,
   Fn,
   throwReatomError,
 } from '@reatom/core'
@@ -111,7 +110,7 @@ export const mapAsync =
               actualize!(
                 ctx,
                 ctx.cause!.meta,
-                (patchCtx: CtxSpy, patch: AtomCache) => {
+                (patchCtx: Ctx, patch: AtomCache) => {
                   patch.cause = ctx.cause!.cause
                   const value = mapper(ctx, v)
                   patch.state = isAction ? [value] : value

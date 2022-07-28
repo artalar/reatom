@@ -382,6 +382,7 @@ export const createContext = ({
                 ...((patch.isConnected ? meta.onConnect : meta.onCleanup) ??
                   []),
               )
+
               if (patch.isConnected) {
                 for (const parentPatch of patch.parents) {
                   testParent(patch, parentPatch)
