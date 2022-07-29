@@ -5,6 +5,7 @@ import {
   Atom,
   AtomCache,
   Ctx,
+  CtxLessParams,
   Fn,
   throwReatomError,
   Unsubscribe,
@@ -22,16 +23,22 @@ export interface Effect<Params extends any[] = [], Resp = any>
   toPromise: Fn<[Ctx], Promise<Resp>>
 }
 
-export const effect = <Params extends any[] = [], Resp = any>(
-  fn: Fn<[Ctx, ...Params], Promise<Resp>>,
+export const effect = <
+  Params extends [Ctx, ...any[]] = [Ctx, ...any[]],
+  Resp = any,
+>(
+  fn: Fn<Params, Promise<Resp>>,
   name?: string,
-): Effect<Params, Resp> => {
-  type Self = Effect<Params, Resp>
+): Effect<CtxLessParams<Params>, Resp> => {
+  type Self = Effect<CtxLessParams<Params>, Resp>
   const onEffect = action((ctx, ...a) => {
+    paramsAtom(ctx, a)
     countAtom(ctx, (s) => ++s)
 
+    // @ts-ignore
     const promise = fn(ctx, ...a)
-    promise.finally(() => countAtom(ctx, (s) => --s))
+    const decreaseCount = () => countAtom(ctx, (s) => --s)
+    promise.then(decreaseCount, decreaseCount)
 
     return promise
   }, name) as Self
@@ -43,13 +50,14 @@ export const effect = <Params extends any[] = [], Resp = any>(
   const retry: Self['retry'] = action((ctx) => {
     const params = ctx.get(paramsAtom)
     throwReatomError(params === null, 'empty params')
-    return onEffect(ctx, ...(params as Params))
+    // @ts-ignore
+    return onEffect(ctx, ...params)
   })
 
   const countAtom = atom(0)
   const pendingAtom: Self['pendingAtom'] = atom((ctx) => ctx.spy(countAtom) > 0)
 
-  const paramsAtom: Self['paramsAtom'] = atom(null)
+  const paramsAtom = atom<null | CtxLessParams<Params>>(null)
 
   const toPromise: Self['toPromise'] = (ctx) =>
     new Promise((res, rej) => {
