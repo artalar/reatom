@@ -8,6 +8,7 @@ import {
   AtomMut,
   AtomState,
   Ctx,
+  CtxLessParams,
   Fn,
   throwReatomError,
 } from '@reatom/core'
@@ -20,7 +21,7 @@ type NEVER = typeof NEVER
 export type AtomMap<
   T extends Atom,
   State = AtomState<T>,
-  Args extends any[] = T extends Fn<[Ctx, ...infer Args]> ? Args : NEVER[],
+  Args extends any[] = CtxLessParams<T, NEVER[]>,
 > = AtomProperties<T> extends never
   ? AtomMapCallable<T, State, Args>
   : AtomMapCallable<T, State, Args> & {
@@ -32,7 +33,7 @@ type AtomProperties<T> = keyof Omit<T, '__reatom' | 'pipe'>
 type AtomMapCallable<
   T extends Atom,
   State = AtomState<T>,
-  Args extends any[] = T extends Fn<[Ctx, ...infer Args]> ? Args : NEVER[],
+  Args extends any[] = CtxLessParams<T, NEVER[]>,
 > = ActionIs<T> extends true
   ? Action<Args, State>
   : T extends AtomMut<AtomState<T>, any>
@@ -135,11 +136,7 @@ export const mapAsync =
 export const mapInput =
   <T extends AtomMut | Action, Args extends [Ctx, ...any[]]>(
     mapper: Fn<Args, Parameters<T>>,
-    name?: string,
-  ): Fn<
-    [T],
-    AtomMap<T, AtomState<T>, Args extends [Ctx, ...infer Args] ? Args : never>
-  > =>
+  ): Fn<[T], AtomMap<T, AtomState<T>, CtxLessParams<Args>>> =>
   (anAtom): any =>
     Object.assign(
       // @ts-ignore
@@ -165,14 +162,21 @@ export const filter = <T extends Atom>(
     name,
   )
 
-/** The action will react to new atom updates */
+/** Convert action to atom with optional fallback state */
 export const toAtom =
   <T extends Action, State = undefined | ActionResult<T>>(
     fallback?: State,
     mapper: Fn<[Ctx, ActionResult<T>], State> = (ctx, v: any) => v,
     name?: string,
-  ): Fn<[T], Atom<State>> =>
-  (anAction) => {
+  ): Fn<
+    [T],
+    AtomProperties<T> extends never
+      ? AtomMut<State | ActionResult<T>, CtxLessParams<T>>
+      : AtomMut<State | ActionResult<T>, CtxLessParams<T>> & {
+          [K in AtomProperties<T>]: T[K]
+        }
+  > =>
+  (anAction): any => {
     throwReatomError(
       !anAction.__reatom.isAction,
       'received atom instead of action',
@@ -184,9 +188,7 @@ export const toAtom =
       name,
     )
 
-    return theAtom
-    // TODO?
-    // return Object.assign(getAtomBlank(anAction, theAtom), anAction, theAtom)
+    return Object.assign(getAtomBlank(anAction, theAtom), anAction, theAtom)
   }
 
 /** The action will react to new atom updates */
