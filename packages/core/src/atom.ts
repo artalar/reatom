@@ -399,12 +399,15 @@ export const createContext = ({
             if (patch.cause !== null) {
               caches.set(meta, patch!)
               const { state } = patch
-              patch.listeners.forEach(
-                meta.isAction
-                  ? ((patch.state = []),
-                    (cb) => nearEffects.push(() => cb(state)))
-                  : (cb) => lateEffects.push(() => cb(read(meta)!.state)),
-              )
+              let cb = (cb: Fn) => lateEffects.push(() => cb(read(meta)!.state))
+
+              if (meta.isAction) {
+                if (state.length === 0) continue
+                patch.state = []
+                cb = (cb) => nearEffects.push(() => cb(state))
+              }
+
+              patch.listeners.forEach(cb)
             }
           }
         }
