@@ -1,9 +1,9 @@
 {
-  "name": "@reatom/effect",
+  "name": "@reatom/async",
   "version": "3.0.0",
   "private": false,
   "sideEffects": false,
-  "description": "Reatom for effect",
+  "description": "Reatom for async",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
@@ -21,7 +21,7 @@
     "build": "cross-env fixme=fixme microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "nx test:native @reatom/effect",
+    "test": "nx test:native @reatom/async",
     "test:native": "cross-env fixme=fixme ts-node src/index.test.ts"
   },
   "peerDependencies": {
@@ -36,7 +36,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/effect",
+  "homepage": "https://github.com/artalar/reatom/packages/async",
   "files": [
     "/build",
     "/package.json",
