@@ -1,7 +1,7 @@
 import { action, atom, createContext } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { atomizeNumber } from '@reatom/primitives'
-import { mockFn } from '@reatom/internal-utils'
+import { mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -19,9 +19,7 @@ import {
 test(`map and mapInput`, async () => {
   const a = atomizeNumber(0)
   const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
-  const aMapInput = a.pipe(
-    mapInput((ctx, v: string) => [ctx, Number(v)]),
-  )
+  const aMapInput = a.pipe(mapInput((ctx, v: string) => [ctx, Number(v)]))
   const aMapMapInput = a.pipe(
     mapState((ctx, v) => v + 1),
     mapInput((ctx, v: string) => [ctx, Number(v)]),
@@ -63,38 +61,33 @@ test(`readonly and plain`, () => {
   ;`👍` //?
 })
 
-test(`mapAwaited`, async () => {
+test(`mapAsync and toAtom`, async () => {
   const a = action(() => sleep(10).then(() => 10))
-  const aMaybeString = a.pipe(
-    mapAsync((ctx, v) => v.toString()),
-    toAtom(),
-  )
+  const aMaybeString = a.pipe(mapAsync((ctx, v) => v.toString()))
   const aString = a.pipe(
     mapAsync((ctx, v) => v.toString()),
     toAtom(''),
   )
   const ctx = createContext()
+  const cb = mockFn()
 
-  ctx.subscribe(aMaybeString, (v) => {
-    v //?
-  })
-  ctx.subscribe(aString, (v) => {
-    v //?
-  })
+  ctx.subscribe(aMaybeString, cb)
+  ctx.subscribe(aString, () => {})
 
   assert.equal(ctx.get(a), [])
-  assert.is(ctx.get(aMaybeString), undefined)
+  assert.is(cb.calls.length, 1)
   assert.is(ctx.get(aString), '')
 
   const promise = a(ctx)
 
   assert.equal(ctx.get(a), [])
-  assert.is(ctx.get(aMaybeString), undefined)
+  assert.is(cb.calls.length, 1)
   assert.is(ctx.get(aString), '')
 
   await promise
 
-  assert.is(ctx.get(aMaybeString), '10')
+  assert.is(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), ['10'])
   assert.is(ctx.get(aString), '10')
   ;`👍` //?
 })
