@@ -132,6 +132,12 @@ export type ActionIs<T> = T extends Action<
   ? true
   : false
 
+export type CtxLessParams<T, Else = never> = T extends [Ctx, ...infer Params]
+  ? Params
+  : T extends Fn<[Ctx, ...infer Params]>
+  ? Params
+  : Else
+
 export interface Unsubscribe {
   (): void
 }
@@ -378,22 +384,22 @@ export const createContext = ({
             if (
               patch.isConnected !== (patch.isConnected = isConnected(patch))
             ) {
-              nearEffects.push(
-                ...((patch.isConnected ? meta.onConnect : meta.onCleanup) ??
-                  []),
-              )
+              let hooks = meta.onCleanup
+              let testParents = (parentPatch: AtomCache) => {
+                parentPatch.children.delete(meta)
+                testParent(patch, parentPatch)
+              }
 
               if (patch.isConnected) {
-                for (const parentPatch of patch.parents) {
+                hooks = meta.onConnect
+                testParents = (parentPatch: AtomCache) => {
                   testParent(patch, parentPatch)
                   parentPatch.children.add(meta)
                 }
-              } else {
-                for (const parentPatch of patch.parents) {
-                  parentPatch.children.delete(meta)
-                  testParent(patch, parentPatch)
-                }
               }
+
+              if (hooks !== null) nearEffects.push(...hooks)
+              patch.parents.forEach(testParents)
             }
 
             if (patch.cause !== null) {
@@ -497,6 +503,7 @@ export const atom: {
   initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
   name?: string,
 ): Atom => {
+  // FIXME: this took way to more than expected in profiling
   let atom: any = (ctx: Ctx, update: any) =>
     ctx.get(
       (read, actualize) =>
