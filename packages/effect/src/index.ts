@@ -23,7 +23,7 @@ export interface Effect<Params extends any[] = [], Resp = any>
   toPromise: Fn<[Ctx], Promise<Resp>>
 }
 
-export const effect = <
+export const atomizeAsync = <
   Params extends [Ctx, ...any[]] = [Ctx, ...any[]],
   Resp = any,
 >(
@@ -76,7 +76,7 @@ export const effect = <
     patch.state.forEach((promise) =>
       promise
         .then((response) => onFulfill(ctx, response))
-        .catch((error) => onReject(ctx, error))
+        .catch((error) => error?.name !== 'AbortError' && onReject(ctx, error))
         .finally(() => onSettle(ctx)),
     ),
   )
@@ -93,21 +93,33 @@ export const effect = <
   })
 }
 
-// export const withConcurrency = <T extends Fn<[Ctx], Promise<any>>>(
-//   fn: T,
-//   shouldThrow = false,
-// ): T => {
-//   const versionAtom = atom(0)
-//   // @ts-ignore
-//   return (ctx, ...a) => {
-//     const version = versionAtom(ctx, (s) => ++s)
-//     return fn(ctx, ...a).then((resp) => {
-//       if (version !== ctx.get(versionAtom)) {
-//         throwReatomError(shouldThrow, 'concurrency error')
-//         // TODO is it ok? (no)
-//         return new Promise(() => {})
-//       }
-//       return resp
-//     })
-//   }
-// }
+// TODO rename?
+export const withLastWin = <
+  T extends Fn<[Ctx, AbortController, ...any[]], Promise<any>>,
+>(
+  fn: T,
+): T extends Fn<[Ctx, AbortController, ...infer Input], infer Output>
+  ? Fn<[Ctx, ...Input], Output>
+  : never => {
+  const versionAtom = atom(0)
+  // @ts-ignore
+  return (ctx, ...a) => {
+    const controller = new AbortController()
+    controller.signal.throwIfAborted ??= () => {
+      if (controller.signal.aborted) {
+        const error = new Error(controller.signal.reason)
+        error.name = 'AbortError'
+        throw error
+      }
+    }
+    const version = versionAtom(ctx, (s) => ++s)
+
+    return fn(ctx, controller, ...a).then((resp) => {
+      if (version !== ctx.get(versionAtom)) {
+        controller.abort('concurrent request')
+      }
+      controller.signal.throwIfAborted()
+      return resp
+    })
+  }
+}

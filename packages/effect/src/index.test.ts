@@ -2,13 +2,14 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { mapAsync, toAtom } from '@reatom/lens'
 import { onUpdate } from '@reatom/utils'
+import { mockFn } from '@reatom/testing'
 
-import { effect } from './'
+import { atomizeAsync, withLastWin } from './'
 import { atom, createContext } from '@reatom/core'
 
 test(`base API`, async () => {
   let i = 1
-  const dataResource = effect(async (ctx, v: number) => v + i).pipe(
+  const dataResource = atomizeAsync(async (ctx, v: number) => v + i).pipe(
     mapAsync((ctx, value) => ({ value })),
     toAtom({ value: 0 }),
   )
@@ -29,7 +30,7 @@ test(`base API`, async () => {
 
 test('retry', async () => {
   let attempts = 0
-  const fetchData = effect(async (ctx, v: number) => {
+  const fetchData = atomizeAsync(async (ctx, v: number) => {
     if (attempts++ < 2) throw new Error('test error')
     return v
   })
@@ -53,6 +54,54 @@ test('retry', async () => {
   )
 
   fetchData(ctx, 123)
+  ;`👍` //?
+})
+
+test('withLastWin', async () => {
+  const async1 = atomizeAsync(
+    withLastWin(async (ctx, controller, v: number) => v),
+  )
+  const valueSubscriber = mockFn()
+  const errorSubscriber = mockFn()
+
+  const ctx = createContext()
+
+  ctx.subscribe(async1.pipe(mapAsync((ctx, v) => v)), valueSubscriber)
+  ctx.subscribe(async1.onReject, errorSubscriber)
+
+  assert.equal(valueSubscriber.lastInput(), [])
+  assert.equal(errorSubscriber.calls.length, 1)
+
+  const promise1 = async1(ctx, 1)
+  const promise2 = async1(ctx, 2)
+
+  await Promise.all([promise1, promise2]).catch((v) => {})
+
+  assert.equal(valueSubscriber.lastInput(), [2])
+  assert.equal(errorSubscriber.calls.length, 1)
+  ;`👍` //?
+})
+
+test('withLastWin user abort', async () => {
+  const async1 = atomizeAsync(
+    withLastWin(async (ctx, controller) => controller.abort()),
+  )
+  const valueSubscriber = mockFn()
+  const errorSubscriber = mockFn()
+
+  const ctx = createContext()
+
+  ctx.subscribe(async1.pipe(mapAsync((ctx, v) => v)), valueSubscriber)
+  ctx.subscribe(async1.onReject, errorSubscriber)
+
+  assert.equal(valueSubscriber.calls.length, 1)
+  assert.equal(errorSubscriber.calls.length, 1)
+
+  await async1(ctx).catch(() => {})
+
+  assert.equal(valueSubscriber.calls.length, 1)
+  assert.equal(errorSubscriber.calls.length, 1)
+  ;`👍` //?
 })
 
 test.run()
