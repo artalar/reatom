@@ -187,11 +187,12 @@ export function createStore(
 
       assign(state, stateNew)
 
-      changedAtoms.forEach((atom) => {
+      changedAtoms.forEach((anAtom) => {
         actualize!(
-          atom.v3atom.__reatom,
+          v3ctx,
+          anAtom.v3atom.__reatom,
           (ctx: v3.CtxSpy, patch: v3.AtomCache) => {
-            patch.state = stateNew[atom[TREE].id]
+            patch.state = stateNew[anAtom[TREE].id]
           },
         )
       })
