@@ -1,12 +1,17 @@
-export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
-
 export function mockFn<I extends any[], O>(
   fn: (...input: I) => O = (...i: any) => void 0 as any,
 ) {
   const _fn = Object.assign(
     function (...i: I) {
-      // @ts-ignore
-      const o = fn.apply(this, i)
+      try {
+        // @ts-ignore
+        var o = fn.apply(this, i)
+      } catch (error) {
+        // @ts-ignore
+        _fn.calls.push({ i, o: error })
+
+        throw error
+      }
 
       _fn.calls.push({ i, o })
 
