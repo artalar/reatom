@@ -508,10 +508,10 @@ export const atom: {
   name?: string,
 ): Atom => {
   // FIXME: this took way to more than expected in profiling
-  let atom: any = (ctx: Ctx, update: any) =>
+  let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
       (read, actualize) =>
-        actualize!(ctx, atom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
+        actualize!(ctx, theAtom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
           patch.cause = ctx.cause
           patch.state =
             typeof update === 'function'
@@ -522,12 +522,12 @@ export const atom: {
   let computer = null
 
   if (typeof initState === 'function') {
-    atom = {}
+    theAtom = {}
     computer = initState
     initState = undefined
   }
 
-  atom.__reatom = {
+  theAtom.__reatom = {
     name,
     isAction: false,
     patch: null,
@@ -538,12 +538,12 @@ export const atom: {
     onUpdate: null,
   }
 
-  atom.pipe = function (...fns: Array<Fn>) {
+  theAtom.pipe = function (...fns: Array<Fn>) {
     return fns.reduce((acc, fn) => fn(acc), this)
   }
 
   // @ts-ignore
-  return atom
+  return theAtom
 }
 
 export const action: {
