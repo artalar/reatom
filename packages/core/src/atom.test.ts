@@ -1,6 +1,6 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { mockFn } from '@reatom/internal-utils'
+import { mockFn } from '@reatom/testing'
 
 import {
   action,

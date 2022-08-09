@@ -64,7 +64,10 @@ export interface Ctx {
     >,
   ): T
   spy?: <T>(atom: Atom<T>) => T
-  schedule<T = void>(cb: Fn<[Ctx], T>, isNearEffect?: boolean): Promise<T>
+  schedule<T = void>(
+    cb: Fn<[Ctx], T>,
+    isNearEffect?: boolean,
+  ): Promise<Awaited<T>>
 
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
@@ -446,6 +449,7 @@ export const createContext = ({
 
       return new Promise<any>((res, rej) => {
         trRollbacks.push(rej)
+        // FIXME `callSafely` do nothing here
         ;(isNearEffect ? nearEffects : lateEffects).push(() => {
           try {
             res(effect(this))
@@ -464,7 +468,7 @@ export const createContext = ({
         return () => logsListeners.delete(cb)
       }
 
-      const { __reatom: meta } = atom
+      const { __reatom: meta } = atom as Atom
 
       let lastState = impossibleValue
       const fn = (state: any) =>
@@ -481,7 +485,7 @@ export const createContext = ({
         cache.listeners.add(fn)
       }
 
-      if (lastState === impossibleValue) fn(read(meta)!.state)
+      if (lastState === impossibleValue) fn((meta.patch ?? read(meta)!).state)
 
       return () => {
         if ((cache = read(meta)!).listeners.delete(fn) && !isConnected(cache)) {
