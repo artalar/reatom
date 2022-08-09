@@ -1,4 +1,5 @@
 import {
+  action,
   Action,
   ActionIs,
   ActionResult,
@@ -12,7 +13,8 @@ import {
   Fn,
   throwReatomError,
 } from '@reatom/core'
-import { onUpdate } from '@reatom/utils'
+import { onUpdate } from '@reatom/hooks'
+import { Plain, assign } from '@reatom/utils'
 
 declare const NEVER: unique symbol
 type NEVER = typeof NEVER
@@ -119,6 +121,7 @@ export const mapAsync =
                 },
               ),
             ),
+          () => {},
         )
 
         return state
@@ -208,22 +211,35 @@ export const toAction =
     theAction.__reatom.isAction = true
     return theAction as Action
   }
-// TODO
-// export const view = <T, K extends keyof T>
 
-export const toPromise = <T>(
-  anAtom: Atom<T>,
-  targetCtx?: Ctx,
-): Promise<[Ctx, T]> =>
-  new Promise((resolve) => {
-    const un = onUpdate(anAtom, (ctx, patch) => {
-      if (targetCtx !== undefined && targetCtx !== ctx) return
+export const toPromise =
+  <T, Res = T>(
+    ctx: Ctx,
+    mapper: Fn<[Ctx, T], Res> = (ctx, v: any) => v,
+  ): Fn<[Atom<T>], Promise<Res>> =>
+  (anAtom) =>
+    new Promise((res, rej) => {
+      const un = onUpdate(anAtom, (_ctx, state) => {
+        if (ctx !== _ctx) return
 
-      // multiple updates will be ignored
-      // and only first will accepted
-      ctx.schedule(() => {
-        resolve([ctx, ctx.get(anAtom)])
-        un()
+        // multiple updates will be ignored
+        // and only first will accepted
+        ctx.schedule(() =>
+          new Promise(
+            () => (
+              un(),
+              res(
+                mapper(
+                  ctx,
+                  // @ts-ignore
+                  state,
+                ),
+              )
+            ),
+          ).catch(rej),
+        )
       })
     })
-  })
+
+// TODO
+// export const view = <T, K extends keyof T>

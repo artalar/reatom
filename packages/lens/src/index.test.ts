@@ -62,7 +62,7 @@ test(`readonly and plain`, () => {
 })
 
 test(`mapAsync and toAtom`, async () => {
-  const a = action(() => sleep(10).then(() => 10))
+  const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 10)))
   const aMaybeString = a.pipe(mapAsync((ctx, v) => v.toString()))
   const aString = a.pipe(
     mapAsync((ctx, v) => v.toString()),
