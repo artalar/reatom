@@ -21,7 +21,7 @@ export const atomizeTimer = (name: string): TimerAtom => {
 
   const versionAtom = atom(0)
 
-  const startTimer = action(async (ctx, delayInSeconds: number) => {
+  const startTimer = action((ctx, delayInSeconds: number) => {
     const version = versionAtom(ctx, (s) => s + 1)
     const delay = delayInSeconds * 1000
     const start = Date.now()
@@ -30,17 +30,17 @@ export const atomizeTimer = (name: string): TimerAtom => {
 
     timerAtom(ctx, remains)
 
-    await ctx.schedule()
+    return ctx.schedule(async () => {
+      while (remains > 0) {
+        await sleep(Math.min(remains, ctx.get(intervalAtom)))
 
-    while (remains > 0) {
-      await sleep(Math.min(remains, ctx.get(intervalAtom)))
+        if (version !== ctx.get(versionAtom)) return
 
-      if (version !== ctx.get(versionAtom)) return
+        timerAtom(ctx, (remains = target - Date.now()))
+      }
 
-      timerAtom(ctx, (remains = target - Date.now()))
-    }
-
-    timerAtom(ctx, 0)
+      timerAtom(ctx, 0)
+    })
   }, `${name}.start`)
 
   const stopTimer = action((ctx) => {
