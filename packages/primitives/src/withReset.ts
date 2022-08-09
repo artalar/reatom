@@ -8,6 +8,7 @@ export const withReset =
         ctx.get(
           (read, actualize) =>
             actualize!(
+              ctx,
               anAtom.__reatom,
               (patchCtx: Ctx, patch: AtomCache) =>
                 (patch.state = patch.meta.initState(ctx)),
