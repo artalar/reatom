@@ -14,7 +14,7 @@ export const isObject = (thing: any): thing is Record<keyof any, any> =>
   typeof thing === 'object' && thing !== null
 
 export const isPlainEqual = (a: any, b: any, compare = Object.is) => {
-  if (!isObject(a) || !isObject(b)) return compare(a, b)
+  if (!isObject(a) || !isObject(b)) return Object.is(a, b)
   const aKeys = Object.keys(a)
   return (
     aKeys.length === Object.keys(b).length &&
