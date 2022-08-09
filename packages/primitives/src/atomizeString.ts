@@ -1,11 +1,11 @@
 import { atom, AtomMut } from '@reatom/core'
-import { withReset } from '@reatom/utils'
-import { withReducers, WithReducers } from './withReducers'
+import { withReset } from './withReset'
+import { WithReducers } from './withReducers'
 
 export type StringAtom<State extends string = string> = WithReducers<
   AtomMut<State>,
   {
-    /* reset: () => State */
+    reset: () => State
   }
 >
 
