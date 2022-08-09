@@ -1,11 +1,12 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { mapAsync, toAtom } from '@reatom/lens'
-import { onUpdate } from '@reatom/utils'
+import fetch from 'cross-fetch'
+import { atom, createContext } from '@reatom/core'
+import { mapAsync, toAtom, toPromise } from '@reatom/lens'
+import { onUpdate } from '@reatom/hooks'
 import { mockFn } from '@reatom/testing'
 
-import { atomizeAsync, withLastWin } from './'
-import { atom, createContext } from '@reatom/core'
+import { atomizeAsync, withAbort, withRetry } from './'
 
 test(`base API`, async () => {
   let i = 1
@@ -33,58 +34,65 @@ test('retry', async () => {
   const fetchData = atomizeAsync(async (ctx, v: number) => {
     if (attempts++ < 2) throw new Error('test error')
     return v
-  })
+  }).pipe(withRetry())
 
   const failTimesAtom = atom(0)
-  onUpdate(fetchData.onReject, (ctx, { state: error }) => {
+  onUpdate(fetchData.onReject, (ctx) => {
     if (failTimesAtom(ctx, (s) => ++s) > 4) return failTimesAtom(ctx, 0)
     fetchData.retry(ctx)
   })
 
   const ctx = createContext()
+  const cb = mockFn()
 
   ctx.subscribe(
     fetchData.pipe(
       mapAsync((ctx, v) => v),
       toAtom(),
     ),
-    (v) => {
-      v //?
-    },
+    cb,
   )
 
+  assert.is(cb.calls.length, 1)
+
   fetchData(ctx, 123)
+
+  await fetchData.onFulfill.pipe(toPromise(ctx))
+
+  assert.is(cb.calls.length, 2)
   ;`👍` //?
 })
 
-test('withLastWin', async () => {
-  const async1 = atomizeAsync(
-    withLastWin(async (ctx, controller, v: number) => v),
-  )
+test('withAbort', async () => {
+  const a1 = atomizeAsync(withAbort(async (ctx, controller, v: number) => v))
   const valueSubscriber = mockFn()
   const errorSubscriber = mockFn()
 
   const ctx = createContext()
 
-  ctx.subscribe(async1.pipe(mapAsync((ctx, v) => v)), valueSubscriber)
-  ctx.subscribe(async1.onReject, errorSubscriber)
+  ctx.subscribe(a1.pipe(mapAsync((ctx, v) => v)), valueSubscriber)
+  ctx.subscribe(a1.onReject, errorSubscriber)
 
+  assert.equal(valueSubscriber.calls.length, 1)
   assert.equal(valueSubscriber.lastInput(), [])
   assert.equal(errorSubscriber.calls.length, 1)
 
-  const promise1 = async1(ctx, 1)
-  const promise2 = async1(ctx, 2)
+  const promise1 = a1(ctx, 1)
+  const promise2 = a1(ctx, 2)
+
+  assert.equal(valueSubscriber.calls.length, 1)
 
   await Promise.all([promise1, promise2]).catch((v) => {})
 
+  assert.equal(valueSubscriber.calls.length, 2)
   assert.equal(valueSubscriber.lastInput(), [2])
   assert.equal(errorSubscriber.calls.length, 1)
   ;`👍` //?
 })
 
-test('withLastWin user abort', async () => {
+test('withAbort user abort', async () => {
   const async1 = atomizeAsync(
-    withLastWin(async (ctx, controller) => controller.abort()),
+    withAbort(async (ctx, controller) => controller.abort()),
   )
   const valueSubscriber = mockFn()
   const errorSubscriber = mockFn()
@@ -101,6 +109,37 @@ test('withLastWin user abort', async () => {
 
   assert.equal(valueSubscriber.calls.length, 1)
   assert.equal(errorSubscriber.calls.length, 1)
+  ;`👍` //?
+})
+
+test('withAbort and fetch', async () => {
+  const handleError = mockFn((e) => {
+    throw e
+  })
+  const fetchData = atomizeAsync(
+    withAbort(async (ctx, { signal }) =>
+      fetch('https://www.google.ru/404', { signal }).catch(handleError),
+    ),
+  )
+
+  const ctx = createContext()
+  const cb = mockFn()
+
+  ctx.subscribe(fetchData.pipe(mapAsync((ctx, resp) => resp.status)), cb)
+
+  assert.is(cb.calls.length, 1)
+  assert.is(handleError.calls.length, 0)
+
+  fetchData(ctx)
+  fetchData(ctx)
+  fetchData(ctx)
+
+  await fetchData.onFulfill.pipe(toPromise(ctx))
+
+  assert.is(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), [404])
+  assert.is(handleError.calls.length, 2)
+  assert.ok(handleError.calls.every(({ o }: any) => o.name === 'AbortError'))
   ;`👍` //?
 })
 
