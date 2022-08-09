@@ -1,14 +1,34 @@
-import { atom, Atom, createContext, throwReatomError } from '@reatom/core'
+import {
+  atom,
+  Atom,
+  AtomCache,
+  Ctx,
+  Fn,
+  throwReatomError,
+  Unsubscribe,
+} from '@reatom/core'
+import { addOnUpdate, onConnect } from '@reatom/hooks'
 import { sleep } from '@reatom/utils'
 
 export interface PersistStorage {
   get: (key: string) => null | { data: unknown; version?: number }
   set: (key: string, payload: { data: unknown; version?: number }) => void
-  // TODO:
-  // subscribe
+  subscribe?: (key: string, callback: (payload: string) => void) => Unsubscribe
   throttle: number
 }
 
+const listeners = new Map<string, Fn>()
+// TODO throttle
+globalThis.addEventListener?.(
+  'storage',
+  (event) => {
+    const { storageArea, key, newValue } = event
+    if (storageArea === localStorage && key !== null && newValue !== null) {
+      listeners.get(key)?.(newValue)
+    }
+  },
+  false,
+)
 export const persistStorageAtom = atom<PersistStorage>({
   get: (key) => {
     const dataStr = globalThis.localStorage?.getItem(key)
@@ -22,45 +42,68 @@ export const persistStorageAtom = atom<PersistStorage>({
   set: (key, payload) => {
     globalThis.localStorage?.setItem(key, JSON.stringify(payload))
   },
+  subscribe(key, cb) {
+    listeners.set(key, cb)
+    return () => listeners.delete(key)
+  },
   throttle: 150,
 })
 
 export const withPersist =
   <A extends Atom>({
     key,
-    version,
+    subscribe = false,
     throttle,
+    version,
   }: {
     key?: string
-    version?: number
+    subscribe?: boolean
     throttle?: number
+    version?: number
     // TODO
     // migration: Fn<[{ snapshot: unknown, version: undefined | number }], unknown>
   } = {}) =>
-  (a: A): A => {
-    let { initState, name } = a.__reatom
+  (anAtom: A): A => {
+    let { initState, name } = anAtom.__reatom
 
-    name ??= key
+    key ??= name
 
-    throwReatomError(!name, 'key is required for persistence')
+    throwReatomError(!key, 'key is required for persistence')
 
-    a.__reatom.initState = (ctx) => {
-      const persistData = ctx.get(persistStorageAtom).get(name!)
+    anAtom.__reatom.initState = (ctx) => {
+      const storage = ctx.get(persistStorageAtom).get(key!)
 
-      return persistData !== null && persistData.version === version
-        ? persistData.data
+      return storage !== null && storage.version === version
+        ? storage.data
         : initState(ctx)
     }
-    ;(a.__reatom.onUpdate ??= new Set()).add((ctx, { state }) => {
-      const persistStorage = ctx.get(persistStorageAtom)
-      let _throttle = throttle ?? persistStorage.throttle
-      const set = () => persistStorage.set(name!, { data: state, version })
+    addOnUpdate(anAtom, (ctx, { state }) => {
+      const storage = ctx.get(persistStorageAtom)
+      let _throttle = throttle ?? storage.throttle
+      const set = () => storage.set(key!, { data: state, version })
 
-      if (persistStorage.get(name!)?.data !== state) {
+      if (storage.get(key!)?.data !== state) {
         // FIXME: make real throttle - skip outdated data
         ctx.schedule(_throttle === 0 ? set : () => sleep(_throttle).then(set))
       }
     })
+    if (subscribe) {
+      onConnect(anAtom, (ctx) => {
+        const storage = ctx.get(persistStorageAtom)
+        return storage.subscribe?.(key!, (payload) =>
+          ctx.get((read, actualize) =>
+            actualize!(
+              ctx,
+              anAtom.__reatom,
+              (patchCtx: Ctx, patch: AtomCache) => {
+                const { data, version: v } = JSON.parse(payload)
+                if (v === version) patch.state = data
+              },
+            ),
+          ),
+        )
+      })
+    }
 
-    return a
+    return anAtom
   }
