@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createContext } from '@reatom/core'
-import { getDuration } from '@reatom/internal-utils'
+import { getDuration } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
 import { atomizeTimer } from './'
@@ -25,6 +25,7 @@ test(`base API`, async () => {
     sleep(target / 2).then(() => timerModel.stopTimer(ctx)),
   ])
   assert.ok(duration >= target / 2 && duration < target)
+  ;`👍` //?
 })
 
 test.run()
