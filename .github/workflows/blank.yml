@@ -33,4 +33,4 @@ jobs:
       run: cd $GITHUB_WORKSPACE && npm i
     - name: publish preview version
       run: echo 'Not ready yet'
-      # run: cd $GITHUB_WORKSPACE && npx ts-node scripts/run_publish.ts ${{needs.changedfiles.outputs.ts}}
+      # run: cd $GITHUB_WORKSPACE && npx tsx scripts/run_publish.ts ${{needs.changedfiles.outputs.ts}}
