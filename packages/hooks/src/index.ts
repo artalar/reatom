@@ -9,38 +9,41 @@ import {
   Unsubscribe,
 } from '@reatom/core'
 
-export const onConnect = <T>(
-  anAtom: Atom<T>,
-  hook: Fn<[Ctx, T, AtomCache<T>], void | Unsubscribe>,
+export const onConnect = (
+  anAtom: Atom,
+  hook: Fn<[Ctx], void | Unsubscribe>,
 ): Unsubscribe => {
   const connectHooks = (anAtom.__reatom.onConnect ??= new Set())
-  const cleanupHooks = (anAtom.__reatom.onCleanup ??= new Set())
-  const connectCleanups = new WeakMap<Ctx, Fn>()
 
-  const connectCb = (ctx: Ctx) => {
-    const cache = ctx.get((read) => read(anAtom.__reatom)!)
-    const cleanup = hook(ctx, cache.state, cache)
+  const connectHook = (ctx: Ctx) => {
+    const cleanup = hook(ctx)
 
     if (typeof cleanup === 'function') {
-      connectCleanups.set(ctx, cleanup)
-    }
-  }
-  const cleanupCb = (ctx: Ctx) => {
-    const cleanup = connectCleanups.get(ctx)
-    if (typeof cleanup === 'function') {
-      connectCleanups.delete(ctx)
-      cleanup()
+      const cleanupHook = (_ctx: Ctx) => {
+        if (ctx === _ctx) {
+          cleanupHooks.delete(cleanupHook)
+          if (connectHooks.has(connectHook)) cleanup()
+        }
+      }
+      const cleanupHooks = (anAtom.__reatom.onCleanup ??= new Set()).add(
+        cleanupHook,
+      )
     }
   }
 
-  connectHooks.add(connectCb)
-  cleanupHooks.add(cleanupCb)
+  connectHooks.add(connectHook)
 
-  return () => {
-    connectHooks.delete(connectCb)
-    cleanupHooks.delete(cleanupCb)
-  }
+  return () => connectHooks.delete(connectHook)
 }
+
+export const whileConnected = <T>(anAtom: Atom<T>, cb: Fn<[Ctx], Promise<any>>) =>
+  onConnect(anAtom, (ctx) => {
+    let isConnected = true
+
+    cb(ctx).then(() => isConnected && cb(ctx))
+
+    return () => (isConnected = false)
+  })
 
 export const addOnUpdate = <T extends Atom>(
   anAtom: T,
