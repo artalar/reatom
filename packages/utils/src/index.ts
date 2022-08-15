@@ -1,3 +1,5 @@
+import { Fn, Pipe } from '@reatom/core'
+
 export type Plain<Intersection> = Intersection extends (...a: any[]) => any
   ? Intersection
   : Intersection extends new (...a: any[]) => any
@@ -8,21 +10,24 @@ export type Plain<Intersection> = Intersection extends (...a: any[]) => any
     }
   : Intersection
 
+export const noop: Fn = () => {}
+
 export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
 export const isObject = (thing: any): thing is Record<keyof any, any> =>
   typeof thing === 'object' && thing !== null
 
-export const isPlainEqual = (a: any, b: any, compare = Object.is) => {
+export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
   if (!isObject(a) || !isObject(b)) return Object.is(a, b)
   const aKeys = Object.keys(a)
   return (
+    a.__proto__ === b.__proto__ &&
     aKeys.length === Object.keys(b).length &&
-    aKeys.every((k) => compare(a[k], b[k]))
+    aKeys.every((k) => k in b && compare(a[k], b[k]))
   )
 }
 
-export const isDeepEqual = (a: any, b: any) => isPlainEqual(a, b, isDeepEqual)
+export const isDeepEqual = (a: any, b: any) => isShallowEqual(a, b, isDeepEqual)
 
 export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
   Omit<T1, keyof T2 | keyof T3 | keyof T4> &
