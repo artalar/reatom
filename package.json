@@ -3,6 +3,7 @@
   "private": true,
   "description": "Expressive and deterministic state manager",
   "scripts": {
+    "postinstall": "npx nx run @reatom/framework:build",
     "prettify": "prettier --write **/*.{js,ts,md} !**/babel-plugin/test/**",
     "prettify:watch": "onchange **/*.{js,ts,md} !**/babel-plugin/test/** -- prettier --write {{changed}}",
     "update": "npx npm-check-updates -u"
