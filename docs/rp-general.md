@@ -4,9 +4,11 @@ Reactivity is a simple pattern which you could use in many complex cases, but yo
 
 ## Definition
 
-**Reactive programming is a pattern of delegating the responsibility of initialization data processing to the data source, which doesn't know dependent units and can't interact with it outside one-way notification.**
+**Reactive programming is a pattern of delegating responsibility for initializing data processing to a data source, which doesn't know dependent units and can't interact with them outside one-way notification.**
 
-The main reason for that is to move components coupling from static definition in a code to dynamic runtime linking. Eventually it allows you to not thinking about cache invalidation, which is huge!
+The main reason for that is to move components coupling from static definition in a code to dynamic runtime linking.
+
+Is is simpler to apply a caches for reactive interfaces, so, eventually, it helps you to built a fully-automatic cache invalidation system, which is huge!
 
 It is a good for data flow description and a bad for data transaction description ([pitfalls](#pitfalls)).
 
@@ -16,4 +18,4 @@ Proxies / lenses / pull or push are just an API, not a sense.
 
 ## Pitfalls
 
-In one to many data structures it is a perfect way to manage coupling by reactive programming: it is just a way to remove a bottle neck of code complexity. But when you need to describe a step-by-step business flow you should do it in one place (one code part), otherwise it will be hard to inspect and debug it, specially with a complicated reproduction.
+In one to many data structures it is a perfect way to manage coupling by reactive programming: it is just a way to remove a bottle neck of code size and complexity. But when you need to describe a step-by-step business flow you should do it in one place (one code part), otherwise it will be hard to inspect and debug it, specially with a complicated reproduction with a lot of conditions.
