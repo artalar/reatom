@@ -378,11 +378,13 @@ export const createContext = ({
 
         for (const log of logsListeners) log(trLogs)
 
-        for (const {
-          meta,
-          meta: { patch },
-        } of trLogs) {
-          if (patch !== null) {
+        for (let patch of trLogs) {
+          const { meta } = patch
+
+          if (meta.isAction && patch.state.length > 0) patch.state = []
+
+          // @ts-expect-error
+          if ((patch = meta.patch) !== null) {
             meta.patch = null
             if (
               patch.isConnected !== (patch.isConnected = isConnected(patch))
@@ -412,7 +414,6 @@ export const createContext = ({
 
               if (meta.isAction) {
                 if (state.length === 0) continue
-                patch.state = []
                 cb = (cb) => nearEffects.push(() => cb(state))
               }
 
