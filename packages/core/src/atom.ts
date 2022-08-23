@@ -384,8 +384,6 @@ export const createContext = ({
         for (let patch of trLogs) {
           const { meta } = patch
 
-          if (meta.isAction && patch.state.length > 0) patch.state = []
-
           // @ts-expect-error
           if ((patch = meta.patch) !== null) {
             meta.patch = null
@@ -423,6 +421,8 @@ export const createContext = ({
               patch.listeners.forEach(cb)
             }
           }
+
+          if (meta.isAction && patch.state.length > 0) patch.state = []
         }
       } catch (e: any) {
         trError = e = e instanceof Error ? e : new Error(String(e))
