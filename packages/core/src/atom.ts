@@ -72,6 +72,8 @@ export interface Ctx {
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
   cause: null | AtomCache
+  /** unique immutable key to understand same context from different computations */
+  key: symbol
 }
 
 export interface CtxSpy extends Required<Ctx> {}
@@ -153,7 +155,10 @@ export const isAction = (thing: any): thing is Action => {
   return thing?.__reatom?.isAction === true
 }
 
-export const isConnected = (cache: AtomCache): boolean => {
+// export const getCache = <T>(ctx: Ctx, anAtom: Atom<T>): AtomCache<T> =>
+//   ctx.get((read) => (ctx.get(anAtom), read(anAtom.__reatom)!))
+
+const isConnected = (cache: AtomCache): boolean => {
   return cache.children.size + cache.listeners.size > 0
 }
 
@@ -162,19 +167,6 @@ const assertFunction = (thing: any) =>
     typeof thing !== 'function',
     `invalid "${typeof thing}", function expected`,
   )
-
-const copyCache = (
-  cache: AtomCache,
-  cause: AtomCache['cause'] = null,
-): AtomCache => ({
-  state: cache.state,
-  isConnected: cache.isConnected,
-  meta: cache.meta,
-  cause,
-  parents: cache.parents,
-  children: cache.children,
-  listeners: cache.listeners,
-})
 
 export interface ContextOptions {
   /** Use it to delay or track late effects such as subscriptions notification */
@@ -221,15 +213,25 @@ export const createContext = ({
     trNearEffectsStart = trLateEffectsStart = 0
   }
 
-  const addPatch = (patch: AtomCache) => {
-    trLogs.push((patch.meta.patch = patch))
-    return patch
+  const addPatch = (cache: AtomCache, cause: AtomCache['cause'] = null) => {
+    trLogs.push(
+      (cache.meta.patch = {
+        state: cache.state,
+        isConnected: cache.isConnected,
+        meta: cache.meta,
+        cause,
+        parents: cache.parents,
+        children: cache.children,
+        listeners: cache.listeners,
+      }),
+    )
+    return cache.meta.patch
   }
 
   // TODO rename
   const testParent = (patch: AtomCache, parentPatch: AtomCache) => {
     if (!isConnected(parentPatch) && parentPatch.meta.patch === null) {
-      addPatch(copyCache(parentPatch, patch))
+      addPatch(parentPatch, patch)
     }
   }
 
@@ -240,7 +242,7 @@ export const createContext = ({
 
         if (
           childCache.cause !== null &&
-          addPatch(copyCache(childCache)).listeners.size === 0 &&
+          addPatch(childCache).listeners.size === 0 &&
           childCache.children.size > 0
         ) {
           queue.push(childCache.children)
@@ -318,7 +320,7 @@ export const createContext = ({
 
     if (isActual && !isMutating) return patch!
 
-    patch = !hasPatch || isActual ? addPatch(copyCache(cache)) : patch!
+    patch = !hasPatch || isActual ? addPatch(cache) : patch!
 
     if (isComputed || isMutating || isInit) {
       const { state } = patch
@@ -328,6 +330,7 @@ export const createContext = ({
         schedule: ctx.schedule,
         subscribe: ctx.subscribe,
         cause: patch,
+        key: ctx.key,
       }
 
       if (isMutating) mutator!(patchCtx, patch)
@@ -495,6 +498,7 @@ export const createContext = ({
       }
     },
     cause: null,
+    key: Symbol(),
   }
 
   return ctx

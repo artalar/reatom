@@ -7,10 +7,10 @@ import {
   Atom,
   atom,
   AtomMeta,
+  AtomMut,
   createContext,
   Ctx,
   Fn,
-  isConnected,
 } from './atom'
 
 // FIXME: get it from @reatom/utils
@@ -112,7 +112,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      !isConnected(context.get((read) => read(a.__reatom))!),
+      context.get((read) => read(a.__reatom)?.isConnected === false),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -145,7 +145,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      !isConnected(context.get((read) => read(a.__reatom))!),
+      context.get((read) => read(a.__reatom)?.isConnected === false),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
