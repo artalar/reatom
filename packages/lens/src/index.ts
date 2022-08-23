@@ -1,5 +1,4 @@
 import {
-  action,
   Action,
   ActionIs,
   ActionResult,
@@ -14,7 +13,6 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { onUpdate } from '@reatom/hooks'
-import { Plain, assign } from '@reatom/utils'
 
 declare const NEVER: unique symbol
 type NEVER = typeof NEVER
@@ -71,67 +69,52 @@ export const mapState =
     name?: string,
   ): Fn<[T], AtomMap<T, Res>> =>
   (anAtom: Atom): any => {
-    const { isAction } = anAtom.__reatom
     const theAtom = atom(
       (ctx) => mapper(ctx, ctx.spy(anAtom), ctx.cause!.parents.at(0)?.state),
       name,
     )
-    theAtom.__reatom.isAction = isAction
+    theAtom.__reatom.isAction = anAtom.__reatom.isAction
 
     return Object.assign(getAtomBlank(anAtom, theAtom), anAtom, theAtom)
   }
 
 /** Get atom (with all properties saving) with resolved action value in state */
+// FIXME: wrong return type
 export const mapAsync =
-  <T extends Atom, Res>(
-    mapper: Fn<
-      [Ctx, Awaited<ActionIs<T> extends true ? ActionResult<T> : AtomState<T>>],
-      Res
-    >,
+  <T extends Action, Res = Awaited<ActionResult<T>>>(
+    mapper: Fn<[Ctx, Awaited<ActionResult<T>>], Res> = (ctx, v) => v,
     name?: string,
-  ): Fn<
-    [T],
-    AtomMap<T, Awaited<Res> | (ActionIs<T> extends true ? never : undefined)>
-  > =>
+  ): Fn<[T], AtomMap<T, Awaited<Res>>> =>
   (anAction): any => {
-    const { isAction } = anAction.__reatom
-    const versionAtom = atom(0)
-    const theAtom = atom((ctx, state?: any) => {
-      let value: any = ctx.spy(anAction as Atom)
-      if (isAction) {
-        state ??= []
-        if (value.length === 0) return state
-        value = value.at(-1)
-      }
+    throwReatomError(!anAction.__reatom.isAction, 'action expected')
 
-      if (value instanceof Promise) {
-        const version = versionAtom(ctx, (s) => ++s)
-
-        value.then(
-          (v) =>
-            version === ctx.get(versionAtom) &&
-            ctx.get((read, actualize) =>
-              actualize!(
-                ctx,
-                ctx.cause!.meta,
-                (patchCtx: Ctx, patch: AtomCache) => {
-                  patch.cause = ctx.cause!.cause
-                  const value = mapper(ctx, v)
-                  patch.state = isAction ? [value] : value
-                },
+    const theAtom = atom((ctx, state: any[] = []) => {
+      for (const promise of ctx.spy(anAction)) {
+        if (promise instanceof Promise) {
+          promise.then(
+            (v) =>
+              ctx.get((read, actualize) =>
+                actualize!(
+                  ctx,
+                  ctx.cause!.meta,
+                  (patchCtx: Ctx, patch: AtomCache) => {
+                    patch.cause = ctx.cause!.cause
+                    patch.state = [...state, mapper(ctx, v)]
+                  },
+                ),
               ),
-            ),
-          () => {},
-        )
-
-        return state
+            () => {},
+          )
+        } else {
+          state = [...state, mapper(ctx, promise)]
+        }
       }
 
-      return mapper(ctx, value)
+      return state
     }, name)
-    theAtom.__reatom.isAction = isAction
+    theAtom.__reatom.isAction = true
 
-    return Object.assign(getAtomBlank(anAction, theAtom), anAction, theAtom)
+    return Object.assign(anAction.bind(null), anAction, theAtom)
   }
 
 /** Transform atom update payload (with all properties saving) */
@@ -157,89 +140,52 @@ export const filter = <T extends Atom>(
   // @ts-ignore
   mapState(
     (ctx, newState, oldState) =>
-      ctx.cause!.parents.length === 0
-        ? newState
-        : predicate(newState, oldState!)
+      ctx.cause!.parents.length === 0 || predicate(newState, oldState!)
         ? newState
         : oldState!,
     name,
   )
 
-/** Convert action to atom with optional fallback state */
+/** Convert action to atom with optional fallback state (with all properties saving) */
 export const toAtom =
   <T extends Action, State = undefined | ActionResult<T>>(
     fallback?: State,
-    mapper: Fn<[Ctx, ActionResult<T>], State> = (ctx, v: any) => v,
     name?: string,
   ): Fn<
     [T],
+    // need to prevent empty `{}` in type
     AtomProperties<T> extends never
-      ? AtomMut<State | ActionResult<T>, CtxLessParams<T>>
-      : AtomMut<State | ActionResult<T>, CtxLessParams<T>> & {
+      ? Atom<State | ActionResult<T>>
+      : Atom<State | ActionResult<T>> & {
           [K in AtomProperties<T>]: T[K]
         }
   > =>
   (anAction): any => {
-    throwReatomError(
-      !anAction.__reatom.isAction,
-      'received atom instead of action',
+    throwReatomError(!anAction.__reatom.isAction, 'action expected')
+
+    return Object.assign(
+      {},
+      anAction,
+      atom(
+        (ctx, state = fallback) =>
+          ctx.spy(anAction).reduce((acc, v) => v, state),
+        name,
+      ),
     )
-
-    const theAtom = atom(
-      (ctx, state = fallback) =>
-        ctx.spy(anAction).reduce((acc, v) => mapper(ctx, v /* , acc */), state),
-      name,
-    )
-
-    return Object.assign(getAtomBlank(anAction, theAtom), anAction, theAtom)
-  }
-
-/** The action will react to new atom updates */
-export const toAction =
-  <T>(name?: string): Fn<[Atom<T>], Action<[never], T>> =>
-  (anAtom) => {
-    const theAction = atom((ctx, state?: any[]) => {
-      const value = ctx.spy(anAtom)
-
-      // skip first computation by connection
-      if (state === undefined) {
-        return []
-      }
-
-      return state.concat([value])
-    }, name)
-    theAction.__reatom.isAction = true
-    return theAction as Action
   }
 
 export const toPromise =
   <T, Res = T>(
     ctx: Ctx,
-    mapper: Fn<[Ctx, T], Res> = (ctx, v: any) => v,
-  ): Fn<[Atom<T>], Promise<Res>> =>
+    mapper: Fn<[Ctx, Awaited<T>], Res> = (ctx, v: any) => v,
+  ): Fn<[Action<any, T> | Atom<T>], Promise<Awaited<Res>>> =>
   (anAtom) =>
-    new Promise((res, rej) => {
-      const un = onUpdate(anAtom, (_ctx, state) => {
-        if (ctx !== _ctx) return
-
-        // multiple updates will be ignored
-        // and only first will accepted
-        ctx.schedule(() =>
-          new Promise(
-            () => (
-              un(),
-              res(
-                mapper(
-                  ctx,
-                  // @ts-ignore
-                  state,
-                ),
-              )
-            ),
-          ).catch(rej),
-        )
+    new Promise<T>((res, fn: Fn) => {
+      // reuse variable to bytes safety
+      fn = onUpdate(anAtom, (_ctx, state) => {
+        if (ctx.key === _ctx.key) ctx.schedule(() => (fn(), res(state)))
       })
-    })
+    }).then<any>((s: any) => mapper(ctx, s))
 
 // TODO
 // export const view = <T, K extends keyof T>

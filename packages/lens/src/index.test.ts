@@ -12,8 +12,8 @@ import {
   mapInput,
   filter,
   plain,
-  toAction,
   toAtom,
+  toPromise,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -63,10 +63,10 @@ test(`readonly and plain`, () => {
 
 test(`mapAsync and toAtom`, async () => {
   const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 10)))
-  const aMaybeString = a.pipe(mapAsync((ctx, v) => v.toString()))
+  const aMaybeString = a.pipe(mapAsync((ctx, v) => v + 1))
   const aString = a.pipe(
-    mapAsync((ctx, v) => v.toString()),
-    toAtom(''),
+    mapAsync((ctx, v) => v + 1),
+    toAtom(0),
   )
   const ctx = createContext()
   const cb = mockFn()
@@ -76,19 +76,19 @@ test(`mapAsync and toAtom`, async () => {
 
   assert.equal(ctx.get(a), [])
   assert.is(cb.calls.length, 1)
-  assert.is(ctx.get(aString), '')
+  assert.is(ctx.get(aString), 0)
 
   const promise = a(ctx)
 
   assert.equal(ctx.get(a), [])
   assert.is(cb.calls.length, 1)
-  assert.is(ctx.get(aString), '')
+  assert.is(ctx.get(aString), 0)
 
   await promise
 
   assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), ['10'])
-  assert.is(ctx.get(aString), '10')
+  assert.equal(cb.lastInput(), [11])
+  assert.is(ctx.get(aString), 11)
   ;`👍` //?
 })
 
@@ -112,22 +112,11 @@ test(`filter`, () => {
   ;`👍` //?
 })
 
-test(`toAction`, () => {
-  const a = atom(0)
-  const a1 = a.pipe(toAction())
+test('toPromise', async () => {
+  const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 123)))
   const ctx = createContext()
-  const cb = mockFn()
 
-  ctx.subscribe(a1, cb)
-  assert.equal(cb.lastInput(), [])
-
-  a(ctx, 0)
-  assert.equal(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), [])
-
-  a(ctx, 1)
-  assert.equal(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), [1])
+  assert.equal(await Promise.all([a.pipe(toPromise(ctx)), a(ctx)]), [123, 123])
   ;`👍` //?
 })
 
