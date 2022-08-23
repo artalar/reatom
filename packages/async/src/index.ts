@@ -14,7 +14,7 @@ import {
 } from '@reatom/core'
 import { addOnUpdate } from '@reatom/hooks'
 
-export interface Effect<Params extends any[] = any[], Resp = any>
+export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, Promise<Resp>> {
   onFulfill: Action<[Resp], Resp>
   onReject: Action<[unknown], unknown>
@@ -22,6 +22,8 @@ export interface Effect<Params extends any[] = any[], Resp = any>
   countAtom: Atom<number>
   pendingAtom: Atom<boolean>
   paramsAtom: Atom<null | Params>
+  /** mutate it in tests */
+  fnAtom: Atom<Fn<Params, Promise<Resp>>>
 }
 
 const NEVER = Symbol()
@@ -32,12 +34,14 @@ export const atomizeAsync = <
 >(
   fn: Fn<Params, Promise<Resp>>,
   name?: string,
-): Effect<CtxLessParams<Params>, Resp> => {
-  type Self = Effect<CtxLessParams<Params>, Resp>
+): AsyncAction<CtxLessParams<Params>, Resp> => {
+  type Self = AsyncAction<CtxLessParams<Params>, Resp>
+  const fnAtom = atom(() => fn, name?.concat('.fn'))
   // @ts-ignore
   const onEffect: Self = action((ctx, ...a) => {
     paramsAtom(ctx, a)
     countAtom(ctx, (s) => ++s)
+    const fn = ctx.get(fnAtom)
 
     // @ts-ignore
     return ctx.schedule(() => fn(ctx, ...a))
@@ -49,7 +53,7 @@ export const atomizeAsync = <
 
   const countAtom = atom(0, name?.concat('.count'))
   // this "isLoading" state type is too utilized
-  // to separate it to a separate fabric
+  // to separate it to a additional `withPending` atom
   const pendingAtom: Self['pendingAtom'] = atom(
     (ctx) => ctx.spy(countAtom) > 0,
     name?.concat('.pending'),
@@ -89,29 +93,30 @@ export const atomizeAsync = <
     countAtom,
     pendingAtom,
     paramsAtom,
+    fnAtom,
   })
 }
 
 export const withDataAtom =
-  <State = undefined, T extends Effect = Effect>(
+  <State = undefined, T extends AsyncAction = AsyncAction>(
     initState?: State,
   ): Fn<[T], T & { dataAtom: AtomMut<State | ActionResult<T['onFulfill']>> }> =>
   (anAsync) => {
     // @ts-expect-error
     if (!anAsync.dataAtom) {
       // @ts-expect-error
-      const dataAtom = (anAsync.errorAtom = atom(
+      const dataAtom = (anAsync.dataAtom = atom(
         initState,
-        anAsync.__reatom.name?.concat('.errorAtom'),
+        anAsync.__reatom.name?.concat('.dataAtom'),
       ))
-      addOnUpdate(anAsync, (ctx, { state }: AtomCache) => dataAtom(ctx, state))
+      addOnUpdate(anAsync.onFulfill, (ctx, { state }: AtomCache) => dataAtom(ctx, state[0]))
     }
 
     return anAsync as T & { dataAtom: any }
   }
 
 export const withErrorAtom =
-  <T extends Effect = Effect>(): Fn<
+  <T extends AsyncAction = AsyncAction>(): Fn<
     [T],
     T & { errorAtom: AtomMut<undefined | Error> }
   > =>
@@ -123,7 +128,7 @@ export const withErrorAtom =
         undefined,
         anAsync.__reatom.name?.concat('.errorAtom'),
       ))
-      addOnUpdate(anAsync.onReject, (ctx, { state }) =>
+      addOnUpdate(anAsync.onReject, (ctx, { state: [state] }) =>
         errorAtom(
           ctx,
           state instanceof Error ? state : new Error(String(state)),
@@ -136,7 +141,10 @@ export const withErrorAtom =
   }
 
 export const withRetry =
-  <T extends Effect>(): Fn<[T], T & { retry: Action<[], ActionResult<T>> }> =>
+  <T extends AsyncAction>(): Fn<
+    [T],
+    T & { retry: Action<[], ActionResult<T>> }
+  > =>
   (anAsync) => {
     // @ts-expect-error
     anAsync.retry ??= action((ctx) => {
@@ -148,7 +156,7 @@ export const withRetry =
   }
 
 export const withFetchOnConnect =
-  <T extends Effect, Targets extends keyof T>(
+  <T extends AsyncAction, Targets extends keyof T>(
     targets: Array<Targets>,
     params: ActionParams<T> | Fn<[Ctx], ActionParams<T>>,
   ): Fn<[T], T> =>
@@ -168,7 +176,7 @@ export const withFetchOnConnect =
   }
 
 export const withOnAbort =
-  <T extends Effect>(): Fn<[T], T & { onAbort: Action<[], Error> }> =>
+  <T extends AsyncAction>(): Fn<[T], T & { onAbort: Action<[], Error> }> =>
   (anAsync) => {
     // @ts-expect-error
     if (anAsync.onAbort === undefined) {

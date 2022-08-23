@@ -1,31 +1,33 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import fetch from 'cross-fetch'
-import { atom, createContext } from '@reatom/core'
+import { Atom, atom, createContext, Fn } from '@reatom/core'
 import { mapAsync, toAtom, toPromise } from '@reatom/lens'
 import { onUpdate } from '@reatom/hooks'
 import { mockFn } from '@reatom/testing'
 
-import { atomizeAsync, withAbort, withRetry } from './'
+import { atomizeAsync, withAbort, withDataAtom, withRetry } from './'
 
 test(`base API`, async () => {
   let i = 1
-  const dataResource = atomizeAsync(async (ctx, v: number) => v + i).pipe(
-    mapAsync((ctx, value) => ({ value })),
-    toAtom({ value: 0 }),
+  const fetchData = atomizeAsync(async (ctx, v: number) => v + i).pipe(
+    withRetry(),
+    withDataAtom(0),
   )
   const ctx = createContext()
-  ctx.subscribe(dataResource, () => {})
+  ctx.subscribe(fetchData, () => {})
 
-  assert.is(ctx.get(dataResource).value, 0)
+  assert.is(ctx.get(fetchData.dataAtom), 0)
 
-  dataResource(ctx, 1)
-
-  assert.is(await dataResource.toPromise(ctx), 2)
-  assert.is(ctx.get(dataResource).value, 2)
+  //?
+  assert.equal(
+    await Promise.all([fetchData.pipe(toPromise(ctx)), fetchData(ctx, 1)]),
+    [2, 2],
+  )
+  assert.is(ctx.get(fetchData.dataAtom), 2)
 
   i++
-  assert.is(await dataResource.retry(ctx), 3)
+  assert.is(await fetchData.retry(ctx), 3)
   ;`👍` //?
 })
 
