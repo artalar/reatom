@@ -275,4 +275,33 @@ test(`display name`, () => {
   ;`👍` //?
 })
 
+test(// this test written is more just for example purposes
+`dynamic lists`, () => {
+  const listAtom = atom(new Array<AtomMut<number>>())
+  const sumAtom = atom((ctx) =>
+    ctx.spy(listAtom).reduce((acc, a) => acc + ctx.spy(a), 0),
+  )
+  const ctx = createContext()
+  const sumListener = mockFn((sum: number) => {})
+
+  ctx.subscribe(sumAtom, sumListener)
+
+  assert.is(sumListener.calls.length, 1)
+
+  let i = 0
+  while (i++ < 3) {
+    listAtom(ctx, (list) => [...list, atom(1)])
+
+    assert.is(sumListener.lastInput(), i)
+  }
+
+  assert.is(sumListener.calls.length, 4)
+
+  ctx.get(listAtom).at(0)!(ctx, (s) => s + 1)
+
+  assert.is(sumListener.calls.length, 5)
+  assert.is(sumListener.lastInput(), 4)
+  ;`👍` //?
+})
+
 test.run()
