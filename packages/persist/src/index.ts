@@ -4,6 +4,7 @@ import {
   Atom,
   AtomCache,
   AtomMeta,
+  AtomState,
   Ctx,
   Fn,
   throwReatomError,
@@ -43,13 +44,17 @@ export const persistStorageAtom = atom<PersistStorage>(
 export const withPersist =
   <A extends Atom>({
     clearTimeout = -1,
+    fromSnapshot = (ctx, data: any) => data,
     migration,
     subscribe = false,
+    toSnapshot = (ctx, data: any) => data,
     version = 0,
   }: {
     clearTimeout?: number
+    fromSnapshot?: Fn<[Ctx, unknown], AtomState<A>>
     migration?: Fn<[PersistRecord], PersistRecord>
     subscribe?: boolean
+    toSnapshot?: Fn<[Ctx, AtomState<A>], unknown>
     version?: number
   } = {}) =>
   (anAtom: A): A => {
@@ -60,7 +65,7 @@ export const withPersist =
 
     const getData = (ctx: Ctx, rec: null | PersistRecord) =>
       rec?.version === version
-        ? rec.data
+        ? fromSnapshot(ctx, rec.data)
         : rec !== null && migration !== undefined
         ? migration(rec).data
         : initState(ctx)
@@ -69,7 +74,9 @@ export const withPersist =
       getData(ctx, ctx.get(persistStorageAtom).get(ctx, meta))
 
     addOnUpdate(anAtom, (ctx, { state }) =>
-      ctx.get(persistStorageAtom).set(ctx, meta, { data: state, version }),
+      ctx
+        .get(persistStorageAtom)
+        .set(ctx, meta, { data: toSnapshot(ctx, state), version }),
     )
 
     if (subscribe) {
@@ -81,7 +88,8 @@ export const withPersist =
               actualize!(
                 ctx,
                 meta,
-                (patchCtx: Ctx, patch: AtomCache) => (patch.state = rec.data),
+                (patchCtx: Ctx, patch: AtomCache) =>
+                  (patch.state = fromSnapshot(ctx, rec.data)),
               ),
             ),
           ),
