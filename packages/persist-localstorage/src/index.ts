@@ -14,7 +14,7 @@ const THROTTLE = 250
 const caches = new WeakMap<AtomMeta, PersistRecordThrottled>()
 let queue: Array<{ cb: Fn; rec: PersistRecord }> = []
 
-const storageLS: PersistStorage = {
+const persistStorageForLocalStorage: PersistStorage = {
   get(ctx, meta) {
     const cache = caches.get(meta)
     if (cache !== undefined) return cache
@@ -84,7 +84,7 @@ const storageLS: PersistStorage = {
   },
 }
 
-export const setupLocalStorageForPersist = action(
-  (ctx) => persistStorageAtom(ctx, storageLS),
-  'setupLocalStorageForPersist',
+export const setupPersistWithLocalStorage = action(
+  (ctx) => persistStorageAtom(ctx, persistStorageForLocalStorage),
+  'setupPersistWithLocalStorage',
 )
