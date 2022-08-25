@@ -447,9 +447,10 @@ export const createContext = ({
     },
     spy: undefined,
     schedule(effect, isNearEffect = true) {
-      throwReatomError(!inTr, 'async schedule')
       assertFunction(effect)
       throwReatomError(this === undefined, 'missed context')
+
+      if (!inTr) Promise.resolve(effect(this))
 
       return new Promise<any>((res, rej) => {
         trRollbacks.push(rej)
