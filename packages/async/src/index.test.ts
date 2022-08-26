@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import fetch from 'cross-fetch'
-import { Atom, atom, createContext, Fn } from '@reatom/core'
+import { atom, createContext } from '@reatom/core'
 import { mapAsync, toAtom, toPromise } from '@reatom/lens'
 import { onUpdate } from '@reatom/hooks'
 import { mockFn } from '@reatom/testing'
@@ -19,11 +19,9 @@ test(`base API`, async () => {
 
   assert.is(ctx.get(fetchData.dataAtom), 0)
 
-  //?
-  assert.equal(
-    await Promise.all([fetchData.pipe(toPromise(ctx)), fetchData(ctx, 1)]),
-    [2, 2],
-  )
+  fetchData.pipe(toPromise(ctx)).then((v) => assert.is(v, 2))
+
+  assert.is(await fetchData(ctx, 1), 2)
   assert.is(ctx.get(fetchData.dataAtom), 2)
 
   i++

@@ -12,7 +12,7 @@ import {
   Fn,
   throwReatomError,
 } from '@reatom/core'
-import { addOnUpdate } from '@reatom/hooks'
+import { addOnUpdate, onUpdate } from '@reatom/hooks'
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, Promise<Resp>> {
@@ -64,27 +64,27 @@ export const atomizeAsync = <
     name?.concat('.params'),
   )
 
-  addOnUpdate(onEffect, (ctx, patch: AtomCache<Array<Promise<Resp>>>) => {
-    let res: any = NEVER
-    let err: any = NEVER
-    patch.state
-      .at(-1)
-      ?.then(
-        (v) => (res = v),
-        (e) => (err = e),
-      )
-      .finally(() =>
-        ctx.get(() => {
-          countAtom(ctx, (s) => --s)
-          if (err !== NEVER) {
-            if (err?.name !== 'AbortError') onReject(ctx, err)
-          } else {
-            onFulfill(ctx, res)
-          }
-          onSettle(ctx)
-        }),
-      )
-  })
+  const fin = (ctx: Ctx, payload: any, isError: boolean) => {
+    // FIXME: error here could broke things
+    ctx.get(() => {
+      countAtom(ctx, (s) => --s)
+      isError
+        ? payload?.name === 'AbortError' || onReject(ctx, payload)
+        : onFulfill(ctx, payload)
+      onSettle(ctx)
+    })
+  }
+
+  addOnUpdate(
+    onEffect,
+    (ctx, patch: AtomCache<Array<Promise<Resp>>>) =>
+      patch.state.at(-1)?.then(
+        (v) => fin(ctx, v, false),
+        (e) => fin(ctx, e, true),
+      ),
+    // couldn't use `finally` here because it creates extra tick
+    // which allow user to get outdated data in `onEffect().then( here )`
+  )
 
   return Object.assign(onEffect, {
     onFulfill,
@@ -102,52 +102,43 @@ export const withDataAtom =
     initState?: State,
   ): Fn<[T], T & { dataAtom: AtomMut<State | ActionResult<T['onFulfill']>> }> =>
   (anAsync) => {
-    // @ts-expect-error
-    if (!anAsync.dataAtom) {
+    onUpdate(
+      anAsync.onFulfill,
       // @ts-expect-error
-      const dataAtom = (anAsync.dataAtom = atom(
+      (anAsync.dataAtom = atom(
         initState,
         anAsync.__reatom.name?.concat('.dataAtom'),
-      ))
-      addOnUpdate(anAsync.onFulfill, (ctx, { state }: AtomCache) => dataAtom(ctx, state[0]))
-    }
+      )),
+    )
 
     return anAsync as T & { dataAtom: any }
   }
 
 export const withErrorAtom =
-  <T extends AsyncAction = AsyncAction>(): Fn<
-    [T],
-    T & { errorAtom: AtomMut<undefined | Error> }
-  > =>
+  <T extends AsyncAction & { errorAtom?: AtomMut<undefined | Error> }>(
+    parseError: Fn<[unknown], Error> = (e) =>
+      e instanceof Error ? e : new Error(String(e)),
+  ): Fn<[T], T & { errorAtom: AtomMut<undefined | Error> }> =>
   (anAsync) => {
-    // @ts-expect-error
-    if (!anAsync.errorAtom) {
-      // @ts-expect-error
-      const errorAtom = (anAsync.errorAtom = atom<undefined | Error>(
-        undefined,
-        anAsync.__reatom.name?.concat('.errorAtom'),
-      ))
-      addOnUpdate(anAsync.onReject, (ctx, { state: [state] }) =>
-        errorAtom(
-          ctx,
-          state instanceof Error ? state : new Error(String(state)),
-        ),
-      )
-      addOnUpdate(anAsync.onFulfill, (ctx) => errorAtom(ctx, undefined))
-    }
+    const errorAtom = (anAsync.errorAtom = atom<undefined | Error>(
+      undefined,
+      anAsync.__reatom.name?.concat('.errorAtom'),
+    ))
+    addOnUpdate(anAsync.onReject, (ctx, { state }) =>
+      errorAtom(ctx, parseError(state[0])),
+    )
+    addOnUpdate(anAsync.onFulfill, (ctx) => errorAtom(ctx, undefined))
 
     return anAsync as T & { errorAtom: any }
   }
 
 export const withRetry =
-  <T extends AsyncAction>(): Fn<
+  <T extends AsyncAction & { retry?: Action<[], ActionResult<T>> }>(): Fn<
     [T],
     T & { retry: Action<[], ActionResult<T>> }
   > =>
   (anAsync) => {
-    // @ts-expect-error
-    anAsync.retry ??= action((ctx) => {
+    anAsync.retry = action((ctx) => {
       const params = ctx.get(anAsync.paramsAtom)
       throwReatomError(params === null, 'no cached params')
       return anAsync(ctx, ...params!) as ActionResult<T>
@@ -165,7 +156,6 @@ export const withFetchOnConnect =
     const addHook = (anAtom: Atom) =>
       (anAtom.__reatom.onConnect ??= new Set()).add(
         (ctx: Ctx) =>
-          // @ts-ignore
           ctx.get(anAsync.countAtom) === 0 && anAsync(ctx, ...getPrams(ctx)),
       )
 
@@ -176,22 +166,20 @@ export const withFetchOnConnect =
   }
 
 export const withOnAbort =
-  <T extends AsyncAction>(): Fn<[T], T & { onAbort: Action<[], Error> }> =>
+  <T extends AsyncAction & { onAbort?: Action<[Error], Error> }>(): Fn<
+    [T],
+    T & { onAbort: Action<[Error], Error> }
+  > =>
   (anAsync) => {
-    // @ts-expect-error
-    if (anAsync.onAbort === undefined) {
-      // @ts-expect-error
-      const onAbort = (anAsync.onAbort = action(
-        anAsync.__reatom.name?.concat('.onAbort'),
-      ))
-      addOnUpdate(anAsync, (ctx, { state }) =>
-        state
-          .at(-1)
-          ?.catch(
-            (err: any) => err?.name === 'AbortError' && onAbort(ctx, err),
-          ),
-      )
-    }
+    const onAbort = (anAsync.onAbort = action(
+      anAsync.__reatom.name?.concat('.onAbort'),
+    ))
+    addOnUpdate(anAsync, (ctx, { state }) =>
+      state
+        .at(-1)
+        ?.catch((err: any) => err?.name === 'AbortError' && onAbort(ctx, err)),
+    )
+
     return anAsync as T & { onAbort: any }
   }
 
