@@ -1,12 +1,18 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import fetch from 'cross-fetch'
 import { atom, createContext } from '@reatom/core'
 import { mapAsync, toAtom, toPromise } from '@reatom/lens'
 import { onUpdate } from '@reatom/hooks'
 import { mockFn } from '@reatom/testing'
+import { sleep } from '@reatom/utils'
 
-import { atomizeAsync, withAbort, withDataAtom, withRetry } from './'
+import {
+  atomizeAsync,
+  withAbort,
+  withDataAtom,
+  withFetchOnConnect,
+  withRetry,
+} from './'
 
 test(`base API`, async () => {
   let i = 1
@@ -140,6 +146,26 @@ test('withAbort and fetch', async () => {
   assert.equal(cb.lastInput(), [404])
   assert.is(handleError.calls.length, 2)
   assert.ok(handleError.calls.every(({ o }: any) => o.name === 'AbortError'))
+  ;`👍` //?
+})
+
+test('withFetchOnConnect', async () => {
+  const fetchData = atomizeAsync(async (ctx, payload) => payload + 1).pipe(
+    withDataAtom(0),
+    withFetchOnConnect(['dataAtom'], [123]),
+  )
+  const ctx = createContext()
+  const cb = mockFn()
+
+  fetchData.onFulfill.pipe(toPromise(ctx)).then(cb)
+
+  await sleep(0)
+  assert.is(cb.calls.length, 0)
+
+  ctx.subscribe(fetchData.dataAtom, () => {})
+  await sleep(0)
+  assert.is(cb.calls.length, 1)
+  assert.is(cb.lastInput(), 124)
   ;`👍` //?
 })
 

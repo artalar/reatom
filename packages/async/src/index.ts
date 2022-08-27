@@ -26,8 +26,6 @@ export interface AsyncAction<Params extends any[] = any[], Resp = any>
   fnAtom: Atom<Fn<Params, Promise<Resp>>>
 }
 
-const NEVER = Symbol()
-
 export const atomizeAsync = <
   Params extends [Ctx, ...any[]] = [Ctx, ...any[]],
   Resp = any,
