@@ -11,13 +11,13 @@ import {
   withAbort,
   withDataAtom,
   withFetchOnConnect,
-  withRetry,
+  withRetryAction,
 } from './'
 
 test(`base API`, async () => {
   let i = 1
   const fetchData = atomizeAsync(async (ctx, v: number) => v + i).pipe(
-    withRetry(),
+    withRetryAction(),
     withDataAtom(0),
   )
   const ctx = createContext()
@@ -35,12 +35,12 @@ test(`base API`, async () => {
   ;`👍` //?
 })
 
-test('retry', async () => {
+test('withRetryAction', async () => {
   let attempts = 0
   const fetchData = atomizeAsync(async (ctx, v: number) => {
     if (attempts++ < 2) throw new Error('test error')
     return v
-  }).pipe(withRetry())
+  }).pipe(withRetryAction())
 
   const failTimesAtom = atom(0)
   onUpdate(fetchData.onReject, (ctx) => {

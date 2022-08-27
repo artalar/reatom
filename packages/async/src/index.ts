@@ -130,7 +130,7 @@ export const withErrorAtom =
     return anAsync as T & { errorAtom: any }
   }
 
-export const withRetry =
+export const withRetryAction =
   <T extends AsyncAction & { retry?: Action<[], ActionResult<T>> }>(): Fn<
     [T],
     T & { retry: Action<[], ActionResult<T>> }
@@ -163,7 +163,7 @@ export const withFetchOnConnect =
     return anAsync
   }
 
-export const withOnAbort =
+export const withOnAbortAction =
   <T extends AsyncAction & { onAbort?: Action<[Error], Error> }>(): Fn<
     [T],
     T & { onAbort: Action<[Error], Error> }
