@@ -30,14 +30,11 @@ test(`await transaction`, async () => {
 
   const flow1Duration = Date.now() - start
 
-  assert.is(flow1Duration >= targetMs && flow1Duration < longestMs, true)
+  assert.ok(flow1Duration >= targetMs && flow1Duration < longestMs)
 
   await flow2Promise
   const flow2Duration = Date.now() - start
-  assert.is(
-    flow2Duration >= longestMs && flow2Duration < targetMs + longestMs,
-    true,
-  )
+  assert.ok(flow2Duration >= longestMs && flow2Duration < targetMs + longestMs)
   ;`👍` //?
 })
 
