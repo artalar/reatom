@@ -42,13 +42,13 @@ async function start(iterations: number) {
 
   const aV3 = v3.atom(0)
 
-  const bV3 = v3.atom(({ spy }) => spy(aV3) + 1)
-  const cV3 = v3.atom(({ spy }) => spy(aV3) + 1)
-  const dV3 = v3.atom(({ spy }) => spy(bV3) + spy(cV3))
-  const eV3 = v3.atom(({ spy }) => spy(dV3) + 1)
-  const fV3 = v3.atom(({ spy }) => spy(dV3) + spy(eV3))
-  const gV3 = v3.atom(({ spy }) => spy(dV3) + spy(eV3))
-  const hV3 = v3.atom(({ spy }) => spy(fV3) + spy(gV3))
+  const bV3 = v3.atom((ctx) => ctx.spy(aV3) + 1)
+  const cV3 = v3.atom((ctx) => ctx.spy(aV3) + 1)
+  const dV3 = v3.atom((ctx) => ctx.spy(bV3) + ctx.spy(cV3))
+  const eV3 = v3.atom((ctx) => ctx.spy(dV3) + 1)
+  const fV3 = v3.atom((ctx) => ctx.spy(dV3) + ctx.spy(eV3))
+  const gV3 = v3.atom((ctx) => ctx.spy(dV3) + ctx.spy(eV3))
+  const hV3 = v3.atom((ctx) => ctx.spy(fV3) + ctx.spy(gV3))
 
   const ctxV3 = v3.createContext()
   let resV3 = 0
@@ -58,10 +58,7 @@ async function start(iterations: number) {
   resV3 = 0
 
   const eEntry = effector.createEvent<number>()
-  const eA = effector
-    .createStore(0)
-    // .on(eEntry, (state, v) => (v % 2 ? state : v + 1))
-    .on(eEntry, (state, v) => v)
+  const eA = effector.createStore(0).on(eEntry, (state, v) => v)
   const eB = eA.map((a) => a + 1)
   const eC = eA.map((a) => a + 1)
   const eD = effector.combine(eB, eC, (b, c) => b + c)
@@ -69,7 +66,9 @@ async function start(iterations: number) {
   const eF = effector.combine(eD, eE, (d, e) => d + e)
   const eG = effector.combine(eD, eE, (d, e) => d + e)
   const eH = effector.combine(eF, eG, (h1, h2) => h1 + h2)
+
   let eRes = 0
+
   // // Effector graphs are hot, so all calculations will be performed on each event
   // // `getState` will be enough
   // eH.subscribe((v) => {
@@ -170,36 +169,33 @@ async function start(iterations: number) {
   autorun(() => (xRes += xH.get()))
   xRes = 0
 
-  const xProxy = new (class {
-    constructor() {
-      makeAutoObservable(this)
-    }
-    entry = 0
+  const xProxy = makeAutoObservable({
+    entry: 0,
     get a() {
       return this.entry
-    }
+    },
     get b() {
       return this.a + 1
-    }
+    },
     get c() {
       return this.a + 1
-    }
+    },
     get d() {
       return this.b + this.c
-    }
+    },
     get e() {
       return this.d + 1
-    }
+    },
     get f() {
       return this.d + this.e
-    }
+    },
     get g() {
       return this.d + this.e
-    }
+    },
     get h() {
       return this.f + this.g
-    }
-  })()
+    },
+  })
   let xpRes = 0
   autorun(() => (xpRes += xProxy.h))
   xpRes = 0

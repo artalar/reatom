@@ -224,16 +224,18 @@ test(`display name`, () => {
   const firstNameAtom = atom(`John`, `firstName`)
   const lastNameAtom = atom(`Doe`, `lastName`)
   const isFirstNameShortAtom = atom(
-    ({ spy }) => spy(firstNameAtom).length < 10,
+    (ctx) => ctx.spy(firstNameAtom).length < 10,
     `isFirstNameShort`,
   )
   const fullNameAtom = atom(
-    ({ spy }) => `${spy(firstNameAtom)} ${spy(lastNameAtom)}`,
+    (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
     `fullName`,
   )
   const displayNameAtom = atom(
-    ({ spy }) =>
-      spy(isFirstNameShortAtom) ? spy(fullNameAtom) : spy(firstNameAtom),
+    (ctx) =>
+      ctx.spy(isFirstNameShortAtom)
+        ? ctx.spy(fullNameAtom)
+        : ctx.spy(firstNameAtom),
     `displayName`,
   )
   const effect = mockFn()
