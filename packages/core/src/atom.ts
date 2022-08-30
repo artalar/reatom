@@ -354,11 +354,12 @@ export const createContext = ({
     get(atomOrCb) {
       if (isAtom(atomOrCb)) {
         const meta = atomOrCb.__reatom
-        // TODO 'read(meta).isConnected'
-        return inTr
-          ? actualize(this, meta).state
-          : meta.computer === null && caches.has(meta)
-          ? read(meta)!.state
+        if (inTr) return actualize(this, meta).state
+        const cache = read(meta)
+
+        return cache !== undefined &&
+          (meta.computer === null || cache.isConnected)
+          ? cache.state
           : this.get(() => actualize(this, meta).state)
       }
 
