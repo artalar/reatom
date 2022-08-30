@@ -137,6 +137,10 @@ export type ActionIs<T> = T extends Action<
   ? true
   : false
 
+export type AtomReturn<T extends Atom> = T extends Action<any[], infer T>
+  ? T
+  : AtomState<T>
+
 export type CtxLessParams<T, Else = never> = T extends [Ctx, ...infer Params]
   ? Params
   : T extends Fn<[Ctx, ...infer Params]>
