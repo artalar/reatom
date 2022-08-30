@@ -85,6 +85,7 @@ export interface Atom<State = any> {
   pipe: Pipe<this>
 }
 
+// FIXME the ctx should be the first: `Fn<[Ctx, State], State>`
 type Update<State> = State | Fn<[State, Ctx], State>
 export interface AtomMut<State = any, Args extends any[] = [Update<State>]>
   extends Atom<State> {
