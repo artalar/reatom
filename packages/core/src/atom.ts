@@ -389,6 +389,8 @@ export const createContext = ({
 
         for (let patch of trLogs) {
           const { meta } = patch
+          const { state } = patch
+          if (meta.isAction && patch.state.length > 0) patch.state = []
 
           // @ts-expect-error
           if ((patch = meta.patch) !== null) {
@@ -416,7 +418,6 @@ export const createContext = ({
 
             if (patch.cause !== null) {
               caches.set(meta, patch!)
-              const { state } = patch
               let cb = (cb: Fn) => lateEffects.push(() => cb(read(meta)!.state))
 
               if (meta.isAction) {
@@ -427,8 +428,6 @@ export const createContext = ({
               patch.listeners.forEach(cb)
             }
           }
-
-          if (meta.isAction && patch.state.length > 0) patch.state = []
         }
       } catch (e: any) {
         trError = e = e instanceof Error ? e : new Error(String(e))
