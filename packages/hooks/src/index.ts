@@ -9,6 +9,16 @@ import {
   Unsubscribe,
 } from '@reatom/core'
 
+export const withInit =
+  <T extends Atom>(
+    createState: Fn<[Ctx, T['__reatom']['initState']], AtomState<T>>,
+  ): Fn<[T], T> =>
+  (anAtom) => {
+    const { initState } = anAtom.__reatom
+    anAtom.__reatom.initState = (ctx) => createState(ctx, initState)
+    return anAtom
+  }
+
 export const onConnect = (
   anAtom: Atom,
   hook: Fn<[Ctx], void | Unsubscribe>,
