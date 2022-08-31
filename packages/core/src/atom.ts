@@ -66,14 +66,14 @@ export interface Ctx {
   spy?: <T>(atom: Atom<T>) => T
   schedule<T = void>(
     cb: Fn<[Ctx], T>,
-    isNearEffect?: boolean,
+    step?: -1 | 0 | 1 | 2,
   ): Promise<Awaited<T>>
 
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
   cause: null | AtomCache
   /** unique immutable key to understand same context from different computations */
-  key: symbol
+  key: Rec<never>
 }
 
 export interface CtxSpy extends Required<Ctx> {}
@@ -188,6 +188,7 @@ export const createContext = ({
   const read = (meta: AtomMeta): undefined | AtomCache => caches.get(meta)
   const logsListeners = new Set<Fn<[Logs, Error?]>>()
 
+  let commits: Array<Fn<[Ctx]>> = []
   let nearEffects: Array<Fn<[Ctx]>> = []
   let lateEffects: Array<Fn<[Ctx]>> = []
 
@@ -377,12 +378,20 @@ export const createContext = ({
       trLateEffectsStart = lateEffects.length
 
       try {
+        let logsSize = 0
         var result = atomOrCb(read, actualize)
 
         if (trLogs.length === 0) return result
 
-        for (let patch of trLogs) {
-          if (patch.listeners.size > 0) actualize(this, patch.meta)
+        while (logsSize !== trLogs.length) {
+          let i = logsSize
+          logsSize = trLogs.length
+          for (; i < trLogs.length; i++) {
+            const patch = trLogs[i]!
+            if (patch.listeners.size > 0) actualize(this, patch.meta)
+          }
+
+          for (const commit of commits) commit(this)
         }
 
         for (const log of logsListeners) log(trLogs)
@@ -451,22 +460,26 @@ export const createContext = ({
       return result
     },
     spy: undefined,
-    schedule(effect, isNearEffect = true) {
+    schedule(effect, step = 1) {
       assertFunction(effect)
       throwReatomError(this === undefined, 'missed context')
 
-      if (!inTr) Promise.resolve(effect(this))
-
       return new Promise<any>((res, rej) => {
+        if (!inTr) return res(effect(this))
+
+        if (step === -1) {
+          rej = effect
+        } else {
+          ;([commits, nearEffects, lateEffects] as const)[step].push(() => {
+            try {
+              res(effect(this))
+            } catch (error) {
+              rej(error)
+            }
+          })
+        }
+
         trRollbacks.push(rej)
-        // FIXME `callSafely` do nothing here
-        ;(isNearEffect ? nearEffects : lateEffects).push(() => {
-          try {
-            res(effect(this))
-          } catch (error) {
-            rej(error)
-          }
-        })
       })
     },
     // @ts-ignore
@@ -504,7 +517,7 @@ export const createContext = ({
       }
     },
     cause: null,
-    key: Symbol(),
+    key: {},
   }
 
   return ctx

@@ -8,9 +8,8 @@ export const allSettled = (ctx: Ctx, cb: Fn<[Ctx]>): Promise<any> =>
     return cb(
       (ctx = {
         ...ctx,
-        // @ts-expect-error bad type inference for the call generic
-        schedule(cb, isNearEffect) {
-          return schedule.call(
+        schedule(cb, step) {
+          return schedule.call<Ctx, Parameters<Ctx['schedule']>, Promise<any>>(
             this,
             (ctx) => {
               const result = cb(ctx)
@@ -20,7 +19,7 @@ export const allSettled = (ctx: Ctx, cb: Fn<[Ctx]>): Promise<any> =>
               }
               return result
             },
-            isNearEffect,
+            step,
           )
         },
       }),
