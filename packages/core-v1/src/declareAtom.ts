@@ -1,5 +1,6 @@
 import * as v3 from '@reatom/core'
-import { Tree, State, TreeId, Ctx, createCtx, Leaf } from './kernel'
+import { isChanged } from '@reatom/hooks'
+import { Tree, State, TreeId, Leaf } from './kernel'
 import {
   TREE,
   nameToId,
@@ -11,7 +12,6 @@ import {
   getIsAction,
   assign,
   getName,
-  equals,
   getOwnKeys,
 } from './shared'
 import { Action, declareAction, PayloadActionCreator } from './declareAction'
@@ -22,6 +22,7 @@ const DEPS_SHAPE = Symbol('@@Reatom/DEPS_SHAPE')
 // action for set initialState of each atom to global state
 export const init = declareAction(['@@Reatom/init'])
 export const initAction = init()
+export const replace = v3.action<Record<string | symbol, any>>()
 
 type AtomName = TreeId | [string]
 type AtomsMap = { [key: string]: Atom<any> }
@@ -43,9 +44,9 @@ type DependencyMatcher<TState> = (on: DependencyMatcherOn<TState>) => any
 
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): Record<string, T | any>
+  v3atom: v3.Atom
   [DEPS]: Set<TreeId>
   [DEPS_SHAPE]?: AtomsMap | TupleOfAtoms
-  v3atom: v3.Atom<T>
 }
 
 export function declareAtom<TState>(
@@ -68,18 +69,42 @@ export function declareAtom<TState>(
     name = 'atom'
   }
 
-  const _id = nameToId(name as AtomName)
-  const _name = getName(_id)
+  const id = nameToId(name as AtomName)
 
-  const v3atom = v3.atom(initialState as TState, _name)
+  name = getName(id)
 
   if (initialState === undefined)
-    throwError(`Atom "${_name}". Initial state can't be undefined`)
+    throwError(`Atom "${name}". Initial state can't be undefined`)
 
-  const _tree = new Tree(_id)
-  const _deps = new Set<TreeId>()
-  // start from `0` for missing `actionDefault`
-  let dependencePosition = 0
+  const deps: Array<{ dep: v3.Atom; reducer: Reducer<any, any> }> = []
+  const tree = new Tree(id)
+  const depsIds = new Set<TreeId>()
+
+  const v3atom = v3.atom((ctx, state?: any) => {
+    if (ctx.cause!.isConnected === false) {
+      state = ctx.get(init.v3action).at(-1)?.[id] ?? initialState
+    }
+
+    ctx.spy(replace).forEach((states) => (state = states[id] ?? state))
+
+    for (const { dep, reducer } of deps) {
+      isChanged(ctx, dep, (payload) => {
+        if (dep !== init.v3action || !ctx.cause!.isConnected) {
+          state = reducer(state, payload)
+
+          if (state === undefined) {
+            const { name } = dep.__reatom
+            const idx = 1 + deps.findIndex((el) => el.reducer === reducer)
+            throwError(
+              `Invalid state. Reducer number ${idx} in "${dep.__reatom.name}" atom returns undefined`,
+            )
+          }
+        }
+      })
+    }
+
+    return state
+  }, id as string)
   const initialPhase = true
 
   function on<T>(
@@ -91,95 +116,63 @@ export function declareAtom<TState>(
 
     safetyFunc(reducer, 'reducer')
 
-    const position = dependencePosition++
+    // @ts-ignore
+    deps.push({ dep: dep.v3atom ?? dep.v3action, reducer })
+
     const depTree = getTree(dep as Unit)
     if (!depTree) throwError('Invalid dependency')
     const depId = depTree.id
 
     const isDepActionCreator = getIsAction(dep)
 
-    _tree.union(depTree)
+    tree.union(depTree)
 
-    const update = function update({
-      state,
-      stateNew,
-      payload,
-      changedIds,
-      changedAtoms,
-      type,
-    }: Ctx) {
-      const atomStateSnapshot = state[_id as string]
-      // first `walk` of lazy (dynamically added by subscription) atom
-      const isAtomLazy = atomStateSnapshot === undefined
+    function update() {}
+    update._ownerAtomId = id
 
-      if (!isAtomLazy && type === initAction.type && !payload) return
-
-      const atomStatePreviousReducer = stateNew[_id as string]
-      // it is mean atom has more than one dependencies
-      // that depended from dispatched action
-      // and one of the atom reducers already processed
-      const hasAtomNewState = atomStatePreviousReducer !== undefined
-      const atomState = (
-        hasAtomNewState ? atomStatePreviousReducer : atomStateSnapshot
-      ) as TState
-
-      const depStateSnapshot = state[depId as string]
-      const depStateNew = stateNew[depId as string]
-      const isDepChanged = depStateNew !== undefined
-      const depState = isDepChanged ? depStateNew : depStateSnapshot
-      const depValue = isDepActionCreator ? payload : depState
-
-      if (isDepActionCreator || isDepChanged || isAtomLazy) {
-        const atomStateNew = reducer(atomState, depValue)
-
-        if (atomStateNew === undefined)
-          throwError(
-            `Invalid state. Reducer number ${position} in "${_name}" atom returns undefined`,
-          )
-
-        if (hasAtomNewState && equals(atomStateSnapshot, atomStateNew)) {
-          changedIds.splice(changedIds.indexOf(_id), 1)
-          delete stateNew[_id as string]
-
-          return
-        }
-
-        if (!equals(atomState, atomStateNew)) {
-          if (!hasAtomNewState) {
-            changedIds.push(_id)
-            changedAtoms.add(atom)
-          }
-
-          stateNew[_id as string] = atomStateNew
-        }
-      }
-    }
-    update._ownerAtomId = _id
-
-    if (isDepActionCreator) return _tree.addFn(update, depId as Leaf)
-    if (_deps.has(depId)) throwError('One of dependencies has the equal id')
-    _deps.add(depId)
-    depTree.fnsMap.forEach((_, key) => _tree.addFn(update, key))
+    if (isDepActionCreator) return tree.addFn(update, depId as Leaf)
+    if (depsIds.has(depId)) throwError('One of dependencies has the equal id')
+    depsIds.add(depId)
+    depTree.fnsMap.forEach((_, key) => tree.addFn(update, key))
   }
 
-  on(init, (_, { [_id]: state = initialState }: any = {}) => state)
   dependencyMatcher(on)
 
   const atom = function atom(
     state: State = {},
     action: Action<any> = initAction,
   ) {
-    const ctx = createCtx(state, action)
-    _tree.forEach(action.type, ctx)
+    const ctx = v3.createContext()
 
-    const { changedIds, stateNew } = ctx
+    ctx.subscribe((logs) => {
+      if (logs.length > 0) state = assign({}, state)
+      logs.forEach(
+        (patch) =>
+          patch.meta.isAction || (state[patch.meta.name!] = patch.state),
+      )
+    })
 
-    return changedIds.length > 0 ? assign({}, state, stateNew) : state
+    ctx.get(() => {
+      if (action.v3action !== init.v3action || action.payload) {
+        action.v3action(ctx, action.payload)
+      }
+      init.v3action(ctx, state)
+      ctx.get(v3atom)
+    })
+
+    return state
   } as Atom<TState>
 
-  atom[TREE] = _tree
-  atom[DEPS] = _deps
+  atom[TREE] = tree
+  atom[DEPS] = depsIds
   atom.v3atom = v3atom
+  ;(v3atom.__reatom.onCleanup ??= new Set()).add((ctx) =>
+    ctx.get((read) => {
+      const cache = read(v3atom.__reatom)!
+      cache.state = undefined
+      cache.parents = []
+    }),
+  )
 
   return atom
 }
@@ -267,4 +260,21 @@ export function getDepsShape(
   thing: Atom<any>,
 ): AtomsMap | TupleOfAtoms | undefined {
   return thing[DEPS_SHAPE]
+}
+
+export function v3toV1<T>(anAtom: v3.Atom<T>): Atom<T> {
+  // @ts-expect-error
+  if (anAtom.v1atom) return anAtom.v1atom
+
+  const name = (anAtom.__reatom.name ??= nameToId('atom') as string)
+
+  // @ts-expect-error
+  const v1atom: Atom<T> = (anAtom.v1atom = declareAtom(
+    [name],
+    null as any,
+    (on) => [],
+  ))
+  v1atom.v3atom = anAtom
+
+  return v1atom
 }

@@ -1,4 +1,5 @@
-import { Atom } from "./declareAtom"
+import * as v3 from '@reatom/core'
+import { Atom } from './declareAtom'
 
 export type Leaf = string // unique
 export type TreeId = string | symbol // unique
@@ -9,7 +10,11 @@ export type Fn = {
   _ownerAtomId: TreeId
 }
 export type Ctx = ReturnType<typeof createCtx>
-export type BaseAction<T = any> = { type: Leaf; payload: T }
+export type BaseAction<T = any> = {
+  type: Leaf
+  payload: T
+  v3action: v3.Action
+}
 export function createCtx(state: State, { type, payload }: BaseAction) {
   return {
     state,

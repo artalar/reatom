@@ -1,6 +1,8 @@
+import * as v3 from '@reatom/core'
 import { Tree, TreeId } from './kernel'
 import { Atom } from './declareAtom'
 import { PayloadActionCreator } from './declareAction'
+import { Store } from './createStore'
 
 export { TreeId }
 export type GenId = (name: string | [string] | symbol) => TreeId
@@ -67,7 +69,7 @@ export function setNameToId(gen: GenId) {
   _nameToId = safetyFunc(gen, 'gen')
 }
 
-export function throwError(error: string) {
+export function throwError(error: string): never {
   // TODO: add link to docs with full description
   throw new Error(`[reatom] ${error}`)
 }
@@ -89,3 +91,6 @@ export function getOwnKeys<T extends object>(obj: T): Array<keyof T> {
 
   return keys
 }
+
+export const getStoreByCtx = (ctx: v3.Ctx): Store | undefined =>
+  ctx.meta.v1store

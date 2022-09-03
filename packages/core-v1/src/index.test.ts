@@ -15,6 +15,7 @@ import {
   getIsAtom,
   initAction,
   getDepsShape,
+  v3toV1,
 } from './'
 
 function noop() {}
@@ -920,8 +921,6 @@ test('dynamic initialState, unsubscribed atom should recalculate on each `getSta
   await sleep()
   const date2 = store.getState(dateAtom)
   assert.is.not(date1, date2)
-
-  1
 })
 
 test('dynamic initialState, reducer of `initAction.type` should calling on each mount', async () => {
@@ -984,6 +983,41 @@ test(`v3`, () => {
   assert.is(cbV1.calls.length, 1)
   assert.is(cbV3.calls.length, 2)
   assert.is(cbV1.lastInput() * 2, cbV3.lastInput())
+})
+
+test(`v3 computed`, () => {
+  const store = createStore()
+  const increment = declareAction()
+  const counterV1 = declareAtom('counterV1', 0, (on) => [
+    on(increment, (state) => state + 1),
+  ])
+  const counterDoubledV3 = v3.atom(
+    (ctx) => ctx.spy(counterV1.v3atom) + 1,
+    'counterDoubledV3',
+  )
+  const counterDoubledV1 = v3toV1(counterDoubledV3)
+  const counterTripleV1 = map('counterTripleV1', counterDoubledV1, (v) => v + 1)
+  const counterQuadV3 = v3.atom(
+    (ctx) => ctx.spy(counterTripleV1.v3atom) + 1,
+    'counterQuadV3',
+  )
+
+  const cb = mockFn()
+
+  store.v3ctx.subscribe(counterQuadV3, cb)
+
+  store.v3ctx.get((read) => read(counterV1.v3atom.__reatom)?.isConnected) //?
+  store.v3ctx.get((read) => read(counterDoubledV3.__reatom)?.isConnected) //?
+  store.v3ctx.get((read) => read(counterDoubledV1.v3atom.__reatom)?.isConnected) //?
+  store.v3ctx.get((read) => read(counterTripleV1.v3atom.__reatom)?.isConnected) //?
+  store.v3ctx.get((read) => read(counterQuadV3.__reatom)?.isConnected) //?
+
+  assert.is(cb.calls.length, 1)
+
+  store.dispatch(increment())
+
+  assert.is(cb.calls.length, 2)
+  assert.is(cb.lastInput(), 4)
 })
 
 test.run()

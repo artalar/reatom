@@ -1,5 +1,6 @@
+import * as v3 from '@reatom/core'
 import { Leaf, Tree, BaseAction } from './kernel'
-import { TREE, nameToId, Unit } from './shared'
+import { TREE, nameToId, Unit, getName, getStoreByCtx } from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
@@ -15,6 +16,7 @@ export type Action<
 
 export type BaseActionCreator<Type extends string = string> = {
   getType: () => Type
+  v3action: v3.Action
 } & Unit
 
 export type ActionCreator<Type extends string = string> =
@@ -24,6 +26,8 @@ export type PayloadActionCreator<
   Payload,
   Type extends string = string,
 > = BaseActionCreator<Type> & ((payload: Payload) => Action<Payload, Type>)
+
+const actions = new Map<Leaf, ActionCreator>()
 
 export function declareAction(
   name?: string | Reaction<undefined>,
@@ -52,6 +56,9 @@ export function declareAction<
   name: string | [Type] | Reaction<Payload> = 'action',
   ...reactions: Reaction<Payload>[]
 ): ActionCreator<Type> | PayloadActionCreator<Payload, Type> {
+  // @ts-expect-error
+  if (Array.isArray(name) && actions.has(name[0])) return actions.get(name[0])!
+
   if (typeof name === 'function') {
     reactions.unshift(name)
     name = 'action'
@@ -60,16 +67,30 @@ export function declareAction<
 
   const ACTree = new Tree(id, true)
 
+  const v3action = v3.action(
+    (ctx, payload, r: Array<Reaction<Payload>> = reactions) => {
+      r.forEach((cb) => ctx.schedule(() => cb(payload, getStoreByCtx(ctx)!)))
+
+      return payload
+    },
+    getName(id),
+  )
+
   const actionCreator = function actionCreator(payload?: Payload) {
     return {
       type: id,
       payload,
       reactions,
+      v3action,
     }
   } as ActionCreator<Type> | PayloadActionCreator<Payload, Type>
 
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id as Type
+  actionCreator.v3action = v3action
+
+  // @ts-expect-error
+  actions.set(id, actionCreator)
 
   return actionCreator
 }

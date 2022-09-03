@@ -1,17 +1,14 @@
 import * as v3 from '@reatom/core'
-import { Tree, State, TreeId, createCtx, BaseAction } from './kernel'
+import { State, BaseAction } from './kernel'
 import {
   throwError,
-  getTree,
   safetyFunc,
   assign,
   getIsAtom,
   getIsAction,
-  getOwnKeys,
-  TREE,
 } from './shared'
 import { Action, PayloadActionCreator } from './declareAction'
-import { Atom, initAction, getState } from './declareAtom'
+import { Atom, init, replace } from './declareAtom'
 
 type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
 type SubscribeFunction = {
@@ -46,26 +43,26 @@ export function createStore(
   initState?: State,
   v3ctx = v3.createContext(),
 ): Store {
-  let listeners: Map<TreeId, Function[]> = new Map<TreeId, Function[]>()
-  let nextListeners: Map<TreeId, Function[]> = listeners
+  const activeAtoms = new Set<v3.Atom>()
   let dispatchListeners: Function[] = []
   let nextDispatchListeners: Function[] = dispatchListeners
-  let initialAtoms = new Set<TreeId>()
-  let state: State = {}
-  const storeTree = new Tree('store')
+  let snapshot: State = {}
+
   if (atom !== undefined) {
-    if (typeof atom === 'object' && initState === undefined) assign(state, atom)
+    if (typeof atom === 'object' && initState === undefined)
+      assign(snapshot, atom)
     else {
       if (!getIsAtom(atom)) throwError('Invalid atom')
-      if (typeof initState === 'object' && initState !== null)
-        assign(state, initState)
-      else if (initState !== undefined) throwError('Invalid initial state')
 
-      storeTree.union(getTree(atom as Atom<any>))
-      const ctx = createCtx(state, initAction)
-      storeTree.forEach(initAction.type, ctx)
-      assign(state, ctx.stateNew)
-      initialAtoms = new Set(getOwnKeys(ctx.stateNew))
+      if (typeof initState === 'object' && initState !== null) {
+        assign(snapshot, initState)
+      } else if (initState !== undefined) {
+        throwError('Invalid initial state')
+      }
+
+      subscribe(atom as Atom<any>, () => {})
+      // @ts-ignore
+      assign(snapshot, _getState())
     }
   }
 
@@ -75,30 +72,28 @@ export function createStore(
     }
   }
 
-  function ensureCanMutateNextListeners(treeId: TreeId) {
-    if (nextListeners === listeners) {
-      nextListeners = new Map()
-      listeners.forEach((value, key) =>
-        nextListeners.set(key, treeId === key ? value.slice() : value),
-      )
-    }
-  }
-
   function _getState(): State
   function _getState<T>(target?: Atom<T>): State | T {
-    // TODO: try to cache `assign`
-    if (target === undefined) return assign({}, state) as State
+    if (target === undefined) {
+      const result: v3.Rec = assign({}, snapshot)
+      const walk = (patch: v3.AtomCache): void => {
+        if (!patch.meta.isAction) result[patch.meta.name!] = patch.state
+        patch.parents.forEach(walk)
+      }
+      v3ctx.get((read) => {
+        init.v3action(v3ctx, snapshot)
+        activeAtoms.forEach((anAtom) => walk(read(anAtom.__reatom)!))
+      })
+      // @ts-ignore
+      return result
+    }
 
     if (!getIsAtom(target)) throwError('Invalid target')
 
-    const targetState = getState<T>(state, target)
-    if (targetState !== undefined) return targetState
-
-    const ctx = createCtx(state, initAction)
-    getTree(target).forEach(initAction.type, ctx)
-
-    // @ts-ignore
-    return getState(ctx.stateNew, target)
+    return v3ctx.get(() => {
+      init.v3action(v3ctx, snapshot)
+      return v3ctx.get(target.v3atom)
+    })
   }
 
   function subscribe(subscriber: ActionsSubscriber): () => void
@@ -112,6 +107,7 @@ export function createStore(
   ): () => void {
     const listener = safetyFunc(subscriber || target, 'listener')
     let isSubscribed = true
+    let skipFirst = true
 
     if (subscriber === undefined) {
       if (getIsAtom(listener) || getIsAction(listener))
@@ -127,87 +123,64 @@ export function createStore(
       }
     }
 
-    const isAction = getIsAction(target)
-    if (!getIsAtom(target) && !isAction)
+    if (!getIsAtom(target) && !getIsAction(target))
       throwError('Invalid subscription target')
-    const targetTree = getTree(target as Atom<T> | PayloadActionCreator<T>)
-    const targetId = targetTree.id
-    const isLazy = !isAction && !initialAtoms.has(targetId)
 
-    ensureCanMutateNextListeners(targetId)
-    if (!nextListeners.has(targetId)) {
-      nextListeners.set(targetId, [])
-      if (isLazy) {
-        storeTree.union(targetTree)
-        const ctx = createCtx(state, initAction)
-        targetTree.forEach(initAction.type, ctx)
-        assign(state, ctx.stateNew)
-      }
+    const { v3atom, v3action }: { v3atom?: v3.Atom; v3action?: v3.Action } =
+      target as any
+
+    if (v3action) {
+      return v3ctx.subscribe(v3action, (payloads) => {
+        if (skipFirst) return (skipFirst = false)
+        if (payloads.length > 0) subscriber(payloads.at(-1))
+      })
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    nextListeners.get(targetId)!.push(listener)
-
-    return () => {
-      if (!isSubscribed) return
-      isSubscribed = false
-
-      ensureCanMutateNextListeners(targetId)
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const _listeners = nextListeners.get(targetId)!
-      _listeners.splice(_listeners.indexOf(listener), 1)
-
-      if (isLazy && _listeners.length === 0) {
-        nextListeners.delete(targetId)
-        storeTree.disunion(targetTree, (id) => {
-          delete state[id as string]
+    if (v3atom) {
+      activeAtoms.add(v3atom)
+      let un = v3ctx.get(() => {
+        init.v3action(v3ctx, snapshot)
+        return v3ctx.subscribe(v3atom, (v) => {
+          if (skipFirst) return (skipFirst = false)
+          subscriber(v)
         })
+      })
+      return () => {
+        if (!isSubscribed) return
+        isSubscribed = false
+        un()
+        activeAtoms.delete(v3atom)
       }
     }
+
+    throwError('Invalid subscription target')
   }
 
   function dispatch(action: Action<any>) {
-    const { type, payload, reactions } = action
+    const { type, payload, reactions, v3action } = action
     if (
       typeof action !== 'object' ||
       action === null ||
       typeof type !== 'string'
-    )
+    ) {
       throwError('Invalid action')
-
-    const ctx = createCtx(state, action)
-    const { changedIds, changedAtoms, stateNew } = ctx
-
-    v3ctx.get((read, actualize) => {
-      storeTree.forEach(type, ctx)
-
-      listeners = nextListeners
-
-      if (type === initAction.type) state = payload || {}
-
-      assign(state, stateNew)
-
-      changedAtoms.forEach((anAtom) => {
-        actualize!(
-          v3ctx,
-          anAtom.v3atom.__reatom,
-          (ctx: v3.CtxSpy, patch: v3.AtomCache) => {
-            patch.state = stateNew[anAtom[TREE].id]
-          },
-        )
-      })
-    })
-
-    if (changedIds.length > 0) {
-      for (let i = 0; i < changedIds.length; i++) {
-        const id = changedIds[i]!
-        callFromList(listeners.get(id) || [], stateNew[id as string])
-      }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    callFromList(reactions || [], payload, store)
-    callFromList(listeners.get(type) || [], payload)
+    const stateNew: v3.Rec = {}
+    const un = v3ctx.subscribe((logs) =>
+      logs.forEach((patch) => {
+        if (!patch.meta.isAction) stateNew[patch.meta.name!] = patch.state
+      }),
+    )
+
+    v3ctx.get((read, actualize) => {
+      v3ctx.schedule(un, -1)
+      v3action(v3ctx, payload, reactions)
+      if (v3action === init.v3action) replace(v3ctx, payload)
+    })
+
+    un()
+
     callFromList((dispatchListeners = nextDispatchListeners), action, stateNew)
   }
 
@@ -224,6 +197,8 @@ export function createStore(
     bind,
     v3ctx,
   }
+
+  v3ctx.meta.v1store = store
 
   return store
 }
