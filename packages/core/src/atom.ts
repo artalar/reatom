@@ -73,7 +73,7 @@ export interface Ctx {
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
   cause: null | AtomCache
   /** unique immutable key to understand same context from different computations */
-  key: Rec<never>
+  meta: Rec
 }
 
 export interface CtxSpy extends Required<Ctx> {}
@@ -336,7 +336,7 @@ export const createContext = ({
         schedule: ctx.schedule,
         subscribe: ctx.subscribe,
         cause: patch,
-        key: ctx.key,
+        meta: ctx.meta,
       }
 
       if (isMutating) mutator!(patchCtx, patch)
@@ -517,7 +517,7 @@ export const createContext = ({
       }
     },
     cause: null,
-    key: {},
+    meta: {},
   }
 
   return ctx
@@ -597,3 +597,7 @@ export const action: {
     actionAtom,
   )
 }
+
+createContext().subscribe(action<1>(), v => {
+  v
+})
