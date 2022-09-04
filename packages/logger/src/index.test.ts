@@ -48,7 +48,7 @@ test(`cause`, async () => {
     `doAsync`,
   )
   const doAsyncRes = doAsync.pipe(mapAsync((ctx, v) => v, `doAsyncRes`))
-  const asyncResAtom = doAsyncRes.pipe(toAtom(0, (ctx, v) => v, `asyncResAtom`))
+  const asyncResAtom = doAsyncRes.pipe(toAtom(0, `asyncResAtom`))
 
   const ctx = createContext()
   const log = mockFn()
