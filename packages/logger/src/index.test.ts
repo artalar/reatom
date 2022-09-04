@@ -24,7 +24,7 @@ test(`base`, async () => {
   })
 
   assert.equal(log.lastInput().changes, {
-    [a2.__reatom.name!]: { cause: `self`, state: 2 },
+    [a2.__reatom.name!]: { cause: `self`, state: 2, stateOld: 0 },
   })
 
   ctx.get(() => {
@@ -34,8 +34,8 @@ test(`base`, async () => {
 
   assert.equal(log.lastInput().changes, {
     [a2.__reatom.name!]: [
-      { cause: `self`, state: 10 },
-      { cause: `self`, state: 20 },
+      { cause: `self`, state: 10, stateOld: 2 },
+      { cause: `self`, state: 20, stateOld: 2 },
     ],
   })
   ;`👍` //?
