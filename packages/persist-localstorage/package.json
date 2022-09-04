@@ -24,8 +24,9 @@
     "test": "nx test:native @reatom/persist-localstorage",
     "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
   },
-  "peerDependencies": {
-    "@reatom/core": ">=3.0.0"
+  "dependencies": {
+    "@reatom/core": ">=3.0.0",
+    "@reatom/persist": ">=3.0.0"
   },
   "author": "artalar",
   "license": "MIT",

@@ -24,7 +24,7 @@
     "test": "nx test:native @reatom/core-v2",
     "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/core": ">=3.0.0"
   },
   "author": "artalar",

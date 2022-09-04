@@ -33,7 +33,7 @@
     "ts-check:watch": "npm run ts-check -- --watch",
     "update": "npx npm-check-updates -u"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/core-v2": "^3.0.0",
     "react": "^17.0.2"
   },
