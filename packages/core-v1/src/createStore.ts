@@ -7,7 +7,7 @@ import {
   getIsAtom,
   getIsAction,
 } from './shared'
-import { Action, PayloadActionCreator } from './declareAction'
+import { Action, actions, PayloadActionCreator } from './declareAction'
 import { Atom, init, replace } from './declareAtom'
 
 type ActionsSubscriber = (action: Action<unknown>, stateDiff: State) => any
@@ -157,6 +157,14 @@ export function createStore(
   }
 
   function dispatch(action: Action<any>) {
+    if (!action.v3action) {
+      const registeredAction = actions.get(action.type) as v3.Fn
+      if (!registeredAction) {
+        throwError('Unregistered action, use "declareAction" first')
+      }
+      action = assign(registeredAction(action.payload), action)
+    }
+
     const { type, payload, reactions, v3action } = action
     if (
       typeof action !== 'object' ||
