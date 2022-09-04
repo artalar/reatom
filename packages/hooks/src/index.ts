@@ -67,13 +67,18 @@ export const onUpdate = <T>(
   anAtom: Action<any[], T> | Atom<T>,
   hook: Fn<[Ctx, T, AtomCache<T>]>,
 ) => {
+  let cleanups: null | WeakMap<Ctx['meta'], Fn> = null
   const cb = (ctx: Ctx, patch: AtomCache) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
       if (patch.state.length === 0) return
       state = state.at(-1)
     }
-    hook(ctx, state, patch)
+    cleanups?.get(ctx.meta)?.()
+    const cleanup = hook(ctx, state, patch)
+    if (typeof cleanup === 'function') {
+      ;(cleanups ??= new WeakMap()).set(ctx.meta, cleanup)
+    }
   }
   const hooks = addOnUpdate(anAtom, cb)
   return () => hooks.delete(cb)
