@@ -6,6 +6,7 @@ import {
   Atom,
   AtomCache,
   AtomMut,
+  AtomReturn,
   AtomState,
   Ctx,
   CtxLessParams,
@@ -135,6 +136,7 @@ export const filter = <T extends Atom>(
   predicate: T extends Action<any, T>
     ? Fn<[T, T], boolean>
     : Fn<[AtomState<T>, AtomState<T>], boolean>,
+  // TODO: how to mark to use the same name?
   name?: string,
 ): Fn<[T], T> =>
   // @ts-ignore
@@ -175,16 +177,18 @@ export const toAtom =
   }
 
 export const toPromise =
-  <T, Res = T>(
+  <T extends Atom, Res = AtomReturn<T>>(
     ctx: Ctx,
-    mapper: Fn<[Ctx, Awaited<T>], Res> = (ctx, v: any) => v,
-  ): Fn<[Action<any, T> | Atom<T>], Promise<Awaited<Res>>> =>
+    mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
+  ): Fn<[T], Promise<Awaited<Res>>> =>
   (anAtom) =>
     new Promise<T>((res, fn: Fn) => {
       // reuse variable to bytes safety
-      fn = onUpdate(anAtom, (_ctx, state) => {
-        if (ctx.key === _ctx.key) ctx.schedule(() => (fn(), res(state)))
-      })
+      fn = onUpdate(
+        anAtom,
+        (_ctx, state) =>
+          ctx.meta === _ctx.meta && ctx.schedule(() => (fn(), res(state))),
+      )
     }).then<any>((s: any) => mapper(ctx, s))
 
 // TODO
