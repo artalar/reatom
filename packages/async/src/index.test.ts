@@ -1,5 +1,6 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
+import { fetch } from 'cross-fetch'
 import { atom, createContext } from '@reatom/core'
 import { mapAsync, toAtom, toPromise } from '@reatom/lens'
 import { onUpdate } from '@reatom/hooks'
