@@ -597,7 +597,3 @@ export const action: {
     actionAtom,
   )
 }
-
-createContext().subscribe(action<1>(), v => {
-  v
-})
