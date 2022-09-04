@@ -28,8 +28,7 @@
     "prettify:watch": "cross-env fixme=fixme onchange '**/*.{js,ts,md}' -- prettier --write {{changed}}",
     "ts-check": "tsc --noEmit",
     "ts-check:watch": "npm run ts-check -- --watch",
-    "update": "npx npm-check-updates -u",
-    "size": "size-limit"
+    "update": "npx npm-check-updates -u"
   },
   "author": "artalar",
   "license": "MIT",
