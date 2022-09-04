@@ -46,7 +46,10 @@ export const onConnect = (
   return () => connectHooks.delete(connectHook)
 }
 
-export const whileConnected = <T>(anAtom: Atom<T>, cb: Fn<[Ctx], Promise<any>>) =>
+export const whileConnected = <T>(
+  anAtom: Atom<T>,
+  cb: Fn<[Ctx], Promise<any>>,
+) =>
   onConnect(anAtom, (ctx) => {
     let isConnected = true
 
