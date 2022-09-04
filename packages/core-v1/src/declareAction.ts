@@ -27,7 +27,7 @@ export type PayloadActionCreator<
   Type extends string = string,
 > = BaseActionCreator<Type> & ((payload: Payload) => Action<Payload, Type>)
 
-const actions = new Map<Leaf, ActionCreator>()
+export const actions = new Map<Leaf, ActionCreator>()
 
 export function declareAction(
   name?: string | Reaction<undefined>,
