@@ -76,18 +76,31 @@ export const onUpdate = <T>(
   return () => hooks.delete(cb)
 }
 
-export const isChanged = (ctx: CtxSpy, atom: Atom): boolean => {
-  const state = ctx.spy(atom)
+export const isChanged = <T>(
+  ctx: CtxSpy,
+  anAtom: Atom<T>,
+  cb?: Fn<[T, T?]>,
+): boolean => {
   const { parents } = ctx.cause!
+  const { isAction } = anAtom.__reatom
+  const state: any = ctx.spy(anAtom)
+
   // we walk from the end because
   // it is possible to have a few different
   // caches for the same atom
   // and the last one is the most actual
   for (let i = parents.length; i > 0; ) {
     const parent = parents[--i]!
-    if (parent.meta === atom.__reatom) {
-      return !Object.is(parent.state, state)
+    if (parent.meta === anAtom.__reatom) {
+      if (Object.is(parent.state, state) || (isAction && state.length === 0)) {
+        return false
+      }
+      cb?.(isAction ? state.at(-1) : state, isAction ? undefined : parent.state)
+      return true
     }
   }
-  return false
+
+  if (isAction && state.length === 0) return false
+  cb?.(state)
+  return true
 }
