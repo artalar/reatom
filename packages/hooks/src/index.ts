@@ -21,12 +21,12 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  hook: Fn<[Ctx], void | Unsubscribe>,
+  cb: Fn<[Ctx], void | Unsubscribe>,
 ): Unsubscribe => {
   const connectHooks = (anAtom.__reatom.onConnect ??= new Set())
 
   const connectHook = (ctx: Ctx) => {
-    const cleanup = hook(ctx)
+    const cleanup = cb(ctx)
 
     if (typeof cleanup === 'function') {
       const cleanupHook = (_ctx: Ctx) => {
@@ -65,23 +65,23 @@ export const addOnUpdate = <T extends Atom>(
 
 export const onUpdate = <T>(
   anAtom: Action<any[], T> | Atom<T>,
-  hook: Fn<[Ctx, T, AtomCache<T>]>,
+  cb: Fn<[Ctx, T, AtomCache<T>]>,
 ) => {
   let cleanups: null | WeakMap<Ctx['meta'], Fn> = null
-  const cb = (ctx: Ctx, patch: AtomCache) => {
+  const hook = (ctx: Ctx, patch: AtomCache) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
       if (patch.state.length === 0) return
       state = state.at(-1)
     }
     cleanups?.get(ctx.meta)?.()
-    const cleanup = hook(ctx, state, patch)
+    const cleanup = cb(ctx, state, patch)
     if (typeof cleanup === 'function') {
       ;(cleanups ??= new WeakMap()).set(ctx.meta, cleanup)
     }
   }
-  const hooks = addOnUpdate(anAtom, cb)
-  return () => hooks.delete(cb)
+  const hooks = addOnUpdate(anAtom, hook)
+  return () => hooks.delete(hook)
 }
 
 export const isChanged = <T>(
