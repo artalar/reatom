@@ -48,6 +48,7 @@ export const callSafely = <I extends any[], O>(
   }
 }
 
+/** Throws `Reatom error: ${message}` */
 export const throwReatomError = (condition: any, message: string) => {
   if (condition) throw new Error(`Reatom error: ${message}`)
 }
