@@ -356,6 +356,49 @@ export const createContext = ({
     return patch
   }
 
+  const commitTr = () => {
+    for (let patch of trLogs) {
+      const { meta } = patch
+      const { state } = patch
+      if (meta.isAction && patch.state.length > 0) patch.state = []
+
+      // @ts-expect-error
+      if ((patch = meta.patch) !== null) {
+        meta.patch = null
+        if (patch.isConnected !== (patch.isConnected = isConnected(patch))) {
+          let hooks = meta.onCleanup
+          let testParents = (parentPatch: AtomCache) => {
+            parentPatch.children.delete(meta)
+            testParent(patch, parentPatch)
+          }
+
+          if (patch.isConnected) {
+            hooks = meta.onConnect
+            testParents = (parentPatch: AtomCache) => {
+              testParent(patch, parentPatch)
+              parentPatch.children.add(meta)
+            }
+          }
+
+          if (hooks !== null) nearEffects.push(...hooks)
+          patch.parents.forEach(testParents)
+        }
+
+        if (patch.cause !== null) {
+          caches.set(meta, patch!)
+          let cb = (cb: Fn) => lateEffects.push(() => cb(read(meta)!.state))
+
+          if (meta.isAction) {
+            if (state.length === 0) continue
+            cb = (cb) => nearEffects.push(() => cb(state))
+          }
+
+          patch.listeners.forEach(cb)
+        }
+      }
+    }
+  }
+
   const ctx: Ctx = {
     get(atomOrCb) {
       if (isAtom(atomOrCb)) {
@@ -396,48 +439,7 @@ export const createContext = ({
 
         for (const log of logsListeners) log(trLogs)
 
-        for (let patch of trLogs) {
-          const { meta } = patch
-          const { state } = patch
-          if (meta.isAction && patch.state.length > 0) patch.state = []
-
-          // @ts-expect-error
-          if ((patch = meta.patch) !== null) {
-            meta.patch = null
-            if (
-              patch.isConnected !== (patch.isConnected = isConnected(patch))
-            ) {
-              let hooks = meta.onCleanup
-              let testParents = (parentPatch: AtomCache) => {
-                parentPatch.children.delete(meta)
-                testParent(patch, parentPatch)
-              }
-
-              if (patch.isConnected) {
-                hooks = meta.onConnect
-                testParents = (parentPatch: AtomCache) => {
-                  testParent(patch, parentPatch)
-                  parentPatch.children.add(meta)
-                }
-              }
-
-              if (hooks !== null) nearEffects.push(...hooks)
-              patch.parents.forEach(testParents)
-            }
-
-            if (patch.cause !== null) {
-              caches.set(meta, patch!)
-              let cb = (cb: Fn) => lateEffects.push(() => cb(read(meta)!.state))
-
-              if (meta.isAction) {
-                if (state.length === 0) continue
-                cb = (cb) => nearEffects.push(() => cb(state))
-              }
-
-              patch.listeners.forEach(cb)
-            }
-          }
-        }
+        commitTr()
       } catch (e: any) {
         trError = e = e instanceof Error ? e : new Error(String(e))
         for (const log of logsListeners) log(trLogs, e)
@@ -512,7 +514,12 @@ export const createContext = ({
 
       return () => {
         if ((cache = read(meta)!).listeners.delete(fn) && !isConnected(cache)) {
-          this.get(() => actualize(this, meta))
+          addPatch(cache!, cache)
+          if (!inTr) {
+            commitTr()
+            trLogs = []
+            walkLateEffects()
+          }
         }
       }
     },
