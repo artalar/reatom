@@ -2,7 +2,7 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { fetch } from 'cross-fetch'
 import { atom, createContext } from '@reatom/core'
-import { mapAsync, toAtom, toPromise } from '@reatom/lens'
+import { mapPayloadAwaited, toAtom, toPromise } from '@reatom/lens'
 import { onUpdate } from '@reatom/hooks'
 import { mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
@@ -54,7 +54,7 @@ test('withRetryAction', async () => {
 
   ctx.subscribe(
     fetchData.pipe(
-      mapAsync((ctx, v) => v),
+      mapPayloadAwaited((ctx, v) => v),
       toAtom(),
     ),
     cb,
@@ -77,7 +77,7 @@ test('withAbort', async () => {
 
   const ctx = createContext()
 
-  ctx.subscribe(a1.pipe(mapAsync((ctx, v) => v)), valueSubscriber)
+  ctx.subscribe(a1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
   ctx.subscribe(a1.onReject, errorSubscriber)
 
   assert.equal(valueSubscriber.calls.length, 1)
@@ -106,7 +106,7 @@ test('withAbort user abort', async () => {
 
   const ctx = createContext()
 
-  ctx.subscribe(async1.pipe(mapAsync((ctx, v) => v)), valueSubscriber)
+  ctx.subscribe(async1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
   ctx.subscribe(async1.onReject, errorSubscriber)
 
   assert.equal(valueSubscriber.calls.length, 1)
@@ -132,7 +132,7 @@ test('withAbort and fetch', async () => {
   const ctx = createContext()
   const cb = mockFn()
 
-  ctx.subscribe(fetchData.pipe(mapAsync((ctx, resp) => resp.status)), cb)
+  ctx.subscribe(fetchData.pipe(mapPayloadAwaited((ctx, resp) => resp.status)), cb)
 
   assert.is(cb.calls.length, 1)
   assert.is(handleError.calls.length, 0)

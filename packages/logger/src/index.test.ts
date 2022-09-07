@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { action, atom, createContext } from '@reatom/core'
-import { mapAsync, toAtom } from '@reatom/lens'
+import { mapPayloadAwaited, toAtom } from '@reatom/lens'
 import { sleep } from '@reatom/utils'
 import { mockFn } from '@reatom/testing'
 
@@ -47,7 +47,7 @@ test(`cause`, async () => {
     (ctx, v: number) => ctx.schedule(() => Promise.resolve(v)),
     `doAsync`,
   )
-  const doAsyncRes = doAsync.pipe(mapAsync((ctx, v) => v, `doAsyncRes`))
+  const doAsyncRes = doAsync.pipe(mapPayloadAwaited((ctx, v) => v, `doAsyncRes`))
   const asyncResAtom = doAsyncRes.pipe(toAtom(0, `asyncResAtom`))
 
   const ctx = createContext()
@@ -123,7 +123,6 @@ test(`should skip logs without state changes`, async () => {
   await 0
 
   assert.is(log.calls.length, 2)
-  log.lastInput() //?
   assert.equal(log.lastInput(), {
     '[1] nAtom': { state: 2, stateOld: 1, cause: 'self' },
     '[2] nAtom1': { state: 1, stateOld: undefined, cause: 'self' },

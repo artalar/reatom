@@ -8,12 +8,13 @@ import * as assert from 'uvu/assert'
 import {
   readonly,
   mapState,
-  mapAsync,
+  mapPayloadAwaited,
   mapInput,
   filter,
   plain,
   toAtom,
   toPromise,
+  mapPayload,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -46,10 +47,6 @@ test(`map and mapInput`, async () => {
   ;`👍` //?
 })
 
-test(`map action`, () => {
-  // TODO
-})
-
 test(`readonly and plain`, () => {
   const a = atomizeNumber(0)
   const a1 = a.pipe(readonly, plain)
@@ -61,11 +58,14 @@ test(`readonly and plain`, () => {
   ;`👍` //?
 })
 
-test(`mapAsync and toAtom`, async () => {
+test(`mapPayload, mapPayloadAwaited, toAtom`, async () => {
   const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 10)))
-  const aMaybeString = a.pipe(mapAsync((ctx, v) => v + 1))
+  const aMaybeString = a.pipe(
+    mapPayloadAwaited((ctx, v) => v + 1),
+    mapPayload((ctx, v) => v),
+  )
   const aString = a.pipe(
-    mapAsync((ctx, v) => v + 1),
+    mapPayloadAwaited((ctx, v) => v + 1),
     toAtom(0),
   )
   const ctx = createContext()
@@ -89,6 +89,32 @@ test(`mapAsync and toAtom`, async () => {
   assert.is(cb.calls.length, 2)
   assert.equal(cb.lastInput(), [11])
   assert.is(ctx.get(aString), 11)
+  ;`👍` //?
+})
+
+test(`mapPayloadAwaited sync resolution`, async () => {
+  const act = action((ctx) => ctx.schedule(async () => 0))
+  const act1 = act.pipe(mapPayloadAwaited((ctx, v) => v + 1))
+  const act2 = act.pipe(mapPayloadAwaited((ctx, v) => v + 2))
+  const sumAtom = atom((ctx, state: Array<any> = []) => {
+    state = [...state]
+    ctx.spy(act1).forEach((v) => state.push(v))
+    ctx.spy(act2).forEach((v) => state.push(v))
+
+    return state
+  })
+  const ctx = createContext()
+  const cb = mockFn()
+
+  ctx.subscribe(sumAtom, cb)
+
+  assert.equal(cb.calls.length, 1)
+  assert.equal(cb.lastInput(), [])
+
+  await act(ctx)
+
+  assert.equal(cb.calls.length, 2)
+  assert.equal(cb.lastInput(), [1, 2])
   ;`👍` //?
 })
 
