@@ -221,14 +221,16 @@ export const toPromise =
     mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
   ): Fn<[T], Promise<Awaited<Res>>> =>
   (anAtom) =>
-    new Promise<T>((res, fn: Fn, _skipFirst = true) => {
+    new Promise<Awaited<Res>>((res, fn: Fn, _skipFirst = true) => {
       // reuse variable to bytes safety
       fn = ctx.subscribe(anAtom, (state) =>
         _skipFirst
           ? (_skipFirst = false)
-          : (fn(), res(anAtom.__reatom.isAction ? state[0] : state)),
+          : (fn(),
+            // @ts-expect-error
+            res(mapper(ctx, anAtom.__reatom.isAction ? state[0] : state))),
       )
-    }).then<any>((s: any) => mapper(ctx, s))
+    })
 
 export const unstable_actionizeAllChanges = <T extends Rec<Atom> | Array<Atom>>(
   shape: T,
