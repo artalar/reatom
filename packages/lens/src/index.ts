@@ -11,9 +11,10 @@ import {
   Ctx,
   CtxLessParams,
   Fn,
+  Rec,
   throwReatomError,
 } from '@reatom/core'
-import { onUpdate } from '@reatom/hooks'
+import { isChanged, onUpdate } from '@reatom/hooks'
 
 declare const NEVER: unique symbol
 type NEVER = typeof NEVER
@@ -220,14 +221,57 @@ export const toPromise =
     mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
   ): Fn<[T], Promise<Awaited<Res>>> =>
   (anAtom) =>
-    new Promise<T>((res, fn: Fn) => {
+    new Promise<T>((res, fn: Fn, _skipFirst = true) => {
       // reuse variable to bytes safety
-      fn = onUpdate(
-        anAtom,
-        (_ctx, state) =>
-          ctx.meta === _ctx.meta && ctx.schedule(() => (fn(), res(state))),
+      fn = ctx.subscribe(anAtom, (state) =>
+        _skipFirst
+          ? (_skipFirst = false)
+          : (fn(), res(anAtom.__reatom.isAction ? state[0] : state)),
       )
     }).then<any>((s: any) => mapper(ctx, s))
+
+export const unstable_actionizeAllChanges = <T extends Rec<Atom> | Array<Atom>>(
+  shape: T,
+  name?: string,
+): Action<
+  [NEVER],
+  {
+    [K in keyof T]: AtomState<T[K]>
+  }
+> => {
+  const cacheAtom = atom(
+    Object.keys(shape).reduce((acc, k) => ((acc[k] = SKIP), acc), {} as Rec),
+  )
+
+  const theAction = atom((ctx, state = []) => {
+    for (const key in shape) {
+      const anAtom = shape[key] as Atom
+      isChanged(ctx, anAtom, (value) => {
+        // if (anAtom.__reatom.isAction) {
+        //   if (value.length === 0) return
+        //   value = value[0]
+        // }
+        cacheAtom(ctx, (state) => ({ ...state, [key]: value }))
+      })
+    }
+
+    let cache = ctx.get(cacheAtom)
+
+    if (Object.values(cache).some((v) => v === SKIP)) return state
+
+    for (const key in shape) {
+      const anAtom = shape[key] as Atom
+      if (anAtom.__reatom.isAction === false) {
+        cache = { ...cache, [key]: ctx.get(anAtom) }
+      }
+    }
+
+    return [Array.isArray(shape) ? Object.values(cache) : cache]
+  }, name)
+  theAction.__reatom.isAction = true
+
+  return theAction as any
+}
 
 // TODO
 // export const view = <T, K extends keyof T>

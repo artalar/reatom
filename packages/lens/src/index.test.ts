@@ -15,6 +15,7 @@ import {
   toAtom,
   toPromise,
   mapPayload,
+  unstable_actionizeAllChanges,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -143,6 +144,38 @@ test('toPromise', async () => {
   const ctx = createContext()
 
   assert.equal(await Promise.all([a.pipe(toPromise(ctx)), a(ctx)]), [123, 123])
+  ;`👍` //?
+})
+
+test(`actionizeAllChanges`, async () => {
+  const act1 = action()
+  const act2 = act1
+    .pipe(mapPayload(() => Promise.resolve(0)))
+    .pipe(mapPayloadAwaited())
+  const a1 = atom(0)
+  const sum = unstable_actionizeAllChanges({
+    a1,
+    act1,
+    act2,
+  })
+  const ctx = createContext()
+  const cb = mockFn()
+
+  sum.pipe(toPromise(ctx)).then(cb)
+
+  a1(ctx, 2)
+
+  assert.is(cb.calls.length, 0)
+
+  act1(ctx)
+
+  assert.is(cb.calls.length, 0)
+
+  await act2.pipe(toPromise(ctx))
+
+  await sleep()
+
+  assert.equal(cb.lastInput(), { a1: 2, act1: undefined, act2: 0 })
   ;`👍` //?
 })
 
