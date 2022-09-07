@@ -30,7 +30,7 @@ const { $mol_wire_atom } = mol_wire_lib
 
 configure({ enforceActions: 'never' })
 
-async function start(iterations: number) {
+async function testComputed(iterations: number) {
   const w_combine = <A, B>(
     sourceA: w.Source<A>,
     sourceB: w.Source<B>,
@@ -365,12 +365,6 @@ async function start(iterations: number) {
   })
 }
 
-start(10)
-start(100)
-start(1_000)
-start(10_000)
-
-testAggregateGrowing()
 async function testAggregateGrowing(count = 1_000) {
   const molAtoms = [new $mol_wire_atom(`0`, (next: number = 0) => next)]
   const reAtoms = [v3.atom(0, `${0}`)]
@@ -417,7 +411,6 @@ async function testAggregateGrowing(count = 1_000) {
   })
 }
 
-testAggregateShrinking()
 async function testAggregateShrinking(count = 1_000) {
   const molAtoms = Array.from(
     { length: 1000 },
@@ -465,6 +458,20 @@ async function testAggregateShrinking(count = 1_000) {
     reatom: log(reatomLogs),
     $mol_wire: log(molLogs),
   })
+}
+
+test()
+async function test() {
+  await Promise.all([
+    testComputed(10),
+    testComputed(100),
+    testComputed(1_000),
+    testComputed(10_000),
+    testAggregateShrinking(),
+    testAggregateShrinking(),
+  ])
+
+  process.exit()
 }
 
 function printLogs(results: v3.Rec<ReturnType<typeof log>>) {
