@@ -122,14 +122,10 @@ export const mapAsync =
 // TODO type inference broken on without explicit Ctx return (currently described by `Parameters<T>`)
 export const mapInput =
   <T extends AtomMut | Action, Args extends [Ctx, ...any[]]>(
-    mapper: Fn<Args, Parameters<T>>,
+    mapper: Fn<Args, Parameters<T>[1]>,
   ): Fn<[T], AtomMap<T, AtomState<T>, CtxLessParams<Args>>> =>
   (anAtom): any =>
-    Object.assign(
-      // @ts-ignore
-      (ctx: Ctx, ...args: Args) => anAtom(...mapper(ctx, ...args)),
-      anAtom,
-    )
+    Object.assign((...args: Args) => anAtom(args[0], mapper(...args)), anAtom)
 
 /** Filter atom updates (with all properties saving) */
 export const filter = <T extends Atom>(

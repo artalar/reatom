@@ -19,10 +19,10 @@ import {
 test(`map and mapInput`, async () => {
   const a = atomizeNumber(0)
   const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
-  const aMapInput = a.pipe(mapInput((ctx, v: string) => [ctx, Number(v)]))
+  const aMapInput = a.pipe(mapInput((ctx, v: string) => Number(v)))
   const aMapMapInput = a.pipe(
     mapState((ctx, v) => v + 1),
-    mapInput((ctx, v: string) => [ctx, Number(v)]),
+    mapInput((ctx, v: string) => Number(v)),
   )
   const ctx = createContext()
 
