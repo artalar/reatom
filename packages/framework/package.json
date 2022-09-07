@@ -1,6 +1,9 @@
 {
   "name": "@reatom/framework",
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -24,7 +27,7 @@
     "test:native": "echo 'ok'",
     "test": "nx test:native @reatom/framework"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/all-settled": ">=3.0.0",
     "@reatom/async": ">=3.0.0",
     "@reatom/core": ">=3.0.0",

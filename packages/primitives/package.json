@@ -1,6 +1,9 @@
 {
   "name": "@reatom/primitives",
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom for primitives",
@@ -24,7 +27,7 @@
     "test": "nx test:native @reatom/primitives",
     "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/core": ">=3.0.0"
   },
   "author": "artalar",

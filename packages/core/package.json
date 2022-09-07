@@ -2,6 +2,9 @@
   "name": "@reatom/core",
   "private": false,
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "description": "State manager for both simple and complex applications",
   "source": "src/index.ts",
   "exports": {

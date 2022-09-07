@@ -1,6 +1,9 @@
 {
   "name": "@reatom/async",
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom for async",
@@ -24,7 +27,7 @@
     "test": "nx test:native @reatom/async",
     "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/core": ">=3.0.0",
     "@reatom/hooks": ">=3.0.0"
   },

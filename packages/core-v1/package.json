@@ -1,6 +1,9 @@
 {
   "name": "@reatom/core-v1",
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Adapter for Reatom v1",
@@ -21,10 +24,10 @@
     "build": "cross-env fixme=fixme microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "nx test:native @reatom/core-v1",
+    "test": "cross-env fixme=fixme tsx src/index.test.ts",
     "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/core": ">=3.0.0",
     "@reatom/hooks": ">=3.0.0"
   },

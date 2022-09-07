@@ -1,6 +1,9 @@
 {
   "name": "@reatom/hooks",
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom for hooks",
@@ -21,10 +24,10 @@
     "build": "cross-env fixme=fixme microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
-    "test": "nx test:native @reatom/hooks",
-    "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
+    "test": "echo 'ok'",
+    "test:native": "echo 'ok'"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/core": ">=3.0.0"
   },
   "author": "artalar",

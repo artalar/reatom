@@ -1,6 +1,9 @@
 {
   "name": "@reatom/testing",
   "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom internal utils",
