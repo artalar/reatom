@@ -122,9 +122,11 @@ export const useAtom = createAtomHook()
 
 type AnyActionCreator = (...args: any[]) => Action<any> | void
 
-const unstable_batchedUpdates = process.env.REACT_NATIVE
-  ? require('react-native').unstable_batchedUpdates
-  : require('react-dom').unstable_batchedUpdates
+let batch = (cb: () => void) => cb()
+
+export const setupBatch = (newBatch: typeof batch) => {
+  batch = newBatch
+}
 
 /**
  * @param ctx react context for your store.
@@ -161,7 +163,7 @@ export function createActionHook(ctx: Context<Store | null> = context) {
               ),
             })
 
-            unstable_batchedUpdates(() => store.dispatch(actionFixed))
+            batch(() => store.dispatch(actionFixed))
           },
         })
 
