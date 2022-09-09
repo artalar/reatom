@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.0.0",
+  "version": "3.0.2",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -27,15 +27,13 @@
     "test:native": "echo 'ok'",
     "test": "nx test:native @reatom/framework"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/all-settled": ">=3.0.0",
     "@reatom/async": ">=3.0.0",
     "@reatom/core": ">=3.0.0",
     "@reatom/hooks": ">=3.0.0",
     "@reatom/lens": ">=3.0.0",
     "@reatom/logger": ">=3.0.0",
-    "@reatom/persist": ">=3.0.0",
-    "@reatom/persist-localstorage": ">=3.0.0",
     "@reatom/primitives": ">=3.0.0",
     "@reatom/utils": ">=3.0.0"
   },
