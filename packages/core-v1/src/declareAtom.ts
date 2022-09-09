@@ -173,6 +173,8 @@ export function declareAtom<TState>(
       cache.parents = []
     }),
   )
+  // @ts-expect-error
+  v3atom.v1atom = atom
 
   return atom
 }
