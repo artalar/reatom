@@ -44,7 +44,7 @@ type DependencyMatcher<TState> = (on: DependencyMatcherOn<TState>) => any
 
 export interface Atom<T> extends Unit {
   (state?: State, action?: Action<any>): Record<string, T | any>
-  v3atom: v3.Atom
+  v3atom: v3.Atom<T>
   [DEPS]: Set<TreeId>
   [DEPS_SHAPE]?: AtomsMap | TupleOfAtoms
 }
