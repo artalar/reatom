@@ -43,7 +43,7 @@ export function createStore(
   initState?: State,
   v3ctx = v3.createContext(),
 ): Store {
-  const activeAtoms = new Set<v3.Atom>()
+  const activeAtoms = new Map<v3.Atom, number>()
   let dispatchListeners: Function[] = []
   let nextDispatchListeners: Function[] = dispatchListeners
   let snapshot: State = {}
@@ -82,7 +82,7 @@ export function createStore(
       }
       v3ctx.get((read) => {
         init.v3action(v3ctx, snapshot)
-        activeAtoms.forEach((anAtom) => walk(read(anAtom.__reatom)!))
+        activeAtoms.forEach((count, anAtom) => walk(read(anAtom.__reatom)!))
       })
       // @ts-ignore
       return result
@@ -137,7 +137,7 @@ export function createStore(
     }
 
     if (v3atom) {
-      activeAtoms.add(v3atom)
+      activeAtoms.set(v3atom, (activeAtoms.get(v3atom) ?? 0) + 1)
       let un = v3ctx.get(() => {
         init.v3action(v3ctx, snapshot)
         return v3ctx.subscribe(v3atom, (v) => {
@@ -149,7 +149,8 @@ export function createStore(
         if (!isSubscribed) return
         isSubscribed = false
         un()
-        activeAtoms.delete(v3atom)
+        const count = activeAtoms.get(v3atom)! - 1
+        count > 0 ? activeAtoms.set(v3atom, count) : activeAtoms.delete(v3atom)
       }
     }
 
