@@ -1006,12 +1006,6 @@ test(`v3 computed`, () => {
 
   store.v3ctx.subscribe(counterQuadV3, cb)
 
-  store.v3ctx.get((read) => read(counterV1.v3atom.__reatom)?.isConnected) //?
-  store.v3ctx.get((read) => read(counterDoubledV3.__reatom)?.isConnected) //?
-  store.v3ctx.get((read) => read(counterDoubledV1.v3atom.__reatom)?.isConnected) //?
-  store.v3ctx.get((read) => read(counterTripleV1.v3atom.__reatom)?.isConnected) //?
-  store.v3ctx.get((read) => read(counterQuadV3.__reatom)?.isConnected) //?
-
   assert.is(cb.calls.length, 1)
 
   store.dispatch(increment())
