@@ -306,4 +306,15 @@ test(// this test written is more just for example purposes
   ;`👍` //?
 })
 
+test('no uncaught errors from schedule promise', () => {
+  const doTest = action((ctx) => {
+    ctx.schedule(() => {})
+    throw 'err'
+  })
+  const ctx = createContext()
+
+  assert.throws(() => doTest(ctx))
+  ;`👍` //?
+})
+
 test.run()

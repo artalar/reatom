@@ -467,7 +467,7 @@ export const createContext = ({
       assertFunction(effect)
       throwReatomError(this === undefined, 'missed context')
 
-      return new Promise<any>((res, rej) => {
+      const promise = new Promise<any>((res, rej) => {
         if (!inTr) return res(effect(this))
 
         if (step === -1) {
@@ -484,6 +484,12 @@ export const createContext = ({
 
         trRollbacks.push(rej)
       })
+
+      // prevent uncautch error
+      // when schedule promise is unused
+      promise.catch(() => {})
+
+      return promise
     },
     // @ts-ignore
     subscribe(atom, cb = atom) {

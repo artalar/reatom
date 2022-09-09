@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "3.0.0",
+  "version": "3.0.1",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -20,7 +20,7 @@
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run rebuild && npm run test",
+    "prepublishOnly": "npm run rebuild && npm run test:native",
     "build": "cross-env fixme=fixme microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
