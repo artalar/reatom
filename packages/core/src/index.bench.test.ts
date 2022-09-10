@@ -467,7 +467,7 @@ async function test() {
     testComputed(100),
     testComputed(1_000),
     testComputed(10_000),
-    testAggregateShrinking(),
+    testAggregateGrowing(),
     testAggregateShrinking(),
   ])
 
