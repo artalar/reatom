@@ -3,13 +3,7 @@ import * as effector from 'effector'
 import * as w from 'wonka'
 import { cellx } from 'cellx'
 import mol_wire_lib from 'mol_wire_lib'
-import {
-  observable,
-  computed,
-  autorun,
-  configure,
-  makeAutoObservable,
-} from 'mobx'
+import * as mobx from 'mobx'
 // @ts-ignore
 import * as solid from 'solid-js/dist/solid.cjs'
 import S, { DataSignal } from 's-js'
@@ -23,12 +17,12 @@ import {
   Store,
 } from '@ngrx/store'
 
-import * as v3 from '.'
-// import * as v3 from '@reatom/core'
+// import * as v3 from '.'
+import * as v3 from '@reatom/core'
 
 const { $mol_wire_atom } = mol_wire_lib
 
-configure({ enforceActions: 'never' })
+mobx.configure({ enforceActions: 'never' })
 
 async function testComputed(iterations: number) {
   const w_combine = <A, B>(
@@ -156,20 +150,20 @@ async function testComputed(iterations: number) {
   mH.sync()
   let mRes = 0
 
-  const xEntry = observable.box(0)
-  const xA = computed(() => xEntry.get())
-  const xB = computed(() => xA.get() + 1)
-  const xC = computed(() => xA.get() + 1)
-  const xD = computed(() => xB.get() + xC.get())
-  const xE = computed(() => xD.get() + 1)
-  const xF = computed(() => xD.get() + xE.get())
-  const xG = computed(() => xD.get() + xE.get())
-  const xH = computed(() => xF.get() + xG.get())
+  const xEntry = mobx.observable.box(0)
+  const xA = mobx.computed(() => xEntry.get())
+  const xB = mobx.computed(() => xA.get() + 1)
+  const xC = mobx.computed(() => xA.get() + 1)
+  const xD = mobx.computed(() => xB.get() + xC.get())
+  const xE = mobx.computed(() => xD.get() + 1)
+  const xF = mobx.computed(() => xD.get() + xE.get())
+  const xG = mobx.computed(() => xD.get() + xE.get())
+  const xH = mobx.computed(() => xF.get() + xG.get())
   let xRes = 0
-  autorun(() => (xRes += xH.get()))
+  mobx.autorun(() => (xRes += xH.get()))
   xRes = 0
 
-  const xProxy = makeAutoObservable({
+  const xProxy = mobx.makeAutoObservable({
     entry: 0,
     get a() {
       return this.entry
@@ -197,7 +191,7 @@ async function testComputed(iterations: number) {
     },
   })
   let xpRes = 0
-  autorun(() => (xpRes += xProxy.h))
+  mobx.autorun(() => (xpRes += xProxy.h))
   xpRes = 0
 
   const [solidEntry, solidSet] = solid.createSignal(0)
@@ -367,6 +361,7 @@ async function testComputed(iterations: number) {
 async function testAggregateGrowing(count = 1_000) {
   const molAtoms = [new $mol_wire_atom(`0`, (next: number = 0) => next)]
   const reAtoms = [v3.atom(0, `${0}`)]
+  const mobxAtoms = [mobx.observable.box(0, { name: `${0}` })]
 
   const molAtom = new $mol_wire_atom(`sum`, () =>
     molAtoms.reduce((sum, atom) => sum + atom.sync(), 0),
@@ -375,13 +370,19 @@ async function testAggregateGrowing(count = 1_000) {
     (ctx) => reAtoms.reduce((sum, atom) => sum + ctx.spy(atom), 0),
     `sum`,
   )
+  const mobxAtom = mobx.computed(
+    () => mobxAtoms.reduce((sum, atom) => sum + atom.get(), 0),
+    { name: `sum` },
+  )
   const ctx = v3.createContext()
 
   ctx.subscribe(reAtom, () => {})
   molAtom.sync()
+  mobx.autorun(() => mobxAtom.get())
 
   const reatomLogs = new Array<number>()
   const molLogs = new Array<number>()
+  const mobxLogs = new Array<number>()
   let i = 1
   while (i++ < count) {
     const startReatom = performance.now()
@@ -395,10 +396,15 @@ async function testAggregateGrowing(count = 1_000) {
     molAtom.sync()
     molLogs.push(performance.now() - startMol)
 
+    const startMobx = performance.now()
+    mobxAtoms.push(mobx.observable.box(i, { name: `${i}` }))
+    mobxAtoms.at(-2)!.set(i)
+    mobxLogs.push(performance.now() - startMobx)
+
     // await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
-  if (molAtom.sync() !== ctx.get(reAtom)) {
+  if (new Set([molAtom.sync(), ctx.get(reAtom), mobxAtom.get()]).size > 1) {
     throw new Error(`Mismatch: ${molAtom.sync()} !== ${ctx.get(reAtom)}`)
   }
 
@@ -407,6 +413,7 @@ async function testAggregateGrowing(count = 1_000) {
   printLogs({
     reatom: log(reatomLogs),
     $mol_wire: log(molLogs),
+    mobx: log(mobxLogs),
   })
 }
 
