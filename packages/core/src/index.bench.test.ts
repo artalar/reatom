@@ -23,8 +23,8 @@ import {
   Store,
 } from '@ngrx/store'
 
-// import * as v3 from '.'
-import * as v3 from '@reatom/core'
+import * as v3 from '.'
+// import * as v3 from '@reatom/core'
 
 const { $mol_wire_atom } = mol_wire_lib
 
@@ -312,8 +312,7 @@ async function testComputed(iterations: number) {
     xProxy.entry = i
     mobxProxyLogs.push(performance.now() - startMobxProxy)
 
-    // uncomment to see interesting results (:
-    // await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
   console.log(`Median on one call in ms from ${iterations} iterations`)
