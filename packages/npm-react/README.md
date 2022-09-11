@@ -123,7 +123,7 @@ const handleSubmit = useAction(
 
 ### Prevent rerenders
 
-`useAtom` accepts third argument `shouldSubscribe` which is `true` by default. But sometimes you have a set of computations which could have different values which you didn't use in a view template. In this case you could use atoms from `useAtom` without subscribing to it values.
+`useAtom` accepts third argument `shouldSubscribe` which is `true` by default. But sometimes you have a set of computations not all of which you need in the render. In this case you could use atoms from `useAtom` without subscribing to it values.
 
 ```js
 const [, , inputAtom] = useAtom('', [], false)
