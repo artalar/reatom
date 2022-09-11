@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "prepublishOnly": "npm run rebuild",
-    "build": "cross-env fixme=fixme microbundle",
+    "build": "microbundle",
     "clean": "rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test:native": "echo 'ok'",
