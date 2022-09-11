@@ -21,20 +21,24 @@ export const getCause = (patch: AtomCache) => {
 export const createLogBatched = (log = console.log) => {
   let queue: Array<LogMsg> = []
   const logBatched = (msg: LogMsg) => {
-    Promise.resolve(queue.push(msg)).then((length) => {
-      if (queue.length !== length) return
+    setTimeout(
+      (length) => {
+        if (queue.length !== length) return
 
-      console.groupCollapsed(`Reatom ${length} logs`)
-      log(
-        queue.reduce((acc, { changes }, i) => {
-          for (const k in changes) acc[`[${i + 1}] ${k}`] = changes[k]
-          return acc
-        }, {} as Rec),
-        queue,
-      )
-      console.groupEnd()
-      queue = []
-    })
+        console.groupCollapsed(`Reatom ${length} logs`)
+        log(
+          queue.reduce((acc, { changes }, i) => {
+            for (const k in changes) acc[`[${i + 1}] ${k}`] = changes[k]
+            return acc
+          }, {} as Rec),
+          queue,
+        )
+        console.groupEnd()
+        queue = []
+      },
+      0,
+      queue.push(msg),
+    )
   }
 
   return logBatched

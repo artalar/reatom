@@ -91,7 +91,7 @@ test(`should skip logs without state changes`, async () => {
 
   assert.is(log.calls.length, 0)
 
-  await 0
+  await sleep()
 
   assert.is(log.calls.length, 1)
 
@@ -120,7 +120,7 @@ test(`should skip logs without state changes`, async () => {
 
   assert.is(log.calls.length, 1)
 
-  await 0
+  await sleep()
 
   assert.is(log.calls.length, 2)
   assert.equal(log.lastInput(), {
