@@ -358,7 +358,7 @@ async function testComputed(iterations: number) {
   })
 }
 
-async function testAggregateGrowing(count = 1_000) {
+async function testAggregateGrowing(count: number) {
   const molAtoms = [new $mol_wire_atom(`0`, (next: number = 0) => next)]
   const reAtoms = [v3.atom(0, `${0}`)]
   const mobxAtoms = [mobx.observable.box(0, { name: `${0}` })]
@@ -401,7 +401,7 @@ async function testAggregateGrowing(count = 1_000) {
     mobxAtoms.at(-2)!.set(i)
     mobxLogs.push(performance.now() - startMobx)
 
-    // await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
   if (new Set([molAtom.sync(), ctx.get(reAtom), mobxAtom.get()]).size > 1) {
@@ -417,7 +417,7 @@ async function testAggregateGrowing(count = 1_000) {
   })
 }
 
-async function testAggregateShrinking(count = 1_000) {
+async function testAggregateShrinking(count: number) {
   const molAtoms = Array.from(
     { length: 1000 },
     (_, i) => new $mol_wire_atom(`${i}`, (next: number = 0) => next),
@@ -441,24 +441,22 @@ async function testAggregateShrinking(count = 1_000) {
   let i = 1
   while (i++ < count) {
     const startReatom = performance.now()
-    reAtoms.splice(Math.floor(reAtoms.length / 2), 1)
-    reAtoms[0]!(ctx, i)
+    reAtoms.pop()!(ctx, i)
     reatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
-    molAtoms.splice(Math.floor(molAtoms.length / 2), 1)
-    molAtoms[0]!.put(i)
+    molAtoms.pop()!.put(i)
     molAtom.sync()
     molLogs.push(performance.now() - startMol)
 
-    // await new Promise((resolve) => setTimeout(resolve, 0))
+    await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
   if (molAtom.sync() !== ctx.get(reAtom)) {
     throw new Error(`Mismatch: ${molAtom.sync()} !== ${ctx.get(reAtom)}`)
   }
 
-  console.log(`Median of sum calc of reactive nodes in list from 1 to ${count}`)
+  console.log(`Median of sum calc of reactive nodes in list from ${count} to 1`)
 
   printLogs({
     reatom: log(reatomLogs),
@@ -473,8 +471,8 @@ async function test() {
     testComputed(100),
     testComputed(1_000),
     testComputed(10_000),
-    testAggregateGrowing(),
-    testAggregateShrinking(),
+    testAggregateGrowing(1000),
+    testAggregateShrinking(1000),
   ])
 
   process.exit()
