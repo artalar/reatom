@@ -7,6 +7,7 @@ import {
   AtomMut,
   AtomState,
   Ctx,
+  CtxSpy,
   Fn,
   isAction,
   isAtom,
@@ -40,12 +41,11 @@ export const useAtom: {
     T,
     Ctx,
   ]
-  <T>(init: T | Fn<[Ctx], T>, deps?: Array<any>, shouldSubscribe?: boolean): [
-    T,
-    Fn<[T | Fn<[T, Ctx], T>], T>,
-    AtomMut<T>,
-    Ctx,
-  ]
+  <T>(
+    init: T | Fn<[CtxSpy], T>,
+    deps?: Array<any>,
+    shouldSubscribe?: boolean,
+  ): [T, Fn<[T | Fn<[T, Ctx], T>], T>, AtomMut<T>, Ctx]
 } = (anAtom: any, deps: Array<any> = [], shouldSubscribe = true) => {
   const ctx = useReatomContext()
 
@@ -77,7 +77,7 @@ export const useAtom: {
 
 export const useAction: {
   <T extends Action>(anAction: T): typeof useAtom<T>
-  <T extends Fn<[Ctx]>>(cb: T, deps?: Array<any>): T extends Fn<
+  <T extends Fn<[Ctx, ...Array<any>]>>(cb: T, deps?: Array<any>): T extends Fn<
     [Ctx, ...infer Args],
     infer Res
   >
