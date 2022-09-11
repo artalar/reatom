@@ -12,6 +12,7 @@ import {
   Ctx,
   Fn,
 } from './atom'
+import { AtomCache } from '../build'
 
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
@@ -314,6 +315,27 @@ test('no uncaught errors from schedule promise', () => {
   const ctx = createContext()
 
   assert.throws(() => doTest(ctx))
+  ;`👍` //?
+})
+
+test('async cause track', () => {
+  const a1 = atom(0, 'a1')
+  const act1 = action((ctx) => ctx.schedule(() => act2(ctx)), 'act1')
+  const act2 = action((ctx) => a1(ctx, (s) => ++s), 'act2')
+  const ctx = createContext()
+  const logger = mockFn()
+
+  ctx.subscribe(logger)
+
+  ctx.subscribe(a1, (v) => {})
+
+  act1(ctx)
+
+  assert.is(
+    logger.lastInput().find((patch: AtomCache) => patch.meta.name === 'a1')
+      ?.cause.meta.name,
+    'act2',
+  )
   ;`👍` //?
 })
 
