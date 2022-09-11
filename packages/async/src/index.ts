@@ -34,7 +34,7 @@ export const atomizeAsync = <
   name?: string,
 ): AsyncAction<CtxLessParams<Params>, Resp> => {
   type Self = AsyncAction<CtxLessParams<Params>, Resp>
-  const fnAtom = atom(() => fn, name?.concat('.fn'))
+  const fnAtom = atom(() => fn)
   // @ts-ignore
   const onEffect: Self = action((ctx, ...a) => {
     paramsAtom(ctx, a)
