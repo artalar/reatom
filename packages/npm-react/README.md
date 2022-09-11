@@ -125,6 +125,8 @@ const handleSubmit = useAction(
 
 `useAtom` accepts third argument `shouldSubscribe` which is `true` by default. But sometimes you have a set of computations not all of which you need in the render. In this case you could use atoms from `useAtom` without subscribing to it values.
 
+[![codesandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/elegant-forest-w2106l?file=/src/App.tsx)
+
 ```js
 const [, , inputAtom] = useAtom('', [], false)
 const handleChange = useAction(
