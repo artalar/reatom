@@ -149,6 +149,10 @@ return (
 // onChange "qw1e" - no rerender
 ```
 
+## Examples
+
+- [Migration from RTK to Reatom](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6) (2 times less code, -8kB gzip)
+
 ## Setup batching for old React
 
 For React 16 and 17 you need to setup batching by yourself in the root fo your app.
