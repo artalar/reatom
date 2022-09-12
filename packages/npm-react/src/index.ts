@@ -64,7 +64,7 @@ export const useAtom: {
   }, deps.concat([ctx]))
 
   const state = shouldSubscribe
-    ? useSyncExternalStore(subscribe, getSnapshot)
+    ? useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
     : ctx.get(theAtom)
 
   return [state, update, theAtom, ctx]
