@@ -137,3 +137,9 @@ export const controlConnection =
       ),
     )
   }
+
+export const isConnected = (ctx: Ctx, anAtom: Atom) =>
+  ctx.get(
+    (read) =>
+      (anAtom.__reatom.patch ?? read(anAtom.__reatom))?.isConnected ?? false,
+  )

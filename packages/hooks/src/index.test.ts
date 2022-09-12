@@ -3,7 +3,7 @@ import { mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { withInit, controlConnection } from './'
+import { withInit, controlConnection, isConnected } from './'
 
 test('withInit', () => {
   const a = atom(0).pipe(withInit(() => 123))
@@ -15,18 +15,22 @@ test('withInit', () => {
 test('controlledConnection', () => {
   const aAtom = atom(0)
   const track = mockFn((ctx: CtxSpy) => ctx.spy(aAtom))
-  const bAtom = atom(track).pipe(controlConnection())
+  const bAtom = atom(track)
+  const bAtomControlled = bAtom.pipe(controlConnection())
   const ctx = createContext()
 
-  ctx.subscribe(bAtom, () => {})
+  ctx.subscribe(bAtomControlled, () => {})
   assert.is(track.calls.length, 1)
+  assert.is(isConnected(ctx, bAtom), true)
 
   aAtom(ctx, (s) => (s += 1))
   assert.is(track.calls.length, 2)
+  assert.is(isConnected(ctx, bAtom), true)
 
-  bAtom.toggleConnection(ctx)
+  bAtomControlled.toggleConnection(ctx)
   aAtom(ctx, (s) => (s += 1))
   assert.is(track.calls.length, 2)
+  assert.is(isConnected(ctx, bAtom), false)
   ;`👍` //?
 })
 
