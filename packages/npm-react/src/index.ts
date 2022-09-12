@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useSyncExternalStore } from 'react'
+import { createContext, useContext, useMemo } from 'react'
+import { useSyncExternalStore } from 'use-sync-external-store/shim'
 import {
   action,
   Action,

@@ -1,6 +1,6 @@
 {
   "name": "@reatom/npm-react",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -27,9 +27,12 @@
     "test": "nx test:native @reatom/npm-react",
     "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
   },
+  "dependencies": {
+    "use-sync-external-store": "^1.2.0"
+  },
   "peerDependencies": {
     "@reatom/core": ">=3.0.0",
-    "react": ">=18.0.0"
+    "react": ">=16.8.0"
   },
   "author": "artalar",
   "license": "MIT",
