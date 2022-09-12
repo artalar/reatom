@@ -76,12 +76,14 @@ export const useAtom: {
 // ) => useAtom(useMemo(creator, deps), deps, shouldSubscribe)
 
 export const useAction: {
-  <T extends Action>(anAction: T): typeof useAtom<T>
+  <T extends Action>(anAction: T): T extends Fn<[Ctx, ...infer Args], infer Res>
+    ? Fn<Args, Res>
+    : never
   <T extends Fn<[Ctx, ...Array<any>]>>(cb: T, deps?: Array<any>): T extends Fn<
     [Ctx, ...infer Args],
     infer Res
   >
-    ? typeof useAtom<Action<Args, Res>>
+    ? Fn<Args, Res>
     : never
   // @ts-ignore
 } = (anAction, deps) => {
