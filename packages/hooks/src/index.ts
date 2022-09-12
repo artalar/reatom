@@ -1,5 +1,7 @@
 import {
+  action,
   Action,
+  atom,
   Atom,
   AtomCache,
   AtomState,
@@ -112,3 +114,26 @@ export const isChanged = <T>(
   cb?.(state)
   return true
 }
+
+export const controlConnection =
+  <T extends Atom>(
+    initValue = true,
+    name?: string,
+  ): Fn<[T], T & { toggleConnection: Action<[boolean?], boolean> }> =>
+  (anAtom) => {
+    const isActiveAtom = atom(initValue)
+
+    return Object.assign(
+      {
+        toggleConnection: action(
+          (ctx, value) => isActiveAtom(ctx, (state) => value ?? !state),
+          name?.concat('.toggleConnection'),
+        ),
+      },
+      anAtom,
+      atom(
+        (ctx, state?: any) => (ctx.spy(isActiveAtom) ? ctx.spy(anAtom) : state),
+        name,
+      ),
+    )
+  }
