@@ -10,6 +10,7 @@ import {
   AtomMut,
   createContext,
   Ctx,
+  CtxSpy,
   Fn,
 } from './atom'
 import { AtomCache } from '../build'
@@ -335,6 +336,33 @@ test('async cause track', () => {
     logger.lastInput().find((patch: AtomCache) => patch.meta.name === 'a1')
       ?.cause.meta.name,
     'act2',
+  )
+  ;`👍` //?
+})
+
+test('disconnect tail deps', () => {
+  const aAtom = atom(0, 'aAtom')
+  const track = mockFn((ctx: CtxSpy) => ctx.spy(aAtom))
+  const bAtom = atom(track, 'bAtom')
+  const isActiveAtom = atom(true, 'isActiveAtom')
+  const bAtomControlled = atom((ctx, state?: any) =>
+    ctx.spy(isActiveAtom) ? ctx.spy(bAtom) : state,
+  )
+  const ctx = createContext()
+
+  ctx.subscribe(bAtomControlled, () => {})
+  assert.is(track.calls.length, 1)
+  assert.is(
+    ctx.get((read) => read(bAtom.__reatom)!.isConnected),
+    true,
+  )
+
+  isActiveAtom(ctx, false)
+  aAtom(ctx, (s) => (s += 1))
+  assert.is(track.calls.length, 1)
+  assert.is(
+    ctx.get((read) => read(bAtom.__reatom)!.isConnected),
+    false,
   )
   ;`👍` //?
 })

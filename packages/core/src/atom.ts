@@ -258,6 +258,15 @@ export const createContext = ({
     }
   }
 
+  const disconnect = (ownPatch: AtomCache, prevDepPatch: AtomCache) => {
+    prevDepPatch.children.delete(ownPatch.meta)
+    trRollbacks.push(() => prevDepPatch.children.add(ownPatch.meta))
+
+    const prevDepPatchDirty = prevDepPatch.meta.patch
+    if (prevDepPatchDirty !== null) prevDepPatchDirty.cause ??= ownPatch
+    else isConnected(prevDepPatch) || addPatch(prevDepPatch, ownPatch)
+  }
+
   const actualizeParents = (patchCtx: Ctx, patch: AtomCache) => {
     let { cause, meta, parents } = patch
 
@@ -279,11 +288,7 @@ export const createContext = ({
         // TODO tests!
         if (prevDepPatch?.meta !== depPatch.meta) {
           if (prevDepPatch !== undefined) {
-            prevDepPatch.children.delete(meta)
-            trRollbacks.push(() => prevDepPatch.children.add(meta))
-            // stale branch
-            const prevDepPatchDirty = prevDepPatch.meta.patch
-            if (prevDepPatchDirty !== null) prevDepPatchDirty.cause ??= patch
+            disconnect(patch, prevDepPatch)
           }
           if (!depPatch.children.has(meta)) {
             depPatch.children.add(meta)
@@ -295,6 +300,11 @@ export const createContext = ({
       }
 
       patch.state = patch.meta.computer!(patchCtx as CtxSpy, patch.state)
+
+      for (let i = newParents.length; i < parents.length; i++) {
+        disconnect(patch, parents[i]!)
+      }
+
       patch.cause = cause
       patch.parents = newParents
     }
