@@ -42,7 +42,6 @@ export const createCookieAtom = <T extends CookieObjectModel>(
       onInit(() => {
         schedule((dispatch) => {
           dispatch(create('_set', cookie.get()))
-          // @ts-ignore
           realTimeCookie.addListener((newCookieFromListener: Partial<T>) => {
             dispatch(create('_set', newCookieFromListener))
           })

@@ -131,11 +131,7 @@ test.skip('unsubscribe from RealTimeCookie when have not subscriber', () => {
   let result = false
   let handler: any = null
   const realTimeCookie: RealTimeCookie<CookieModel> = {
-    // TODO: remove ignore after update cookie
-    // @ts-ignore
     addListener: (x) => (handler = x),
-    // TODO: remove ignore after update cookie
-    // @ts-ignore
     removeListener: (x) => (result = handler === x),
   }
   const cookieAtom = createCookieAtom(cookie, realTimeCookie)
