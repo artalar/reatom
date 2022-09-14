@@ -31,11 +31,11 @@
   },
   "peerDependencies": {
     "@reatom/core": "^2.0.0-rc1",
-    "@cookie-baker/core": "^0.2.0"
+    "@cookie-baker/core": "^0.2.1"
   },
   "devDependencies": {
     "@reatom/core": "^2.0.0-rc1",
-    "@cookie-baker/core": "^0.2.0"
+    "@cookie-baker/core": "^0.2.1"
   },
   "author": "BataevDaniil",
   "maintainers": [
