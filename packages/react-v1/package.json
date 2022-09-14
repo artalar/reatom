@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react-v1",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -29,22 +29,8 @@
   },
   "peerDependencies": {
     "@reatom/core": "alpha",
-    "react": "17.0.1"
-  },
-  "devDependencies": {
-    "@babel/cli": "^7.8.4",
-    "@babel/core": "^7.9.0",
-    "@babel/plugin-proposal-class-properties": "^7.8.3",
-    "@babel/plugin-proposal-object-rest-spread": "^7.9.0",
-    "@babel/polyfill": "^7.8.7",
-    "@babel/preset-env": "^7.9.0",
-    "@babel/preset-react": "^7.8.3",
-    "@babel/preset-typescript": "^7.9.0",
-    "@reatom/core": "alpha",
-    "babel-core": "^7.0.0-bridge.0",
-    "babel-jest": "^24.9.0",
-    "babel-loader": "^8.1.0",
-    "cross-env": "^6.0.2"
+    "react": ">=16.8.0",
+    "use-sync-external-store": "^1.2.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -63,6 +49,6 @@
     "/src"
   ],
   "dependencies": {
-    "@types/react": "^17.0.49"
+    "@types/react": ">=16.8.0"
   }
 }
