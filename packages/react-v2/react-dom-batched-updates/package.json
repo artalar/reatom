@@ -1,0 +1,18 @@
+{
+  "name": "@reatom/react-dom-batched-updates-v2",
+  "version": "3.0.0",
+  "private": true,
+  "sideEffects": false,
+  "source": "index.ts",
+  "main": "build/react-dom-batched-updates.js",
+  "module": "build/react-dom-batched-updates.module.js",
+  "unpkg": "build/react-dom-batched-updates.umd.js",
+  "types": "build/react-dom-batched-updates.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "cross-env fixme=fixme microbundle"
+  },
+  "peerDependencies": {
+    "@reatom/react-v2": "^3.0.0"
+  }
+}

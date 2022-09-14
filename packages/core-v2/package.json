@@ -1,0 +1,49 @@
+{
+  "name": "@reatom/core-v2",
+  "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "private": false,
+  "sideEffects": false,
+  "description": "Reatom for v2",
+  "source": "src/index.ts",
+  "exports": {
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "last 4 chrome versions"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run rebuild && npm run test",
+    "build": "microbundle",
+    "clean": "rimraf build/",
+    "rebuild": "npm run clean && npm run build",
+    "test": "nx test:native @reatom/core-v2",
+    "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
+  },
+  "peerDependencies": {
+    "@reatom/core": ">=3.0.0"
+  },
+  "author": "artalar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://github.com/artalar/reatom/packages/core-v2",
+  "files": [
+    "/build",
+    "/package.json",
+    "/README.md",
+    "/src"
+  ]
+}

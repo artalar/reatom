@@ -1,1 +1,1 @@
-export * from './internal'
+export * from './atom'
