@@ -8,6 +8,8 @@ import * as mobx from 'mobx'
 import * as solid from 'solid-js/dist/solid.cjs'
 import S, { DataSignal } from 's-js'
 import * as frpts from '@frp-ts/core'
+// @ts-ignore
+import * as usignal from 'usignal'
 import {
   createAction,
   createReducer,
@@ -19,6 +21,12 @@ import {
 
 // import * as v3 from '.'
 import * as v3 from '@reatom/core'
+
+const us: {
+  signal<T>(value: T): { value: T }
+  computed<T>(fn: () => T): { value: T }
+  effect: v3.Fn
+} = usignal
 
 const { $mol_wire_atom } = mol_wire_lib
 
@@ -223,6 +231,19 @@ async function testComputed(iterations: number) {
   })
   sRes = 0
 
+  const uEntry = us.signal(0)
+  const uA = us.computed(() => uEntry.value)
+  const uB = us.computed(() => uA.value + 1)
+  const uC = us.computed(() => uA.value + 1)
+  const uD = us.computed(() => uB.value + uC.value)
+  const uE = us.computed(() => uD.value + 1)
+  const uF = us.computed(() => uD.value + uE.value)
+  const uG = us.computed(() => uD.value + uE.value)
+  const uH = us.computed(() => uF.value + uG.value)
+  let uRes = 0
+  us.effect(() => (uRes += uH.value))
+  uRes = 0
+
   // const nEntry = createAction('entry', props<{ payload: number }>())
   // const nA = createReducer(
   //   0,
@@ -254,6 +275,7 @@ async function testComputed(iterations: number) {
   const molLogs = new Array<number>()
   const mobxLogs = new Array<number>()
   const mobxProxyLogs = new Array<number>()
+  const usignalLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
@@ -306,6 +328,10 @@ async function testComputed(iterations: number) {
     xProxy.entry = i
     mobxProxyLogs.push(performance.now() - startMobxProxy)
 
+    const startUsignal = performance.now()
+    uEntry.value = i
+    usignalLogs.push(performance.now() - startUsignal)
+
     await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
@@ -324,6 +350,7 @@ async function testComputed(iterations: number) {
       mRes,
       xRes,
       xpRes,
+      uRes,
     ]).size !== 1
   ) {
     console.log(`ERROR!`)
@@ -340,6 +367,7 @@ async function testComputed(iterations: number) {
       mRes,
       xRes,
       xpRes,
+      uRes,
     })
   }
 
@@ -355,6 +383,7 @@ async function testComputed(iterations: number) {
     frpts: log(frptsLogs),
     mobx: log(mobxLogs),
     mobxProxy: log(mobxProxyLogs),
+    usignal: log(usignalLogs),
   })
 }
 
