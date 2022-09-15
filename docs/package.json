@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@artalar/mono": "^1.0.3",
+    "@astrojs/vercel": "^2.0.0",
     "astro": "^1.2.4"
   }
 }
