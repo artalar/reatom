@@ -93,10 +93,16 @@ const DEFAULT_BACK = '#e1dff1'
     <script type="module" src="/main.js"></script>
   </body>
 </html>
-<style>
+<style is:global define:vars={{ 'monoMainPre': DEFAULT_BACK, 'monoBackPre': DEFAULT_MAIN }}>
   @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
 
   html {
     font-size: calc(0.3vw + 0.7em);
+  }
+
+  pre.mono,
+  .mono-all pre {
+    --mono-main: var(--monoMainPre);
+    --mono-back: var(--monoBackPre);
   }
 </style>
