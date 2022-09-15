@@ -1,3 +1,9 @@
+---
+layout: ../layouts/Layout.astro
+title: A General Theory of Reactivity
+description: A main definition of reactivity pattern with pros and cons
+---
+
 # A General Theory of Reactivity
 
 Reactivity is a simple pattern which you could use in many complex cases, but you always should figure out the basis to understand each case. Don't try to understand a reactivity by [how](https://github.com/kriskowal/gtor) you can use it, just always repeat [what](#definition) it is and try it yourself:

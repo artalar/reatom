@@ -1,0 +1,100 @@
+---
+// import '@artalar/mono'
+
+export interface Props {
+  title: string
+}
+
+const { title } = Astro.props
+
+// FIXME https://discord.com/channels/830184174198718474/845451724738265138/1019770939203915786
+// const readmes = await Astro.glob('../../../packages/*/README.md')
+// console.log('readmes', readmes)
+const pages = await Astro.glob('../pages/*.md')
+
+const DEFAULT_MAIN = '#0e1117'
+const DEFAULT_BACK = '#cdc8f5'
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="stylesheet" href="/styles/mono.css" />
+    <title>{title}</title>
+  </head>
+  <body
+    class="mono-all"
+    style={{
+      '--mono-main': DEFAULT_MAIN,
+      '--mono-back': DEFAULT_BACK,
+    }}
+  >
+    <script>
+      // TODO: rm doubling
+      const DEFAULT_MAIN = '#0e1117'
+      const DEFAULT_BACK = '#cdc8f5'
+
+      const MEDIA_DARK = '(prefers-color-scheme: dark)'
+      const MEDIA_LIGHT = '(prefers-color-scheme: light)'
+
+      detectColorScheme()
+      function detectColorScheme() {
+        if (!globalThis.matchMedia) return
+
+        const listener: any = ({ matches, media }: MediaQueryListEvent) => {
+          if (!matches) {
+            // Not matching anymore = not interesting
+            return
+          }
+          if (media === MEDIA_DARK) {
+            changeWebsiteTheme(DEFAULT_BACK, DEFAULT_MAIN)
+          } else if (media === MEDIA_LIGHT) {
+            changeWebsiteTheme(DEFAULT_MAIN, DEFAULT_BACK)
+          }
+        }
+
+        const mqDark = globalThis.matchMedia(MEDIA_DARK)
+        if (mqDark.matches) changeWebsiteTheme(DEFAULT_BACK, DEFAULT_MAIN)
+        mqDark.addEventListener('change', listener)
+
+        const mqLight = globalThis.matchMedia(MEDIA_LIGHT)
+        if (mqLight.matches) changeWebsiteTheme(DEFAULT_MAIN, DEFAULT_BACK)
+        mqLight.addEventListener('change', listener)
+
+        function changeWebsiteTheme(main: string, back: string) {
+          document.body.style.setProperty('--mono-main', main)
+          document.body.style.setProperty('--mono-back', back)
+        }
+      }
+    </script>
+    <aside>
+      <ul>
+        {
+          pages.map((v) => (
+            <li>
+              <a href={v.url || '/'}>{v.frontmatter.title}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </aside>
+    <main>
+      <slot />
+    </main>
+    <footer>
+      <a href="https://github.com/artalar/reatom" target="_blank">github</a>
+    </footer>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+
+  html {
+    font-size: calc(0.3vw + 0.7em);
+  }
+</style>

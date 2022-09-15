@@ -1,0 +1,606 @@
+/* Copied from the origin (https://github.com/artalar/mono) for fast interaction and fixing. Reatom docs is a good playground form mono. */
+
+.mono-all,
+.mono,
+.mono-all *,
+.mono:before,
+.mono-all *:before,
+.mono:after,
+.mono-all *:after {
+  color: var(--mono-main, #111111);
+  background-color: var(--mono-back, #eeeeee);
+  font-family: 'Roboto Mono', monospace;
+  line-height: 2rem;
+  font-size: 1.2rem;
+  box-sizing: border-box;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.mono::selection,
+.mono-all *::selection {
+  color: var(--mono-back);
+  background-color: var(--mono-main);
+}
+
+a.mono,
+.mono-all a {
+  position: relative;
+  /* margin-right: 0.5rem; */
+  text-decoration: none;
+  outline: none;
+  border-bottom: 0.25rem solid var(--mono-main);
+}
+a.mono:visited,
+.mono-all a:visited {
+  border-bottom: 0.1rem solid var(--mono-main);
+}
+a.mono:after,
+.mono-all a:after {
+  content: '00';
+  color: transparent;
+  background-color: var(--mono-main);
+  clip-path: polygon(25% 25%, 75% 50%, 25% 75%);
+}
+a.mono:after,
+.mono-all a:after {
+  content: '00';
+  color: transparent;
+  background-color: var(--mono-main);
+  clip-path: polygon(25% 25%, 75% 50%, 25% 75%);
+}
+a.mono:focus:after,
+.mono-all a:focus:after {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  background-color: unset;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 5px
+  );
+}
+a.mono:active:after,
+.mono-all a:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 7px
+  );
+}
+
+b.mono,
+.mono-all b {
+  font-weight: 600;
+  border: 0.2rem solid var(--mono-main);
+}
+
+body.mono,
+body.mono-all,
+.mono-all body {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  height: 100vh;
+  overflow: auto;
+  margin: 0;
+}
+
+main.mono,
+.mono-all main {
+  margin: 0 auto;
+  min-width: 80vw;
+  max-width: 75rem;
+  padding: 0 1rem;
+}
+
+aside.mono,
+.mono-all aside {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: 1rem;
+}
+
+footer.mono,
+.mono-all footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding: 1rem;
+  border-top: 1px solid var(--mono-main);
+}
+
+blockquote.mono,
+.mono-all blockquote {
+  position: relative;
+  margin: 2rem;
+}
+blockquote.mono:before,
+.mono-all blockquote:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -0.5rem;
+  height: 1rem;
+  width: 3rem;
+  background-color: transparent;
+  box-shadow: -0.5rem -0.8rem 0 0.1rem var(--mono-main),
+    -0.2rem -0.5rem 0 0.1rem var(--mono-main);
+}
+
+button.mono,
+.mono-all button {
+  position: relative;
+  outline: none;
+  margin-top: 0.4rem;
+  margin-bottom: 0.2rem;
+  border: 0.2rem solid var(--mono-main);
+  border-top: none;
+  height: 2rem;
+  min-width: 5rem;
+  color: var(--mono-main);
+  background-color: var(--mono-back);
+  font-weight: 600;
+}
+button.mono + button.mono,
+.mono-all button + button {
+  margin-left: 1rem;
+}
+button.mono:before,
+.mono-all button:before {
+  content: '';
+  position: absolute;
+  top: -0.4rem;
+  left: -0.2rem;
+  width: calc(100% + 0.4rem);
+  height: 0.8rem;
+  background-color: var(--mono-main);
+  clip-path: polygon(
+    0 30%,
+    calc(100% - 0.8rem) 30%,
+    calc(100% - 0.8rem) 0%,
+    100% 50%,
+    calc(100% - 0.8rem) 100%,
+    calc(100% - 0.8rem) 70%,
+    0 70%
+  );
+}
+button.mono:focus:after,
+.mono-all button:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.8rem);
+  height: calc(100% + 0.8rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+button.mono:active:after,
+.mono-all button:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 7px
+  );
+}
+
+:not(pre) > code.mono,
+.mono-all :not(pre) > code {
+  border: 1px dashed var(--mono-main);
+}
+:not(pre) > code.mono:before,
+.mono-all :not(pre) > code:before {
+  content: '<';
+  margin-right: 0.5em;
+}
+:not(pre) > code.mono:after,
+.mono-all :not(pre) > code:after {
+  content: '>';
+  margin-left: 0.5em;
+}
+:not(pre) > code.mono:before,
+.mono-all :not(pre) > code:before,
+:not(pre) > code.mono:after,
+.mono-all :not(pre) > code:after {
+  font-weight: bold;
+  color: var(--mono-back);
+  background-color: var(--mono-main);
+  /* fix empty space when scale */
+  box-shadow: 0 0 0 1px var(--mono-main);
+}
+
+details.mono,
+.mono-all details {
+  margin: 1rem 0;
+  padding: 1rem;
+  padding-left: 2rem;
+  border: 0.2rem solid var(--mono-main);
+  overflow-x: hidden;
+}
+details[open].mono summary.mono,
+.mono-all details[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+h1.mono,
+.mono-all h1,
+h2.mono,
+.mono-all h2,
+h3.mono,
+.mono-all h3,
+h4.mono,
+.mono-all h4 {
+  border-left: 4px solid var(--mono-main);
+  border-top: 2px solid var(--mono-main);
+  padding-top: 0.2em;
+  padding-left: 0.3em;
+}
+
+h1.mono,
+.mono-all h1 {
+  font-size: 2em;
+}
+
+h2.mono,
+.mono-all h2 {
+  font-size: 1.6em;
+}
+
+h3.mono,
+.mono-all h3 {
+  font-size: 1.2em;
+}
+
+input[type='checkbox'].mono,
+.mono-all input[type='checkbox'] {
+  position: relative;
+  top: 0.5em;
+  margin: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1rem var(--mono-main);
+  outline: none;
+  cursor: pointer;
+}
+input[type='checkbox'].mono:before,
+.mono-all input[type='checkbox']:before {
+  position: absolute;
+  content: '';
+  left: 0.125rem;
+  top: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--mono-back);
+  border: 0.25rem solid var(--mono-back);
+}
+input[type='checkbox'].mono:checked:before,
+.mono-all input[type='checkbox']:checked:before {
+  background-color: var(--mono-main);
+}
+input[type='checkbox'].mono:focus:after,
+.mono-all input[type='checkbox']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.4rem);
+  height: calc(100% + 0.4rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 2px,
+    var(--mono-main) 2px 3px
+  );
+  clip-path: polygon(
+    calc(100% - 0.4rem) 0.2rem,
+    calc(100% - 0.4rem) calc(100% - 0.4rem),
+    0.2rem calc(100% - 0.4rem),
+    0.2rem 100%,
+    100% 100%,
+    100% 0.2rem
+  );
+}
+input[type='checkbox'].mono:active:after,
+.mono-all input[type='checkbox']:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 2px,
+    var(--mono-main) 2px 4px
+  );
+}
+
+input[type='color'].mono,
+.mono-all input[type='color'] {
+  position: relative;
+  outline: none;
+  height: 2.5rem;
+}
+input[type='color'].mono:focus:after,
+.mono-all input[type='color']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.6rem);
+  height: calc(100% + 0.6rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+input[type='color'].mono:active:after,
+.mono-all input[type='color']:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 7px
+  );
+}
+
+input[type='radio'].mono,
+.mono-all input[type='radio'] {
+  position: relative;
+  top: 0.5em;
+  margin: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1rem var(--mono-main);
+  outline: none;
+  cursor: pointer;
+}
+input[type='radio'].mono:before,
+.mono-all input[type='radio']:before {
+  position: absolute;
+  content: '';
+  left: 0.125rem;
+  top: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--mono-back);
+  border: 0.15rem solid var(--mono-back);
+  border-radius: 50%;
+}
+input[type='radio'].mono:checked:before,
+.mono-all input[type='radio']:checked:before {
+  background-color: var(--mono-main);
+}
+input[type='radio'].mono:focus:after,
+.mono-all input[type='radio']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.4rem);
+  height: calc(100% + 0.4rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 2px,
+    var(--mono-main) 2px 3px
+  );
+  clip-path: polygon(
+    calc(100% - 0.4rem) 0.2rem,
+    calc(100% - 0.4rem) calc(100% - 0.4rem),
+    0.2rem calc(100% - 0.4rem),
+    0.2rem 100%,
+    100% 100%,
+    100% 0.2rem
+  );
+}
+
+input[type='range'].mono,
+.mono-all input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  position: relative;
+  border: 0.2rem solid var(--mono-main);
+  padding: 0.8rem 0.5rem;
+  height: 1.5rem;
+  width: 20rem;
+}
+input[type='range'].mono::-webkit-slider-runnable-track,
+.mono-all input[type='range']::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 0.2rem;
+  cursor: pointer;
+  background: var(--mono-main);
+}
+input[type='range'].mono::-webkit-slider-thumb,
+.mono-all input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border: 0.2rem solid var(--mono-main);
+  height: 1rem;
+  width: 1rem;
+  background: var(--mono-back);
+  cursor: pointer;
+  margin-top: -0.4rem;
+}
+input[type='range'].mono:active::-webkit-slider-thumb,
+.mono-all input[type='range']:active::-webkit-slider-thumb {
+  background-color: var(--mono-main);
+}
+input[type='range'].mono:focus:after,
+.mono-all input[type='range']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.7rem);
+  height: calc(100% + 0.7rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+
+fieldset.mono,
+.mono-all fieldset {
+  border: 0.2rem solid var(--mono-main);
+}
+
+legend.mono,
+.mono-all legend {
+  font-size: 1.4em;
+}
+
+li.mono,
+.mono-all li {
+  list-style: none;
+  position: relative;
+}
+li.mono + li.mono,
+.mono-all li + li {
+  margin-top: 1.5rem;
+}
+li.mono:before,
+.mono-all li:before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: -1.5rem;
+  width: 1rem;
+  height: 1rem;
+  color: var(--mono-back);
+  background-color: var(--mono-main);
+  box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--mono-main);
+}
+
+p.mono:first-letter,
+.mono-all p:first-letter {
+  color: var(--mono-back);
+  background-color: var(--mono-main);
+  margin-left: 0.5rem;
+  box-shadow: -0.5em 0.25em 0 -0em var(--mono-main);
+}
+
+pre.mono,
+.mono-all pre {
+  padding: 0.5rem 1rem;
+  border: 2px dashed var(--mono-main);
+  overflow-x: scroll;
+  line-height: 1.5rem;
+}
+
+strong.mono,
+.mono-all strong {
+  font-weight: 600;
+  box-shadow: inset 0 -0.2em var(--mono-main), 0 0.4em 0 0 var(--mono-main);
+}
+
+summary.mono,
+.mono-all summary {
+  display: inline;
+  position: relative;
+  margin-right: 100%;
+  list-style: none;
+  font-size: 1.4rem;
+  outline: none;
+}
+summary.mono:before,
+.mono-all summary:before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: -1.4rem;
+  width: 0.8rem;
+  height: calc(100% + 1rem);
+  background-color: var(--mono-main);
+  clip-path: polygon(
+    25% 0,
+    25% calc(100% - 0.6rem),
+    0 calc(100% - 0.6rem),
+    50% 100%,
+    100% calc(100% - 0.6rem),
+    75% calc(100% - 0.6rem),
+    75% 0
+  );
+}
+summary.mono:focus:after,
+.mono-all summary:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.8rem);
+  height: calc(100% + 0.4rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+summary.mono:active:after,
+.mono-all summary:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--mono-main) 3px 7px
+  );
+}
+
+table.mono,
+.mono-all table {
+  display: block;
+  width: 100%;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+}
+
+td.mono,
+.mono-all td,
+th.mono,
+.mono-all th {
+  border-top: 0.5rem solid var(--mono-main);
+  padding: 0 1rem;
+}
+
+ul.mono,
+.mono-all ul {
+  padding-left: 1.5rem;
+}
