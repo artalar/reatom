@@ -13,14 +13,14 @@ const { title } = Astro.props
 const pages = await Astro.glob('../pages/*.md')
 
 const DEFAULT_MAIN = '#0e1117'
-const DEFAULT_BACK = '#cdc8f5'
+const DEFAULT_BACK = '#e1dff1'
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <link rel="stylesheet" href="/styles/mono.css" />
@@ -36,7 +36,7 @@ const DEFAULT_BACK = '#cdc8f5'
     <script>
       // TODO: rm doubling
       const DEFAULT_MAIN = '#0e1117'
-      const DEFAULT_BACK = '#cdc8f5'
+      const DEFAULT_BACK = '#e1dff1'
 
       const MEDIA_DARK = '(prefers-color-scheme: dark)'
       const MEDIA_LIGHT = '(prefers-color-scheme: light)'
@@ -72,15 +72,17 @@ const DEFAULT_BACK = '#cdc8f5'
       }
     </script>
     <aside>
-      <ul>
-        {
-          pages.map((v) => (
-            <li>
-              <a href={v.url || '/'}>{v.frontmatter.title}</a>
-            </li>
-          ))
-        }
-      </ul>
+      <nav>
+        <ul>
+          {
+            pages.map((v) => (
+              <li>
+                <a href={v.url || '/'}>{v.frontmatter.title}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
     </aside>
     <main>
       <slot />

@@ -90,7 +90,7 @@ main.mono,
 .mono-all main {
   margin: 0 auto;
   width: 80vmax;
-  max-width: 75rem;
+  max-width: min(100%, 75rem);
   padding: 0 1rem;
 }
 
@@ -203,16 +203,7 @@ button.mono:active:after,
 :not(pre) > code.mono,
 .mono-all :not(pre) > code {
   border: 1px dashed var(--mono-main);
-}
-:not(pre) > code.mono:before,
-.mono-all :not(pre) > code:before {
-  content: '<';
-  margin-right: 0.5em;
-}
-:not(pre) > code.mono:after,
-.mono-all :not(pre) > code:after {
-  content: '>';
-  margin-left: 0.5em;
+  padding: 0 0.25rem;
 }
 :not(pre) > code.mono:before,
 .mono-all :not(pre) > code:before,
@@ -252,10 +243,12 @@ h4.mono,
   border-top: 2px solid var(--mono-main);
   padding-top: 0.2em;
   padding-left: 0.3em;
+  margin: 5rem 0 2rem 0;
 }
 
 h1.mono,
 .mono-all h1 {
+  margin-top: 2rem;
   font-size: 2em;
 }
 
@@ -503,9 +496,16 @@ li.mono:before,
   height: 1rem;
   color: var(--mono-back);
   background-color: var(--mono-main);
-  box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--mono-main);
+  /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--mono-main); */
 }
 
+p.mono:first-letter,
+.mono-all p:first-letter {
+  color: var(--mono-back);
+  background-color: var(--mono-main);
+  margin-left: 0.5rem;
+  /* box-shadow: 0 0.2em 0 0 var(--mono-main); */
+}
 p.mono:first-letter,
 .mono-all p:first-letter {
   color: var(--mono-back);
