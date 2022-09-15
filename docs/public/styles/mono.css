@@ -89,7 +89,7 @@ body.mono-all,
 main.mono,
 .mono-all main {
   margin: 0 auto;
-  min-width: 80vw;
+  width: 80vmax;
   max-width: 75rem;
   padding: 0 1rem;
 }
@@ -99,6 +99,8 @@ aside.mono,
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  max-width: 20vw;
+  min-width: 15rem;
   padding: 1rem;
 }
 
@@ -221,6 +223,8 @@ button.mono:active:after,
   background-color: var(--mono-main);
   /* fix empty space when scale */
   box-shadow: 0 0 0 1px var(--mono-main);
+  /* FIXME: does not work */
+  transform: scaleX(0.5);
 }
 
 details.mono,
@@ -507,7 +511,7 @@ p.mono:first-letter,
   color: var(--mono-back);
   background-color: var(--mono-main);
   margin-left: 0.5rem;
-  box-shadow: -0.5em 0.25em 0 -0em var(--mono-main);
+  /* box-shadow: 0 0.2em 0 0 var(--mono-main); */
 }
 
 pre.mono,
@@ -521,7 +525,7 @@ pre.mono,
 strong.mono,
 .mono-all strong {
   font-weight: 600;
-  box-shadow: inset 0 -0.2em var(--mono-main), 0 0.4em 0 0 var(--mono-main);
+  box-shadow: inset 0 -0.2em var(--mono-main), 0 0.25em 0 0 var(--mono-main);
 }
 
 summary.mono,
