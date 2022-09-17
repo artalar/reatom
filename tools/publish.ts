@@ -19,7 +19,7 @@ async function main() {
         await $`npm view @reatom/${packageName}@alpha version`
       ).stdout.trim()
     } catch (error) {
-      // this package is not published yet
+      console.warn(`"${packageName}" is not published yet`)
       continue
     }
 
