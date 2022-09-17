@@ -66,6 +66,7 @@ dist/
 .cache/
 build/
 .idea/
+.turbo
 
 packages/**/package-lock.json
 packages/**/yarn.lock

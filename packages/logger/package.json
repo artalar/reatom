@@ -20,12 +20,10 @@
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run rebuild && npm run test",
+    "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "clean": "rimraf build/",
-    "rebuild": "npm run clean && npm run build",
-    "test": "nx test:native @reatom/logger",
-    "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
   },
   "peerDependencies": {
     "@reatom/core": ">=3.0.0"
