@@ -8,6 +8,7 @@
     "test": "turbo run test",
     "prettify": "prettier --write **/*.{js,ts,md}",
     "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
+    "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u"
   },
   "workspaces": [
@@ -52,7 +53,8 @@
     "use-sync-external-store": "^1.2.0",
     "usignal": "^0.4.1",
     "uvu": "^0.5.6",
-    "wonka": "^6.0.0"
+    "wonka": "^6.0.0",
+    "zx": "^7.0.8"
   },
   "keywords": [
     "state",
