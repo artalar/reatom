@@ -1,4 +1,4 @@
-import { createContext } from '@reatom/core'
+import { createCtx } from '@reatom/core'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -6,7 +6,7 @@ import { atomizeString } from './atomizeString'
 
 test(`atomizeString. reset`, () => {
   const a = atomizeString(`string`)
-  const ctx = createContext()
+  const ctx = createCtx()
 
   assert.is(ctx.get(a), `string`)
 

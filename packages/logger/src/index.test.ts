@@ -1,6 +1,6 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { action, atom, createContext } from '@reatom/core'
+import { action, atom, createCtx } from '@reatom/core'
 import { mapPayloadAwaited, toAtom } from '@reatom/lens'
 import { sleep } from '@reatom/utils'
 import { mockFn } from '@reatom/testing'
@@ -10,7 +10,7 @@ import { connectLogger, createLogBatched } from '.'
 test(`base`, async () => {
   const asyncResAtom = atom(0)
   const a2 = atom(0, `test`)
-  const ctx = createContext()
+  const ctx = createCtx()
   const log = mockFn()
 
   ctx.get(asyncResAtom)
@@ -50,7 +50,7 @@ test(`cause`, async () => {
   const doAsyncRes = doAsync.pipe(mapPayloadAwaited((ctx, v) => v, `doAsyncRes`))
   const asyncResAtom = doAsyncRes.pipe(toAtom(0, `asyncResAtom`))
 
-  const ctx = createContext()
+  const ctx = createCtx()
   const log = mockFn()
 
   connectLogger(ctx, { log })
@@ -74,7 +74,7 @@ test(`cause`, async () => {
 
 test(`should skip logs without state changes`, async () => {
   const a = atom(0, 'nAtom')
-  const ctx = createContext()
+  const ctx = createCtx()
   const log = mockFn()
 
   ctx.subscribe(a, () => {})

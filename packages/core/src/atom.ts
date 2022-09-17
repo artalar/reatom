@@ -181,7 +181,7 @@ export interface ContextOptions {
   callNearEffect?: typeof callSafely
 }
 
-export const createContext = ({
+export const createCtx = ({
   callLateEffect = callSafely,
   callNearEffect = callSafely,
 }: ContextOptions = {}): Ctx => {
@@ -620,4 +620,12 @@ export const action: {
       ).at(-1),
     actionAtom,
   )
+}
+
+/**
+ * @deprecated since version 3.0.2
+ */
+export const createContext: typeof createCtx = (...a) => {
+  console.error('"createContext" is deprecated, use "createCtx" instead')
+  return createCtx(...a)
 }

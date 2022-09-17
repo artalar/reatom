@@ -52,7 +52,7 @@ async function testComputed(iterations: number) {
   const gV3 = v3.atom((ctx) => ctx.spy(dV3) + ctx.spy(eV3))
   const hV3 = v3.atom((ctx) => ctx.spy(fV3) + ctx.spy(gV3))
 
-  const ctxV3 = v3.createContext()
+  const ctxV3 = v3.createCtx()
   let resV3 = 0
   ctxV3.subscribe(hV3, (v) => {
     resV3 += v //?
@@ -403,7 +403,7 @@ async function testAggregateGrowing(count: number) {
     () => mobxAtoms.reduce((sum, atom) => sum + atom.get(), 0),
     { name: `sum` },
   )
-  const ctx = v3.createContext()
+  const ctx = v3.createCtx()
 
   ctx.subscribe(reAtom, () => {})
   molAtom.sync()
@@ -460,7 +460,7 @@ async function testAggregateShrinking(count: number) {
     (ctx) => reAtoms.reduce((sum, atom) => sum + ctx.spy(atom), 0),
     `sum`,
   )
-  const ctx = v3.createContext()
+  const ctx = v3.createCtx()
 
   ctx.subscribe(reAtom, () => {})
   molAtom.sync()

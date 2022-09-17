@@ -22,11 +22,11 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "test": "echo 'ok'",
     "test": "echo 'ok'"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/core": "alpha",
+    "@types/react": ">=16.8.0",
     "react": ">=16.8.0",
     "use-sync-external-store": "^1.2.0"
   },
@@ -45,8 +45,5 @@
     "/package.json",
     "/README.md",
     "/src"
-  ],
-  "dependencies": {
-    "@types/react": ">=16.8.0"
-  }
+  ]
 }

@@ -41,7 +41,7 @@ export function createStore(atom: Atom<any>, initState?: State): Store
 export function createStore(
   atom?: Atom<any> | State,
   initState?: State,
-  v3ctx = v3.createContext(),
+  v3ctx = v3.createCtx(),
 ): Store {
   const activeAtoms = new Map<v3.Atom, number>()
   let dispatchListeners: Function[] = []

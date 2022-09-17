@@ -20,12 +20,9 @@
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run rebuild",
+    "prepublishOnly": "npm run build",
     "build": "microbundle",
-    "clean": "rimraf build/",
-    "rebuild": "npm run clean && npm run build",
-    "test:native": "echo 'ok'",
-    "test": "nx test:native @reatom/framework"
+    "test": "echo 'ok'"
   },
   "dependencies": {
     "@reatom/all-settled": ">=3.0.0",

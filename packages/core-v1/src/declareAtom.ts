@@ -142,7 +142,7 @@ export function declareAtom<TState>(
     state: State = {},
     action: Action<any> = initAction,
   ) {
-    const ctx = v3.createContext()
+    const ctx = v3.createCtx()
 
     ctx.subscribe((logs) => {
       if (logs.length > 0) state = assign({}, state)

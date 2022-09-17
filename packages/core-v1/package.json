@@ -23,11 +23,9 @@
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
     "test": "tsx src/index.test.ts",
-    "test:watch": "tsx watch src/index.test.ts",
-    "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/core": ">=3.0.0",
     "@reatom/hooks": ">=3.0.0"
   },

@@ -1,6 +1,6 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { createContext } from '@reatom/core'
+import { createCtx } from '@reatom/core'
 import { getDuration } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
@@ -8,7 +8,7 @@ import { atomizeTimer } from './'
 
 test(`base API`, async () => {
   const timerModel = atomizeTimer(`test`)
-  const ctx = createContext()
+  const ctx = createCtx()
 
   timerModel.intervalAtom.setSeconds(ctx, 0.001)
 

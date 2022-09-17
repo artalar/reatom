@@ -8,7 +8,7 @@ import {
   atom,
   AtomMeta,
   AtomMut,
-  createContext,
+  createCtx,
   Ctx,
   CtxSpy,
   Fn,
@@ -40,7 +40,7 @@ test(`action`, () => {
     ctx.spy(act1).forEach(() => fn(1))
     ctx.spy(act2).forEach(() => fn(2))
   })
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(a2, () => {})
   assert.is(fn.calls.length, 0)
@@ -66,7 +66,7 @@ test(`action`, () => {
 test(`linking`, () => {
   const a1 = atom(0, `a1`)
   const a2 = atom((ctx) => ctx.spy(a1), `a2`)
-  const context = createContext()
+  const context = createCtx()
   const fn = mockFn()
 
   context.subscribe((logs) => {
@@ -100,7 +100,7 @@ test(`nested deps`, () => {
   const a4 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a4`)
   const a5 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a5`)
   const a6 = atom((ctx) => ctx.spy(a4) + ctx.spy(a5), `a6`)
-  const context = createContext()
+  const context = createCtx()
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
@@ -161,7 +161,7 @@ test(`transaction batch`, () => {
   const numberAtom = atom((ctx) => {
     ctx.spy(pushNumber).forEach(track)
   })
-  const context = createContext()
+  const context = createCtx()
   context.subscribe(numberAtom, () => {})
 
   assert.is(track.calls.length, 0)
@@ -198,7 +198,7 @@ test(`transaction batch`, () => {
 
 test(`late effects batch`, async () => {
   const a = atom(0)
-  const context = createContext({
+  const context = createCtx({
     // @ts-ignores
     callLateEffect: (cb, ...a) => setTimeout(() => cb(...a)),
   })
@@ -247,7 +247,7 @@ test(`display name`, () => {
   onConnect(displayNameAtom, () => effect(`displayNameAtom init`))
   onCleanup(displayNameAtom, () => effect(`displayNameAtom cleanup`))
 
-  const ctx = createContext()
+  const ctx = createCtx()
 
   const un = ctx.subscribe(displayNameAtom, () => {})
 
@@ -285,7 +285,7 @@ test(// this test written is more just for example purposes
   const sumAtom = atom((ctx) =>
     ctx.spy(listAtom).reduce((acc, a) => acc + ctx.spy(a), 0),
   )
-  const ctx = createContext()
+  const ctx = createCtx()
   const sumListener = mockFn((sum: number) => {})
 
   ctx.subscribe(sumAtom, sumListener)
@@ -313,7 +313,7 @@ test('no uncaught errors from schedule promise', () => {
     ctx.schedule(() => {})
     throw 'err'
   })
-  const ctx = createContext()
+  const ctx = createCtx()
 
   assert.throws(() => doTest(ctx))
   ;`👍` //?
@@ -323,7 +323,7 @@ test('async cause track', () => {
   const a1 = atom(0, 'a1')
   const act1 = action((ctx) => ctx.schedule(() => act2(ctx)), 'act1')
   const act2 = action((ctx) => a1(ctx, (s) => ++s), 'act2')
-  const ctx = createContext()
+  const ctx = createCtx()
   const logger = mockFn()
 
   ctx.subscribe(logger)
@@ -348,7 +348,7 @@ test('disconnect tail deps', () => {
   const bAtomControlled = atom((ctx, state?: any) =>
     ctx.spy(isActiveAtom) ? ctx.spy(bAtom) : state,
   )
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(bAtomControlled, () => {})
   assert.is(track.calls.length, 1)

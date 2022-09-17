@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { fetch } from 'cross-fetch'
-import { atom, createContext } from '@reatom/core'
+import { atom, createCtx } from '@reatom/core'
 import { mapPayloadAwaited, toAtom, toPromise } from '@reatom/lens'
 import { onUpdate } from '@reatom/hooks'
 import { mockFn } from '@reatom/testing'
@@ -21,8 +21,8 @@ test(`base API`, async () => {
     withRetryAction(),
     withDataAtom(0),
   )
-  const ctx = createContext()
-  ctx.subscribe(fetchData, () => {})
+  const ctx = createCtx()
+  // ctx.subscribe(fetchData, () => {})
 
   assert.is(ctx.get(fetchData.dataAtom), 0)
 
@@ -49,7 +49,7 @@ test('withRetryAction', async () => {
     fetchData.retry(ctx)
   })
 
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
   ctx.subscribe(
@@ -75,7 +75,7 @@ test('withAbort', async () => {
   const valueSubscriber = mockFn()
   const errorSubscriber = mockFn()
 
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(a1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
   ctx.subscribe(a1.onReject, errorSubscriber)
@@ -104,7 +104,7 @@ test('withAbort user abort', async () => {
   const valueSubscriber = mockFn()
   const errorSubscriber = mockFn()
 
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(async1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
   ctx.subscribe(async1.onReject, errorSubscriber)
@@ -129,10 +129,13 @@ test('withAbort and fetch', async () => {
     ),
   )
 
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
-  ctx.subscribe(fetchData.pipe(mapPayloadAwaited((ctx, resp) => resp.status)), cb)
+  ctx.subscribe(
+    fetchData.pipe(mapPayloadAwaited((ctx, resp) => resp.status)),
+    cb,
+  )
 
   assert.is(cb.calls.length, 1)
   assert.is(handleError.calls.length, 0)
@@ -153,9 +156,9 @@ test('withAbort and fetch', async () => {
 test('withFetchOnConnect', async () => {
   const fetchData = atomizeAsync(async (ctx, payload) => payload + 1).pipe(
     withDataAtom(0),
-    withFetchOnConnect(['dataAtom'], [123]),
+    withFetchOnConnect(['dataAtom'], (ctx): [number] => [123]),
   )
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
   fetchData.onFulfill.pipe(toPromise(ctx)).then(cb)

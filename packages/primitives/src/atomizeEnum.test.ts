@@ -1,4 +1,4 @@
-import { createContext } from '@reatom/core'
+import { createCtx } from '@reatom/core'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -18,7 +18,7 @@ test(`atomizeEnum. camelCase`, async () => {
     'updated',
     'pushed',
   ])
-  const ctx = createContext()
+  const ctx = createCtx()
 
   sortFilterAtom.setUpdated(ctx)
 
@@ -29,7 +29,7 @@ test(`atomizeEnum. camelCase`, async () => {
 test(`atomizeEnum. snake_case`, async () => {
   const cases = ['full_name', 'created', 'updated', 'pushed'] as const
   const sortFilterAtom = atomizeEnum(cases, { format: 'snake_case' })
-  const ctx = createContext()
+  const ctx = createCtx()
 
   sortFilterAtom.enum
 
@@ -46,7 +46,7 @@ test(`atomizeEnum. snake_case`, async () => {
 
 test(`atomizeEnum. reset`, () => {
   const enumAtom = atomizeEnum(['a', 'b'], { initState: 'b' })
-  const ctx = createContext()
+  const ctx = createCtx()
 
   assert.is(ctx.get(enumAtom), 'b')
 
