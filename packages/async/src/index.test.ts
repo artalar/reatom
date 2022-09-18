@@ -8,7 +8,7 @@ import { mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
 import {
-  atomizeAsync,
+  reatomAsync,
   withAbort,
   withDataAtom,
   withFetchOnConnect,
@@ -17,7 +17,7 @@ import {
 
 test(`base API`, async () => {
   let i = 1
-  const fetchData = atomizeAsync(async (ctx, v: number) => v + i).pipe(
+  const fetchData = reatomAsync(async (ctx, v: number) => v + i).pipe(
     withRetryAction(),
     withDataAtom(0),
   )
@@ -38,7 +38,7 @@ test(`base API`, async () => {
 
 test('withRetryAction', async () => {
   let attempts = 0
-  const fetchData = atomizeAsync(async (ctx, v: number) => {
+  const fetchData = reatomAsync(async (ctx, v: number) => {
     if (attempts++ < 2) throw new Error('test error')
     return v
   }).pipe(withRetryAction())
@@ -71,7 +71,7 @@ test('withRetryAction', async () => {
 })
 
 test('withAbort', async () => {
-  const a1 = atomizeAsync(withAbort(async (ctx, controller, v: number) => v))
+  const a1 = reatomAsync(withAbort(async (ctx, controller, v: number) => v))
   const valueSubscriber = mockFn()
   const errorSubscriber = mockFn()
 
@@ -98,7 +98,7 @@ test('withAbort', async () => {
 })
 
 test('withAbort user abort', async () => {
-  const async1 = atomizeAsync(
+  const async1 = reatomAsync(
     withAbort(async (ctx, controller) => controller.abort()),
   )
   const valueSubscriber = mockFn()
@@ -123,7 +123,7 @@ test('withAbort and fetch', async () => {
   const handleError = mockFn((e) => {
     throw e
   })
-  const fetchData = atomizeAsync(
+  const fetchData = reatomAsync(
     withAbort(async (ctx, { signal }) =>
       fetch('https://www.google.ru/404', { signal }).catch(handleError),
     ),
@@ -154,7 +154,7 @@ test('withAbort and fetch', async () => {
 })
 
 test('withFetchOnConnect', async () => {
-  const fetchData = atomizeAsync(async (ctx, payload) => payload + 1).pipe(
+  const fetchData = reatomAsync(async (ctx, payload) => payload + 1).pipe(
     withDataAtom(0),
     withFetchOnConnect(['dataAtom'], (ctx): [number] => [123]),
   )

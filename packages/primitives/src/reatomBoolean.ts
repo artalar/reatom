@@ -10,7 +10,7 @@ export type BooleanReducers = {
 
 export type BooleanAtom = WithReducers<AtomMut<boolean>, BooleanReducers>
 
-export const atomizeBoolean = (initState = false, name?: string): BooleanAtom =>
+export const reatomBoolean = (initState = false, name?: string): BooleanAtom =>
   atom(initState, name).pipe(
     withReducers({
       toggle: (state) => !state,

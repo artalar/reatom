@@ -1,6 +1,6 @@
 import { action, atom, createCtx } from '@reatom/core'
 import { sleep } from '@reatom/utils'
-import { atomizeNumber } from '@reatom/primitives'
+import { reatomNumber } from '@reatom/primitives'
 import { mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
@@ -19,7 +19,7 @@ import {
 } from './'
 
 test(`map and mapInput`, async () => {
-  const a = atomizeNumber(0)
+  const a = reatomNumber(0)
   const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
   const aMapInput = a.pipe(mapInput((ctx, v: string) => Number(v)))
   const aMapMapInput = a.pipe(
@@ -49,7 +49,7 @@ test(`map and mapInput`, async () => {
 })
 
 test(`readonly and plain`, () => {
-  const a = atomizeNumber(0)
+  const a = reatomNumber(0)
   const a1 = a.pipe(readonly, plain)
   const ctx = createCtx()
   assert.is(a(ctx, 1), 1)

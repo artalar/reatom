@@ -12,7 +12,7 @@ export type NumberAtomReducers = {
 
 export type NumberAtom = WithReducers<AtomMut<number>, NumberAtomReducers>
 
-export const atomizeNumber = (initState = 0, name?: string): NumberAtom =>
+export const reatomNumber = (initState = 0, name?: string): NumberAtom =>
   atom(initState, name).pipe(
     withReducers({
       increment: (state, value = 1) => state + value,

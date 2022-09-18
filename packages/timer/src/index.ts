@@ -10,7 +10,7 @@ export interface TimerAtom extends AtomMut<number> {
   stopTimer: Action<[], void>
 }
 
-export const atomizeTimer = (name: string): TimerAtom => {
+export const reatomTimer = (name: string): TimerAtom => {
   const timerAtom = atom(0, `${name}Atom`)
 
   const intervalAtom = atom(1000, `${name}IntervalAtom`).pipe(

@@ -28,7 +28,7 @@ export type EnumAtomOptions<
   initState?: T extends any ? T : never
 }
 
-export const atomizeEnum = <
+export const reatomEnum = <
   T extends string,
   Format extends 'camelCase' | 'snake_case' = 'camelCase',
 >(
