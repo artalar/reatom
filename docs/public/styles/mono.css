@@ -503,7 +503,7 @@ li.mono:before,
 .mono-all li:before {
   content: '';
   position: absolute;
-  top: 0.5rem;
+  top: 0.75rem;
   left: -1.5rem;
   width: 1rem;
   height: 1rem;

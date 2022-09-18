@@ -28,7 +28,6 @@ import {
 
 test(`map and mapInput`, async () => {
   const a = reatomNumber(0)
-
   const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
   const aMapInput = a.pipe(mapInput((ctx, v: string) => Number(v)))
   const aMapMapInput = a.pipe(
