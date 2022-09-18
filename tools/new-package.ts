@@ -5,16 +5,11 @@ import { createInterface } from 'readline'
 
 const templateLocation = 'tools/new-package-template'
 
-const rl = createInterface({
-  input: process.stdin,
-  output: process.stdout,
-})
-
-async function personalizeTemplate(packagePath: string, name: string) {
-  const files = await fs.readdir(packagePath)
+async function personalizeTemplate(dirPath: string, name: string) {
+  const files = await fs.readdir(dirPath)
 
   for (const file of files) {
-    const filePath = path.join(packagePath, file)
+    const filePath = path.join(dirPath, file)
 
     if ((await fs.stat(filePath)).isFile()) {
       const templateContent = await fs.readFile(filePath, 'utf8')
@@ -29,12 +24,17 @@ async function personalizeTemplate(packagePath: string, name: string) {
   }
 }
 
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
 rl.question("What's a new package name? ", async (name) => {
   console.log('name is', name)
 
   const newPackageLocation = path.join(process.cwd(), 'packages', name)
 
-  // FIXME: https://nodejs.org/api/fs.html#fspromisescpsrc-dest-options
+  // TODO: https://nodejs.org/api/fs.html#fspromisescpsrc-dest-options
   await $`cp -r ${templateLocation} ${newPackageLocation}`
 
   await personalizeTemplate(newPackageLocation, name)
