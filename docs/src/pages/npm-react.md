@@ -5,8 +5,6 @@ title: npm-react
 description: Docs for @reatom/npm-react package
 ---
 
-# @reatom/npm-react
-
 Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be installed `react` and `@reatom/core@alpha` or `@reatom/framework@alpha`.
 
 ## Usage
@@ -14,10 +12,10 @@ Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be insta
 In the app root:
 
 ```js
-import { createContext } from '@reatom/core'
+import { createCtx } from '@reatom/core'
 import { reatomContext } from '@reatom/npm-react'
 
-const ctx = createContext()
+const ctx = createCtx()
 
 export const App = () => (
   <reatomContext.Provider value={ctx}>
