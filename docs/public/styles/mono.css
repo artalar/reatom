@@ -10,7 +10,7 @@
   color: var(--mono-main, #111111);
   background-color: var(--mono-back, #eeeeee);
   font-family: 'Roboto Mono', monospace;
-  line-height: 2rem;
+  line-height: 2.5rem;
   font-size: 1.2rem;
   box-sizing: border-box;
 
@@ -90,7 +90,7 @@ main.mono,
 .mono-all main {
   margin: 0 auto;
   width: 80vmax;
-  max-width: min(100%, 75rem);
+  max-width: min(100%, 65rem);
   padding: 0 1rem;
 }
 
@@ -101,7 +101,26 @@ aside.mono,
   flex-wrap: wrap;
   max-width: 20vw;
   min-width: 15rem;
+  height: fit-content;
   padding: 1rem;
+}
+
+@media (max-width: 65rem) {
+  aside.mono,
+  .mono-all aside {
+    max-width: unset;
+  }
+  aside.mono > nav.mono > ul.mono,
+  .mono-all aside > nav > ul {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  aside.mono > nav.mono > ul.mono > li.mono,
+  .mono-all aside > nav > ul > li {
+    margin-top: 2rem;
+    margin-left: 3rem;
+  }
 }
 
 footer.mono,

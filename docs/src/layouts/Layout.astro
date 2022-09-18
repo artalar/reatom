@@ -1,11 +1,7 @@
 ---
-// import '@artalar/mono'
-
-export interface Props {
-  title: string
-}
-
-const { title } = Astro.props
+const {
+  frontmatter: { title },
+} = Astro.props
 
 // FIXME https://discord.com/channels/830184174198718474/845451724738265138/1019770939203915786
 // const readmes = await Astro.glob('../../../packages/*/README.md')
@@ -85,6 +81,7 @@ const DEFAULT_BACK = '#f1f0f7'
       </nav>
     </aside>
     <main>
+      <h1>{title}</h1>
       <slot />
     </main>
     <footer>
@@ -93,7 +90,10 @@ const DEFAULT_BACK = '#f1f0f7'
     <script type="module" src="/main.js"></script>
   </body>
 </html>
-<style is:global define:vars={{ 'monoMainPre': DEFAULT_BACK, 'monoBackPre': DEFAULT_MAIN }}>
+<style
+  is:global
+  define:vars={{ monoMainPre: DEFAULT_BACK, monoBackPre: DEFAULT_MAIN }}
+>
   @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
 
   html {
