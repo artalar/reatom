@@ -7,6 +7,7 @@ const {
 // const readmes = await Astro.glob('../../../packages/*/README.md')
 // console.log('readmes', readmes)
 const pages = await Astro.glob('../pages/*.md')
+const packages = await Astro.glob('../pages/packages/*.md')
 
 const DEFAULT_MAIN = '#0e1117'
 const DEFAULT_BACK = '#f1f0f7'
@@ -68,25 +69,43 @@ const DEFAULT_BACK = '#f1f0f7'
       }
     </script>
     <aside>
-      <nav>
+      <!-- <a href="#navigation">nav</a> -->
+      <nav id="navigation">
         <ul>
           {
-            pages.map((v) => (
-              <li>
-                <a href={v.url || '/'}>{v.frontmatter.title}</a>
-              </li>
-            ))
+            pages
+              .sort((a) => (a.frontmatter.title === 'Main' ? -1 : 1))
+              .map((v) => (
+                <li>
+                  <a href={v.url || '/'}>{v.frontmatter.title}</a>
+                </li>
+              ))
           }
         </ul>
+      </nav>
+      <nav>
+        <details open={true /* packages.some(isCurrentPage) */}>
+          <summary>packages</summary><ul>
+            {
+              packages
+                .sort((a) => (a.frontmatter.title === 'core' ? -1 : 1))
+                .map((v) => (
+                  <li>
+                    <a href={v.url || '/'}>{v.frontmatter.title}</a>
+                  </li>
+                ))
+            }
+          </ul>
+        </details>
       </nav>
     </aside>
     <main>
       <h1>{title}</h1>
       <slot />
+      <footer>
+        <a href="https://github.com/artalar/reatom" target="_blank">github</a>
+      </footer>
     </main>
-    <footer>
-      <a href="https://github.com/artalar/reatom" target="_blank">github</a>
-    </footer>
     <script type="module" src="/main.js"></script>
   </body>
 </html>

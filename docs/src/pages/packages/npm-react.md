@@ -1,9 +1,9 @@
 ---
-# FIXME: copied from `../../../packages/npm-react/README.md
-layout: ../layouts/Layout.astro
+layout: ../../layouts/Layout.astro
 title: npm-react
-description: Docs for @reatom/npm-react package
----
+description: Reatom for npm-react
+---  
+# @reatom/npm-react
 
 Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be installed `react` and `@reatom/core@alpha` or `@reatom/framework@alpha`.
 
@@ -12,10 +12,10 @@ Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be insta
 In the app root:
 
 ```js
-import { createCtx } from '@reatom/core'
+import { createContext } from '@reatom/core'
 import { reatomContext } from '@reatom/npm-react'
 
-const ctx = createCtx()
+const ctx = createContext()
 
 export const App = () => (
   <reatomContext.Provider value={ctx}>
