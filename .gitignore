@@ -67,6 +67,7 @@ dist/
 build/
 .idea/
 .turbo
+.vercel
 
 packages/**/package-lock.json
 packages/**/yarn.lock
