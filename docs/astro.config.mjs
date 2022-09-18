@@ -17,8 +17,23 @@ if (!process.env.VERCEL) {
       'packages',
       `${packageName}.md`,
     )
-    const content = await fs.readFile(readmePath, 'utf8')
+    let content = await fs.readFile(readmePath, 'utf8')
     const packageJSON = JSON.parse(await fs.readFile(packageJSONPath, 'utf8'))
+
+    if (!content.trim()) {
+      content = await fs.readFile(
+        path.join(packagesPath, packageName, 'src', 'index.test.ts'),
+        'utf8',
+      )
+
+      content =
+        `
+There is no docs yet, but you could check tests instead:
+` +
+        '```ts\n' +
+        content +
+        '\n```\n'
+    }
 
     await fs.writeFile(
       pagePath,

@@ -1,5 +1,3 @@
-# @reatom/core-v1
-
 ## Migration guide
 
 before

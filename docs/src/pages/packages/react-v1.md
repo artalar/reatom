@@ -3,7 +3,7 @@ layout: ../../layouts/Layout.astro
 title: react-v1
 description: Reatom for react-v1
 ---  
-# @reatom/react-v1
+
 
 This is compatible package witch allow you to use `@reatom/core-v1` with react. All docs is [here](https://reatom.js.org/#/packages/react).
 

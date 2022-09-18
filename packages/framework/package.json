@@ -22,7 +22,8 @@
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "microbundle",
-    "test": "echo 'ok'"
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
     "@reatom/all-settled": ">=3.0.0",

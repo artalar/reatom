@@ -3,7 +3,7 @@ layout: ../../layouts/Layout.astro
 title: lens
 description: Reatom for lens
 ---  
-# @reatom/lens
+
 
 Cases:
 

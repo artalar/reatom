@@ -3,8 +3,6 @@ layout: ../../layouts/Layout.astro
 title: core-v1
 description: Adapter for Reatom v1
 ---  
-# @reatom/core-v1
-
 ## Migration guide
 
 before
