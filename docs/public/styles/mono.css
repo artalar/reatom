@@ -94,7 +94,10 @@ main.mono,
   scroll-snap-align: start;
   margin: auto;
   width: min(100vw, 65rem);
+  height: 100vh;
   max-height: 100vh;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   padding: 0 1rem;
 }
@@ -518,6 +521,7 @@ p.mono:before,
 
 pre.mono,
 .mono-all pre {
+  flex-shrink: 0;
   padding: 0.5rem 1rem;
   margin: 1.5rem 0;
   border: 2px dashed var(--mono-main);
