@@ -3,6 +3,8 @@ import vercel from '@astrojs/vercel/serverless'
 import fs from 'fs/promises'
 import path from 'path'
 
+console.log(process.env)
+
 const packagesPath = path.join(process.cwd(), '..', 'packages')
 const packages = await fs.readdir(path.join(process.cwd(), '..', 'packages'))
 
