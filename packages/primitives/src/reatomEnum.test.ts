@@ -2,17 +2,17 @@ import { createCtx } from '@reatom/core'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { atomizeEnum } from './atomizeEnum'
+import { reatomEnum } from './reatomEnum'
 
-test(`atomizeEnum. static enum property`, async () => {
-  const enumAtom = atomizeEnum(['a', 'b'])
+test(`reatomEnum. static enum property`, async () => {
+  const enumAtom = reatomEnum(['a', 'b'])
 
   assert.equal(enumAtom.enum, { a: 'a', b: 'b' })
   ;`👍` //?
 })
 
-test(`atomizeEnum. camelCase`, async () => {
-  const sortFilterAtom = atomizeEnum([
+test(`reatomEnum. camelCase`, async () => {
+  const sortFilterAtom = reatomEnum([
     'fullName',
     'created',
     'updated',
@@ -26,9 +26,9 @@ test(`atomizeEnum. camelCase`, async () => {
   ;`👍` //?
 })
 
-test(`atomizeEnum. snake_case`, async () => {
+test(`reatomEnum. snake_case`, async () => {
   const cases = ['full_name', 'created', 'updated', 'pushed'] as const
-  const sortFilterAtom = atomizeEnum(cases, { format: 'snake_case' })
+  const sortFilterAtom = reatomEnum(cases, { format: 'snake_case' })
   const ctx = createCtx()
 
   sortFilterAtom.enum
@@ -44,8 +44,8 @@ test(`atomizeEnum. snake_case`, async () => {
   ;`👍` //?
 })
 
-test(`atomizeEnum. reset`, () => {
-  const enumAtom = atomizeEnum(['a', 'b'], { initState: 'b' })
+test(`reatomEnum. reset`, () => {
+  const enumAtom = reatomEnum(['a', 'b'], { initState: 'b' })
   const ctx = createCtx()
 
   assert.is(ctx.get(enumAtom), 'b')

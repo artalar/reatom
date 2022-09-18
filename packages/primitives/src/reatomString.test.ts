@@ -2,10 +2,10 @@ import { createCtx } from '@reatom/core'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { atomizeString } from './atomizeString'
+import { reatomString } from './reatomString'
 
-test(`atomizeString. reset`, () => {
-  const a = atomizeString(`string`)
+test(`reatomString. reset`, () => {
+  const a = reatomString(`string`)
   const ctx = createCtx()
 
   assert.is(ctx.get(a), `string`)

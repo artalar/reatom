@@ -13,7 +13,7 @@ export type MapAtom<Key, Element> = WithReducers<
   MapAtomReducers<Key, Element>
 >
 
-export const atomizeMap = <Key, Element>(
+export const reatomMap = <Key, Element>(
   initState = new Map<Key, Element>(),
   name?: string,
 ): MapAtom<Key, Element> =>

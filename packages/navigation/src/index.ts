@@ -31,7 +31,7 @@ export interface RouteAtom extends Atom<Route> {
   }>
 }
 
-export const atomizeNavigation = (
+export const reatomNavigation = (
   sync: AtomState<RouteAtom['syncAtom']>,
 ): RouteAtom => {
   const syncAtom = atom(sync, `navigation.sync`)

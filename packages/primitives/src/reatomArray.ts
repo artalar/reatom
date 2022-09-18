@@ -16,7 +16,7 @@ export type ArrayAtom<T> = WithReducers<
   }
 >
 
-export const atomizeArray = <T>(
+export const reatomArray = <T>(
   initState = new Array<T>(),
   name?: string,
 ): ArrayAtom<T> => {

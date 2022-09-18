@@ -1,6 +1,6 @@
 {
   "name": "@reatom/primitives",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "publishConfig": {
     "tag": "alpha"
   },

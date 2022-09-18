@@ -11,7 +11,7 @@ export type SetAtom<T> = WithReducers<
   }
 >
 
-export const atomizeSet = <T>(
+export const reatomSet = <T>(
   initState = new Set<T>(),
   name?: string,
 ): SetAtom<T> =>
