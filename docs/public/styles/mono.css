@@ -78,51 +78,42 @@ b.mono,
 body.mono,
 body.mono-all,
 .mono-all body {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  height: 100vh;
-  overflow: auto;
   margin: 0;
+  position: relative;
+  min-width: min(calc(100vw + 20rem), 85rem);
+  max-height: 100vh;
+  overflow: hidden;
+  overflow-x: scroll;
+  scroll-snap-type: x mandatory;
+  padding-left: 20rem;
 }
 
 main.mono,
 .mono-all main {
-  margin: 0 auto;
-  width: 80vmax;
-  max-width: min(100%, 65rem);
+  /* TODO: looks like it doesn't work */
+  scroll-snap-align: start;
+  margin: auto;
+  width: min(100vw, 65rem);
+  max-height: 100vh;
+  overflow-y: auto;
   padding: 0 1rem;
 }
 
 aside.mono,
 .mono-all aside {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  max-width: 20vw;
-  min-width: 15rem;
-  height: fit-content;
+  flex-direction: column;
+  width: 20rem;
+  min-width: 20rem;
+  max-width: 20rem;
+  max-height: 100vh;
+  overflow-y: scroll;
   padding: 1rem;
 }
-
-@media (max-width: 65rem) {
-  aside.mono,
-  .mono-all aside {
-    max-width: unset;
-  }
-  aside.mono > nav.mono > ul.mono,
-  .mono-all aside > nav > ul {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  aside.mono > nav.mono > ul.mono > li.mono,
-  .mono-all aside > nav > ul > li {
-    margin-top: 2rem;
-    margin-left: 3rem;
-  }
-}
-
+/* TODO: stick it bottom */
 footer.mono,
 .mono-all footer {
   width: 100%;
@@ -518,17 +509,11 @@ li.mono:before,
   /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--mono-main); */
 }
 
-p.mono:first-letter,
-.mono-all p:first-letter {
-  color: var(--mono-back);
-  background-color: var(--mono-main);
-  margin-left: 0.5rem;
-}
-p.mono:first-letter,
-.mono-all p:first-letter {
-  color: var(--mono-back);
-  background-color: var(--mono-main);
-  margin-left: 0.5rem;
+p.mono:before,
+.mono-all p:before {
+  content: ' ';
+  width: 1.5rem;
+  display: inline-block;
 }
 
 pre.mono,
