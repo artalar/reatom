@@ -3,7 +3,7 @@
   "private": true,
   "description": "Expressive and deterministic state manager",
   "scripts": {
-    "postinstall": "turbo run build --filter=framework",
+    "postinstall": "npx simple-git-hooks && turbo run build --filter=framework",
     "build": "turbo run build",
     "test": "turbo run test",
     "prettify": "prettier --write **/*.{js,ts,md}",
@@ -14,6 +14,9 @@
   "workspaces": [
     "packages/*"
   ],
+  "simple-git-hooks": {
+    "commit-msg": "npx commitlint -e '$@'"
+  },
   "author": "artalar",
   "license": "MIT",
   "readme": "README.md",
@@ -29,6 +32,8 @@
   },
   "homepage": "https://github.com/artalar/reatom/tree/v2",
   "devDependencies": {
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
     "@frp-ts/core": "^1.0.0-beta.2",
     "@ngrx/store": "^14.3.0",
     "@types/node": "latest",
@@ -46,6 +51,7 @@
     "reselect": "^4.1.6",
     "rimraf": "^3.0.2",
     "s-js": "^0.4.9",
+    "simple-git-hooks": "^2.8.0",
     "solid-js": "^1.5.4",
     "tsx": "^3.9.0",
     "turbo": "^1.4.7",
