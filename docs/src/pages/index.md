@@ -22,4 +22,4 @@ description: Work in progress
 
 Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow predictable, but granular and efficient.
 
-Check out [the core package docs](http://localhost:3000/packages/core).
+Check out [the core package docs](https://reatom.vercel.app/packages/core).
