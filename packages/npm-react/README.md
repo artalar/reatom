@@ -1,5 +1,3 @@
-# @reatom/npm-react
-
 Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be installed `react` and `@reatom/core@alpha` or `@reatom/framework@alpha`.
 
 ## Usage

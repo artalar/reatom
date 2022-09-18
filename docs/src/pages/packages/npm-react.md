@@ -3,8 +3,6 @@ layout: ../../layouts/Layout.astro
 title: npm-react
 description: Reatom for npm-react
 ---  
-# @reatom/npm-react
-
 Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be installed `react` and `@reatom/core@alpha` or `@reatom/framework@alpha`.
 
 ## Usage

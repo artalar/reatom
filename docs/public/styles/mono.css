@@ -519,6 +519,7 @@ p.mono:before,
 pre.mono,
 .mono-all pre {
   padding: 0.5rem 1rem;
+  margin: 1.5rem 0;
   border: 2px dashed var(--mono-main);
   overflow-x: scroll;
   line-height: 1.5rem;

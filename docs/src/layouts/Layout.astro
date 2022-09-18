@@ -69,7 +69,6 @@ const DEFAULT_BACK = '#f1f0f7'
       }
     </script>
     <aside>
-      <!-- <a href="#navigation">nav</a> -->
       <nav id="navigation">
         <ul>
           {
@@ -100,6 +99,15 @@ const DEFAULT_BACK = '#f1f0f7'
       </nav>
     </aside>
     <main>
+      <!-- <nav style={`
+        position: sticky;
+        top: 0;
+        --mono-main: var(--mono-back);
+        --mono-back: var(--mono-switch);
+        z-index: 1;
+      `}>
+        <a href="#navigation">nav</a>
+      </nav> -->
       <h1>{title}</h1>
       <slot />
       <footer>
