@@ -101,7 +101,7 @@ test('set cookie for source cookie', () => {
   }
   const { cookieAtom, set } = createCookieAtom(cookie, realTimeCookie)
   const ctx = createContext()
-  ctx.subscribe(cookieAtom, (x) => {})
+  ctx.subscribe(cookieAtom, () => {})
   set(ctx, 'b', 'newB', { httpOnly: true })
 
   assert.equal(actual, result)

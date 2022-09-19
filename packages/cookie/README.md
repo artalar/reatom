@@ -43,10 +43,13 @@ or
 npm install @cookie-baker/node
 ```
 
-## Example 
-```ts
+## Example
 
-import { Cookie as CookieClient, createRealTimeCookie } from "@cookie-baker/browser";
+```ts
+import {
+  Cookie as CookieClient,
+  createRealTimeCookie,
+} from '@cookie-baker/browser'
 
 type CookieModel = {
   ga?: string
@@ -56,11 +59,12 @@ type CookieModel = {
 const cookie = new CookieClient<CookieModel>()
 const realTimeCookie = createRealTimeCookie(cookie)
 
-const cookieAtom = createCookieAtom(cookie, realTimeCookie)
+const { cookieAtom, set, remove } = createCookieAtom(cookie, realTimeCookie)
 
-cookieAtom.subscribe(console.log)
-cookieAtom.set.dispatch('adc', 'dasf')
-cookieAtom.remove.dispatch('ga')
+const ctx = createContext()
+ctx.subscribe(cookieAtom, console.log)
+
+set(ctx, 'adc', 'dasf')
+remove(ctx, 'ga')
 cookie.set('adc', 'set-cookie-from-imperative-modify')
 ```
-
