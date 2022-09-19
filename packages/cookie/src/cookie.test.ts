@@ -129,8 +129,7 @@ test('update cookie when emit event RealTimeCookie', () => {
   handler(newCookie)
   assert.equal(actual, result)
 })
-//TODO
-test.skip('unsubscribe from RealTimeCookie when have not subscriber', () => {
+test('unsubscribe from RealTimeCookie when have not subscriber', () => {
   const cookie: CookieController<CookieModel> = {
     get: () => ({}),
     set: () => {},

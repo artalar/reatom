@@ -13,12 +13,19 @@ export const createCookieAtom = <T extends CookieObjectModel>(
   const cookieAtom = atom({} as ReturnType<typeof cookie.get>).pipe(
     withInit(() => cookie.get()),
   )
+  let updateCookie: Parameters<typeof realTimeCookie.addListener>[0]
   onConnect(cookieAtom, (ctx) => {
     ctx.schedule(() => {
-      realTimeCookie.addListener((newCookie) => {
-        cookieAtom(ctx, newCookie)
-      })
+      updateCookie = (newCookie) => cookieAtom(ctx, newCookie)
+      realTimeCookie.addListener(updateCookie)
     })
+    return () => {
+      ctx.schedule(() => {
+        if (updateCookie) {
+          realTimeCookie.removeListener(updateCookie)
+        }
+      })
+    }
   })
 
   const remove = action<Parameters<CookieController<T>['remove']>>(
