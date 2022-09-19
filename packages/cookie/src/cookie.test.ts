@@ -117,8 +117,6 @@ test('update cookie when emit event RealTimeCookie', () => {
   }
   let handler: any = null
   const realTimeCookie: RealTimeCookie<CookieModel> = {
-    // TODO: remove ignore after update cookie
-    // @ts-ignore
     addListener: (x) => (handler = x),
     removeListener: () => {},
   }
