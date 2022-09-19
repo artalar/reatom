@@ -21,8 +21,7 @@
     "clean": "cross-env fixme=fixme rimraf build/",
     "rebuild": "npm run clean && npm run build",
     "test": "cross-env fixme=fixme jest tests/*",
-    "test:watch": "cross-env fixme=fixme jest --watch",
-    "test:debug": "node --inspect-brk jest --runInBand",
+    "test:native": "cross-env fixme=fixme tsx src/cookie.test.ts",
     "prettify": "cross-env fixme=fixme prettier --write '**/*.{js,ts,md}'",
     "prettify:watch": "cross-env fixme=fixme onchange '**/*.{js,ts,md}' -- prettier --write {{changed}}",
     "ts-check": "cross-env fixme=fixme tsc --noEmit",
@@ -30,11 +29,11 @@
     "update": "npx npm-check-updates -u"
   },
   "peerDependencies": {
-    "@reatom/core": "^2.0.0-rc1",
+    "@reatom/core": "^3.0.0",
     "@cookie-baker/core": "^0.2.1"
   },
   "devDependencies": {
-    "@reatom/core": "^2.0.0-rc1",
+    "@reatom/core": "^3.0.0",
     "@cookie-baker/core": "^0.2.1"
   },
   "author": "BataevDaniil",

@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
+import { createContext } from '@reatom/core'
 import { CookieController, RealTimeCookie } from '@cookie-baker/core'
-
 import { createCookieAtom } from './cookie'
 
 type CookieModel = {
@@ -21,9 +21,11 @@ test('get actual cookie when immediately subscribe after create', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
+  const ctx = createContext()
+
+  const { cookieAtom } = createCookieAtom(cookie, realTimeCookie)
   let result = null
-  cookieAtom.subscribe((x) => (result = x))
+  ctx.subscribe(cookieAtom, (x) => (result = x))
   assert.equal(actual, result)
 })
 test('remove cookie from atom store', () => {
@@ -38,10 +40,12 @@ test('remove cookie from atom store', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom, remove } = createCookieAtom(cookie, realTimeCookie)
+
   let result = null
-  cookieAtom.subscribe((x) => (result = x))
-  cookieAtom.remove.dispatch('b')
+  const ctx = createContext()
+  ctx.subscribe(cookieAtom, (x) => (result = x))
+  remove(ctx, 'b')
   assert.equal(actual, result)
 })
 test('remove cookie from source cookie', () => {
@@ -57,9 +61,10 @@ test('remove cookie from source cookie', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
-  cookieAtom.subscribe(() => {})
-  cookieAtom.remove.dispatch('b')
+  const { cookieAtom, remove } = createCookieAtom(cookie, realTimeCookie)
+  const ctx = createContext()
+  ctx.subscribe(cookieAtom, () => {})
+  remove(ctx, 'b')
   assert.equal(actual, result)
 })
 test('set cookie for atom store', () => {
@@ -74,10 +79,11 @@ test('set cookie for atom store', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom, set } = createCookieAtom(cookie, realTimeCookie)
   let result = null
-  cookieAtom.subscribe((x) => (result = x))
-  cookieAtom.set.dispatch('b', 'newB', { httpOnly: true })
+  const ctx = createContext()
+  ctx.subscribe(cookieAtom, (x) => (result = x))
+  set(ctx, 'b', 'newB', { httpOnly: true })
   assert.equal(actual, result)
 })
 test('set cookie for source cookie', () => {
@@ -93,9 +99,11 @@ test('set cookie for source cookie', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
-  cookieAtom.subscribe(() => {})
-  cookieAtom.set.dispatch('b', 'newB', { httpOnly: true })
+  const { cookieAtom, set } = createCookieAtom(cookie, realTimeCookie)
+  const ctx = createContext()
+  ctx.subscribe(cookieAtom, (x) => {})
+  set(ctx, 'b', 'newB', { httpOnly: true })
+
   assert.equal(actual, result)
 })
 test('update cookie when emit event RealTimeCookie', () => {
@@ -114,14 +122,14 @@ test('update cookie when emit event RealTimeCookie', () => {
     addListener: (x) => (handler = x),
     removeListener: () => {},
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom } = createCookieAtom(cookie, realTimeCookie)
   let result = null
-  cookieAtom.subscribe((x) => (result = x))
+  const ctx = createContext()
+  ctx.subscribe(cookieAtom, (x) => (result = x))
   handler(newCookie)
   assert.equal(actual, result)
 })
-
-// TODO
+//TODO
 test.skip('unsubscribe from RealTimeCookie when have not subscriber', () => {
   const cookie: CookieController<CookieModel> = {
     get: () => ({}),
@@ -134,8 +142,9 @@ test.skip('unsubscribe from RealTimeCookie when have not subscriber', () => {
     addListener: (x) => (handler = x),
     removeListener: (x) => (result = handler === x),
   }
-  const cookieAtom = createCookieAtom(cookie, realTimeCookie)
-  const removeSubscribe = cookieAtom.subscribe(() => {})
+  const { cookieAtom } = createCookieAtom(cookie, realTimeCookie)
+  const ctx = createContext()
+  const removeSubscribe = ctx.subscribe(cookieAtom, (x) => {})
   removeSubscribe()
   assert.equal(result, true)
 })

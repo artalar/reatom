@@ -1,53 +1,51 @@
-import { createAtom } from '@reatom/core'
+import { action, atom } from '@reatom/core'
 import {
   CookieController,
   CookieObjectModel,
   RealTimeCookie,
 } from '@cookie-baker/core'
+import { onConnect, withInit } from '@reatom/hooks'
 
 export const createCookieAtom = <T extends CookieObjectModel>(
   cookie: CookieController<T>,
   realTimeCookie: RealTimeCookie<T>,
 ) => {
-  type argsRemove = Parameters<CookieController<T>['remove']>
-  type argsSet = Parameters<CookieController<T>['set']>
-  return createAtom(
-    {
-      set: (name: argsSet[0], value: argsSet[1], options?: argsSet[2]) => ({
-        name,
-        value,
-        options,
-      }),
-      remove: (name: argsRemove[0]) => name,
-      _set: (cookieOnSet: Partial<T>) => cookieOnSet,
-    },
-    ({ onAction, schedule, create, onInit }, cookieState: Partial<T> = {}) => {
-      let newCookie = cookieState
-      onAction('set', ({ name, value, options }) => {
-        schedule(() => {
-          cookie.set(name, value, options)
-        })
-        newCookie = { ...newCookie, [name]: value }
+  const cookieAtom = atom({} as ReturnType<typeof cookie.get>).pipe(
+    withInit(() => cookie.get()),
+  )
+  onConnect(cookieAtom, (ctx) => {
+    ctx.schedule(() => {
+      realTimeCookie.addListener((newCookie) => {
+        cookieAtom(ctx, newCookie)
       })
-      onAction('_set', (cookieOnSet) => {
-        newCookie = cookieOnSet
-      })
-      onAction('remove', (name) => {
-        schedule(() => {
-          cookie.remove(name)
-        })
-        newCookie = { ...newCookie }
+    })
+  })
+
+  const remove = action<Parameters<CookieController<T>['remove']>>(
+    (ctx, name) => {
+      cookieAtom(ctx, (oldCookie) => {
+        const newCookie = { ...oldCookie }
         delete newCookie[name]
+        return newCookie
       })
-      onInit(() => {
-        schedule((dispatch) => {
-          dispatch(create('_set', cookie.get()))
-          realTimeCookie.addListener((newCookieFromListener: Partial<T>) => {
-            dispatch(create('_set', newCookieFromListener))
-          })
-        })
+      ctx.schedule(() => {
+        cookie.remove(name)
       })
-      return newCookie
     },
   )
+
+  const set = action<Parameters<CookieController<T>['set']>>(
+    (ctx, name, value, options) => {
+      cookieAtom(ctx, (oldCookie) => ({ ...oldCookie, [name]: value }))
+      ctx.schedule(() => {
+        cookie.set(name, value, options)
+      })
+    },
+  )
+
+  return {
+    cookieAtom,
+    set,
+    remove,
+  }
 }
