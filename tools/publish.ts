@@ -1,6 +1,14 @@
 import 'zx/globals'
 import path from 'path'
 import fs from 'fs/promises'
+import { createInterface } from 'readline'
+
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout,
+})
+
+let otpCache: string
 
 main()
 async function main() {
@@ -24,7 +32,17 @@ async function main() {
     }
 
     if (packageJSON.version !== npmVersion) {
-      await $`cd ${packagePath} && npm publish`
+      const otp = (otpCache = await new Promise((r) => {
+        let message = `Enter OTP code for "${packageName}@${packageJSON.version}"`
+        if (otpCache) message += ` (${otpCache})`
+        rl.question(`${message}: `, (otp) => r(otp || otpCache))
+      }))
+
+      if (!otp) throw new Error('OTP code missed')
+
+      await $`cd ${packagePath} && npm publish --otp=${otp}`
     }
   }
+
+  process.exit()
 }
