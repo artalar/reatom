@@ -81,32 +81,24 @@ body.mono-all,
   margin: 0;
   position: relative;
   min-width: min(calc(100vw + 20rem), 85rem);
-  max-height: 100vh;
-  overflow: hidden;
-  overflow-x: scroll;
   scroll-snap-type: x mandatory;
-  padding-left: 20rem;
+  display: flex;
 }
 
 main.mono,
 .mono-all main {
-  /* TODO: looks like it doesn't work */
   scroll-snap-align: start;
   margin: auto;
   width: min(100vw, 65rem);
-  height: 100vh;
-  max-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   padding: 0 1rem;
 }
 
 aside.mono,
 .mono-all aside {
-  position: absolute;
+  position: sticky;
   top: 0;
-  left: 0;
   display: flex;
   flex-direction: column;
   width: 20rem;
