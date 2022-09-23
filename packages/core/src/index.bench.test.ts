@@ -10,6 +10,7 @@ import S, { DataSignal } from 's-js'
 import * as frpts from '@frp-ts/core'
 // @ts-ignore
 import * as usignal from 'usignal'
+import * as preact from '@preact/signals-core'
 import {
   createAction,
   createReducer,
@@ -19,8 +20,8 @@ import {
   Store,
 } from '@ngrx/store'
 
-// import * as v3 from '.'
-import * as v3 from '@reatom/core'
+import * as v3 from '.'
+// import * as v3 from '@reatom/core'
 
 const us: {
   signal<T>(value: T): { value: T }
@@ -244,6 +245,19 @@ async function testComputed(iterations: number) {
   us.effect(() => (uRes += uH.value))
   uRes = 0
 
+  const pEntry = preact.signal(0)
+  const pA = preact.computed(() => pEntry.value)
+  const pB = preact.computed(() => pA.value + 1)
+  const pC = preact.computed(() => pA.value + 1)
+  const pD = preact.computed(() => pB.value + pC.value)
+  const pE = preact.computed(() => pD.value + 1)
+  const pF = preact.computed(() => pD.value + pE.value)
+  const pG = preact.computed(() => pD.value + pE.value)
+  const pH = preact.computed(() => pF.value + pG.value)
+  let pRes = 0
+  preact.effect(() => (pRes += pH.value))
+  pRes = 0
+
   // const nEntry = createAction('entry', props<{ payload: number }>())
   // const nA = createReducer(
   //   0,
@@ -276,6 +290,7 @@ async function testComputed(iterations: number) {
   const mobxLogs = new Array<number>()
   const mobxProxyLogs = new Array<number>()
   const usignalLogs = new Array<number>()
+  const preactLogs = new Array<number>()
 
   var i = 0
   while (i++ < iterations) {
@@ -332,6 +347,10 @@ async function testComputed(iterations: number) {
     uEntry.value = i
     usignalLogs.push(performance.now() - startUsignal)
 
+    const preactUsignal = performance.now()
+    pEntry.value = i
+    preactLogs.push(performance.now() - preactUsignal)
+
     await new Promise((resolve) => setTimeout(resolve, 0))
   }
 
@@ -351,6 +370,7 @@ async function testComputed(iterations: number) {
       xRes,
       xpRes,
       uRes,
+      pRes,
     ]).size !== 1
   ) {
     console.log(`ERROR!`)
@@ -368,6 +388,7 @@ async function testComputed(iterations: number) {
       xRes,
       xpRes,
       uRes,
+      pRes,
     })
   }
 
@@ -384,6 +405,7 @@ async function testComputed(iterations: number) {
     mobx: log(mobxLogs),
     mobxProxy: log(mobxProxyLogs),
     usignal: log(usignalLogs),
+    preact: log(preactLogs),
   })
 }
 

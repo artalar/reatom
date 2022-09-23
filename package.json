@@ -36,6 +36,7 @@
     "@commitlint/config-conventional": "^17.1.0",
     "@frp-ts/core": "^1.0.0-beta.2",
     "@ngrx/store": "^14.3.0",
+    "@preact/signals-core": "^1.2.0",
     "@types/node": "latest",
     "@types/use-sync-external-store": "^0.0.3",
     "cellx": "^1.10.29",
@@ -57,7 +58,7 @@
     "turbo": "^1.4.7",
     "typescript": "^4.8.2",
     "use-sync-external-store": "^1.2.0",
-    "usignal": "^0.4.1",
+    "usignal": "^0.7.15",
     "uvu": "^0.5.6",
     "wonka": "^6.0.0",
     "zx": "^7.0.8"
