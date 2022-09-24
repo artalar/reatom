@@ -20,8 +20,8 @@ import {
   Store,
 } from '@ngrx/store'
 
-import * as v3 from '.'
-// import * as v3 from '@reatom/core'
+// import * as v3 from '.'
+import * as v3 from '@reatom/core'
 
 const us: {
   signal<T>(value: T): { value: T }
@@ -522,9 +522,9 @@ async function test() {
     testComputed(100),
     testComputed(1_000),
     testComputed(10_000),
-    testAggregateGrowing(1000),
-    testAggregateShrinking(1000),
   ])
+
+  await Promise.all([testAggregateGrowing(1000), testAggregateShrinking(1000)])
 
   process.exit()
 }
