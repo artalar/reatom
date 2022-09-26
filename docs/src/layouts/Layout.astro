@@ -1,13 +1,7 @@
 ---
-const {
-  frontmatter: { title = '404' } = {},
-} = Astro.props
+import Sidebar from '../components/Sidebar.astro'
 
-// FIXME https://discord.com/channels/830184174198718474/845451724738265138/1019770939203915786
-// const readmes = await Astro.glob('../../../packages/*/README.md')
-// console.log('readmes', readmes)
-const pages = await Astro.glob('../pages/*.md')
-const packages = await Astro.glob('../pages/packages/*.md')
+const { frontmatter: { title = '404' } = {} } = Astro.props
 
 const DEFAULT_MAIN = '#0e1117'
 const DEFAULT_BACK = '#f1f0f7'
@@ -68,36 +62,7 @@ const DEFAULT_BACK = '#f1f0f7'
         }
       }
     </script>
-    <aside>
-      <nav id="navigation">
-        <ul>
-          {
-            pages
-              .sort((a) => (a.frontmatter.title === 'Main' ? -1 : 1))
-              .map((v) => (
-                <li>
-                  <a href={v.url || '/'}>{v.frontmatter.title}</a>
-                </li>
-              ))
-          }
-        </ul>
-      </nav>
-      <nav>
-        <details open={true /* packages.some(isCurrentPage) */}>
-          <summary>packages</summary><ul>
-            {
-              packages
-                .sort((a) => (a.frontmatter.title === 'core' ? -1 : 1))
-                .map((v) => (
-                  <li>
-                    <a href={v.url || '/'}>{v.frontmatter.title}</a>
-                  </li>
-                ))
-            }
-          </ul>
-        </details>
-      </nav>
-    </aside>
+    <Sidebar />
     <main>
       <!-- <nav style={`
         position: sticky;
@@ -106,7 +71,7 @@ const DEFAULT_BACK = '#f1f0f7'
         --mono-back: var(--mono-switch);
         z-index: 1;
       `}>
-        <a href="#navigation">nav</a>
+        <a href="#nav-general">nav</a>
       </nav> -->
       <h1>{title}</h1>
       <slot />

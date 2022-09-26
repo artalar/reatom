@@ -59,7 +59,7 @@ const fetchGoods = action((ctx) => {
 })
 ```
 
-> Do you want to see next [the docs for React adapter](https://reatom.vercel.app/packages/npm-react)?
+> Do you want to see next [the docs for React adapter](https://reatom.dev/packages/npm-react)?
 
 ```ts
 // subscribe to your atoms

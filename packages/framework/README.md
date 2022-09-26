@@ -1,10 +1,10 @@
 This is a meta package with reexports from:
 
-- [@reatom/all-settled](https://reatom.vercel.app/packages/all-settled)
-- [@reatom/async](https://reatom.vercel.app/packages/async)
-- [@reatom/core](https://reatom.vercel.app/packages/core)
-- [@reatom/hooks](https://reatom.vercel.app/packages/hooks)
-- [@reatom/lens](https://reatom.vercel.app/packages/lens)
-- [@reatom/logger](https://reatom.vercel.app/packages/logger)
-- [@reatom/primitives](https://reatom.vercel.app/packages/primitives)
-- [@reatom/utils](https://reatom.vercel.app/packages/utils)
+- [@reatom/all-settled](https://reatom.dev/packages/all-settled)
+- [@reatom/async](https://reatom.dev/packages/async)
+- [@reatom/core](https://reatom.dev/packages/core)
+- [@reatom/hooks](https://reatom.dev/packages/hooks)
+- [@reatom/lens](https://reatom.dev/packages/lens)
+- [@reatom/logger](https://reatom.dev/packages/logger)
+- [@reatom/primitives](https://reatom.dev/packages/primitives)
+- [@reatom/utils](https://reatom.dev/packages/utils)

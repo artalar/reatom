@@ -61,7 +61,6 @@ test(`readonly and plain`, () => {
   const a1 = a.pipe(readonly, plain)
   const ctx = createCtx()
   assert.is(a(ctx, 1), 1)
-  // @ts-expect-error
   assert.throws(() => a1(ctx, 1))
   assert.not.ok('increment' in a1)
   ;`👍` //?

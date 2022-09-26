@@ -235,6 +235,10 @@ details[open].mono summary.mono,
 .mono-all details[open] summary {
   margin-bottom: 0.5rem;
 }
+details[open].mono summary.mono::before,
+.mono-all details[open] summary::before {
+  transform: rotate(180deg);
+}
 
 h1.mono,
 .mono-all h1,
