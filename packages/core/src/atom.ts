@@ -283,7 +283,11 @@ export const createCtx = ({
         throwReatomError(patch.parents !== parents, 'async spy')
 
         const depPatch = actualize(patchCtx, atom.__reatom)
-        const prevDepPatch = parents.at(newParents.push(depPatch) - 1)
+
+        const prevDepPatch =
+          newParents.push(depPatch) <= parents.length
+            ? parents[newParents.length - 1]
+            : undefined
 
         // TODO tests!
         if (prevDepPatch?.meta !== depPatch.meta) {
@@ -371,8 +375,7 @@ export const createCtx = ({
 
   const commitTr = () => {
     for (let patch of trLogs) {
-      const { meta } = patch
-      const { state } = patch
+      const { meta, state } = patch
       if (meta.isAction && patch.state.length > 0) patch.state = []
 
       // @ts-expect-error
