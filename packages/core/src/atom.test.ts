@@ -134,9 +134,7 @@ test(`nested deps`, () => {
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  ctx.subscribe((logs) =>
-    logs.forEach(({ meta }) => touchedAtoms.push(meta)),
-  )
+  ctx.subscribe((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
 
   a1(ctx, 1)
 
