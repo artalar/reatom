@@ -88,3 +88,46 @@ import { onUpdate } from '@reatom/hooks'
 
 onUpdate(searchAtom, fetchGoods)
 ```
+
+### Action handling
+
+It is better to stay atoms stupid and handle all logic inside action. But sometimes you need to turn direction of your code coupling and make atom depends from an action. And you could do it!
+
+Action is an atom with a temporal state, which array of all passed payloads. This state is clearing after transaction end, if you will try to `get` or `spy` action which wasn't called you will receive an empty array. But if action was called, the array will contain some elements.
+
+```ts
+// ~/modules/someFlow
+import { newMessage } from '~/modules/ws'
+
+const FLOW_NAME = 'someFlow'
+
+export const someFlowAtom = atom(0)
+
+// you need to subscribe to it to start watching `newMessage`
+export const someFlowManagerAtom = atom((ctx) => {
+  console.log('example log for `ctx.get(newMessage)`', ctx.get(newMessage))
+
+  ctx.spy(newMessage).forEach((msg) => {
+    if (msg.relation === FLOW_NAME) someFlowAtom(ctx, msg)
+
+    console.log('example log for `ctx.spy(newMessage)[N]`', msg)
+  })
+})
+
+// socket service:
+socket.on(
+  throttle(150, (msgs) =>
+    // batch  updates
+    ctx.get(() => {
+      msgs.forEach((msg) => newMessage(ctx, msg))
+    }),
+  ),
+)
+
+// someFlowManagerAtom reducer:
+// example log for `ctx.get(newMessage)` [1, 2]
+// example log for `ctx.spy(newMessage)[N]` 1
+// example log for `ctx.spy(newMessage)[N]` 2
+```
+
+You need to know one rare tricky thing. If during transaction you will call an action and will read it dependent atom a few time step by step, `ctx.get` will return the whole array of all passed payload, but `ctx.spy` will return array with only new elements, which wasn't handled in this reducer during this transaction. And to made this rare case correct you should spying your dependencies in same way each time, without conditions. In other words, for this case your dependencies list should be static.

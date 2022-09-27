@@ -187,11 +187,11 @@ test(`transaction batch`, () => {
     pushNumber(ctx, 5)
     assert.is(track.calls.length, 4)
   })
-  assert.is(track.calls.length, 6)
+  assert.is(track.calls.length, 5)
   assert.is(track.lastInput(), 5)
   assert.equal(
     track.calls.map(({ i }) => i[0]),
-    [1, 2, 3, 4, 4, 5],
+    [1, 2, 3, 4, 5],
   )
   ;`👍` //?
 })

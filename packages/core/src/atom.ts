@@ -296,7 +296,9 @@ export const createCtx = ({
           }
         }
 
-        return depPatch.state
+        return atom.__reatom.isAction
+          ? depPatch.state.slice(prevDepPatch?.state.length || 0)
+          : depPatch.state
       }
 
       patch.state = patch.meta.computer!(patchCtx as CtxSpy, patch.state)
