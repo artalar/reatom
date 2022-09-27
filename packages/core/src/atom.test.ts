@@ -12,8 +12,8 @@ import {
   Ctx,
   CtxSpy,
   Fn,
+  AtomCache,
 } from './atom'
-import { AtomCache } from '../build'
 
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
@@ -66,18 +66,18 @@ test(`action`, () => {
 test(`linking`, () => {
   const a1 = atom(0, `a1`)
   const a2 = atom((ctx) => ctx.spy(a1), `a2`)
-  const context = createCtx()
+  const ctx = createCtx()
   const fn = mockFn()
 
-  context.subscribe((logs) => {
+  ctx.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = context.subscribe(a2, fn)
-  var a1Cache = context.get((read) => read(a1.__reatom))!
-  var a2Cache = context.get((read) => read(a2.__reatom))!
+  const un = ctx.subscribe(a2, fn)
+  var a1Cache = ctx.get((read) => read(a1.__reatom))!
+  var a2Cache = ctx.get((read) => read(a2.__reatom))!
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
@@ -86,10 +86,10 @@ test(`linking`, () => {
 
   un()
 
-  assert.is.not(a1Cache, context.get((read) => read(a1.__reatom))!)
-  assert.is.not(a2Cache, context.get((read) => read(a2.__reatom))!)
+  assert.is.not(a1Cache, ctx.get((read) => read(a1.__reatom))!)
+  assert.is.not(a2Cache, ctx.get((read) => read(a2.__reatom))!)
 
-  assert.is(context.get((read) => read(a1.__reatom))!.children.size, 0)
+  assert.is(ctx.get((read) => read(a1.__reatom))!.children.size, 0)
   ;`👍` //?
 })
 
@@ -100,21 +100,21 @@ test(`nested deps`, () => {
   const a4 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a4`)
   const a5 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a5`)
   const a6 = atom((ctx) => ctx.spy(a4) + ctx.spy(a5), `a6`)
-  const context = createCtx()
+  const ctx = createCtx()
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
-  context.subscribe((logs) => {
+  ctx.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = context.subscribe(a6, fn)
+  const un = ctx.subscribe(a6, fn)
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      context.get((read) => read(a.__reatom)?.isConnected === false),
+      ctx.get((read) => read(a.__reatom)?.isConnected === false),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -122,23 +122,23 @@ test(`nested deps`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.equal(
-    context.get((read) => read(a1.__reatom))!.children,
+    ctx.get((read) => read(a1.__reatom))!.children,
     new Set([a2.__reatom, a3.__reatom]),
   )
   assert.equal(
-    context.get((read) => read(a2.__reatom))!.children,
+    ctx.get((read) => read(a2.__reatom))!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
   assert.equal(
-    context.get((read) => read(a3.__reatom))!.children,
+    ctx.get((read) => read(a3.__reatom))!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  context.subscribe((logs) =>
+  ctx.subscribe((logs) =>
     logs.forEach(({ meta }) => touchedAtoms.push(meta)),
   )
 
-  a1(context, 1)
+  a1(ctx, 1)
 
   assert.is(fn.calls.length, 2)
   assert.is(touchedAtoms.length, new Set(touchedAtoms).size)
@@ -147,7 +147,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      context.get((read) => read(a.__reatom)?.isConnected === false),
+      ctx.get((read) => read(a.__reatom)?.isConnected === false),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
@@ -161,30 +161,30 @@ test(`transaction batch`, () => {
   const numberAtom = atom((ctx) => {
     ctx.spy(pushNumber).forEach(track)
   })
-  const context = createCtx()
-  context.subscribe(numberAtom, () => {})
+  const ctx = createCtx()
+  ctx.subscribe(numberAtom, () => {})
 
   assert.is(track.calls.length, 0)
 
-  pushNumber(context, 1)
+  pushNumber(ctx, 1)
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), 1)
 
-  context.get(() => {
-    pushNumber(context, 2)
+  ctx.get(() => {
+    pushNumber(ctx, 2)
     assert.is(track.calls.length, 1)
-    pushNumber(context, 3)
+    pushNumber(ctx, 3)
     assert.is(track.calls.length, 1)
   })
   assert.is(track.calls.length, 3)
   assert.is(track.lastInput(), 3)
 
-  context.get(() => {
-    pushNumber(context, 4)
+  ctx.get(() => {
+    pushNumber(ctx, 4)
     assert.is(track.calls.length, 3)
-    context.get(numberAtom)
+    ctx.get(numberAtom)
     assert.is(track.calls.length, 4)
-    pushNumber(context, 5)
+    pushNumber(ctx, 5)
     assert.is(track.calls.length, 4)
   })
   assert.is(track.calls.length, 6)
@@ -198,20 +198,20 @@ test(`transaction batch`, () => {
 
 test(`late effects batch`, async () => {
   const a = atom(0)
-  const context = createCtx({
+  const ctx = createCtx({
     // @ts-ignores
     callLateEffect: (cb, ...a) => setTimeout(() => cb(...a)),
   })
   const fn = mockFn()
-  context.subscribe(a, fn)
+  ctx.subscribe(a, fn)
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
 
-  a(context, (s) => s + 1)
-  a(context, (s) => s + 1)
+  a(ctx, (s) => s + 1)
+  a(ctx, (s) => s + 1)
   await Promise.resolve()
-  a(context, (s) => s + 1)
+  a(ctx, (s) => s + 1)
 
   assert.is(fn.calls.length, 1)
 
