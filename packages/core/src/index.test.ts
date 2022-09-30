@@ -545,8 +545,8 @@ test('State updates order', async () => {
 
       onAction('setB', () => {
         state = 'b'
-        schedule(() => {
-          create('_setC')
+        schedule((dispatch) => {
+          dispatch(create('_setC'))
         })
       })
 
