@@ -19,6 +19,8 @@ import {
 export type StoreOnError = Parameters<Store[`onError`]>[0]
 export type StoreOnPatch = Parameters<Store[`onPatch`]>[0]
 
+const impossibleValue: any = Symbol()
+
 function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
   const cache = getCache(atom)
 
@@ -138,21 +140,27 @@ export function createStore({
 
     invalidateAtomCache(atom)
 
-    const cache = getCache(atom)
+    const atomCache = getCache(atom)
 
     // @ts-expect-error
-    const listeners: Set<AtomListener> = (cache.listeners ??= new Set())
+    const listeners: Set<AtomListener> = (atomCache.listeners ??= new Set())
 
     if (listeners.size == 0) {
       atom.types.forEach((type) => addToSetsMap(atomsByAction, type, atom))
     }
 
-    listeners.add(cb)
+    let lastState = impossibleValue
+    const listener: typeof cb = (_state, causes) => {
+      const { state } = cache.get(atom)!
+      Object.is(lastState, state) || cb(state, causes)
+    }
 
-    callSafety(cb, cache.state!, [])
+    listeners.add(listener)
+
+    callSafety(cb, atomCache.state!, [])
 
     return () => {
-      listeners.delete(cb)
+      listeners.delete(listener)
       if (listeners.size == 0) {
         atom.types.forEach((type) => delFromSetsMap(atomsByAction, type, atom))
       }
