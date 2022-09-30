@@ -538,4 +538,32 @@ test(`onPatch / onError`, () => {
   assert.is(store.getCache(a)!.state, 2)
 })
 
+test('State updates order', async () => {
+  const a = createAtom(
+    { setB: () => null, _setC: () => null },
+    ({ onAction, schedule, create }, state = 'a') => {
+
+      onAction('setB', () => {
+        state = 'b'
+        schedule(() => {
+          create('_setC')
+        })
+      })
+
+      onAction('_setC', () => {
+        state = 'c'
+      })
+
+      return state;
+    },
+  );
+  const store = createStore()
+  const listener = mockFn()
+  store.subscribe(a, listener)
+  store.dispatch(a.setB());
+  await sleep()
+  assert.is(listener.lastInput(), 'c');
+})
+
+
 test.run()
