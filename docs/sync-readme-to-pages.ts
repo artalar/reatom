@@ -1,7 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
 
-const packagesPath = path.join(process.cwd(), '..', 'packages')
+const root = path.join(process.cwd(), '..')
+const packagesPath = path.join(root, 'packages')
 const packages = await fs.readdir(path.join(process.cwd(), '..', 'packages'))
 
 for (const packageName of packages) {
@@ -45,3 +46,15 @@ description: ${packageJSON.description}
     await fs.writeFile(pagePath, content)
   }
 }
+
+const rootReadmePath = path.join(root, 'README.md')
+const rootPagePath = path.join(root, 'docs', 'src', 'pages', 'index.md')
+let readme = await fs.readFile(rootReadmePath, 'utf8')
+readme =
+  `---
+layout: ../layouts/Layout.astro
+title: Reatom
+description: Reatom - tiny and powerful reactive system with immutable nature
+---
+` + readme
+await fs.writeFile(rootPagePath, readme)
