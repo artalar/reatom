@@ -518,24 +518,29 @@ export const createCtx = ({
       const { __reatom: meta } = atom as Atom
 
       let lastState = impossibleValue
-      const fn = (state: any) =>
+      const listener = (state: any) =>
         Object.is(lastState, state) || cb((lastState = state))
 
       let cache = read(meta)
 
       if (cache === undefined || !isConnected(cache)) {
         this.get(() => {
-          trRollbacks.push(() => meta.patch!.listeners.delete(fn))
-          actualize(this, meta).listeners.add(fn)
+          trRollbacks.push(() => meta.patch!.listeners.delete(listener))
+          actualize(this, meta).listeners.add(listener)
         })
       } else {
-        cache.listeners.add(fn)
+        cache.listeners.add(listener)
       }
 
-      if (lastState === impossibleValue) fn((meta.patch ?? read(meta)!).state)
+      if (lastState === impossibleValue) {
+        listener((meta.patch ?? read(meta)!).state)
+      }
 
       return () => {
-        if ((cache = read(meta)!).listeners.delete(fn) && !isConnected(cache)) {
+        if (
+          (cache = read(meta)!).listeners.delete(listener) &&
+          !isConnected(cache)
+        ) {
           addPatch(cache!, cache)
           if (!inTr) {
             commitTr()
