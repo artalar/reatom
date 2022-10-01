@@ -4,21 +4,23 @@ title: A General Theory of Reactivity
 description: A main definition of reactivity pattern with pros and cons
 ---
 
-Reactivity is a simple pattern which you could use in many complex cases, but you always should figure out the basis to understand each case. Don't try to understand a reactivity by [how](https://github.com/kriskowal/gtor) you can use it, just always repeat [what](#definition) it is and try it yourself:
+Reactivity is a simple pattern which you could use in many complex cases, but you always should figure out the basis to understand each case. Don't try to understand a reactivity by [how](https://github.com/kriskowal/gtor) you can use it, just focus on [what](#definition) it is and try it yourself.
 
 ## Definition
 
-**Reactive programming is a pattern of delegating responsibility for initializing data processing to a data source, which doesn't know dependent units and can't interact with them outside one-way notification.**
+**Reactive programming is a pattern of delegating responsibility for initializing data processing to a data source**, which doesn't know dependent units and can't interact with them outside one-way notification.
 
 The main reason for that is to move components coupling from static definition in a code to dynamic runtime linking.
 
-Is is simpler to apply a caches for reactive interfaces, so, eventually, it helps you to built a fully-automatic cache invalidation system, which is huge!
+It is simpler to apply a caches for reactive interfaces, so, eventually, it helps you to built a fully-automatic cache invalidation system, which is huge!
 
 It is a good for data flow description and a bad for data transaction description ([pitfalls](#pitfalls)).
 
 FRP, OORP, Flux, two-way binding, single-store, granular updates are just buzzwords on top of that, other high order patterns.
-Rx, Solid, React, Even Emmiter are all about reactive programming.
+Rx, Solid, React, any Even Emmiter are all about reactive programming.
 Proxies / lenses / pull or push are just an API, not a sense.
+
+> Did [React](https://reactjs.org) reactive? Yeah! It is simple to test. Do you have a control on callbacks (render functions) execution? No, it React defines. You could ask to plan an update, but it will run when React decides.
 
 ## Pitfalls
 
