@@ -5,6 +5,12 @@ description: State manager for both simple and complex applications
 ---  
 Small, performant, powerful and extensible core package for building reactive applications of any size.
 
+## Installation
+
+```sh
+npm i @reatom/core@alpha
+```
+
 ## Usage
 
 ```ts
