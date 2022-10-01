@@ -7,7 +7,7 @@ Reatom is a state manager with quite unique set of features, it provides the mos
 
 The core package is already feature-rich and you could use it anywhere, from huge apps to even small libs, as the overhead only 2kb. Also, you could reuse our carefully written helper tools to solve complex task in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
-Main features of the core:
+Main features of the [core package](https://www.reatom.dev/packages/core):
 
 - **simple abstraction** and friendly DX: minimum boilerplate and tiny API
 - **performance**: performant updates for partial state changes
