@@ -87,7 +87,7 @@ export const Greeting = ({ initialGreeting = '' }) => {
 }
 ```
 
-What, why? In the example bellow we creating "inline" atoms, which will leave only during the component lifetime. Here are the benefits of this pattern instead of using regular hooks:
+What, why? In the example bellow we creating "inline" atoms, which will live only during the component lifetime. Here are the benefits of this pattern instead of using regular hooks:
 
 - You could depend your atoms by a props (deps changing will cause atom recreation and it state dropping).
 - Easy access to services, in case you use reatom as a IoC.
