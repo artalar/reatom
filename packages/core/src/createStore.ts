@@ -152,7 +152,7 @@ export function createStore({
     let lastState = impossibleValue
     const listener: typeof cb = (_state, causes) => {
       const { state } = cache.get(atom)!
-      Object.is(lastState, state) || cb(state, causes)
+      Object.is(lastState, state) || cb(lastState = _state, causes)
     }
 
     listeners.add(listener)
