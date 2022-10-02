@@ -5,7 +5,7 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 ---
 Reatom is a state manager with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
 
-The core package is already feature-rich and you could use it anywhere, from huge apps to even small libs, as the overhead only 2kb. Also, you could reuse our carefully written helper tools to solve complex task in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+The core package is already feature-rich and you may use it anywhere, from huge apps to even small libs, as the overhead only 2kb. Also, you could reuse our carefully written helper tools to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 Main features of the [core package](https://www.reatom.dev/packages/core):
 
@@ -29,7 +29,9 @@ Reatom is a mix of all best from MobX and Redux. It processes immutable data by 
 
 Check out [the core package docs](https://reatom.dev/packages/core).
 
-Try our helper packages, [here is `@reatom/async` example](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts).
+Or go deeper with [framework](https://reatom.dev/packages/framework) package, which combine a lot of features to manage network cache, describe data flow declaratively and log all of it together.
+[Here is](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts) `@reatom/async` example for fast introduction.
+
 
 ## FAQ
 
@@ -46,3 +48,9 @@ To be honest, right now bus factor is one - @artalar, but it wasn't always like 
 ### Guides, tutorials, screencasts, production examples
 
 In progress :)
+
+Check the [examples](https://www.reatom.dev/examples) page.
+
+### Performance
+
+[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms works in separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, in the middle numbers Reatom faster than MobX which is already should be pretty impressive.
