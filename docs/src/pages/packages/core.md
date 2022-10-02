@@ -137,3 +137,135 @@ socket.on(
 ```
 
 You need to know one rare tricky thing. If during transaction you will call an action and will read it dependent atom a few time step by step, `ctx.get` will return the whole array of all passed payload, but `ctx.spy` will return array with only new elements, which wasn't handled in this reducer during this transaction. And to made this rare case correct you should spying your dependencies in same way each time, without conditions. In other words, for this case your dependencies list should be static.
+
+## API
+
+### `atom` API
+
+```ts
+import { atom } from '@reatom/core'
+```
+
+`atom` function is a fabric for an atom - base reactive primitive. Atom don't store it data (state, listeners, dependencies) in itself, it only key to a cache in [ctx](https://reatom.dev/packages/core#ctx-api) (context). You may imagine atom as a prototype for a cache. One of the most powerful Reatom feature is that a cache is immutable, it recreates on each relative update. Cache immutability helps to process [transactions](https://reatom.dev/packages/core#transaction) and it super handy for debugging. Don't worry, it is pretty [efficient](https://reatom.dev#performance).
+
+As atom is a key, it should be mapped somewhere to it cache. `ctx` has internal weak map `caches`, which store your data until you have a link to atom. When you subscribe (connect) and unsubscribe (disconnect) from atom the state isn't reseted or deleted, it still stored in cache, which will cleared by GC only after link to the atom disappears from you closures. So, if you define global atom available in a few your modules the state will always persists in memory during application lifetime, neither you subscribed or unsubscribed for the atom, which is useful. If you need to clear state on disconnect or doing other lifetime transformations check the [hooks package](https://reatom.dev/packages/hooks).
+
+If you need to create base mutable atom just pass the initial value to `atom`. Pass the atom name by a second argument (it is optional, but strongly recommended). Resulted atom will be mutable (`mut`) with a callable signature (a function), you could mutate it by passing context and new value or reducer function.
+
+```ts
+// create
+const countAtom = atom(0, 'count')
+// countAtom: AtomMut<number>
+
+// mutate by setter
+countAtom(ctx, 10) // 10
+// mutate by reducer
+countAtom(ctx, (state) => state + 1) // 11
+```
+
+You could create a computed derived atoms by passing a function to `atom`. First argument of passed reducer is special kind of `ctx` with `spy` function, which allow you to subscribe to passed atom and receive it fresh state. Second argument is a previous `state` and it optional, you could initiate it by defining a default value.
+
+> TypeScript users note. It is impossible to describe reducer type with optional generic state argument, which is returned from the function. If you use the second `state` argument you should define it type, do not rely on return type.
+
+```ts
+const isCountEvenAtom = atom(
+  (ctx) => ctx.spy(countAtom) % 2 === 0,
+  'isCountEven',
+)
+// isCountEvenAtom: Atom<number>
+```
+
+Reatom allows you to use native language features to describe your conditions, all reactive dependencies recalculating in a real time.
+
+```ts
+export const currencyAtom = atom<'us' | 'eu'>('us')
+export const rateAtom = atom(1)
+export const usCurrencyAtom = atom(0)
+export const euCurrencyAtom = atom(0)
+export const currencyValueAtom = atom((ctx) => {
+  const currency = ctx.spy(currencyAtom)
+  // use `if` or `switch` if you want
+  const valueAtom = { us: usCurrencyAtom, eu: euCurrencyAtom }[currency]
+  return ctx.spy(valueAtom)
+})
+```
+
+Moreover, you could dynamically create and manage atoms.
+
+```ts
+const currencyAtom = atom('us')
+const currenciesAtom = atom({ us: atom(0) })
+export const currencyValueAtom = atom((ctx) => {
+  const currency = ctx.spy(currencyAtom)
+  let valueAtom = ctx.spy(currenciesAtom)[currency]
+
+  if (!valueAtom) {
+    valueAtom = atom(0)
+    currenciesAtom(ctx, (state) => ({
+      ...state,
+      [currency]: valueAtom,
+    }))
+  }
+
+  return ctx.spy(valueAtom)
+})
+
+// update could look like
+ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
+```
+
+### `atom.pipe` API
+
+Operator map the atom to another thing: `<T extends Atom>(options?: any) => (anAtom: T) => something`
+
+### `action` API
+
+Actions is atom with temporal state, which leaves only during transaction. Action state is array of payloads, it need to handle a few actions call during transaction batch. Action callback could mutate atoms or call other actions, but their dependencies will be notified only after the callback end - it is what batch mean.
+
+Possible usage:
+
+```ts
+const increment = action()
+// increment: Action<[], void>
+const increment = action('increment')
+// increment: Action<[], void>
+
+const add = action<number>()
+// increment: Action<[number], number>
+const add = action<number>('add')
+// increment: Action<[number], number>
+const add = action<number>((ctx, value: number) => value)
+// increment: Action<[number], number>
+const add = action<number>((ctx, value: number) => value, 'add')
+// increment: Action<[number], number>
+```
+
+### `ctx` API
+
+#### `ctx.get` atom API
+
+Get fresh atom state
+
+`get<T>(anAtom: Atom<T>): T`
+
+#### `ctx.get` batch API
+
+Start transaction and batch all updates, same as in action call
+
+`get<T>(cb: () => T): T`
+
+#### `ctx.subscribe` atom API
+
+Subscribe to atom new state
+
+`subscribe<T>(anAtom: Atom<T>, cb: (newState: T) => void): () => void`
+
+#### `ctx.subscribe` log API
+
+Subscribe to transaction end
+
+`subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
+
+### Transaction API
+
+To archive [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](https://reatom.dev/packages/core#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map.
