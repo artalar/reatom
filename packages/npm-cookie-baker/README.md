@@ -10,13 +10,13 @@
 ## Install
 
 ```
-npm i @reatom/cookie @cookie-baker/core
+npm i @reatom/npm-cookie-baker @cookie-baker/core
 ```
 
 or
 
 ```sh
-yarn add @reatom/cookie @cookie-baker/core
+yarn add @reatom/npm-cookie-baker @cookie-baker/core
 ```
 
 ### browser
@@ -50,7 +50,7 @@ import {
     Cookie as CookieClient,
     createRealTimeCookie,
 } from '@cookie-baker/browser'
-import {reatomCookie} from "@reatom/cookie/src";
+import {reatomCookie} from "@reatom/npm-cookie-baker";
 
 type CookieModel = {
     ga?: string

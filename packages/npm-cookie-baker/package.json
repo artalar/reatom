@@ -1,5 +1,5 @@
 {
-  "name": "@reatom/cookie",
+  "name": "@reatom/npm-cookie-baker",
   "version": "0.0.1",
   "description": "Manipulate cookie on different platform",
   "homepage": "https://github.com/artalar/reatom/tree/master/packages/cookie",
