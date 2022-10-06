@@ -32,7 +32,6 @@ Check out [the core package docs](https://reatom.dev/packages/core).
 Or go deeper with [framework](https://reatom.dev/packages/framework) package, which combine a lot of features to manage network cache, describe data flow declaratively and log all of it together.
 [Here is](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts) `@reatom/async` example for fast introduction.
 
-
 ## FAQ
 
 ### Support
@@ -53,4 +52,6 @@ Check the [examples](https://www.reatom.dev/examples) page.
 
 ### Performance
 
-[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms works in separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, in the middle numbers Reatom faster than MobX which is already should be pretty impressive.
+[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms works in separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
+
+Also, check out [atomization guild](https://www.reatom.dev/codestyle#atomization).
