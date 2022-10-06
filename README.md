@@ -27,8 +27,13 @@ Check out [the core package docs](https://reatom.dev/packages/core).
 Or go deeper with [framework](https://reatom.dev/packages/framework) package, which combine a lot of features to manage network cache, describe data flow declaratively and log all of it together.
 [Here is](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts) `@reatom/async` example for fast introduction.
 
-
 ## FAQ
+
+### Guides, tutorials, screencasts, production examples
+
+In progress :)
+
+We have a few small examples on [examples page](https://www.reatom.dev/examples) and general guidelines on [codestyle page](https://www.reatom.dev/codestyle).
 
 ### Support
 
@@ -39,12 +44,6 @@ https://www.patreon.com/artalar_dev
 Reatom always developed for long time usage. Our first stable LTS version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guid](https://www.reatom.dev/packages/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](https://www.reatom.dev/packages/core-v1). We hope it shows and prove our responsibility.
 
 To be honest, right now bus factor is one - @artalar, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LST version (v3) we bring to new feature of this lib and application development experience.
-
-### Guides, tutorials, screencasts, production examples
-
-In progress :)
-
-Check the [examples](https://www.reatom.dev/examples) page.
 
 ### Performance
 
