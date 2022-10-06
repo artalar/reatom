@@ -100,7 +100,7 @@ export const updateProp = (state, idx, prop) => {
 }
 // reatom way: O(1)
 export const updateProp = action((ctx, idx, prop) =>
-  ctx.get(listAtom)[idx].prop(ctx, (state) => ({ ...state, prop })),
+  ctx.get(listAtom)[idx].prop(ctx, prop),
 )
 ```
 
