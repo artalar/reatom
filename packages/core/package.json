@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "private": false,
-  "version": "3.0.1",
+  "version": "3.0.4",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -20,18 +20,11 @@
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run rebuild && npm run test:native",
+    "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "clean": "rimraf build/",
-    "rebuild": "npm run clean && npm run build",
-    "test": "nx test:native @reatom/core",
-    "test:native": "cross-env fixme=fixme tsx src/atom.test.ts",
-    "bench": "cross-env fixme=fixme tsx src/index.bench.test.ts",
-    "prettify": "cross-env fixme=fixme prettier --write '**/*.{js,ts,md}'",
-    "prettify:watch": "cross-env fixme=fixme onchange '**/*.{js,ts,md}' -- prettier --write {{changed}}",
-    "ts-check": "tsc --noEmit",
-    "ts-check:watch": "npm run ts-check -- --watch",
-    "update": "npx npm-check-updates -u"
+    "test": "tsx src/atom.test.ts",
+    "test:watch": "tsx watch src/atom.test.ts",
+    "bench": "tsx src/index.bench.test.ts"
   },
   "author": "artalar",
   "license": "MIT",

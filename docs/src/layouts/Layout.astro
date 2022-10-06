@@ -1,0 +1,100 @@
+---
+import Sidebar from '../components/Sidebar.astro'
+
+const { frontmatter: { title = '404' } = {} } = Astro.props
+
+const DEFAULT_MAIN = '#0e1117'
+const DEFAULT_BACK = '#f1f0f7'
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="stylesheet" href="/styles/mono.css" />
+    <title>{title}</title>
+  </head>
+  <body
+    class="mono-all"
+    style={{
+      '--mono-main': DEFAULT_MAIN,
+      '--mono-back': DEFAULT_BACK,
+    }}
+  >
+    <script>
+      // TODO: rm doubling
+      const DEFAULT_MAIN = '#0e1117'
+      const DEFAULT_BACK = '#f1f0f7'
+
+      const MEDIA_DARK = '(prefers-color-scheme: dark)'
+      const MEDIA_LIGHT = '(prefers-color-scheme: light)'
+
+      detectColorScheme()
+      function detectColorScheme() {
+        if (!globalThis.matchMedia) return
+
+        const listener: any = ({ matches, media }: MediaQueryListEvent) => {
+          if (!matches) {
+            // Not matching anymore = not interesting
+            return
+          }
+          if (media === MEDIA_DARK) {
+            changeWebsiteTheme(DEFAULT_BACK, DEFAULT_MAIN)
+          } else if (media === MEDIA_LIGHT) {
+            changeWebsiteTheme(DEFAULT_MAIN, DEFAULT_BACK)
+          }
+        }
+
+        const mqDark = globalThis.matchMedia(MEDIA_DARK)
+        if (mqDark.matches) changeWebsiteTheme(DEFAULT_BACK, DEFAULT_MAIN)
+        mqDark.addEventListener('change', listener)
+
+        const mqLight = globalThis.matchMedia(MEDIA_LIGHT)
+        if (mqLight.matches) changeWebsiteTheme(DEFAULT_MAIN, DEFAULT_BACK)
+        mqLight.addEventListener('change', listener)
+
+        function changeWebsiteTheme(main: string, back: string) {
+          document.body.style.setProperty('--mono-main', main)
+          document.body.style.setProperty('--mono-back', back)
+        }
+      }
+    </script>
+    <Sidebar />
+    <main>
+      <!-- <nav style={`
+        position: sticky;
+        top: 0;
+        --mono-main: var(--mono-back);
+        --mono-back: var(--mono-switch);
+        z-index: 1;
+      `}>
+        <a href="#nav-general">nav</a>
+      </nav> -->
+      <h1>{title}</h1>
+      <slot />
+      <footer>
+        <a href="https://github.com/artalar/reatom" target="_blank">github</a>
+      </footer>
+    </main>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
+<style
+  is:global
+  define:vars={{ monoMainPre: DEFAULT_BACK, monoBackPre: DEFAULT_MAIN }}
+>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+
+  html {
+    font-size: calc(0.3vw + 0.7em);
+  }
+
+  pre.mono,
+  .mono-all pre {
+    --mono-main: var(--monoMainPre);
+    --mono-back: var(--monoBackPre);
+  }
+</style>

@@ -181,7 +181,7 @@ export interface ContextOptions {
   callNearEffect?: typeof callSafely
 }
 
-export const createContext = ({
+export const createCtx = ({
   callLateEffect = callSafely,
   callNearEffect = callSafely,
 }: ContextOptions = {}): Ctx => {
@@ -283,7 +283,11 @@ export const createContext = ({
         throwReatomError(patch.parents !== parents, 'async spy')
 
         const depPatch = actualize(patchCtx, atom.__reatom)
-        const prevDepPatch = parents.at(newParents.push(depPatch) - 1)
+
+        const prevDepPatch =
+          newParents.push(depPatch) <= parents.length
+            ? parents[newParents.length - 1]
+            : undefined
 
         // TODO tests!
         if (prevDepPatch?.meta !== depPatch.meta) {
@@ -296,7 +300,9 @@ export const createContext = ({
           }
         }
 
-        return depPatch.state
+        return atom.__reatom.isAction
+          ? depPatch.state.slice(prevDepPatch?.state.length || 0)
+          : depPatch.state
       }
 
       patch.state = patch.meta.computer!(patchCtx as CtxSpy, patch.state)
@@ -369,8 +375,7 @@ export const createContext = ({
 
   const commitTr = () => {
     for (let patch of trLogs) {
-      const { meta } = patch
-      const { state } = patch
+      const { meta, state } = patch
       if (meta.isAction && patch.state.length > 0) patch.state = []
 
       // @ts-expect-error
@@ -513,24 +518,29 @@ export const createContext = ({
       const { __reatom: meta } = atom as Atom
 
       let lastState = impossibleValue
-      const fn = (state: any) =>
+      const listener = (state: any) =>
         Object.is(lastState, state) || cb((lastState = state))
 
       let cache = read(meta)
 
       if (cache === undefined || !isConnected(cache)) {
         this.get(() => {
-          trRollbacks.push(() => meta.patch!.listeners.delete(fn))
-          actualize(this, meta).listeners.add(fn)
+          trRollbacks.push(() => meta.patch!.listeners.delete(listener))
+          actualize(this, meta).listeners.add(listener)
         })
       } else {
-        cache.listeners.add(fn)
+        cache.listeners.add(listener)
       }
 
-      if (lastState === impossibleValue) fn((meta.patch ?? read(meta)!).state)
+      if (lastState === impossibleValue) {
+        listener((meta.patch ?? read(meta)!).state)
+      }
 
       return () => {
-        if ((cache = read(meta)!).listeners.delete(fn) && !isConnected(cache)) {
+        if (
+          (cache = read(meta)!).listeners.delete(listener) &&
+          !isConnected(cache)
+        ) {
           addPatch(cache!, cache)
           if (!inTr) {
             commitTr()
@@ -620,4 +630,12 @@ export const action: {
       ).at(-1),
     actionAtom,
   )
+}
+
+/**
+ * @deprecated since version 3.0.2
+ */
+export const createContext: typeof createCtx = (...a) => {
+  console.error('"createContext" is deprecated, use "createCtx" instead')
+  return createCtx(...a)
 }

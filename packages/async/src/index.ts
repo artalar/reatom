@@ -26,7 +26,7 @@ export interface AsyncAction<Params extends any[] = any[], Resp = any>
   fnAtom: Atom<Fn<Params, Promise<Resp>>>
 }
 
-export const atomizeAsync = <
+export const reatomAsync = <
   Params extends [Ctx, ...any[]] = [Ctx, ...any[]],
   Resp = any,
 >(

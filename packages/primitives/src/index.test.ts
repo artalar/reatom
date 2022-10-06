@@ -1,2 +1,2 @@
-import './atomizeArray.test'
-import './atomizeEnum.test'
+import './reatomArray.test'
+import './reatomEnum.test'

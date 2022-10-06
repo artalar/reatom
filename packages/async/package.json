@@ -1,6 +1,6 @@
 {
   "name": "@reatom/async",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -20,14 +20,12 @@
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run rebuild && npm run test",
+    "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "clean": "rimraf build/",
-    "rebuild": "npm run clean && npm run build",
-    "test": "nx test:native @reatom/async",
-    "test:native": "cross-env fixme=fixme tsx src/index.test.ts"
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/core": ">=3.0.0",
     "@reatom/hooks": ">=3.0.0"
   },

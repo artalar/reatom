@@ -3,14 +3,20 @@
   "private": true,
   "description": "Expressive and deterministic state manager",
   "scripts": {
-    "postinstall": "npx nx run @reatom/framework:build",
-    "prettify": "prettier --write **/*.{js,ts,md} !**/babel-plugin/test/**",
-    "prettify:watch": "onchange **/*.{js,ts,md} !**/babel-plugin/test/** -- prettier --write {{changed}}",
+    "postinstall": "npx simple-git-hooks && turbo run build --filter=framework",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "prettify": "prettier --write **/*.{js,ts,md}",
+    "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
+    "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u"
   },
   "workspaces": [
     "packages/*"
   ],
+  "simple-git-hooks": {
+    "commit-msg": "npx commitlint -e '$@'"
+  },
   "author": "artalar",
   "license": "MIT",
   "readme": "README.md",
@@ -26,20 +32,19 @@
   },
   "homepage": "https://github.com/artalar/reatom/tree/v2",
   "devDependencies": {
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
     "@frp-ts/core": "^1.0.0-beta.2",
     "@ngrx/store": "^14.3.0",
-    "@nrwl/devkit": "^14.6.4",
-    "@nrwl/workspace": "^14.6.4",
+    "@preact/signals-core": "^1.2.0",
     "@types/node": "latest",
     "@types/use-sync-external-store": "^0.0.3",
     "cellx": "^1.10.29",
-    "cross-env": "^7.0.3",
     "cross-fetch": "^3.1.5",
     "effector": "^22.3.0",
     "microbundle": "^0.15.1",
     "mobx": "^6.6.1",
     "mol_wire_lib": "^1.0.296",
-    "nx": "^14.6.4",
     "prettier": "^2.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -47,13 +52,16 @@
     "reselect": "^4.1.6",
     "rimraf": "^3.0.2",
     "s-js": "^0.4.9",
+    "simple-git-hooks": "^2.8.0",
     "solid-js": "^1.5.4",
     "tsx": "^3.9.0",
+    "turbo": "^1.4.7",
     "typescript": "^4.8.2",
     "use-sync-external-store": "^1.2.0",
-    "usignal": "^0.4.1",
+    "usignal": "^0.7.15",
     "uvu": "^0.5.6",
-    "wonka": "^6.0.0"
+    "wonka": "^6.0.0",
+    "zx": "^7.0.8"
   },
   "keywords": [
     "state",

@@ -75,6 +75,10 @@ If you found a bug or want to make an improvement in the library please check wh
 12. Link the Pull Request and issue with [keyword](https://help.github.com/en/articles/closing-issues-using-keywords) in the comment. Example: `fix #74`
 13. Wait for a decision about accepting the changes.
 
+## Codestyle rules
+
+1. use `// @ts-ignore` if you not sure why error appears or you think it could be better
+
 ## Commit rules
 
 Record the changes made by making comments in accordance with [Conventional Commits](https://conventionalcommits.org).

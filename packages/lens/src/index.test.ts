@@ -1,6 +1,6 @@
-import { action, atom, createContext } from '@reatom/core'
+import { action, atom, createCtx } from '@reatom/core'
 import { sleep } from '@reatom/utils'
-import { atomizeNumber } from '@reatom/primitives'
+import { reatomNumber } from '@reatom/primitives'
 import { mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
@@ -19,14 +19,14 @@ import {
 } from './'
 
 test(`map and mapInput`, async () => {
-  const a = atomizeNumber(0)
+  const a = reatomNumber(0)
   const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
   const aMapInput = a.pipe(mapInput((ctx, v: string) => Number(v)))
   const aMapMapInput = a.pipe(
     mapState((ctx, v) => v + 1),
     mapInput((ctx, v: string) => Number(v)),
   )
-  const ctx = createContext()
+  const ctx = createCtx()
 
   assert.is(a.__reatom, aMapInput.__reatom)
   assert.is(ctx.get(a), 0)
@@ -49,9 +49,9 @@ test(`map and mapInput`, async () => {
 })
 
 test(`readonly and plain`, () => {
-  const a = atomizeNumber(0)
+  const a = reatomNumber(0)
   const a1 = a.pipe(readonly, plain)
-  const ctx = createContext()
+  const ctx = createCtx()
   assert.is(a(ctx, 1), 1)
   // @ts-expect-error
   assert.throws(() => a1(ctx, 1))
@@ -69,7 +69,7 @@ test(`mapPayload, mapPayloadAwaited, toAtom`, async () => {
     mapPayloadAwaited((ctx, v) => v + 1),
     toAtom(0),
   )
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
   ctx.subscribe(aMaybeString, cb)
@@ -104,7 +104,7 @@ test(`mapPayloadAwaited sync resolution`, async () => {
 
     return state
   })
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
   ctx.subscribe(sumAtom, cb)
@@ -122,7 +122,7 @@ test(`mapPayloadAwaited sync resolution`, async () => {
 test(`filter`, () => {
   const a = atom(1)
   const a1 = a.pipe(filter((v) => v !== 2))
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
   ctx.subscribe(a1, cb)
@@ -141,7 +141,7 @@ test(`filter`, () => {
 
 test('toPromise', async () => {
   const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 123)))
-  const ctx = createContext()
+  const ctx = createCtx()
 
   assert.equal(await Promise.all([a.pipe(toPromise(ctx)), a(ctx)]), [123, 123])
   ;`👍` //?
@@ -158,7 +158,7 @@ test(`actionizeAllChanges`, async () => {
     act1,
     act2,
   })
-  const ctx = createContext()
+  const ctx = createCtx()
   const cb = mockFn()
 
   sum.pipe(toPromise(ctx)).then(cb)

@@ -20,15 +20,13 @@
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run rebuild && npm run test",
+    "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "clean": "rimraf build/",
-    "rebuild": "npm run clean && npm run build",
-    "test": "echo 'ok'",
-    "test:native": "echo 'ok'"
+    "test": "echo 'ok'"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@reatom/core": "alpha",
+    "@types/react": ">=16.8.0",
     "react": ">=16.8.0",
     "use-sync-external-store": "^1.2.0"
   },
@@ -47,8 +45,5 @@
     "/package.json",
     "/README.md",
     "/src"
-  ],
-  "dependencies": {
-    "@types/react": ">=16.8.0"
-  }
+  ]
 }

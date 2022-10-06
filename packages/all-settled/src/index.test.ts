@@ -1,4 +1,4 @@
-import { action, createContext, Ctx, Fn } from '@reatom/core'
+import { action, createCtx, Ctx, Fn } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
@@ -19,7 +19,7 @@ test(`await transaction`, async () => {
   const flow1_1 = effect(() => sleep(targetMs))
   const flow2_0 = effect(() => sleep(longestMs))
 
-  const ctx = createContext()
+  const ctx = createCtx()
 
   const start = Date.now()
 

@@ -8,12 +8,12 @@ import {
   atom,
   AtomMeta,
   AtomMut,
-  createContext,
+  createCtx,
   Ctx,
   CtxSpy,
   Fn,
+  AtomCache,
 } from './atom'
-import { AtomCache } from '../build'
 
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
@@ -40,7 +40,7 @@ test(`action`, () => {
     ctx.spy(act1).forEach(() => fn(1))
     ctx.spy(act2).forEach(() => fn(2))
   })
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(a2, () => {})
   assert.is(fn.calls.length, 0)
@@ -66,18 +66,18 @@ test(`action`, () => {
 test(`linking`, () => {
   const a1 = atom(0, `a1`)
   const a2 = atom((ctx) => ctx.spy(a1), `a2`)
-  const context = createContext()
+  const ctx = createCtx()
   const fn = mockFn()
 
-  context.subscribe((logs) => {
+  ctx.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = context.subscribe(a2, fn)
-  var a1Cache = context.get((read) => read(a1.__reatom))!
-  var a2Cache = context.get((read) => read(a2.__reatom))!
+  const un = ctx.subscribe(a2, fn)
+  var a1Cache = ctx.get((read) => read(a1.__reatom))!
+  var a2Cache = ctx.get((read) => read(a2.__reatom))!
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
@@ -86,10 +86,10 @@ test(`linking`, () => {
 
   un()
 
-  assert.is.not(a1Cache, context.get((read) => read(a1.__reatom))!)
-  assert.is.not(a2Cache, context.get((read) => read(a2.__reatom))!)
+  assert.is.not(a1Cache, ctx.get((read) => read(a1.__reatom))!)
+  assert.is.not(a2Cache, ctx.get((read) => read(a2.__reatom))!)
 
-  assert.is(context.get((read) => read(a1.__reatom))!.children.size, 0)
+  assert.is(ctx.get((read) => read(a1.__reatom))!.children.size, 0)
   ;`👍` //?
 })
 
@@ -100,21 +100,21 @@ test(`nested deps`, () => {
   const a4 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a4`)
   const a5 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a5`)
   const a6 = atom((ctx) => ctx.spy(a4) + ctx.spy(a5), `a6`)
-  const context = createContext()
+  const ctx = createCtx()
   const fn = mockFn()
   const touchedAtoms: Array<AtomMeta> = []
 
-  context.subscribe((logs) => {
+  ctx.subscribe((logs) => {
     logs.forEach((patch) =>
       assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
     )
   })
 
-  const un = context.subscribe(a6, fn)
+  const un = ctx.subscribe(a6, fn)
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      context.get((read) => read(a.__reatom)?.isConnected === false),
+      ctx.get((read) => read(a.__reatom)?.isConnected === false),
       false,
       `"${a.__reatom.name}" should not be stale`,
     )
@@ -122,23 +122,21 @@ test(`nested deps`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.equal(
-    context.get((read) => read(a1.__reatom))!.children,
+    ctx.get((read) => read(a1.__reatom))!.children,
     new Set([a2.__reatom, a3.__reatom]),
   )
   assert.equal(
-    context.get((read) => read(a2.__reatom))!.children,
+    ctx.get((read) => read(a2.__reatom))!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
   assert.equal(
-    context.get((read) => read(a3.__reatom))!.children,
+    ctx.get((read) => read(a3.__reatom))!.children,
     new Set([a4.__reatom, a5.__reatom]),
   )
 
-  context.subscribe((logs) =>
-    logs.forEach(({ meta }) => touchedAtoms.push(meta)),
-  )
+  ctx.subscribe((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
 
-  a1(context, 1)
+  a1(ctx, 1)
 
   assert.is(fn.calls.length, 2)
   assert.is(touchedAtoms.length, new Set(touchedAtoms).size)
@@ -147,7 +145,7 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      context.get((read) => read(a.__reatom)?.isConnected === false),
+      ctx.get((read) => read(a.__reatom)?.isConnected === false),
       true,
       `"${a.__reatom.name}" should be stale`,
     )
@@ -161,57 +159,57 @@ test(`transaction batch`, () => {
   const numberAtom = atom((ctx) => {
     ctx.spy(pushNumber).forEach(track)
   })
-  const context = createContext()
-  context.subscribe(numberAtom, () => {})
+  const ctx = createCtx()
+  ctx.subscribe(numberAtom, () => {})
 
   assert.is(track.calls.length, 0)
 
-  pushNumber(context, 1)
+  pushNumber(ctx, 1)
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), 1)
 
-  context.get(() => {
-    pushNumber(context, 2)
+  ctx.get(() => {
+    pushNumber(ctx, 2)
     assert.is(track.calls.length, 1)
-    pushNumber(context, 3)
+    pushNumber(ctx, 3)
     assert.is(track.calls.length, 1)
   })
   assert.is(track.calls.length, 3)
   assert.is(track.lastInput(), 3)
 
-  context.get(() => {
-    pushNumber(context, 4)
+  ctx.get(() => {
+    pushNumber(ctx, 4)
     assert.is(track.calls.length, 3)
-    context.get(numberAtom)
+    ctx.get(numberAtom)
     assert.is(track.calls.length, 4)
-    pushNumber(context, 5)
+    pushNumber(ctx, 5)
     assert.is(track.calls.length, 4)
   })
-  assert.is(track.calls.length, 6)
+  assert.is(track.calls.length, 5)
   assert.is(track.lastInput(), 5)
   assert.equal(
     track.calls.map(({ i }) => i[0]),
-    [1, 2, 3, 4, 4, 5],
+    [1, 2, 3, 4, 5],
   )
   ;`👍` //?
 })
 
 test(`late effects batch`, async () => {
   const a = atom(0)
-  const context = createContext({
+  const ctx = createCtx({
     // @ts-ignores
     callLateEffect: (cb, ...a) => setTimeout(() => cb(...a)),
   })
   const fn = mockFn()
-  context.subscribe(a, fn)
+  ctx.subscribe(a, fn)
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
 
-  a(context, (s) => s + 1)
-  a(context, (s) => s + 1)
+  a(ctx, (s) => s + 1)
+  a(ctx, (s) => s + 1)
   await Promise.resolve()
-  a(context, (s) => s + 1)
+  a(ctx, (s) => s + 1)
 
   assert.is(fn.calls.length, 1)
 
@@ -247,7 +245,7 @@ test(`display name`, () => {
   onConnect(displayNameAtom, () => effect(`displayNameAtom init`))
   onCleanup(displayNameAtom, () => effect(`displayNameAtom cleanup`))
 
-  const ctx = createContext()
+  const ctx = createCtx()
 
   const un = ctx.subscribe(displayNameAtom, () => {})
 
@@ -285,7 +283,7 @@ test(// this test written is more just for example purposes
   const sumAtom = atom((ctx) =>
     ctx.spy(listAtom).reduce((acc, a) => acc + ctx.spy(a), 0),
   )
-  const ctx = createContext()
+  const ctx = createCtx()
   const sumListener = mockFn((sum: number) => {})
 
   ctx.subscribe(sumAtom, sumListener)
@@ -313,7 +311,7 @@ test('no uncaught errors from schedule promise', () => {
     ctx.schedule(() => {})
     throw 'err'
   })
-  const ctx = createContext()
+  const ctx = createCtx()
 
   assert.throws(() => doTest(ctx))
   ;`👍` //?
@@ -323,7 +321,7 @@ test('async cause track', () => {
   const a1 = atom(0, 'a1')
   const act1 = action((ctx) => ctx.schedule(() => act2(ctx)), 'act1')
   const act2 = action((ctx) => a1(ctx, (s) => ++s), 'act2')
-  const ctx = createContext()
+  const ctx = createCtx()
   const logger = mockFn()
 
   ctx.subscribe(logger)
@@ -348,7 +346,7 @@ test('disconnect tail deps', () => {
   const bAtomControlled = atom((ctx, state?: any) =>
     ctx.spy(isActiveAtom) ? ctx.spy(bAtom) : state,
   )
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(bAtomControlled, () => {})
   assert.is(track.calls.length, 1)

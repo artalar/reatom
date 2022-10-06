@@ -1,0 +1,42 @@
+---
+// FIXME https://discord.com/channels/830184174198718474/845451724738265138/1019770939203915786
+// const readmes = await Astro.glob('../../../packages/*/README.md')
+// console.log('readmes', readmes)
+const pages = await Astro.glob('../pages/*.md')
+const packages = (await Astro.glob('../pages/packages/*.md')).sort((a) =>
+  a.frontmatter.title === 'core' ? -1 : 1,
+)
+
+const mainPage = pages.find((page) => page.frontmatter.title === 'Reatom')!
+
+const sections = [
+  {
+    name: 'general',
+    open: false,
+    pages: pages.filter((page) => page.frontmatter.title !== 'Reatom'),
+  },
+  { name: 'packages', open: true, pages: packages },
+]
+---
+
+<aside>
+  <nav id="nav-main">
+    <p><a href={mainPage.url || '/'}>{mainPage.frontmatter.title}</a></p>
+  </nav>
+  {
+    sections.map((section) => (
+      <nav id={`nav-${section.name}`}>
+        <details open={section.open}>
+          <summary>{section.name}</summary>
+          <ul>
+            {section.pages.map((v) => (
+              <li>
+                <a href={v.url || '/'}>{v.frontmatter.title}</a>
+              </li>
+            ))}
+          </ul>
+        </details>
+      </nav>
+    ))
+  }
+</aside>

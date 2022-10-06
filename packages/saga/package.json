@@ -1,0 +1,47 @@
+{
+  "name": "@reatom/saga",
+  "version": "3.0.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "private": false,
+  "sideEffects": false,
+  "description": "Reatom for saga",
+  "source": "src/index.ts",
+  "exports": {
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "last 4 chrome versions"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "microbundle",
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
+  },
+  "dependencies": {
+    "@reatom/core": ">=3.0.0"
+  },
+  "author": "artalar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://github.com/artalar/reatom/packages/saga",
+  "files": [
+    "/build",
+    "/package.json",
+    "/README.md",
+    "/src"
+  ]
+}

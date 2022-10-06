@@ -1,16 +1,20 @@
-# @reatom/npm-react
+## Installation
 
-Installation is just `npm i @reatom/npm-react@alpha`. Also, you need to be installed `react` and `@reatom/core@alpha` or `@reatom/framework@alpha`.
+```sh
+npm i @reatom/npm-react@alpha
+```
+
+Also, you need to be installed `@reatom/core@alpha` or `@reatom/framework@alpha` and `react` with `use-sync-external-store`.
 
 ## Usage
 
 In the app root:
 
 ```js
-import { createContext } from '@reatom/core'
+import { createCtx } from '@reatom/core'
 import { reatomContext } from '@reatom/npm-react'
 
-const ctx = createContext()
+const ctx = createCtx()
 
 export const App = () => (
   <reatomContext.Provider value={ctx}>
@@ -78,7 +82,7 @@ export const Greeting = ({ initialGreeting = '' }) => {
 }
 ```
 
-What, why? In the example bellow we creating "inline" atoms, which will leave only during the component lifetime. Here are the benefits of this pattern instead of using regular hooks:
+What, why? In the example bellow we creating "inline" atoms, which will live only during the component lifetime. Here are the benefits of this pattern instead of using regular hooks:
 
 - You could depend your atoms by a props (deps changing will cause atom recreation and it state dropping).
 - Easy access to services, in case you use reatom as a IoC.

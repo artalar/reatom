@@ -1,4 +1,4 @@
-import { atom, createContext, CtxSpy } from '@reatom/core'
+import { atom, createCtx, CtxSpy } from '@reatom/core'
 import { mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
@@ -7,7 +7,7 @@ import { withInit, controlConnection, isConnected } from './'
 
 test('withInit', () => {
   const a = atom(0).pipe(withInit(() => 123))
-  const ctx = createContext()
+  const ctx = createCtx()
   assert.is(ctx.get(a), 123)
   ;`👍` //?
 })
@@ -17,7 +17,7 @@ test('controlledConnection', () => {
   const track = mockFn((ctx: CtxSpy) => ctx.spy(aAtom))
   const bAtom = atom(track)
   const bAtomControlled = bAtom.pipe(controlConnection())
-  const ctx = createContext()
+  const ctx = createCtx()
 
   ctx.subscribe(bAtomControlled, () => {})
   assert.is(track.calls.length, 1)
