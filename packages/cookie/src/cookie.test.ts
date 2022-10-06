@@ -2,7 +2,7 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createContext } from '@reatom/core'
 import { CookieController, RealTimeCookie } from '@cookie-baker/core'
-import { createCookieAtom } from './cookie'
+import { reatomCookie } from './cookie'
 
 type CookieModel = {
   a?: string
@@ -23,7 +23,7 @@ test('get actual cookie when immediately subscribe after create', () => {
   }
   const ctx = createContext()
 
-  const { cookieAtom } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom } = reatomCookie(cookie, realTimeCookie)
   let result = null
   ctx.subscribe(cookieAtom, (x) => (result = x))
   assert.equal(actual, result)
@@ -40,7 +40,7 @@ test('remove cookie from atom store', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const { cookieAtom, remove } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom, remove } = reatomCookie(cookie, realTimeCookie)
 
   let result = null
   const ctx = createContext()
@@ -61,7 +61,7 @@ test('remove cookie from source cookie', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const { cookieAtom, remove } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom, remove } = reatomCookie(cookie, realTimeCookie)
   const ctx = createContext()
   ctx.subscribe(cookieAtom, () => {})
   remove(ctx, 'b')
@@ -79,7 +79,7 @@ test('set cookie for atom store', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const { cookieAtom, set } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom, set } = reatomCookie(cookie, realTimeCookie)
   let result = null
   const ctx = createContext()
   ctx.subscribe(cookieAtom, (x) => (result = x))
@@ -99,7 +99,7 @@ test('set cookie for source cookie', () => {
     addListener: () => {},
     removeListener: () => {},
   }
-  const { cookieAtom, set } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom, set } = reatomCookie(cookie, realTimeCookie)
   const ctx = createContext()
   ctx.subscribe(cookieAtom, () => {})
   set(ctx, 'b', 'newB', { httpOnly: true })
@@ -120,7 +120,7 @@ test('update cookie when emit event RealTimeCookie', () => {
     addListener: (x) => (handler = x),
     removeListener: () => {},
   }
-  const { cookieAtom } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom } = reatomCookie(cookie, realTimeCookie)
   let result = null
   const ctx = createContext()
   ctx.subscribe(cookieAtom, (x) => (result = x))
@@ -139,7 +139,7 @@ test('unsubscribe from RealTimeCookie when have not subscriber', () => {
     addListener: (x) => (handler = x),
     removeListener: (x) => (result = handler === x),
   }
-  const { cookieAtom } = createCookieAtom(cookie, realTimeCookie)
+  const { cookieAtom } = reatomCookie(cookie, realTimeCookie)
   const ctx = createContext()
   const removeSubscribe = ctx.subscribe(cookieAtom, (x) => {})
   removeSubscribe()

@@ -47,19 +47,20 @@ npm install @cookie-baker/node
 
 ```ts
 import {
-  Cookie as CookieClient,
-  createRealTimeCookie,
+    Cookie as CookieClient,
+    createRealTimeCookie,
 } from '@cookie-baker/browser'
+import {reatomCookie} from "@reatom/cookie/src";
 
 type CookieModel = {
-  ga?: string
-  adc?: string
+    ga?: string
+    adc?: string
 }
 
 const cookie = new CookieClient<CookieModel>()
 const realTimeCookie = createRealTimeCookie(cookie)
 
-const { cookieAtom, set, remove } = createCookieAtom(cookie, realTimeCookie)
+const {cookieAtom, set, remove} = reatomCookie(cookie, realTimeCookie)
 
 const ctx = createContext()
 ctx.subscribe(cookieAtom, console.log)

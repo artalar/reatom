@@ -6,7 +6,7 @@ import {
 } from '@cookie-baker/core'
 import { onConnect, withInit } from '@reatom/hooks'
 
-export const createCookieAtom = <T extends CookieObjectModel>(
+export const reatomCookie = <T extends CookieObjectModel>(
   cookie: CookieController<T>,
   realTimeCookie: RealTimeCookie<T>,
 ) => {
@@ -15,16 +15,12 @@ export const createCookieAtom = <T extends CookieObjectModel>(
   )
   let updateCookie: Parameters<typeof realTimeCookie.addListener>[0]
   onConnect(cookieAtom, (ctx) => {
-    ctx.schedule(() => {
-      updateCookie = (newCookie) => cookieAtom(ctx, newCookie)
-      realTimeCookie.addListener(updateCookie)
-    })
+    updateCookie = (newCookie) => cookieAtom(ctx, newCookie)
+    realTimeCookie.addListener(updateCookie)
     return () => {
-      ctx.schedule(() => {
-        if (updateCookie) {
-          realTimeCookie.removeListener(updateCookie)
-        }
-      })
+      if (updateCookie) {
+        realTimeCookie.removeListener(updateCookie)
+      }
     }
   })
 
