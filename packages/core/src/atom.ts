@@ -65,6 +65,7 @@ export interface Ctx {
     >,
   ): T
   spy?: <T>(atom: Atom<T>) => T
+
   schedule<T = void>(
     cb: Fn<[Ctx], T>,
     step?: -1 | 0 | 1 | 2,
@@ -72,6 +73,7 @@ export interface Ctx {
 
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
+
   cause: null | AtomCache
   /** unique immutable key to understand same context from different computations */
   meta: Rec
@@ -109,7 +111,6 @@ export interface AtomMeta<State = any> {
 // (the most interesting properties are at the top)
 export interface AtomCache<State = any> {
   state: State
-  isConnected: boolean
   readonly meta: AtomMeta
   // nullable state mean cache is dirty (has updated parents, which could produce new state)
   cause: null | AtomCache
@@ -154,7 +155,7 @@ export interface Unsubscribe {
 }
 
 export const isAtom = (thing: any): thing is Atom => {
-  return !!thing?.__reatom
+  return thing?.__reatom !== undefined
 }
 
 export const isAction = (thing: any): thing is Action => {
@@ -224,7 +225,6 @@ export const createCtx = ({
     trLogs.push(
       (cache.meta.patch = {
         state: cache.state,
-        isConnected: cache.isConnected,
         meta: cache.meta,
         cause,
         parents: cache.parents,
@@ -235,36 +235,44 @@ export const createCtx = ({
     return cache.meta.patch
   }
 
-  // TODO rename
-  const testParent = (patch: AtomCache, parentPatch: AtomCache) => {
-    if (!isConnected(parentPatch) && parentPatch.meta.patch === null) {
-      addPatch(parentPatch, patch)
-    }
-  }
-
-  const enqueueComputers = (cache: AtomCache) => {
-    for (let i = 0, queue = [cache.children]; i < queue.length; ) {
-      for (const childMeta of queue[i++]!) {
+  const enqueueComputers = (queue: Array<Set<AtomMeta>>) => {
+    for (const children of queue)
+      for (const childMeta of children) {
         const childCache = childMeta.patch ?? read(childMeta)!
 
-        if (
-          childCache.cause !== null &&
-          addPatch(childCache).listeners.size === 0 &&
-          childCache.children.size > 0
-        ) {
+        childCache.cause === null ||
+          addPatch(childCache).listeners.size > 0 ||
           queue.push(childCache.children)
-        }
+      }
+  }
+
+  const disconnect = (meta: AtomMeta, parentPatch: AtomCache): void => {
+    if (parentPatch.children.delete(meta)) {
+      trRollbacks.push(() => parentPatch.children.add(meta))
+
+      if (!isConnected(parentPatch) && parentPatch.meta.onCleanup !== null) {
+        nearEffects.push(...parentPatch.meta.onCleanup)
+      }
+
+      for (const parentParent of parentPatch.parents) {
+        disconnect(parentPatch.meta, parentParent)
       }
     }
   }
 
-  const disconnect = (ownPatch: AtomCache, prevDepPatch: AtomCache) => {
-    prevDepPatch.children.delete(ownPatch.meta)
-    trRollbacks.push(() => prevDepPatch.children.add(ownPatch.meta))
+  const connect = (meta: AtomMeta, parentPatch: AtomCache) => {
+    if (!parentPatch.children.has(meta)) {
+      if (!isConnected(parentPatch) && parentPatch.meta.onConnect !== null) {
+        nearEffects.push(...parentPatch.meta.onConnect)
+      }
 
-    const prevDepPatchDirty = prevDepPatch.meta.patch
-    if (prevDepPatchDirty !== null) prevDepPatchDirty.cause ??= ownPatch
-    else isConnected(prevDepPatch) || addPatch(prevDepPatch, ownPatch)
+      parentPatch.children.add(meta)
+      trRollbacks.push(() => parentPatch.children.delete(meta))
+
+      for (const parentParentPatch of parentPatch.parents) {
+        connect(parentPatch.meta, parentParentPatch)
+      }
+    }
   }
 
   const actualizeParents = (patchCtx: Ctx, patch: AtomCache) => {
@@ -279,36 +287,30 @@ export const createCtx = ({
     ) {
       const newParents: typeof parents = []
 
-      patchCtx.spy = (atom: Atom) => {
+      patchCtx.spy = ({ __reatom: depMeta }: Atom) => {
         throwReatomError(patch.parents !== parents, 'async spy')
 
-        const depPatch = actualize(patchCtx, atom.__reatom)
-
+        const depPatch = actualize(patchCtx, depMeta)
         const prevDepPatch =
           newParents.push(depPatch) <= parents.length
             ? parents[newParents.length - 1]
             : undefined
+        const isDepChanged = prevDepPatch?.meta !== depPatch.meta
 
-        // TODO tests!
-        if (prevDepPatch?.meta !== depPatch.meta) {
-          if (prevDepPatch !== undefined) {
-            disconnect(patch, prevDepPatch)
-          }
-          if (!depPatch.children.has(meta)) {
-            depPatch.children.add(meta)
-            trRollbacks.push(() => depPatch.children.delete(meta))
-          }
+        if (isDepChanged) {
+          if (prevDepPatch !== undefined) disconnect(meta, prevDepPatch)
+          if (patch.listeners.size > 0) connect(meta, depPatch)
         }
 
-        return atom.__reatom.isAction
-          ? depPatch.state.slice(prevDepPatch?.state.length || 0)
+        return depMeta.isAction && !isDepChanged
+          ? depPatch.state.slice(prevDepPatch.state.length)
           : depPatch.state
       }
 
       patch.state = patch.meta.computer!(patchCtx as CtxSpy, patch.state)
 
       for (let i = newParents.length; i < parents.length; i++) {
-        disconnect(patch, parents[i]!)
+        disconnect(meta, parents[i]!)
       }
 
       patch.cause = cause
@@ -341,6 +343,7 @@ export const createCtx = ({
           listeners: new Set(),
         })
 
+    // TODO skip not relevant `spy`
     if (isActual && !isMutating) return patch!
 
     patch = !hasPatch || isActual ? addPatch(cache) : patch!
@@ -361,7 +364,7 @@ export const createCtx = ({
       if (isComputed) actualizeParents(patchCtx, patch)
 
       if (!Object.is(state, patch.state)) {
-        if (patch.children.size > 0) enqueueComputers(patch)
+        if (patch.children.size > 0) enqueueComputers([patch.children])
 
         meta.onUpdate?.forEach((hook) => hook(ctx, patch!))
       }
@@ -373,48 +376,6 @@ export const createCtx = ({
     return patch
   }
 
-  const commitTr = () => {
-    for (let patch of trLogs) {
-      const { meta, state } = patch
-      if (meta.isAction && patch.state.length > 0) patch.state = []
-
-      // @ts-expect-error
-      if ((patch = meta.patch) !== null) {
-        meta.patch = null
-        if (patch.isConnected !== (patch.isConnected = isConnected(patch))) {
-          let hooks = meta.onCleanup
-          let testParents = (parentPatch: AtomCache) => {
-            parentPatch.children.delete(meta)
-            testParent(patch, parentPatch)
-          }
-
-          if (patch.isConnected) {
-            hooks = meta.onConnect
-            testParents = (parentPatch: AtomCache) => {
-              testParent(patch, parentPatch)
-              parentPatch.children.add(meta)
-            }
-          }
-
-          if (hooks !== null) nearEffects.push(...hooks)
-          patch.parents.forEach(testParents)
-        }
-
-        if (patch.cause !== null) {
-          caches.set(meta, patch!)
-          let cb = (cb: Fn) => lateEffects.push(() => cb(read(meta)!.state))
-
-          if (meta.isAction) {
-            if (state.length === 0) continue
-            cb = (cb) => nearEffects.push(() => cb(state))
-          }
-
-          patch.listeners.forEach(cb)
-        }
-      }
-    }
-  }
-
   const ctx: Ctx = {
     get(atomOrCb) {
       if (isAtom(atomOrCb)) {
@@ -423,7 +384,7 @@ export const createCtx = ({
         const cache = read(meta)
 
         return cache !== undefined &&
-          (meta.computer === null || cache.isConnected)
+          (meta.computer === null || isConnected(cache))
           ? cache.state
           : this.get(() => actualize(this, meta).state)
       }
@@ -455,7 +416,27 @@ export const createCtx = ({
 
         for (const log of logsListeners) log(trLogs)
 
-        commitTr()
+        for (let patch of trLogs) {
+          const { meta, state } = patch
+          if (meta.isAction) patch.state = []
+
+          // @ts-expect-error
+          if ((patch = meta.patch) !== null) {
+            meta.patch = null
+
+            if (patch.cause !== null) {
+              caches.set(meta, patch!)
+              let cb = (cb: Fn) => lateEffects.push(() => cb(read(meta)!.state))
+
+              if (meta.isAction) {
+                if (state.length === 0) continue
+                cb = (cb) => nearEffects.push(() => cb(state))
+              }
+
+              patch.listeners.forEach(cb)
+            }
+          }
+        }
       } catch (e: any) {
         trError = e = e instanceof Error ? e : new Error(String(e))
         for (const log of logsListeners) log(trLogs, e)
@@ -525,8 +506,11 @@ export const createCtx = ({
 
       if (cache === undefined || !isConnected(cache)) {
         this.get(() => {
+          if (meta.onConnect !== null) nearEffects.push(...meta.onConnect)
           trRollbacks.push(() => meta.patch!.listeners.delete(listener))
-          actualize(this, meta).listeners.add(listener)
+          cache = actualize(this, meta, (patchCtx, patch) => {
+            patch.listeners.add(listener)
+          })
         })
       } else {
         cache.listeners.add(listener)
@@ -537,16 +521,13 @@ export const createCtx = ({
       }
 
       return () => {
-        if (
-          (cache = read(meta)!).listeners.delete(listener) &&
-          !isConnected(cache)
-        ) {
-          addPatch(cache!, cache)
-          if (!inTr) {
-            commitTr()
-            trLogs = []
-            walkLateEffects()
+        if (cache!.listeners.delete(listener) && !isConnected(cache!)) {
+          if (meta.onCleanup !== null) nearEffects.push(...meta.onCleanup)
+          for (const parentCache of cache!.parents) {
+            disconnect(meta, parentCache)
           }
+
+          inTr || walkLateEffects()
         }
       }
     },
@@ -566,17 +547,18 @@ export const atom: {
   name?: string,
 ): Atom => {
   // FIXME: this took way to more than expected in profiling
-  let theAtom: any = (ctx: Ctx, update: any) =>
-    ctx.get(
-      (read, actualize) =>
-        actualize!(ctx, theAtom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
-          patch.cause = ctx.cause
-          patch.state =
-            typeof update === 'function'
-              ? update(patch.state, patchCtx)
-              : update
-        }).state,
+  let theAtom: any = (ctx: Ctx, update: any) => {
+    ctx.get((read, actualize) =>
+      actualize!(ctx, theAtom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
+        patch.cause = ctx.cause
+        patch.state =
+          typeof update === 'function'
+            ? (update = update(patch.state, patchCtx))
+            : update
+      }),
     )
+    return update
+  }
   let computer = null
 
   if (typeof initState === 'function') {
@@ -622,14 +604,13 @@ export const action: {
   const actionAtom = atom([], name)
   actionAtom.__reatom.isAction = true
 
-  return Object.assign(
-    (ctx: Ctx, ...params: any[]) =>
-      actionAtom(ctx, (state, patchCtx) =>
-        // @ts-ignore
-        state.concat([fn(patchCtx, ...params)]),
-      ).at(-1),
-    actionAtom,
-  )
+  return Object.assign((ctx: Ctx, ...a: any) => {
+    actionAtom(ctx, (state, patchCtx) =>
+      // @ts-ignore
+      state.concat([(a = fn(patchCtx, ...a))]),
+    )
+    return a
+  }, actionAtom)
 }
 
 /**

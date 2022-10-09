@@ -30,6 +30,14 @@ import {
   }
 }
 
+export const isConnected = (ctx: Ctx, anAtom: Atom) => {
+  const cache = ctx.get((read) => read(anAtom.__reatom))
+
+  if (!cache) return false
+
+  return cache.children.size + cache.listeners.size > 0
+}
+
 test(`action`, () => {
   const act1 = action()
   const act2 = action()
@@ -86,8 +94,8 @@ test(`linking`, () => {
 
   un()
 
-  assert.is.not(a1Cache, ctx.get((read) => read(a1.__reatom))!)
-  assert.is.not(a2Cache, ctx.get((read) => read(a2.__reatom))!)
+  assert.is(a1Cache, ctx.get((read) => read(a1.__reatom))!)
+  assert.is(a2Cache, ctx.get((read) => read(a2.__reatom))!)
 
   assert.is(ctx.get((read) => read(a1.__reatom))!.children.size, 0)
   ;`👍` //?
@@ -114,8 +122,8 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      ctx.get((read) => read(a.__reatom)?.isConnected === false),
-      false,
+      isConnected(ctx, a),
+      true,
       `"${a.__reatom.name}" should not be stale`,
     )
   }
@@ -145,8 +153,8 @@ test(`nested deps`, () => {
 
   for (const a of [a1, a2, a3, a4, a5, a6]) {
     assert.is(
-      ctx.get((read) => read(a.__reatom)?.isConnected === false),
-      true,
+      isConnected(ctx, a),
+      false,
       `"${a.__reatom.name}" should be stale`,
     )
   }
@@ -350,19 +358,41 @@ test('disconnect tail deps', () => {
 
   ctx.subscribe(bAtomControlled, () => {})
   assert.is(track.calls.length, 1)
-  assert.is(
-    ctx.get((read) => read(bAtom.__reatom)!.isConnected),
-    true,
-  )
+  assert.is(isConnected(ctx, bAtom), true)
 
   isActiveAtom(ctx, false)
   aAtom(ctx, (s) => (s += 1))
   assert.is(track.calls.length, 1)
-  assert.is(
-    ctx.get((read) => read(bAtom.__reatom)!.isConnected),
-    false,
-  )
+  assert.is(isConnected(ctx, bAtom), false)
   ;`👍` //?
 })
+
+// test(`maximum call stack`, () => {
+//   const atoms = new Map<AtomMeta, Atom>()
+//   let i = 0
+//   const reducer = (ctx: CtxSpy): any => {
+//     let dep = atoms.get(ctx.cause!.meta)
+//     if (!dep)
+//       atoms.set(ctx.cause!.meta, (dep = ++i > 10_000 ? atom(0) : atom(reducer)))
+//     return ctx.spy(dep)
+//   }
+//   const testAtom = atom(reducer)
+//   const ctx = createCtx()
+
+//   assert.throws(
+//     () => {
+//       try {
+//         ctx.get(testAtom)
+//       } catch (error) {
+//         i //?
+//         error.message //?
+//         throw error
+//       }
+//     },
+//     /Maximum call stack/,
+//     '',
+//   )
+//   ;`👍` //?
+// })
 
 test.run()
