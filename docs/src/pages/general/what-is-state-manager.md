@@ -28,7 +28,7 @@ FRP, OORP, Flux, two-way binding, single-store, granular updates are just buzzwo
 Rx, Solid, React, any Even Emmiter are all about reactive programming.
 Proxies / lenses / pull or push are just an API, not a sense.
 
-> Did [React](https://reactjs.org) reactive? Yeah! It is simple to test. Do you have a control of callbacks (render functions) execution? No, it React defines. You could ask to plan an update, but it will run when React decides.
+> Is [React](https://reactjs.org) reactive? Yeah! It is simple to test. Do you have a control of callbacks (render functions) execution? No, React defines it. You could ask to plan an update, but it will run when React will decide to.
 
 ### RP pitfalls
 
@@ -67,13 +67,13 @@ A data manager is a means of managing (storing and processing) certain informati
 
 **A cache is an instance of data bounded to some medium and has a lifetime**.
 
-The last condition is very important - computational resources are limited, so we cannot always recalculate derived data for every query - we need to save intermediate results. At the same time we cannot save absolutely all intermediate results, so managing the cache is always a difficult task balancing its quantity, lifetime and the resources it saves. Usually, the cache is managed by data managers with focus on the domain area which is close to IO because a request delay. For example: React-query, RTK Query, SWR, urql, Apollo Client. Network data is a cache often, but a cache is a general term and no coupled with network. Reselect is a simple cache manager too.
+The last condition is very important - computational resources are limited, so we cannot always recalculate derived data for every query - we need to save intermediate results. At the same time we cannot save absolutely all intermediate results, so managing the cache is always a difficult task balancing its quantity, lifetime and the resources it saves. Usually, the cache is managed by data managers with focus on the domain area which is close to IO because of a request delay. For example: React-query, RTK Query, SWR, urql, Apollo Client. Network data is a cache often, but a cache is a general term and it's not coupled with network. Reselect is a simple cache manager too.
 
 ### State
 
 **A state is a semantically consistent cache**, at a certain point in time.
 
-You can talk about the state as data related by some meaning, although often we are talking about some specific cache. For example, traffic light data contains information about three light bulbs, their colors and which one is on. Semantics follows from the subject area and is the meaning of the data: only one light bulb can be turned on at a time, and the order of their switching is strictly regulated, this information is described not by the data structure, but by the code, therefore less explicit, although no less important.
+You can talk about the state as data related by some meaning, although often we are talking about some specific cache. For example, traffic light data contains information about three light bulbs, their colors and which one is on. Semantics follows from the subject area and represents the meaning of the data: only one light bulb can be turned on at a time, and the order of their switching is strictly regulated, this information is described not by the data structure, but by the code, therefore less explicit, although no less important.
 
 The traffic light example deduced an important distinguishing feature of state as a phenomenon, is the need for data consistency: we cannot turn on one light without turning off the other, otherwise we would get erroneous data with their unpredictable impact on the user. The property of a state to be always consistent, i.e. to contain non-contradictory data, is called [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) in database theory.
 
@@ -83,8 +83,8 @@ The traffic light example deduced an important distinguishing feature of state a
 
 Changing data or moving from one state to another cannot be absolutely instantaneous and requires performing a number of steps in which an error may occur, which will lead us to a dilemma - what to do with changes from already completed steps? This is a complex and debatable question that may have different answers in different systems, but the basic best practice developed in database design is the [ACID](https://en.wikipedia.org/wiki/ACID) concept, which promotes the guarantee of the atomicity of the system, which was mentioned above and means avoiding an inconsistent state (its partial update). More precisely, inconsistent data [can live](https://clojure.org/reference/transients) only in a short-term transaction, which, upon completion, must either save all the accumulated data completely and guaranteed, or, if an error occurs in the process, do not apply new changes at all.
 
-Someone will say that discarding all changes is not consistent with modular systems, where a drop in one module should not affect other modules. This is true from the point of view of the overall operation of the application, but not from the point of view of the transaction of any particular process, and they (transactions) are just like that. I.e. each transaction is a container of some kind of logical operation, perhaps a business process, which, if it affects different modules of the system, does it, obviously, for reasons of the links between these modules that need to be taken into account or, whatever they fall into the transaction, described in some other way, outside of the main reactive the context of the status manager.
+Someone will say that discarding all changes is not consistent with modular systems, where a drop in one module should not affect other modules. This is true from the point of view of the overall operation of the application, but not from the point of view of the transaction of any particular process, and they (transactions) are just like that. I.e. each transaction is a container of some kind of logical operation, perhaps a business process, which, if it affects different modules of the system, does it, obviously, for reasons of the links between these modules that need to be taken into account or, whatever they fall into the transaction, described in some other way, outside of the main reactive context of the status manager.
 
 ## State management
 
-So, what is state manager? It is a library for storing and processing data with reactive interface, it could expose special APIs for certain domain, have some cache invalidation strategies and it should helps to prevent [glitches](https://en.wikipedia.org/wiki/Reactive_programming#Glitches) and grant data consistency.
+So, what is state manager? It is a library for storing and processing data with reactive interface. It could expose special APIs for certain domain, have some cache invalidation strategies and should help to prevent [glitches](https://en.wikipedia.org/wiki/Reactive_programming#Glitches) and grant data consistency.
