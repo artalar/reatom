@@ -43,16 +43,19 @@ a.mono:after,
   background-color: var(--mono-main);
   clip-path: polygon(25% 25%, 75% 50%, 25% 75%);
 }
-a.mono:after,
-.mono-all a:after {
-  content: '00';
-  color: transparent;
-  background-color: var(--mono-main);
-  clip-path: polygon(25% 25%, 75% 50%, 25% 75%);
-}
 a.mono:focus:after,
 .mono-all a:focus:after {
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  clip-path: polygon(
+    0 0,
+    25% 25%,
+    25% 75%,
+    75% 50%,
+    25% 25%,
+    0 0,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
   background-color: unset;
   background-image: repeating-linear-gradient(
     -45deg,
