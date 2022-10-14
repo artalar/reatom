@@ -31,6 +31,8 @@ There is no docs yet, but you could check tests instead:
       '```ts\n' +
       content +
       '\n```\n'
+  } else {
+    content = content.replaceAll('https://www.reatom.dev', '')
   }
 
   content =
@@ -57,5 +59,6 @@ title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
 
-` + readme
+` + readme.replaceAll('https://www.reatom.dev', '')
+
 await fs.writeFile(rootPagePath, readme)

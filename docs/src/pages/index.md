@@ -6,9 +6,9 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 
 Reatom is a state manager with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
 
-The core package is already feature-rich and you may use it anywhere, from huge apps to even small libs, as the overhead only 2kb. Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+The core package is already feature-rich and you may use it anywhere, from huge apps to even small libs, as the overhead only 2kb. Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
-Main features of the [core package](https://www.reatom.dev/packages/core):
+Main features of the [core package](/packages/core):
 
 - **simple abstraction** and friendly DX: minimum boilerplate and tiny API
 - **performant**: efficient updates for partial state changes
@@ -28,7 +28,7 @@ Main features of the [core package](https://www.reatom.dev/packages/core):
 
 Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient.
 
-To get maximum of Reatom and the ecosystem just got to [tutorial](https://www.reatom.dev/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core).
+To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core).
 
 ## FAQ
 
@@ -54,7 +54,7 @@ Reatom solves all this problems and bring much more features by the almost same 
 
 ### What LTS policy is used and what about bus factor?
 
-Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guid](https://www.reatom.dev/packages/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](https://www.reatom.dev/packages/core-v1). We hope it shows and prove our responsibility.
+Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guid](/packages/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](/packages/core-v1). We hope it shows and prove our responsibility.
 
 To be honest, right now bus factor is one - [@artalar](https://github.com/artalar/), but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LST version (v3) we bring to new feature of this lib and application development experience for a long time.
 
@@ -62,7 +62,7 @@ To be honest, right now bus factor is one - [@artalar](https://github.com/artala
 
 [Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms works in separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
 
-Also, check out [atomization guild](https://www.reatom.dev/guides/atomization).
+Also, check out [atomization guild](/guides/atomization).
 
 ### How to support the project?
 

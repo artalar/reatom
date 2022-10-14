@@ -13,6 +13,8 @@ npm i @reatom/core@alpha
 
 ## Usage
 
+> See the APIs description [below](#api)
+
 ```ts
 import { createCtx, action, atom } from '@reatom/core'
 
@@ -240,7 +242,7 @@ const add = action<number>((ctx, value: number) => value, 'add')
 // increment: Action<[number], number>
 ```
 
-Action state is `Array<{ params: Array<any>, payload: any }>`, but an action call return the payload:
+Action state is `Array<{ params: Array<any>, payload: any }>`, but action call returns the payload:
 
 ```ts
 const submit = action((ctx, name, password) => ({ name, password }))

@@ -8,6 +8,8 @@ npm i @reatom/core@alpha
 
 ## Usage
 
+> See the APIs description [below](#api)
+
 ```ts
 import { createCtx, action, atom } from '@reatom/core'
 
