@@ -2,14 +2,25 @@
   const handler = (event: KeyboardEvent) => {
     if (event.code !== 'F12') return
 
-    document.body.classList.add('glitch')
+    // show glitch only once. Do not use cookie / LS as it too obvious
+    indexedDB.open('db').onupgradeneeded = () => {
+      document.body.classList.add('glitch')
 
-    setTimeout(() => {
-      document.removeEventListener('keydown', handler)
-      document.body.classList.remove('glitch')
-      eval("console.log('Have a nice debug!')")
+      setTimeout(() => {
+        document.removeEventListener('keydown', handler)
+        document.body.classList.remove('glitch')
+        // hide log source
+        setTimeout(
+          eval,
+          0,
+          // hinder search by sources
+          "console.log('H_a_v_e_ _a_ _n_i_c_e_ _d_e_b_u_g_!')".replaceAll(
+            '_',
+            '',
+          ),
+        )
 
-      /*
+        /*
         What are you looking for?
         The missed answer?
         You was dedug before
@@ -20,7 +31,8 @@
         To make things done
         You need go deeper.
       */
-    }, 700)
+      }, 700)
+    }
   }
   document.addEventListener('keydown', handler)
 </script>
