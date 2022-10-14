@@ -106,8 +106,8 @@ test(`mapPayloadAwaited sync resolution`, async () => {
   const act2 = act.pipe(mapPayloadAwaited((ctx, v) => v + 2))
   const sumAtom = atom((ctx, state: Array<any> = []) => {
     state = [...state]
-    ctx.spy(act1).forEach((v) => state.push(v))
-    ctx.spy(act2).forEach((v) => state.push(v))
+    ctx.spy(act1).forEach(({ payload }) => state.push(payload))
+    ctx.spy(act2).forEach(({ payload }) => state.push(payload))
 
     return state
   })

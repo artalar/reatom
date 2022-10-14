@@ -53,8 +53,9 @@ let readme = await fs.readFile(rootReadmePath, 'utf8')
 readme =
   `---
 layout: ../layouts/Layout.astro
-title: Reatom
+title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
+
 ` + readme
 await fs.writeFile(rootPagePath, readme)

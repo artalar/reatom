@@ -13,3 +13,5 @@ This is a meta package with reexports from:
 - [@reatom/logger](https://reatom.dev/packages/logger)
 - [@reatom/primitives](https://reatom.dev/packages/primitives)
 - [@reatom/utils](https://reatom.dev/packages/utils)
+
+Docs around this package and it combination usage you could find in the [tutorial](https://www.reatom.dev/tutorial).

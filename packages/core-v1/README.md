@@ -41,11 +41,11 @@ import { action, atom } from '@reatom/core'
 
 const add = action()
 const n1Atom = atom((ctx, state = 0) => {
-  ctx.spy(add).forEach((value) => (state += value))
+  ctx.spy(add).forEach(({ payload }) => (state += payload))
   return state
 })
 const n2Atom = atom((ctx, state = 0) => {
-  ctx.spy(add).forEach((value) => (state += value))
+  ctx.spy(add).forEach(({ payload }) => (state += payload))
   return state
 })
 const sumAtom = atom((ctx) => ctx.spy(n1Atom) + ctx.spy(n2Atom))

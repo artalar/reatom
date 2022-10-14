@@ -113,10 +113,10 @@ export const someFlowAtom = atom(0)
 export const someFlowManagerAtom = atom((ctx) => {
   console.log('example log for `ctx.get(newMessage)`', ctx.get(newMessage))
 
-  ctx.spy(newMessage).forEach((msg) => {
-    if (msg.relation === FLOW_NAME) someFlowAtom(ctx, msg)
+  ctx.spy(newMessage).forEach(({ payload }) => {
+    if (payload.relation === FLOW_NAME) someFlowAtom(ctx, payload)
 
-    console.log('example log for `ctx.spy(newMessage)[N]`', msg)
+    console.log('example log for `ctx.spy(newMessage)[N]`', payload)
   })
 })
 
@@ -220,7 +220,7 @@ Operator map the atom to another thing: `<T extends Atom>(options?: any) => (anA
 
 ### `action` API
 
-Actions is atom with temporal state, which leaves only during transaction. Action state is array of payloads, it need to handle a few actions call during transaction batch. Action callback could mutate atoms or call other actions, but their dependencies will be notified only after the callback end - it is what batch mean.
+Actions is atom with temporal state, which lives only during transaction. Action state is array of params and payload. Array needed to handle a few actions call during transaction batch. Action callback could mutate atoms or call other actions, but their dependencies will be notified only after the callback end - it is what batch mean.
 
 Possible usage:
 
@@ -238,6 +238,23 @@ const add = action<number>((ctx, value: number) => value)
 // increment: Action<[number], number>
 const add = action<number>((ctx, value: number) => value, 'add')
 // increment: Action<[number], number>
+```
+
+Action state is `Array<{ params: Array<any>, payload: any }>`, but an action call return the payload:
+
+```ts
+const submit = action((ctx, name, password) => ({ name, password }))
+
+ctx.get(() => {
+  submit(ctx, 'Joe', 'Bom')
+  // { name: 'Joe', password: 'Bom' }
+
+  submit(ctx, 'Koe', 'Rog')
+  // { name: 'Koe', password: 'Rog' }
+
+  ctx.get(submit)
+  // [{ name: 'Joe', password: 'Bom' }, { name: 'Koe', password: 'Rog' }]
+})
 ```
 
 ### `ctx` API
