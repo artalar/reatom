@@ -1,0 +1,152 @@
+<script>
+  const handler = (event: KeyboardEvent) => {
+    if (event.code !== 'F12') return
+
+    document.body.classList.add('glitch')
+
+    setTimeout(() => {
+      document.removeEventListener('keydown', handler)
+      document.body.classList.remove('glitch')
+      // remove this script source relation
+      eval("console.log('Have a nice debug!')")
+    }, 700)
+  }
+  document.addEventListener('keydown', handler)
+</script>
+<style is:global>
+  body.glitch:before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    background: url(/favicon.svg);
+    background-size: 50vmin;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.3;
+    pointer-events: none;
+    animation-duration: 0.7s;
+    animation-fill-mode: forwards;
+    animation-iteration-count: 1;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    body.glitch:before {
+      opacity: 0;
+      animation-name: glitch;
+    }
+  }
+
+  @keyframes glitch {
+    0% {
+      transform: translate(3rem, -10rem) scale(0.5);
+      filter: hue-rotate(45deg);
+    }
+    10% {
+      transform: translate(3rem, 1rem) scale(1);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    11% {
+      transform: translate(-3rem, -1rem) skew(295deg, 5deg);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+    20% {
+      transform: translate(1rem, 5rem) skew(295deg, 5deg);
+      filter: invert(1);
+      opacity: 0.7;
+    }
+
+    21% {
+      transform: translate(-3rem, 1rem);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    30% {
+      transform: translate(10rem, -5rem);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    31% {
+      transform: translate(2rem, -1rem);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+    40% {
+      transform: translate(2rem, 5rem);
+      filter: invert(1);
+      opacity: 0.7;
+    }
+
+    41% {
+      transform: translate(-15rem, -5rem);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    50% {
+      transform: translate(3rem, 1rem);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    51% {
+      transform: translate(-3rem, -1rem) skew(45deg, 5deg);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+    60% {
+      transform: translate(10rem, -15rem) skew(45deg, 5deg);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+
+    61% {
+      transform: translate(15rem, -1rem) skew(45deg, 5deg);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    70% {
+      transform: translate(15rem, 5rem) skew(45deg, 5deg);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    71% {
+      transform: translate(-20rem, -5rem) skew(291deg, 35deg);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+    80% {
+      transform: translate(-3rem, -1rem) skew(291deg, 35deg);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+
+    81% {
+      transform: translate(3rem, 1rem) scale(1.5);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    90% {
+      transform: translate(-10rem, 1rem) scale(2);
+      filter: hue-rotate(45deg);
+      opacity: 0.7;
+    }
+    91% {
+      transform: translate(-3rem, 10rem) scale(2);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+    99% {
+      transform: translate(-1rem, -1rem) scale(3);
+      filter: hue-rotate(275deg);
+      opacity: 0.7;
+    }
+
+    100% {
+      opacity: 0;
+    }
+  }
+</style>

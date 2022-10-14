@@ -2,6 +2,7 @@
 import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
+import Glitch from '../components/Glitch.astro'
 
 const { frontmatter: { title = '404' } = {} } = Astro.props
 
@@ -99,6 +100,6 @@ const DEFAULT_BACK = '#f1f0f7'
     </style>
     <CurrentLinkHighlight />
     <HeadingCopyButton />
-
+    <Glitch/>
   </body>
 </html>
