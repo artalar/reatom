@@ -1,0 +1,34 @@
+---
+import type { MarkdownInstance } from 'astro'
+
+export type Props = {
+  section: {
+    name: string
+    open: boolean
+    pages: Array<MarkdownInstance<Record<string, any>>>
+  }
+}
+
+const { section } = Astro.props
+const { name } = section
+const id = `nav-${section.name}`
+---
+
+<nav id={id}>
+  <details open={section.open}>
+    <summary>{section.name}</summary>
+    <ul>
+      {
+        section.pages.map((v) => (
+          <li>
+            <a href={v.url || '/'}>{v.frontmatter.title}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </details>
+</nav>
+<script define:vars={{ id, name }}>
+  document.querySelector(`#${id} > details`).open =
+    location.pathname.startsWith(`/${name}`)
+</script>

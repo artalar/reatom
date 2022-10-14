@@ -79,22 +79,36 @@ const DEFAULT_BACK = '#f1f0f7'
         <a href="https://github.com/artalar/reatom" target="_blank">github</a>
       </footer>
     </main>
-    <script type="module" src="/main.js"></script>
+    <style
+      is:global
+      define:vars={{ monoMainPre: DEFAULT_BACK, monoBackPre: DEFAULT_MAIN }}
+    >
+      @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
+
+      html {
+        font-size: calc(0.3vw + 0.7em);
+      }
+
+      pre.mono,
+      .mono-all pre {
+        --mono-main: var(--monoMainPre);
+        --mono-back: var(--monoBackPre);
+      }
+    </style>
+    <script>
+      document.querySelectorAll('nav a').forEach((el) => {
+        const a = el as HTMLAnchorElement
+
+        if (new URL(a.href).pathname === location.pathname) {
+          console.log(location.pathname, a)
+          a.classList.add('current')
+        }
+      })
+    </script>
+    <style is:global>
+      a.current {
+        border-bottom: 0.5rem double var(--mono-main);
+      }
+    </style>
   </body>
 </html>
-<style
-  is:global
-  define:vars={{ monoMainPre: DEFAULT_BACK, monoBackPre: DEFAULT_MAIN }}
->
-  @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
-
-  html {
-    font-size: calc(0.3vw + 0.7em);
-  }
-
-  pre.mono,
-  .mono-all pre {
-    --mono-main: var(--monoMainPre);
-    --mono-back: var(--monoBackPre);
-  }
-</style>

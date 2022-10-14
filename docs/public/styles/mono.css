@@ -531,6 +531,7 @@ p.mono:before,
 
 pre.mono,
 .mono-all pre {
+  position: relative;
   flex-shrink: 0;
   padding: 0.5rem 1rem;
   margin: 1.5rem 0;
@@ -538,6 +539,30 @@ pre.mono,
   overflow-x: scroll;
   line-height: 1.5rem;
 }
+
+/* pre.mono:hover:before,
+.mono-all pre:hover:before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: var(--mono-main);
+  opacity: 0.7;
+  clip-path: polygon(
+    0 0,
+    0 65%,
+    65% 65%,
+    65% 0,
+    100% 0,
+    100% 100%,
+    35% 100%,
+    35% 35%,
+    100% 35%,
+    100% 0
+  );
+} */
 
 strong.mono,
 .mono-all strong {
