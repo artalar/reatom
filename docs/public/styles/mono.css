@@ -126,18 +126,29 @@ blockquote.mono,
 .mono-all blockquote {
   position: relative;
   margin: 2rem;
+  margin-left: 3rem;
 }
 blockquote.mono:before,
 .mono-all blockquote:before {
   content: '';
   position: absolute;
   top: 0;
-  left: -0.5rem;
+  left: 0;
   height: 1rem;
   width: 3rem;
-  background-color: transparent;
-  box-shadow: -0.5rem -0.8rem 0 0.1rem var(--mono-main),
-    -0.2rem -0.5rem 0 0.1rem var(--mono-main);
+  background-color: var(--mono-main);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 0.25rem) 0,
+    calc(100% - 0.25rem) 0.25rem,
+    100% 0.25rem,
+    100% calc(100% - 0.25rem),
+    1rem calc(100% - 0.25rem),
+    1rem 100%,
+    0.25rem 100%,
+    0.25rem calc(100% - 0.25rem),
+    0 calc(100% - 0.25rem)
+  );
 }
 
 button.mono,
