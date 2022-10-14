@@ -1,5 +1,7 @@
 ---
 import Sidebar from '../components/Sidebar.astro'
+import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
+import HeadingCopyButton from '../components/HeadingCopyButton.astro'
 
 const { frontmatter: { title = '404' } = {} } = Astro.props
 
@@ -95,20 +97,8 @@ const DEFAULT_BACK = '#f1f0f7'
         --mono-back: var(--monoBackPre);
       }
     </style>
-    <script>
-      document.querySelectorAll('nav a').forEach((el) => {
-        const a = el as HTMLAnchorElement
+    <CurrentLinkHighlight />
+    <HeadingCopyButton />
 
-        if (new URL(a.href).pathname === location.pathname) {
-          console.log(location.pathname, a)
-          a.classList.add('current')
-        }
-      })
-    </script>
-    <style is:global>
-      a.current {
-        border-bottom: 0.5rem double var(--mono-main);
-      }
-    </style>
   </body>
 </html>

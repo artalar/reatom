@@ -22,7 +22,7 @@ Main features of the [core package](https://www.reatom.dev/packages/core):
 
 Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient.
 
-To get maximum of Reatom and the ecosystem just got to [tutorial](https://www.reatom.dev/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core).
+To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.reatom.dev/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core).
 
 ## FAQ
 
@@ -61,16 +61,3 @@ Also, check out [atomization guild](https://www.reatom.dev/guides/atomization).
 ### How to support the project?
 
 https://www.patreon.com/artalar_dev
-
-## TODO
-
-- [ ] add `withStatusAtom`
-- [x] add params to action state
-- [x] change `onConnect` to `connectHooks`
-- [ ] rm all `FIXME`
-- [ ] cleanup issues, hacktoberfest
-  - [ ] search
-  - [ ] copy button
-  - [ ] landing layout (article selector?)
-- [ ] v2 adapter
-- [ ] testing package

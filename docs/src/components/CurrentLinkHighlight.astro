@@ -1,0 +1,15 @@
+<script>
+  document.querySelectorAll('nav a').forEach((el) => {
+    const a = el as HTMLAnchorElement
+
+    if (new URL(a.href).pathname === location.pathname) {
+      console.log(location.pathname, a)
+      a.classList.add('current')
+    }
+  })
+</script>
+<style is:global>
+  a.current {
+    border-bottom: 0.5rem double var(--mono-main);
+  }
+</style>
