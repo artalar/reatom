@@ -3,7 +3,6 @@
     const a = el as HTMLAnchorElement
 
     if (new URL(a.href).pathname === location.pathname) {
-      console.log(location.pathname, a)
       a.classList.add('current')
     }
   })
