@@ -13,7 +13,7 @@ const packages = (await Astro.glob('../pages/packages/*.md')).sort((a) =>
 const sections = [
   {
     name: 'guides',
-    open: true,
+    open: false,
     pages: guides,
   },
   {
@@ -21,21 +21,27 @@ const sections = [
     open: false,
     pages: general,
   },
-  { name: 'packages', open: true, pages: packages },
+  {
+    name: 'packages',
+    open: true,
+    pages: packages,
+  },
 ]
 ---
 
 <aside>
-  <nav id="nav-main">
-    {
-      pages
-        .sort(({ frontmatter: { title } }) => (title === 'Main' ? -1 : 1))
-        .map(({ url, frontmatter }) => (
-          <p>
-            <a href={url || '/'}>{frontmatter.title}</a>
-          </p>
-        ))
-    }
+  <nav id="nav-main" aria-label="main">
+    <ul>
+      {
+        pages
+          .sort(({ frontmatter: { title } }) => (title === 'Main' ? -1 : 1))
+          .map(({ url, frontmatter }) => (
+            <li>
+              <a href={url || '/'}>{frontmatter.title}</a>
+            </li>
+          ))
+      }
+    </ul>
   </nav>
   {sections.map((section) => <NavSection section={section} />)}
 </aside>

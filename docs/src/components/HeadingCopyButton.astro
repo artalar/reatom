@@ -7,6 +7,8 @@
 
     copyButton.innerText = '#'
 
+    copyButton.ariaLabel = copyButton.title = `copy anchore to "${h.innerText}"`
+
     copyButton.onclick = () => {
       location.hash = `#${h.id}`
       navigator.clipboard.writeText(location.href)
@@ -32,7 +34,8 @@
     position: relative;
     top: -0.5rem;
   }
-  h1 button.copy, h2 button.copy {
+  h1 button.copy,
+  h2 button.copy {
     top: -1rem;
   }
 </style>

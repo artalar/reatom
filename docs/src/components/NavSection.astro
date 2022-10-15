@@ -14,7 +14,7 @@ const { name } = section
 const id = `nav-${section.name}`
 ---
 
-<nav id={id}>
+<nav id={id} aria-label={section.name}>
   <details open={section.open}>
     <summary>{section.name}</summary>
     <ul>
@@ -29,6 +29,7 @@ const id = `nav-${section.name}`
   </details>
 </nav>
 <script define:vars={{ id, name }}>
-  document.querySelector(`#${id} > details`).open =
-    location.pathname.startsWith(`/${name}`)
+  if (location.pathname.startsWith(`/${name}`)) {
+    document.querySelector(`#${id} > details`).open = true
+  }
 </script>
