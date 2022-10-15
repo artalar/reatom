@@ -241,7 +241,7 @@ details.mono,
 .mono-all details {
   margin: 1rem 0;
   padding: 1rem;
-  padding-left: 2rem;
+  padding-left: 1.5rem;
   border: 0.2rem solid var(--mono-main);
   overflow-x: hidden;
 }
@@ -584,7 +584,7 @@ summary.mono:before,
   content: '';
   position: absolute;
   top: -0.5rem;
-  left: -1.4rem;
+  left: -1.2rem;
   width: 0.8rem;
   height: calc(100% + 1rem);
   background-color: var(--mono-main);
