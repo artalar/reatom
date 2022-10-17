@@ -97,6 +97,13 @@ const DEFAULT_BACK = '#f1f0f7'
         --mono-main: var(--monoMainPre);
         --mono-back: var(--monoBackPre);
       }
+
+      @media (prefers-color-scheme: light) {
+        pre.mono,
+        .mono-all pre {
+          filter: invert(1);
+        }
+      }
     </style>
     <CurrentLinkHighlight />
     <HeadingCopyButton />
