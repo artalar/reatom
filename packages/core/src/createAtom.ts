@@ -99,7 +99,7 @@ export function createAtom<
       if (isActionCreator(dep)) {
         externalActions[name] = type = dep.type
       } else {
-        type = `${name}_${id}`
+        type = `${id}:${name}`
 
         const actionCreator = (...a: any[]) => ({
           payload: dep(...a),
