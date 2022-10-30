@@ -12,8 +12,8 @@ export type Merge<Intersection> = Intersection extends (...a: any[]) => any
   ? Intersection
   : Intersection extends object
   ? {
-      [Key in keyof Intersection]: Intersection[Key]
-    }
+    [Key in keyof Intersection]: Intersection[Key]
+  }
   : Intersection
 
 export type Values<T> = Merge<T[keyof T]>
@@ -127,14 +127,14 @@ export type DepsPayloadMappers<
 export type DepsActionCreators<
   Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
 > = {
-  [K in keyof Deps]: Deps[K] extends ActionCreator ? Deps[K] : never
-}
+    [K in keyof Deps]: Deps[K] extends ActionCreator ? Deps[K] : never
+  }
 
 export type DepsAtoms<
   Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
 > = {
-  [K in keyof Deps]: Deps[K] extends Atom ? Deps[K] : never
-}
+    [K in keyof Deps]: Deps[K] extends Atom ? Deps[K] : never
+  }
 
 export type Track<
   Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
@@ -159,12 +159,12 @@ export type Track<
     reaction: Fn<
       [
         payload: Name extends keyof PickValues<Deps, ActionCreator>
-          ? // TODO
-            // @ts-ignore
-            ActionPayload<Deps[Name]>
-          : // TODO
-            // @ts-ignore
-            ReturnType<Deps[Name]>,
+        ? // TODO
+        // @ts-ignore
+        ActionPayload<Deps[Name]>
+        : // TODO
+        // @ts-ignore
+        ReturnType<Deps[Name]>,
       ]
     >,
   ): void
@@ -265,6 +265,10 @@ export type Store = {
 
   /** Subscribe to dispatch */
   subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe
+
+  options: {
+    typeFormatterFn?(id: string, dep: Fn): string
+  }
 }
 
 /**
@@ -305,10 +309,10 @@ export type AtomState<T extends Atom | Cache<any>> = T extends Atom<infer State>
 
 export type ActionPayload<T extends ActionCreator | Action> =
   T extends ActionCreator<any[], { payload: infer Payload }>
-    ? Payload
-    : T extends Action<infer Payload>
-    ? Payload
-    : never
+  ? Payload
+  : T extends Action<infer Payload>
+  ? Payload
+  : never
 
 export type ActionCreatorData<T extends ActionCreator> =
   T extends ActionCreator<any[], infer Data> ? Data : never

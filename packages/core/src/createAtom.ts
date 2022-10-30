@@ -28,26 +28,23 @@ import {
 export type AtomSelfBinded<
   State = any,
   Deps extends Rec<PayloadMapper | Atom> = Rec<PayloadMapper | Atom>,
-> = AtomBinded<State> &
-  {
-    [K in keyof Deps]: Deps[K] extends Atom
-      ? never
-      : Deps[K] extends ActionCreator
-      ? never
-      : K extends `_${string}`
-      ? never
-      : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
-          dispatch: (
-            ...args: Parameters<Deps[K]>
-          ) => Action<ReturnType<Deps[K]>>
-        }
-  }
+> = AtomBinded<State> & {
+  [K in keyof Deps]: Deps[K] extends Atom
+    ? never
+    : Deps[K] extends ActionCreator
+    ? never
+    : K extends `_${string}`
+    ? never
+    : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
+        dispatch: (...args: Parameters<Deps[K]>) => Action<ReturnType<Deps[K]>>
+      }
+}
 
 export type AtomOptions<State = any> =
   | Atom[`id`]
   | {
       id?: Atom[`id`]
-      decorators?: Array<AtomDecorator<State>>,
+      decorators?: Array<AtomDecorator<State>>
       store?: Store
     }
 
@@ -99,7 +96,11 @@ export function createAtom<
       if (isActionCreator(dep)) {
         externalActions[name] = type = dep.type
       } else {
-        type = `${id}:${name}`
+        if (store.options?.typeFormatterFn) {
+          type = store.options.typeFormatterFn(id, dep)
+        } else {
+          type = `${name}_${id}`
+        }
 
         const actionCreator = (...a: any[]) => ({
           payload: dep(...a),

@@ -18,6 +18,7 @@ import {
 
 export type StoreOnError = Parameters<Store[`onError`]>[0]
 export type StoreOnPatch = Parameters<Store[`onPatch`]>[0]
+export type StoreOptions = Store[`options`]
 
 const impossibleValue: any = Symbol()
 
@@ -48,6 +49,7 @@ export function createStore({
   onError,
   onPatch,
   now = Date.now.bind(Date),
+  options = {},
 }: {
   callSafety?: typeof originalCallSafety
   createTemplateCache?: typeof originalCreateTemplateCache
@@ -55,6 +57,7 @@ export function createStore({
   onPatch?: StoreOnPatch
   /** Current time getter. Tip: use `performance.now` to accurate tracking */
   now?: typeof Date.now
+  options?: StoreOptions
   // TODO:
   // createTransaction
 } = {}): Store {
@@ -152,7 +155,7 @@ export function createStore({
     let lastState = impossibleValue
     const listener: typeof cb = (_state, causes) => {
       const { state } = cache.get(atom)!
-      Object.is(lastState, state) || cb(lastState = _state, causes)
+      Object.is(lastState, state) || cb((lastState = _state), causes)
     }
 
     listeners.add(listener)
@@ -180,6 +183,7 @@ export function createStore({
       return () => (patchHandlers = patchHandlers.filter((el) => el !== cb))
     },
     subscribe,
+    options,
   }
 
   return store
