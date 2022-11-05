@@ -7,7 +7,7 @@ import Glitch from '../components/Glitch.astro'
 const { frontmatter: { title = '404' } = {} } = Astro.props
 
 const DEFAULT_MAIN = '#0e1117'
-const DEFAULT_BACK = '#f1f0f7'
+const DEFAULT_BACK = '#d4d1e6'
 ---
 
 <!DOCTYPE html>
@@ -30,7 +30,7 @@ const DEFAULT_BACK = '#f1f0f7'
     <script>
       // TODO: rm doubling
       const DEFAULT_MAIN = '#0e1117'
-      const DEFAULT_BACK = '#f1f0f7'
+      const DEFAULT_BACK = '#d4d1e6'
 
       const MEDIA_DARK = '(prefers-color-scheme: dark)'
       const MEDIA_LIGHT = '(prefers-color-scheme: light)'
@@ -101,7 +101,7 @@ const DEFAULT_BACK = '#f1f0f7'
       @media (prefers-color-scheme: light) {
         pre.mono,
         .mono-all pre {
-          filter: invert(1);
+          filter: invert(0.95) hue-rotate(240deg);
         }
       }
     </style>
