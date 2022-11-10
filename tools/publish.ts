@@ -22,13 +22,21 @@ async function main() {
 
     const packageJSON = JSON.parse(await fs.readFile(packageJSONPath, 'utf8'))
 
+    if (packageJSON.private) continue
+
+    let npmVersion = '-1'
     try {
-      var npmVersion = (
+      npmVersion = (
         await $`npm view @reatom/${packageName}@alpha version`
       ).stdout.trim()
     } catch (error) {
       console.warn(`"${packageName}" is not published yet`)
-      continue
+
+      let answer = await new Promise((r) =>
+        rl.question('continue?(y/n = y)', r),
+      )
+      answer ??= 'y'
+      if (answer !== 'y') continue
     }
 
     if (packageJSON.version !== npmVersion) {
@@ -40,7 +48,7 @@ async function main() {
 
       if (!otp) throw new Error('OTP code missed')
 
-      await $`cd ${packagePath} && npm publish --otp=${otp}`
+      await $`cd ${packagePath} && npm publish --otp=${otp} --access public`
     }
   }
 
