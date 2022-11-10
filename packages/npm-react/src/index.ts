@@ -1,8 +1,11 @@
-import { createContext, useContext, useMemo } from 'react'
-import { useSyncExternalStore } from 'use-sync-external-store/shim'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from 'react'
 import {
-  action,
-  Action,
   atom,
   Atom,
   AtomMut,
@@ -10,10 +13,10 @@ import {
   Ctx,
   CtxSpy,
   Fn,
-  isAction,
   isAtom,
   throwReatomError,
 } from '@reatom/core'
+import { bind, Binded } from '@reatom/lens'
 
 let batch = (cb: Fn) => cb()
 
@@ -23,7 +26,7 @@ export const setupBatch = (newBatch: typeof batch) => {
 
 export const reatomContext = createContext<null | Ctx>(null)
 
-export const useReatomContext = (): Ctx => {
+export const useCtx = (): Ctx => {
   const ctx = useContext(reatomContext)
 
   throwReatomError(
@@ -33,6 +36,10 @@ export const useReatomContext = (): Ctx => {
 
   return ctx!
 }
+
+const bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
+export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
+  bind(useCtx(), bindBind)
 
 // @ts-ignore
 export const useAtom: {
@@ -48,24 +55,47 @@ export const useAtom: {
     shouldSubscribe?: boolean,
   ): [T, Fn<[T | Fn<[T, Ctx], T>], T>, AtomMut<T>, Ctx]
 } = (anAtom: any, deps: Array<any> = [], shouldSubscribe = true) => {
-  const ctx = useReatomContext()
+  const ctx = useCtx()
+  deps.push(ctx)
 
-  const [theAtom, subscribe, getSnapshot, update] = useMemo(() => {
+  const setup = () => {
     const theAtom = isAtom(anAtom) ? anAtom : atom(anAtom)
+    const state = ctx.get(theAtom)
     return [
-      theAtom,
-      (cb: Fn) => ctx.subscribe(theAtom, cb),
-      () => ctx.get(theAtom),
+      state,
       typeof theAtom === 'function'
         ? // @ts-expect-error
           (...a) => batch(() => theAtom(ctx, ...a))
         : undefined,
-    ]
-  }, deps.concat([ctx]))
+      theAtom,
+      deps,
+    ] as const
+  }
 
-  const state = shouldSubscribe
-    ? useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-    : ctx.get(theAtom)
+  let [[state, update, theAtom, prevDeps], setState] = React.useState(setup)
+
+  if (
+    deps.length !== prevDeps.length ||
+    deps.some((v, i) => !Object.is(v, prevDeps[i]!))
+  ) {
+    const newState = setup()
+    setState(newState)
+    ;[state, update, theAtom, prevDeps] = newState
+  }
+
+  if (shouldSubscribe) {
+    useEffect(
+      () =>
+        ctx.subscribe(theAtom, (v) =>
+          setState((atomState) =>
+            Object.is(atomState[0], v)
+              ? atomState
+              : [v, atomState[1], atomState[2], atomState[3]],
+          ),
+        ),
+      deps,
+    )
+  }
 
   return [state, update, theAtom, ctx]
 }
@@ -76,21 +106,37 @@ export const useAtom: {
 //   shouldSubscribe?: boolean,
 // ) => useAtom(useMemo(creator, deps), deps, shouldSubscribe)
 
-export const useAction: {
-  <T extends Action>(anAction: T): T extends Fn<[Ctx, ...infer Args], infer Res>
-    ? Fn<Args, Res>
-    : never
-  <T extends Fn<[Ctx, ...Array<any>]>>(cb: T, deps?: Array<any>): T extends Fn<
-    [Ctx, ...infer Args],
-    infer Res
-  >
-    ? Fn<Args, Res>
-    : never
-  // @ts-ignore
-} = (anAction, deps) => {
-  const theAction = isAction(anAction)
-    ? anAction
-    : useMemo(() => action(anAction), deps)
+export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
+  cb: T,
+  deps: Array<any> = [],
+): T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : never => {
+  const ctx = useCtx()
+  deps.push(ctx)
 
-  return useAtom(theAction, deps, false)[1]
+  // @ts-ignore
+  return useCallback(
+    (...a: Array<any>) => batch(() => ctx.get(() => cb(ctx, ...a))),
+    deps,
+  )
 }
+
+// export const unstable_reatomComponent =
+//   <T = {}>(
+//     render: (
+//       ctx: CtxSpy,
+//       props: React.PropsWithChildren<T>,
+//     ) => React.ReactElement,
+//   ): React.FC<T> =>
+//   (props) => {
+//     const [propsAtom] = useState(() => atom(props))
+//     propsAtom(useCtx(), props)
+//     const [[element]] = useAtom((ctx, state?: any) => {
+//       const props = ctx.spy(propsAtom)
+
+//       return [
+//         props === ctx.cause!.parents[0]?.state ? state : render(ctx, props),
+//       ]
+//     })
+
+//     return element
+//   }

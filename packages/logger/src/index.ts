@@ -1,4 +1,4 @@
-import { AtomCache, AtomMeta, Ctx, Fn, Rec } from '@reatom/core'
+import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 
 export interface LogMsg {
   error: undefined | Error
@@ -7,37 +7,56 @@ export interface LogMsg {
   ctx: Ctx
 }
 
+const countify = (s: string, i: number, list: Array<any>) =>
+  `[${`${i + 1}`.padStart(list.length.toString().length, '0')}] ${s}`
+
 export const getCause = (patch: AtomCache) => {
-  let log = `self`
+  let log = ''
   let cause: typeof patch.cause = patch
 
-  while (cause !== cause.cause && cause.cause !== null) {
-    log += ' <-- ' + ((cause = cause.cause).meta.name ?? 'unnamed')
+  while (cause.cause !== null && cause.cause.proto !== __root) {
+    if (log.length > 0) log += ' <-- '
+    log += (cause = cause.cause).proto.name ?? 'unnamed'
   }
 
-  return log
+  return log || 'root'
 }
 
-export const createLogBatched = (log = console.log) => {
-  let queue: Array<LogMsg> = []
+export const createLogBatched = ({
+  debounce = 20,
+  getTimeStamp = () => new Date().toLocaleTimeString(),
+  limit = 5000,
+  log = console.log,
+}: {
+  debounce?: number
+  getTimeStamp?: () => string
+  limit?: number
+  log?: typeof console.log
+} = {}) => {
+  let queue: Array<LogMsg & { time: string }> = []
+  let lastLog = Date.now()
   const logBatched = (msg: LogMsg) => {
+    if (Object.keys(msg.changes).length === 0) return
     setTimeout(
       (length) => {
-        if (queue.length !== length) return
+        if (queue.length !== length && Date.now() - lastLog < limit) return
 
-        console.groupCollapsed(`Reatom ${length} logs`)
+        lastLog = Date.now()
+
+        // console.groupCollapsed(`Reatom ${length} logs`)
         log(
-          queue.reduce((acc, { changes }, i) => {
-            for (const k in changes) acc[`[${i + 1}] ${k}`] = changes[k]
+          queue.reduce((acc, { changes, time }, i) => {
+            acc[`--- update ${i + 1} ---`] = time
+            for (const k in changes) acc[k] = changes[k]
             return acc
           }, {} as Rec),
           queue,
         )
-        console.groupEnd()
+        // console.groupEnd()
         queue = []
       },
-      0,
-      queue.push(msg),
+      debounce,
+      queue.push(Object.assign(msg, { time: getTimeStamp() })),
     )
   }
 
@@ -48,52 +67,43 @@ export const connectLogger = (
   ctx: Ctx,
   {
     log = createLogBatched(),
-    skipEmpty = true,
-    showCause = true,
+    showCause = false,
+    skipUnnamed = true,
   }: {
     log?: Fn<[LogMsg]>
-    skipEmpty?: boolean
     showCause?: boolean
+    skipUnnamed?: boolean
   } = {},
 ) => {
-  let read: Fn<[AtomMeta], undefined | AtomCache>
+  let read: Fn<[AtomProto], undefined | AtomCache>
   ctx.get((r) => (read = r))
 
   return ctx.subscribe((logs, error) => {
-    const counter = new Map<AtomMeta, number>()
-    let empty = true
-    const changes = logs.reduce((acc, patch) => {
-      const { meta, state } = patch
-      const { name } = meta
-      const stateOld = read(meta)?.state
+    const states = new Map<AtomProto, any>()
+    const changes = logs.reduce((acc, patch, i) => {
+      const { proto, state } = patch
+      let { name } = proto
 
-      counter.set(meta, (counter.get(meta) ?? 0) + 1)
-
-      if (!name || Object.is(state, stateOld)) return acc
-
-      empty = false
-
-      const message = showCause
-        ? {
-            state,
-            stateOld,
-            get cause() {
-              return getCause(patch)
-            },
-          }
-        : state
-
-      if (name in acc) {
-        if (counter.get(meta)! > 1) acc[name] = [acc[name]]
-        acc[name].push(message)
-      } else {
-        acc[name] = message
+      if (!name) {
+        if (skipUnnamed) return acc
+        name = 'unnamed'
       }
+
+      const prevState = states.has(proto)
+        ? states.get(proto)
+        : read(proto)?.state
+      states.set(proto, state)
+
+      if (Object.is(state, prevState)) return acc
+
+      const logName = countify(name, i, logs)
+
+      acc[logName] = proto.isAction ? state.at(-1) : state
+
+      if (showCause) acc[`${logName} cause`] = getCause(patch)
 
       return acc
     }, {} as Rec)
-
-    if (skipEmpty && empty) return
 
     log({
       error,

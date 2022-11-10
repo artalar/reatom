@@ -8,120 +8,133 @@ import {
   Ctx,
   CtxSpy,
   Fn,
+  throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+
+export const getRootCause = (cause: AtomCache): AtomCache =>
+  cause.cause === null ? cause : getRootCause(cause)
+
+export const isSameCtx = (ctx1: Ctx, ctx2: Ctx) =>
+  getRootCause(ctx1.cause) === getRootCause(ctx2.cause)
+
+export const addOnConnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
+  (anAtom.__reatom.connectHooks ??= new Set()).add(cb)
+
+export const addOnDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
+  (anAtom.__reatom.disconnectHooks ??= new Set()).add(cb)
+
+export const addOnUpdate = <T>(anAtom: Atom<T>, cb: Fn<[Ctx, AtomCache<T>]>) =>
+  (anAtom.__reatom.updateHooks ??= new Set()).add(cb)
 
 export const withInit =
   <T extends Atom>(
     createState: Fn<[Ctx, T['__reatom']['initState']], AtomState<T>>,
   ): Fn<[T], T> =>
   (anAtom) => {
-    const { initState } = anAtom.__reatom
+    const { initState, isAction } = anAtom.__reatom
+
+    throwReatomError(isAction, 'action state is not manageable')
+
     anAtom.__reatom.initState = (ctx) => createState(ctx, initState)
+
     return anAtom
   }
 
-export const onConnect = (
-  anAtom: Atom,
-  cb: Fn<[Ctx], void | Unsubscribe>,
-): Unsubscribe => {
-  const connectHooks = (anAtom.__reatom.onConnect ??= new Set())
-
+export const onConnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
     const cleanup = cb(ctx)
 
     if (typeof cleanup === 'function') {
-      const cleanupHook = (_ctx: Ctx) => {
-        if (ctx === _ctx) {
-          cleanupHooks.delete(cleanupHook)
-          if (connectHooks.has(connectHook)) cleanup()
-        }
-      }
-      const cleanupHooks = (anAtom.__reatom.onCleanup ??= new Set()).add(
-        cleanupHook,
-      )
+      const cleanupHook = (_ctx: Ctx) =>
+        isSameCtx(ctx, _ctx) &&
+        disconnectHooks.delete(cleanupHook) &&
+        connectHooks.has(connectHook) &&
+        cleanup()
+
+      const disconnectHooks = addOnDisconnect(anAtom, cleanupHook)
     }
   }
 
-  connectHooks.add(connectHook)
+  const connectHooks = addOnConnect(anAtom, connectHook)
 
   return () => connectHooks.delete(connectHook)
 }
 
-export const whileConnected = <T>(
-  anAtom: Atom<T>,
-  cb: Fn<[Ctx], Promise<any>>,
-) =>
-  onConnect(anAtom, (ctx) => {
-    let isConnected = true
-
-    cb(ctx).then(() => isConnected && cb(ctx))
-
-    return () => (isConnected = false)
-  })
-
-export const addOnUpdate = <T extends Atom>(
-  anAtom: T,
-  cb: Fn<[Ctx, AtomCache<AtomState<T>>]>,
-) => (anAtom.__reatom.onUpdate ??= new Set()).add(cb)
+export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
+  const disconnectHooks = addOnDisconnect(anAtom, cb)
+  return () => disconnectHooks.delete(cb)
+}
 
 export const onUpdate = <T>(
   anAtom: Action<any[], T> | Atom<T>,
   cb: Fn<[Ctx, T, AtomCache<T>]>,
 ) => {
-  let cleanups: null | WeakMap<Ctx['meta'], Fn> = null
   const hook = (ctx: Ctx, patch: AtomCache) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
       if (patch.state.length === 0) return
-      state = state.at(-1)
+      state = state.at(-1)!.payload
     }
-    cleanups?.get(ctx.meta)?.()
-    const cleanup = cb(ctx, state, patch)
-    if (typeof cleanup === 'function') {
-      ;(cleanups ??= new WeakMap()).set(ctx.meta, cleanup)
-    }
+    cb(ctx, state, patch)
   }
+
   const hooks = addOnUpdate(anAtom, hook)
+
   return () => hooks.delete(hook)
 }
 
-export const isChanged = <T>(
+export const spyChange = <T>(
   ctx: CtxSpy,
   anAtom: Atom<T>,
-  cb?: Fn<[T, T?]>,
+  handler?: Fn<[T, T?]>,
 ): boolean => {
-  const { parents } = ctx.cause!
+  const { pubs } = ctx.cause
   const { isAction } = anAtom.__reatom
-  const state: any = ctx.spy(anAtom)
+  let state: any = ctx.spy(anAtom)
 
   // we walk from the end because
   // it is possible to have a few different
   // caches for the same atom
   // and the last one is the most actual
-  for (let i = parents.length; i > 0; ) {
-    const parent = parents[--i]!
-    if (parent.meta === anAtom.__reatom) {
-      if (Object.is(parent.state, state) || (isAction && state.length === 0)) {
+  for (let i = pubs.length; i > 0; ) {
+    const pub = pubs[--i]!
+    if (pub.proto === anAtom.__reatom) {
+      if (
+        Object.is(pub.state, state) ||
+        // TODO impossible state?
+        (isAction && state.length === 0)
+      ) {
         return false
       }
-      cb?.(isAction ? state.at(-1) : state, isAction ? undefined : parent.state)
+      handler?.(
+        isAction ? state.at(-1) : state,
+        isAction ? state.at(-2) : pub.state,
+      )
       return true
     }
   }
 
-  if (isAction && state.length === 0) return false
-  cb?.(state)
+  if (isAction) {
+    if (state.length === 0) return false
+    state = state.at(-1)
+  }
+
+  handler?.(state)
+
   return true
 }
 
 export const controlConnection =
-  <T extends Atom>(
-    initValue = true,
+  <T>(
+    initState = true,
     name?: string,
-  ): Fn<[T], T & { toggleConnection: Action<[boolean?], boolean> }> =>
+  ): Fn<
+    [Atom<T>],
+    Atom<T> & { toggleConnection: Action<[boolean?], boolean> }
+  > =>
   (anAtom) => {
-    const isActiveAtom = atom(initValue)
+    const isActiveAtom = atom(initState)
 
     return Object.assign(
       {
@@ -130,7 +143,6 @@ export const controlConnection =
           name?.concat('.toggleConnection'),
         ),
       },
-      anAtom,
       atom(
         (ctx, state?: any) => (ctx.spy(isActiveAtom) ? ctx.spy(anAtom) : state),
         name,
@@ -138,8 +150,8 @@ export const controlConnection =
     )
   }
 
-export const isConnected = (ctx: Ctx, anAtom: Atom) =>
-  ctx.get(
-    (read) =>
-      (anAtom.__reatom.patch ?? read(anAtom.__reatom))?.isConnected ?? false,
-  )
+export const isConnected = (ctx: Ctx, { __reatom: proto }: Atom) =>
+  ctx.get((read) => {
+    const cache = proto.patch ?? read(proto)
+    return !!cache && cache.subs.size + cache.listeners.size > 0
+  })

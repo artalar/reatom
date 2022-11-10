@@ -566,7 +566,7 @@ pre.mono,
 
 strong.mono,
 .mono-all strong {
-  font-weight: 600;
+  font-weight: normal;
   box-shadow: inset 0 -0.2em var(--mono-main), 0 0.25em 0 0 var(--mono-main);
 }
 

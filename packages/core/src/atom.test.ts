@@ -6,7 +6,7 @@ import {
   action,
   Atom,
   atom,
-  AtomMeta,
+  AtomProto,
   AtomMut,
   createCtx,
   Ctx,
@@ -19,12 +19,12 @@ import {
 // (right now there is cyclic dependency, we should move tests to separate package probably)
 {
   var onCleanup = (atom: Atom, cb: Fn<[Ctx]>) => {
-    const hooks = (atom.__reatom.onCleanup ??= new Set())
+    const hooks = (atom.__reatom.disconnectHooks ??= new Set())
     hooks.add(cb)
     return () => hooks.delete(cb)
   }
   var onConnect = (atom: Atom, cb: Fn<[Ctx]>) => {
-    const hooks = (atom.__reatom.onConnect ??= new Set())
+    const hooks = (atom.__reatom.connectHooks ??= new Set())
     hooks.add(cb)
     return () => hooks.delete(cb)
   }
@@ -35,7 +35,7 @@ export const isConnected = (ctx: Ctx, anAtom: Atom) => {
 
   if (!cache) return false
 
-  return cache.children.size + cache.listeners.size > 0
+  return cache.subs.size + cache.listeners.size > 0
 }
 
 test(`action`, () => {
@@ -79,7 +79,7 @@ test(`linking`, () => {
 
   ctx.subscribe((logs) => {
     logs.forEach((patch) =>
-      assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
+      assert.is.not(patch.cause, null, `"${patch.proto.name}" cause is null`),
     )
   })
 
@@ -89,32 +89,32 @@ test(`linking`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
-  assert.is(a2Cache.parents[0], a1Cache)
-  assert.equal(a1Cache.children, new Set([a2.__reatom]))
+  assert.is(a2Cache.pubs[0], a1Cache)
+  assert.equal(a1Cache.subs, new Map([[a2.__reatom, 1]]))
 
   un()
 
   assert.is(a1Cache, ctx.get((read) => read(a1.__reatom))!)
   assert.is(a2Cache, ctx.get((read) => read(a2.__reatom))!)
 
-  assert.is(ctx.get((read) => read(a1.__reatom))!.children.size, 0)
+  assert.is(ctx.get((read) => read(a1.__reatom))!.subs.size, 0)
   ;`👍` //?
 })
 
 test(`nested deps`, () => {
   const a1 = atom(0, `a1`)
-  const a2 = atom((ctx) => ctx.spy(a1), `a2`)
+  const a2 = atom((ctx) => ctx.spy(a1) + ctx.spy(a1) - ctx.spy(a1), `a2`)
   const a3 = atom((ctx) => ctx.spy(a1), `a3`)
   const a4 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a4`)
   const a5 = atom((ctx) => ctx.spy(a2) + ctx.spy(a3), `a5`)
   const a6 = atom((ctx) => ctx.spy(a4) + ctx.spy(a5), `a6`)
   const ctx = createCtx()
   const fn = mockFn()
-  const touchedAtoms: Array<AtomMeta> = []
+  const touchedAtoms: Array<AtomProto> = []
 
   ctx.subscribe((logs) => {
     logs.forEach((patch) =>
-      assert.is.not(patch.cause, null, `"${patch.meta.name}" cause is null`),
+      assert.is.not(patch.cause, null, `"${patch.proto.name}" cause is null`),
     )
   })
 
@@ -130,19 +130,28 @@ test(`nested deps`, () => {
 
   assert.is(fn.calls.length, 1)
   assert.equal(
-    ctx.get((read) => read(a1.__reatom))!.children,
-    new Set([a2.__reatom, a3.__reatom]),
+    ctx.get((read) => read(a1.__reatom))!.subs,
+    new Map([
+      [a2.__reatom, 1],
+      [a3.__reatom, 1],
+    ]),
   )
   assert.equal(
-    ctx.get((read) => read(a2.__reatom))!.children,
-    new Set([a4.__reatom, a5.__reatom]),
+    ctx.get((read) => read(a2.__reatom))!.subs,
+    new Map([
+      [a4.__reatom, 1],
+      [a5.__reatom, 1],
+    ]),
   )
   assert.equal(
-    ctx.get((read) => read(a3.__reatom))!.children,
-    new Set([a4.__reatom, a5.__reatom]),
+    ctx.get((read) => read(a3.__reatom))!.subs,
+    new Map([
+      [a4.__reatom, 1],
+      [a5.__reatom, 1],
+    ]),
   )
 
-  ctx.subscribe((logs) => logs.forEach(({ meta }) => touchedAtoms.push(meta)))
+  ctx.subscribe((logs) => logs.forEach(({ proto }) => touchedAtoms.push(proto)))
 
   a1(ctx, 1)
 
@@ -165,7 +174,7 @@ test(`transaction batch`, () => {
   const track = mockFn()
   const pushNumber = action<number>()
   const numberAtom = atom((ctx) => {
-    ctx.spy(pushNumber).forEach(track)
+    ctx.spy(pushNumber).forEach(({ payload }) => track(payload))
   })
   const ctx = createCtx()
   ctx.subscribe(numberAtom, () => {})
@@ -339,8 +348,8 @@ test('async cause track', () => {
   act1(ctx)
 
   assert.is(
-    logger.lastInput().find((patch: AtomCache) => patch.meta.name === 'a1')
-      ?.cause.meta.name,
+    logger.lastInput().find((patch: AtomCache) => patch.proto.name === 'a1')
+      ?.cause.proto.name,
     'act2',
   )
   ;`👍` //?
@@ -367,13 +376,33 @@ test('disconnect tail deps', () => {
   ;`👍` //?
 })
 
+test('deps shift', () => {
+  const deps = [atom(0), atom(0), atom(0)]
+  const track = mockFn()
+
+  deps.forEach((dep) => (dep.__reatom.disconnectHooks ??= new Set()).add(track))
+
+  const a = atom((ctx) => deps.forEach((dep) => ctx.spy(dep)))
+  const ctx = createCtx()
+
+  ctx.subscribe(a, () => {})
+  assert.is(track.calls.length, 0)
+
+  deps[0]!(ctx, (s) => s + 1)
+  assert.is(track.calls.length, 0)
+
+  deps.shift()!(ctx, (s) => s + 1)
+  assert.is(track.calls.length, 1)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
-//   const atoms = new Map<AtomMeta, Atom>()
+//   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
 //   const reducer = (ctx: CtxSpy): any => {
-//     let dep = atoms.get(ctx.cause!.meta)
+//     let dep = atoms.get(ctx.cause!.proto)
 //     if (!dep)
-//       atoms.set(ctx.cause!.meta, (dep = ++i > 10_000 ? atom(0) : atom(reducer)))
+//       atoms.set(ctx.cause!.proto, (dep = ++i > 10_000 ? atom(0) : atom(reducer)))
 //     return ctx.spy(dep)
 //   }
 //   const testAtom = atom(reducer)

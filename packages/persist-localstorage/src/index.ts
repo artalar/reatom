@@ -1,9 +1,5 @@
-import { action, AtomMeta, Fn } from '@reatom/core'
-import {
-  PersistRecord,
-  PersistStorage,
-  persistStorageAtom,
-} from '@reatom/persist'
+import { action, AtomProto, Fn } from '@reatom/core'
+import { PersistRecord, reatomPersist } from '@reatom/persist'
 
 interface PersistRecordThrottled extends PersistRecord {
   throttle?: number
@@ -11,32 +7,32 @@ interface PersistRecordThrottled extends PersistRecord {
 
 const THROTTLE = 250
 
-const caches = new WeakMap<AtomMeta, PersistRecordThrottled>()
+const caches = new WeakMap<AtomProto, PersistRecordThrottled>()
 let queue: Array<{ cb: Fn; rec: PersistRecord }> = []
 
-const persistStorageForLocalStorage: PersistStorage = {
-  get(ctx, meta) {
-    const cache = caches.get(meta)
+export const persistLS = reatomPersist({
+  get(ctx, proto) {
+    const cache = caches.get(proto)
     if (cache !== undefined) return cache
 
-    const dataStr = globalThis.localStorage?.getItem(meta.name!)
+    const dataStr = globalThis.localStorage?.getItem(proto.name!)
     if (dataStr) {
       try {
         const rec: PersistRecordThrottled = JSON.parse(dataStr)
         // TODO: schedule?
-        caches.set(meta, rec)
+        caches.set(proto, rec)
         return rec
       } catch {}
     }
     return null
   },
-  set(ctx, meta, rec: PersistRecordThrottled) {
-    const cache = caches.get(meta)
+  set(ctx, proto, rec: PersistRecordThrottled) {
+    const cache = caches.get(proto)
 
     if (rec === cache) return
 
     ctx.schedule(() => {
-      caches.set(meta, rec)
+      caches.set(proto, rec)
 
       const now = Date.now()
 
@@ -47,8 +43,8 @@ const persistStorageForLocalStorage: PersistStorage = {
         setTimeout(
           () =>
             globalThis.localStorage?.setItem(
-              meta.name!,
-              JSON.stringify(caches.get(meta)),
+              proto.name!,
+              JSON.stringify(caches.get(proto)),
             ),
           THROTTLE,
         )
@@ -56,19 +52,19 @@ const persistStorageForLocalStorage: PersistStorage = {
     })
   },
   // FIXME: concurrency with throttled set?
-  clear(ctx, meta) {
-    caches.delete(meta)
-    globalThis.localStorage?.removeItem(meta.name!)
+  clear(ctx, proto) {
+    caches.delete(proto)
+    globalThis.localStorage?.removeItem(proto.name!)
   },
-  subscribe(ctx, meta, cb) {
+  subscribe(ctx, proto, cb) {
     const handler = (event: StorageEvent) => {
       if (
         event.storageArea === localStorage &&
-        event.key === meta.name! &&
+        event.key === proto.name! &&
         event.newValue !== null
       ) {
         const rec: PersistRecordThrottled = JSON.parse(event.newValue)
-        this.set(ctx, meta, rec)
+        this.set(ctx, proto, rec)
 
         Promise.resolve(queue.push({ cb, rec })).then(
           (length) =>
@@ -82,9 +78,4 @@ const persistStorageForLocalStorage: PersistStorage = {
     globalThis.addEventListener?.('storage', handler, false)
     return () => globalThis.removeEventListener?.('storage', handler, false)
   },
-}
-
-export const setupPersistWithLocalStorage = action(
-  (ctx) => persistStorageAtom(ctx, persistStorageForLocalStorage),
-  'setupPersistWithLocalStorage',
-)
+})

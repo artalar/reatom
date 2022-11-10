@@ -1,87 +1,72 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { fetch } from 'cross-fetch'
-import { atom, createCtx } from '@reatom/core'
-import { mapPayloadAwaited, toAtom, toPromise } from '@reatom/lens'
-import { onUpdate } from '@reatom/hooks'
-import { mockFn } from '@reatom/testing'
+import { atom } from '@reatom/core'
+import { mapPayloadAwaited, toAtom } from '@reatom/lens'
+import { take } from '@reatom/effects'
+import { onConnect, onUpdate } from '@reatom/hooks'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
-import {
-  reatomAsync,
-  withAbort,
-  withDataAtom,
-  withFetchOnConnect,
-  withRetryAction,
-} from './'
+import { reatomAsync, withAbort, withDataAtom, withRetryAction } from './'
 
 test(`base API`, async () => {
-  let i = 1
-  const fetchData = reatomAsync(async (ctx, v: number) => v + i).pipe(
-    withRetryAction(),
+  const fetchData = reatomAsync(async (ctx, v: number) => v).pipe(
     withDataAtom(0),
   )
-  const ctx = createCtx()
-  // ctx.subscribe(fetchData, () => {})
+  const ctx = createTestCtx()
 
   assert.is(ctx.get(fetchData.dataAtom), 0)
 
-  fetchData.pipe(toPromise(ctx)).then((v) => assert.is(v, 2))
-
-  assert.is(await fetchData(ctx, 1), 2)
-  assert.is(ctx.get(fetchData.dataAtom), 2)
-
-  i++
-  assert.is(await fetchData.retry(ctx), 3)
+  setTimeout(fetchData, 0, ctx, 123)
+  assert.is(await take(ctx, fetchData), 123)
+  assert.is(ctx.get(fetchData.dataAtom), 123)
   ;`👍` //?
 })
 
 test('withRetryAction', async () => {
-  let attempts = 0
   const fetchData = reatomAsync(async (ctx, v: number) => {
-    if (attempts++ < 2) throw new Error('test error')
-    return v
-  }).pipe(withRetryAction())
-
-  const failTimesAtom = atom(0)
-  onUpdate(fetchData.onReject, (ctx) => {
-    if (failTimesAtom(ctx, (s) => ++s) > 4) return failTimesAtom(ctx, 0)
-    fetchData.retry(ctx)
-  })
-
-  const ctx = createCtx()
-  const cb = mockFn()
-
-  ctx.subscribe(
-    fetchData.pipe(
-      mapPayloadAwaited((ctx, v) => v),
-      toAtom(),
-    ),
-    cb,
+    if (1) throw new Error('TEST')
+  }).pipe(
+    withRetryAction({
+      onReject(ctx, error: any, retries) {
+        if (error?.message === 'TEST' && retries < 2) return 0
+      },
+    }),
   )
 
-  assert.is(cb.calls.length, 1)
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(fetchData)
+
+  assert.is(track.calls.length, 1)
 
   fetchData(ctx, 123)
 
-  await fetchData.onFulfill.pipe(toPromise(ctx))
+  assert.is(track.calls.length, 2)
 
-  assert.is(cb.calls.length, 2)
+  await sleep()
+
+  assert.is(track.calls.length, 4)
   ;`👍` //?
 })
 
 test('withAbort', async () => {
-  const a1 = reatomAsync(withAbort(async (ctx, controller, v: number) => v))
-  const valueSubscriber = mockFn()
-  const errorSubscriber = mockFn()
+  const a1 = reatomAsync((ctx, v: number) =>
+    sleep().then(() => {
+      ctx.controller.signal.throwIfAborted()
+      return v
+    }),
+  ).pipe(withAbort())
 
-  const ctx = createCtx()
+  const ctx = createTestCtx()
 
-  ctx.subscribe(a1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
-  ctx.subscribe(a1.onReject, errorSubscriber)
+  const valueSubscriber = ctx.subscribeTrack(
+    a1.pipe(mapPayloadAwaited((ctx, v) => v)),
+  )
+  const errorSubscriber = ctx.subscribeTrack(a1.onReject)
 
   assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(valueSubscriber.lastInput(), [])
   assert.equal(errorSubscriber.calls.length, 1)
 
   const promise1 = a1(ctx, 1)
@@ -89,33 +74,34 @@ test('withAbort', async () => {
 
   assert.equal(valueSubscriber.calls.length, 1)
 
-  await Promise.all([promise1, promise2]).catch((v) => {})
+  await Promise.any([promise1, promise2])
 
   assert.equal(valueSubscriber.calls.length, 2)
-  assert.equal(valueSubscriber.lastInput(), [2])
-  assert.equal(errorSubscriber.calls.length, 1)
+  assert.equal(valueSubscriber.lastInput().at(-1)?.payload, 2)
+  assert.equal(errorSubscriber.calls.length, 2)
   ;`👍` //?
 })
 
 test('withAbort user abort', async () => {
-  const async1 = reatomAsync(
-    withAbort(async (ctx, controller) => controller.abort()),
+  const a1 = reatomAsync(async (ctx) => {
+    ctx.controller.abort()
+    ctx.controller.signal.throwIfAborted()
+  }).pipe(withAbort())
+
+  const ctx = createTestCtx()
+
+  const valueSubscriber = ctx.subscribeTrack(
+    a1.pipe(mapPayloadAwaited((ctx, v) => v)),
   )
-  const valueSubscriber = mockFn()
-  const errorSubscriber = mockFn()
-
-  const ctx = createCtx()
-
-  ctx.subscribe(async1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
-  ctx.subscribe(async1.onReject, errorSubscriber)
+  const errorSubscriber = ctx.subscribeTrack(a1.onReject)
 
   assert.equal(valueSubscriber.calls.length, 1)
   assert.equal(errorSubscriber.calls.length, 1)
 
-  await async1(ctx).catch(() => {})
+  await a1(ctx).catch((v) => {})
 
   assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(errorSubscriber.calls.length, 1)
+  assert.equal(errorSubscriber.calls.length, 2)
   ;`👍` //?
 })
 
@@ -123,18 +109,14 @@ test('withAbort and fetch', async () => {
   const handleError = mockFn((e) => {
     throw e
   })
-  const fetchData = reatomAsync(
-    withAbort(async (ctx, { signal }) =>
-      fetch('https://www.google.ru/404', { signal }).catch(handleError),
-    ),
-  )
+  const fetchData = reatomAsync((ctx) =>
+    fetch('https://www.google.ru/404', ctx.controller).catch(handleError),
+  ).pipe(withAbort())
 
-  const ctx = createCtx()
-  const cb = mockFn()
+  const ctx = createTestCtx()
 
-  ctx.subscribe(
+  const cb = ctx.subscribeTrack(
     fetchData.pipe(mapPayloadAwaited((ctx, resp) => resp.status)),
-    cb,
   )
 
   assert.is(cb.calls.length, 1)
@@ -144,32 +126,25 @@ test('withAbort and fetch', async () => {
   fetchData(ctx)
   fetchData(ctx)
 
-  await fetchData.onFulfill.pipe(toPromise(ctx))
+  await take(ctx, fetchData.onFulfill)
 
   assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), [404])
+  assert.equal(cb.lastInput().at(-1)?.payload, 404)
   assert.is(handleError.calls.length, 2)
   assert.ok(handleError.calls.every(({ o }: any) => o.name === 'AbortError'))
   ;`👍` //?
 })
 
-test('withFetchOnConnect', async () => {
-  const fetchData = reatomAsync(async (ctx, payload) => payload + 1).pipe(
+test('fetch on connect', async () => {
+  const fetchData = reatomAsync(async (ctx, payload: number) => payload).pipe(
     withDataAtom(0),
-    withFetchOnConnect(['dataAtom'], (ctx): [number] => [123]),
   )
-  const ctx = createCtx()
-  const cb = mockFn()
+  const ctx = createTestCtx()
+  onConnect(fetchData.dataAtom, (ctx) => fetchData(ctx, 123))
+  const track = ctx.subscribeTrack(fetchData.dataAtom)
 
-  fetchData.onFulfill.pipe(toPromise(ctx)).then(cb)
-
-  await sleep(0)
-  assert.is(cb.calls.length, 0)
-
-  ctx.subscribe(fetchData.dataAtom, () => {})
-  await sleep(0)
-  assert.is(cb.calls.length, 1)
-  assert.is(cb.lastInput(), 124)
+  await sleep()
+  assert.is(track.lastInput(), 123)
   ;`👍` //?
 })
 

@@ -1,19 +1,12 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { createContext, atom, Rec } from '@reatom/core'
+import { createCtx, atom, Rec } from '@reatom/core'
 
-import { PersistRecord, persistStorageAtom, withPersist } from './'
+import { PersistRecord, reatomPersist } from './'
 import { sleep } from '@reatom/utils'
 
 test(`withPersist`, async () => {
-  const a1 = atom(0, 'a1').pipe(withPersist())
-  const a2 = atom(0, 'a2').pipe(withPersist())
-
-  assert.throws(() => atom(0).pipe(withPersist()))
-
-  const ctx = createContext()
-
-  persistStorageAtom(ctx, {
+  const { withPersist } = reatomPersist({
     get(ctx, { name }) {
       const snapshot: Rec<PersistRecord> = {
         a1: { data: 1, version: 0 },
@@ -23,6 +16,12 @@ test(`withPersist`, async () => {
     },
     set() {},
   })
+  const a1 = atom(0, 'a1').pipe(withPersist())
+  const a2 = atom(0, 'a2').pipe(withPersist())
+
+  assert.throws(() => atom(0).pipe(withPersist()))
+
+  const ctx = createCtx()
 
   assert.is(ctx.get(a1), 1)
   assert.is(ctx.get(a2), 2)
@@ -30,13 +29,7 @@ test(`withPersist`, async () => {
 })
 
 test(`withPersist offline like`, async () => {
-  const numberAtom = atom(0, 'number').pipe(withPersist())
-  const storage: Rec<PersistRecord> = {}
-  let isOnline = true
-
-  const ctx = createContext()
-
-  persistStorageAtom(ctx, {
+  const { withPersist } = reatomPersist({
     get(ctx, { name }) {
       return storage[name!] ?? null
     },
@@ -45,6 +38,11 @@ test(`withPersist offline like`, async () => {
       storage[name!] = payload
     },
   })
+  const numberAtom = atom(0, 'number').pipe(withPersist())
+  const storage: Rec<PersistRecord> = {}
+  let isOnline = true
+
+  const ctx = createCtx()
 
   assert.is(ctx.get(numberAtom), 0)
 

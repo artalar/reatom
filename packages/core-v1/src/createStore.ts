@@ -1,4 +1,4 @@
-import * as v3 from '@reatom/core'
+import * as v3 from './atom'
 import { State, BaseAction } from './kernel'
 import {
   throwError,
@@ -77,8 +77,8 @@ export function createStore(
     if (target === undefined) {
       const result: v3.Rec = assign({}, snapshot)
       const walk = (patch: v3.AtomCache): void => {
-        if (!patch.meta.isAction) result[patch.meta.name!] = patch.state
-        patch.parents.forEach(walk)
+        if (!patch.proto.isAction) result[patch.proto.name!] = patch.state
+        patch.pubs.forEach(walk)
       }
       v3ctx.get((read) => {
         init.v3action(v3ctx, snapshot)
@@ -92,7 +92,8 @@ export function createStore(
 
     return v3ctx.get(() => {
       init.v3action(v3ctx, snapshot)
-      return v3ctx.get(target.v3atom)
+      const state = v3ctx.get(target.v3atom)
+      return state
     })
   }
 
@@ -130,9 +131,9 @@ export function createStore(
       target as any
 
     if (v3action) {
-      return v3ctx.subscribe(v3action, (payloads) => {
+      return v3ctx.subscribe(v3action, (calls) => {
         if (skipFirst) return (skipFirst = false)
-        if (payloads.length > 0) subscriber(payloads.at(-1))
+        if (calls.length > 0) subscriber(calls.at(-1)!.payload)
       })
     }
 
@@ -176,11 +177,11 @@ export function createStore(
     }
 
     const stateNew: v3.Rec = {}
-    const un = v3ctx.subscribe((logs) =>
+    const un = v3ctx.subscribe((logs) => {
       logs.forEach((patch) => {
-        if (!patch.meta.isAction) stateNew[patch.meta.name!] = patch.state
-      }),
-    )
+        if (!patch.proto.isAction) stateNew[patch.proto.name!] = patch.state
+      })
+    })
 
     v3ctx.get((read, actualize) => {
       v3ctx.schedule(un, -1)
@@ -207,7 +208,8 @@ export function createStore(
     v3ctx,
   }
 
-  v3ctx.meta.v1store = store
+  // @ts-expect-error
+  v3ctx.cause.v1store = store
 
   return store
 }

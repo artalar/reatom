@@ -1,9 +1,6 @@
 {
   "name": "@reatom/<%= name %>",
-  "version": "3.0.0",
-  "publishConfig": {
-    "tag": "alpha"
-  },
+  "version": "3.1.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for <%= name %>",

@@ -3,184 +3,71 @@ layout: ../../layouts/Layout.astro
 title: async
 description: Reatom for async
 ---  
+This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`.
 
-There is no docs yet, but you could check tests instead:
 ```ts
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
-import { fetch } from 'cross-fetch'
-import { atom, createCtx } from '@reatom/core'
-import { mapPayloadAwaited, toAtom, toPromise } from '@reatom/lens'
-import { onUpdate } from '@reatom/hooks'
-import { mockFn } from '@reatom/testing'
-import { sleep } from '@reatom/utils'
+import { reatomAsync } from '@reatom/async'
 
-import {
-  reatomAsync,
-  withAbort,
-  withDataAtom,
-  withFetchOnConnect,
-  withRetryAction,
-} from './'
+const fetchList = reatomAsync((ctx, page: number) =>
+  fetch(`/api/list?page={page}`),
+)
+```
 
-test(`base API`, async () => {
-  let i = 1
-  const fetchData = reatomAsync(async (ctx, v: number) => v + i).pipe(
-    withRetryAction(),
-    withDataAtom(0),
-  )
-  const ctx = createCtx()
-  // ctx.subscribe(fetchData, () => {})
+Also, there are few additional operators which you could plug for extra features - grow as you need:
 
-  assert.is(ctx.get(fetchData.dataAtom), 0)
+> all this imports available in one `@reatom/framework`
 
-  fetchData.pipe(toPromise(ctx)).then((v) => assert.is(v, 2))
+## `withDataAtom`
 
-  assert.is(await fetchData(ctx, 1), 2)
-  assert.is(ctx.get(fetchData.dataAtom), 2)
+Adds `dataAtom` which updates by `onFulfill` or manually.
 
-  i++
-  assert.is(await fetchData.retry(ctx), 3)
-  ;`👍` //?
-})
+### Fetch data on demand
 
-test('withRetryAction', async () => {
-  let attempts = 0
-  const fetchData = reatomAsync(async (ctx, v: number) => {
-    if (attempts++ < 2) throw new Error('test error')
-    return v
-  }).pipe(withRetryAction())
+```ts
+import { reatomAsync, withDataAtom } from '@reatom/async'
+import { onConnect } from '@reatom/hooks'
 
-  const failTimesAtom = atom(0)
-  onUpdate(fetchData.onReject, (ctx) => {
-    if (failTimesAtom(ctx, (s) => ++s) > 4) return failTimesAtom(ctx, 0)
-    fetchData.retry(ctx)
-  })
+const fetchData = reatomAsync((ctx) => fetch('...')).pipe(withDataAtom([]))
 
-  const ctx = createCtx()
-  const cb = mockFn()
+onConnect(fetchData.dataAtom, fetchData)
+```
 
-  ctx.subscribe(
-    fetchData.pipe(
-      mapPayloadAwaited((ctx, v) => v),
-      toAtom(),
-    ),
-    cb,
-  )
+## `withErrorAtom`
 
-  assert.is(cb.calls.length, 1)
+Adds `errorAtom` which updates by `onReject` and clears by `onFulfill`.
 
-  fetchData(ctx, 123)
+## `withAbort`
 
-  await fetchData.onFulfill.pipe(toPromise(ctx))
+Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call and adds `onAbort` action.
 
-  assert.is(cb.calls.length, 2)
-  ;`👍` //?
-})
+## `withRetryAction`
 
-test('withAbort', async () => {
-  const a1 = reatomAsync(withAbort(async (ctx, controller, v: number) => v))
-  const valueSubscriber = mockFn()
-  const errorSubscriber = mockFn()
+Adds `retry` action and `paramsAtom` to store last params of the effect call.
 
-  const ctx = createCtx()
+### Retry request on failure
 
-  ctx.subscribe(a1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
-  ctx.subscribe(a1.onReject, errorSubscriber)
+`withRetryAction` accept optional `onReject` parameter which is a hook which is called with context, payload error and retries count parameters. This hook could return a number which will be used as a timer for scheduling `retry` action. To skip the retry scheduling return nothing or negative number.
 
-  assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(valueSubscriber.lastInput(), [])
-  assert.equal(errorSubscriber.calls.length, 1)
+```ts
+import { reatomAsync, withRetryAction } from '@reatom/async'
 
-  const promise1 = a1(ctx, 1)
-  const promise2 = a1(ctx, 2)
+const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
+  withRetryAction({
+    onReject(ctx, error, retries) {
+      if (retries < 4) return 0
+    },
+  }),
+)
+```
 
-  assert.equal(valueSubscriber.calls.length, 1)
+```ts
+import { reatomAsync, withRetryAction } from '@reatom/async'
 
-  await Promise.all([promise1, promise2]).catch((v) => {})
-
-  assert.equal(valueSubscriber.calls.length, 2)
-  assert.equal(valueSubscriber.lastInput(), [2])
-  assert.equal(errorSubscriber.calls.length, 1)
-  ;`👍` //?
-})
-
-test('withAbort user abort', async () => {
-  const async1 = reatomAsync(
-    withAbort(async (ctx, controller) => controller.abort()),
-  )
-  const valueSubscriber = mockFn()
-  const errorSubscriber = mockFn()
-
-  const ctx = createCtx()
-
-  ctx.subscribe(async1.pipe(mapPayloadAwaited((ctx, v) => v)), valueSubscriber)
-  ctx.subscribe(async1.onReject, errorSubscriber)
-
-  assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(errorSubscriber.calls.length, 1)
-
-  await async1(ctx).catch(() => {})
-
-  assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(errorSubscriber.calls.length, 1)
-  ;`👍` //?
-})
-
-test('withAbort and fetch', async () => {
-  const handleError = mockFn((e) => {
-    throw e
-  })
-  const fetchData = reatomAsync(
-    withAbort(async (ctx, { signal }) =>
-      fetch('https://www.google.ru/404', { signal }).catch(handleError),
-    ),
-  )
-
-  const ctx = createCtx()
-  const cb = mockFn()
-
-  ctx.subscribe(
-    fetchData.pipe(mapPayloadAwaited((ctx, resp) => resp.status)),
-    cb,
-  )
-
-  assert.is(cb.calls.length, 1)
-  assert.is(handleError.calls.length, 0)
-
-  fetchData(ctx)
-  fetchData(ctx)
-  fetchData(ctx)
-
-  await fetchData.onFulfill.pipe(toPromise(ctx))
-
-  assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), [404])
-  assert.is(handleError.calls.length, 2)
-  assert.ok(handleError.calls.every(({ o }: any) => o.name === 'AbortError'))
-  ;`👍` //?
-})
-
-test('withFetchOnConnect', async () => {
-  const fetchData = reatomAsync(async (ctx, payload) => payload + 1).pipe(
-    withDataAtom(0),
-    withFetchOnConnect(['dataAtom'], (ctx): [number] => [123]),
-  )
-  const ctx = createCtx()
-  const cb = mockFn()
-
-  fetchData.onFulfill.pipe(toPromise(ctx)).then(cb)
-
-  await sleep(0)
-  assert.is(cb.calls.length, 0)
-
-  ctx.subscribe(fetchData.dataAtom, () => {})
-  await sleep(0)
-  assert.is(cb.calls.length, 1)
-  assert.is(cb.lastInput(), 124)
-  ;`👍` //?
-})
-
-test.run()
-
+const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
+  withRetryAction({
+    onReject(ctx, error, retries) {
+      return 100 * Math.min(5000, retries ** 2)
+    },
+  }),
+)
 ```

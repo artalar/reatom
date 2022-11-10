@@ -1,10 +1,10 @@
 ## Installation
 
 ```sh
-npm i @reatom/npm-react@alpha
+npm i @reatom/npm-react
 ```
 
-Also, you need to be installed `@reatom/core@alpha` or `@reatom/framework@alpha` and `react` with `use-sync-external-store`.
+Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`.
 
 ## Usage
 
@@ -129,9 +129,27 @@ const handleSubmit = useAction(
 
 `useAtom` accepts third argument `shouldSubscribe` which is `true` by default. But sometimes you have a set of computations not all of which you need in the render. In this case you could use atoms from `useAtom` without subscribing to it values.
 
+Here is how could you share data created and managed in parent, but used in children.
+
+```ts
+// this parent will not rerender by `inputAtom` change
+const [, setInput, inputAtom] = useAtom('', [], false)
+
+return (
+  <>
+    <Input atom={inputAtom} />
+    <Input atom={inputAtom} />
+    <button onClick={() => setInput('')}>Reset</button>
+  </>
+)
+```
+
+Another example of in-render computations which could be archived without rerender.
+
 [![codesandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/elegant-forest-w2106l?file=/src/App.tsx)
 
 ```js
+// this component will not rerender by `inputAtom` change, only by `numbers` change
 const [, , inputAtom] = useAtom('', [], false)
 const handleChange = useAction(
   (ctx, event) => inputAtom(ctx, event.currentTarget.value),

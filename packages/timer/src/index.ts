@@ -3,11 +3,16 @@ import { withReducers } from '@reatom/primitives'
 import { sleep } from '@reatom/utils'
 
 export interface TimerAtom extends AtomMut<number> {
+  // interval in ms
   intervalAtom: AtomMut<number> & {
     setSeconds: Action<[seconds: number], number>
   }
+  // start timer by passed interval
   startTimer: Action<[delayInSeconds: number], Promise<void>>
+  // stop timer manually
   stopTimer: Action<[], void>
+  // track end of timer, do not call manually
+  endTimer: Action<[], void>
 }
 
 export const reatomTimer = (name: string): TimerAtom => {
@@ -39,16 +44,19 @@ export const reatomTimer = (name: string): TimerAtom => {
         timerAtom(ctx, (remains = target - Date.now()))
       }
 
-      timerAtom(ctx, 0)
+      endTimer(ctx)
     })
   }, `${name}.start`)
 
   const stopTimer = action((ctx) => {
     versionAtom(ctx, (s) => s + 1)
-    timerAtom(ctx, 0)
+    endTimer(ctx)
   }, `${name}.stop`)
 
+  const endTimer = action((ctx) => timerAtom(ctx, 0), `${name}.end`)
+
   return Object.assign(timerAtom, {
+    endTimer,
     intervalAtom,
     startTimer,
     stopTimer,

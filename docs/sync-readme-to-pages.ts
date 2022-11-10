@@ -18,6 +18,8 @@ for (const packageName of packages) {
   let content = await fs.readFile(readmePath, 'utf8')
   const packageJSON = JSON.parse(await fs.readFile(packageJSONPath, 'utf8'))
 
+  if (packageJSON.private) continue
+
   if (!content.trim()) {
     content = await fs.readFile(
       path.join(packagesPath, packageName, 'src', 'index.test.ts'),
@@ -43,10 +45,22 @@ description: ${packageJSON.description}
 ---  
 ` + content
 
-  if (content !== (await fs.readFile(pagePath, 'utf8'))) {
-    console.log(`"${packageName}" docs updated`)
-    await fs.writeFile(pagePath, content)
-  }
+  // try {
+  //   if (content !== (await fs.readFile(pagePath, 'utf8'))) {
+  //     console.log(`"${packageName}" docs updated`)
+  //     await fs.writeFile(pagePath, content)
+  //   }
+  // } catch (error) {
+  //   const message = (error as any)?.message
+  //   if (
+  //     typeof message !== 'string' ||
+  //     !message.includes('no such file or directory')
+  //   ) {
+  //     throw error
+  //   }
+  // }
+
+  await fs.writeFile(pagePath, content)
 }
 
 const rootReadmePath = path.join(root, 'README.md')

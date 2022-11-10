@@ -1,9 +1,9 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import * as allSettled from '@reatom/all-settled'
 import * as async from '@reatom/async'
 import * as core from '@reatom/core'
+import * as effects from '@reatom/effects'
 import * as hooks from '@reatom/hooks'
 import * as lens from '@reatom/lens'
 import * as logger from '@reatom/logger'
@@ -12,9 +12,9 @@ import * as utils from '@reatom/utils'
 
 test(`base API`, async () => {
   const packages = [
-    allSettled,
     async,
     core,
+    effects,
     hooks,
     lens,
     logger,

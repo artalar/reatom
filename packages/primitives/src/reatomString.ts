@@ -12,4 +12,5 @@ export type StringAtom<State extends string = string> = WithReducers<
 export const reatomString: {
   (initState?: string, name?: string): StringAtom
   <T extends string>(initState: T, name?: string): StringAtom<T>
-} = (initState = '' as any, name?: string) => atom(initState, name).pipe(withReset())
+} = (initState = '' as string, name?: string) =>
+  atom(initState, name).pipe(withReset())

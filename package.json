@@ -12,7 +12,8 @@
     "update": "npx npm-check-updates -u"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "bench"
   ],
   "simple-git-hooks": {
     "commit-msg": "npx commitlint -e '$@'"
@@ -34,33 +35,21 @@
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
-    "@frp-ts/core": "^1.0.0-beta.2",
-    "@ngrx/store": "^14.3.0",
-    "@preact/signals-core": "^1.2.0",
+    "@cookie-baker/core": "^0.2.1",
     "@types/node": "latest",
     "@types/use-sync-external-store": "^0.0.3",
-    "cellx": "^1.10.29",
     "cross-fetch": "^3.1.5",
-    "effector": "^22.3.0",
     "microbundle": "^0.15.1",
-    "mobx": "^6.6.1",
-    "mol_wire_lib": "^1.0.296",
     "prettier": "^2.7.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "redux": "^4.2.0",
-    "reselect": "^4.1.6",
     "rimraf": "^3.0.2",
-    "s-js": "^0.4.9",
     "simple-git-hooks": "^2.8.0",
-    "solid-js": "^1.5.4",
     "tsx": "^3.9.0",
     "turbo": "^1.4.7",
     "typescript": "^4.8.2",
     "use-sync-external-store": "^1.2.0",
-    "usignal": "^0.7.15",
     "uvu": "^0.5.6",
-    "wonka": "^6.0.0",
     "zx": "^7.0.8"
   },
   "keywords": [

@@ -6,27 +6,67 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 
 Reatom is a state manager with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
 
-The core package is already feature-rich and you may use it anywhere, from huge apps to even small libs, as the overhead only 2kb. Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
 
-Main features of the [core package](/packages/core):
+[The core package](/packages/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
-- **simple abstraction** and friendly DX: minimum boilerplate and tiny API
-- **performant**: efficient updates for partial state changes
-- **reliable**: [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) guaranties
-- **statically typed**: best type inferences
-- **small size**: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha) gzipped
-- **modular**: dynamic units creation
-- **lazy**: code splitting just works
-- **framework-agnostic**: independent and self-sufficient
-- **testable**: simple mocking
-- **debugging**: immutable data and built-in logger
-- **IE11 support**: [Can I Use](https://caniuse.com/?search=weakmap)
-- synchronous [glitch](https://en.wikipedia.org/wiki/Reactive_programming#Glitches) free
-- simple integration with other libraries (Observable, redux ecosystem, etc)
-- awkward to write bad code
-- easy to write good code
+## Example
 
-Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient.
+We will use [@reatom/core](/packages/core) and [@reatom/async](/packages/async) in this example by importing it from a meta package [@reatom/framework](/packages/framework).
+
+> [Check the real example in codesandbox](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts)
+
+```ts
+import {
+  action,
+  atom,
+  reatomAsync,
+  withAbort,
+  withDataAtom,
+} from '@reatom/framework'
+
+// define primitive atom - key to data in context
+export const searchAtom = atom('', 'searchAtom')
+// define actions to handle data and schedule effects
+export const onSearch = action((ctx, event) => {
+  // mutate primitive atoms
+  const search = searchAtom(ctx, event.currentTarget.value)
+  // read relative data
+  const controller = ctx.get(fetchSuggestions.abortControllerAtom)
+
+  // schedule effects
+  ctx.schedule(() => {
+    // abort the last request and debounce the next
+    controller?.abort()
+    setTimeout(() => fetchSuggestions(ctx, search), 150)
+  })
+}, 'onSearch')
+
+// define effect container
+export const fetchSuggestions = reatomAsync(
+  (ctx, search: string) => apiService.getSuggestions(ctx, search),
+  'fetchSuggestions',
+).pipe(
+  // prevent concurrent errors (last-in-win by default)
+  withAbort(),
+  // store data in additional atom
+  withDataAtom([]),
+)
+// use `fetchSuggestions.pendingAtom` to handle loading state
+
+// define computed atoms (you could spying in conditions too!)
+const suggestionsViewAtom = atom(
+  (ctx) =>
+    ctx.spy(fetchSuggestions.pendingAtom)
+      ? [{ name: 'Loading...' }]
+      : ctx.spy(fetchSuggestions.dataAtom).slice(0, 5),
+  'suggestionsViewAtom',
+)
+```
+
+This example is only about 20 LoC without comments and imports to describe all logic, what is the count would be in a different library? The most impressed thing is that the framework package took only 5KB (gzip). And it already includes console logger and a few more additional helpers.
+
+<!-- Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient. -->
 
 To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core).
 
@@ -34,7 +74,7 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If 
 
 ### Why not Redux?
 
-Redux is awesome and Reatom is heavy inspired by it. Immutability, separation of computations and effects are good architecture designs principles. But there are a lot of missing features, when you trying to build something huge, or want to describe something small.
+Redux is awesome and Reatom is heavy inspired by it. Immutability, separation of computations and effects are good architecture designs principles. But there are a lot of missing features, when you trying to build something huge, or want to describe something small. Some of them is just impossible to fix, like O(n) complexity, others is really [hard to improve](https://github.com/reduxjs/reselect/discussions/491). Here is a list.
 
 - Selectors are not inspectable, it caches are not displayed in devtools.
 - Difficult static type inference, every selector must know the full path to parent state.
@@ -48,19 +88,21 @@ Redux is awesome and Reatom is heavy inspired by it. Immutability, separation of
 - Middleware is a confusing pattern that can unexpectedly modify the behavior of the store. For example, actions for redux-thunk do not log.
 - No good effect-management.
 
-> Some problems can be solved by various fabric functions and third party libraries. This makes it difficult to reuse solutions across multiple projects.
-
 Reatom solves all this problems and bring much more features by the almost same size.
+
+### Why immutability?
+
+When Redux brings to our world it perfectly solved the concurrency problem ([glitches](https://en.wikipedia.org/wiki/Reactive_programming#Glitches)) of dependent computations and increase debug experience a lot, as it allows you to log and asynchronously inspect each update snapshot in any time.
 
 ### What LTS policy is used and what about bus factor?
 
 Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guid](/packages/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](/packages/core-v1). We hope it shows and prove our responsibility.
 
-To be honest, right now bus factor is one - [@artalar](https://github.com/artalar/), but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LST version (v3) we bring to new feature of this lib and application development experience for a long time.
+To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LST version (v3) we bring to new feature of this lib and application development experience for a long time.
 
-### Performance
+### How performant Reatom is?
 
-[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms works in separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
+[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms has a lifecycle hooks and works in a separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
 
 Also, check out [atomization guild](/guides/atomization).
 

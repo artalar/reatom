@@ -1,5 +1,4 @@
-import * as v3 from '@reatom/core'
-import { isChanged } from '@reatom/hooks'
+import * as v3 from './atom'
 import { Tree, State, TreeId, Leaf } from './kernel'
 import {
   TREE,
@@ -81,22 +80,26 @@ export function declareAtom<TState>(
   const depsIds = new Set<TreeId>()
 
   const v3atom = v3.atom((ctx, state?: any) => {
-    if (ctx.cause!.isConnected === false) {
-      state = ctx.get(init.v3action).at(-1)?.[id] ?? initialState
+    const isConnected = ctx.get((r) => {
+      const cache = r(v3atom.__reatom)
+      return !!cache && cache.subs.size + cache.listeners.size > 0
+    })
+    if (!isConnected) {
+      state = ctx.get(init.v3action).at(-1)?.payload[id] ?? initialState
     }
 
-    ctx.spy(replace).forEach((states) => (state = states[id] ?? state))
+    ctx.spy(replace).forEach(({ payload }) => (state = payload[id] ?? state))
 
     for (const { dep, reducer } of deps) {
-      isChanged(ctx, dep, (payload) => {
-        if (dep !== init.v3action || !ctx.cause!.isConnected) {
-          state = reducer(state, payload)
+      v3.spyChange(ctx, dep, (payload) => {
+        if (dep !== init.v3action || !isConnected) {
+          const { isAction, name } = dep.__reatom
+          state = reducer(state, isAction ? payload.payload : payload)
 
           if (state === undefined) {
-            const { name } = dep.__reatom
             const idx = 1 + deps.findIndex((el) => el.reducer === reducer)
             throwError(
-              `Invalid state. Reducer number ${idx} in "${dep.__reatom.name}" atom returns undefined`,
+              `Invalid state. Reducer number ${idx} in "${name}" atom returns undefined`,
             )
           }
         }
@@ -148,7 +151,7 @@ export function declareAtom<TState>(
       if (logs.length > 0) state = assign({}, state)
       logs.forEach(
         (patch) =>
-          patch.meta.isAction || (state[patch.meta.name!] = patch.state),
+          patch.proto.isAction || (state[patch.proto.name!] = patch.state),
       )
     })
 
@@ -166,11 +169,11 @@ export function declareAtom<TState>(
   atom[TREE] = tree
   atom[DEPS] = depsIds
   atom.v3atom = v3atom
-  ;(v3atom.__reatom.onCleanup ??= new Set()).add((ctx) =>
+  ;(v3atom.__reatom.disconnectHooks ??= new Set()).add((ctx) =>
     ctx.get((read) => {
       const cache = read(v3atom.__reatom)!
       cache.state = undefined
-      cache.parents = []
+      cache.pubs = []
     }),
   )
   // @ts-expect-error

@@ -1,4 +1,4 @@
-import * as v3 from '@reatom/core'
+import * as v3 from './atom'
 import { Tree, TreeId } from './kernel'
 import { Atom } from './declareAtom'
 import { PayloadActionCreator } from './declareAction'
@@ -92,5 +92,11 @@ export function getOwnKeys<T extends object>(obj: T): Array<keyof T> {
   return keys
 }
 
-export const getStoreByCtx = (ctx: v3.Ctx): Store | undefined =>
-  ctx.meta.v1store
+export const getStoreByCtx = (ctx: v3.Ctx): Store | undefined => {
+  let { cause } = ctx
+
+  while (cause.proto !== v3.__root) cause = cause.cause!
+
+  // @ts-expect-error
+  return cause.v1store
+}

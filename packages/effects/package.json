@@ -1,12 +1,9 @@
 {
-  "name": "@reatom/saga",
-  "version": "3.0.0",
-  "publishConfig": {
-    "tag": "alpha"
-  },
+  "name": "@reatom/effects",
+  "version": "3.1.0",
   "private": false,
   "sideEffects": false,
-  "description": "Reatom for saga",
+  "description": "Reatom for effects",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
@@ -26,7 +23,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.0.0"
+    "@reatom/core": ">=3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -37,7 +34,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/saga",
+  "homepage": "https://www.reatom.dev/packages/effects",
   "files": [
     "/build",
     "/package.json",

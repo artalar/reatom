@@ -1,7 +1,7 @@
-import { action, atom, createCtx } from '@reatom/core'
+import { action, atom } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { reatomNumber } from '@reatom/primitives'
-import { mockFn } from '@reatom/testing'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -13,83 +13,75 @@ import {
   filter,
   plain,
   toAtom,
-  toPromise,
   mapPayload,
-  unstable_actionizeAllChanges,
 } from './'
 
 test(`map and mapInput`, async () => {
   const a = reatomNumber(0)
   const aMap = a.pipe(mapState((ctx, v, u) => v + 1))
   const aMapInput = a.pipe(mapInput((ctx, v: string) => Number(v)))
-  const aMapMapInput = a.pipe(
-    mapState((ctx, v) => v + 1),
-    mapInput((ctx, v: string) => Number(v)),
-  )
-  const ctx = createCtx()
+  const ctx = createTestCtx()
 
-  assert.is(a.__reatom, aMapInput.__reatom)
+  const aMapInputTrack = ctx.subscribeTrack(aMapInput, () => {})
+
   assert.is(ctx.get(a), 0)
   assert.is(ctx.get(aMap), 1)
-  assert.is(ctx.get(aMapInput), 0)
-  assert.is(ctx.get(aMapMapInput), 1)
+  assert.equal(ctx.get(aMapInput), [])
 
   aMapInput(ctx, '1')
   assert.is(ctx.get(a), 1)
   assert.is(ctx.get(aMap), 2)
-  assert.is(ctx.get(aMapInput), 1)
-  assert.is(ctx.get(aMapMapInput), 2)
-
-  aMapMapInput(ctx, '2')
-  assert.is(ctx.get(a), 2)
-  assert.is(ctx.get(aMap), 3)
-  assert.is(ctx.get(aMapInput), 2)
-  assert.is(ctx.get(aMapMapInput), 3)
+  assert.equal(aMapInputTrack.lastInput(), [{ params: ['1'], payload: 1 }])
   ;`👍` //?
 })
 
 test(`readonly and plain`, () => {
   const a = reatomNumber(0)
-  const a1 = a.pipe(readonly, plain)
-  const ctx = createCtx()
+  const aReadonly = a.pipe(readonly, plain)
+  const aPlain = a.pipe(readonly, plain)
+  const ctx = createTestCtx()
   assert.is(a(ctx, 1), 1)
+  assert.is(a.increment(ctx, 1), 2)
   // @ts-expect-error
-  assert.throws(() => a1(ctx, 1))
-  assert.not.ok('increment' in a1)
+  assert.throws(() => aReadonly(ctx, 1))
+  // @ts-expect-error
+  assert.throws(() => aPlain.increment(ctx, 1))
   ;`👍` //?
 })
 
 test(`mapPayload, mapPayloadAwaited, toAtom`, async () => {
-  const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 10)))
-  const aMaybeString = a.pipe(
-    mapPayloadAwaited((ctx, v) => v + 1),
-    mapPayload((ctx, v) => v),
+  const a = action(
+    (ctx, v: number) => ctx.schedule(() => sleep(10).then(() => v)),
+    'a',
   )
-  const aString = a.pipe(
-    mapPayloadAwaited((ctx, v) => v + 1),
+  const aMaybeString = a.pipe(mapPayloadAwaited((ctx, v) => v.toString()))
+  const aString = aMaybeString.pipe(toAtom('0'))
+  const aNumber = aMaybeString.pipe(
+    mapPayload((ctx, v) => Number(v)),
     toAtom(0),
   )
-  const ctx = createCtx()
-  const cb = mockFn()
+  const ctx = createTestCtx()
 
-  ctx.subscribe(aMaybeString, cb)
-  ctx.subscribe(aString, () => {})
-
-  assert.equal(ctx.get(a), [])
-  assert.is(cb.calls.length, 1)
-  assert.is(ctx.get(aString), 0)
-
-  const promise = a(ctx)
+  const trackMaybeString = ctx.subscribeTrack(aMaybeString)
+  const trackString = ctx.subscribeTrack(aString)
+  const trackNumber = ctx.subscribeTrack(aNumber)
 
   assert.equal(ctx.get(a), [])
-  assert.is(cb.calls.length, 1)
-  assert.is(ctx.get(aString), 0)
+  assert.equal(ctx.get(aMaybeString), [])
+  assert.is(ctx.get(aString), '0')
+  assert.is(ctx.get(aNumber), 0)
+
+  const promise = a(ctx, 4)
+
+  assert.is(trackMaybeString.calls.length, 1)
+  assert.is(trackString.calls.length, 1)
+  assert.is(trackNumber.calls.length, 1)
 
   await promise
 
-  assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), [11])
-  assert.is(ctx.get(aString), 11)
+  assert.equal(trackMaybeString.lastInput(), [{ params: [4], payload: '4' }])
+  assert.is(trackString.lastInput(), '4')
+  assert.is(trackNumber.lastInput(), 4)
   ;`👍` //?
 })
 
@@ -99,12 +91,12 @@ test(`mapPayloadAwaited sync resolution`, async () => {
   const act2 = act.pipe(mapPayloadAwaited((ctx, v) => v + 2))
   const sumAtom = atom((ctx, state: Array<any> = []) => {
     state = [...state]
-    ctx.spy(act1).forEach((v) => state.push(v))
-    ctx.spy(act2).forEach((v) => state.push(v))
+    ctx.spy(act1).forEach(({ payload }) => state.push(payload))
+    ctx.spy(act2).forEach(({ payload }) => state.push(payload))
 
     return state
   })
-  const ctx = createCtx()
+  const ctx = createTestCtx()
   const cb = mockFn()
 
   ctx.subscribe(sumAtom, cb)
@@ -122,7 +114,7 @@ test(`mapPayloadAwaited sync resolution`, async () => {
 test(`filter`, () => {
   const a = atom(1)
   const a1 = a.pipe(filter((v) => v !== 2))
-  const ctx = createCtx()
+  const ctx = createTestCtx()
   const cb = mockFn()
 
   ctx.subscribe(a1, cb)
@@ -136,46 +128,6 @@ test(`filter`, () => {
   a(ctx, 3)
   assert.is(cb.calls.length, 2)
   assert.equal(cb.lastInput(), 3)
-  ;`👍` //?
-})
-
-test('toPromise', async () => {
-  const a = action((ctx) => ctx.schedule(() => sleep(10).then(() => 123)))
-  const ctx = createCtx()
-
-  assert.equal(await Promise.all([a.pipe(toPromise(ctx)), a(ctx)]), [123, 123])
-  ;`👍` //?
-})
-
-test(`actionizeAllChanges`, async () => {
-  const act1 = action()
-  const act2 = act1
-    .pipe(mapPayload(() => Promise.resolve(0)))
-    .pipe(mapPayloadAwaited())
-  const a1 = atom(0)
-  const sum = unstable_actionizeAllChanges({
-    a1,
-    act1,
-    act2,
-  })
-  const ctx = createCtx()
-  const cb = mockFn()
-
-  sum.pipe(toPromise(ctx)).then(cb)
-
-  a1(ctx, 2)
-
-  assert.is(cb.calls.length, 0)
-
-  act1(ctx)
-
-  assert.is(cb.calls.length, 0)
-
-  await act2.pipe(toPromise(ctx))
-
-  await sleep()
-
-  assert.equal(cb.lastInput(), { a1: 2, act1: undefined, act2: 0 })
   ;`👍` //?
 })
 

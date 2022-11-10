@@ -106,21 +106,3 @@ export const reatomNavigation = (
     syncAtom,
   })
 }
-
-export const nav = atomizeNavigation({
-  // FIXME: back / go(-1)
-  go: (ctx, path, title) =>
-    typeof path === 'number'
-      ? history.go(path)
-      : history.pushState(null, title!, path),
-  subscribe: (ctx, route) => {
-    const { pushState } = history
-
-    history.pushState = (data, title, url) => {
-      pushState(data, title, url)
-      route.go(ctx, url as any, title)
-    }
-
-    return () => {}
-  },
-})

@@ -1,9 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.0.2",
-  "publishConfig": {
-    "tag": "alpha"
-  },
+  "version": "3.1.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -26,14 +23,14 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/all-settled": ">=3.0.0",
-    "@reatom/async": ">=3.0.0",
-    "@reatom/core": ">=3.0.0",
-    "@reatom/hooks": ">=3.0.0",
-    "@reatom/lens": ">=3.0.0",
-    "@reatom/logger": ">=3.0.0",
-    "@reatom/primitives": ">=3.0.0",
-    "@reatom/utils": ">=3.0.0"
+    "@reatom/async": ">=3.1.0",
+    "@reatom/core": ">=3.1.0",
+    "@reatom/effects": ">=3.1.0",
+    "@reatom/hooks": ">=3.1.0",
+    "@reatom/lens": ">=3.1.0",
+    "@reatom/logger": ">=3.1.0",
+    "@reatom/primitives": ">=3.1.0",
+    "@reatom/utils": ">=3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -44,7 +41,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/framework",
+  "homepage": "https://www.reatom.dev/packages/framework",
   "files": [
     "/build",
     "/package.json",

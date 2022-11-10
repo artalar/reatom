@@ -1,4 +1,4 @@
-import * as v3 from '@reatom/core'
+import * as v3 from './atom'
 import { Leaf, Tree, BaseAction } from './kernel'
 import { TREE, nameToId, Unit, getName, getStoreByCtx } from './shared'
 import { Store } from './createStore'
@@ -69,6 +69,7 @@ export function declareAction<
 
   const v3action = v3.action(
     (ctx, payload, r: Array<Reaction<Payload>> = reactions) => {
+      if (Array.isArray(payload) && payload.some(v => 'payload' in v)) throw new Error('HERE')
       r.forEach((cb) => ctx.schedule(() => cb(payload, getStoreByCtx(ctx)!)))
 
       return payload

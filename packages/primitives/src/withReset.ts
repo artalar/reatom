@@ -11,7 +11,7 @@ export const withReset =
               ctx,
               anAtom.__reatom,
               (patchCtx: Ctx, patch: AtomCache) =>
-                (patch.state = patch.meta.initState(ctx)),
+                (patch.state = patch.proto.initState(ctx)),
             ).state,
         ),
       ),

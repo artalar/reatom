@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { mockFn } from '@reatom/testing'
-import * as v3 from '@reatom/core'
+import * as v3 from './atom'
 
 import {
   declareAction,
@@ -965,15 +965,16 @@ test('unsubscribe from atom should not cancel the subscription from the action',
 
 test(`v3`, () => {
   const store = createStore()
-  const increment = declareAction()
-  const counter = declareAtom(0, (on) => [on(increment, (state) => state + 1)])
-  const counterDoubled = v3.atom((ctx) => ctx.spy(counter.v3atom) * 2)
+  const increment = declareAction(['increment'])
+  const counter = declareAtom(['counter'], 0, (on) => [on(increment, (state) => state + 1)])
+  const counterDoubled = v3.atom((ctx) => ctx.spy(counter.v3atom) * 2, 'counterDoubled')
 
   const cbV1 = mockFn()
   const cbV3 = mockFn()
 
   store.subscribe(counter, cbV1)
   store.v3ctx.subscribe(counterDoubled, cbV3)
+  store.subscribe(v3toV1(counterDoubled), cbV3)
 
   assert.is(cbV1.calls.length, 0)
   assert.is(cbV3.calls.length, 1)

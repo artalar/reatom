@@ -1,9 +1,11 @@
 Small, performant, powerful and extensible core package for building reactive applications of any size.
 
+[Main docs starts here](https://www.reatom.dev)
+
 ## Installation
 
 ```sh
-npm i @reatom/core@alpha
+npm i @reatom/core
 ```
 
 ## Usage
@@ -280,6 +282,8 @@ Subscribe to transaction end
 
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
-### Transaction API
+### `ctx.schedule`
+
+
 
 To archive [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](https://reatom.dev/packages/core#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map.

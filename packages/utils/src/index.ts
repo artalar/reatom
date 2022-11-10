@@ -1,4 +1,4 @@
-import { Fn, Pipe } from '@reatom/core'
+import { Fn } from '@reatom/core'
 
 export type Plain<Intersection> = Intersection extends (...a: any[]) => any
   ? Intersection

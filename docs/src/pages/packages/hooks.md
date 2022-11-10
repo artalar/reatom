@@ -3,45 +3,76 @@ layout: ../../layouts/Layout.astro
 title: hooks
 description: Reatom for hooks
 ---  
+All atoms and actions have a hooks to they lifecycle, this package expose friendly helpers to use this hooks.
 
-There is no docs yet, but you could check tests instead:
+## `withInit`
+
+Operator to set state creator callback to an atom, which is called by first atom subscription (during transaction).
+
 ```ts
-import { atom, createCtx, CtxSpy } from '@reatom/core'
-import { mockFn } from '@reatom/testing'
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
+import { atom } from '@reatom/core'
+import { withInit } from '@reatom/hooks'
 
-import { withInit, controlConnection, isConnected } from './'
-
-test('withInit', () => {
-  const a = atom(0).pipe(withInit(() => 123))
-  const ctx = createCtx()
-  assert.is(ctx.get(a), 123)
-  ;`👍` //?
-})
-
-test('controlledConnection', () => {
-  const aAtom = atom(0)
-  const track = mockFn((ctx: CtxSpy) => ctx.spy(aAtom))
-  const bAtom = atom(track)
-  const bAtomControlled = bAtom.pipe(controlConnection())
-  const ctx = createCtx()
-
-  ctx.subscribe(bAtomControlled, () => {})
-  assert.is(track.calls.length, 1)
-  assert.is(isConnected(ctx, bAtom), true)
-
-  aAtom(ctx, (s) => (s += 1))
-  assert.is(track.calls.length, 2)
-  assert.is(isConnected(ctx, bAtom), true)
-
-  bAtomControlled.toggleConnection(ctx)
-  aAtom(ctx, (s) => (s += 1))
-  assert.is(track.calls.length, 2)
-  assert.is(isConnected(ctx, bAtom), false)
-  ;`👍` //?
-})
-
-test.run()
-
+const dateAtom = atom(0).pipe(withInit(() => Date.now()))
 ```
+
+## `onConnect`
+
+Subscribe to atom subscription, optionally return cleanup callback (called during effect queue).
+
+```ts
+import { onConnect } from '@reatom/hooks'
+
+onConnect(messagesAtom, (ctx) => {
+  const cb = (message) => {
+    messagesAtom(ctx, (messages) => [...messages, message])
+  }
+
+  WS.on('message', cb)
+
+  return () => WS.off('message', cb)
+})
+```
+
+## `onDisconnect`
+
+Shortcut to `onConnect` return callback.
+
+## `onUpdate`
+
+Derive atom or action update during transaction.
+
+```ts
+import { onUpdate } from '@reatom/hooks'
+
+onUpdate(pagingAtom, (ctx, page) => fetchData(ctx, page))
+```
+
+Very simplified example of lazy analytics connection.
+
+```ts
+// analytics.ts
+import { isAtom } from '@reatom/core'
+import { onUpdate } from '@reatom/hooks'
+import * as moduleA from '~/module-a'
+// ...
+import * as moduleN from '~/module-N'
+
+for (const mod of [moduleA, moduleN]) {
+  for (const name of Object.keys(mod)) {
+    if (isAtom(mod[name])) {
+      onUpdate(mod[name], (ctx, data) => analyticsService.send(name, data))
+    }
+  }
+}
+```
+
+## `spyChange`
+
+Spy atom or action change in the atom reducer.
+
+`spyChange(CtxSpy, anAtom, (value) => any): isChanged`
+
+<!-- ## `controlConnection` -->
+
+<!-- ## `isConnected` -->
