@@ -7,7 +7,7 @@ import Glitch from '../components/Glitch.astro'
 const { frontmatter: { title = '404' } = {} } = Astro.props
 
 const DEFAULT_MAIN = '#0e1117'
-const DEFAULT_BACK = '#d4d1e6'
+const DEFAULT_BACK = '#e0deed'
 ---
 
 <!DOCTYPE html>
@@ -15,56 +15,54 @@ const DEFAULT_BACK = '#d4d1e6'
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <link rel="stylesheet" href="/styles/mono.css" />
-    <title>{title}</title>
-  </head>
-  <body
-    class="mono-all"
-    style={{
-      '--mono-main': DEFAULT_MAIN,
-      '--mono-back': DEFAULT_BACK,
-    }}
-  >
-    <script>
-      // TODO: rm doubling
-      const DEFAULT_MAIN = '#0e1117'
-      const DEFAULT_BACK = '#d4d1e6'
+    <style
+      is:global
+      define:vars={{ monoMainPre: DEFAULT_BACK, monoBackPre: DEFAULT_MAIN }}
+    >
+      @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
 
-      const MEDIA_DARK = '(prefers-color-scheme: dark)'
-      const MEDIA_LIGHT = '(prefers-color-scheme: light)'
+      html {
+        font-size: calc(0.3vw + 0.7em);
+      }
 
-      detectColorScheme()
-      function detectColorScheme() {
-        if (!globalThis.matchMedia) return
+      body {
+        --mono-main: var(--monoBackPre);
+        --mono-back: var(--monoMainPre);
+      }
 
-        const listener: any = ({ matches, media }: MediaQueryListEvent) => {
-          if (!matches) {
-            // Not matching anymore = not interesting
-            return
-          }
-          if (media === MEDIA_DARK) {
-            changeWebsiteTheme(DEFAULT_BACK, DEFAULT_MAIN)
-          } else if (media === MEDIA_LIGHT) {
-            changeWebsiteTheme(DEFAULT_MAIN, DEFAULT_BACK)
-          }
-        }
-
-        const mqDark = globalThis.matchMedia(MEDIA_DARK)
-        if (mqDark.matches) changeWebsiteTheme(DEFAULT_BACK, DEFAULT_MAIN)
-        mqDark.addEventListener('change', listener)
-
-        const mqLight = globalThis.matchMedia(MEDIA_LIGHT)
-        if (mqLight.matches) changeWebsiteTheme(DEFAULT_MAIN, DEFAULT_BACK)
-        mqLight.addEventListener('change', listener)
-
-        function changeWebsiteTheme(main: string, back: string) {
-          document.body.style.setProperty('--mono-main', main)
-          document.body.style.setProperty('--mono-back', back)
+      @media (prefers-color-scheme: light) {
+        body {
+          --mono-main: var(--monoBackPre);
+          --mono-back: var(--monoMainPre);
         }
       }
-    </script>
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          --mono-main: var(--monoMainPre);
+          --mono-back: var(--monoBackPre);
+        }
+      }
+
+      pre.mono,
+      .mono-all pre {
+        --mono-main: var(--monoMainPre);
+        --mono-back: var(--monoBackPre);
+      }
+
+      @media (prefers-color-scheme: light) {
+        pre.mono,
+        .mono-all pre {
+          filter: invert(0.95) hue-rotate(240deg) contrast(1.1);
+        }
+      }
+    </style>
+  </head>
+  <body class="mono-all">
     <Sidebar />
     <main>
       <!-- <nav style={`
@@ -82,31 +80,8 @@ const DEFAULT_BACK = '#d4d1e6'
         <a href="https://github.com/artalar/reatom" target="_blank">github</a>
       </footer>
     </main>
-    <style
-      is:global
-      define:vars={{ monoMainPre: DEFAULT_BACK, monoBackPre: DEFAULT_MAIN }}
-    >
-      @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
-
-      html {
-        font-size: calc(0.3vw + 0.7em);
-      }
-
-      pre.mono,
-      .mono-all pre {
-        --mono-main: var(--monoMainPre);
-        --mono-back: var(--monoBackPre);
-      }
-
-      @media (prefers-color-scheme: light) {
-        pre.mono,
-        .mono-all pre {
-          filter: invert(0.95) hue-rotate(240deg);
-        }
-      }
-    </style>
     <CurrentLinkHighlight />
     <HeadingCopyButton />
-    <Glitch/>
+    <Glitch />
   </body>
 </html>
