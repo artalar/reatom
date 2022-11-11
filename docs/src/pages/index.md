@@ -4,11 +4,11 @@ title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
 
-Reatom is a state manager with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It is an opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
+Reatom is a state manager with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
 
 Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
 
-[The core package](/packages/core) includes all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+[The core package](/packages/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 ## Example
 
@@ -98,13 +98,13 @@ When Redux brings to our world it perfectly solved the concurrency problem ([gli
 
 Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guid](/packages/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](/packages/core-v1). We hope it shows and prove our responsibility.
 
-To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LTS version (v3) we bring to new feature of this lib and application development experience for a long time.
+To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LST version (v3) we bring to new feature of this lib and application development experience for a long time.
 
 ### How performant Reatom is?
 
 [Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms has a lifecycle hooks and works in a separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
 
-Also, check out [atomization guide](/guides/atomization).
+Also, check out [atomization guild](/guides/atomization).
 
 ### How to support the project?
 
