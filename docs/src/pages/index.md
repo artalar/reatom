@@ -10,7 +10,38 @@ Key principles are **immutability** and **explicit reactivity** (no proxies), im
 
 [The core package](/packages/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
-## Example
+Do you React.js user? Check out [npm-react](/packages/npm-react) package!
+
+## Simple example
+
+```ts
+import { action, atom, createCtx } from 'reatom/core'
+
+// primitive mutable atom
+const inputAtom = atom('')
+// computed readonly atom
+// `spy` reads the atom and subscribes to it
+const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(inputAtom)}!`)
+
+// all updates in action processed by a smart batching
+const onInput = action((ctx, event) =>
+  // update the atom value by call it as a function
+  inputAtom(ctx, event.currentTarget.value),
+)
+
+// global application context
+const ctx = createCtx()
+
+document
+  .getElementById('name-input')
+  .addEventListener('input', (event) => onInput(ctx, event))
+
+ctx.subscribe(greetingAtom, (greeting) => {
+  document.getElementById('greeting').innerText = greeting
+})
+```
+
+## Advanced example
 
 We will use [@reatom/core](/packages/core) and [@reatom/async](/packages/async) in this example by importing it from a meta package [@reatom/framework](/packages/framework).
 
