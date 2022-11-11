@@ -3,19 +3,4 @@ layout: ../../layouts/Layout.astro
 title: utils
 description: Reatom for utils
 ---  
-
-There is no docs yet, but you could check tests instead:
-```ts
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
-
-import {} from './'
-
-test(`base API`, async () => {
-  // TODO
-  // assert.ok(false, `You forgot test you code`)
-})
-
-test.run()
-
-```
+This package includes a set of well-typed simple utils: `noop`, `sleep`, `isObject`, `isShallowEqual`, `isDeepEqual`, `assign`, `pick`, `omit`.
