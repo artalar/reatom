@@ -332,7 +332,7 @@ export const createCtx = ({
 
       if (isDepsChanged || pubs.length !== newPubs.length) {
         for (let i = 0; i < pubs.length; i++) {
-          if (pubs[i]!.proto !== newPubs[i]?.proto) {
+          if (i >= newPubs.length || pubs[i]!.proto !== newPubs[i]!.proto) {
             disconnect(proto, pubs[i]!)
           }
         }
@@ -340,6 +340,8 @@ export const createCtx = ({
 
       patch.cause = cause
       patch.pubs = newPubs
+    } else if (pubs.length > 0 && !pubs[0]!.subs.has(patch.proto)) {
+      for (const depCache of pubs) connect(proto, depCache)
     }
   }
 

@@ -396,6 +396,21 @@ test('deps shift', () => {
   ;`👍` //?
 })
 
+test('subscribe to cached atom', () => {
+  const a1 = atom(0)
+  const a2 = atom((ctx) => ctx.spy(a1))
+  const ctx = createCtx()
+
+  ctx.get(a2)
+  ctx.subscribe(a2, () => {})
+
+  assert.is(
+    ctx.get((r) => r(a1.__reatom)?.subs.size),
+    1,
+  )
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
