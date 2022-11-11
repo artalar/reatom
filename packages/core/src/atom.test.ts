@@ -90,7 +90,7 @@ test(`linking`, () => {
   assert.is(fn.calls.length, 1)
   assert.is(fn.lastInput(), 0)
   assert.is(a2Cache.pubs[0], a1Cache)
-  assert.equal(a1Cache.subs, new Map([[a2.__reatom, 1]]))
+  assert.equal(a1Cache.subs, new Set([a2.__reatom]))
 
   un()
 
@@ -131,24 +131,15 @@ test(`nested deps`, () => {
   assert.is(fn.calls.length, 1)
   assert.equal(
     ctx.get((read) => read(a1.__reatom))!.subs,
-    new Map([
-      [a2.__reatom, 1],
-      [a3.__reatom, 1],
-    ]),
+    new Set([a2.__reatom, a3.__reatom]),
   )
   assert.equal(
     ctx.get((read) => read(a2.__reatom))!.subs,
-    new Map([
-      [a4.__reatom, 1],
-      [a5.__reatom, 1],
-    ]),
+    new Set([a4.__reatom, a5.__reatom]),
   )
   assert.equal(
     ctx.get((read) => read(a3.__reatom))!.subs,
-    new Map([
-      [a4.__reatom, 1],
-      [a5.__reatom, 1],
-    ]),
+    new Set([a4.__reatom, a5.__reatom]),
   )
 
   ctx.subscribe((logs) => logs.forEach(({ proto }) => touchedAtoms.push(proto)))
@@ -380,7 +371,9 @@ test('deps shift', () => {
   const deps = [atom(0), atom(0), atom(0)]
   const track = mockFn()
 
-  deps.forEach((dep) => (dep.__reatom.disconnectHooks ??= new Set()).add(track))
+  deps.forEach((dep, i) =>
+    (dep.__reatom.disconnectHooks ??= new Set()).add(() => track(i)),
+  )
 
   const a = atom((ctx) => deps.forEach((dep) => ctx.spy(dep)))
   const ctx = createCtx()

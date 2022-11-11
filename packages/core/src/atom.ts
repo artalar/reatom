@@ -110,7 +110,7 @@ export interface AtomCache<State = any> {
   // nullable state mean cache is dirty (has updated pubs, which could produce new state)
   cause: null | AtomCache
   pubs: Array<AtomCache>
-  readonly subs: Map<AtomProto, number>
+  readonly subs: Set<AtomProto>
   readonly listeners: Set<Fn>
 }
 
@@ -258,55 +258,45 @@ export const createCtx = ({
   }
 
   const disconnect = (proto: AtomProto, pubPatch: AtomCache): void => {
-    const count = pubPatch.subs.get(proto)
-    if (count !== undefined) {
-      if (count === 1) {
-        pubPatch.subs.delete(proto)
-        trRollbacks.push(() => pubPatch.subs.set(proto, 1))
+    if (pubPatch.subs.delete(proto)) {
+      trRollbacks.push(() => pubPatch.subs.add(proto))
 
-        if (!isConnected(pubPatch) && pubPatch.proto.disconnectHooks !== null) {
-          nearEffects.push(...pubPatch.proto.disconnectHooks)
-        }
+      if (!isConnected(pubPatch) && pubPatch.proto.disconnectHooks !== null) {
+        nearEffects.push(...pubPatch.proto.disconnectHooks)
+      }
 
-        for (const pubPub of pubPatch.pubs) {
-          disconnect(pubPatch.proto, pubPub)
-        }
-      } else {
-        pubPatch.subs.set(proto, count - 1)
-        trRollbacks.push(() => pubPatch.subs.set(proto, count))
+      for (const parentParent of pubPatch.pubs) {
+        disconnect(pubPatch.proto, parentParent)
       }
     }
   }
 
   const connect = (proto: AtomProto, pubPatch: AtomCache) => {
-    const count = pubPatch.subs.get(proto)
-    if (count === undefined) {
+    if (!pubPatch.subs.has(proto)) {
       if (!isConnected(pubPatch) && pubPatch.proto.connectHooks !== null) {
         nearEffects.push(...pubPatch.proto.connectHooks)
       }
 
-      pubPatch.subs.set(proto, 1)
+      pubPatch.subs.add(proto)
       trRollbacks.push(() => pubPatch.subs.delete(proto))
 
-      for (const pubPubPatch of pubPatch.pubs) {
-        pubPubPatch.subs.has(pubPatch.proto) ||
-          connect(pubPatch.proto, pubPubPatch)
+      for (const parentParentPatch of pubPatch.pubs) {
+        connect(pubPatch.proto, parentParentPatch)
       }
-    } else {
-      pubPatch.subs.set(proto, count + 1)
-      trRollbacks.push(() => pubPatch.subs.set(proto, count))
     }
   }
 
   const actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
-    let { proto, pubs } = patch
-    let isDepsChanged = false
+    let { cause, proto, pubs } = patch
+    let connected = isConnected(patch)
+    let toDisconnect = new Set<AtomProto>()
+    let toConnect = new Set<AtomProto>()
 
     if (
       pubs.length === 0 ||
       pubs.some(
         ({ proto, state }) =>
-          !Object.is(state, (patch.cause = actualize(patchCtx, proto)).state),
+          !Object.is(state, (cause = actualize(patchCtx, proto)).state),
       )
     ) {
       const newPubs: typeof pubs = []
@@ -320,10 +310,10 @@ export const createCtx = ({
             ? pubs[newPubs.length - 1]
             : undefined
         const isDepChanged = prevDepPatch?.proto !== depPatch.proto
-        isDepsChanged ||= isDepChanged
 
-        if (isDepChanged) {
-          if (patch.listeners.size > 0) connect(proto, depPatch)
+        if (isDepChanged && connected) {
+          if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
+          toConnect.add(depProto)
         }
 
         return depProto.isAction && !isDepChanged
@@ -332,16 +322,21 @@ export const createCtx = ({
       }
 
       patch.state = patch.proto.computer!(patchCtx as CtxSpy, patch.state)
+      patch.cause = cause
+      patch.pubs = newPubs
 
-      if (isDepsChanged || pubs.length !== newPubs.length) {
-        for (let i = 0; i < pubs.length; i++) {
-          if (i >= newPubs.length || pubs[i]!.proto !== newPubs[i]!.proto) {
-            disconnect(proto, pubs[i]!)
-          }
+      if (connected) {
+        for (let i = newPubs.length; i < pubs.length; i++) {
+          toDisconnect.add(pubs[i]!.proto)
+        }
+        for (const depProto of toDisconnect) {
+          toConnect.has(depProto) ||
+            disconnect(proto, depProto.patch ?? read(depProto)!)
+        }
+        for (const depProto of toConnect) {
+          connect(proto, depProto.patch!)
         }
       }
-
-      patch.pubs = newPubs
     } else if (pubs.length > 0 && !pubs[0]!.subs.has(patch.proto)) {
       for (const depCache of pubs) connect(proto, depCache)
     }
@@ -369,13 +364,11 @@ export const createCtx = ({
             proto,
             cause: null,
             pubs: [],
-            subs: new Map(),
+            subs: new Set(),
             listeners: new Set(),
           })
 
       patch = !hasPatch || isActual ? addPatch(cache) : patch!
-
-      patch.cause ??= ctx.cause
 
       if (isComputed || isMutating || isInit) {
         const { state } = patch
@@ -399,6 +392,8 @@ export const createCtx = ({
           proto.updateHooks?.forEach((hook) => hook(ctx, patch!))
         }
       }
+
+      patch.cause ??= ctx.cause
     }
 
     return patch!
