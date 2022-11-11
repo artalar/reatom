@@ -296,14 +296,14 @@ export const createCtx = ({
   }
 
   const actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
-    let { cause, proto, pubs } = patch
+    let { proto, pubs } = patch
     let isDepsChanged = false
 
     if (
       pubs.length === 0 ||
       pubs.some(
         ({ proto, state }) =>
-          !Object.is(state, (cause = actualize(patchCtx, proto)).state),
+          !Object.is(state, (patch.cause = actualize(patchCtx, proto)).state),
       )
     ) {
       const newPubs: typeof pubs = []
@@ -338,7 +338,6 @@ export const createCtx = ({
         }
       }
 
-      patch.cause = cause
       patch.pubs = newPubs
     } else if (pubs.length > 0 && !pubs[0]!.subs.has(patch.proto)) {
       for (const depCache of pubs) connect(proto, depCache)
@@ -373,6 +372,8 @@ export const createCtx = ({
 
       patch = !hasPatch || isActual ? addPatch(cache) : patch!
 
+      patch.cause ??= ctx.cause
+
       if (isComputed || isMutating || isInit) {
         const { state } = patch
         const patchCtx: Ctx = {
@@ -395,8 +396,6 @@ export const createCtx = ({
           proto.updateHooks?.forEach((hook) => hook(ctx, patch!))
         }
       }
-
-      patch.cause ??= ctx.cause
     }
 
     return patch!
