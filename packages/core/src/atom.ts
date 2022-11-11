@@ -261,12 +261,14 @@ export const createCtx = ({
     if (pubPatch.subs.delete(proto)) {
       trRollbacks.push(() => pubPatch.subs.add(proto))
 
-      if (!isConnected(pubPatch) && pubPatch.proto.disconnectHooks !== null) {
-        nearEffects.push(...pubPatch.proto.disconnectHooks)
-      }
+      if (!isConnected(pubPatch)) {
+        if (pubPatch.proto.disconnectHooks !== null) {
+          nearEffects.push(...pubPatch.proto.disconnectHooks)
+        }
 
-      for (const parentParent of pubPatch.pubs) {
-        disconnect(pubPatch.proto, parentParent)
+        for (const parentParent of pubPatch.pubs) {
+          disconnect(pubPatch.proto, parentParent)
+        }
       }
     }
   }

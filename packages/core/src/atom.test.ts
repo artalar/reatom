@@ -413,8 +413,8 @@ test('update propagation for atom with listener', () => {
   const cb1 = mockFn()
   const cb2 = mockFn()
 
-  ctx.subscribe(a2, cb1)
-  ctx.subscribe(a3, cb2)
+  const un1 = ctx.subscribe(a2, cb1)
+  const un2 = ctx.subscribe(a3, cb2)
 
   assert.is(cb1.calls.length, 1)
   assert.is(cb2.calls.length, 1)
@@ -422,8 +422,14 @@ test('update propagation for atom with listener', () => {
   a1(ctx, 1)
 
   assert.is(cb1.calls.length, 2)
+  assert.is(cb1.lastInput(), 1)
   assert.is(cb2.calls.length, 2)
-  assert.is(cb1.lastInput(), cb2.lastInput())
+  assert.is(cb2.lastInput(), 1)
+
+  un2()
+  a1(ctx, 2)
+  assert.is(cb1.calls.length, 3)
+  assert.is(cb1.lastInput(), 2)
   ;`👍` //?
 })
 
