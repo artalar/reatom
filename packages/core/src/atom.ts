@@ -242,14 +242,17 @@ export const createCtx = ({
     return cache.proto.patch
   }
 
-  const enqueueComputers = (queue: Array<AtomCache['subs']>) => {
-    for (const subs of queue) {
-      for (const [subProto] of subs) {
+  const enqueueComputers = (subs: AtomCache['subs']) => {
+    const bfs = [subs]
+    for (const subs of bfs) {
+      for (const subProto of subs.keys()) {
         const subCache = subProto.patch ?? read(subProto)!
 
-        subCache.cause === null ||
-          addPatch(subCache).listeners.size > 0 ||
-          queue.push(subCache.subs)
+        if (subCache.cause !== null) {
+          if (addPatch(subCache).listeners.size === 0) {
+            bfs.push(subCache.subs)
+          }
+        }
       }
     }
   }
@@ -390,7 +393,7 @@ export const createCtx = ({
 
         if (!Object.is(state, patch.state)) {
           if (isMutating && patch.subs.size > 0) {
-            enqueueComputers([patch.subs])
+            enqueueComputers(patch.subs)
           }
 
           proto.updateHooks?.forEach((hook) => hook(ctx, patch!))
