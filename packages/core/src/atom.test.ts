@@ -404,6 +404,29 @@ test('subscribe to cached atom', () => {
   ;`👍` //?
 })
 
+test('update propagation for atom with listener', () => {
+  const a1 = atom(0)
+  const a2 = atom((ctx) => ctx.spy(a1))
+  const a3 = atom((ctx) => ctx.spy(a2))
+
+  const ctx = createCtx()
+  const cb1 = mockFn()
+  const cb2 = mockFn()
+
+  ctx.subscribe(a2, cb1)
+  ctx.subscribe(a3, cb2)
+
+  assert.is(cb1.calls.length, 1)
+  assert.is(cb2.calls.length, 1)
+
+  a1(ctx, 1)
+
+  assert.is(cb1.calls.length, 2)
+  assert.is(cb2.calls.length, 2)
+  assert.is(cb1.lastInput(), cb2.lastInput())
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
