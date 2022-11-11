@@ -542,16 +542,22 @@ export const createCtx = ({
         listener((proto.patch ?? read(proto)!).state)
       }
 
-      // FIXME clear trRollbacks
       return () => {
         if (cache!.listeners.delete(listener) && !isConnected(cache!)) {
+          if (!inTr) {
+            trNearEffectsStart = nearEffects.length
+            trLateEffectsStart = lateEffects.length
+          }
           proto.disconnectHooks && nearEffects.push(...proto.disconnectHooks)
 
           for (const pubCache of cache!.pubs) {
             disconnect(proto, pubCache)
           }
 
-          inTr || walkLateEffects()
+          if (!inTr) {
+            trRollbacks.length = 0
+            walkLateEffects()
+          }
         }
       }
     },
