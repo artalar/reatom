@@ -1,3 +1,0 @@
-[submodule "examples/nextjs-chat"]
-	path = examples/nextjs-chat
-	url = git@github.com:artalar/reatom-next-example.git
