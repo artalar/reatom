@@ -275,20 +275,27 @@ export const createCtx = ({
 
   const connect = (proto: AtomProto, pubPatch: AtomCache) => {
     if (!pubPatch.subs.has(proto)) {
-      if (!isConnected(pubPatch) && pubPatch.proto.connectHooks !== null) {
-        nearEffects.push(...pubPatch.proto.connectHooks)
-      }
-
+      const wasConnected = isConnected(pubPatch)
       pubPatch.subs.add(proto)
       trRollbacks.push(() => pubPatch.subs.delete(proto))
 
-      for (const parentParentPatch of pubPatch.pubs) {
-        connect(pubPatch.proto, parentParentPatch)
+      if (!wasConnected) {
+        if (pubPatch.proto.connectHooks !== null) {
+          nearEffects.push(...pubPatch.proto.connectHooks)
+        }
+
+        for (const parentParentPatch of pubPatch.pubs) {
+          connect(pubPatch.proto, parentParentPatch)
+        }
       }
     }
   }
 
-  const actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
+  const actualizePubs = (
+    patchCtx: Ctx,
+    patch: AtomCache,
+    isReconnection: boolean,
+  ) => {
     let { cause, proto, pubs } = patch
     let connected = isConnected(patch)
     let toDisconnect = new Set<AtomProto>()
@@ -314,9 +321,10 @@ export const createCtx = ({
         const isDepChanged = prevDepPatch?.proto !== depPatch.proto
 
         if (isDepChanged && connected) {
+          isReconnection = true
           if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
-          toConnect.add(depProto)
         }
+        if (isReconnection) toConnect.add(depProto)
 
         return depProto.isAction && !isDepChanged
           ? depPatch.state.slice(prevDepPatch.state.length)
@@ -327,7 +335,7 @@ export const createCtx = ({
       patch.cause = cause
       patch.pubs = newPubs
 
-      if (connected) {
+      if (isReconnection || newPubs.length < pubs.length) {
         for (let i = newPubs.length; i < pubs.length; i++) {
           toDisconnect.add(pubs[i]!.proto)
         }
@@ -339,7 +347,7 @@ export const createCtx = ({
           connect(proto, depProto.patch!)
         }
       }
-    } else if (pubs.length > 0 && !pubs[0]!.subs.has(patch.proto)) {
+    } else if (isReconnection) {
       for (const depCache of pubs) connect(proto, depCache)
     }
   }
@@ -374,6 +382,7 @@ export const createCtx = ({
 
       if (isComputed || isMutating || isInit) {
         const { state } = patch
+        const listenersSize = patch.listeners.size
         const patchCtx: Ctx = {
           get: ctx.get,
           spy: undefined,
@@ -384,7 +393,9 @@ export const createCtx = ({
 
         if (isMutating) mutator!(patchCtx, patch)
 
-        if (isComputed) actualizePubs(patchCtx, patch)
+        if (isComputed) {
+          actualizePubs(patchCtx, patch, listenersSize !== patch.listeners.size)
+        }
 
         if (!Object.is(state, patch.state)) {
           if (patch.subs.size > 0) enqueueComputers(patch.subs)

@@ -18,7 +18,7 @@ import {
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
 {
-  var onCleanup = (atom: Atom, cb: Fn<[Ctx]>) => {
+  var onDisconnect = (atom: Atom, cb: Fn<[Ctx]>) => {
     const hooks = (atom.__reatom.disconnectHooks ??= new Set())
     hooks.add(cb)
     return () => hooks.delete(cb)
@@ -249,9 +249,9 @@ test(`display name`, () => {
   const effect = mockFn()
 
   onConnect(fullNameAtom, () => effect(`fullNameAtom init`))
-  onCleanup(fullNameAtom, () => effect(`fullNameAtom cleanup`))
+  onDisconnect(fullNameAtom, () => effect(`fullNameAtom cleanup`))
   onConnect(displayNameAtom, () => effect(`displayNameAtom init`))
-  onCleanup(displayNameAtom, () => effect(`displayNameAtom cleanup`))
+  onDisconnect(displayNameAtom, () => effect(`displayNameAtom cleanup`))
 
   const ctx = createCtx()
 
@@ -409,27 +409,50 @@ test('update propagation for atom with listener', () => {
   const a2 = atom((ctx) => ctx.spy(a1))
   const a3 = atom((ctx) => ctx.spy(a2))
 
+  // onConnect(a1, (v) => {
+  //   1 //?
+  // })
+  // onDisconnect(a1, (v) => {
+  //   ;-1 //?
+  // })
+  // onConnect(a2, (v) => {
+  //   2 //?
+  // })
+  // onDisconnect(a2, (v) => {
+  //   ;-2 //?
+  // })
+  // onConnect(a3, (v) => {
+  //   3 //?
+  // })
+  // onDisconnect(a3, (v) => {
+  //   ;-3 //?
+  // })
+
   const ctx = createCtx()
-  const cb1 = mockFn()
   const cb2 = mockFn()
+  const cb3 = mockFn()
 
-  const un1 = ctx.subscribe(a2, cb1)
-  const un2 = ctx.subscribe(a3, cb2)
+  const un1 = ctx.subscribe(a2, cb2)
+  const un2 = ctx.subscribe(a3, cb3)
 
-  assert.is(cb1.calls.length, 1)
   assert.is(cb2.calls.length, 1)
+  assert.is(cb3.calls.length, 1)
 
   a1(ctx, 1)
 
-  assert.is(cb1.calls.length, 2)
-  assert.is(cb1.lastInput(), 1)
   assert.is(cb2.calls.length, 2)
   assert.is(cb2.lastInput(), 1)
+  assert.is(cb3.calls.length, 2)
+  assert.is(cb3.lastInput(), 1)
 
   un2()
+  assert.is(ctx.get((r) => r(a2.__reatom))!.subs.size, 0)
   a1(ctx, 2)
-  assert.is(cb1.calls.length, 3)
-  assert.is(cb1.lastInput(), 2)
+  assert.is(cb2.calls.length, 3)
+  assert.is(cb2.lastInput(), 2)
+
+  ctx.subscribe(a3, cb3)
+  assert.is(ctx.get((r) => r(a2.__reatom))!.subs.size, 1)
   ;`👍` //?
 })
 
