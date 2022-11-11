@@ -631,14 +631,14 @@ export const action: {
 
   assertFunction(fn)
 
-  const actionAtom = atom([], name)
+  const actionAtom = atom<Array<any>>([], name)
   actionAtom.__reatom.isAction = true
 
   return Object.assign((ctx: Ctx, ...params: any) => {
-    const state = actionAtom(ctx, (state, patchCtx) =>
-      // @ts-ignore
-      state.concat({ params, payload: fn(patchCtx, ...params) }),
-    )
+    const state = actionAtom(ctx, (state, patchCtx) => [
+      ...state,
+      { params, payload: (fn as Fn)(patchCtx, ...params) },
+    ])
     // @ts-ignore
     return state[state.length - 1]!.payload
   }, actionAtom)
