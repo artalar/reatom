@@ -537,7 +537,12 @@ pre.mono,
   margin: 1.5rem 0;
   border: 2px dashed var(--mono-main);
   overflow-x: scroll;
-  line-height: 1.5rem;
+  line-height: 2rem;
+}
+
+pre.mono *,
+.mono-all pre * {
+  line-height: 2rem;
 }
 
 /* pre.mono:hover:before,
