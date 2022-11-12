@@ -27,7 +27,7 @@ async function main() {
     let npmVersion = '-1'
     try {
       npmVersion = (
-        await $`npm view @reatom/${packageName}@alpha version`
+        await $`npm view @reatom/${packageName} version`
       ).stdout.trim()
     } catch (error) {
       console.warn(`"${packageName}" is not published yet`)
