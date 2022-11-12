@@ -25,7 +25,7 @@ It is simpler to apply a caches for reactive interfaces, so, eventually, it help
 It is a good for data flow description and a bad for data transaction description ([pitfalls](#rp-pitfalls)).
 
 FRP, OORP, Flux, two-way binding, single-store, granular updates are just buzzwords on top of that, other high order patterns.
-Rx, Solid, React, any Even Emmiter are all about reactive programming.
+Rx, Solid, React, any Event Emitter are all about reactive programming.
 Proxies / lenses / pull or push are just an API, not a sense.
 
 > Is [React](https://reactjs.org) reactive? Yeah! It is simple to test. Do you have a control of callbacks (render functions) execution? No, React defines it. You could ask to plan an update, but it will run when React will decide to.

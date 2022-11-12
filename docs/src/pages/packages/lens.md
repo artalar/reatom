@@ -2,8 +2,8 @@
 layout: ../../layouts/Layout.astro
 title: lens
 description: Reatom for lens
----  
-A set of helper operators to transform actions paylod or an atoms state.
+---
+A set of helper operators to transform actions payload or an atoms state.
 
 ## `mapState`
 
@@ -31,7 +31,7 @@ export const changeFullname = changeName.pipe(
 
 ## `mapPayloadAwaited`
 
-Map fullfiled value of async action call. Resulted action is not callable.
+Map fulfilled value of async action call. Resulted action is not callable.
 
 ```ts
 import { mapPayloadAwaited } from '@reatom/lens'
@@ -59,7 +59,7 @@ export const changeInput = inputAtom.pipe(
 
 ## `filter`
 
-Filter unnecesary updates.
+Filter unnecessary updates.
 
 ```ts
 import { filter } from '@reatom/lens'
