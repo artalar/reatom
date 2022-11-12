@@ -1,4 +1,4 @@
-import * as v3 from './atom'
+import * as v3 from '@reatom/core'
 import { Atom } from './declareAtom'
 
 export type Leaf = string // unique

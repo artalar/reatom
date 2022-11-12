@@ -1,4 +1,5 @@
-import * as v3 from './atom'
+import * as v3 from '@reatom/core'
+import { spyChange } from '@reatom/hooks'
 import { Tree, State, TreeId, Leaf } from './kernel'
 import {
   TREE,
@@ -12,6 +13,8 @@ import {
   assign,
   getName,
   getOwnKeys,
+  __onConnect,
+  __onDisconnect,
 } from './shared'
 import { Action, declareAction, PayloadActionCreator } from './declareAction'
 
@@ -21,7 +24,8 @@ const DEPS_SHAPE = Symbol('@@Reatom/DEPS_SHAPE')
 // action for set initialState of each atom to global state
 export const init = declareAction(['@@Reatom/init'])
 export const initAction = init()
-export const replace = v3.action<Record<string | symbol, any>>()
+export const replace =
+  v3.action<Record<string | symbol, any>>('@@Reatom/replace')
 
 type AtomName = TreeId | [string]
 type AtomsMap = { [key: string]: Atom<any> }
@@ -91,7 +95,7 @@ export function declareAtom<TState>(
     ctx.spy(replace).forEach(({ payload }) => (state = payload[id] ?? state))
 
     for (const { dep, reducer } of deps) {
-      v3.spyChange(ctx, dep, (payload) => {
+      spyChange(ctx, dep, (payload) => {
         if (dep !== init.v3action || !isConnected) {
           const { isAction, name } = dep.__reatom
           state = reducer(state, isAction ? payload.payload : payload)
@@ -108,6 +112,12 @@ export function declareAtom<TState>(
 
     return state
   }, id as string)
+  ;(v3atom.__reatom.connectHooks = new Set()).add((ctx) =>
+    __onConnect(ctx, v3atom),
+  )
+  ;(v3atom.__reatom.disconnectHooks = new Set()).add((ctx) =>
+    __onDisconnect(ctx, v3atom),
+  )
   const initialPhase = true
 
   function on<T>(

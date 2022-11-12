@@ -1,6 +1,14 @@
-import * as v3 from './atom'
+import * as v3 from '@reatom/core'
 import { Leaf, Tree, BaseAction } from './kernel'
-import { TREE, nameToId, Unit, getName, getStoreByCtx } from './shared'
+import {
+  TREE,
+  nameToId,
+  Unit,
+  getName,
+  getStoreByCtx,
+  __onConnect,
+  __onDisconnect,
+} from './shared'
 import { Store } from './createStore'
 
 export type ActionType = Leaf
@@ -69,12 +77,19 @@ export function declareAction<
 
   const v3action = v3.action(
     (ctx, payload, r: Array<Reaction<Payload>> = reactions) => {
-      if (Array.isArray(payload) && payload.some(v => 'payload' in v)) throw new Error('HERE')
+      if (Array.isArray(payload) && payload.some((v) => 'payload' in v))
+        throw new Error('HERE')
       r.forEach((cb) => ctx.schedule(() => cb(payload, getStoreByCtx(ctx)!)))
 
       return payload
     },
     getName(id),
+  )
+  ;(v3action.__reatom.connectHooks = new Set()).add((ctx) =>
+    __onConnect(ctx, v3action),
+  )
+  ;(v3action.__reatom.disconnectHooks = new Set()).add((ctx) =>
+    __onDisconnect(ctx, v3action),
   )
 
   const actionCreator = function actionCreator(payload?: Payload) {

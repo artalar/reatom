@@ -1,4 +1,4 @@
-import * as v3 from './atom'
+import * as v3 from '@reatom/core'
 import { Tree, TreeId } from './kernel'
 import { Atom } from './declareAtom'
 import { PayloadActionCreator } from './declareAction'
@@ -92,11 +92,33 @@ export function getOwnKeys<T extends object>(obj: T): Array<keyof T> {
   return keys
 }
 
-export const getStoreByCtx = (ctx: v3.Ctx): Store | undefined => {
+const getRootCause = (ctx: v3.Ctx): v3.AtomCache => {
   let { cause } = ctx
 
   while (cause.proto !== v3.__root) cause = cause.cause!
 
+  return cause
+}
+export const getStoreByCtx = (ctx: v3.Ctx): Store | undefined =>
   // @ts-expect-error
-  return cause.v1store
+  getRootCause(ctx).v1store
+
+export const __onConnect = (ctx: v3.Ctx, anAtom: v3.Atom) => {
+  const rootCause = getRootCause(ctx)
+  if (!rootCause) return
+
+  // @ts-expect-error
+  const activeAtoms: Map<v3.Atom, number> = rootCause[TREE]
+  const count = activeAtoms.get(anAtom) ?? 0
+  activeAtoms.set(anAtom, count + 1)
+}
+export const __onDisconnect = (ctx: v3.Ctx, anAtom: v3.Atom) => {
+  const rootCause = getRootCause(ctx)
+  if (!rootCause) return
+
+  // @ts-expect-error
+  const activeAtoms: Map<v3.Atom, number> = rootCause[TREE]
+  const count = activeAtoms.get(anAtom)!
+  if (count === 1) activeAtoms.delete(anAtom)
+  else activeAtoms.set(anAtom, count - 1)
 }

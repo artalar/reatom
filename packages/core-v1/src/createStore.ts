@@ -1,4 +1,4 @@
-import * as v3 from './atom'
+import * as v3 from '@reatom/core'
 import { State, BaseAction } from './kernel'
 import {
   throwError,
@@ -6,6 +6,7 @@ import {
   assign,
   getIsAtom,
   getIsAction,
+  TREE,
 } from './shared'
 import { Action, actions, PayloadActionCreator } from './declareAction'
 import { Atom, init, replace } from './declareAtom'
@@ -44,6 +45,8 @@ export function createStore(
   v3ctx = v3.createCtx(),
 ): Store {
   const activeAtoms = new Map<v3.Atom, number>()
+  // @ts-expect-error
+  v3ctx.cause[TREE] = activeAtoms
   let dispatchListeners: Function[] = []
   let nextDispatchListeners: Function[] = dispatchListeners
   let snapshot: State = {}
@@ -76,13 +79,11 @@ export function createStore(
   function _getState<T>(target?: Atom<T>): State | T {
     if (target === undefined) {
       const result: v3.Rec = assign({}, snapshot)
-      const walk = (patch: v3.AtomCache): void => {
-        if (!patch.proto.isAction) result[patch.proto.name!] = patch.state
-        patch.pubs.forEach(walk)
-      }
       v3ctx.get((read) => {
         init.v3action(v3ctx, snapshot)
-        activeAtoms.forEach((count, anAtom) => walk(read(anAtom.__reatom)!))
+        activeAtoms.forEach((count, { __reatom: proto }) => {
+          if (!proto.isAction) result[proto.name!] = read(proto)!.state
+        })
       })
       // @ts-ignore
       return result
@@ -138,7 +139,6 @@ export function createStore(
     }
 
     if (v3atom) {
-      activeAtoms.set(v3atom, (activeAtoms.get(v3atom) ?? 0) + 1)
       let un = v3ctx.get(() => {
         init.v3action(v3ctx, snapshot)
         return v3ctx.subscribe(v3atom, (v) => {
@@ -150,8 +150,6 @@ export function createStore(
         if (!isSubscribed) return
         isSubscribed = false
         un()
-        const count = activeAtoms.get(v3atom)! - 1
-        count > 0 ? activeAtoms.set(v3atom, count) : activeAtoms.delete(v3atom)
       }
     }
 
