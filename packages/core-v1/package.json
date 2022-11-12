@@ -1,6 +1,6 @@
 {
   "name": "@reatom/core-v1",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": false,
   "sideEffects": false,
   "description": "Adapter for Reatom v1",
@@ -19,11 +19,11 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "test": "echo 'FIXME tsx src/index.test.ts'",
+    "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
+    "@reatom/core": ">=3.1.1",
     "@reatom/hooks": ">=3.1.0"
   },
   "author": "artalar",
