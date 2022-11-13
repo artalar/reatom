@@ -243,15 +243,12 @@ export const createCtx = ({
   }
 
   const enqueueComputers = (subs: AtomCache['subs']) => {
-    const bfs = [subs]
-    for (const subs of bfs) {
-      for (const subProto of subs.keys()) {
-        const subCache = subProto.patch ?? read(subProto)!
+    for (const subProto of subs.keys()) {
+      const subCache = subProto.patch ?? read(subProto)!
 
-        if (subCache.cause !== null) {
-          if (addPatch(subCache).listeners.size === 0) {
-            bfs.push(subCache.subs)
-          }
+      if (subCache.cause !== null) {
+        if (addPatch(subCache).listeners.size === 0) {
+          enqueueComputers(subCache.subs)
         }
       }
     }
@@ -542,11 +539,12 @@ export const createCtx = ({
 
       if (cache === undefined || !isConnected(cache)) {
         this.get(() => {
-          if (proto.connectHooks !== null)
+          if (proto.connectHooks !== null) {
             nearEffects.push(...proto.connectHooks)
-          trRollbacks.push(() => proto.patch!.listeners.delete(listener))
+          }
           cache = actualize(this, proto, (patchCtx, patch) => {
             patch.listeners.add(listener)
+            trRollbacks.push(() => proto.patch!.listeners.delete(listener))
           })
         })
       } else {
