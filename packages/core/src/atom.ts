@@ -398,7 +398,9 @@ export const createCtx = ({
         }
 
         if (!Object.is(state, patch.state)) {
-          if (patch.subs.size > 0) enqueueComputers(patch.subs)
+          if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
+            enqueueComputers(patch.subs)
+          }
 
           proto.updateHooks?.forEach((hook) => hook(ctx, patch!))
         }
