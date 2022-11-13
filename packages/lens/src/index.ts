@@ -1,7 +1,6 @@
 import {
   action,
   Action,
-  ActionPayload,
   atom,
   Atom,
   AtomCache,
@@ -67,65 +66,109 @@ export const mapState =
     )
 
 /** Transform action payload */
-export const mapPayload =
-  <T extends Action, Res>(
-    mapper: Fn<[Ctx, ReturnType<T>], Res>,
-    name?: string,
-  ): Fn<[T], Action<[], Res>> =>
-  (anAction): any => {
+export const mapPayload: {
+  <T, Payload>(map: Fn<[Ctx, T], Payload>, name?: string): Fn<
+    [Action<any[], T>],
+    Action<[], Payload>
+  >
+  <T, State>(fallback: State, name?: string): Fn<
+    [Action<any[], T>],
+    Atom<State | T>
+  >
+  <T, State>(fallback: State, map: Fn<[Ctx, T], State>, name?: string): Fn<
+    [Action<any[], T>],
+    Atom<State>
+  >
+} =
+  (fallbackOrMapper: any, mapOrName?: any, name?: string) =>
+  (anAction: Action): any => {
     throwReatomError(!anAction.__reatom.isAction, 'action expected')
 
-    const theAction = Object.assign(
+    const isAction = typeof fallbackOrMapper === 'function'
+    // isAtom
+    let fallback = fallbackOrMapper
+    // isAtom
+    let map = mapOrName ?? ((ctx: Ctx, v: any) => v)
+    if (isAction) {
+      fallback = []
+      map = fallbackOrMapper
+      name = mapOrName
+    }
+
+    const theAtom = Object.assign(
       () => throwReatomError(1, 'derived action call'),
       anAction.pipe(
-        mapState((ctx, depState, prevDepState, prevState = []) => {
-          const newState = depState
-            .map((v) =>
-              v === SKIP
-                ? SKIP
-                : { params: [v], payload: mapper(ctx, v.payload) },
-            )
-            .filter((v) => v !== SKIP && v.payload !== SKIP)
-
-          return newState.length === 0
-            ? prevState
-            : (prevState as any[]).concat(newState)
-        }, name || (anAction.__reatom.name && 'mapPayload')),
+        mapState((ctx, depState, prevDepState, prevState = fallback) => {
+          return isAction
+            ? depState.reduce((acc: any, v) => {
+                const payload = map(ctx, v.payload)
+                return payload === SKIP
+                  ? acc
+                  : [...acc, { params: [v], payload }]
+              }, prevState)
+            : depState.reduce((acc, { payload }) => {
+                const state = map(ctx, payload)
+                return state === SKIP ? acc : state
+              }, prevState)
+        }, name || (anAction.__reatom.name && `mapPayload${isAction ? '' : 'Atom'}`)),
       ),
     )
-    theAction.__reatom.isAction = true
+    theAtom.__reatom.isAction = isAction
 
-    return theAction
+    return theAtom
   }
 
 /** Transform async action payload */
-export const mapPayloadAwaited =
-  <T extends Action, Res = Awaited<ActionPayload<T>>>(
-    mapper: Fn<[Ctx, Awaited<ActionPayload<T>>], Res> = (ctx, v) => v,
+export const mapPayloadAwaited: {
+  <T, Payload = Awaited<T>>(
+    mapper: Fn<[Ctx, Awaited<T>], Payload>,
     name?: string,
-  ): Fn<[T], Action<[], Res>> =>
-  (anAction): any =>
-    anAction.pipe(
-      mapPayload((ctx, promise: any) => {
-        if (promise instanceof Promise) {
-          __thenReatomed(ctx, promise, (v, read, actualize) =>
-            actualize!(
-              ctx,
-              ctx.cause!.proto,
-              (patchCtx: Ctx, patch: AtomCache) => {
-                patch.cause = ctx.cause!.cause
-                patch.state = patch.state.concat([
-                  { params: [v], payload: mapper(ctx, v) },
-                ])
-              },
-            ),
-          )
-          return SKIP
-        } else {
-          return mapper(ctx, promise)
-        }
-      }, name || (anAction.__reatom.name && 'mapPayloadAwaited')),
+  ): Fn<[Action<any[], T>], Action<[], Payload>>
+  <T, State>(fallback: State, name?: string): Fn<
+    [Action<any[], T>],
+    Atom<State | Awaited<T>>
+  >
+  <T, State>(
+    fallback: State,
+    map: Fn<[Ctx, Awaited<T>], State>,
+    name?: string,
+  ): Fn<[Action<any[], T>], Atom<State>>
+} =
+  (...a: [any?, any?, any?]) =>
+  (anAction: Action): any => {
+    const isAction = a.length === 0 || typeof a[0] === 'function'
+    const [fallback, map = (ctx: Ctx, v: any) => v, name] = isAction
+      ? [[], a[0], a[1]]
+      : a
+    const params = isAction ? [] : [fallback]
+    params.push((ctx: Ctx, promise: any) => {
+      if (promise instanceof Promise) {
+        __thenReatomed(ctx, promise, (v, read, actualize) =>
+          actualize!(
+            ctx,
+            ctx.cause!.proto,
+            (patchCtx: Ctx, patch: AtomCache) => {
+              patch.cause = ctx.cause.cause
+              const payload = map(ctx, v)
+              patch.state = isAction
+                ? [...patch.state, { params: [v], payload }]
+                : payload
+            },
+          ),
+        )
+        return SKIP
+      } else {
+        return map(ctx, promise)
+      }
+    }, name || (anAction.__reatom.name && `mapPayloadAwaited${isAction ? '' : 'Atom'}`))
+
+    return anAction.pipe(
+      mapPayload(
+        // @ts-ignore
+        ...params,
+      ),
     )
+  }
 
 /** Transform atom update */
 export const mapInput =
@@ -165,29 +208,11 @@ export const filter =
     )
 
 /** Convert action to atom with optional fallback state */
-export const toAtom =
-  <T, State = undefined | T>(
-    fallback?: State,
-    name?: string,
-  ): Fn<[Action<any[], T>], Atom<State | T>> =>
-  (anAction): any => {
-    throwReatomError(!anAction.__reatom.isAction, 'action expected')
-
-    return Object.assign(
-      {},
-      anAction,
-      atom(
-        (ctx, state = fallback) =>
-          ctx.spy(anAction).reduce(
-            (acc, v) =>
-              // @ts-ignore
-              v.payload,
-            state,
-          ),
-        name || (anAction.__reatom.name && 'toAtom'),
-      ),
-    )
-  }
+export const toAtom = <T, State = undefined | T>(
+  fallback?: State,
+  name?: string,
+): Fn<[Action<any[], T>], Atom<State | T>> =>
+  mapPayload(fallback, (ctx, v: any) => v, name)
 
 // type StatesShape<Shape extends Rec<Atom>> = {
 //   [K in keyof Shape]: AtomState<Shape[K]>
