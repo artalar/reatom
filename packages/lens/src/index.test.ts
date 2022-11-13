@@ -131,4 +131,37 @@ test(`filter`, () => {
   ;`👍` //?
 })
 
+test('mapPayload atom', () => {
+  const act = action((ctx, v: number) => v)
+  const actAtom = act.pipe(mapPayload(0))
+  const actMapAtom = act.pipe(mapPayload(0, (ctx, v) => v + 1))
+  const ctx = createTestCtx()
+  const atomTrack = ctx.subscribeTrack(actAtom)
+  const actMapTrack = ctx.subscribeTrack(actMapAtom)
+
+  assert.is(atomTrack.lastInput(), 0)
+  assert.is(actMapTrack.lastInput(), 0)
+
+  act(ctx, 1)
+  assert.is(atomTrack.lastInput(), 1)
+  assert.is(actMapTrack.lastInput(), 2)
+  ;`👍` //?
+})
+test('mapPayloadAwaited atom', async () => {
+  const act = action((ctx, v: number) => ctx.schedule(() => v))
+  const actAtom = act.pipe(mapPayloadAwaited(0))
+  const actMapAtom = act.pipe(mapPayloadAwaited(0, (ctx, v) => v + 1))
+  const ctx = createTestCtx()
+  const atomTrack = ctx.subscribeTrack(actAtom)
+  const actMapTrack = ctx.subscribeTrack(actMapAtom)
+
+  assert.is(atomTrack.lastInput(), 0)
+  assert.is(actMapTrack.lastInput(), 0)
+
+  await act(ctx, 1)
+  assert.is(atomTrack.lastInput(), 1)
+  assert.is(actMapTrack.lastInput(), 2)
+  ;`👍` //?
+})
+
 test.run()
