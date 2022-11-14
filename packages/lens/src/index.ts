@@ -190,14 +190,22 @@ export const mapInput =
 
 /** Filter atom updates */
 export const filter: {
-  <T>(predicate: Fn<[Ctx, T], boolean>, name?: string): Fn<
-    [Action<any[], T>],
-    Action<[], T>
-  >
-  <T>(predicate: Fn<[CtxSpy, T, T], boolean>, name?: string): Fn<
-    [Atom<T>],
-    Atom<T>
-  >
+  // TODO for some reason an atom not handled by the second overload
+  // and fails with error on the frst overload.
+  // <T>(predicate: Fn<[Ctx, T], boolean>, name?: string): Fn<
+  //   [Action<any[], T>],
+  //   T extends any ? Action<[], T> : never
+  // >
+  // <T>(predicate: Fn<[CtxSpy, T, T], boolean>, name?: string): Fn<
+  //   [Atom<T>],
+  //   Atom<T>
+  // >
+  <T extends Atom>(
+    predicate: T extends Action
+      ? Fn<[CtxSpy, ReturnType<T>], boolean>
+      : Fn<[CtxSpy, AtomState<T>, AtomState<T>], boolean>,
+    name?: string,
+  ): Fn<[T], T extends Action ? Action<[], ReturnType<T>> : Atom<AtomState<T>>>
 } =
   (predicate, name) =>
   (anAtom: Atom): any => {
