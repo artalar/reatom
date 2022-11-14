@@ -540,9 +540,10 @@ pre.mono,
   line-height: 2rem;
 }
 
-pre.mono *,
-.mono-all pre * {
+pre.mono, pre.mono *,
+.mono-all pre, .mono-all pre * {
   line-height: 2rem;
+  background-color: transparent;
 }
 
 /* pre.mono:hover:before,
