@@ -32,6 +32,10 @@ a.mono,
   outline: none;
   border-bottom: 0.25rem solid var(--mono-main);
 }
+a.mono:hover,
+.mono-all a:hover {
+  border-bottom-width: 0.5rem;
+}
 a.mono:visited,
 .mono-all a:visited {
   border-bottom: 0.1rem solid var(--mono-main);
