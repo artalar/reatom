@@ -97,7 +97,7 @@ export interface AtomProto<State = any> {
   isAction: boolean
   /** temporal cache of the last patch during transaction */
   patch: null | AtomCache
-  initState: Fn<[Ctx], State | any>
+  initState: Fn<[Ctx], State>
   computer: null | Fn<[CtxSpy, unknown], unknown>
   connectHooks: null | Set<Fn<[Ctx]>>
   disconnectHooks: null | Set<Fn<[Ctx]>>
@@ -638,7 +638,7 @@ export const action: {
     fn: (ctx: Ctx, ...params: Params) => Res,
     name?: string,
   ): Action<Params, Res>
-} = (fn?: string | Fn, name?: string): Action => {
+} = (fn?: string | Fn, name?: string): any => {
   if (fn === undefined || typeof fn === 'string') {
     name = fn
     fn = (ctx: Ctx, v?: any) => v

@@ -99,7 +99,7 @@ export function declareAction<
       reactions,
       v3action,
     }
-  } as ActionCreator<Type> | PayloadActionCreator<Payload, Type>
+  } as BaseActionCreator & v3.Fn
 
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id as Type
@@ -108,5 +108,5 @@ export function declareAction<
   // @ts-expect-error
   actions.set(id, actionCreator)
 
-  return actionCreator
+  return actionCreator as any
 }
