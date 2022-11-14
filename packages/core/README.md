@@ -1,6 +1,6 @@
-Small, performant, powerful and extensible core package for building reactive applications of any size.
+Small, extensible, feature-rich and performant core package for building reactive applications of any size.
 
-[Main docs starts here](https://www.reatom.dev)
+[Main docs starts here](https://www.reatom.dev).
 
 ## Installation
 
@@ -11,6 +11,12 @@ npm i @reatom/core
 ## Usage
 
 > See the APIs description [below](#api)
+
+Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation. All other abstractions work on top of these three. You could check the [architecture](#architecture) section for a deep dive to internal principles and it motivation.
+
+Reatom is inspired by React.js architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`.
+
+> To get the maximum performance and handle immutability by a constant time, check the [atomization](https://www.reatom.dev/guides/atomization) guide. [There](https://www.reatom.dev/#how-performant-reatom-is) you could find an overview of a self Reatom performance.
 
 ```ts
 import { createCtx, action, atom } from '@reatom/core'
@@ -137,6 +143,10 @@ socket.on(
 
 You need to know one rare tricky thing. If during transaction you will call an action and will read it dependent atom a few time step by step, `ctx.get` will return the whole array of all passed payload, but `ctx.spy` will return array with only new elements, which wasn't handled in this reducer during this transaction. And to made this rare case correct you should spying your dependencies in same way each time, without conditions. In other words, for this case your dependencies list should be static.
 
+<!-- ## Architecture
+
+A few notes about internal architecture design and it motivation. -->
+
 ## API
 
 ### `atom` API
@@ -215,7 +225,22 @@ ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
 
 ### `atom.pipe` API
 
-Operator map the atom to another thing: `<T extends Atom>(options?: any) => (anAtom: T) => something`
+Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`.
+
+> Check naming conventions and more examples in [this guild](http://localhost:3000/guides/naming#operator-prefix).
+
+```ts
+const someAtom = atom(0).pipe(toSome({}), withOther({}))
+// equals to
+const someAtom = withOther({})(toSome({})(atom(0)))
+```
+
+Chain operator is just a more prettier way to apply decorations
+
+```ts
+// ugly for a few decorators, the applying order is less obvious
+const someAtom = withOther({}, toSome({}, atom(0)))
+```
 
 ### `action` API
 
@@ -283,7 +308,5 @@ Subscribe to transaction end
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
 ### `ctx.schedule`
-
-
 
 To archive [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](https://reatom.dev/packages/core#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map.
