@@ -101,12 +101,14 @@ export const mapPayload: {
       anAction.pipe(
         mapState((ctx, depState, prevDepState, prevState = fallback) => {
           return isAction
-            ? depState.reduce((acc: any, v) => {
+            ? // @ts-expect-error
+              ((ctx.spy = undefined),
+              depState.reduce((acc: any, v) => {
                 const payload = map(ctx, v.payload)
                 return payload === SKIP
                   ? acc
                   : [...acc, { params: [v], payload }]
-              }, prevState)
+              }, prevState))
             : depState.reduce((acc, { payload }) => {
                 const state = map(ctx, payload)
                 return state === SKIP ? acc : state
