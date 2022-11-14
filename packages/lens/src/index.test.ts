@@ -111,23 +111,39 @@ test(`mapPayloadAwaited sync resolution`, async () => {
   ;`👍` //?
 })
 
-test(`filter`, () => {
+test('filter atom', () => {
   const a = atom(1)
-  const a1 = a.pipe(filter((v) => v !== 2))
+  const a1 = a.pipe(filter((ctx, v) => v !== 2))
   const ctx = createTestCtx()
-  const cb = mockFn()
 
-  ctx.subscribe(a1, cb)
-  assert.is(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), 1)
+  const track = ctx.subscribeTrack(a1)
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), 1)
 
   a(ctx, 2)
-  assert.is(cb.calls.length, 1)
-  assert.equal(cb.lastInput(), 1)
+  assert.is(track.calls.length, 1)
 
   a(ctx, 3)
-  assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput(), 3)
+  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput(), 3)
+  ;`👍` //?
+})
+
+test('filter action', () => {
+  const act = action<number>()
+  const act1 = act.pipe(filter((ctx, v) => v !== 2))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(act1)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), [])
+
+  act(ctx, 2)
+  assert.is(track.calls.length, 1)
+
+  act(ctx, 3)
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput()[0]?.payload, 3)
   ;`👍` //?
 })
 

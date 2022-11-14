@@ -8,6 +8,7 @@ import {
   AtomState,
   Ctx,
   CtxParams,
+  CtxSpy,
   Fn,
   throwReatomError,
 } from '@reatom/core'
@@ -55,7 +56,7 @@ export const plain = <T extends Atom>(
 /** Transform atom state */
 export const mapState =
   <T extends Atom, Res>(
-    mapper: Fn<[Ctx, AtomState<T>, undefined | AtomState<T>, unknown], Res>,
+    mapper: Fn<[CtxSpy, AtomState<T>, undefined | AtomState<T>, unknown], Res>,
     name?: string,
   ): Fn<[T], Atom<Res>> =>
   (anAtom: Atom) =>
@@ -188,24 +189,38 @@ export const mapInput =
     )
 
 /** Filter atom updates */
-export const filter =
-  <T extends Atom>(
-    predicate: T extends Action<any, T>
-      ? Fn<[T, T], boolean>
-      : Fn<[AtomState<T>, AtomState<T>], boolean>,
-    name?: string,
-  ): Fn<[T], T> =>
-  (anAtom) =>
-    // @ts-ignore
-    anAtom.pipe(
-      mapState(
-        (ctx, newState, oldState) =>
-          ctx.cause!.pubs.length === 0 || predicate(newState, oldState!)
-            ? newState
-            : oldState!,
-        name || (anAtom.__reatom.name && 'filter'),
-      ),
+export const filter: {
+  <T>(predicate: Fn<[Ctx, T], boolean>, name?: string): Fn<
+    [Action<any[], T>],
+    Action<[], T>
+  >
+  <T>(predicate: Fn<[CtxSpy, T, T], boolean>, name?: string): Fn<
+    [Atom<T>],
+    Atom<T>
+  >
+} =
+  (predicate, name) =>
+  (anAtom: Atom): any => {
+    name ||= anAtom.__reatom.name && 'filter'
+
+    return anAtom.pipe(
+      // @ts-ignore
+      anAtom.__reatom.isAction
+        ? mapPayload(
+            // @ts-ignore
+            (ctx, payload) => (predicate(ctx, payload) ? payload : SKIP),
+            name,
+          )
+        : mapState(
+            (ctx, newState, oldState) =>
+              ctx.cause!.pubs.length === 0 ||
+              predicate(ctx, newState, oldState!)
+                ? newState
+                : oldState!,
+            name,
+          ),
     )
+  }
 
 /** Convert action to atom with optional fallback state */
 export const toAtom = <T, State = undefined | T>(
