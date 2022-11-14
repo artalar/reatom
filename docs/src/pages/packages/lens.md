@@ -2,12 +2,12 @@
 layout: ../../layouts/Layout.astro
 title: lens
 description: Reatom for lens
----
+---  
 A set of helper operators to transform actions payload or an atoms state.
 
 ## `mapState`
 
-Simple map utility, which allow you to recieave previous dependency state by a second optional argument.
+Simple map utility, which allow you to receive previous dependency state by a second optional argument.
 
 ```ts
 import { mapState } from '@reatom/lens'

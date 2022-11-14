@@ -18,7 +18,7 @@ Subscribe to atom subscription, optionally return cleanup callback (called durin
 ```ts
 import { onConnect } from '@reatom/hooks'
 
-onConnect(messagesAtom, (ctx) => {
+const unkink = onConnect(messagesAtom, (ctx) => {
   const cb = (message) => {
     messagesAtom(ctx, (messages) => [...messages, message])
   }
@@ -27,6 +27,7 @@ onConnect(messagesAtom, (ctx) => {
 
   return () => WS.off('message', cb)
 })
+// use `unlink` to dispose the hook
 ```
 
 ## `onDisconnect`
@@ -40,7 +41,8 @@ Derive atom or action update during transaction.
 ```ts
 import { onUpdate } from '@reatom/hooks'
 
-onUpdate(pagingAtom, (ctx, page) => fetchData(ctx, page))
+const unlink = onUpdate(pagingAtom, (ctx, page) => fetchData(ctx, page))
+// use `unlink` to dispose the hook
 ```
 
 Very simplified example of lazy analytics connection.
@@ -64,9 +66,24 @@ for (const mod of [moduleA, moduleN]) {
 
 ## `spyChange`
 
-Spy atom or action change in the atom reducer.
+Spy an atom or an action change in the atom reducer. The difference with [onUpdate](#onupdate) is that `spyChange` is a warm link - works inside atom only when it have a connections.
 
 `spyChange(CtxSpy, anAtom, (value) => any): isChanged`
+
+```ts
+import { atom } from '@reatom/core'
+import { spyChange } from '@reatom/hooks'
+
+export const someAtom = atom((ctx, state = initState) => {
+  spyChange(ctx, someAction, (payload) => {
+    state = state + payload
+  })
+  // OR
+  if (spyChange(ctx, someAction)) {
+    state = state + payload
+  }
+})
+```
 
 <!-- ## `controlConnection` -->
 
