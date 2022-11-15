@@ -14,7 +14,6 @@
     "@artalar/mono": "^1.0.3",
     "@astrojs/prefetch": "^0.1.1",
     "@astrojs/sitemap": "^1.0.0",
-    "@astrojs/vercel": "^2.0.0",
     "astro": "^1.2.4"
   },
   "devDependencies": {
