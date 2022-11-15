@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/Layout.astro
 title: What is a state manager
-description: What is a state manager
+description: General introduction to state management and reactive programming
 ---
 
 ## The disunity

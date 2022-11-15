@@ -1,7 +1,7 @@
 ---
 layout: ../layouts/Layout.astro
 title: Examples
-description: Reatom examples
+description: Complex examples of Reatom state manager
 ---
 
 ### Data fetching and react

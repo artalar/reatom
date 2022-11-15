@@ -4,7 +4,9 @@ import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
 import Glitch from '../components/Glitch.astro'
 
-const { frontmatter: { title = '404' } = {} } = Astro.props
+const {
+  frontmatter: { title = '404', description } = {} as Record<string, string>,
+} = Astro.props
 
 const DEFAULT_MAIN = '#0e1117'
 const DEFAULT_BACK = '#e0deed'
@@ -16,6 +18,7 @@ const DEFAULT_BACK = '#e0deed'
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
+    {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <link rel="stylesheet" href="/styles/mono.css" />
