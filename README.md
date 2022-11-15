@@ -93,7 +93,15 @@ This example is only about 20 LoC without comments and imports to describe all l
 
 <!-- Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient. -->
 
-To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.reatom.dev/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core).
+To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.reatom.dev/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core). Also, we have a [package for testing](https://www.reatom.dev/packages/testing)!
+
+## Roadmap
+
+- Finish [persist](https://github.com/artalar/reatom/tree/v3/packages/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
+- Add adapters for most popular ui frameworks: ~~react~~ ([already have](https://www.reatom.dev/packages/npm-react)), angular, vue, svelte, solid.
+- Port some components logic from reakit.io, to made it fast, light and portable.
+- Add ability to made async transaction and elaborate optimistic-ui patterns and helpers / package.
+- Try to write own jsx renderer.
 
 ## FAQ
 
