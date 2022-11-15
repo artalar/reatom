@@ -12,8 +12,7 @@
     "update": "npx npm-check-updates -u"
   },
   "workspaces": [
-    "packages/*",
-    "bench"
+    "packages/*"
   ],
   "simple-git-hooks": {
     "commit-msg": "npx commitlint -e '$@'"
