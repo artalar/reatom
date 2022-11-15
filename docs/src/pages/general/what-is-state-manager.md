@@ -88,3 +88,5 @@ Someone will say that discarding all changes is not consistent with modular syst
 ## State management
 
 So, what is state manager? It is a library for storing and processing data with reactive interface. It could expose special APIs for certain domain, have some cache invalidation strategies and should help to prevent [glitches](https://en.wikipedia.org/wiki/Reactive_programming#Glitches) and grant data consistency.
+
+> Let's [discuss](https://github.com/artalar/reatom/discussions/444) this!
