@@ -76,6 +76,12 @@ const DEFAULT_BACK = '#e0deed'
     </style>
   </head>
   <body class="mono-all">
+    <script>
+      const remSize = new URLSearchParams(document.location.search).get(
+        '__remSize',
+      )
+      if (remSize) document.documentElement.style.fontSize = remSize
+    </script>
     <Sidebar />
     <main>
       <!-- <nav style={`
