@@ -28,7 +28,7 @@ FRP, OORP, Flux, two-way binding, single-store, granular updates are just buzzwo
 Rx, Solid, React, any Event Emitter are all about reactive programming.
 Proxies / lenses / pull or push are just an API, not a sense.
 
-> Is [React](https://reactjs.org) reactive? Yeah! It is simple to test. Do you have a control of callbacks (render functions) execution? No, React defines it. You could ask to plan an update, but it will run when React will decide to.
+> Is [React](https://reactjs.org) reactive? Yeah! It is simple to test. Do you have a control of callbacks (render functions) execution? No, React defines it. You could ask to plan an update, but it will run when React will decide to. Reactivity in implementations could be very different, [MobX](https://mobx.js.org) and [Rx](https://rxjs.dev) are both reactive, but look totally opposite to each other.
 
 ### RP pitfalls
 
