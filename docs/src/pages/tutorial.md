@@ -10,4 +10,6 @@ description: Base tutorial for of reatom features
 npm i @reatom/framework
 ```
 
+> Also, we have a [package for testing](https://www.reatom.dev/packages/testing)!
+
 TODO..

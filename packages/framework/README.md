@@ -11,4 +11,6 @@ This is a meta package with reexports from:
 - [@reatom/primitives](https://reatom.dev/packages/primitives)
 - [@reatom/utils](https://reatom.dev/packages/utils)
 
+> Also, we have a [package for testing](https://www.reatom.dev/packages/testing)!
+
 <!-- All exported variables: -->
