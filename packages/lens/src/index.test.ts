@@ -14,6 +14,7 @@ import {
   plain,
   toAtom,
   mapPayload,
+  debounce,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -144,6 +145,36 @@ test('filter action', () => {
   act(ctx, 3)
   assert.is(track.calls.length, 2)
   assert.equal(track.lastInput()[0]?.payload, 3)
+  ;`👍` //?
+})
+
+test('debounce action', async () => {
+  const act = action<number>()
+  const actD = act.pipe(debounce(0))
+  const a = actD.pipe(mapPayload(0))
+  const ctx = createTestCtx()
+  const track = ctx.subscribeTrack(actD)
+  ctx.subscribeTrack(a)
+
+  act(ctx, 1)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), [])
+  assert.is(ctx.get(a), 0)
+
+  await sleep()
+  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput().at(0)?.payload, 1)
+  assert.is(ctx.get(a), 1)
+
+  act(ctx, 2)
+  act(ctx, 3)
+  assert.is(track.calls.length, 2)
+  assert.is(ctx.get(a), 1)
+
+  await sleep()
+  assert.is(track.calls.length, 3)
+  assert.is(track.lastInput().at(0)?.payload, 3)
+  assert.is(ctx.get(a), 3)
   ;`👍` //?
 })
 

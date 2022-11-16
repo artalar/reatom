@@ -17,6 +17,10 @@ import { __thenReatomed } from '@reatom/effects'
 export * from './parseAtoms'
 export * from './bind'
 
+type SameAtom<T extends Atom> = T extends Action<any[], infer Payload>
+  ? Action<[], Payload>
+  : Atom<AtomState<T>>
+
 const mapName = ({ __reatom: proto }: Atom, fallback: string, name?: string) =>
   proto.name ? `${proto.name}.${name ?? fallback}` : name
 
@@ -203,11 +207,11 @@ export const filter: {
   //   Atom<T>
   // >
   <T extends Atom>(
-    predicate: T extends Action
-      ? Fn<[CtxSpy, ReturnType<T>], boolean>
+    predicate: T extends Action<any[], infer Payload>
+      ? Fn<[CtxSpy, Payload], boolean>
       : Fn<[CtxSpy, AtomState<T>, AtomState<T>], boolean>,
     name?: string,
-  ): Fn<[T], T extends Action ? Action<[], ReturnType<T>> : Atom<AtomState<T>>>
+  ): Fn<[T], SameAtom<T>>
 } =
   (predicate, name) =>
   (anAtom: Atom): any => {
@@ -230,6 +234,41 @@ export const filter: {
             name,
           ),
     )
+  }
+
+export const debounce =
+  <T extends Atom>(timeout: number, name?: string): Fn<[T], SameAtom<T>> =>
+  // @ts-ignore
+  (anAtom: Atom, name?: string) => {
+    const { isAction } = anAtom.__reatom
+    const cacheAtom = atom({ current: undefined as any })
+    const theAtom = atom((ctx, prevState?: any) => {
+      let state = ctx.spy(anAtom)
+      if (isAction) state = anAtom.__reatom.patch!.state
+
+      const cache = cacheAtom(ctx, { current: state })
+
+      ctx.schedule(() =>
+        setTimeout(
+          () =>
+            ctx.get(
+              (r, a) =>
+                ctx.get(cacheAtom) === cache &&
+                a!(
+                  ctx,
+                  theAtom.__reatom,
+                  (patchCtx: Ctx, patch: AtomCache) => (patch.state = state),
+                ),
+            ),
+          timeout,
+        ),
+      )
+
+      return ctx.cause.pubs.length ? prevState : state
+    }, name || (anAtom.__reatom.name && 'debounce'))
+    theAtom.__reatom.isAction = isAction
+
+    return theAtom
   }
 
 /** Convert action to atom with optional fallback state */

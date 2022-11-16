@@ -64,6 +64,18 @@ export const listMemoAtom = listAtom.pipe(filter, (ctx, a, b) =>
 )
 ```
 
+## `debounce`
+
+Debounce updates by timeout.
+
+```ts
+import { action } from '@reatom/core'
+import { debounce, mapPayload } from '@reatom/lens'
+
+export const startAnimation = action()
+export const endAnimation = startAnimation.pipe(debounce(250))
+```
+
 ## `toAtom`
 
 Convert an action to atom with optional init state.
