@@ -310,23 +310,25 @@ export const createCtx = ({
       const newPubs: typeof pubs = []
 
       patchCtx.spy = ({ __reatom: depProto }: Atom) => {
-        throwReatomError(patch.pubs !== pubs, 'async spy')
+        if (patch.pubs === pubs) {
+          const depPatch = actualize(patchCtx, depProto)
+          const prevDepPatch =
+            newPubs.push(depPatch) <= pubs.length
+              ? pubs[newPubs.length - 1]
+              : undefined
+          const isDepChanged = prevDepPatch?.proto !== depPatch.proto
 
-        const depPatch = actualize(patchCtx, depProto)
-        const prevDepPatch =
-          newPubs.push(depPatch) <= pubs.length
-            ? pubs[newPubs.length - 1]
-            : undefined
-        const isDepChanged = prevDepPatch?.proto !== depPatch.proto
+          if (isDepChanged && (connected ||= isConnected(patch))) {
+            if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
+            toConnect.add(depProto)
+          }
 
-        if (isDepChanged && (connected ||= isConnected(patch))) {
-          if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
-          toConnect.add(depProto)
+          return depProto.isAction && !isDepChanged
+            ? depPatch.state.slice(prevDepPatch.state.length)
+            : depPatch.state
+        } else {
+          throwReatomError(1, 'async spy')
         }
-
-        return depProto.isAction && !isDepChanged
-          ? depPatch.state.slice(prevDepPatch.state.length)
-          : depPatch.state
       }
 
       patch.state = patch.proto.computer!(patchCtx as CtxSpy, patch.state)
