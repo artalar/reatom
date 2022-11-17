@@ -24,6 +24,18 @@ export const changeFullname = changeName.pipe(
 )
 ```
 
+You could pass initial state by first argument to create an atom.
+
+```ts
+import { action } from '@reatom/core'
+import { mapPayload } from '@reatom/lens'
+
+export const onInput = action('onInput')
+export const inputAtom = onInput.pipe(
+  mapPayload('', (ctx, event) => event.currentTarget.value, 'inputAtom'),
+)
+```
+
 ## `mapPayloadAwaited`
 
 Map fulfilled value of async action call. Resulted action is not callable.
@@ -32,29 +44,41 @@ Map fulfilled value of async action call. Resulted action is not callable.
 import { mapPayloadAwaited } from '@reatom/lens'
 
 export const newData = fetchData.pipe(mapPayloadAwaited())
-// OR
+// OR pick needed value
 export const newData = fetchData.pipe(
   mapPayloadAwaited((ctx, response) => response.data),
 )
 ```
 
+You could pass initial state by first argument to create an atom.
+
+```ts
+import { mapPayloadAwaited } from '@reatom/lens'
+
+export const dataAtom = fetchList.pipe(
+  [],
+  mapPayloadAwaited((ctx, response) => response.data),
+  'dataAtom',
+)
+```
+
 ## `mapInput`
 
-Create action wich map input to passed action / atom.
+Create action witch map input to passed action / atom.
 
 ```ts
 import { atom } from '@reatom/core'
 import { mapInput } from '@reatom/lens'
 
-export const input = atom('')
+export const inputAtom = atom('', 'inputAtom')
 export const changeInput = inputAtom.pipe(
-  mapInput((ctx, event) => event.currentTarget.value),
+  mapInput((ctx, event) => event.currentTarget.value, 'changeInput'),
 )
 ```
 
 ## `filter`
 
-Filter unnecessary updates.
+Filter updates by comparator function.
 
 ```ts
 import { filter } from '@reatom/lens'
@@ -66,7 +90,7 @@ export const listMemoAtom = listAtom.pipe(filter, (ctx, a, b) =>
 
 ## `debounce`
 
-Debounce updates by timeout.
+Delay updates by timeout.
 
 ```ts
 import { action } from '@reatom/core'
@@ -74,6 +98,20 @@ import { debounce, mapPayload } from '@reatom/lens'
 
 export const startAnimation = action()
 export const endAnimation = startAnimation.pipe(debounce(250))
+```
+
+## `sample`
+
+Delay updates until other atom update / action call.
+
+```ts
+import { mapPayload, sample } from '@reatom/lens'
+
+export const lastRequestTimeAtom = fetchData.pipe(
+  mapPayload(0, () => Date.now(), 'fetchStartAtom'),
+  sample(fetchImages.onSettle),
+  mapState((ctx, start) => start && Date.now() - start, 'lastRequestTimeAtom'),
+)
 ```
 
 ## `toAtom`

@@ -13,16 +13,23 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
+import { spyChange } from '@reatom/hooks'
 
 export * from './parseAtoms'
 export * from './bind'
 
-type SameAtom<T extends Atom> = T extends Action<any[], infer Payload>
+type PipedAtom<T extends Atom> = T extends Action<any[], infer Payload>
   ? Action<[], Payload>
   : Atom<AtomState<T>>
 
 const mapName = ({ __reatom: proto }: Atom, fallback: string, name?: string) =>
   proto.name ? `${proto.name}.${name ?? fallback}` : name
+
+const mapNameForMap = (
+  { __reatom: proto }: Atom,
+  fallback: string,
+  name?: string,
+) => name || (proto.name && `${fallback}${proto.isAction ? '' : 'Atom'}`)
 
 /**
  * Skip mark to stop reactive propagation and use previous state
@@ -117,7 +124,7 @@ export const mapPayload: {
                 const state = map(ctx, payload)
                 return state === SKIP ? acc : state
               }, prevState)
-        }, name || (anAction.__reatom.name && `mapPayload${isAction ? '' : 'Atom'}`)),
+        }, name || (anAction.__reatom.name && 'mapPayload')),
       ),
     )
     theAtom.__reatom.isAction = isAction
@@ -167,7 +174,7 @@ export const mapPayloadAwaited: {
       } else {
         return map(ctx, promise)
       }
-    }, name || (anAction.__reatom.name && `mapPayloadAwaited${isAction ? '' : 'Atom'}`))
+    }, name || (anAction.__reatom.name && 'mapPayloadAwaited'))
 
     return anAction.pipe(
       mapPayload(
@@ -191,10 +198,10 @@ export const mapInput =
           // @ts-ignore
           mapper(ctx, ...args),
         ),
-      name || (anAtom.__reatom.name && 'mapInput'),
+      mapName(anAtom, 'mapInput', name),
     )
 
-/** Filter atom updates */
+/** Filter updates by comparator function */
 export const filter: {
   // TODO for some reason an atom not handled by the second overload
   // and fails with error on the frst overload.
@@ -211,7 +218,7 @@ export const filter: {
       ? Fn<[CtxSpy, Payload], boolean>
       : Fn<[CtxSpy, AtomState<T>, AtomState<T>], boolean>,
     name?: string,
-  ): Fn<[T], SameAtom<T>>
+  ): Fn<[T], PipedAtom<T>>
 } =
   (predicate, name) =>
   (anAtom: Atom): any => {
@@ -236,8 +243,9 @@ export const filter: {
     )
   }
 
+/** Delay updates by timeout */
 export const debounce =
-  <T extends Atom>(timeout: number, name?: string): Fn<[T], SameAtom<T>> =>
+  <T extends Atom>(timeout: number, name?: string): Fn<[T], PipedAtom<T>> =>
   // @ts-ignore
   (anAtom: Atom, name?: string) => {
     const { isAction } = anAtom.__reatom
@@ -265,10 +273,30 @@ export const debounce =
       )
 
       return ctx.cause.pubs.length ? prevState : state
-    }, name || (anAtom.__reatom.name && 'debounce'))
+    }, mapName(anAtom, 'debounce', name))
     theAtom.__reatom.isAction = isAction
 
     return theAtom
+  }
+
+/** Delay updates until other atom update / action call */
+// https://rxjs.dev/api/operators/sample
+// https://effector.dev/docs/api/effector/sample
+export const sample =
+  <T>(signal: Atom, name?: string): Fn<[Atom<T>], Atom<T>> =>
+  // @ts-ignore
+  (anAtom) => {
+    throwReatomError(anAtom.__reatom.isAction, 'atom expected')
+
+    return anAtom.pipe(
+      mapState(
+        (ctx, payload, prevPayload, prevState) =>
+          spyChange(ctx, signal) || ctx.cause.pubs.length === 0
+            ? payload
+            : prevState,
+        name || (anAtom.__reatom.name && 'filter'),
+      ),
+    )
   }
 
 /** Convert action to atom with optional fallback state */

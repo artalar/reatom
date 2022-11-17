@@ -15,6 +15,7 @@ import {
   toAtom,
   mapPayload,
   debounce,
+  sample,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -178,6 +179,26 @@ test('debounce action', async () => {
   ;`👍` //?
 })
 
+test('sample', () => {
+  const act = action()
+  const a = atom(0)
+  const aSampled = a.pipe(sample(act))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(aSampled)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), 0)
+
+  a(ctx, 1)
+  a(ctx, 2)
+  assert.is(track.calls.length, 1)
+
+  act(ctx)
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput(), 2)
+  ;`👍` //?
+})
+
 test('mapPayload atom', () => {
   const act = action((ctx, v: number) => v)
   const actAtom = act.pipe(mapPayload(0))
@@ -194,6 +215,7 @@ test('mapPayload atom', () => {
   assert.is(actMapTrack.lastInput(), 2)
   ;`👍` //?
 })
+
 test('mapPayloadAwaited atom', async () => {
   const act = action((ctx, v: number) => ctx.schedule(() => v))
   const actAtom = act.pipe(mapPayloadAwaited(0))
