@@ -335,8 +335,11 @@ export const createCtx = ({
       patch.cause = cause
       patch.pubs = newPubs
 
-      for (let i = newPubs.length; i < pubs.length; i++) {
-        toDisconnect.add(pubs[i]!.proto)
+      if (newPubs.length < pubs.length) {
+        connected = true
+        for (let i = newPubs.length; i < pubs.length; i++) {
+          toDisconnect.add(pubs[i]!.proto)
+        }
       }
 
       if (connected) {
