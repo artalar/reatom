@@ -1,0 +1,19 @@
+{
+  "name": "@reatom/experiments-v2",
+  "version": "3.1.0",
+  "private": true,
+  "sideEffects": false,
+  "description": "Experimented helpers for reatom",
+  "source": "index.ts",
+  "main": "build/experiments.js",
+  "module": "build/experiments.module.js",
+  "umd:main": "build/experiments.umd.js",
+  "types": "build/experiments.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "cross-env fixme=fixme microbundle"
+  },
+  "peerDependencies": {
+    "@reatom/core-v2": "^3.1.0"
+  }
+}

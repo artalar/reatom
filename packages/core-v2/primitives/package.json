@@ -1,0 +1,19 @@
+{
+  "name": "@reatom/primitives-v2",
+  "version": "3.1.0",
+  "private": true,
+  "sideEffects": false,
+  "description": "Reatom helpers to create atoms around data primitives",
+  "source": "index.ts",
+  "main": "build/primitives.js",
+  "module": "build/primitives.module.js",
+  "umd:main": "build/primitives.umd.js",
+  "types": "build/primitives.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "cross-env fixme=fixme microbundle"
+  },
+  "peerDependencies": {
+    "@reatom/core-v2": "^3.1.0"
+  }
+}
