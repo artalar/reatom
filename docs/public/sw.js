@@ -6,7 +6,8 @@ self.addEventListener('install', (event) => {
 })
 
 self.addEventListener('fetch', function (event) {
-  const { request } = event
+  /** @type Request */
+  const request = event.request
   const fetchPromise = fetch(request)
 
   event.respondWith(
@@ -16,11 +17,13 @@ self.addEventListener('fetch', function (event) {
       .catch(() => fetchPromise),
   )
 
-  event.waitUntil(
-    fetchPromise.then((response) => {
-      if (response.status !== 200) return
-      response = response.clone()
-      caches.open(CACHE).then((cache) => cache.put(request, response))
-    }),
-  )
+  if (request.method.toLowerCase() === 'get') {
+    event.waitUntil(
+      fetchPromise.then((response) => {
+        if (response.status !== 200) return
+        response = response.clone()
+        caches.open(CACHE).then((cache) => cache.put(request, response))
+      }),
+    )
+  }
 })
