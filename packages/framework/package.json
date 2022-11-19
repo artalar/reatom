@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -13,9 +13,7 @@
   "module": "build/index.module.js",
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
-  "browserslist": [
-    "last 4 chrome versions"
-  ],
+  "browserslist": ["last 4 chrome versions"],
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "microbundle",
@@ -24,10 +22,10 @@
   },
   "dependencies": {
     "@reatom/async": ">=3.1.0",
-    "@reatom/core": ">=3.1.0",
+    "@reatom/core": ">=3.1.6",
     "@reatom/effects": ">=3.1.0",
     "@reatom/hooks": ">=3.1.0",
-    "@reatom/lens": ">=3.1.0",
+    "@reatom/lens": ">=3.1.5",
     "@reatom/logger": ">=3.1.0",
     "@reatom/primitives": ">=3.1.0",
     "@reatom/utils": ">=3.1.0"
@@ -38,14 +36,7 @@
     "type": "git",
     "url": "git+ssh://git@github.com/artalar/reatom.git"
   },
-  "bugs": {
-    "url": "https://github.com/artalar/reatom/issues"
-  },
+  "bugs": { "url": "https://github.com/artalar/reatom/issues" },
   "homepage": "https://www.reatom.dev/packages/framework",
-  "files": [
-    "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
-  ]
+  "files": ["/build", "/package.json", "/README.md", "/src"]
 }

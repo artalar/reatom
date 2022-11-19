@@ -1,7 +1,55 @@
 import 'zx/globals'
+import prettier from 'prettier'
 import path from 'path'
 import fs from 'fs/promises'
 import { createInterface } from 'readline'
+
+const updateFramework = async () => {
+  const packageJson: { version: string; dependencies: Record<string, string> } =
+    JSON.parse(
+      await fs.readFile(
+        path.join(process.cwd(), 'packages', 'framework', 'package.json'),
+        'utf8',
+      ),
+    )
+  const { dependencies } = packageJson
+  let isChanged = false
+
+  for (const name in dependencies) {
+    const { version }: { version: string } = JSON.parse(
+      await fs.readFile(
+        path.join(
+          process.cwd(),
+          'packages',
+          name.replace('@reatom/', ''),
+          'package.json',
+        ),
+        'utf8',
+      ),
+    )
+
+    isChanged ||= dependencies[name] !== `>=${version}`
+
+    dependencies[name] = `>=${version}`
+  }
+
+  if (!isChanged) return
+
+  const [major, minor, patch] = packageJson.version.split('.')
+  packageJson.version = [major, minor, Number(patch) + 1].join('.')
+
+  const prettierConfig = await prettier.resolveConfig(
+    path.join(process.cwd(), '.prettierrc'),
+  )
+  await fs.writeFile(
+    path.join(process.cwd(), 'packages', 'framework', 'package.json'),
+    prettier.format(JSON.stringify(packageJson), {
+      ...prettierConfig,
+      parser: 'json',
+    }),
+    'utf8',
+  )
+}
 
 const rl = createInterface({
   input: process.stdin,
@@ -10,8 +58,9 @@ const rl = createInterface({
 
 let otpCache: string
 
-main()
-async function main() {
+const main = async () => {
+  await updateFramework()
+
   const packages = await fs.readdir(path.join(process.cwd(), 'packages'))
 
   $.log = () => {}
@@ -54,3 +103,5 @@ async function main() {
 
   process.exit()
 }
+
+main()
