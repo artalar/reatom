@@ -1,6 +1,7 @@
 import {
   action,
   Action,
+  ActionPayload,
   atom,
   Atom,
   AtomCache,
@@ -83,6 +84,10 @@ export const mapPayload: {
     [Action<any[], T>],
     Action<[], Payload>
   >
+  <T extends Action>(fallback: ActionPayload<T>, name?: string): Fn<
+    [T],
+    Atom<ActionPayload<T>>
+  >
   <T, State>(fallback: State, name?: string): Fn<
     [Action<any[], T>],
     Atom<State | T>
@@ -138,6 +143,10 @@ export const mapPayloadAwaited: {
     mapper: Fn<[Ctx, Awaited<T>], Payload>,
     name?: string,
   ): Fn<[Action<any[], T>], Action<[], Payload>>
+  <T extends Action>(fallback: Awaited<ActionPayload<T>>, name?: string): Fn<
+    [T],
+    Atom<Awaited<ActionPayload<T>>>
+  >
   <T, State>(fallback: State, name?: string): Fn<
     [Action<any[], T>],
     Atom<State | Awaited<T>>
