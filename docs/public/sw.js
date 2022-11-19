@@ -10,7 +10,7 @@ self.addEventListener('fetch', function (event) {
   const fetchPromise = fetch(request)
 
   event.respondWith(
-    cache
+    caches
       .match(request)
       .then((matching) => matching || Promise.reject('no-match'))
       .catch(() => fetchPromise),
@@ -21,7 +21,6 @@ self.addEventListener('fetch', function (event) {
       (response) =>
         response.status === 200 &&
         caches
-          // TODO does `open` need here?
           .open(CACHE)
           .then((cache) => cache.put(request, response.clone())),
     ),
