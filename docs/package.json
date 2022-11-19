@@ -15,8 +15,7 @@
     "@astrojs/prefetch": "^0.1.1",
     "@astrojs/sitemap": "^1.0.0",
     "@vercel/analytics": "^0.1.5",
-    "astro": "^1.2.4",
-    "astrojs-service-worker": "^0.0.8"
+    "astro": "^1.2.4"
   },
   "devDependencies": {
     "zx": "^7.0.8"
