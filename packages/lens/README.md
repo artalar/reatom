@@ -104,12 +104,14 @@ export const endAnimation = startAnimation.pipe(debounce(250))
 
 Delay updates until other atom update / action call.
 
+> This code is taken from [this example](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts).
+
 ```ts
 import { mapPayload, sample } from '@reatom/lens'
 
 export const lastRequestTimeAtom = fetchData.pipe(
   mapPayload(0, () => Date.now(), 'fetchStartAtom'),
-  sample(fetchImages.onSettle),
+  sample(fetchData.onSettle),
   mapState((ctx, start) => start && Date.now() - start, 'lastRequestTimeAtom'),
 )
 ```
