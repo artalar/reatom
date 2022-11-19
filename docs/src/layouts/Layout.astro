@@ -106,5 +106,12 @@ const DEFAULT_BACK = '#e0deed'
     <HeadingCopyButton />
     <Glitch />
     <script defer src="/_vercel/insights/script.js"></script>
+    <script>
+      requestAnimationFrame(() =>
+        navigator.serviceWorker
+          ?.register('/sw.js')
+          .catch((error) => console.log(error)),
+      )
+    </script>
   </body>
 </html>
