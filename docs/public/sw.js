@@ -17,12 +17,10 @@ self.addEventListener('fetch', function (event) {
   )
 
   event.waitUntil(
-    fetchPromise.then(
-      (response) =>
-        response.status === 200 &&
-        caches
-          .open(CACHE)
-          .then((cache) => cache.put(request, response.clone())),
-    ),
+    fetchPromise.then((response) => {
+      if (response.status !== 200) return
+      response = response.clone()
+      caches.open(CACHE).then((cache) => cache.put(request, response))
+    }),
   )
 })
