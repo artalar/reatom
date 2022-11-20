@@ -402,7 +402,7 @@ export const createCtx = ({
             enqueueComputers(patch.subs)
           }
 
-          proto.updateHooks?.forEach((hook) => hook(ctx, patch!))
+          proto.updateHooks?.forEach((hook) => hook(patchCtx, patch!))
         }
       }
 
@@ -652,6 +652,7 @@ export const action: {
 
   const actionAtom = atom<Array<any>>([], name)
   actionAtom.__reatom.isAction = true
+  actionAtom.__reatom.initState = () => []
 
   return Object.assign((ctx: Ctx, ...params: any) => {
     const state = actionAtom(ctx, (state, patchCtx) => [
