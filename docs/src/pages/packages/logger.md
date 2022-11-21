@@ -38,3 +38,5 @@ connectLogger(
   },
 )
 ```
+
+Every log record includes a number in the start of the name to fix autosorting keys in a console.
