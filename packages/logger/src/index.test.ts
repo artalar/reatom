@@ -23,14 +23,14 @@ test(`base`, async () => {
     a2(ctx, 2)
   })
 
-  assert.equal(log.lastInput().changes, { '[2] a2': 2 })
+  assert.equal(log.lastInput().changes, { '2.a2': 2 })
 
   ctx.get(() => {
     a2(ctx, 10)
     a2(ctx, 20)
   })
 
-  assert.equal(log.lastInput().changes, { '[1] a2': 10, '[2] a2': 20 })
+  assert.equal(log.lastInput().changes, { '1.a2': 10, '2.a2': 20 })
 
   // padStart test
   ctx.get(() => {
@@ -39,16 +39,16 @@ test(`base`, async () => {
   })
 
   assert.equal(log.lastInput().changes, {
-    '[01] a2': 1,
-    '[02] a2': 2,
-    '[03] a2': 3,
-    '[04] a2': 4,
-    '[05] a2': 5,
-    '[06] a2': 6,
-    '[07] a2': 7,
-    '[08] a2': 8,
-    '[09] a2': 9,
-    '[10] a2': 10,
+    '1.a2': 1,
+    '2.a2': 2,
+    '3.a2': 3,
+    '4.a2': 4,
+    '5.a2': 5,
+    '6.a2': 6,
+    '7.a2': 7,
+    '8.a2': 8,
+    '9.a2': 9,
+    '10.a2': 10,
   })
   ;`👍` //?
 })
@@ -79,14 +79,14 @@ test(`cause`, async () => {
   await sleep(5)
 
   assert.equal(log.lastInput(), {
-    '--- update 1 ---': '1',
-    '[1] doAsync': { params: [123], payload: new Promise(() => {}) },
-    '[1] doAsync cause': 'root',
-    '--- update 2 ---': '2',
-    '[1] doAsync.asyncResAtom': { params: [123], payload: 123 },
-    '[1] doAsync.asyncResAtom cause': 'doAsync',
-    '[3] resMapAtom': [{ params: [123], payload: 123 }],
-    '[3] resMapAtom cause': 'doAsync.asyncResAtom <-- doAsync',
+    '1.0.___timestamp___': '1',
+    '1.1.doAsync': { params: [123], payload: new Promise(() => {}) },
+    '1.1.___cause___': 'root',
+    '2.0.___timestamp___': '2',
+    '2.1.doAsync.asyncResAtom': { params: [123], payload: 123 },
+    '2.1.___cause___': 'doAsync',
+    '2.3.resMapAtom': [{ params: [123], payload: 123 }],
+    '2.3.___cause___': 'doAsync.asyncResAtom <-- doAsync',
   })
   ;`👍` //?
 })
@@ -144,12 +144,12 @@ test(`should skip logs without state changes`, async () => {
 
   assert.is(log.calls.length, 2)
   assert.equal(log.lastInput(), {
-    '--- update 1 ---': '2',
-    '[1] nAtom': 2,
-    '--- update 2 ---': '3',
-    '[1] nAtom1': 1,
-    '[3] nAtom2': 1,
-    '[4] nAtom': 3,
+    '1.0.___timestamp___': '2',
+    '1.1.nAtom': 2,
+    '2.0.___timestamp___': '3',
+    '2.1.nAtom1': 1,
+    '2.3.nAtom2': 1,
+    '2.4.nAtom': 3,
   })
   ;`👍` //?
 })
