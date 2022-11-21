@@ -61,24 +61,28 @@ test('withAbort', async () => {
 
   const ctx = createTestCtx()
 
-  const valueSubscriber = ctx.subscribeTrack(
+  const valueTrack = ctx.subscribeTrack(
     a1.pipe(mapPayloadAwaited((ctx, v) => v)),
   )
-  const errorSubscriber = ctx.subscribeTrack(a1.onReject)
+  const errorTrack = ctx.subscribeTrack(a1.onReject)
+  const abortTrack = ctx.subscribeTrack(a1.onAbort)
 
-  assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(errorSubscriber.calls.length, 1)
+  assert.equal(valueTrack.calls.length, 1)
+  assert.equal(errorTrack.calls.length, 1)
+  assert.equal(abortTrack.calls.length, 1)
 
   const promise1 = a1(ctx, 1)
   const promise2 = a1(ctx, 2)
 
-  assert.equal(valueSubscriber.calls.length, 1)
+  assert.equal(valueTrack.calls.length, 1)
+  assert.equal(abortTrack.calls.length, 1)
 
   await Promise.any([promise1, promise2])
 
-  assert.equal(valueSubscriber.calls.length, 2)
-  assert.equal(valueSubscriber.lastInput().at(-1)?.payload, 2)
-  assert.equal(errorSubscriber.calls.length, 2)
+  assert.equal(valueTrack.calls.length, 2)
+  assert.equal(valueTrack.lastInput().at(-1)?.payload, 2)
+  assert.equal(errorTrack.calls.length, 2)
+  assert.equal(abortTrack.calls.length, 2)
   ;`👍` //?
 })
 
@@ -123,7 +127,9 @@ test('withAbort and fetch', async () => {
   assert.is(handleError.calls.length, 0)
 
   fetchData(ctx)
+  await sleep()
   fetchData(ctx)
+  await sleep()
   fetchData(ctx)
 
   await take(ctx, fetchData.onFulfill)

@@ -48,14 +48,17 @@ export const reatomAsync = <
     const controller = new AbortController()
     controller.signal.throwIfAborted ??= () => {
       if (controller.signal.aborted) {
-        const error = new Error(controller.signal.reason)
-        error.name = 'AbortError'
-        throw error
+        let error = controller.signal.reason
+        if (error instanceof Error === false) {
+          error = new Error(controller.signal.reason)
+          error.name = 'AbortError'
+        }
+        throw controller.signal.reason
       }
     }
     pendingAtom(ctx, (s) => ++s)
 
-    const promise = Object.assign(
+    const promise: ControlledPromise<Resp> = Object.assign(
       // @ts-ignore
       ctx.schedule(() => effect(Object.assign(ctx, { controller }), ...a)),
       { controller },
@@ -79,9 +82,9 @@ export const reatomAsync = <
     return promise
   }, name)
 
-  const onFulfill: Self['onFulfill'] = action(name?.concat('.onFulfill'))
-  const onReject: Self['onReject'] = action(name?.concat('.onReject'))
-  const onSettle: Self['onSettle'] = action(name?.concat('.onSettle'))
+  const onFulfill = action<Resp>(name?.concat('.onFulfill'))
+  const onReject = action<unknown>(name?.concat('.onReject'))
+  const onSettle = action(name?.concat('.onSettle'))
 
   const pendingAtom = atom(0, name?.concat('.pendingAtom'))
 
@@ -176,23 +179,38 @@ export const withAbort =
     if (!anAsync.onAbort) {
       const abortControllerAtom = (anAsync.abortControllerAtom =
         atom<null | AbortController>(null))
-      anAsync.onAbort = action(anAsync.__reatom.name?.concat('.onAbort'))
-      addOnUpdate(anAsync.onReject, (ctx, patch) => {
-        const error = patch.state.at(-1)?.payload
-        if (isAbortError(error)) anAsync.onAbort!(ctx, error)
-      })
+      anAsync.onAbort = action<Error>(anAsync.__reatom.name?.concat('.onAbort'))
       addOnUpdate(anAsync, (ctx, patch) => {
         const promise = patch.state.at(-1)?.payload
         if (!promise) return
 
+        const clearAbortAtom = () =>
+          strategy === 'last-in-win' &&
+          ctx.get(abortControllerAtom) === promise.controller &&
+          abortControllerAtom(ctx, null)
+
+        __thenReatomed(ctx, promise, clearAbortAtom, () => {
+          clearAbortAtom()
+
+          const { signal } = promise.controller
+          if (!signal.aborted) return
+
+          let error = signal.reason
+          if (error instanceof Error === false) {
+            error = new Error(signal.reason)
+            error.name = 'AbortError'
+          }
+
+          anAsync.onAbort!(ctx, error)
+        })
+
         if (strategy === 'last-in-win') {
-          ctx.get(abortControllerAtom)?.abort('concurrent request')
+          const error = new Error('concurrent request')
+          error.name = 'AbortError'
+          ctx.get(abortControllerAtom)?.abort(error)
           abortControllerAtom(ctx, promise.controller)
         }
       })
-      if (strategy === 'last-in-win') {
-        addOnUpdate(anAsync.onSettle, (ctx) => abortControllerAtom(ctx, null))
-      }
     }
 
     return anAsync as T & {
