@@ -145,6 +145,11 @@ To be honest, right now bus factor is one, [@artalar](https://github.com/artalar
 
 Also, check out [atomization guild](/guides/atomization).
 
+### Community
+
+- [en](https://github.com/artalar/reatom/discussions)
+- [ru](https://t.me/reatom_ru)
+
 ### How to support the project?
 
 https://www.patreon.com/artalar_dev
