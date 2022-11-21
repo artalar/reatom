@@ -636,7 +636,9 @@ export const atom: {
 }
 
 export const action: {
-  <T = void>(name?: string): Action<[T], T>
+  (name?: string): Action<[], void>
+
+  <T>(name?: string): Action<[T], T>
 
   <Params extends any[] = any[], Res = void>(
     fn: (ctx: Ctx, ...params: Params) => Res,
