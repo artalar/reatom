@@ -1,4 +1,12 @@
-import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
+import {
+  action,
+  AtomCache,
+  AtomProto,
+  Ctx,
+  Fn,
+  Rec,
+  __root,
+} from '@reatom/core'
 
 export interface LogMsg {
   error: undefined | Error
@@ -6,9 +14,6 @@ export interface LogMsg {
   logs: Array<AtomCache>
   ctx: Ctx
 }
-
-const countify = (s: string, i: number, list: Array<any>) =>
-  `[${`${i + 1}`.padStart(list.length.toString().length, '0')}] ${s}`
 
 export const getCause = (patch: AtomCache) => {
   let log = ''
@@ -22,9 +27,15 @@ export const getCause = (patch: AtomCache) => {
   return log || 'root'
 }
 
+const getTimeStampDefault = () => {
+  let ms: number | string = new Date().getMilliseconds()
+  ms = ms.toString().padStart(3, '0')
+  return `${new Date().toLocaleTimeString()} ${ms}ms`
+}
+
 export const createLogBatched = ({
-  debounce = 20,
-  getTimeStamp = () => new Date().toLocaleTimeString(),
+  debounce = 500,
+  getTimeStamp = getTimeStampDefault,
   limit = 5000,
   log = console.log,
 }: {
@@ -34,20 +45,28 @@ export const createLogBatched = ({
   log?: typeof console.log
 } = {}) => {
   let queue: Array<LogMsg & { time: string }> = []
-  let lastLog = Date.now()
+  let isBatching = false
+  let batchingStart = Date.now()
   const logBatched = (msg: LogMsg) => {
     if (Object.keys(msg.changes).length === 0) return
+
+    if (!isBatching) {
+      isBatching = true
+      batchingStart = Date.now()
+    }
+
     setTimeout(
       (length) => {
-        if (queue.length !== length && Date.now() - lastLog < limit) return
+        isBatching =
+          queue.length !== length && Date.now() - batchingStart < limit
 
-        lastLog = Date.now()
+        if (isBatching) return
 
         // console.groupCollapsed(`Reatom ${length} logs`)
         log(
           queue.reduce((acc, { changes, time }, i) => {
-            acc[`--- update ${i + 1} ---`] = time
-            for (const k in changes) acc[k] = changes[k]
+            acc[`${i + 1}.0.___timestamp___`] = time
+            for (const k in changes) acc[`${i + 1}.${k}`] = changes[k]
             return acc
           }, {} as Rec),
           queue,
@@ -62,6 +81,17 @@ export const createLogBatched = ({
 
   return logBatched
 }
+
+// export const log = action((ctx, message: any, name?: string) => ({
+//   message,
+//   name,
+// }), '@reatom/logger.log')
+
+// declare global {
+//   REATOM_LOG: typeof log
+// }
+
+// globalThis.REATOM_LOG = log
 
 export const connectLogger = (
   ctx: Ctx,
@@ -96,11 +126,11 @@ export const connectLogger = (
 
       if (Object.is(state, prevState)) return acc
 
-      const logName = countify(name, i, logs)
+      const logName = `${i + 1}.${name}`
 
       acc[logName] = proto.isAction ? state.at(-1) : state
 
-      if (showCause) acc[`${logName} cause`] = getCause(patch)
+      if (showCause) acc[`${i + 1}.___cause___`] = getCause(patch)
 
       return acc
     }, {} as Rec)
