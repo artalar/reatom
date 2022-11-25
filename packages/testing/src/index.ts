@@ -1,4 +1,5 @@
 import {
+  Action,
   Atom,
   AtomCache,
   AtomProto,
@@ -7,6 +8,7 @@ import {
   CtxOptions,
   Fn,
   isAtom,
+  throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
 
@@ -49,7 +51,12 @@ export const getDuration = async (cb: () => void) => {
 }
 
 export interface TestCtx extends Ctx {
-  mock<T>(anAtom: Atom<T>, fallback: T): void
+  mock<T>(anAtom: Atom<T>, fallback: T): Unsubscribe
+
+  mockAction<I extends any[], O>(
+    anAction: Action<I, O>,
+    cb: Fn<[Ctx, ...I], O>,
+  ): Unsubscribe
 
   subscribeTrack<T, F extends Fn<[T]>>(
     anAtom: Atom<T>,
@@ -65,6 +72,7 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
   const ctx = createCtx(options)
   const { get } = ctx
   const mocks = new Map<AtomProto, any>()
+  const actionMocks = new Map<AtomProto, Fn<[Ctx, ...any[]]>>()
 
   return Object.assign(ctx, {
     get(value: Atom | Fn) {
@@ -73,18 +81,24 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
         return get.call(ctx, value)
       }
       return get.call(ctx, (read, actualize) =>
-        value(read, (ctx: Ctx, proto: AtomProto, mutator: Fn) =>
-          actualize!(
-            ctx,
-            proto,
-            mocks.has(proto)
-              ? (patchCtx: Ctx, patch: AtomCache) => {
-                  const state = mocks.get(proto)
-                  patch.state = proto.isAction ? state.slice() : state
-                }
-              : mutator,
-          ),
-        ),
+        value(read, (ctx: Ctx, proto: AtomProto, mutator: Fn) => {
+          if (mocks.has(proto)) {
+            mutator = (patchCtx: Ctx, patch: AtomCache) => {
+              const state = mocks.get(proto)
+              patch.state = proto.isAction ? state.slice() : state
+            }
+          }
+          if (actionMocks.has(proto)) {
+            mutator = (patchCtx: Ctx, patch: AtomCache) => {
+              patch.state = [
+                ...patch.state,
+                { params: [], payload: actionMocks.get(proto)!(ctx) },
+              ]
+            }
+          }
+
+          return actualize!(ctx, proto, mutator)
+        }),
       )
     },
     subscribeTrack(anAtom: Atom, cb: Fn = () => {}): any {
@@ -94,14 +108,30 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
       return Object.assign(track, { unsubscribe })
     },
     mock<T>(anAtom: Atom<T>, fallback: T) {
+      const proto = anAtom.__reatom
+
       get((read, actualize) => {
-        actualize!(ctx, anAtom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
+        actualize!(ctx, proto, (patchCtx: Ctx, patch: AtomCache) => {
           patch.state = fallback
           // disable computer
           patch.pubs.push(ctx.cause)
         })
-        mocks.set(anAtom.__reatom, fallback)
+        mocks.set(proto, fallback)
       })
+
+      return () => mocks.delete(proto)
+    },
+    mockAction<I extends any[], O>(
+      anAction: Action<I, O>,
+      cb: Fn<[Ctx, ...I], O>,
+    ) {
+      const proto = anAction.__reatom
+
+      throwReatomError(!proto.isAction, 'action expected')
+
+      actionMocks.set(proto, cb as Fn<[Ctx, ...any[]]>)
+
+      return () => actionMocks.delete(proto)
     },
   })
 }
