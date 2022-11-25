@@ -118,6 +118,7 @@ export interface AtomCache<State = any> {
   pubs: Array<AtomCache>
   readonly subs: Set<AtomProto>
   readonly listeners: Set<Fn>
+  error?: unknown
 }
 
 export interface Action<Params extends any[] = any[], Payload = any>
@@ -393,9 +394,15 @@ export const createCtx = ({
           cause: patch,
         }
 
-        if (isMutating) mutator!(patchCtx, patch)
+        try {
+          if (isMutating) mutator!(patchCtx, patch)
 
-        if (isComputed) actualizePubs(patchCtx, patch)
+          if (isComputed) actualizePubs(patchCtx, patch)
+        } catch (error) {
+          patch.error = error
+          patch.cause ??= ctx.cause
+          throw error
+        }
 
         if (!Object.is(state, patch.state)) {
           if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
