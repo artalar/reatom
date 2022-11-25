@@ -227,7 +227,9 @@ export const withRetryAction =
     },
   >({
     onReject,
-  }: { onReject?: Fn<[Ctx, unknown, number], void | number> } = {}): Fn<
+  }: {
+    onReject?: Fn<[ctx: Ctx, error: unknown, retries: number], void | number>
+  } = {}): Fn<
     [T],
     T & {
       paramsAtom: Atom<undefined | ActionParams<T>>
@@ -269,12 +271,14 @@ export const withRetryAction =
           if (timeout === 0) {
             anAsync.retry!(ctx)
           } else {
-            const effectState = ctx.get(anAsync)
+            const rejectCache = anAsync.onReject.__reatom.patch
             setTimeout(
               () =>
-                effectState === ctx.get(anAsync) &&
-                state === ctx.get(anAsync.onReject) &&
-                anAsync.retry!(ctx),
+                ctx.get(
+                  (r) =>
+                    rejectCache === r(anAsync.onReject.__reatom) &&
+                    anAsync.retry!(ctx),
+                ),
               timeout,
             )
           }

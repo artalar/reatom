@@ -51,6 +51,39 @@ test('withRetryAction', async () => {
   ;`👍` //?
 })
 
+test('withRetryAction delay', async () => {
+  const fetchData = reatomAsync(async (ctx, v: number) => {
+    await sleep(5)
+    if (1) throw new Error('TEST')
+  }).pipe(
+    withRetryAction({
+      onReject(ctx, error: any, retries) {
+        if (error?.message === 'TEST' && retries < 1) return 6
+      },
+    }),
+  )
+
+  const ctx = createTestCtx()
+
+  onUpdate(fetchData, () => console.log('fetchData'))
+  onUpdate(fetchData.onReject, () => console.log('fetchData.onReject'))
+  onUpdate(fetchData.retry, () => console.log('fetchData.retry'))
+
+  const track = ctx.subscribeTrack(fetchData)
+
+  assert.is(track.calls.length, 1)
+
+  fetchData(ctx, 123)
+  fetchData(ctx, 123)
+
+  assert.is(track.calls.length, 3)
+
+  await sleep(30)
+
+  assert.is(track.calls.length, 4)
+  ;`👍` //?
+})
+
 test('withAbort', async () => {
   const a1 = reatomAsync((ctx, v: number) =>
     sleep().then(() => {
