@@ -24,8 +24,10 @@ export const addOnConnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
 export const addOnDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
   (anAtom.__reatom.disconnectHooks ??= new Set()).add(cb)
 
-export const addOnUpdate = <T>(anAtom: Atom<T>, cb: Fn<[Ctx, AtomCache<T>]>) =>
-  (anAtom.__reatom.updateHooks ??= new Set()).add(cb)
+export const addOnUpdate = <T extends Atom>(
+  anAtom: T,
+  cb: Fn<[Ctx, AtomCache<AtomState<T>>]>,
+) => (anAtom.__reatom.updateHooks ??= new Set()).add(cb)
 
 export const withInit =
   <T extends Atom>(
@@ -84,11 +86,20 @@ export const onUpdate = <T>(
   return () => hooks.delete(hook)
 }
 
-export const spyChange = <T>(
-  ctx: CtxSpy,
-  anAtom: Atom<T>,
-  handler?: Fn<[T, T?]>,
-): boolean => {
+// @ts-ignore
+export const spyChange: {
+  <Params extends any[], Payload>(
+    ctx: CtxSpy,
+    anAction: Action<Params, Payload>,
+    handler?: Fn<
+      [
+        { params: Params; payload: Payload },
+        { params: Params; payload: Payload }?,
+      ]
+    >,
+  ): boolean
+  <T>(ctx: CtxSpy, anAtom: Atom<T>, handler?: Fn<[T, T?]>): boolean
+} = (ctx: CtxSpy, anAtom: Atom, handler: Fn) => {
   const { pubs } = ctx.cause
   const { isAction } = anAtom.__reatom
   let state: any = ctx.spy(anAtom)
