@@ -105,12 +105,18 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
         if (skipFirst) return (skipFirst = false)
         fn()
         if (anAtom.__reatom.isAction) state = state[0].payload
-        if (state instanceof Promise) state.then((v) => res(mapper(ctx, v)), rej)
+        if (state instanceof Promise) {
+          state.then((v) => res(mapper(ctx, v)), rej)
+        }
         res(mapper(ctx, state))
       })
   })
 
-export const takeNested = (ctx: Ctx, cb: Fn<[Ctx]>): Promise<any> =>
+export const takeNested = <I extends any[]>(
+  ctx: Ctx,
+  cb: Fn<[Ctx, ...I]>,
+  ...params: I
+): Promise<void> =>
   new Promise<void>((r) => {
     let i = 0,
       { schedule } = ctx
@@ -132,6 +138,7 @@ export const takeNested = (ctx: Ctx, cb: Fn<[Ctx]>): Promise<any> =>
           )
         },
       }),
+      ...params,
     )
   })
 
