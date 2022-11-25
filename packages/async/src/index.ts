@@ -224,6 +224,7 @@ export const withRetryAction =
     T extends AsyncAction & {
       paramsAtom?: Atom<undefined | ActionParams<T>>
       retry?: Action<[], ActionPayload<T>>
+      retriesAtom?: Atom<number>
     },
   >({
     onReject,
@@ -234,6 +235,7 @@ export const withRetryAction =
     T & {
       paramsAtom: Atom<undefined | ActionParams<T>>
       retry: Action<[], ActionPayload<T>>
+      retriesAtom: Atom<number>
     }
   > =>
   (anAsync) => {
@@ -254,17 +256,19 @@ export const withRetryAction =
         return anAsync(ctx, ...params!) as ActionPayload<T>
       }, anAsync.__reatom.name?.concat('.retry'))
 
-      const retriesCountAtom = atom(0)
-      addOnUpdate(anAsync.retry, (ctx) => retriesCountAtom(ctx, (s) => ++s))
-      addOnUpdate(anAsync.onFulfill, (ctx) => retriesCountAtom(ctx, 0))
+      const retriesAtom = (anAsync.retriesAtom = atom(
+        0,
+        anAsync.__reatom.name?.concat('.retriesAtom'),
+      ))
+      addOnUpdate(anAsync.retry, (ctx) => retriesAtom(ctx, (s) => ++s))
+      addOnUpdate(anAsync.onFulfill, (ctx) => retriesAtom(ctx, 0))
 
       if (onReject) {
         addOnUpdate(anAsync.onReject, (ctx, { state }) => {
           if (state.length === 0) return
 
           const timeout =
-            onReject(ctx, state.at(-1)!.payload, ctx.get(retriesCountAtom)) ??
-            -1
+            onReject(ctx, state.at(-1)!.payload, ctx.get(retriesAtom)) ?? -1
 
           if (timeout < 0) return
 
@@ -289,6 +293,7 @@ export const withRetryAction =
     return anAsync as T & {
       paramsAtom: Atom<undefined | ActionParams<T>>
       retry: Action<[], ActionPayload<T>>
+      retriesAtom: Atom<number>
     }
   }
 
