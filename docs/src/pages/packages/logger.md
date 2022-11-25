@@ -3,6 +3,8 @@ layout: ../../layouts/Layout.astro
 title: logger
 description: Reatom for logger
 ---  
+> included in [@reatom/framework](/packages/framework)
+
 ## Usage
 
 ```ts

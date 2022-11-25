@@ -3,6 +3,8 @@ layout: ../../layouts/Layout.astro
 title: primitives
 description: Reatom for primitives
 ---  
+> included in [@reatom/framework](/packages/framework)
+
 This package contains tiny wrappers around JS primitives with a few helper actions to mutate data type-safety and efficiently.
 
 ## `reatomArray`

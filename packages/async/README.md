@@ -1,3 +1,5 @@
+> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+
 This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`.
 
 ```ts

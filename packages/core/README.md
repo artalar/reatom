@@ -1,5 +1,7 @@
 Small, extensible, feature-rich and performant core package for building reactive applications of any size.
 
+> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+
 [Main docs starts here](https://www.reatom.dev).
 
 ## Installation

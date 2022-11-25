@@ -1,3 +1,5 @@
+> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+
 This package is inspired by [sagas](https://redux-saga.js.org) and give you advanced effect management solutions
 
 ## `take`

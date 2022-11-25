@@ -1,3 +1,5 @@
+> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+
 This package contains tiny wrappers around JS primitives with a few helper actions to mutate data type-safety and efficiently.
 
 ## `reatomArray`

@@ -1,3 +1,5 @@
+> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+
 All atoms and actions have a hooks to they lifecycle, this package expose friendly helpers to use this hooks.
 
 ## `withInit`

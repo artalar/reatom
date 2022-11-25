@@ -3,6 +3,8 @@ layout: ../../layouts/Layout.astro
 title: lens
 description: Reatom for lens
 ---  
+> included in [@reatom/framework](/packages/framework)
+
 A set of helper operators to transform actions payload or an atoms state.
 
 ## `mapState`
