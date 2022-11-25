@@ -53,10 +53,7 @@ export const getDuration = async (cb: () => void) => {
 export interface TestCtx extends Ctx {
   mock<T>(anAtom: Atom<T>, fallback: T): Unsubscribe
 
-  mockAction<I extends any[], O>(
-    anAction: Action<I, O>,
-    cb: Fn<[Ctx, ...I], O>,
-  ): Unsubscribe
+  mockAction<T>(anAction: Action<any[], T>, cb: Fn<[Ctx], T>): Unsubscribe
 
   subscribeTrack<T, F extends Fn<[T]>>(
     anAtom: Atom<T>,
@@ -109,17 +106,22 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
     },
     mock<T>(anAtom: Atom<T>, fallback: T) {
       const proto = anAtom.__reatom
+      let read: Fn
 
-      get((read, actualize) => {
+      get((_read, actualize) => {
+        read = _read
         actualize!(ctx, proto, (patchCtx: Ctx, patch: AtomCache) => {
           patch.state = fallback
           // disable computer
-          patch.pubs.push(ctx.cause)
+          patch.pubs = [ctx.cause]
         })
         mocks.set(proto, fallback)
       })
 
-      return () => mocks.delete(proto)
+      return () => {
+        read(proto).pubs = []
+        mocks.delete(proto)
+      }
     },
     mockAction<I extends any[], O>(
       anAction: Action<I, O>,

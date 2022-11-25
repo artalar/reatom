@@ -1,37 +1,9 @@
-Simple timer model to manage some countdown.
-
-```ts
-import { createTestCtx, mockFn } from '@reatom/testing'
-```
-
-```ts
-export interface TestCtx extends Ctx {
-  mock<T>(anAtom: Atom<T>, fallback: T): void
-
-  subscribeTrack<T, F extends Fn<[T]>>(
-    anAtom: Atom<T>,
-    cb?: F,
-  ): F & {
-    unsubscribe: () => void
-    calls: Array<{ i: [T]; o: ReturnType<F> }>
-    lastInput: Fn<[], T>
-  }
-}
-
-declare function mockFn<I extends any[], O>(
-  fn?: (...input: I) => O,
-): ((...input: I) => O) & {
-  calls: Array<{ i: I; o: O }>
-  lastInput: Fn<[], I[0]>
-}
-```
-
-```ts
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { action, atom } from '@reatom/core'
 import { spyChange } from '@reatom/hooks'
-import { createTestCtx } from '@reatom/testing'
+
+import { createTestCtx } from './'
 
 test('createTestCtx', async () => {
   const add = action<number>()
@@ -69,4 +41,3 @@ test('createTestCtx', async () => {
 })
 
 test.run()
-```
