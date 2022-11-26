@@ -8,7 +8,7 @@ Do you React.js user? Check out [npm-react](https://www.reatom.dev/packages/npm-
 
 ## Simple example
 
-[repl](https://replit.com/@artalar/reatom-react-ts).
+[repl](https://replit.com/@artalar/reatom-react-ts)
 
 ```ts
 import { action, atom, createCtx } from 'reatom/core'
@@ -39,13 +39,13 @@ ctx.subscribe(greetingAtom, (greeting) => {
 
 ## Advanced example
 
-[repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx).
+[repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 
 We will use [@reatom/core](https://www.reatom.dev/packages/core), [@reatom/async](https://www.reatom.dev/packages/async) and [@reatom/hooks](https://www.reatom.dev/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](https://www.reatom.dev/packages/framework).
 
 `withDataAtom` saves the result of async function to separate atom, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetryAction` and `onReject` handler helps to handle temporal rate limit.
 
-Simple `sleep` helper gotten from [utils package](https://www.reatom.dev/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
+Simple `sleep` helper (for debounce) gotten from [utils package](https://www.reatom.dev/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
 ```ts
 import { atom, reatomAsync, withAbort, withDataAtom, withRetryAction, onUpdate, sleep } from "@reatom/framework";
