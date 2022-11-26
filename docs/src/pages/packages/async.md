@@ -68,7 +68,7 @@ import { reatomAsync, withRetryAction } from '@reatom/async'
 const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
   withRetryAction({
     onReject(ctx, error, retries) {
-      return 100 * Math.min(5000, retries ** 2)
+      return 100 * Math.min(500, retries ** 2)
     },
   }),
 )

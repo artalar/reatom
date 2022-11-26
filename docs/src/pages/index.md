@@ -14,6 +14,8 @@ Do you React.js user? Check out [npm-react](/packages/npm-react) package!
 
 ## Simple example
 
+[repl](https://replit.com/@artalar/reatom-react-ts).
+
 ```ts
 import { action, atom, createCtx } from 'reatom/core'
 
@@ -43,59 +45,57 @@ ctx.subscribe(greetingAtom, (greeting) => {
 
 ## Advanced example
 
-We will use [@reatom/core](/packages/core) and [@reatom/async](/packages/async) in this example by importing it from a meta package [@reatom/framework](/packages/framework).
+[repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx).
 
-> [Check the real example in codesandbox](https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts)
+We will use [@reatom/core](/packages/core), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework).
+
+`withDataAtom` saves the result of async function to separate atom, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetryAction` and `onReject` handler helps to handle temporal rate limit.
+
+Simple `sleep` helper gotten from [utils package](/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
 ```ts
-import {
-  action,
-  atom,
-  reatomAsync,
-  withAbort,
-  withDataAtom,
-} from '@reatom/framework'
+import { atom, reatomAsync, withAbort, withDataAtom, withRetryAction, onUpdate, sleep } from "@reatom/framework";
+import { useAtom } from '@reatom/npm-react'
 
-// define primitive atom - key to data in context
-export const searchAtom = atom('', 'searchAtom')
-// define actions to handle data and schedule effects
-export const onSearch = action((ctx, event) => {
-  // mutate primitive atoms
-  const search = searchAtom(ctx, event.currentTarget.value)
-  // read relative data
-  const controller = ctx.get(fetchSuggestions.abortControllerAtom)
-
-  // schedule effects
-  ctx.schedule(() => {
-    // abort the last request and debounce the next
-    controller?.abort()
-    setTimeout(() => fetchSuggestions(ctx, search), 150)
-  })
-}, 'onSearch')
-
-// define effect container
-export const fetchSuggestions = reatomAsync(
-  (ctx, search: string) => apiService.getSuggestions(ctx, search),
-  'fetchSuggestions',
-).pipe(
-  // prevent concurrent errors (last-in-win by default)
-  withAbort(),
-  // store data in additional atom
+const searchAtom = atom('', 'searchAtom')
+const fetchIssues = reatomAsync(async (ctx, query: string) => {
+  await sleep(250)
+  const { items } = await fetchIssuesApi(query, ctx.controller)
+  return items
+}, 'fetchIssues').pipe(
   withDataAtom([]),
+  withAbort({ strategy: 'last-in-win' }),
+  withRetryAction({
+    onReject: (ctx, error: any, retries) => error?.message.includes('rate limit')
+      ? 100 * Math.min(500, retries ** 2)
+      : -1
+  }),
 )
-// use `fetchSuggestions.pendingAtom` to handle loading state
+onUpdate(searchAtom, fetchIssues)
 
-// define computed atoms (you could spying in conditions too!)
-const suggestionsViewAtom = atom(
-  (ctx) =>
-    ctx.spy(fetchSuggestions.pendingAtom)
-      ? [{ name: 'Loading...' }]
-      : ctx.spy(fetchSuggestions.dataAtom).slice(0, 5),
-  'suggestionsViewAtom',
-)
+export default function App() {
+  const [search, setSearch] = useAtom(searchAtom)
+  const [issues] = useAtom(fetchIssues.dataAtom)
+  const [isLoading] = useAtom(
+    (ctx) =>
+      ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0,
+  )
+
+  return (
+    <main>
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.currentTarget.value)}
+        placeholder="Search"
+      />
+      {isLoading && 'Loading...'}
+      <ul>{issues.map(({ title }, i) => <li key={i}>{title}</li>)}</ul>
+    </main>
+  )
+}
 ```
 
-This example is only about 20 LoC without comments and imports to describe all logic, what is the count would be in a different library? The most impressed thing is that the framework package took only 5KB (gzip). And it already includes console logger and a few more additional helpers.
+The whole logic definition is only about 15 LoC, what is the count would be in a different library? The most impressed thing is that the overhead is only [6KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetryAction%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdncYbmhXGF94HCkAX2lEb18YfkE0EXFJDGCrUiN4ExodXQA6bksQf0DkWI9ZKDFkMGSoVIhOdJpyfOFRCQhWOrLg%2BFI4z180ABFiRCYyAG0AXRYqReWMACMQZChSFwtkYnhbM1p-dSgAWhsXpbByGHT9w6g0AAlAQmDA6KzgS5xDzgYEAK3gOnM2j0NCqyDO5kQYEUNE61kkDnwjmhHhg6LOAH46jhJBBELZ4HUbMB-GIACaSCg3fowfxWHC%2BVikskwSkwACMUSiMAAVDAALLENA0mykaJRPEgqySOXysIsEVk8wvCUHDy-A6xcAAVWC7NupHoqEwJBoY0KE0JnA48F0wTOsCuwFktwAwqiYGIEJsfmwgA) and you not limited only for network cache, Reatom is enough powerful and expression for describing any kind of states.
 
 <!-- Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient. -->
 
@@ -103,6 +103,7 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If 
 
 ## Roadmap
 
+- Finish [forms package](https://github.com/artalar/reatom/tree/v3/packages/form)
 - Finish [persist](https://github.com/artalar/reatom/tree/v3/packages/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
 - Add adapters for most popular ui frameworks: ~~react~~ ([already have](/packages/npm-react)), angular, vue, svelte, solid.
 - Port some components logic from reakit.io, to made it fast, light and portable.
