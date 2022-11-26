@@ -1,3 +1,5 @@
+Tiny logger with a couple nice configurations.
+
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
 ## Usage

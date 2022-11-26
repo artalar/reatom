@@ -1,3 +1,5 @@
+Adapter package for migration from core@1 to core@3.
+
 ## Migration guide
 
 before

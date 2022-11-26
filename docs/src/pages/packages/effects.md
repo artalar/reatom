@@ -3,9 +3,9 @@ layout: ../../layouts/Layout.astro
 title: effects
 description: Reatom for effects
 ---  
-> included in [@reatom/framework](/packages/framework)
-
 This package is inspired by [sagas](https://redux-saga.js.org) and give you advanced effect management solutions
+
+> included in [@reatom/framework](/packages/framework)
 
 ## `take`
 

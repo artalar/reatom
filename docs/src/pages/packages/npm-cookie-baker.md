@@ -3,6 +3,8 @@ layout: ../../layouts/Layout.astro
 title: npm-cookie-baker
 description: Reatom for cookies by cookie-baker
 ---  
+Adapter for [cookie-baker](https://github.com/BataevDaniil/cookie-baker).
+
 ## Install
 
 ```

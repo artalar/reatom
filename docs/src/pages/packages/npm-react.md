@@ -3,6 +3,8 @@ layout: ../../layouts/Layout.astro
 title: npm-react
 description: Reatom for npm-react
 ---  
+Adapter for [react](https://github.com/facebook/react).
+
 ## Installation
 
 ```sh

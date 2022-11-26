@@ -1,3 +1,5 @@
+Adapter for [cookie-baker](https://github.com/BataevDaniil/cookie-baker).
+
 ## Install
 
 ```

@@ -1,3 +1,5 @@
+Adapter for [react](https://github.com/facebook/react).
+
 ## Installation
 
 ```sh

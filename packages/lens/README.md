@@ -1,6 +1,6 @@
-> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
-
 A set of helper operators to transform actions payload or an atoms state.
+
+> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
 ## `mapState`
 
