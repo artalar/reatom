@@ -3,7 +3,7 @@ Docs around this package and it combination usage you could find in the [tutoria
 This is a meta package with reexports from:
 
 - [@reatom/async](https://reatom.dev/packages/async)
-- [@reatom/core](https://reatom.dev/packages/core)
+- [@reatom/core](https://reatom.dev/core)
 - [@reatom/effects](https://reatom.dev/packages/effects)
 - [@reatom/hooks](https://reatom.dev/packages/hooks)
 - [@reatom/lens](https://reatom.dev/packages/lens)

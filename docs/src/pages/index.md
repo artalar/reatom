@@ -8,7 +8,7 @@ Reatom is a state manager with quite unique set of features, it provides the mos
 
 Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
 
-[The core package](/packages/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+[The core package](/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 Do you React.js user? Check out [npm-react](/packages/npm-react) package!
 
@@ -47,7 +47,7 @@ ctx.subscribe(greetingAtom, (greeting) => {
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 
-We will use [@reatom/core](/packages/core), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework).
+We will use [@reatom/core](/core), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework).
 
 `withDataAtom` saves the result of async function to separate atom, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetryAction` and `onReject` handler helps to handle temporal rate limit.
 
@@ -99,7 +99,7 @@ The whole logic definition is only about 15 LoC, what is the count would be in a
 
 <!-- Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient. -->
 
-To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/packages/core). Also, we have a [package for testing](/packages/testing)!
+To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/core). Also, we have a [package for testing](/packages/testing)!
 
 ## Roadmap
 

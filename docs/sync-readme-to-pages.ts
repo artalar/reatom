@@ -33,17 +33,21 @@ const getStoryTests = async (packageName: string) => {
 for (const packageName of packages) {
   const readmePath = path.join(packagesPath, packageName, 'README.md')
   const packageJSONPath = path.join(packagesPath, packageName, 'package.json')
-  const pagePath = path.join(
-    process.cwd(),
-    'src',
-    'pages',
-    'packages',
-    `${packageName}.md`,
-  )
+  const pagePath =
+    packageName == 'core'
+      ? path.join(process.cwd(), 'src', 'pages', `${packageName}.md`)
+      : path.join(
+          process.cwd(),
+          'src',
+          'pages',
+          'packages',
+          `${packageName}.md`,
+        )
   let content = await fs.readFile(readmePath, 'utf8')
   const packageJSON = JSON.parse(await fs.readFile(packageJSONPath, 'utf8'))
 
   if (packageJSON.private) continue
+  if (packageJSON.name === '@reatom/all-settled') continue
 
   if (!content.trim()) {
     content = await fs.readFile(
@@ -59,15 +63,25 @@ There is no docs yet, but you could check tests instead:
       content +
       '\n```\n'
   } else {
+    content = content.replaceAll(
+      '\n[Main docs starts here](https://www.reatom.dev).',
+      '',
+    )
     content = content.replaceAll('https://www.reatom.dev', '')
+  }
+
+  let layoutPath = '../../layouts/Layout.astro'
+  if (packageName === 'core') {
+    layoutPath = layoutPath.replace('../', '')
   }
 
   content =
     `---
-layout: ../../layouts/Layout.astro
+layout: ${layoutPath}
 title: ${packageName}
 description: ${packageJSON.description}
----  
+---
+
 ` + content
 
   // try {

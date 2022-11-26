@@ -2,7 +2,8 @@
 layout: ../../layouts/Layout.astro
 title: logger
 description: Reatom for logger
----  
+---
+
 Tiny logger with a couple nice configurations.
 
 > included in [@reatom/framework](/packages/framework)

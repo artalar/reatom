@@ -2,7 +2,8 @@
 layout: ../../layouts/Layout.astro
 title: hooks
 description: Reatom for hooks
----  
+---
+
 > included in [@reatom/framework](/packages/framework)
 
 All atoms and actions have a hooks to they lifecycle, this package expose friendly helpers to use this hooks.

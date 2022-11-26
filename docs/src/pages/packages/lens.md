@@ -2,7 +2,8 @@
 layout: ../../layouts/Layout.astro
 title: lens
 description: Reatom for lens
----  
+---
+
 A set of helper operators to transform actions payload or an atoms state.
 
 > included in [@reatom/framework](/packages/framework)

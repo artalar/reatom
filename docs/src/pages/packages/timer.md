@@ -2,7 +2,8 @@
 layout: ../../layouts/Layout.astro
 title: timer
 description: Reatom for timer
----  
+---
+
 Simple timer model to manage some countdown.
 
 ```ts

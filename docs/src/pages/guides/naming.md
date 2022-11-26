@@ -59,7 +59,7 @@ export const mapState = (anAtom, mapper, name) => {
 
 ### Operator prefix
 
-Operator for the [pipe](/packages/core#pipe-api) function should starts with a verb.
+Operator for the [pipe](/core#pipe-api) function should starts with a verb.
 
 ```ts
 declare 

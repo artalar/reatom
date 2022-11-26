@@ -2,7 +2,8 @@
 layout: ../../layouts/Layout.astro
 title: async
 description: Reatom for async
----  
+---
+
 This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`.
 
 > included in [@reatom/framework](/packages/framework)
