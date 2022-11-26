@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/Layout.astro
 title: testing
-description: Reatom internal utils
+description: Reatom testing package
 ---  
 Simple timer model to manage some countdown.
 
