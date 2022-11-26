@@ -5,6 +5,31 @@ const root = path.join(process.cwd(), '..')
 const packagesPath = path.join(root, 'packages')
 const packages = await fs.readdir(path.join(process.cwd(), '..', 'packages'))
 
+const getStoryTests = async (packageName: string) => {
+  const storyTestsPath = path.join(
+    packagesPath,
+    packageName,
+    'src',
+    'index.story.test.ts',
+  )
+  const isExist = await fs.access(storyTestsPath).then(
+    () => true,
+    () => false,
+  )
+
+  if (!isExist) return ''
+
+  const testLink = `https://github.com/artalar/reatom/blob/v3/packages/${packageName}/src/index.story.test.ts`
+
+  let storyTest = await fs.readFile(storyTestsPath, 'utf8')
+
+  storyTest = storyTest.replaceAll(`from './'`, `from '@reatom/${packageName}'`)
+
+  storyTest = '\n```ts\n' + storyTest + '```\n'
+
+  return `\n## Story test\n\n[source](${testLink})\n` + storyTest
+}
+
 for (const packageName of packages) {
   const readmePath = path.join(packagesPath, packageName, 'README.md')
   const packageJSONPath = path.join(packagesPath, packageName, 'package.json')
@@ -59,6 +84,8 @@ description: ${packageJSON.description}
   //     throw error
   //   }
   // }
+
+  content += await getStoryTests(packageName)
 
   await fs.writeFile(pagePath, content)
 }

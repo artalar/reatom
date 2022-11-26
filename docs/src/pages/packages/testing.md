@@ -11,15 +11,17 @@ import { createTestCtx, mockFn } from '@reatom/testing'
 
 ```ts
 export interface TestCtx extends Ctx {
-  mock<T>(anAtom: Atom<T>, fallback: T): void
+  mock<T>(anAtom: Atom<T>, fallback: T): Unsubscribe
+
+  mockAction<T>(anAction: Action<any[], T>, cb: Fn<[Ctx], T>): Unsubscribe
 
   subscribeTrack<T, F extends Fn<[T]>>(
     anAtom: Atom<T>,
     cb?: F,
   ): F & {
-    unsubscribe: () => void
-    calls: Array<{ i: [T]; o: ReturnType<F> }>
-    lastInput: Fn<[], T>
+    unsubscribe: Unsubscribe
+    calls: ReturnType<typeof mockFn<[T], any>>['calls']
+    lastInput: ReturnType<typeof mockFn<[T], any>>['lastInput']
   }
 }
 
@@ -30,6 +32,10 @@ declare function mockFn<I extends any[], O>(
   lastInput: Fn<[], I[0]>
 }
 ```
+
+## Story test
+
+[source](https://github.com/artalar/reatom/blob/v3/packages/testing/src/index.story.test.ts)
 
 ```ts
 import { test } from 'uvu'

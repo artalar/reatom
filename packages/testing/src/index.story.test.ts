@@ -2,7 +2,6 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { action, atom } from '@reatom/core'
 import { spyChange } from '@reatom/hooks'
-
 import { createTestCtx } from './'
 
 test('createTestCtx', async () => {
