@@ -1,6 +1,5 @@
 import { atom, AtomMut } from '@reatom/core'
-import { WithReducers } from './withReducers'
-import { withReducers } from '../build'
+import { WithReducers, withReducers } from './withReducers'
 
 export type StringAtom<State extends string = string> = WithReducers<
   AtomMut<State>,
