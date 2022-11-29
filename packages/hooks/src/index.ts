@@ -43,9 +43,16 @@ export const withInit =
     return anAtom
   }
 
-export const onConnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
+export const onConnect = (
+  anAtom: Atom,
+  cb: Fn<[Ctx & { isConnected(): boolean }]>,
+): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
-    const cleanup = cb(ctx)
+    const cleanup = cb(
+      Object.assign({}, ctx, {
+        isConnected: () => isConnected(ctx, anAtom),
+      }),
+    )
 
     if (typeof cleanup === 'function') {
       const cleanupHook = (_ctx: Ctx) =>

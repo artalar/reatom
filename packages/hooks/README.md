@@ -17,10 +17,12 @@ const dateAtom = atom(0).pipe(withInit(() => Date.now()))
 
 Subscribe to atom subscription, optionally return cleanup callback (called during effect queue).
 
+Passed `ctx` have `isConnected` method which checks the passed atom current status.
+
 ```ts
 import { onConnect } from '@reatom/hooks'
 
-const unkink = onConnect(messagesAtom, (ctx) => {
+const dispose = onConnect(messagesAtom, (ctx) => {
   const cb = (message) => {
     messagesAtom(ctx, (messages) => [...messages, message])
   }
@@ -29,7 +31,7 @@ const unkink = onConnect(messagesAtom, (ctx) => {
 
   return () => WS.off('message', cb)
 })
-// use `unlink` to dispose the hook
+// use `dispose` to remove the hook
 ```
 
 ## `onDisconnect`

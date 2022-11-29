@@ -105,7 +105,7 @@ export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
   withRetryAction(),
 )
 onConnect(fetchList.dataAtom, async (ctx) => {
-  while (isConnected(ctx, fetchList.dataAtom)) {
+  while (ctx.isConnected()) {
     await sleep(5000)
     fetchList.retry(ctx).catch(() => {})
     await take(ctx, fetchList.onSettle)
