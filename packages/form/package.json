@@ -17,6 +17,7 @@
     "last 4 chrome versions"
   ],
   "scripts": {
+    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
     "test": "tsx src/index.test.ts",
