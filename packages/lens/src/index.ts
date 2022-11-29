@@ -18,6 +18,7 @@ import { spyChange } from '@reatom/hooks'
 
 export * from './parseAtoms'
 export * from './bind'
+export * from './withReset'
 
 type PipedAtom<T extends Atom> = T extends Action<any[], infer Payload>
   ? Action<[], Payload>
