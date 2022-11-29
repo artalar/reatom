@@ -193,16 +193,16 @@ For `react-dom`:
 
 ```js
 import { unstable_batchedUpdates } from 'react-dom'
-import { setupBatch } from '@reatom/react-v1'
+import { setupBatch } from '@reatom/npm-react'
 
-setupBatch(unstable_batchedUpdates)``
+setupBatch(unstable_batchedUpdates)
 ```
 
 For `react-native`:
 
 ```js
 import { unstable_batchedUpdates } from 'react-native'
-import { setupBatch } from '@reatom/react-v1'
+import { setupBatch } from '@reatom/npm-react'
 
-setupBatch(unstable_batchedUpdates)``
+setupBatch(unstable_batchedUpdates)
 ```
