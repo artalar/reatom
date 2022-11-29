@@ -1,8 +1,8 @@
-Reatom is a state manager with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
+Reatom is a [state manager](https://www.reatom.dev/general/what-is-state-manager) with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
 
 Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
 
-[The core package](https://www.reatom.dev/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore%40alpha). Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+[The core package](https://www.reatom.dev/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 Do you React.js user? Check out [npm-react](https://www.reatom.dev/packages/npm-react) package!
 
@@ -20,10 +20,10 @@ const inputAtom = atom('')
 const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(inputAtom)}!`)
 
 // all updates in action processed by a smart batching
-const onInput = action((ctx, event) =>
+const onInput = action((ctx, event) => {
   // update the atom value by call it as a function
-  inputAtom(ctx, event.currentTarget.value),
-)
+  inputAtom(ctx, event.currentTarget.value)
+})
 
 // global application context
 const ctx = createCtx()
@@ -37,6 +37,8 @@ ctx.subscribe(greetingAtom, (greeting) => {
 })
 ```
 
+Check out [@reatom/core docs](https://www.reatom.dev/core) for detailed explanation of key principles and features.
+
 ## Advanced example
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
@@ -48,7 +50,15 @@ We will use [@reatom/core](https://www.reatom.dev/core), [@reatom/async](https:/
 Simple `sleep` helper (for debounce) gotten from [utils package](https://www.reatom.dev/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
 ```ts
-import { atom, reatomAsync, withAbort, withDataAtom, withRetryAction, onUpdate, sleep } from "@reatom/framework";
+import {
+  atom,
+  reatomAsync,
+  withAbort,
+  withDataAtom,
+  withRetryAction,
+  onUpdate,
+  sleep,
+} from '@reatom/framework'
 import { useAtom } from '@reatom/npm-react'
 
 const searchAtom = atom('', 'searchAtom')
@@ -60,9 +70,11 @@ const fetchIssues = reatomAsync(async (ctx, query: string) => {
   withDataAtom([]),
   withAbort({ strategy: 'last-in-win' }),
   withRetryAction({
-    onReject: (ctx, error: any, retries) => error?.message.includes('rate limit')
-      ? 100 * Math.min(500, retries ** 2)
-      : -1
+    onReject(ctx, error: any, retries) {
+      return error?.message.includes('rate limit')
+        ? 100 * Math.min(500, retries ** 2)
+        : -1
+    },
   }),
 )
 onUpdate(searchAtom, fetchIssues)
@@ -83,7 +95,11 @@ export default function App() {
         placeholder="Search"
       />
       {isLoading && 'Loading...'}
-      <ul>{issues.map(({ title }, i) => <li key={i}>{title}</li>)}</ul>
+      <ul>
+        {issues.map(({ title }, i) => (
+          <li key={i}>{title}</li>
+        ))}
+      </ul>
     </main>
   )
 }
@@ -99,34 +115,27 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.rea
 
 - Finish [forms package](https://github.com/artalar/reatom/tree/v3/packages/form)
 - Finish [persist](https://github.com/artalar/reatom/tree/v3/packages/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
-- Add adapters for most popular ui frameworks: ~~react~~ ([already have](https://www.reatom.dev/packages/npm-react)), angular, vue, svelte, solid.
+- Add adapters for most popular ui frameworks: ~~[react](https://www.reatom.dev/packages/npm-react)~~, angular, vue, svelte, solid.
 - Port some components logic from reakit.io, to made it fast, light and portable.
 - Add ability to made async transaction and elaborate optimistic-ui patterns and helpers / package.
 - Try to write own jsx renderer.
 
 ## FAQ
 
-### Why not Redux?
+### Why not X?
 
-Redux is awesome and Reatom is heavy inspired by it. Immutability, separation of computations and effects are good architecture designs principles. But there are a lot of missing features, when you trying to build something huge, or want to describe something small. Some of them is just impossible to fix, like O(n) complexity, others is really [hard to improve](https://github.com/reduxjs/reselect/discussions/491). Here is a list.
-
-- Selectors are not inspectable, it caches are not displayed in devtools.
-- Difficult static type inference, every selector must know the full path to parent state.
-- Hard for modular architecture: lazy loading is not handy, every selector must know about parent state.
-- Separation of interfaces (reducers and selectors) is excessively for feature-first / component architecture.
-- Selectors - **manual** API for state, they must be **manually** described and memoized, which takes a lot of work (code).
-- Selectors are executed after state change at subscriptions - error in selector will throw an error and it is not possible to restore the previous valid state, which is not compatible with [ACID](/general/what-is-state-manager#transaction).
-- Classic reducer API and [static] type descriptions have a lot of boilerplate, even with RTK.
-- Only one subscriptions queue made Redux performance O(n) for any small update.
-- If selector is not memoized or it have mistakes and produce unique reference each time (which happens often) it would call trigger dependencies recalculations even if update was come for different part of the state.
-- Middleware is a confusing pattern that can unexpectedly modify the behavior of the store. For example, actions for redux-thunk do not log.
-- No good effect-management.
-
+**Redux** is awesome and Reatom is heavy inspired by it. Immutability, separation of computations and effects are good architecture designs principles. But there are a lot of missing features, when you trying to build something huge, or want to describe something small. Some of them is just impossible to fix, like [batching](https://www.reatom.dev/core#ctxget-batch-api), [O(n) complexity](https://www.reatom.dev/guides/atomization#ref-pattern) or that selectors is not inspectable and breaks [the atomicy](https://www.reatom.dev/general/what-is-state-manager#state). Others is really [hard to improve](https://github.com/reduxjs/reselect/discussions/491). And boilerplate, yeah, [the difference is a huge](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6).
 Reatom solves all this problems and bring much more features by the almost same size.
+
+**MobX** brings to big bundle to use it in a small widgets, Reatom is more universal in this case. Also, MobX have implicit reactivity, which is usefull for simple cases, but could be not obvious and hard to debug in complext cases. There is no separate thing like action / event / effect to describe some dependent effects sequences (FRP-way). [There is not atomicy too](https://github.com/artalar/state-management-specification/blob/master/src/index.test.js#L60).
+
+**Effector** is too opinionated. There is **no** first-class support for **lazy** reactive computations and all connections are [hot](https://luukgruijs.medium.com/understanding-hot-vs-cold-observables-62d04cf92e03) everytime, which is could be more predictable, but defenetly is not optimal. Effector is not friendly for fabric creation (because of it hotness), which disallow us to use [atomization](https://www.reatom.dev/guides/atomization#ref-pattern) patterns, needed to handle immutability efficient. [The bundle size is 2-3 times larger](https://bundlejs.com/?q=effector&treeshake=%5B%7BcraeteStore%2CcreateEvent%2Ccombine%7D%5D) and [performance is lower](https://github.com/artalar/reactive-computed-bench).
+
+[Zustand](https://github.com/pmndrs/zustand), [nanostores](https://github.com/nanostores/nanostores), [xstate](https://xstate.js.org) and [many other](https://gist.github.com/artalar/e5e8a7274dfdfbe9d36c9e5ec22fc650) state managers have no so great combination of type inference, features, bundle size and performance, as Reatom have.
 
 ### Why immutability?
 
-When Redux brings to our world it perfectly solved the concurrency problem ([glitches](https://en.wikipedia.org/wiki/Reactive_programming#Glitches)) of dependent computations and increase debug experience a lot, as it allows you to log and asynchronously inspect each update snapshot in any time.
+Immutable data is much predictable and better for debug, than mutable states and wrapers around that. Reatom specialy designed with focus on [simple debug of async chains](https://www.reatom.dev/guides/debug) and [have a patterns](https://www.reatom.dev/guides/atomization) to handle [greate performance](#how-performant-reatom-is).
 
 ### What LTS policy is used and what about bus factor?
 

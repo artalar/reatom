@@ -9,6 +9,8 @@ Small, extensible, feature-rich and performant core package for building reactiv
 > included in [@reatom/framework](/packages/framework)
 
 
+The raw API description is [below](#api).
+
 ## Installation
 
 ```sh
@@ -17,13 +19,9 @@ npm i @reatom/core
 
 ## Usage
 
-> See the APIs description [below](#api)
-
 Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation. All other abstractions work on top of these three. You could check the [architecture](#architecture) section for a deep dive to internal principles and it motivation.
 
 Reatom is inspired by React.js architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`.
-
-> To get the maximum performance and handle immutability by a constant time, check the [atomization](/guides/atomization) guide. [There](/#how-performant-reatom-is) you could find an overview of a self Reatom performance.
 
 ```ts
 import { createCtx, action, atom } from '@reatom/core'
@@ -63,6 +61,8 @@ const fetchGoods = action((ctx) => {
   // [OPTIONAL] get your services from the context
   const api = ctx.get(apiAtom)
 
+  // all sync updates inside action automatically batched
+  // and dependent computations will call after the action callback return
   isSearchingAtom(ctx, true)
 
   // schedule side-effects
@@ -70,7 +70,7 @@ const fetchGoods = action((ctx) => {
   const promise = ctx.schedule(async () => {
     const goods = await api.getGoods(search)
 
-    // pass a callback to `get` to batch a few updates
+    // pass a callback to `get` to batch a few updates inside async resolve
     ctx.get(() => {
       isSearchingAtom(ctx, false)
       goodsAtom(ctx, goods)
@@ -82,7 +82,7 @@ const fetchGoods = action((ctx) => {
 })
 ```
 
-> Do you want to see next [the docs for React adapter](https://reatom.dev/packages/npm-react)?
+As you can see, most passed callbacks in Reatom units accepts `ctx` by the first argument - it is a main convention, which allow you to not use imports and write more clean. Some advanced helpers could extends or redefine ctx for additional features, so when you will need it, there will no feature code changes.
 
 ```ts
 // subscribe to your atoms
@@ -98,6 +98,8 @@ ctx.subscribe((logs) => {
   console.log(logs)
 })
 ```
+
+> Do you want to see next [the docs for React adapter](https://reatom.dev/packages/npm-react)?
 
 Use Reatom ecosystem to made your code clean and readable
 
@@ -128,7 +130,7 @@ export const someFlowManagerAtom = atom((ctx) => {
   ctx.spy(newMessage).forEach(({ payload }) => {
     if (payload.relation === FLOW_NAME) someFlowAtom(ctx, payload)
 
-    console.log('example log for `ctx.spy(newMessage)[N]`', payload)
+    console.log('example log for `ctx.spy(newMessage)[N]`.payload', payload)
   })
 })
 
@@ -143,12 +145,12 @@ socket.on(
 )
 
 // someFlowManagerAtom reducer:
-// example log for `ctx.get(newMessage)` [1, 2]
+// example log for `ctx.get(newMessage)` [{ params: [1], payload: 1 }, { params: [2], payload: 2 }]
 // example log for `ctx.spy(newMessage)[N]` 1
 // example log for `ctx.spy(newMessage)[N]` 2
 ```
 
-You need to know one rare tricky thing. If during transaction you will call an action and will read it dependent atom a few time step by step, `ctx.get` will return the whole array of all passed payload, but `ctx.spy` will return array with only new elements, which wasn't handled in this reducer during this transaction. And to made this rare case correct you should spying your dependencies in same way each time, without conditions. In other words, for this case your dependencies list should be static.
+> You need to know one **rare** tricky thing. If during transaction you will call an action and will read it dependent atom a few time step by step, `ctx.get` will return the whole array of all passed payload, but `ctx.spy` will return array with only new elements, which wasn't handled in this reducer during this transaction. And to made this rare case correct you should spying your dependencies in same way each time, without conditions. In other words, for this case your dependencies list should be static.
 
 <!-- ## Architecture
 
@@ -162,21 +164,32 @@ A few notes about internal architecture design and it motivation. -->
 import { atom } from '@reatom/core'
 ```
 
-`atom` function is a fabric for an atom - base reactive primitive. Atom don't store it data (state, listeners, dependencies) in itself, it only key to a cache in [ctx](https://reatom.dev/packages/core#ctx-api) (context). You may imagine atom as a prototype for a cache. One of the most powerful Reatom feature is that a cache is immutable, it recreates on each relative update. Cache immutability helps to process [transactions](https://reatom.dev/packages/core#transaction-api) and it super handy for debugging. Don't worry, it is pretty [efficient](https://reatom.dev#performance).
+`atom` function is a fabric for an atom - base reactive primitive. Atom don't store it data (state, listeners, dependencies) in itself, it only key to a cache in [ctx](#ctx-api) (context). You may imagine atom as a prototype for a cache. One of the most powerful Reatom feature is that a cache is immutable, it recreates on each relative update. Cache immutability helps to process [transactions](#transaction-api) and it super handy for debugging. Don't worry, it is pretty [efficient](https://reatom.dev#performance).
 
-As atom is a key, it should be mapped somewhere to it cache. `ctx` has internal weak map `caches`, which store your data until you have a link to atom. When you subscribe (connect) and unsubscribe (disconnect) from atom the state isn't reseted or deleted, it still stored in cache, which will cleared by GC only after link to the atom disappears from you closures. So, if you define global atom available in a few your modules the state will always persists in memory during application lifetime, neither you subscribed or unsubscribed for the atom, which is useful. If you need to clear state on disconnect or doing other lifetime transformations check the [hooks package](https://reatom.dev/packages/hooks).
+As atom is a key, it should be mapped somewhere to it cache. `ctx` has internal [WeakMap](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap) `caches`, which store your data until you have a link to atom. When you subscribe (connect) and unsubscribe (disconnect) from atom the state isn't reseted or deleted, it still stored in cache, which will cleared by GC only after link to the atom disappears from you closures. This behavior is most intuitive and works just like any variable storing. So, if you define global atom available in a few your modules the state will always persists in memory during application lifetime, neither you subscribed or unsubscribed for the atom, which is useful. If you need to clear state on disconnect or doing other lifetime transformations check the [hooks package](https://reatom.dev/packages/hooks) and [withreset](/packages/lens#withreset) helper.
 
-If you need to create base mutable atom just pass the initial value to `atom`. Pass the atom name by a second argument (it is optional, but strongly recommended). Resulted atom will be mutable (`mut`) with a callable signature (a function), you could mutate it by passing context and new value or reducer function.
+If you need to create base mutable atom just pass the initial value to `atom`. Pass the atom name by a second argument (it is optional, but strongly recommended). Resulted atom will be mutable (`Mut`) with a callable signature (a function), you could mutate it by passing context and new value or reducer function.
 
 ```ts
 // create
-const countAtom = atom(0, 'count')
+const countAtom = atom(0, 'countAtom')
 // countAtom: AtomMut<number>
 
 // mutate by setter
-countAtom(ctx, 10) // 10
+countAtom(ctx, 10)
+// updates and return 10
+
 // mutate by reducer
-countAtom(ctx, (state) => state + 1) // 11
+countAtom(ctx, (state) => state + 1)
+// updates and return 11
+```
+
+**All atom state changes should be immutable**.
+
+```ts
+export const listAtom = atom([], 'listAtom')
+// add item
+listAtom(ctx, (list) => [...list, newItem])
 ```
 
 You could create a computed derived atoms by passing a function to `atom`. First argument of passed reducer is special kind of `ctx` with `spy` function, which allow you to subscribe to passed atom and receive it fresh state. Second argument is a previous `state` and it optional, you could initiate it by defining a default value.
@@ -191,7 +204,9 @@ const isCountEvenAtom = atom(
 // isCountEvenAtom: Atom<number>
 ```
 
-Reatom allows you to use native language features to describe your conditions, all reactive dependencies recalculating in a real time.
+> To store a function in reatom state just wrap it to a container, like `atom({ fn })`.
+
+Reatom allows you to use native language features to describe your conditions, all reactive dependencies reconnecting in a real time.
 
 ```ts
 export const currencyAtom = atom<'us' | 'eu'>('us')
@@ -234,7 +249,7 @@ ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
 
 Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`.
 
-> Check naming conventions and more examples in [this guild](http://localhost:3000/guides/naming#operator-prefix).
+> Check naming conventions and more examples in [this guild](/guides/naming#operator-prefix).
 
 ```ts
 const someAtom = atom(0).pipe(toSome({}), withOther({}))
@@ -262,13 +277,21 @@ const increment = action('increment')
 // increment: Action<[], void>
 
 const add = action<number>()
-// increment: Action<[number], number>
+// add: Action<[number], number>
 const add = action<number>('add')
-// increment: Action<[number], number>
-const add = action<number>((ctx, value: number) => value)
-// increment: Action<[number], number>
-const add = action<number>((ctx, value: number) => value, 'add')
-// increment: Action<[number], number>
+// add: Action<[number], number>
+const add = action((ctx, value: number) => value)
+// add: Action<[number], number>
+const add = action((ctx, value: number) => value, 'add')
+// add: Action<[number], number>
+const splice = action((ctx, start: number, deleteCount?: number) => {
+  listAtom(ctx, (list) => {
+    const newList = list.slice(0)
+    newList.splice(start, deleteCount)
+    return newList
+  })
+})
+// splice: Action<[number, number?], number>
 ```
 
 Action state is `Array<{ params: Array<any>, payload: any }>`, but action call returns the payload:
@@ -310,10 +333,27 @@ Subscribe to atom new state
 
 #### `ctx.subscribe` log API
 
-Subscribe to transaction end
+Subscribe to transaction end. Useful for logging.
 
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
 ### `ctx.schedule`
 
-To archive [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](https://reatom.dev/packages/core#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map.
+To archive [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map. To archive pureness of computations and ability to cancel it all side-effects should be called separately in different queue, after all computation. Here is `schedule` come, it accept effect callback and returns a promise which will be resolved after effect call or rejected if transaction will fall.
+
+```ts
+const fetchData = action((ctx) => {
+  loadingAtom(ctx, true)
+  ctx.schedule(effect).then((data) => {
+    loadingAtom(ctx, false)
+    dataAtom(ctx, data)
+  })
+})
+```
+
+The unique feature of Reatom and the schedule specially is ability to define the target queue. The second argument of `schedule` is a priority number:
+
+- `-1` - rollback queue, useful when you need to do a side-effect during pure computations. For example you need to create a timeout and store it id, you could schedule rollback to clear it, in case if transaction will fail.
+- `0` - computations queue, schedule **pure** computation, which will call right after all batches.
+- `1` - the **default** near effect queue, used to schedule regular effects. This effects calling could be redefined (delayed) in `callNearEffect` option of `createCtx`
+- `2` - lates effect queue, used to schedule subscribers. This effects calling could be redefined (delayed) in `callLateEffect` option of `createCtx`.

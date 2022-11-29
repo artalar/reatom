@@ -200,3 +200,18 @@ handleSome(123)
 bind(ctx, doSome) === bind(ctx, doSome)
 // true
 ```
+
+## `withReset`
+
+Adds `reset` action to reset the atom state.
+
+For example, clear state after all dependencies and subscribers are gone.
+
+```ts
+import { atom } from '@reatom/core'
+import { withReset } from '@reatom/lens'
+import { onDisconnect } from '@reatom/hooks'
+
+export const dataAtom = atom([], 'dataAtom').pipe(withReset())
+onDisconnect(dataAtom, dataAtom.reset)
+```

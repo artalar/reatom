@@ -2,21 +2,21 @@ This package is helping you to manage async requests by adding additional meta i
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
+`reatomAsync` accepts effect function which returns a promise (it could be just `async` function) and call it in effects queue. `ctx` already includes `controller` which is [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
+
 ```ts
 import { reatomAsync } from '@reatom/async'
 
-const fetchList = reatomAsync((ctx, page: number) =>
-  fetch(`/api/list?page={page}`),
+export const fetchList = reatomAsync((ctx, page: number) =>
+  fetch(`/api/list?page={page}`, ctx.controller),
 )
 ```
 
-Also, there are few additional operators which you could plug for extra features - grow as you need:
-
-> all this imports available in one `@reatom/framework`
+Also, there are few additional operators which you could plug for extra features - grow as you need, unused operators will be treeshaked.
 
 ## `withDataAtom`
 
-Adds `dataAtom` which updates by `onFulfill` or manually.
+Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a tiny cache level.
 
 ### Fetch data on demand
 
@@ -24,9 +24,27 @@ Adds `dataAtom` which updates by `onFulfill` or manually.
 import { reatomAsync, withDataAtom } from '@reatom/async'
 import { onConnect } from '@reatom/hooks'
 
-const fetchData = reatomAsync((ctx) => fetch('...')).pipe(withDataAtom([]))
+export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
+  withDataAtom([]),
+)
 
-onConnect(fetchData.dataAtom, fetchData)
+onConnect(fetchList.dataAtom, fetchList)
+```
+
+### Invalidate backend data on mutation
+
+```ts
+import { reatomAsync, withDataAtom, onUpdate } from '@reatom/framework'
+
+export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
+  withDataAtom(),
+)
+export const updateList = reatomAsync((ctx, newList) => api.updateList(newList))
+onUpdate(updateList, (ctx, newList) => {
+  // optimistic update
+  fetchList.dataAtom(ctx, newList)
+  fetchList(ctx)
+})
 ```
 
 ## `withErrorAtom`
@@ -67,4 +85,30 @@ const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
     },
   }),
 )
+```
+
+### Periodic refresh for used data
+
+```ts
+import {
+  reatomAsync,
+  withDataAtom,
+  withRetryAction,
+  onUpdate,
+  isConnected,
+  sleep,
+  take,
+} from '@reatom/framework'
+
+export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
+  withDataAtom([]),
+  withRetryAction(),
+)
+onConnect(fetchList.dataAtom, async (ctx) => {
+  while (isConnected(ctx, fetchList.dataAtom)) {
+    await sleep(5000)
+    fetchList.retry(ctx).catch(() => {})
+    await take(ctx, fetchList.onSettle)
+  }
+})
 ```
