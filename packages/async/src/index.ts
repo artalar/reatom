@@ -149,16 +149,27 @@ export const withDataAtom: {
   }
 
 export const withErrorAtom =
-  <T extends AsyncAction & { errorAtom?: Atom<undefined | Err> }, Err = Error>(
+  <
+    T extends AsyncAction & {
+      errorAtom?: Atom<undefined | Err> & { reset: Action }
+    },
+    Err = Error,
+  >(
     parseError: Fn<[Ctx, unknown], Err> = (e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
-  ): Fn<[T], T & { errorAtom: Atom<undefined | Err> }> =>
+  ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
-      const errorAtom = (anAsync.errorAtom = atom<undefined | Err>(
-        undefined,
-        anAsync.__reatom.name?.concat('.errorAtom'),
-      ))
+      const errorAtomName = anAsync.__reatom.name?.concat('.errorAtom')
+      const errorAtom = Object.assign(
+        atom<undefined | Err>(undefined, errorAtomName),
+        {
+          reset: action((ctx) => {
+            errorAtom(ctx, undefined)
+          }, errorAtomName?.concat('reset')),
+        },
+      )
+      anAsync.errorAtom = errorAtom
       addOnUpdate(anAsync.onReject, (ctx, { state }) =>
         errorAtom(ctx, parseError(ctx, state[0]!.payload)),
       )
