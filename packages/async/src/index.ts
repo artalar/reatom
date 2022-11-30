@@ -122,18 +122,26 @@ export const withDataAtom: {
   >(
     initState: State,
   ): Fn<[T], T & { dataAtom: AtomMut<State | ActionPayload<T['onFulfill']>> }>
+  <
+    T extends AsyncAction & {
+      dataAtom?: AtomMut<State>
+    },
+    State,
+  >(
+    initState: State,
+    map?: Fn<[Ctx, ActionPayload<T['onFulfill']>], State>,
+  ): Fn<[T], T & { dataAtom: AtomMut<State> }>
 } =
-  (initState: any) =>
+  (initState: any, map?: Fn) =>
   // @ts-ignore
   (anAsync) => {
     if (!anAsync.dataAtom) {
-      onUpdate(
-        anAsync.onFulfill,
-        // @ts-expect-error
-        (anAsync.dataAtom = atom(
-          initState,
-          anAsync.__reatom.name?.concat('.dataAtom'),
-        )),
+      const dataAtom = (anAsync.dataAtom = atom(
+        initState,
+        anAsync.__reatom.name?.concat('.dataAtom'),
+      )) as AtomMut
+      onUpdate(anAsync.onFulfill, (ctx, payload) =>
+        dataAtom(ctx, map ? map(ctx, payload) : payload),
       )
     }
 

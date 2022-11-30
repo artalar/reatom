@@ -12,7 +12,7 @@ import { reatomAsync, withAbort, withDataAtom, withRetryAction } from './'
 
 test(`base API`, async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => v).pipe(
-    withDataAtom(0),
+    withDataAtom(0, (ctx, v) => v),
   )
   const ctx = createTestCtx()
 
