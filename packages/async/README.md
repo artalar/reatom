@@ -49,7 +49,24 @@ onUpdate(updateList, (ctx, newList) => {
 
 ## `withErrorAtom`
 
-Adds `errorAtom` which updates by `onReject` and clears by `onFulfill`.
+Adds `errorAtom` which updates by `onReject` and clears by `onFulfill`. You could add a mapper function and reset trigger: `null | 'onEffect' | 'onFulfill'` (`onEffect` by default).
+
+```ts
+import { reatomAsync, withErrorAtom } from '@reatom/async'
+
+export const fetchSome = reatomAsync(async (ctx) =>
+  fetch('/api/some').then((r) => {
+    if (r.status !== 200) throw r
+    return r.json()
+  }),
+).pipe(
+  withErrorAtom((ctx, error) =>
+    error instanceof Response
+      ? error.status
+      : error?.message || 'unknown error',
+  ),
+)
+```
 
 ## `withAbort`
 

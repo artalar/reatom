@@ -157,6 +157,9 @@ export const withErrorAtom =
   >(
     parseError: Fn<[Ctx, unknown], Err> = (e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
+    { resetTrigger }: { resetTrigger: null | 'onEffect' | 'onFulfill' } = {
+      resetTrigger: 'onEffect',
+    },
   ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
@@ -173,7 +176,10 @@ export const withErrorAtom =
       addOnUpdate(anAsync.onReject, (ctx, { state }) =>
         errorAtom(ctx, parseError(ctx, state[0]!.payload)),
       )
-      addOnUpdate(anAsync.onFulfill, (ctx) => errorAtom(ctx, undefined))
+      if (resetTrigger) {
+        // @ts-expect-error
+        addOnUpdate(anAsync[resetTrigger] ?? anAsync, errorAtom.reset)
+      }
     }
 
     return anAsync as T & { errorAtom: Atom<undefined | Err> }
