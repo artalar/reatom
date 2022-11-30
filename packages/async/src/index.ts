@@ -142,7 +142,7 @@ export const withDataAtom: {
 
 export const withErrorAtom =
   <T extends AsyncAction & { errorAtom?: Atom<undefined | Err> }, Err = Error>(
-    parseError: Fn<[unknown], Err> = (e) =>
+    parseError: Fn<[Ctx, unknown], Err> = (e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
   ): Fn<[T], T & { errorAtom: Atom<undefined | Err> }> =>
   (anAsync) => {
@@ -152,7 +152,7 @@ export const withErrorAtom =
         anAsync.__reatom.name?.concat('.errorAtom'),
       ))
       addOnUpdate(anAsync.onReject, (ctx, { state }) =>
-        errorAtom(ctx, parseError(state[0])),
+        errorAtom(ctx, parseError(ctx, state[0]!.payload)),
       )
       addOnUpdate(anAsync.onFulfill, (ctx) => errorAtom(ctx, undefined))
     }
