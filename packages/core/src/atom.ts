@@ -395,9 +395,7 @@ export const createCtx = ({
 
           if (isComputed) actualizePubs(patchCtx, patch)
         } catch (error) {
-          patch.error = error
-          patch.cause ??= ctx.cause
-          throw error
+          throw (patch.error = error)
         }
 
         if (!Object.is(state, patch.state)) {
@@ -409,7 +407,7 @@ export const createCtx = ({
         }
       }
 
-      patch.cause ??= ctx.cause
+      patch.cause ??= root
     }
 
     return patch!
@@ -583,7 +581,7 @@ export const createCtx = ({
     cause: undefined as any,
   }
 
-  ctx.cause = ctx.get(() => actualize(ctx, __root))
+  var root = (ctx.cause = ctx.get(() => actualize(ctx, __root)))
   ctx.cause.cause = null
 
   return ctx
