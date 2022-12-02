@@ -1,6 +1,6 @@
 {
   "name": "@reatom/core",
-  "version": "3.1.10",
+  "version": "3.1.11",
   "private": false,
   "description": "State manager for both simple and complex applications",
   "source": "src/index.ts",

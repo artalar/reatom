@@ -297,7 +297,6 @@ export const createCtx = ({
 
   let actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
     let { cause, proto, pubs } = patch
-    let connected = false
     let toDisconnect = new Set<AtomProto>()
     let toConnect = new Set<AtomProto>()
 
@@ -319,7 +318,7 @@ export const createCtx = ({
               : undefined
           let isDepChanged = prevDepPatch?.proto !== depPatch.proto
 
-          if (isDepChanged && (connected ||= isConnected(patch))) {
+          if (isDepChanged) {
             if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
             toConnect.add(depProto)
           }
@@ -328,7 +327,7 @@ export const createCtx = ({
             ? depPatch.state.slice(prevDepPatch!.state.length)
             : depPatch.state
         } else {
-          throwReatomError(1, 'async spy')
+          throwReatomError(true, 'async spy')
         }
       }
 
@@ -336,14 +335,11 @@ export const createCtx = ({
       patch.cause = cause
       patch.pubs = newPubs
 
-      if (newPubs.length < pubs.length) {
-        connected = true
-        for (let i = newPubs.length; i < pubs.length; i++) {
-          toDisconnect.add(pubs[i]!.proto)
-        }
+      for (let i = newPubs.length; i < pubs.length; i++) {
+        toDisconnect.add(pubs[i]!.proto)
       }
 
-      if (connected) {
+      if (toDisconnect.size + toConnect.size && isConnected(patch)) {
         for (let depProto of toDisconnect) {
           toConnect.has(depProto) ||
             disconnect(proto, depProto.patch ?? read(depProto)!)
