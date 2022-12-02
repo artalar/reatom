@@ -15,7 +15,7 @@
     "packages/*"
   ],
   "simple-git-hooks": {
-    "commit-msg": "npx commitlint -e '$@'"
+    "commit-msg": "npx commitlint -e ${1}"
   },
   "author": "artalar",
   "license": "MIT",
