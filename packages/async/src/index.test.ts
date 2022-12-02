@@ -1,14 +1,19 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { fetch } from 'cross-fetch'
-import { atom } from '@reatom/core'
-import { mapPayloadAwaited, toAtom } from '@reatom/lens'
+import { mapPayloadAwaited } from '@reatom/lens'
 import { take } from '@reatom/effects'
 import { onConnect, onUpdate } from '@reatom/hooks'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
-import { reatomAsync, withAbort, withDataAtom, withRetryAction } from './'
+import {
+  reatomAsync,
+  withAbort,
+  withDataAtom,
+  withRetryAction,
+  withErrorAtom,
+} from './'
 
 test(`base API`, async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => v).pipe(
@@ -174,6 +179,40 @@ test('withAbort and fetch', async () => {
   ;`👍` //?
 })
 
+test('hooks', async () => {
+  let onEffect = 0
+  let onFulfill = 0
+  let onReject = 0
+  let onSettle = 0
+  const effect = reatomAsync(
+    async (ctx, v: number) => {
+      if (v) return v
+      throw v
+    },
+    {
+      onEffect: () => onEffect++,
+      onFulfill: () => onFulfill++,
+      onReject: () => onReject++,
+      onSettle: () => onSettle++,
+    },
+  )
+  const ctx = createTestCtx()
+
+  assert.equal([onEffect, onFulfill, onReject, onSettle], [0, 0, 0, 0])
+
+  const promise1 = effect(ctx, 1)
+  assert.equal([onEffect, onFulfill, onReject, onSettle], [1, 0, 0, 0])
+
+  await promise1
+  assert.equal([onEffect, onFulfill, onReject, onSettle], [1, 1, 0, 1])
+
+  const promise2 = effect(ctx, 0)
+  assert.equal([onEffect, onFulfill, onReject, onSettle], [2, 1, 0, 1])
+  await promise2.catch(() => {})
+  assert.equal([onEffect, onFulfill, onReject, onSettle], [2, 1, 1, 2])
+  ;`👍` //?
+})
+
 test('fetch on connect', async () => {
   const fetchData = reatomAsync(async (ctx, payload: number) => payload).pipe(
     withDataAtom(0),
@@ -184,6 +223,25 @@ test('fetch on connect', async () => {
 
   await sleep()
   assert.is(track.lastInput(), 123)
+  ;`👍` //?
+})
+
+test('resetTrigger', async () => {
+  const effect = reatomAsync(async () => {
+    if (1) throw 42
+    return 42
+  }).pipe(
+    withDataAtom(),
+    withErrorAtom(undefined, { resetTrigger: 'dataAtom' }),
+  )
+  const ctx = createTestCtx()
+
+  await effect(ctx).catch(() => {})
+
+  assert.is(ctx.get(effect.errorAtom)?.message, '42')
+
+  effect.dataAtom(ctx, 42)
+  assert.is(ctx.get(effect.errorAtom), undefined)
   ;`👍` //?
 })
 

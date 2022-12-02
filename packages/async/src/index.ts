@@ -28,6 +28,14 @@ export interface AsyncCtx extends Ctx {
   controller: AbortController
 }
 
+export interface AsyncOptions<Resp = any> {
+  name?: string
+  onEffect?: Fn<[Ctx, Resp]>
+  onFulfill?: Fn<[Ctx, Resp]>
+  onReject?: Fn<[Ctx, unknown]>
+  onSettle?: Fn<[Ctx]>
+}
+
 export interface ControlledPromise<T> extends Promise<T> {
   controller: AbortController
 }
@@ -40,8 +48,18 @@ export const reatomAsync = <
   Resp = any,
 >(
   effect: Fn<Params, Promise<Resp>>,
-  name?: string,
+  options: string | AsyncOptions<Resp> = {},
 ): AsyncAction<CtxParams<Params>, Resp> => {
+  const {
+    name,
+    onEffect: onEffectHook,
+    onFulfill: onFulfillHook,
+    onReject: onRejectHook,
+    onSettle: onSettleHook,
+  } = typeof options === 'string'
+    ? ({ name: options } as AsyncOptions<Resp>)
+    : options
+
   type Self = AsyncAction<CtxParams<Params>, Resp>
   // @ts-ignore
   const onEffect: Self = action((ctx, ...a) => {
@@ -68,13 +86,13 @@ export const reatomAsync = <
       ctx,
       promise,
       (v) => {
-        pendingAtom(ctx, (s) => --s)
         onFulfill(ctx, v)
+        pendingAtom(ctx, (s) => --s)
         onSettle(ctx)
       },
       (e) => {
-        pendingAtom(ctx, (s) => --s)
         onReject(ctx, e)
+        pendingAtom(ctx, (s) => --s)
         onSettle(ctx)
       },
     )
@@ -87,6 +105,12 @@ export const reatomAsync = <
   const onSettle = action(name?.concat('.onSettle'))
 
   const pendingAtom = atom(0, name?.concat('.pendingAtom'))
+
+  // @ts-ignore
+  if (onEffectHook) onUpdate(onEffect, onEffectHook)
+  if (onFulfillHook) onUpdate(onFulfill, onFulfillHook)
+  if (onRejectHook) onUpdate(onReject, onRejectHook)
+  if (onSettleHook) onUpdate(onSettle, onSettleHook)
 
   return Object.assign(onEffect, {
     onFulfill,
@@ -155,9 +179,17 @@ export const withErrorAtom =
     },
     Err = Error,
   >(
-    parseError: Fn<[Ctx, unknown], Err> = (e) =>
+    parseError: Fn<[Ctx, unknown], Err> = (ctx, e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
-    { resetTrigger }: { resetTrigger: null | 'onEffect' | 'onFulfill' } = {
+    {
+      resetTrigger,
+    }: {
+      resetTrigger:
+        | null
+        | 'onEffect'
+        | 'onFulfill'
+        | ('dataAtom' extends keyof T ? 'dataAtom' : null)
+    } = {
       resetTrigger: 'onEffect',
     },
   ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
@@ -169,16 +201,19 @@ export const withErrorAtom =
         {
           reset: action((ctx) => {
             errorAtom(ctx, undefined)
-          }, errorAtomName?.concat('reset')),
+          }, errorAtomName?.concat('.reset')),
         },
       )
       anAsync.errorAtom = errorAtom
       addOnUpdate(anAsync.onReject, (ctx, { state }) =>
-        errorAtom(ctx, parseError(ctx, state[0]!.payload)),
+        errorAtom(ctx, parseError(ctx, state.at(-1)!.payload)),
       )
       if (resetTrigger) {
-        // @ts-expect-error
-        addOnUpdate(anAsync[resetTrigger] ?? anAsync, errorAtom.reset)
+        addOnUpdate(
+          // @ts-expect-error
+          anAsync[resetTrigger] ?? anAsync,
+          (ctx) => ctx.get(errorAtom) !== undefined && errorAtom.reset(ctx),
+        )
       }
     }
 
