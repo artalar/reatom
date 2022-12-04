@@ -456,6 +456,29 @@ test('update propagation for atom with listener', () => {
   ;`👍` //?
 })
 
+test('update queue', () => {
+  const a1 = atom(5)
+  const a2 = atom((ctx) => {
+    const v = ctx.spy(a1)
+    if (v < 3) ctx.schedule(track, 0)
+  })
+  let iterations = 0
+  const track = mockFn(() => {
+    if (iterations++ > 5) throw new Error('circle')
+    a1(ctx, (s) => ++s)
+  })
+  const ctx = createCtx()
+
+  ctx.subscribe(a2, () => {})
+  assert.is(track.calls.length, 0)
+
+  a1(ctx, 0)
+  assert.is(track.calls.length, 3)
+
+  iterations = 5
+  assert.throws(() => a1(ctx, 0))
+  ;`👍` //?
+})
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

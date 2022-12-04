@@ -204,17 +204,17 @@ export const createCtx = ({
   let read = (proto: AtomProto): undefined | AtomCache => caches.get(proto)
   let logsListeners = new Set<Fn<[Logs, Error?]>>()
 
-  let commits: Array<Fn<[Ctx]>> = []
   let nearEffects: Array<Fn<[Ctx]>> = []
   let lateEffects: Array<Fn<[Ctx]>> = []
 
   // 'tr' is short for 'transaction'
   let inTr = false
   let trError: null | Error = null
+  let trUpdates: Array<Fn<[Ctx]>> = []
+  let trRollbacks: Array<Fn> = []
+  let trLogs: Array<AtomCache> = []
   let trNearEffectsStart: typeof nearEffects.length = 0
   let trLateEffectsStart: typeof lateEffects.length = 0
-  let trLogs: Array<AtomCache> = []
-  let trRollbacks: Array<Fn> = []
 
   let walkNearEffects = () => {
     for (let effect of nearEffects) callNearEffect(effect, ctx)
@@ -440,12 +440,10 @@ export const createCtx = ({
         if (trLogs.length === 0) return result
 
         for (let i = 0; i < trLogs.length; ) {
-          let patch = trLogs[i]!
-          if (patch.listeners.size > 0) {
-            actualize(this, patch.proto)
-          }
+          let { listeners, proto } = trLogs[i]!
+          if (listeners.size > 0) actualize(this, proto)
           if (++i === trLogs.length) {
-            for (let commit of commits) commit(this)
+            for (let commit of trUpdates.splice(0)) commit(this)
           }
         }
 
@@ -487,8 +485,9 @@ export const createCtx = ({
       } finally {
         inTr = false
         trError = null
-        trLogs = []
+        trUpdates = []
         trRollbacks = []
+        trLogs = []
       }
 
       walkLateEffects()
@@ -505,8 +504,10 @@ export const createCtx = ({
 
         if (step === -1) {
           rej = effect
+        } else if (step === 0) {
+          trUpdates.push(effect)
         } else {
-          ;([commits, nearEffects, lateEffects] as const)[step].push(() => {
+          ;([{}, nearEffects, lateEffects] as const)[step].push(() => {
             try {
               res(effect(this))
             } catch (error) {
