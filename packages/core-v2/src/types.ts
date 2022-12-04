@@ -89,6 +89,8 @@ export type Atom<State = any> = {
    * Set of all dependency types which this atom should handle
    */
   types: Array<Action['type']>
+
+  // v3atom: v3.Atom<State>
 }
 
 export type AtomBindings<State = any> = {
@@ -267,6 +269,8 @@ export type Store = {
 
   /** Subscribe to dispatch */
   subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe
+
+  // v3ctx: v3.Ctx
 }
 
 /**

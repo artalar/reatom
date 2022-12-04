@@ -35,7 +35,7 @@ function isCacheFresh(atom: Atom, getCache: Store['getCache']): boolean {
   while (stack.length > 0) {
     const deps = stack.pop()!
     for (let i = 0; i < deps.length; i++) {
-      const dep = deps[i]
+      const dep = deps[i]!
       if (dep != getCache(dep.atom)) return false
       stack.push(dep.tracks)
     }
