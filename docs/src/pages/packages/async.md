@@ -13,8 +13,32 @@ This package is helping you to manage async requests by adding additional meta i
 ```ts
 import { reatomAsync } from '@reatom/async'
 
-export const fetchList = reatomAsync((ctx, page: number) =>
-  fetch(`/api/list?page={page}`, ctx.controller),
+export const fetchList = reatomAsync(
+  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  'fetchList',
+)
+```
+
+You could handle promise states to update other stuff during it batch in the second parameter.
+
+```ts
+import { reatomAsync } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  {
+    name: 'fetchList',
+    onEffect(ctx, promise, params) {
+      notify(ctx, 'fetch start')
+    },
+    onFulfill(ctx, result) {
+      notify(ctx, 'fetch end')
+    },
+    onReject(ctx, error) {
+      notify(ctx, 'fetch error')
+    },
+    onSettle(ctx) {},
+  },
 )
 ```
 
@@ -55,7 +79,24 @@ onUpdate(updateList, (ctx, newList) => {
 
 ## `withErrorAtom`
 
-Adds `errorAtom` which updates by `onReject` and clears by `onFulfill`.
+Adds `errorAtom` which updates by `onReject` and clears by `onFulfill`. You could add a mapper function and reset trigger: `null | 'onEffect' | 'onFulfill'` (`onEffect` by default).
+
+```ts
+import { reatomAsync, withErrorAtom } from '@reatom/async'
+
+export const fetchSome = reatomAsync(async (ctx) =>
+  fetch('/api/some').then((r) => {
+    if (r.status !== 200) throw r
+    return r.json()
+  }),
+).pipe(
+  withErrorAtom((ctx, error) =>
+    error instanceof Response
+      ? error.status
+      : error?.message || 'unknown error',
+  ),
+)
+```
 
 ## `withAbort`
 

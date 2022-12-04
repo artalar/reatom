@@ -193,9 +193,11 @@ For `react-dom`:
 
 ```js
 import { unstable_batchedUpdates } from 'react-dom'
-import { setupBatch } from '@reatom/npm-react'
+import { createCtx } from '@reatom/core'
+import { setupBatch, withBatching } from '@reatom/npm-react'
 
 setupBatch(unstable_batchedUpdates)
+const ctx = withBatching(createCtx())
 ```
 
 For `react-native`:
@@ -205,4 +207,6 @@ import { unstable_batchedUpdates } from 'react-native'
 import { setupBatch } from '@reatom/npm-react'
 
 setupBatch(unstable_batchedUpdates)
+import { createCtx } from '@reatom/core'
+const ctx = withBatching(createCtx())
 ```
