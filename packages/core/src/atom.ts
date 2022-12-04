@@ -403,7 +403,9 @@ export const createCtx = ({
             enqueueComputers(patch.subs)
           }
 
-          proto.updateHooks?.forEach((hook) => hook(patchCtx, patch!))
+          proto.updateHooks?.forEach((hook) =>
+            trUpdates.push(() => hook(patchCtx, patch!)),
+          )
         }
       }
 
@@ -439,10 +441,10 @@ export const createCtx = ({
 
         if (trLogs.length === 0) return result
 
-        for (let i = 0; i < trLogs.length; ) {
+        for (let i = 0; i < trLogs.length; i++) {
           let { listeners, proto } = trLogs[i]!
           if (listeners.size > 0) actualize(this, proto)
-          if (++i === trLogs.length) {
+          if (trUpdates.length > 0) {
             for (let commit of trUpdates.splice(0)) commit(this)
           }
         }
