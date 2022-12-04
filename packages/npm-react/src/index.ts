@@ -127,7 +127,7 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   deps.push(ctx)
 
   // @ts-ignore
-  return useCallback(
+  return React.useCallback(
     (...a: Array<any>) => batch(() => ctx.get(() => cb(ctx, ...a))),
     deps,
   )
