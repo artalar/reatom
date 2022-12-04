@@ -61,6 +61,9 @@ export const reatomAsync = <
     : options
 
   type Self = AsyncAction<CtxParams<Params>, Resp>
+
+  const pendingAtom = atom(0, name?.concat('.pendingAtom'))
+
   // @ts-ignore
   const onEffect: Self = action((ctx, ...a) => {
     const controller = new AbortController()
@@ -97,15 +100,9 @@ export const reatomAsync = <
   const onReject = action<unknown>(name?.concat('.onReject'))
   const onSettle = action(name?.concat('.onSettle'))
 
-  const fin = (ctx: Ctx) => {
-    pendingAtom(ctx, (s) => --s)
-    onSettle(ctx)
-  }
-
-  onUpdate(onFulfill, fin)
-  onUpdate(onReject, fin)
-
-  const pendingAtom = atom(0, name?.concat('.pendingAtom'))
+  onUpdate(onFulfill, onSettle)
+  onUpdate(onReject, onSettle)
+  onUpdate(onSettle, (ctx) => pendingAtom(ctx, (s) => --s))
 
   if (onEffectHook)
     // @ts-ignore
