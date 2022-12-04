@@ -14,8 +14,13 @@ export const noop: Fn = () => {}
 
 export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
-export const isObject = (thing: any): thing is Record<keyof any, any> =>
-  typeof thing === 'object' && thing !== null
+// @ts-expect-error
+export const isObject: {
+  <T extends Record<string | number | symbol, any>>(
+    thing: T | string | number | null | undefined | symbol | boolean | bigint,
+  ): thing is T
+  (thing: any): thing is Record<string | number | symbol, any>
+} = (thing: any) => typeof thing === 'object' && thing !== null
 
 export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
   if (!isObject(a) || !isObject(b)) return Object.is(a, b)
