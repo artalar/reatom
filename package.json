@@ -3,6 +3,7 @@
   "private": true,
   "description": "Expressive and deterministic state manager",
   "scripts": {
+    "release": "npx tsx ./tools/publish.ts",
     "postinstall": "npx simple-git-hooks && turbo run build --filter=framework",
     "build": "turbo run build",
     "test": "turbo run test",
