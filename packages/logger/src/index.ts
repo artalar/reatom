@@ -69,11 +69,22 @@ export const createLogBatched = ({
         for (const { changes, time } of queue) {
           console.log(
             `%c transaction ${time} end`,
-            'font-size: 1.2em; padding: 0.5em; border-bottom: 1px solid currentcolor',
+            'padding-right: 1ch; border-bottom: 1px solid currentcolor; box-sizing: border-box;',
           )
-          for (const k in changes) {
-            const title = `%c ${k.replace(/(\d)*\./, '')}`
-            const change = changes[k]!
+          let inGroup = false
+          Object.entries(changes).forEach(([k, change], i, arr) => {
+            const name = k.replace(/(\d)*\./, '')
+            const head = name.replace(/\..*/, '')
+            const nextK = arr[i + 1]?.[0]
+            const nextName = nextK?.replace(/(\d)*\./, '')
+            const isGroup = nextName?.startsWith(head)
+            if (isGroup) {
+              if (!inGroup) {
+                inGroup = true
+                console.groupCollapsed(head)
+              }
+            }
+            const title = `%c ${name}`
             const isAction = 'payload' in change
             const data = isAction ? change!.payload : change!.newState
             const color = isAction
@@ -87,7 +98,12 @@ export const createLogBatched = ({
               '\n',
               change,
             )
-          }
+
+            if (!isGroup && inGroup) {
+              inGroup = false
+              console.groupEnd()
+            }
+          })
         }
         console.groupEnd()
         queue = []
