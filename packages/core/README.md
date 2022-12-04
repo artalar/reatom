@@ -244,20 +244,30 @@ ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
 
 Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`.
 
-> Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix).
-
 ```ts
-const someAtom = atom(0).pipe(toSome({}), withOther({}))
+const doubleCountAtom = atom(0).pipe(
+  mapState((ctx, state) => state * 1),
+  withStateHistory(1),
+)
 // equals to
-const someAtom = withOther({})(toSome({})(atom(0)))
+const doubleCountAtom = withStateHistory(1)(
+  mapState((ctx, state) => state * 1)(atom(0)),
+)
 ```
+
+> `withStateHistory` adds additional `historyAtom` to store previous states and `mapState` operator creates new atom to compute a new state. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix).
 
 Chain operator is just a more prettier way to apply decorations
 
 ```ts
 // ugly for a few decorators, the applying order is less obvious
-const someAtom = withOther({}, toSome({}, atom(0)))
+const doubleCountAtom = withStateHistory(
+  1,
+  mapState((ctx, state) => state * 1, atom(0)),
+)
 ```
+
+Btw, actions has `pipe` too!
 
 ### `action` API
 

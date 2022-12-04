@@ -59,16 +59,22 @@ export const mapState = (anAtom, mapper, name) => {
 
 ### Operator prefix
 
-Operator for the [pipe](/core#pipe-api) function should starts with a verb.
+Operator for the [pipe](/core#atompipe-api) function should starts with a verb.
 
 ```ts
-declare 
+import { Atom, AtomState, CtxSpy, Fn } from '@reatom/core'
+
+declare function mapState<T extends Atom, Res>(
+  mapper: Fn<[CtxSpy, AtomState<T>, undefined | AtomState<T>], Res>,
+  name?: string,
+): Fn<[T], Atom<Res>>
 ```
 
 If operator isn't create a new atom and mutate the passed you should use `with` prefix.
 
 ```ts
 import { Atom, AtomState } from '@reatom/core'
+
 declare function withStateHistory<T extends Atom>(
   length: string,
 ): (anAtom: T) => T & {
