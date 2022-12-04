@@ -85,16 +85,9 @@ export const reatomAsync = <
     __thenReatomed(
       ctx,
       promise,
-      (v) => {
-        onFulfill(ctx, v)
-        pendingAtom(ctx, (s) => --s)
-        onSettle(ctx)
-      },
-      (e) => {
-        onReject(ctx, e)
-        pendingAtom(ctx, (s) => --s)
-        onSettle(ctx)
-      },
+      (v) => onFulfill(ctx, v),
+
+      (e) => onReject(ctx, e),
     )
 
     return promise
@@ -103,6 +96,14 @@ export const reatomAsync = <
   const onFulfill = action<Resp>(name?.concat('.onFulfill'))
   const onReject = action<unknown>(name?.concat('.onReject'))
   const onSettle = action(name?.concat('.onSettle'))
+
+  const fin = (ctx: Ctx) => {
+    pendingAtom(ctx, (s) => --s)
+    onSettle(ctx)
+  }
+
+  onUpdate(onFulfill, fin)
+  onUpdate(onReject, fin)
 
   const pendingAtom = atom(0, name?.concat('.pendingAtom'))
 
