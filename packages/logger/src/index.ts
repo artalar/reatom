@@ -1,16 +1,17 @@
-import {
-  action,
-  AtomCache,
-  AtomProto,
-  Ctx,
-  Fn,
-  Rec,
-  __root,
-} from '@reatom/core'
+import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 
+export interface unstable_ChangeMsg {
+  newState?: any
+  oldState?: any
+  payload?: any
+  patch: AtomCache
+  cause?: string
+  param?: any
+  [k: `param${number}`]: any
+}
 export interface LogMsg {
   error: undefined | Error
-  changes: Rec
+  changes: Rec<unstable_ChangeMsg>
   logs: Array<AtomCache>
   ctx: Ctx
 }
@@ -62,16 +63,33 @@ export const createLogBatched = ({
 
         if (isBatching) return
 
-        // console.groupCollapsed(`Reatom ${length} logs`)
-        log(
-          queue.reduce((acc, { changes, time }, i) => {
-            acc[`${i + 1}.0.___timestamp___`] = time
-            for (const k in changes) acc[`${i + 1}.${k}`] = changes[k]
-            return acc
-          }, {} as Rec),
-          queue,
+        console.groupCollapsed(
+          length ? `Reatom ${length} transactions` : `Reatom transaction`,
         )
-        // console.groupEnd()
+        for (const { changes, time } of queue) {
+          console.log(
+            `%c transaction ${time} end`,
+            'font-size: 1.2em; padding: 0.5em; border-bottom: 1px solid currentcolor',
+          )
+          for (const k in changes) {
+            const title = `%c ${k.replace(/(\d)*\./, '')}`
+            const change = changes[k]!
+            const isAction = 'payload' in change
+            const data = isAction ? change!.payload : change!.newState
+            const color = isAction
+              ? 'background: #ffff80; color: #151134;'
+              : 'background: #151134; color: white;'
+            log(
+              title,
+              `${color}font-size: 1.1em; padding: 0.15em;  padding-right: 1ch;`,
+              '\n',
+              data,
+              '\n',
+              change,
+            )
+          }
+        }
+        console.groupEnd()
         queue = []
       },
       debounce,
@@ -97,7 +115,7 @@ export const connectLogger = (
   ctx: Ctx,
   {
     log = createLogBatched(),
-    showCause = false,
+    showCause = true,
     skipUnnamed = true,
   }: {
     log?: Fn<[LogMsg]>
@@ -109,9 +127,10 @@ export const connectLogger = (
   ctx.get((r) => (read = r))
 
   return ctx.subscribe((logs, error) => {
-    const states = new Map<AtomProto, any>()
+    const states = new WeakMap<AtomProto, any>()
     const changes = logs.reduce((acc, patch, i) => {
       const { proto, state } = patch
+      const { isAction } = proto
       let { name } = proto
 
       if (!name) {
@@ -119,21 +138,41 @@ export const connectLogger = (
         name = 'unnamed'
       }
 
-      const prevState = states.has(proto)
-        ? states.get(proto)
-        : read(proto)?.state
+      const oldCache = read(proto)
+      const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
       states.set(proto, state)
 
-      if (Object.is(state, prevState)) return acc
+      const isConnection =
+        !oldCache &&
+        patch.cause!.proto.name === 'root' &&
+        (!isAction || state.length === 0)
 
-      const logName = `${i + 1}.${name}`
+      if (isConnection || Object.is(state, oldState)) {
+        return acc
+      }
 
-      acc[logName] = proto.isAction ? state.at(-1) : state
+      const changeMsg: unstable_ChangeMsg = (acc[`${i + 1}.${name}`] = {
+        patch,
+      })
 
-      if (showCause) acc[`${i + 1}.___cause___`] = getCause(patch)
+      if (isAction) {
+        const call = state.at(-1) as { params: Array<any>; payload: any }
+        changeMsg.payload = call.payload
+        if (call.params.length <= 1) {
+          changeMsg.param = call.params[0]
+        } else
+          call.params.forEach((param, i) => {
+            changeMsg[`param${i + 1}`] = param
+          })
+      } else {
+        changeMsg.newState = state
+        changeMsg.oldState = oldState
+      }
+      changeMsg.patch = patch
+      if (showCause) changeMsg.cause = getCause(patch)
 
       return acc
-    }, {} as Rec)
+    }, {} as LogMsg['changes'])
 
     log({
       error,
