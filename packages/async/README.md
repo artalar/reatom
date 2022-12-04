@@ -7,8 +7,32 @@ This package is helping you to manage async requests by adding additional meta i
 ```ts
 import { reatomAsync } from '@reatom/async'
 
-export const fetchList = reatomAsync((ctx, page: number) =>
-  fetch(`/api/list?page={page}`, ctx.controller),
+export const fetchList = reatomAsync(
+  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  'fetchList',
+)
+```
+
+You could handle promise states to update other stuff during it batch in the second parameter.
+
+```ts
+import { reatomAsync } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  {
+    name: 'fetchList',
+    onEffect(ctx, promise, params) {
+      notify(ctx, 'fetch start')
+    },
+    onFulfill(ctx, result) {
+      notify(ctx, 'fetch end')
+    },
+    onReject(ctx, error) {
+      notify(ctx, 'fetch error')
+    },
+    onSettle(ctx) {},
+  },
 )
 ```
 

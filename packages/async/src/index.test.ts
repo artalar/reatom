@@ -70,10 +70,6 @@ test('withRetryAction delay', async () => {
 
   const ctx = createTestCtx()
 
-  onUpdate(fetchData, () => console.log('fetchData'))
-  onUpdate(fetchData.onReject, () => console.log('fetchData.onReject'))
-  onUpdate(fetchData.retry, () => console.log('fetchData.retry'))
-
   const track = ctx.subscribeTrack(fetchData)
 
   assert.is(track.calls.length, 1)

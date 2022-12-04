@@ -28,9 +28,9 @@ export interface AsyncCtx extends Ctx {
   controller: AbortController
 }
 
-export interface AsyncOptions<Resp = any> {
+export interface AsyncOptions<Params extends any[] = any[], Resp = any> {
   name?: string
-  onEffect?: Fn<[Ctx, Resp]>
+  onEffect?: Fn<[Ctx, Params, ControlledPromise<Resp>]>
   onFulfill?: Fn<[Ctx, Resp]>
   onReject?: Fn<[Ctx, unknown]>
   onSettle?: Fn<[Ctx]>
@@ -48,7 +48,7 @@ export const reatomAsync = <
   Resp = any,
 >(
   effect: Fn<Params, Promise<Resp>>,
-  options: string | AsyncOptions<Resp> = {},
+  options: string | AsyncOptions<CtxParams<Params>, Resp> = {},
 ): AsyncAction<CtxParams<Params>, Resp> => {
   const {
     name,
@@ -57,7 +57,7 @@ export const reatomAsync = <
     onReject: onRejectHook,
     onSettle: onSettleHook,
   } = typeof options === 'string'
-    ? ({ name: options } as AsyncOptions<Resp>)
+    ? ({ name: options } as AsyncOptions<CtxParams<Params>, Resp>)
     : options
 
   type Self = AsyncAction<CtxParams<Params>, Resp>
@@ -106,8 +106,11 @@ export const reatomAsync = <
 
   const pendingAtom = atom(0, name?.concat('.pendingAtom'))
 
-  // @ts-ignore
-  if (onEffectHook) onUpdate(onEffect, onEffectHook)
+  if (onEffectHook)
+    // @ts-ignore
+    onUpdate(onEffect, (ctx, promise) =>
+      onEffectHook(ctx, ctx.get(onEffect).at(-1)!.params, promise),
+    )
   if (onFulfillHook) onUpdate(onFulfill, onFulfillHook)
   if (onRejectHook) onUpdate(onReject, onRejectHook)
   if (onSettleHook) onUpdate(onSettle, onSettleHook)
