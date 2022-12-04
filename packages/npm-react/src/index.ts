@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from 'react'
+import React from 'react'
 import {
   atom,
   Atom,
@@ -24,10 +18,29 @@ export const setupBatch = (newBatch: typeof batch) => {
   batch = newBatch
 }
 
-export const reatomContext = createContext<null | Ctx>(null)
+export const withBatching = (ctx: Ctx): Ctx => {
+  let queue: Array<Fn> = []
+  return {
+    ...ctx,
+    // @ts-ignore
+    subscribe: (anAtom, cb) =>
+      ctx.subscribe(
+        anAtom,
+        cb &&
+          ((value) =>
+            Promise.resolve(queue.push(() => cb(value))).then(
+              (length) =>
+                length === queue.length &&
+                batch(() => queue.splice(0).forEach((cb) => cb())),
+            )),
+      ),
+  }
+}
+
+export const reatomContext = React.createContext<null | Ctx>(null)
 
 export const useCtx = (): Ctx => {
-  const ctx = useContext(reatomContext)
+  const ctx = React.useContext(reatomContext)
 
   throwReatomError(
     !ctx,
@@ -84,7 +97,7 @@ export const useAtom: {
   }
 
   if (shouldSubscribe) {
-    useEffect(
+    React.useEffect(
       () =>
         ctx.subscribe(theAtom, (v) =>
           setState((atomState) =>
@@ -120,6 +133,15 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   )
 }
 
+export const createCallLateEffect = (): Fn<[Fn, ...any[]]> => {
+  const queue: Array<Fn> = []
+  return (fn: Fn, ...i) =>
+    Promise.resolve(queue.push(() => fn(...i))).then(
+      (length) =>
+        length === queue.length && batch(() => queue.forEach((cb) => cb())),
+    )
+}
+
 // export const unstable_reatomComponent =
 //   <T = {}>(
 //     render: (
@@ -128,6 +150,18 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
 //     ) => React.ReactElement,
 //   ): React.FC<T> =>
 //   (props) => {
+//     const ctx = useCtx()
+//     return ctx.get(() => {
+//       const trackCtx: Ctx = {
+//         get: ctx.get,
+//         spy(anAtom){},
+//         schedule: ctx.schedule,
+//         subscribe: ctx.subscribe,
+//         cause: ctx.cause,
+//       }
+//       const element = render(trackCtx, props)
+//     })
+
 //     const [propsAtom] = useState(() => atom(props))
 //     propsAtom(useCtx(), props)
 //     const [[element]] = useAtom((ctx, state?: any) => {
