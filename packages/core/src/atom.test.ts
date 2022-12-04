@@ -479,6 +479,19 @@ test('update queue', () => {
   assert.throws(() => a1(ctx, 0))
   ;`👍` //?
 })
+
+test('do not create extra patch', () => {
+  const a = atom(0)
+  const ctx = createCtx()
+  const track = mockFn()
+  ctx.get(a)
+
+  ctx.subscribe(track)
+  ctx.get(() => ctx.get(a))
+  assert.is(track.calls.length, 0)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

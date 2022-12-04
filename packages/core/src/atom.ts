@@ -346,7 +346,7 @@ export const createCtx = ({
         }
 
         for (let depProto of toConnect) {
-          connect(proto, depProto.patch!)
+          connect(proto, depProto.patch ?? read(depProto)!)
         }
       }
     }
@@ -377,6 +377,8 @@ export const createCtx = ({
             subs: new Set(),
             listeners: new Set(),
           })
+
+      if (!isComputed && !isMutating && !isInit) return cache
 
       patch = !hasPatch || isActual ? addPatch(cache) : patch!
 
