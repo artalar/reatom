@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # @reatom/babel-plugin
 
 Babel plugin for automatically insert variable name to declarations of atoms or actions

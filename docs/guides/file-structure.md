@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # File Structure
 
 Reatom does not dictate the organization of the file system. In this guide we are just trying to help those who can not decide how and where to store the code.

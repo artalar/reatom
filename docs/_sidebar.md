@@ -1,4 +1,5 @@
-- Docs for LTS version
+- This docs for outdated version
+- Chech out https://www.reatom.dev/
 
 - Getting started
 

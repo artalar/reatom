@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 ## Action
 
 Action is the intention of changing the state. Declared action is a function that returns [flux standard action](https://github.com/redux-utilities/flux-standard-action):

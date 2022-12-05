@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # @reatom/debug
 
 Package of Reatom for generating dynamic names with contain source path

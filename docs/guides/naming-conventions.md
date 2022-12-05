@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # Naming Conventions
 
 Naming is a purely subjective thing that should be in the team. In this guide, we just show the established naming schemes that we use ourselves or members of our community.

@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 ## Background
 
 Reactivity is a hard stuff - it bring us to new magical world thats automatically rules and maintain a code relations, but every atomatization has a price.

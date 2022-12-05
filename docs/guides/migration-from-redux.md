@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # Migration from Redux
 
 This is a simple instruction to replace approaches in writing code with Reatom if you have used Redux before.

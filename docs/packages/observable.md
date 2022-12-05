@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # @reatom/observable
 
 Package of Reatom for creating observers of atoms or stores

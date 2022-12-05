@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # @reatom/react
 
 React bindings package for [Reatom](https://github.com/artalar/reatom) store.

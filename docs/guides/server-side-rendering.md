@@ -1,3 +1,9 @@
+## **This docs for outdated 1* version of Reatom.**
+
+Here is the new one: https://www.reatom.dev/.
+
+---
+
 # Server Side Rendering
 
 Server rendering is a very useful way to speed up the transfer of content to the user. This makes mobile users happier and more loyal to your resource.
