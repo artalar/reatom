@@ -1,4 +1,4 @@
-## **This docs for outdated 1* version of Reatom.**
+## **This docs for outdated 1.x.x version of Reatom.**
 
 Here is the new one: https://www.reatom.dev/.
 
