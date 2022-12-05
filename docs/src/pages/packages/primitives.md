@@ -8,7 +8,11 @@ This package contains tiny wrappers around JS primitives with a few helper actio
 
 > included in [@reatom/framework](/packages/framework)
 
+Under the hood all changes produced immutably by state recreation, but every action firstly check the new data for equality to the existent state to trying to prevent extra updates. However you could update all primitives directly (as it's type `AtomMut`) by a function call, like: `entitiesAtom(ctx, list => list.filter(el => ...))`.
+
 ## `reatomArray`
+
+> API based on [proposal-change-array-by-copy](https://github.com/tc39/proposal-change-array-by-copy)
 
 ```ts
 import { reatomArray } from '@reatom/primitives'
