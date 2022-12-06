@@ -142,7 +142,6 @@ const handleSubmit = useAction(
 Here is how could you share data created and managed in parent, but used in children.
 
 ```ts
-// this parent will not rerender by `inputAtom` change
 const [filter, setFilter, filterAtom] = useAtom('', [], false)
 const [data, setData, dataAtom] = useAtom([], [], false)
 const handleSubmit = useAction(
