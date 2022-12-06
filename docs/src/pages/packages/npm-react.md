@@ -14,6 +14,8 @@ npm i @reatom/npm-react
 
 Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`.
 
+> Read [the core docs](/core) first for production usage.
+
 ## Usage
 
 In the app root:
@@ -101,15 +103,15 @@ What, why? In the example bellow we creating "inline" atoms, which will live onl
 
 ### Lazy reading
 
-[As react docs says](https://reactjs.org/docs/hooks-faq.html#how-to-read-an-often-changing-value-from-usecallback), sometimes you need a callback, which depends on often changed value, but you don't want to change a reference of this handler, to not broke memoization of components which depends on this. In this case, you could use atom and read it value lazily.
+[As react docs says](https://reactjs.org/docs/hooks-faq.html#how-to-read-an-often-changing-value-from-usecallback), sometimes you need a callback, which depends on often changed value, but you don't want to change a reference of this handler, to not broke memoization of children components which depends on the current. In this case, you could use atom and read it value lazily.
 
-Here `handleSubmit` reference is recreating on each `input` change.
+Here is a standard react code, `handleSubmit` reference is recreating on each `input` change and rerender.
 
 ```js
 const [input, setInput] = useState('')
 const handleSubmit = useCallback(
-  () => props.onChange(input),
-  [props.onChange, input],
+  () => props.onSubmit(input),
+  [props.onSubmit, input],
 )
 ```
 
@@ -118,12 +120,12 @@ Here `handleSubmit` reference is stable and doesn't depend on `input`, but have 
 ```js
 const [input, setInput, inputAtom, ctx] = useAtom('')
 const handleSubmit = useCallback(
-  () => props.onChange(ctx.get(inputAtom)),
-  [props.onChange, inputAtom, ctx],
+  () => props.onSubmit(ctx.get(inputAtom)),
+  [props.onSubmit, inputAtom, ctx],
 )
 ```
 
-Btw, you could use `useAction`
+Btw, you could use `useAction`.
 
 ```js
 const [input, setInput, inputAtom] = useAtom('')
@@ -141,18 +143,29 @@ Here is how could you share data created and managed in parent, but used in chil
 
 ```ts
 // this parent will not rerender by `inputAtom` change
-const [, setInput, inputAtom] = useAtom('', [], false)
+const [filter, setFilter, filterAtom] = useAtom('', [], false)
+const [data, setData, dataAtom] = useAtom([], [], false)
+const handleSubmit = useAction(
+  (ctx) =>
+    ctx.schedule(() =>
+      fetch(`api/search?q=${ctx.get(filterAtom)}`)
+        .then((res) => res.json())
+        .then(setData),
+    ),
+  [filterAtom, dataAtom],
+)
 
 return (
   <>
-    <Input atom={inputAtom} />
-    <Input atom={inputAtom} />
-    <button onClick={() => setInput('')}>Reset</button>
+    <Filter atom={filterAtom} />
+    <Table atom={dataAtom} />
+    {/* this will not rerender by filters or data changes */}
+    <OtherComponent>
   </>
 )
 ```
 
-Another example of in-render computations which could be archived without rerender.
+Here is another example of in-render computations which could be archived without rerender.
 
 [![codesandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/elegant-forest-w2106l?file=/src/App.tsx)
 
