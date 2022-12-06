@@ -154,7 +154,7 @@ return (
     <Filter atom={filterAtom} />
     <Table atom={dataAtom} />
     {/* this will not rerender by filters or data changes */}
-    <OtherComponent>
+    <OtherComponent />
   </>
 )
 ```
