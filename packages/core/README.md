@@ -359,6 +359,6 @@ const fetchData = action((ctx) => {
 The unique feature of Reatom and the schedule specially is ability to define the target queue. The second argument of `schedule` is a priority number:
 
 - `-1` - rollback queue, useful when you need to do a side-effect during pure computations. For example you need to create a timeout and store it id, you could schedule rollback to clear it, in case if transaction will fail.
-- `0` - computations queue, schedule **pure** computation, which will call right after all batches.
+- `0` - computations queue, schedule **pure** computation, which will call right after current batch.
 - `1` - the **default** near effect queue, used to schedule regular effects. This effects calling could be redefined (delayed) in `callNearEffect` option of `createCtx`
 - `2` - lates effect queue, used to schedule subscribers. This effects calling could be redefined (delayed) in `callLateEffect` option of `createCtx`.

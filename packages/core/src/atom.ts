@@ -358,63 +358,57 @@ export const createCtx = ({
     mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
   ): AtomCache => {
     let { patch } = proto
-    let hasPatch = patch !== null
-    let isActual = hasPatch && patch!.cause !== null
     let isMutating = mutator !== undefined
 
-    if (!isActual || isMutating) {
-      let isComputed = proto.computer !== null
-      let isInit = false
-      let cache = hasPatch
-        ? patch!
-        : read(proto) ??
-          ((isInit = true),
-          {
-            state: proto.initState(ctx),
-            proto,
-            cause: null,
-            pubs: [],
-            subs: new Set(),
-            listeners: new Set(),
-          })
+    if (patch?.cause && !isMutating) return patch
 
-      if (!isComputed && !isMutating && !isInit) return cache
+    let cache = patch ?? read(proto)
 
-      patch = !hasPatch || isActual ? addPatch(cache) : patch!
-
-      if (isComputed || isMutating || isInit) {
-        let { state } = patch
-        let patchCtx: Ctx = {
-          get: ctx.get,
-          spy: undefined,
-          schedule: ctx.schedule,
-          subscribe: ctx.subscribe,
-          cause: patch,
-        }
-
-        try {
-          if (isMutating) mutator!(patchCtx, patch)
-
-          if (isComputed) actualizePubs(patchCtx, patch)
-        } catch (error) {
-          throw (patch.error = error)
-        }
-
-        if (!Object.is(state, patch.state)) {
-          if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
-            enqueueComputers(patch.subs)
-          }
-
-          proto.updateHooks?.forEach((hook) =>
-            trUpdates.push(() => hook(patchCtx, patch!)),
-          )
-        }
+    if (!cache) {
+      cache = {
+        state: proto.initState(ctx),
+        proto,
+        cause: null,
+        pubs: [],
+        subs: new Set(),
+        listeners: new Set(),
       }
-
-      patch.cause ??= root
+    } else if (proto.computer === null && !isMutating) {
+      return cache
     }
 
-    return patch!
+    if (!patch || patch.cause) patch = addPatch(cache)
+
+    let { state } = patch
+    let patchCtx: Ctx = {
+      get: ctx.get,
+      spy: undefined,
+      schedule: ctx.schedule,
+      subscribe: ctx.subscribe,
+      cause: patch,
+    }
+
+    try {
+      if (isMutating) mutator!(patchCtx, patch)
+
+      if (proto.computer) actualizePubs(patchCtx, patch)
+    } catch (error) {
+      throw (patch.error = error)
+    }
+
+    if (!Object.is(state, patch.state)) {
+      if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
+        enqueueComputers(patch.subs)
+      }
+
+      proto.updateHooks?.forEach((hook) =>
+        trUpdates.push(() => hook(patchCtx, patch!)),
+      )
+    }
+
+    patch.cause ??= root
+
+    return patch
   }
 
   let ctx: Ctx = {
