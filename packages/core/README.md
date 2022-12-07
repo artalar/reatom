@@ -344,7 +344,7 @@ Subscribe to transaction end. Useful for logging.
 
 ### `ctx.schedule`
 
-To archive [atomicity](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map. To archive pureness of computations and ability to cancel it all side-effects should be called separately in different queue, after all computation. Here is `schedule` come, it accept effect callback and returns a promise which will be resolved after effect call or rejected if transaction will fall.
+To archive [atomicity](https://www.reatom.dev/general/what-is-state-manager#state) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map. To archive pureness of computations and ability to cancel it all side-effects should be called separately in different queue, after all computation. Here is `schedule` come, it accept effect callback and returns a promise which will be resolved after effect call or rejected if transaction will fall.
 
 ```ts
 const fetchData = action((ctx) => {

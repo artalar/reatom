@@ -145,7 +145,7 @@ To be honest, right now bus factor is one, [@artalar](https://github.com/artalar
 
 ### How performant Reatom is?
 
-[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures and all atoms has a lifecycle hooks and works in a separate context, which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
+[Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures, works in a separate context (DI-like) and keeps [atomicity](https://www.reatom.dev/general/what-is-state-manager#state), which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
 
 Also, check out [atomization guild](https://www.reatom.dev/guides/atomization).
 
