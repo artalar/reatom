@@ -40,19 +40,20 @@ Also, there are few additional operators which you could plug for extra features
 
 ## `withDataAtom`
 
-Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a tiny cache level.
+Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a tiny cache level. `reset` action included by default.
 
 ### Fetch data on demand
 
 ```ts
 import { reatomAsync, withDataAtom } from '@reatom/async'
-import { onConnect } from '@reatom/hooks'
+import { onConnect, onDisconnect } from '@reatom/hooks'
 
-export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
+export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
   withDataAtom([]),
 )
 
 onConnect(fetchList.dataAtom, fetchList)
+onDisconnect(fetchList.dataAtom, fetchList.dataAtom.reset)
 ```
 
 ### Invalidate backend data on mutation
@@ -97,17 +98,17 @@ export const fetchSome = reatomAsync(async (ctx) =>
 Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call and adds `onAbort` action. Added `abortControllerAtom` witch stores AbortController of the last effect call, which you could abort by `abort` action.
 
 ```ts
-import { reatomAsync, withAbort, withDataAtom } from '@reatom/async'
-import { onConnect } from '@reatom/hooks'
+import { reatomAsync, withAbort } from '@reatom/async'
+import { onDisconnect, onUpdate } from '@reatom/hooks'
 
 const reatomResource = (initState, url, concurrent = true) => {
   const effect = reatomAsync((ctx) => fetch(url, ctx.controller)).pipe(
     withAbort({ strategy: concurrent ? 'last-in-win' : 'none' }),
-    withDataAtom(initState)
+    withDataAtom(initState),
   )
 
-  // cancel effect on data becomes unnecessary
-  onConnect(effect.dataAtom, (ctx) => () => effect.abort(ctx))
+  // abort unneeded request
+  onDisconnect(effect.dataAtom, effect.abort)
 
   return effect
 }

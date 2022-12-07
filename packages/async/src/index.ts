@@ -123,12 +123,16 @@ export const reatomAsync = <
   })
 }
 
+export interface AsyncDataAtom<State = any> extends AtomMut<State> {
+  reset: Action<[], void>
+}
+
 // TODO
 // @ts-ignore
 export const withDataAtom: {
   <
     T extends AsyncAction & {
-      dataAtom?: AtomMut<ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
     },
   >(): Fn<
     [T],
@@ -136,28 +140,31 @@ export const withDataAtom: {
   >
   <
     T extends AsyncAction & {
-      dataAtom?: AtomMut<ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
     },
   >(
     initState: ActionPayload<T['onFulfill']>,
-  ): Fn<[T], T & { dataAtom: AtomMut<ActionPayload<T['onFulfill']>> }>
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
   <
     T extends AsyncAction & {
-      dataAtom?: AtomMut<State | ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<State | ActionPayload<T['onFulfill']>>
     },
     State,
   >(
     initState: State,
-  ): Fn<[T], T & { dataAtom: AtomMut<State | ActionPayload<T['onFulfill']>> }>
+  ): Fn<
+    [T],
+    T & { dataAtom: AsyncDataAtom<State | ActionPayload<T['onFulfill']>> }
+  >
   <
     T extends AsyncAction & {
-      dataAtom?: AtomMut<State>
+      dataAtom?: AsyncDataAtom<State>
     },
     State,
   >(
     initState: State,
     map?: Fn<[Ctx, ActionPayload<T['onFulfill']>], State>,
-  ): Fn<[T], T & { dataAtom: AtomMut<State> }>
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<State> }>
 } =
   (initState: any, map?: Fn) =>
   // @ts-ignore
@@ -166,7 +173,11 @@ export const withDataAtom: {
       const dataAtom = (anAsync.dataAtom = atom(
         initState,
         anAsync.__reatom.name?.concat('.dataAtom'),
-      )) as AtomMut
+      )) as AsyncDataAtom
+      dataAtom.reset = action(
+        (ctx) => void dataAtom(ctx, initState),
+        dataAtom.__reatom.name?.concat('.reset'),
+      )
       onUpdate(anAsync.onFulfill, (ctx, payload) =>
         dataAtom(ctx, map ? map(ctx, payload) : payload),
       )
