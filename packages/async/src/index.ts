@@ -98,10 +98,10 @@ export const reatomAsync = <
 
   const onFulfill = action<Resp>(name?.concat('.onFulfill'))
   const onReject = action<unknown>(name?.concat('.onReject'))
-  const onSettle = action((ctx) => pendingAtom(ctx, (s) => --s), name?.concat('.onSettle'))
+  const onSettle = action((ctx) => void pendingAtom(ctx, (s) => --s), name?.concat('.onSettle'))
 
-  onUpdate(onFulfill, onSettle)
-  onUpdate(onReject, onSettle)
+  onUpdate(onFulfill, ctx => onSettle(ctx))
+  onUpdate(onReject, ctx => onSettle(ctx))
 
   if (onEffectHook)
     // @ts-ignore
