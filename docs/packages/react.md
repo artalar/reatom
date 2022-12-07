@@ -1,6 +1,6 @@
 ## **This docs for outdated 1.x.x version of Reatom.**
 
-Here is the new one: https://www.reatom.dev/.
+Here is the new one: https://www.reatom.dev/packages/core-v1#migration-guide.
 
 ---
 

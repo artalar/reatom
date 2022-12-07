@@ -1,5 +1,5 @@
 - This docs for outdated version
-- Chech out https://www.reatom.dev/
+- Chech out https://www.reatom.dev/packages/core-v1#migration-guide
 
 - Getting started
 
