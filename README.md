@@ -153,6 +153,7 @@ Also, check out [atomization guild](https://www.reatom.dev/guides/atomization).
 
 - [en](https://github.com/artalar/reatom/discussions)
 - [ru](https://t.me/reatom_ru)
+- [twitter](https://twitter.com/ReatomJS)
 
 ### How to support the project?
 

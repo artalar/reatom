@@ -1,4 +1,4 @@
-Small, extensible, feature-rich and performant core package for building reactive applications of any size.
+Tiny, efficient, featured and extensible core to handle reactivity right. Build easily anything, from a small widget to a huge application.
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
@@ -14,9 +14,9 @@ npm i @reatom/core
 
 ## Usage
 
-Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation. All other abstractions work on top of these three. You could check the [architecture](#architecture) section for a deep dive to internal principles and it motivation.
+Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation. 
 
-Reatom is inspired by React.js architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`.
+Reatom is inspired by React and Redux architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`. Only consistent data transaction applying. All prerequisites you could check in this article: [What is a state manager](https://www.reatom.dev/general/what-is-state-manager).
 
 ```ts
 import { createCtx, action, atom } from '@reatom/core'
@@ -146,10 +146,6 @@ socket.on(
 ```
 
 > You need to know one **rare** tricky thing. If during transaction you will call an action and will read it dependent atom a few time step by step, `ctx.get` will return the whole array of all passed payload, but `ctx.spy` will return array with only new elements, which wasn't handled in this reducer during this transaction. And to made this rare case correct you should spying your dependencies in same way each time, without conditions. In other words, for this case your dependencies list should be static.
-
-<!-- ## Architecture
-
-A few notes about internal architecture design and it motivation. -->
 
 ## API
 
