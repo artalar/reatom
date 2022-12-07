@@ -52,14 +52,33 @@ Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a 
 
 ```ts
 import { reatomAsync, withDataAtom } from '@reatom/async'
-import { onConnect, onDisconnect } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 
 export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
   withDataAtom([]),
 )
 
 onConnect(fetchList.dataAtom, fetchList)
-onDisconnect(fetchList.dataAtom, fetchList.dataAtom.reset)
+```
+
+### Cache timeout
+
+```ts
+import { reatomAsync, withDataAtom } from '@reatom/async'
+import { onConnect, onDisconnect } from '@reatom/hooks'
+
+export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
+  withDataAtom([]),
+)
+
+const staleTime = 1000 * 60 * 5 // 5 min
+onConnect(fetchList.dataAtom, (ctx) => {
+  fetchList(ctx)
+  return () =>
+    setTimeout(() => {
+      if (!ctx.isConnected()) fetchList.dataAtom.reset(ctx)
+    }, staleTime)
+})
 ```
 
 ### Invalidate backend data on mutation
