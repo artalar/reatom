@@ -102,19 +102,19 @@ export const fetchSome = reatomAsync(async (ctx) =>
 
 Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call and adds `onAbort` action.
 
-## `withRetryAction`
+## `withRetry`
 
 Adds `retry` action and `paramsAtom` to store last params of the effect call.
 
 ### Retry request on failure
 
-`withRetryAction` accept optional `onReject` parameter which is a hook which is called with context, payload error and retries count parameters. This hook could return a number which will be used as a timer for scheduling `retry` action. To skip the retry scheduling return nothing or negative number.
+`withRetry` accept optional `onReject` parameter which is a hook which is called with context, payload error and retries count parameters. This hook could return a number which will be used as a timer for scheduling `retry` action. To skip the retry scheduling return nothing or negative number.
 
 ```ts
-import { reatomAsync, withRetryAction } from '@reatom/async'
+import { reatomAsync, withRetry } from '@reatom/async'
 
 const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
-  withRetryAction({
+  withRetry({
     onReject(ctx, error, retries) {
       if (retries < 4) return 0
     },
@@ -123,10 +123,10 @@ const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
 ```
 
 ```ts
-import { reatomAsync, withRetryAction } from '@reatom/async'
+import { reatomAsync, withRetry } from '@reatom/async'
 
 const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
-  withRetryAction({
+  withRetry({
     onReject(ctx, error, retries) {
       return 100 * Math.min(500, retries ** 2)
     },
@@ -140,13 +140,13 @@ const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
 import {
   reatomAsync,
   withDataAtom,
-  withRetryAction,
+  withRetry,
   sleep,
 } from '@reatom/framework'
 
 export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
   withDataAtom([]),
-  withRetryAction(),
+  withRetry(),
 )
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (ctx.isConnected()) {

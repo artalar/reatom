@@ -24,6 +24,6 @@ https://replit.com/@artalar/reatom-react-ts-dynamic-list#src/App.tsx
 
 ### Search component
 
-This example uses `withAbort` and `withRetryAction` from [async package](https://www.reatom.dev/packages/async) to handle classic search edge cases and made perfect UX.
+This example uses `withAbort` and `withRetry` from [async package](https://www.reatom.dev/packages/async) to handle classic search edge cases and made perfect UX.
 
 https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx

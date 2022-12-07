@@ -34,6 +34,6 @@ Plan:
 - `withDataAtom` decorator -> operator
 - `withAbort`
 - debounce
-- `withRetryAction` on 429
+- `withRetry` on 429
 - testing
 -->

@@ -98,10 +98,13 @@ export const reatomAsync = <
 
   const onFulfill = action<Resp>(name?.concat('.onFulfill'))
   const onReject = action<unknown>(name?.concat('.onReject'))
-  const onSettle = action((ctx) => void pendingAtom(ctx, (s) => --s), name?.concat('.onSettle'))
+  const onSettle = action(
+    (ctx) => void pendingAtom(ctx, (s) => --s),
+    name?.concat('.onSettle'),
+  )
 
-  onUpdate(onFulfill, ctx => onSettle(ctx))
-  onUpdate(onReject, ctx => onSettle(ctx))
+  onUpdate(onFulfill, (ctx) => onSettle(ctx))
+  onUpdate(onReject, (ctx) => onSettle(ctx))
 
   if (onEffectHook)
     // @ts-ignore
@@ -279,7 +282,7 @@ export const withAbort =
     }
   }
 
-export const withRetryAction =
+export const withRetry =
   <
     T extends AsyncAction & {
       paramsAtom?: Atom<undefined | ActionParams<T>>
@@ -356,6 +359,8 @@ export const withRetryAction =
       retriesAtom: Atom<number>
     }
   }
+
+export const withRetryAction = withRetry
 
 // TODO extra methods with different retry policies
 // TODO `withCache`

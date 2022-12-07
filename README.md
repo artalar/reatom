@@ -45,7 +45,7 @@ Check out [@reatom/core docs](https://www.reatom.dev/core) for detailed explanat
 
 We will use [@reatom/core](https://www.reatom.dev/core), [@reatom/async](https://www.reatom.dev/packages/async) and [@reatom/hooks](https://www.reatom.dev/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](https://www.reatom.dev/packages/framework).
 
-`withDataAtom` saves the result of async function to separate atom, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetryAction` and `onReject` handler helps to handle temporal rate limit.
+`withDataAtom` saves the result of async function to separate atom, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler helps to handle temporal rate limit.
 
 Simple `sleep` helper (for debounce) gotten from [utils package](https://www.reatom.dev/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
@@ -55,7 +55,7 @@ import {
   reatomAsync,
   withAbort,
   withDataAtom,
-  withRetryAction,
+  withRetry,
   onUpdate,
   sleep,
 } from '@reatom/framework'
@@ -69,7 +69,7 @@ const fetchIssues = reatomAsync(async (ctx, query: string) => {
 }, 'fetchIssues').pipe(
   withDataAtom([]),
   withAbort({ strategy: 'last-in-win' }),
-  withRetryAction({
+  withRetry({
     onReject(ctx, error: any, retries) {
       return error?.message.includes('rate limit')
         ? 100 * Math.min(500, retries ** 2)

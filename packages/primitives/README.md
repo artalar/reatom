@@ -2,7 +2,7 @@ This package contains tiny wrappers around JS primitives with a few helper actio
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
-Under the hood all changes produced immutably by state recreation, but every action firstly check the new data for equality to the existent state to trying to prevent extra updates. However you could update all primitives directly (as it's type `AtomMut`) by a function call, like: `entitiesAtom(ctx, list => list.filter(el => ...))`.
+Under the hood all changes produced immutably by state recreation, but every action firstly check the new data for equality to the existent state to trying to prevent extra updates. However you could update all primitives directly (as it's type `AtomMut`) by a function call, like: `thingsAtom(ctx, list => list.filter(el => ...))`.
 
 ## `reatomArray`
 
@@ -11,13 +11,13 @@ Under the hood all changes produced immutably by state recreation, but every act
 ```ts
 import { reatomArray } from '@reatom/primitives'
 
-const entitiesAtom = reatomArray<Entity>()
+const thingsAtom = reatomArray<Entity>()
 
 // built-in actions:
-entitiesAtom.toReversed(ctx)
-entitiesAtom.toSorted(ctx, (a, b) => (a.some > b.some ? -1 : 1))
-entitiesAtom.toSpliced(ctx, index, count)
-entitiesAtom.with(ctx, index, element)
+thingsAtom.toReversed(ctx)
+thingsAtom.toSorted(ctx, (a, b) => (a.some > b.some ? -1 : 1))
+thingsAtom.toSpliced(ctx, index, count)
+thingsAtom.with(ctx, index, element)
 ```
 
 ## `reatomBoolean`
@@ -54,13 +54,13 @@ sortFilterAtom.setPushed(ctx)
 ```ts
 import { reatomMap } from '@reatom/primitives'
 
-const entitiesAtom = reatomMap<string, Entity>()
+const thingsAtom = reatomMap<string, Entity>()
 
 // built-in actions:
-entitiesAtom.set(ctx, key, el)
-entitiesAtom.delete(ctx, key)
-entitiesAtom.clear(ctx)
-entitiesAtom.reset(ctx)
+thingsAtom.set(ctx, key, el)
+thingsAtom.delete(ctx, key)
+thingsAtom.clear(ctx)
+thingsAtom.reset(ctx)
 ```
 
 ## `reatomNumber`

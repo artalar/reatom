@@ -11,7 +11,7 @@ import {
   reatomAsync,
   withAbort,
   withDataAtom,
-  withRetryAction,
+  withRetry,
   withErrorAtom,
 } from './'
 
@@ -29,11 +29,11 @@ test(`base API`, async () => {
   ;`👍` //?
 })
 
-test('withRetryAction', async () => {
+test('withRetry', async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => {
     if (1) throw new Error('TEST')
   }).pipe(
-    withRetryAction({
+    withRetry({
       onReject(ctx, error: any, retries) {
         if (error?.message === 'TEST' && retries < 2) return 0
       },
@@ -56,12 +56,12 @@ test('withRetryAction', async () => {
   ;`👍` //?
 })
 
-test('withRetryAction delay', async () => {
+test('withRetry delay', async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => {
     await sleep(5)
     if (1) throw new Error('TEST')
   }).pipe(
-    withRetryAction({
+    withRetry({
       onReject(ctx, error: any, retries) {
         if (error?.message === 'TEST' && retries < 1) return 6
       },
