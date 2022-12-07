@@ -226,6 +226,7 @@ export const withErrorAtom =
 export const withAbort =
   <
     T extends AsyncAction & {
+      abort?: Action<[reason?: string], void>
       onAbort?: Action<[Error], Error>
       abortControllerAtom?: Atom<AbortController | null>
     },
@@ -234,14 +235,19 @@ export const withAbort =
   }: { strategy?: 'none' | 'last-in-win' } = {}): Fn<
     [T],
     T & {
+      abort: Action<[reason?: string], void>
       onAbort: Action<[Error], Error>
       abortControllerAtom: Atom<AbortController | null>
     }
   > =>
   (anAsync) => {
-    if (!anAsync.onAbort) {
+    if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom =
         atom<null | AbortController>(null))
+      anAsync.abort = action((ctx, reason?: string) => {
+        const controller = ctx.get(abortControllerAtom)
+        if (controller) ctx.schedule(() => controller.abort(reason))
+      }, anAsync.__reatom.name?.concat('.abort'))
       anAsync.onAbort = action<Error>(anAsync.__reatom.name?.concat('.onAbort'))
       addOnUpdate(anAsync, (ctx, patch) => {
         const promise = patch.state.at(-1)?.payload
@@ -277,6 +283,7 @@ export const withAbort =
     }
 
     return anAsync as T & {
+      abort: Action<[reason?: string], void>
       onAbort: Action<[Error], Error>
       abortControllerAtom: Atom<AbortController | null>
     }

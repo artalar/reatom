@@ -94,7 +94,24 @@ export const fetchSome = reatomAsync(async (ctx) =>
 
 ## `withAbort`
 
-Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call and adds `onAbort` action.
+Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call and adds `onAbort` action. Added `abortControllerAtom` witch stores AbortController of the last effect call, which you could abort by `abort` action.
+
+```ts
+import { reatomAsync, withAbort, withDataAtom } from '@reatom/async'
+import { onConnect } from '@reatom/hooks'
+
+const reatomResource = (initState, url, concurrent = true) => {
+  const effect = reatomAsync((ctx) => fetch(url, ctx.controller)).pipe(
+    withAbort({ strategy: concurrent ? 'last-in-win' : 'none' }),
+    withDataAtom(initState)
+  )
+
+  // cancel effect on data becomes unnecessary
+  onConnect(effect.dataAtom, (ctx) => () => effect.abort(ctx))
+
+  return effect
+}
+```
 
 ## `withRetry`
 
@@ -131,12 +148,7 @@ const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
 ### Periodic refresh for used data
 
 ```ts
-import {
-  reatomAsync,
-  withDataAtom,
-  withRetry,
-  sleep,
-} from '@reatom/framework'
+import { reatomAsync, withDataAtom, withRetry, sleep } from '@reatom/framework'
 
 export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
   withDataAtom([]),
