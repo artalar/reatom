@@ -63,6 +63,8 @@ export const createLogBatched = ({
 
         if (isBatching) return
 
+        const isFewTransactions = queue.length > 0
+
         console.groupCollapsed(
           length ? `Reatom ${length} transactions` : `Reatom transaction`,
         )
@@ -78,11 +80,9 @@ export const createLogBatched = ({
             const nextK = arr[i + 1]?.[0]
             const nextName = nextK?.replace(/(\d)*\./, '')
             const isGroup = nextName?.startsWith(head)
-            if (isGroup) {
-              if (!inGroup) {
-                inGroup = true
-                console.groupCollapsed(head)
-              }
+            if (!inGroup && isGroup && isFewTransactions) {
+              inGroup = true
+              console.groupCollapsed(head)
             }
             const title = `%c ${name}`
             const isAction = 'payload' in change
