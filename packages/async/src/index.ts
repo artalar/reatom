@@ -303,13 +303,16 @@ export const withAbort =
 export const withRetry =
   <
     T extends AsyncAction & {
-      paramsAtom?: Atom<undefined | ActionParams<T>>
+      paramsAtom?: Atom<Params | ActionParams<T>>
       retry?: Action<[], ActionPayload<T>>
       retriesAtom?: Atom<number>
     },
+    Params extends ActionParams<T> | undefined = undefined,
   >({
+    fallbackParams,
     onReject,
   }: {
+    fallbackParams?: Params
     onReject?: Fn<[ctx: Ctx, error: unknown, retries: number], void | number>
   } = {}): Fn<
     [T],
@@ -321,19 +324,17 @@ export const withRetry =
   > =>
   (anAsync) => {
     if (!anAsync.paramsAtom) {
-      const paramsAtom = (anAsync.paramsAtom = atom<
-        undefined | ActionParams<T>
-      >(undefined, anAsync.__reatom.name?.concat('.paramsAtom')))
+      const paramsAtom = (anAsync.paramsAtom = atom(
+        fallbackParams as Params,
+        anAsync.__reatom.name?.concat('.paramsAtom'),
+      ))
       addOnUpdate(anAsync, (ctx, patch) =>
-        paramsAtom(
-          ctx,
-          patch.state.at(-1)?.params as undefined | ActionParams<T>,
-        ),
+        paramsAtom(ctx, patch.state.at(-1)?.params as Params),
       )
 
       anAsync.retry = action((ctx) => {
         const params = ctx.get(anAsync.paramsAtom!)
-        throwReatomError(params === undefined, 'no cached params')
+        throwReatomError(!params, 'no cached params')
         return anAsync(ctx, ...params!) as ActionPayload<T>
       }, anAsync.__reatom.name?.concat('.retry'))
 

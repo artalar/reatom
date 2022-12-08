@@ -171,6 +171,19 @@ const fetchData = reatomAsync((ctx) => fetch('...')).pipe(
 )
 ```
 
+You could specify `fallbackParams` for ability to call `retry` before first effect call (it will throw an error either).
+
+```ts
+import { reatomAsync, withRetry } from '@reatom/async'
+
+const fetchData = reatomAsync((ctx, page: number) =>
+  fetch(`/api?page=${page}`),
+).pipe(withRetry({ fallbackParams: 1 }))
+
+// will call fetch(`/api?page=1`)
+fetchData.retry(ctx)
+```
+
 ### Periodic refresh for used data
 
 ```ts

@@ -56,6 +56,29 @@ test('withRetry', async () => {
   ;`👍` //?
 })
 
+test('withRetry fallbackParams', async () => {
+  const ctx = createTestCtx()
+
+  assert.throws(() =>
+    reatomAsync(async () => {})
+      .pipe(withRetry())
+      .retry(ctx),
+  )
+
+  assert.not.throws(() =>
+    reatomAsync(async () => {})
+      .pipe(withRetry({ fallbackParams: [] }))
+      .retry(ctx),
+  )
+
+  const fallback = await reatomAsync(async (ctx, v: number) => v)
+    .pipe(withRetry({ fallbackParams: [123] }))
+    .retry(ctx)
+
+  assert.is(fallback, 123)
+  ;`👍` //?
+})
+
 test('withRetry delay', async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => {
     await sleep(5)
