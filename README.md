@@ -45,11 +45,15 @@ Check out [@reatom/core docs](https://www.reatom.dev/core) for detailed explanat
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 
-We will use [@reatom/core](https://www.reatom.dev/core), [@reatom/async](https://www.reatom.dev/packages/async) and [@reatom/hooks](https://www.reatom.dev/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](https://www.reatom.dev/packages/framework).
+We will use [@reatom/core](https://www.reatom.dev/core), [@reatom/npm-react](https://www.reatom.dev/npm-react), [@reatom/async](https://www.reatom.dev/packages/async) and [@reatom/hooks](https://www.reatom.dev/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](https://www.reatom.dev/packages/framework).
 
-`withDataAtom` saves the result of async function to separate atom, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler helps to handle temporal rate limit.
+`reatomAsync` is a simple decorator which wrap your async function and adds extra actions and atoms to track creating promise statuses.
+
+`withDataAtom` adds property `dataAtom` which subscribes to the effect results, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler helps to handle temporal rate limit.
 
 Simple `sleep` helper (for debounce) gotten from [utils package](https://www.reatom.dev/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
+
+`onUpdate` is a [hook](https://www.reatom.dev/packages/hooks) which subscribes to the atom and call passed callback on every update.
 
 ```ts
 import {
@@ -58,15 +62,16 @@ import {
   withAbort,
   withDataAtom,
   withRetry,
-  onUpdate,
   sleep,
+  onUpdate,
 } from '@reatom/framework'
 import { useAtom } from '@reatom/npm-react'
+import * as api from './api'
 
 const searchAtom = atom('', 'searchAtom')
 const fetchIssues = reatomAsync(async (ctx, query: string) => {
   await sleep(250)
-  const { items } = await fetchIssuesApi(query, ctx.controller)
+  const { items } = await api.fetchIssues(query, ctx.controller)
   return items
 }, 'fetchIssues').pipe(
   withDataAtom([]),
