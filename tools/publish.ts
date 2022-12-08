@@ -89,6 +89,9 @@ const main = async () => {
     }
 
     if (packageJSON.version !== npmVersion) {
+      // warm up cache
+      await $`npx turbo run test --filter=${packageName}`
+
       const otp = (otpCache = await new Promise((r) => {
         let message = `Enter OTP code for "${packageName}@${packageJSON.version}"`
         if (otpCache) message += ` (${otpCache})`
