@@ -8,10 +8,12 @@ Do you React.js user? Check out [npm-react](https://www.reatom.dev/packages/npm-
 
 ## Simple example
 
-[repl](https://replit.com/@artalar/reatom-react-ts)
+[vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
+
+[react repl](https://replit.com/@artalar/reatom-react-ts)
 
 ```ts
-import { action, atom, createCtx } from 'reatom/core'
+import { action, atom, createCtx } from '@reatom/core'
 
 // primitive mutable atom
 const inputAtom = atom('')
