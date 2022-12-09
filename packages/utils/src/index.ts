@@ -80,3 +80,8 @@ export const omit = <T, K extends keyof T>(
   }
   return result
 }
+
+/** use `structuredClone` when possible
+ * https://developer.mozilla.org/en-US/docs/Web/API/structuredClone
+ */
+export const jsonClone = <T>(value: T): T => JSON.parse(JSON.stringify(value))

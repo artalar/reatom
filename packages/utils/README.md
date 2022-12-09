@@ -1,3 +1,3 @@
-This package includes a set of well-typed simple utils: `noop`, `sleep`, `isObject`, `isShallowEqual`, `isDeepEqual`, `assign`, `pick`, `omit`.
+This package includes a set of well-typed simple utils: `noop`, `sleep`, `isObject`, `isShallowEqual`, `isDeepEqual`, `assign`, `pick`, `omit`, `jsonClone`.
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
