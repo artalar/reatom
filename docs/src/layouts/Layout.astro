@@ -105,9 +105,18 @@ const DEFAULT_BACK = '#e0deed'
     <CurrentLinkHighlight />
     <HeadingCopyButton />
     <Glitch />
-    <script defer src="/_vercel/insights/script.js"></script>
-    <script>
-      requestAnimationFrame(() => navigator.serviceWorker?.register('/sw.js'))
+    <script client>
+      requestAnimationFrame(() => {
+        navigator.serviceWorker
+          ?.register('/sw.js')
+          .then((registration) => registration.update())
+        // const broadcast = new BroadcastChannel('sw')
+        // broadcast.onmessage = (event) => {
+        //   console.log(event.data)
+        // }
+        console.log('wat')
+      })
     </script>
+    <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>
