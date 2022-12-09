@@ -158,12 +158,26 @@ export const withDataAtom: {
   >
   <
     T extends AsyncAction & {
+      dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
+    },
+  >(
+    initState: ActionPayload<T['onFulfill']>,
+    map?: Fn<
+      [ctx: Ctx, payload: ActionPayload<T['onFulfill']>, state: ActionPayload<T['onFulfill']>],
+      ActionPayload<T['onFulfill']>
+    >,
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
+  <
+    T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<State>
     },
     State,
   >(
     initState: State,
-    map?: Fn<[Ctx, ActionPayload<T['onFulfill']>], State>,
+    map?: Fn<
+      [ctx: Ctx, payload: ActionPayload<T['onFulfill']>, state: State],
+      State
+    >,
   ): Fn<[T], T & { dataAtom: AsyncDataAtom<State> }>
 } =
   (initState: any, map?: Fn) =>
@@ -179,7 +193,9 @@ export const withDataAtom: {
         dataAtom.__reatom.name?.concat('.reset'),
       )
       onUpdate(anAsync.onFulfill, (ctx, payload) =>
-        dataAtom(ctx, map ? map(ctx, payload) : payload),
+        dataAtom(ctx, (state: any) =>
+          map ? map(ctx, payload, state) : payload,
+        ),
       )
     }
 

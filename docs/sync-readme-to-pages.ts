@@ -24,6 +24,7 @@ const getStoryTests = async (packageName: string) => {
   let storyTest = await fs.readFile(storyTestsPath, 'utf8')
 
   storyTest = storyTest.replaceAll(`from './'`, `from '@reatom/${packageName}'`)
+  storyTest = storyTest.replace(/\n.*👍.*/g, '')
 
   storyTest = '\n```ts\n' + storyTest + '```\n'
 

@@ -189,8 +189,8 @@ export const fetchList = reatomAsync((ctx) => fetch('...')).pipe(
 )
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (ctx.isConnected()) {
-    await sleep(5000)
     await fetchList.retry(ctx).catch(() => {})
+    await sleep(5000)
   }
 })
 ```
