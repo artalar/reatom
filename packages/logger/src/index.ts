@@ -1,4 +1,4 @@
-import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
+import { Atom, AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -133,10 +133,12 @@ export const connectLogger = (
     log = createLogBatched(),
     showCause = true,
     skipUnnamed = true,
+    skip = () => false,
   }: {
     log?: Fn<[LogMsg]>
     showCause?: boolean
     skipUnnamed?: boolean
+    skip?: (patch: AtomCache) => boolean
   } = {},
 ) => {
   let read: Fn<[AtomProto], undefined | AtomCache>
@@ -148,6 +150,8 @@ export const connectLogger = (
       const { proto, state } = patch
       const { isAction } = proto
       let { name } = proto
+
+      if (skip(patch)) return acc
 
       if (!name) {
         if (skipUnnamed) return acc
