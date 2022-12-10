@@ -1,5 +1,6 @@
 import { Fn } from '@reatom/core'
 
+/** Remove named generics, show plain type. */
 export type Plain<Intersection> = Intersection extends (...a: any[]) => any
   ? Intersection
   : Intersection extends new (...a: any[]) => any
@@ -22,6 +23,7 @@ export const isObject: {
   (thing: any): thing is Record<string | number | symbol, any>
 } = (thing: any) => typeof thing === 'object' && thing !== null
 
+/** Compares only primitives, doesn't support Set and Map. */
 export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
   if (!isObject(a) || !isObject(b)) return Object.is(a, b)
   const aKeys = Object.keys(a)
@@ -32,6 +34,7 @@ export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
   )
 }
 
+/** Compares only primitives, doesn't support Set and Map. */
 export const isDeepEqual = (a: any, b: any) => isShallowEqual(a, b, isDeepEqual)
 
 export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
@@ -41,6 +44,7 @@ export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
     T4
 >
 
+/** Runtime equivalent version of `Object.assign` - values from first objects will be overwritten by values from next objects, not union as in std type. */
 export const assign: {
   <T1, T2, T3 = {}, T4 = {}>(a1: T1, a2: T2, a3?: T3, a4?: T4): Assign<
     T1,
@@ -81,7 +85,12 @@ export const omit = <T, K extends keyof T>(
   return result
 }
 
-/** use `structuredClone` when possible
+/** Typesafe shortcut to `JSON.parse(JSON.stringify(value))`.
+ * `structuredClone` is a better solution
  * https://developer.mozilla.org/en-US/docs/Web/API/structuredClone
  */
 export const jsonClone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
+
+/** Get random integer. Parameters should be integers too. */
+export const random = (min = 0, max = Number.MAX_SAFE_INTEGER - 1) =>
+  Math.floor(Math.random() * (max - min + 1)) + min
