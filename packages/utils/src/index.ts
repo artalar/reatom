@@ -15,13 +15,14 @@ export const noop: Fn = () => {}
 
 export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
-// @ts-expect-error
-export const isObject: {
-  <T extends Record<string | number | symbol, any>>(
-    thing: T | string | number | null | undefined | symbol | boolean | bigint,
-  ): thing is T
-  (thing: any): thing is Record<string | number | symbol, any>
-} = (thing: any) => typeof thing === 'object' && thing !== null
+/** Extract Object type or intersect the thing with `Record<string | number | symbol, unknown>` */
+export const isObject = <T>(
+  thing: T,
+  // @ts-expect-error
+): thing is T extends Record<string | number | symbol, unknown>
+  ? T
+  : Record<string | number | symbol, unknown> =>
+  typeof thing === 'object' && thing !== null
 
 /** Compares only primitives, doesn't support Set and Map. */
 export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
@@ -44,7 +45,10 @@ export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
     T4
 >
 
-/** Runtime equivalent version of `Object.assign` - values from first objects will be overwritten by values from next objects, not union as in std type. */
+/** Runtime equivalent version of `Object.assign`
+ * values from first objects will be overwritten by values from next objects,
+ * not union as in std type.
+ */
 export const assign: {
   <T1, T2, T3 = {}, T4 = {}>(a1: T1, a2: T2, a3?: T3, a4?: T4): Assign<
     T1,
@@ -54,17 +58,7 @@ export const assign: {
   >
 } = Object.assign
 
-// TODO
-// export type Merge<T1, T2> = T1 extends Record<keyof any, any> | Array<any>
-//   ? Plain<
-//       {
-//         [K in Exclude<keyof T1, keyof T2>]: T1[K]
-//       } & {
-//         [K in keyof T2]: K extends keyof T1 ? Merge<T1[K], T2[K]> : T2[K]
-//       }
-//     >
-//   : T2
-
+/** Get a new object only with the passed keys*/
 export const pick = <T, K extends keyof T>(
   target: T,
   keys: Array<K>,
@@ -74,6 +68,7 @@ export const pick = <T, K extends keyof T>(
   return result
 }
 
+/** Get a new object without the passed keys*/
 export const omit = <T, K extends keyof T>(
   target: T,
   keys: Array<K>,
