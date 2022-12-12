@@ -1,6 +1,6 @@
 {
   "name": "@reatom/primitives",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for primitives",
@@ -23,7 +23,8 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0"
+    "@reatom/core": ">=3.1.1",
+    "@reatom/utils": ">=3.1.1"
   },
   "author": "artalar",
   "license": "MIT",

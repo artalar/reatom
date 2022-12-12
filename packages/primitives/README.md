@@ -89,9 +89,12 @@ const themeAtom = reatomRecord({
 })
 
 // built-in actions:
-themeAtom.merge(ctx, { color: '' }) // will not recreate the object if passed properties are equal
-themeAtom.reset(ctx)
+themeAtom.merge(ctx, { color: 'red', fontSize: '12px' })
+themeAtom.reset(ctx, 'color')
+themeAtom.omit(ctx, 'fontSize')
 ```
+
+All actions checks the new data for equality to the existent state to trying to prevent extra updates. `omit` and `reset` accepts any length of arguments (keys). `reset` calling without extra arguments will reset all record.
 
 ## `reatomSet`
 
