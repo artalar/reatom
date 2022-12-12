@@ -86,7 +86,7 @@ export const changeInput = inputAtom.pipe(
 
 ## `filter`
 
-Filter updates by comparator function.
+Filter updates by comparator function ("shallow equal" by default).
 
 ```ts
 import { filter } from '@reatom/lens'

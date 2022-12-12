@@ -15,6 +15,7 @@ import {
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { spyChange } from '@reatom/hooks'
+import { isShallowEqual } from '@reatom/utils'
 
 export * from './parseAtoms'
 export * from './bind'
@@ -26,12 +27,6 @@ type PipedAtom<T extends Atom> = T extends Action<any[], infer Payload>
 
 const mapName = ({ __reatom: proto }: Atom, fallback: string, name?: string) =>
   proto.name ? `${proto.name}.${name ?? fallback}` : name
-
-const mapNameForMap = (
-  { __reatom: proto }: Atom,
-  fallback: string,
-  name?: string,
-) => name || (proto.name && `${fallback}${proto.isAction ? '' : 'Atom'}`)
 
 /**
  * Skip mark to stop reactive propagation and use previous state
@@ -211,7 +206,7 @@ export const mapInput =
       mapName(anAtom, 'mapInput', name),
     )
 
-/** Filter updates by comparator function */
+/** Filter updates by comparator function ("shallow equal" by default) */
 export const filter: {
   // TODO for some reason an atom not handled by the second overload
   // and fails with error on the frst overload.
@@ -224,13 +219,17 @@ export const filter: {
   //   Atom<T>
   // >
   <T extends Atom>(
-    predicate: T extends Action<any[], infer Payload>
+    predicate?: T extends Action<any[], infer Payload>
       ? Fn<[CtxSpy, Payload], boolean>
       : Fn<[CtxSpy, AtomState<T>, AtomState<T>], boolean>,
     name?: string,
   ): Fn<[T], PipedAtom<T>>
 } =
-  (predicate, name) =>
+  (
+    // @ts-expect-error
+    predicate = (ctx, a, b) => isShallowEqual(a, b),
+    name,
+  ) =>
   (anAtom: Atom): any => {
     name ||= anAtom.__reatom.name && 'filter'
 
