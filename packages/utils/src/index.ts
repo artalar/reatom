@@ -26,6 +26,7 @@ export const isObject = <T>(
 
 /** Compares only primitives, doesn't support Set and Map. */
 export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
+  if (Object.is(a, b)) return true
   if (!isObject(a) || !isObject(b)) return Object.is(a, b)
   const aKeys = Object.keys(a)
   return (
