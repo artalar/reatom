@@ -4,20 +4,18 @@
   "description": "Expressive and deterministic state manager",
   "scripts": {
     "release": "npx tsx ./tools/publish.ts",
-    "postinstall": "npx simple-git-hooks && turbo run build --filter=framework",
+    "postinstall": "turbo run build --filter=framework",
     "build": "turbo run build",
     "test": "turbo run test",
     "prettify": "prettier --write **/*.{js,ts,md}",
     "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
     "package-generator": "tsx tools/new-package.ts",
-    "update": "npx npm-check-updates -u"
+    "update": "npx npm-check-updates -u",
+    "prepare": "husky install"
   },
   "workspaces": [
     "packages/*"
   ],
-  "simple-git-hooks": {
-    "commit-msg": "npx commitlint -e ${1}"
-  },
   "author": "artalar",
   "license": "MIT",
   "readme": "README.md",
@@ -47,14 +45,14 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rimraf": "^3.0.2",
-    "simple-git-hooks": "^2.8.0",
     "tsx": "^3.9.0",
     "turbo": "^1.4.7",
     "typescript": "^4.8.2",
     "use-sync-external-store": "^1.2.0",
     "uvu": "^0.5.6",
     "vite": "^3.2.4",
-    "zx": "^7.0.8"
+    "zx": "^7.0.8",
+    "husky": "^8.0.0"
   },
   "peerDependencies": {
     "prettier": "*"
