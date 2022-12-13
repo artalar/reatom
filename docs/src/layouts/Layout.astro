@@ -106,15 +106,39 @@ const DEFAULT_BACK = '#e0deed'
     <HeadingCopyButton />
     <Glitch />
     <script client>
-      requestAnimationFrame(() => {
-        navigator.serviceWorker
+      requestAnimationFrame(async () => {
+        await navigator.serviceWorker
           ?.register('/sw.js')
           .then((registration) => registration.update())
-        // const broadcast = new BroadcastChannel('sw')
-        // broadcast.onmessage = (event) => {
-        //   console.log(event.data)
-        // }
-        console.log('wat')
+          .catch(() => null)
+
+        // console.log('client ready')
+
+        const broadcast = new BroadcastChannel('sw')
+        broadcast.postMessage({ type: 'client-ready' })
+        broadcast.onmessage = ({ data, source }) => {
+          // console.log('client message')
+          if (
+            data?.type === 'hot-update' &&
+            location.pathname === new URL(data.url).pathname
+          ) {
+            source?.postMessage({ type: 'hot-update-received' })
+
+            const doc = new DOMParser().parseFromString(data.text, 'text/html')
+            const newMain = doc.querySelector('main')
+            const main = document.querySelector('main')
+
+            if (!newMain || newMain.innerHTML === main.innerHTML) {
+              // console.log('cliens mains is equal')
+              return
+            }
+
+            // console.log('cliens mains is not equal')
+
+            // TODO show toast?
+            main.replaceWith(newMain)
+          }
+        }
       })
     </script>
     <script defer src="/_vercel/insights/script.js"></script>

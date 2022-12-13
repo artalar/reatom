@@ -79,7 +79,6 @@ test('createTestCtx', async () => {
   add(ctx, 10)
   assert.is(track.calls.length, 5)
   assert.is(track.lastInput(), 223)
-  ;`👍` //?
 })
 
 test.run()

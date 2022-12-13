@@ -1,65 +1,126 @@
-const CACHE = 'cache-and-update-v2'
+/// <reference lib="webworker" />
 
-self.addEventListener('install', (event) => {
-  // TODO parse `/sitemap-0.xml`
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(['/'])))
-})
+const CACHE = 'cache-and-update-v4'
+const cacheTypes = ['html', 'css', 'font', 'image']
+// const _log = console.log
+const _log = () => {}
 
-self.addEventListener('fetch', (event) => {
-  /** @type Request */
-  const request = event.request
-  const fetchPromise = fetch(request)
+self.addEventListener(
+  'fetch',
+  /** @param {ExtendableEvent} event */
+  (event) => {
+    /** @type Request */
+    const request = event.request
+    const fetchPromise = fetch(request)
+    const id = (Math.random() * 1e10) | 0
+    const log = (...a) => _log(request.url, ...a, id)
 
-  event.respondWith(
-    caches
-      .match(request)
-      .then((matching) => matching || Promise.reject('no-match'))
-      .catch(() => fetchPromise),
-  )
+    event.respondWith(
+      caches
+        .open(CACHE)
+        .then((cache) => cache.match(request))
+        .then((matching) => {
+          if (matching) {
+            log('cache match')
+            return matching
+          }
+          log('cache mismatch')
+          return fetchPromise
+        }),
+    )
 
-  if (request.method.toLowerCase() === 'get' && !request.url.endsWith('js')) {
+    if (request.method.toLowerCase() !== 'get') {
+      log('not get')
+      return
+    }
+    // extension
+    if (!request.url.startsWith('http')) {
+      log('not http')
+      return
+    }
+
     event.waitUntil(
       fetchPromise.then(async (response) => {
+        const contentType = response.headers.get('content-type')
+
         if (
+          !response.ok ||
           response.status !== 200 ||
-          response.headers
-            .get('content-type')
-            ?.includes('application/javascript')
+          contentType?.includes('application/javascript')
         ) {
+          log('not ok')
           return
         }
+
         response = response.clone()
 
-        let staleUpdate = Promise.resolve()
-        if (response.headers.get('content-type')?.includes('text/html')) {
-          staleUpdate = caches
-            .match(request)
-            .then((matching) => matching || null)
-            .then((cache) => cache?.text())
-            .then(
-              (cacheText) =>
-                cacheText &&
-                response
-                  .clone()
-                  .text()
-                  .then((responseText) => {
-                    if (cacheText === responseText) return
-
-                    // const broadcast = new BroadcastChannel('sw')
-                    // broadcast.postMessage({
-                    //   type: 'new-content',
-                    //   text: responseText,
-                    //   url: request.url,
-                    // })
-                  }),
-            )
-            .catch(() => null)
+        if (contentType.includes('text/html') && !request.url.endsWith('.js')) {
+          await hotUpdate(log, event, request, response)
         }
 
-        return staleUpdate.then(() =>
-          caches.open(CACHE).then((cache) => cache.put(request, response)),
-        )
+        return caches.open(CACHE).then((cache) => {
+          log('cache put')
+          cache.put(request, response)
+        })
       }),
     )
+  },
+)
+
+/**
+ * @param {ExtendableEvent} event
+ * @param {Request} request
+ * @param {Response} response
+ */
+const hotUpdate = async (log, event, request, response) => {
+  log('hotUpdate')
+
+  const cacheText = await caches
+    .open(CACHE)
+    .then((cache) => cache.match(request))
+    .then((cache) => cache?.text())
+
+  if (!cacheText) {
+    log('no cache')
+    return
   }
-})
+
+  const responseText = await response.clone().text()
+
+  if (cacheText === responseText) {
+    log('text equals')
+    return
+  }
+  log('text not equals')
+
+  event.waitUntil(
+    new Promise((resolve) => {
+      setTimeout(() => {
+        log('timeout')
+        resolve()
+      }, 5000)
+
+      const msg = {
+        type: 'hot-update',
+        text: responseText,
+        url: response.url,
+      }
+      const broadcast = new BroadcastChannel('sw')
+
+      broadcast.postMessage(msg)
+      broadcast.onmessage = (event) => {
+        log('onmessage', event.data)
+
+        if (event.data?.type === 'hot-update-received') {
+          log('hot-update-received')
+          resolve()
+        }
+        if (event.data?.type === 'client-ready') {
+          log('client-ready')
+          broadcast.postMessage(msg)
+          resolve()
+        }
+      }
+    }),
+  )
+}
