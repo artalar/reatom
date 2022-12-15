@@ -14,7 +14,7 @@ npm i @reatom/core
 
 ## Usage
 
-Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation. 
+Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation.
 
 Reatom is inspired by React and Redux architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`. Only consistent data transaction applying. All prerequisites you could check in this article: [What is a state manager](https://www.reatom.dev/general/what-is-state-manager).
 
@@ -354,7 +354,35 @@ const fetchData = action((ctx) => {
 
 The unique feature of Reatom and the schedule specially is ability to define the target queue. The second argument of `schedule` is a priority number:
 
-- `-1` - rollback queue, useful when you need to do a side-effect during pure computations. For example you need to create a timeout and store it id, you could schedule rollback to clear it, in case if transaction will fail.
+- `-1` - rollback queue, useful when you need to do a side-effect during pure computations. Check example [below](#ctxschedule-rollback-api).
 - `0` - computations queue, schedule **pure** computation, which will call right after current batch.
 - `1` - the **default** near effect queue, used to schedule regular effects. This effects calling could be redefined (delayed) in `callNearEffect` option of `createCtx`
 - `2` - lates effect queue, used to schedule subscribers. This effects calling could be redefined (delayed) in `callLateEffect` option of `createCtx`.
+
+### `ctx.schedule` rollback API
+
+Sometimes you want to do a side-effect during clean calculations or need to store some artifact of an effect and store it. To made it clean you should describe a rollback (cleanup) function for case of unexpected error by passing `-1` as a second of `ctx.schedule`. Check this example with a debounced action:
+
+```ts
+const timeoutIdAtom = atom(-1)
+
+// `timeoutIdAtom` update is in a schedule cause an extra transaction - not handy
+export const doSome = action((ctx) => {
+  const timeoutId = ctx.get(timeoutIdAtom)
+
+  ctx.schedule(() => {
+    clearTimeout(timeoutId)
+    const newTimeoutId = setTimeout(some)
+    timeoutIdAtom(ctx, newTimeoutId)
+  })
+})
+// `timeoutIdAtom` update is during transaction more obvious
+export const doSome = action((ctx) => {
+  const timeoutId = ctx.get(timeoutIdAtom)
+  ctx.schedule(() => clearTimeout(timeoutId))
+
+  const newTimeoutId = setTimeout(some)
+  timeoutIdAtom(ctx, newTimeoutId)
+  ctx.schedule(() => clearTimeout(newTimeoutId), -1)
+})
+```
