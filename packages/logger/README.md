@@ -29,7 +29,7 @@ connectLogger(
       // optional configuration
       {
         // 20ms by default
-        debounce: 20,
+        debounce: 500,
         // 5000ms by default, it helps to not stuck with WS and so on
         limit: 5000,
         // `toLocaleTimeString` by default
@@ -43,3 +43,7 @@ connectLogger(
 ```
 
 Every log record includes a number in the start of the name to fix autosorting keys in a console.
+
+Here is how it looks like ([from this example](https://www.reatom.dev/examples#search-component)):
+
+![](https://user-images.githubusercontent.com/27290320/208033158-0033d0a2-edd5-44ab-8fd6-510d9347a49d.png)

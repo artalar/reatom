@@ -76,23 +76,8 @@ const DEFAULT_BACK = '#e0deed'
     </style>
   </head>
   <body class="mono-all">
-    <script>
-      const remSize = new URLSearchParams(document.location.search).get(
-        '__remSize',
-      )
-      if (remSize) document.documentElement.style.fontSize = remSize
-    </script>
     <Sidebar />
     <main>
-      <!-- <nav style={`
-        position: sticky;
-        top: 0;
-        --mono-main: var(--mono-back);
-        --mono-back: var(--mono-switch);
-        z-index: 1;
-      `}>
-        <a href="#nav-general">nav</a>
-      </nav> -->
       <h1>{title}</h1>
       <slot />
       <footer>

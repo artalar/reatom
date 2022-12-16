@@ -171,3 +171,7 @@ Also, check out [atomization guild](/guides/atomization).
 ### How to support the project?
 
 https://www.patreon.com/artalar_dev
+
+### Credits
+
+[![Wallaby.js](https://img.shields.io/badge/wallaby.js-powered-lightgrey.svg?style=flat&logo=github)](https://wallabyjs.com/oss/) All tests are written by Quokka and [uvu](https://github.com/lukeed/uvu), which speed up development a lot.
