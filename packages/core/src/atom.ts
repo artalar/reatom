@@ -659,7 +659,7 @@ export const action: {
   return Object.assign((...params: [Ctx, ...any[]]) => {
     let state = actionAtom(params[0], (state, patchCtx) => {
       params[0] = patchCtx
-      return [...state, { params, payload: (fn as Fn)(...params) }]
+      return [...state, { params: params.slice(1), payload: (fn as Fn)(...params) }]
     })
     return state[state.length - 1]!.payload
   }, actionAtom)
