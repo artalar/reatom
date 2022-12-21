@@ -656,12 +656,11 @@ export const action: {
   actionAtom.__reatom.isAction = true
   actionAtom.__reatom.initState = () => []
 
-  return Object.assign((ctx: Ctx, ...params: any) => {
-    let state = actionAtom(ctx, (state, patchCtx) => [
-      ...state,
-      { params, payload: (fn as Fn)(patchCtx, ...params) },
-    ])
-    // @ts-ignore
+  return Object.assign((...params: [Ctx, ...any[]]) => {
+    let state = actionAtom(params[0], (state, patchCtx) => {
+      params[0] = patchCtx
+      return [...state, { params, payload: (fn as Fn)(...params) }]
+    })
     return state[state.length - 1]!.payload
   }, actionAtom)
 }
