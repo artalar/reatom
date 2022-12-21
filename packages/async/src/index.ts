@@ -65,8 +65,9 @@ export const reatomAsync = <
   const pendingAtom = atom(0, name?.concat('.pendingAtom'))
 
   // @ts-ignore
-  const onEffect: Self = action((ctx, ...a) => {
-    const controller = new AbortController()
+  const onEffect: Self = action((...a) => {
+    const ctx = a[0] as AsyncCtx
+    const controller = (ctx.controller = new AbortController())
     controller.signal.throwIfAborted ??= () => {
       if (controller.signal.aborted) {
         let error = controller.signal.reason
@@ -81,7 +82,7 @@ export const reatomAsync = <
 
     const promise: ControlledPromise<Resp> = Object.assign(
       // @ts-ignore
-      ctx.schedule(() => effect(Object.assign(ctx, { controller }), ...a)),
+      ctx.schedule(() => effect(...a)),
       { controller },
     )
 
@@ -163,7 +164,11 @@ export const withDataAtom: {
   >(
     initState: ActionPayload<T['onFulfill']>,
     map?: Fn<
-      [ctx: Ctx, payload: ActionPayload<T['onFulfill']>, state: ActionPayload<T['onFulfill']>],
+      [
+        ctx: Ctx,
+        payload: ActionPayload<T['onFulfill']>,
+        state: ActionPayload<T['onFulfill']>,
+      ],
       ActionPayload<T['onFulfill']>
     >,
   ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
