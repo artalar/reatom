@@ -33,23 +33,22 @@ Than you can bind `subscribe` and `set` (for mutable atoms) to your atoms by `wi
   import { atom } from '@reatom/core'
   import { withSvelte } from '@reatom/npm-svelte'
 
-  const count = atom(0).pipe(withSvelte())
+  const count = atom(0).pipe(withSvelte)
 </script>
 
 <button on:click={() => $count++}>
-	Clicked {$count} {$count === 1 ? 'time' : 'times}
+	Clicked {$count} {$count === 1 ? 'time' : 'times'}
 </button>
 ```
 
-Of course, you could describe atoms as a [separate module](https://www.reatom.dev/guides/architecture) and bind actions by `bindSvelte`.
+Of course, you could describe atoms as a [separate module](https://www.reatom.dev/guides/architecture) and bind actions with the same `withSvelte(anAction).set`
 
 ```svelte
 <script>
-  import { bindSvelte } from '@reatom/npm-svelte'
   import { countAtom, timesAtom, increment } from './model'
 </script>
 
-<button on:click={bindSvelte(handleClick)}>
+<button on:click={increment.set}>
 	Clicked {$countAtom} {$timesAtom}
 </button>
 ```
@@ -59,10 +58,14 @@ Of course, you could describe atoms as a [separate module](https://www.reatom.de
 import { atom, action } from '@reatom/core'
 import { withSvelte } from '@reatom/npm-svelte'
 
-export const countAtom = atom(0).pipe(withSvelte())
-export const timesAtom = atom((ctx) =>
-  ctx.spy(countAtom) === 1 ? 'time' : 'times',
+export const countAtom = atom(0, 'countAtom').pipe(withSvelte())
+export const timesAtom = atom(
+  (ctx) => (ctx.spy(countAtom) === 1 ? 'time' : 'times'),
+  'timesAtom',
 ).pipe(withSvelte())
 
-export const increment = action((ctx) => countAtom(ctx, (s) => ++s))
+export const increment = action(
+  (ctx) => countAtom(ctx, (s) => ++s),
+  'increment',
+).pipe(withSvelte)
 ```

@@ -6,7 +6,7 @@
   "version": "3.1.0",
   "private": false,
   "sideEffects": false,
-  "description": "Reatom for npm-svelte",
+  "description": "Reatom adapter for Svelte",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
