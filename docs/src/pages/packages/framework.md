@@ -17,6 +17,8 @@ This is a meta package with reexports from:
 - [@reatom/primitives](https://reatom.dev/packages/primitives)
 - [@reatom/utils](https://reatom.dev/packages/utils)
 
+All size is around [6.5kb](https://bundlejs.com/?q=%40reatom%2Fasync%2C%40reatom%2Fcore%2C%40reatom%2Feffects%2C%40reatom%2Fhooks%2C%40reatom%2Flens%2C%40reatom%2Fprimitives%2C%40reatom%2Futils&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22%40reatom%2Flogger%22%5D%7D%7D) (the logger package is not included in prod build normally).
+
 > Also, we have a [package for testing](/packages/testing)!
 
 <!-- All exported variables: -->
