@@ -4,8 +4,6 @@
 npm i @reatom/<%= name %>
 ```
 
-<summary></summary>
-
 ## Usage
 
 ```ts
