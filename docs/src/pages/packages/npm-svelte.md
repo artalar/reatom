@@ -82,3 +82,7 @@ export const increment = action(
   'increment',
 )
 ```
+
+### Data fetching and Svelte
+
+https://svelte.dev/repl/0613e23e6aa74246afad6d726d6c5a33?version=3.55.0
