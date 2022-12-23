@@ -116,18 +116,35 @@ test(`mapPayloadAwaited sync resolution`, async () => {
 test('filter atom', () => {
   const a = atom(1)
   const a1 = a.pipe(filter((ctx, v) => v !== 2))
+  const a2 = a.pipe(
+    mapState((ctx, v) => [v] as const),
+    filter(),
+  )
   const ctx = createTestCtx()
 
-  const track = ctx.subscribeTrack(a1)
-  assert.is(track.calls.length, 1)
-  assert.is(track.lastInput(), 1)
+  const track1 = ctx.subscribeTrack(a1)
+  const track2 = ctx.subscribeTrack(a2)
+  assert.is(track1.calls.length, 1)
+  assert.is(track1.lastInput(), 1)
+  assert.is(track2.calls.length, 1)
+  assert.equal(track2.lastInput(), [1])
 
   a(ctx, 2)
-  assert.is(track.calls.length, 1)
+  assert.is(track1.calls.length, 1)
+  assert.equal(ctx.get(a2), [2])
+  assert.is(track2.calls.length, 2)
+  assert.equal(track2.lastInput(), [2])
+
+  a(ctx, 2)
+  assert.is(track1.calls.length, 1)
+  assert.is(track2.calls.length, 2)
+  assert.equal(track2.lastInput(), [2])
 
   a(ctx, 3)
-  assert.is(track.calls.length, 2)
-  assert.is(track.lastInput(), 3)
+  assert.is(track1.calls.length, 2)
+  assert.is(track1.lastInput(), 3)
+  assert.is(track2.calls.length, 3)
+  assert.equal(track2.lastInput(), [3])
   ;`👍` //?
 })
 

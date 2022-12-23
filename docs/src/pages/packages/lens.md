@@ -86,13 +86,15 @@ export const changeInput = inputAtom.pipe(
 
 ## `filter`
 
-Filter updates by comparator function ("shallow equal" by default).
+Filter updates by comparator function, which should return `true`, if new state should continue to propagate ("shallow equal" by default).
 
 ```ts
 import { filter } from '@reatom/lens'
 
-export const listMemoAtom = listAtom.pipe(filter, (ctx, a, b) =>
-  isShallowEqual(a, b),
+export const listMemoAtom = listAtom.pipe(filter())
+// equals to
+export const listMemoAtom = listAtom.pipe(
+  filter((ctx, next, prev) => !isShallowEqual(next, prev)),
 )
 ```
 

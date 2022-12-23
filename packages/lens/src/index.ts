@@ -227,7 +227,7 @@ export const filter: {
 } =
   (
     // @ts-expect-error
-    predicate = (ctx, a, b) => isShallowEqual(a, b),
+    predicate = (ctx, a, b) => !isShallowEqual(a, b),
     name,
   ) =>
   (anAtom: Atom): any => {
@@ -246,7 +246,7 @@ export const filter: {
               ctx.cause!.pubs.length === 0 ||
               predicate(ctx, newState, oldState!)
                 ? newState
-                : oldState!,
+                : ctx.cause.state,
             name,
           ),
     )
@@ -303,7 +303,7 @@ export const sample =
           spyChange(ctx, signal) || ctx.cause.pubs.length === 0
             ? payload
             : prevState,
-        name || (anAtom.__reatom.name && 'filter'),
+        name || (anAtom.__reatom.name && 'sample'),
       ),
     )
   }
