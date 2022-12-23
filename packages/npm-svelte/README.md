@@ -28,6 +28,8 @@ setupCtx(ctx)
 
 Than you can bind `subscribe` and `set` (for mutable atoms) to your atoms by `withSvelte` and use it as a store.
 
+> **IMPORTANT**, use `withSvelte` only in component `script` tag, as it reads the context.
+
 ```svelte
 <script>
   import { atom } from '@reatom/core'
@@ -41,31 +43,36 @@ Than you can bind `subscribe` and `set` (for mutable atoms) to your atoms by `wi
 </button>
 ```
 
-Of course, you could describe atoms as a [separate module](https://www.reatom.dev/guides/architecture) and bind actions with the same `withSvelte(anAction).set`
+Of course, you could describe atoms as a [separate module](https://www.reatom.dev/guides/architecture) and bind actions with the same `withSvelte(anAction).set`.
+
+[repl](https://svelte.dev/repl/416d3e07447440729416e77e45071b87?version=3.55.0).
 
 ```svelte
 <script>
+	import { withSvelte } from '@reatom/npm-svelte'
   import { countAtom, timesAtom, increment } from './model'
+	
+	const count = withSvelte(countAtom)
+	const times = withSvelte(timesAtom)
+	const handleIncrement = withSvelte(increment).set
 </script>
 
-<button on:click={increment.set}>
-	Clicked {$countAtom} {$timesAtom}
+<button on:click={handleIncrement}>
+	Clicked {$count} {$times}
 </button>
 ```
 
 ```ts
 // model.ts
 import { atom, action } from '@reatom/core'
-import { withSvelte } from '@reatom/npm-svelte'
 
-export const countAtom = atom(0, 'countAtom').pipe(withSvelte())
+export const countAtom = atom(0, 'countAtom')
 export const timesAtom = atom(
   (ctx) => (ctx.spy(countAtom) === 1 ? 'time' : 'times'),
   'timesAtom',
-).pipe(withSvelte())
-
+)
 export const increment = action(
   (ctx) => countAtom(ctx, (s) => ++s),
   'increment',
-).pipe(withSvelte)
+)
 ```
