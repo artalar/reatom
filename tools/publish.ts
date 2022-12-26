@@ -84,7 +84,7 @@ const main = async () => {
       let answer = await new Promise((r) =>
         rl.question('continue?(y/n = y)', r),
       )
-      answer ??= 'y'
+      answer ||= 'y'
       if (answer !== 'y') continue
     }
 
