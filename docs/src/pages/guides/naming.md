@@ -4,6 +4,10 @@ title: Naming
 description: Main advices for things naming
 ---
 
+### Packages
+
+We want to grow a huge ecosystem of packages, which will be useful for everyone. So, we need to have a common naming for packages, especially that a few different platforms could have a package with the same name. For this reason we use prefixes for adapter packages, which related to a specific scope, like `npm` or `web`, `node` etc.
+
 ### Fabric and model
 
 If you want to describe a fabric which returns an atom or an action or a set of atoms and / or actions (a **model**) use `reatom` prefix as a verb.
