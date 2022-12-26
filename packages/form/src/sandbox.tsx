@@ -4,33 +4,43 @@ import {
   parseAtoms,
   onUpdate,
 } from '@reatom/framework'
-import { reatomContext, useCtxBind } from '@reatom/npm-react'
+import { reatomContext, useAtom, useCtxBind } from '@reatom/npm-react'
 import * as ReactDOMClient from 'react-dom/client'
 import React from 'react'
 import { reatomHTMLForm } from './form-web'
 
+import { unstable_batchedUpdates } from 'react-dom'
+import { setupBatch } from '@reatom/npm-react'
+
+setupBatch(unstable_batchedUpdates)
+
 const form = reatomHTMLForm({
+  name: 'example',
   // you could use `fieldsListAtom` for dynamic forms
   onSubmit(ctx, { fieldsListAtom }) {
     const data = parseAtoms(ctx, {
       name: nameFieldAtom,
       age: ageFieldAtom,
-      sex: sexFieldsAtom,
+      pet: petFieldsAtom,
       driver: driverFieldAtom,
       hobby: hobbyFieldAtom,
     })
     console.log(data)
   },
 })
-const nameFieldAtom = form.reatomHTMLField('')
-const ageFieldAtom = form.reatomHTMLField(14)
-const driverFieldAtom = form.reatomHTMLField(false)
-const sexFieldsAtom = form.reatomHTMLField({
-  male: false,
-  female: false,
-})
+const nameFieldAtom = form.reatomHTMLField('', 'name')
+const ageFieldAtom = form.reatomHTMLField(14, 'age')
+const driverFieldAtom = form.reatomHTMLField(false, 'driver')
+const petFieldsAtom = form.reatomHTMLField(
+  {
+    cat: false,
+    dog: false,
+  },
+  'sex',
+)
 const hobbyFieldAtom = form.reatomHTMLField(
   new Array<'swim' | 'walk' | 'draw' | 'music'>(),
+  'hobby',
 )
 onUpdate(ageFieldAtom, (ctx, age) => {
   driverFieldAtom.attributesAtom.merge(ctx, { disabled: age < 18 })
@@ -52,8 +62,16 @@ export default function App() {
       </label>
       <label>
         Sex:
-        <input ref={bind(sexFieldsAtom.female.register)} required />
-        <input ref={bind(sexFieldsAtom.male.register)} required />
+        <br />
+        <label>
+          Cat
+          <input ref={bind(petFieldsAtom.cat.register)} required />
+        </label>
+        <br />
+        <label>
+          Dog
+          <input ref={bind(petFieldsAtom.dog.register)} required />
+        </label>
       </label>
       <label>
         Hobby:
@@ -77,17 +95,15 @@ export default function App() {
 }
 
 const ctx = createCtx()
-// connectLogger(ctx);
-// ctx.subscribe(console.log);
+connectLogger(ctx)
 
 const rootElement = document.getElementById('root')!
 const root = ReactDOMClient.createRoot(rootElement)
 
-ctx.get(() => {
-  root.render(
-    <reatomContext.Provider value={ctx}>
-      <App />
-      <style>{`
+root.render(
+  <reatomContext.Provider value={ctx}>
+    <App />
+    <style>{`
         .form {
           width: 5rem;
           display: flex;
@@ -95,6 +111,5 @@ ctx.get(() => {
           gap: 1rem;
         }  
       `}</style>
-    </reatomContext.Provider>,
-  )
-})
+  </reatomContext.Provider>,
+)
