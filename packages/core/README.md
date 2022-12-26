@@ -1,8 +1,8 @@
-Tiny, efficient, featured and extensible core to handle reactivity right. Build easily anything, from a small widget to a huge application.
+Tiny, efficient, featured and extensible core to handle reactivity right. The ultimate state manager. Build easily anything, from a small widget to a huge application.
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
-[Main docs starts here](https://www.reatom.dev).
+[Main introduction](https://www.reatom.dev).
 
 The raw API description is [below](#api).
 
@@ -77,7 +77,7 @@ const fetchGoods = action((ctx) => {
 })
 ```
 
-As you can see, most passed callbacks in Reatom units accepts `ctx` by the first argument - it is a main convention, which allow you to not use imports and write more clean. Some advanced helpers could extends or redefine ctx for additional features, so when you will need it, there will no feature code changes.
+As you can see, most passed callbacks in Reatom units accepts `ctx` by the first argument - it is a main convention, which allow you to not use imports and write more clean. Some advanced helpers could extends or redefine ctx for additional features typesafety, so when you will need it, there will no feature code changes.
 
 ```ts
 // subscribe to your atoms
@@ -104,7 +104,7 @@ import { onUpdate } from '@reatom/hooks'
 onUpdate(searchAtom, fetchGoods)
 ```
 
-### Action handling
+### Action handling (advanced)
 
 It is better to stay atoms stupid and handle all logic inside action. But sometimes you need to turn direction of your code coupling and make atom depends from an action. And you could do it!
 

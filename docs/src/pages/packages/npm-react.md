@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/Layout.astro
 title: npm-react
-description: Reatom for npm-react
+description: Reatom adapter for React
 ---
 
 Adapter for [react](https://github.com/facebook/react).
@@ -16,22 +16,9 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`
 
 > Read [the core docs](/core) first for production usage.
 
-## Usage
+## Use atom
 
-In the app root:
-
-```js
-import { createCtx } from '@reatom/core'
-import { reatomContext } from '@reatom/npm-react'
-
-const ctx = createCtx()
-
-export const App = () => (
-  <reatomContext.Provider value={ctx}>
-    <Main />
-  </reatomContext.Provider>
-)
-```
+`useAtom` is your main hook. It accepts an atom, or a primitive value to create a new mutable atom. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
 
 In a component:
 
@@ -40,13 +27,17 @@ import { action, atom } from '@reatom/core'
 import { useAction, useAtom } from '@reatom/npm-react'
 
 // base mutable atom
-const inputAtom = atom('')
+const inputAtom = atom('', 'inputAtom')
 // computed readonly atom
-const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(inputAtom)}!`)
+const greetingAtom = atom(
+  (ctx) => `Hello, ${ctx.spy(inputAtom)}!`,
+  'greetingAtom',
+)
 // action to do things
 const onChange = action(
   (ctx, event /* : React.ChangeEvent<HTMLInputElement> */) =>
     inputAtom(ctx, event.currentTarget.value),
+  'onChange',
 )
 
 export const Greeting = () => {
@@ -63,19 +54,69 @@ export const Greeting = () => {
 }
 ```
 
+In the app root:
+
+```js
+import { createCtx } from '@reatom/core'
+import { reatomContext } from '@reatom/npm-react'
+
+const ctx = createCtx()
+
+export const App = () => (
+  <reatomContext.Provider value={ctx}>
+    <Main />
+  </reatomContext.Provider>
+)
+```
+
+We recommend to setup [logger](/packages/logger) here.
+
+## Use atom selector
+
+It is possible to paste a reducer function to `useState`, which will create a new computed atom (`setState` will be `undefined` in this case).
+
+```ts
+import { useAtom } from "@reatom/npm-react";
+import { goodsAtom } from "~/goods/model";
+
+export const GoodsItem = ({ idx }: { idx: number }) => {
+  const [element] = useAtom((ctx) => ctx.spy(goodsAtom)[idx], [idx]);
+
+  return <some-jsx {...element} />;
+};
+```
+
+The reducer function is just the same as in `atom` function. You could `spy` a few other atoms. It will be called only when the dependencies change, so you could use conditions and Reatom will optimize your dependencies and subscribes only to the necessary atoms.
+
+```ts
+import { useAtom } from "@reatom/npm-react";
+import { activeAtom, goodsAtom } from "~/goods/model";
+
+export const GoodsItem = ({ idx }: { idx: number }) => {
+  const [element] = useAtom(
+    (ctx) => (ctx.spy(activeAtom) === idx ? ctx.spy(listAtom)[idx] : null),
+    [idx]
+  );
+
+  if (!element) return null;
+
+  return <some-jsx {...element} />
+};
+```
+
 ### Advanced usage
 
 ```js
 export const Greeting = ({ initialGreeting = '' }) => {
-  const [input, update, inputAtom] = useAtom(initialGreeting)
+  const [input, setInput, inputAtom] = useAtom(initialGreeting)
   const [greeting] = useAtom(
     (ctx) => `Hello, ${ctx.spy(inputAtom)}!`,
     [inputAtom],
   )
   // you could do this
   const handleChange = useCallback(
-    (event) => update(event.currentTarget.value),
-    [update],
+    (event) => setInput(event.currentTarget.value),
+    [setInput],
   )
   // OR this
   const handleChange = useAction(
@@ -95,7 +136,7 @@ export const Greeting = ({ initialGreeting = '' }) => {
 What, why? In the example bellow we creating "inline" atoms, which will live only during the component lifetime. Here are the benefits of this pattern instead of using regular hooks:
 
 - You could depend your atoms by a props (deps changing will cause atom recreation and it state dropping).
-- Easy access to services, in case you use reatom as a IoC.
+- Easy access to services, in case you use reatom as a DI.
 - Component inline atoms could be used for other computations, which could prevent rerenders ([see above](#prevent-rerenders)).
 - Created actions and atoms will be visible in logger / debugger with async `cause` tracking, witch is much better for debugging than `useEffect`.
 - Unify codestyle for any state (local and global) description.
