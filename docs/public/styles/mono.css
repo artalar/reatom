@@ -168,6 +168,9 @@ button.mono,
   color: var(--mono-main);
   background-color: var(--mono-back);
   font-weight: 600;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
 }
 button.mono + button.mono,
 .mono-all button + button {
@@ -270,13 +273,13 @@ h4.mono,
   border-top: 2px solid var(--mono-main);
   padding-top: 0.2em;
   padding-left: 0.3em;
-  margin: 3rem 0 0;
+  margin: 3rem 0 1rem;
 }
 
 h1.mono,
 .mono-all h1 {
   margin-top: 2rem;
-  font-size: 2em;
+  font-size: 2.2em;
 }
 
 h2.mono,
