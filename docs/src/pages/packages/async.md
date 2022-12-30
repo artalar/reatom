@@ -127,15 +127,20 @@ import { reatomAsync, withAbort } from '@reatom/async'
 import { onDisconnect, onUpdate } from '@reatom/hooks'
 
 const reatomResource = (initState, url, concurrent = true) => {
-  const effect = reatomAsync((ctx) => fetch(url, ctx.controller)).pipe(
+  const resource = reatomAsync((ctx) =>
+    fetch(url, ctx.controller).then((response) => {
+      if (response.status !== 200) throw response
+      return response.json()
+    }),
+  ).pipe(
     withAbort({ strategy: concurrent ? 'last-in-win' : 'none' }),
     withDataAtom(initState),
   )
 
   // abort unneeded request
-  onDisconnect(effect.dataAtom, effect.abort)
+  onDisconnect(resource.dataAtom, resource.abort)
 
-  return effect
+  return resource
 }
 ```
 
