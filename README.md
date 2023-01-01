@@ -169,4 +169,9 @@ https://www.patreon.com/artalar_dev
 
 ### Credits
 
-[![Wallaby.js](https://img.shields.io/badge/wallaby.js-powered-lightgrey.svg?style=flat&logo=github)](https://wallabyjs.com/oss/) All tests are written by Quokka and [uvu](https://github.com/lukeed/uvu), which speed up development a lot.
+Software development in 202X is hard and we really appreciate to all [contributors](https://github.com/artalar/reatom/graphs/contributors) and free software maintainers, who make our life easier. Special thanks to:
+
+- [React](https://reactjs.org), [Redux](https://redux.js.org) and [Effector](https://effector.dev/) for inspiration
+- [Quokka](https://wallabyjs.com/oss/) and [uvu](https://github.com/lukeed/uvu) for incredible testing experience
+- [Astro](https://astro.build) for best in class combine of performance and developer experience
+- [Vercel](https://vercel.com/) for free hosting and perfect CI/CD (preview branches are <3)
