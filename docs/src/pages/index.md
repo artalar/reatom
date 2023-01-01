@@ -168,7 +168,7 @@ Also, check out [atomization guild](/guides/atomization).
 Of course there are no software without limitations. Reatom is trying to be a silver bullet but we still have some cases witch you should know about.
 
 - Immutable data always have an additional performance impact and in critical cases you should think well about your structures and how you could handle it better. The good news is that you [don't have to use normalization](/guides/atomization).
-- Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of how observables. Anyway, we have [hooks](/packages/hooks) for hot linking.
+- Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of hot observables. Anyway, we have [hooks](/packages/hooks) for hot linking.
 - Currently, there is no way to subscribe on error of any dependency, but we are working on it. However, you could subscribe to ctx logs and check `patch?.error` property.
 - Currently, there is no asynchronous transactions support, but we are working on it. It is important feature for simplify building of optimistic UI and we really think it will improve UX a lot.
 
