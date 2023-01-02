@@ -240,7 +240,7 @@ return (
 
 ## Setup batching for old React
 
-For React 16 and 17 you need to setup batching by yourself in the root fo your app.
+For React 16 and 17 you need to setup batching by yourself in the root of your app.
 
 For `react-dom`:
 
@@ -257,9 +257,9 @@ For `react-native`:
 
 ```js
 import { unstable_batchedUpdates } from 'react-native'
+import { createCtx } from '@reatom/core'
 import { setupBatch } from '@reatom/npm-react'
 
 setupBatch(unstable_batchedUpdates)
-import { createCtx } from '@reatom/core'
 const ctx = withBatching(createCtx())
 ```
