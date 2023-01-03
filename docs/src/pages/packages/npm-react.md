@@ -18,11 +18,11 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`
 
 ## Use atom
 
-`useAtom` is your main hook. It accepts an atom, or a primitive value to create a new mutable atom. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
+`useAtom` is your main hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
 
 In a component:
 
-```js
+```tsx
 import { action, atom } from '@reatom/core'
 import { useAction, useAtom } from '@reatom/npm-react'
 
@@ -35,7 +35,7 @@ const greetingAtom = atom(
 )
 // action to do things
 const onChange = action(
-  (ctx, event /* : React.ChangeEvent<HTMLInputElement> */) =>
+  (ctx, event: React.ChangeEvent<HTMLInputElement>) =>
     inputAtom(ctx, event.currentTarget.value),
   'onChange',
 )
@@ -76,32 +76,32 @@ We recommend to setup [logger](/packages/logger) here.
 It is possible to paste a reducer function to `useState`, which will create a new computed atom (`setState` will be `undefined` in this case).
 
 ```ts
-import { useAtom } from "@reatom/npm-react";
-import { goodsAtom } from "~/goods/model";
+import { useAtom } from '@reatom/npm-react'
+import { goodsAtom } from '~/goods/model'
 
 export const GoodsItem = ({ idx }: { idx: number }) => {
-  const [element] = useAtom((ctx) => ctx.spy(goodsAtom)[idx], [idx]);
+  const [element] = useAtom((ctx) => ctx.spy(goodsAtom)[idx], [idx])
 
-  return <some-jsx {...element} />;
-};
+  return <some-jsx {...element} />
+}
 ```
 
 The reducer function is just the same as in `atom` function. You could `spy` a few other atoms. It will be called only when the dependencies change, so you could use conditions and Reatom will optimize your dependencies and subscribes only to the necessary atoms.
 
 ```ts
-import { useAtom } from "@reatom/npm-react";
-import { activeAtom, goodsAtom } from "~/goods/model";
+import { useAtom } from '@reatom/npm-react'
+import { activeAtom, goodsAtom } from '~/goods/model'
 
 export const GoodsItem = ({ idx }: { idx: number }) => {
   const [element] = useAtom(
     (ctx) => (ctx.spy(activeAtom) === idx ? ctx.spy(listAtom)[idx] : null),
-    [idx]
-  );
+    [idx],
+  )
 
-  if (!element) return null;
+  if (!element) return null
 
   return <some-jsx {...element} />
-};
+}
 ```
 
 ### Advanced usage
