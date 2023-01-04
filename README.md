@@ -4,7 +4,7 @@ Key principles are **immutability** and **explicit reactivity** (no proxies), im
 
 [The core package](https://www.reatom.dev/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
-Do you React.js user? Check out [npm-react](https://www.reatom.dev/packages/npm-react) package!
+Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
 ## Simple example
 
