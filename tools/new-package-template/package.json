@@ -26,6 +26,12 @@
     "@reatom/core": ">=3.1.0"
   },
   "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
