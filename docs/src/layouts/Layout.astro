@@ -9,7 +9,7 @@ const {
 } = Astro.props
 
 const DEFAULT_MAIN = '#0e1117'
-const DEFAULT_BACK = '#e0deed'
+const DEFAULT_BACK = '#9c9ba2'
 ---
 
 <!DOCTYPE html>
@@ -21,7 +21,7 @@ const DEFAULT_BACK = '#e0deed'
     {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="stylesheet" href="/styles/mono.css" />
+    <link rel="stylesheet" href="/styles/chromo.css" />
     <style
       is:global
       define:vars={{
@@ -58,13 +58,6 @@ const DEFAULT_BACK = '#e0deed'
       .mono-all pre {
         --mono-main: var(--mono-main-default);
         --mono-back: var(--mono-back-default);
-      }
-
-      pre.mono,
-      pre.mono *,
-      .mono-all pre,
-      .mono-all pre * {
-        background-color: transparent !important;
       }
 
       @media (prefers-color-scheme: light) {
