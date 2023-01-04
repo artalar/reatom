@@ -1,20 +1,23 @@
 <script>
   const handler = (event: KeyboardEvent) => {
     if (event.code !== 'F12') return
+    document.removeEventListener('keydown', handler)
 
     // show glitch only once. Do not use cookie / LS as it too obvious to debug
     indexedDB.open('db').onupgradeneeded = () => {
       document.body.classList.add('glitch')
 
       setTimeout(() => {
-        document.removeEventListener('keydown', handler)
         document.body.classList.remove('glitch')
         // hide log source
         setTimeout(
           eval,
           0,
           // hide from search by sources
-          "console.log('H_a_v_e_ _a_ _n_i_c_e_ _d_e_b_u_g_!')".replace(/\_/g, ''),
+          "console.log('H_a_v_e_ _a_ _n_i_c_e_ _d_e_b_u_g_!')".replace(
+            /\_/g,
+            '',
+          ),
         )
 
         /*
