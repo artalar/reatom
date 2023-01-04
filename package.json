@@ -4,7 +4,7 @@
   "description": "Expressive and deterministic state manager",
   "scripts": {
     "release": "npx tsx ./tools/publish.ts",
-    "postinstall": "turbo run build --filter=framework",
+    "postinstall": "turbo run build --filter=testing --filter=framework",
     "build": "turbo run build",
     "test": "turbo run test",
     "prettify": "prettier --write **/*.{js,ts,md}",
