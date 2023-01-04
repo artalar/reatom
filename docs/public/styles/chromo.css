@@ -118,6 +118,11 @@ a.mono:after,
   clip-path: polygon(25% 25%, 100% 25%, 100% 50%);
 }
 
+a.current {
+  color:  var(--foreground-strong-color)
+}
+
+
 details.mono a,
 .mono-all details a {
   border-bottom: none;
