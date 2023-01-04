@@ -7,9 +7,6 @@ import Glitch from '../components/Glitch.astro'
 const {
   frontmatter: { title = '404', description } = {} as Record<string, string>,
 } = Astro.props
-
-const DEFAULT_MAIN = '#0e1117'
-const DEFAULT_BACK = '#9c9ba2'
 ---
 
 <!DOCTYPE html>
@@ -22,51 +19,9 @@ const DEFAULT_BACK = '#9c9ba2'
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <link rel="stylesheet" href="/styles/chromo.css" />
-    <style
-      is:global
-      define:vars={{
-        'mono-main-default': DEFAULT_BACK,
-        'mono-back-default': DEFAULT_MAIN,
-      }}
-    >
+    <style>
       @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
-
-      html {
-        font-size: calc(0.3vw + 0.7em);
-      }
-
-      body {
-        --mono-main: var(--mono-back-default);
-        --mono-back: var(--mono-main-default);
-      }
-
-      @media (prefers-color-scheme: light) {
-        body {
-          --mono-main: var(--mono-back-default);
-          --mono-back: var(--mono-main-default);
-        }
-      }
-
-      @media (prefers-color-scheme: dark) {
-        body {
-          --mono-main: var(--mono-main-default);
-          --mono-back: var(--mono-back-default);
-        }
-      }
-
-      pre.mono,
-      .mono-all pre {
-        --mono-main: var(--mono-main-default);
-        --mono-back: var(--mono-back-default);
-      }
-
-      @media (prefers-color-scheme: light) {
-        pre.mono,
-        .mono-all pre {
-          filter: invert(0.95) hue-rotate(240deg) contrast(1.1);
-        }
-      }
-    </style>
+  </style>
   </head>
   <body class="mono-all">
     <Sidebar />

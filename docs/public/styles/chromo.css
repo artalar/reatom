@@ -1,5 +1,72 @@
 /* Copied from the origin (https://github.com/artalar/mono) for fast interaction and fixing. Reatom docs is a good playground form mono. */
 
+/* Default case - prefers-color-scheme not supported or not selected */
+:root {
+  --foreground-color: #393939;
+  --background-color: #fff;
+  --foreground-strong-color: #000000;
+  --background-strong-color: #eaeaea;
+  --dimmed-color: rgba(0, 0, 0, 0.2);
+  --weak-color: rgba(0, 0, 0, 0.1);
+  --selection-text-color: var(--background-color);
+  --selection-back-color: var(--foreground-color);
+}
+
+pre.mono,
+.mono-all pre {
+  filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
+  background-color: #191919 !important;
+  position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-color: #9c9ba2;
+    --background-color: #0e1117;
+    --foreground-strong-color: #eaeaea;
+    --background-strong-color: #000;
+    --dimmed-color: rgba(255, 255, 255, 0.2);
+    --weak-color: rgba(255, 255, 255, 0.1);
+    --selection-text-color: var(--background-color);
+    --selection-back-color: var(--foreground-color);
+  }
+
+  pre.mono,
+  .mono-all pre {
+    background-color: var(--background-strong-color) !important;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --foreground-color: #393939;
+    --background-color: #fff;
+    --foreground-strong-color: #000000;
+    --background-strong-color: #eaeaea;
+    --dimmed-color: rgba(0, 0, 0, 0.2);
+    --weak-color: rgba(0, 0, 0, 0.1);
+    --selection-text-color: var(--background-color);
+    --selection-back-color: var(--foreground-color);
+  }
+
+  pre.mono,
+  .mono-all pre {
+    filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
+    background-color: #191919 !important;
+    position: relative;
+  }
+}
+
+html {
+  font-size: calc(0.3vw + 0.7em);
+}
+
+pre.mono,
+.mono-all pre {
+  --mono-main: var(--foreground-color);
+  --mono-back: var(--background-color);
+}
+
 .mono-all,
 .mono,
 .mono-all *,
@@ -7,8 +74,8 @@
 .mono-all *:before,
 .mono:after,
 .mono-all *:after {
-  color: var(--mono-main, #111111);
-  background-color: var(--mono-back, #eeeeee);
+  color: var(--foreground-color, #111111);
+  background-color: var(--background-color, #eeeeee);
   font-family: 'Roboto', sans;
   line-height: 1.85rem;
   font-size: 1;
@@ -20,8 +87,8 @@
 
 .mono::selection,
 .mono-all *::selection {
-  color: var(--mono-back);
-  background-color: var(--mono-main);
+  color: var(--selection-text-color);
+  background-color: var(--selection-back-color);
 }
 
 a.mono,
@@ -29,25 +96,24 @@ a.mono,
   position: relative;
   text-decoration: none;
   outline: none;
-  border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 3px solid var(--dimmed-color);
 }
 
 a.mono:hover,
 .mono-all a:hover {
-  color: white;
-  border-color: rgba(255, 255, 255, 0.8);
+  color: var(--foreground-strong-color);
+  border-color: var(--foreground-strong-color);
 }
-
 
 a.mono:visited,
 .mono-all a:visited {
-  border-bottom: 0.1rem solid var(--mono-main);
+  border-bottom: 2px solid var(--dimmed-color);
 }
 a.mono:after,
 .mono-all a:after {
   content: '0';
   color: transparent;
-  background-color: var(--mono-main);
+  background-color: var(--dimmed-color);
   clip-path: polygon(25% 25%, 100% 25%, 100% 50%);
 }
 
@@ -81,6 +147,7 @@ main.mono,
   scroll-snap-align: start;
   margin: auto;
   width: min(100vw, 65rem);
+  max-width: 960px;
   display: flex;
   flex-direction: column;
   padding: 0 1rem;
@@ -98,13 +165,13 @@ aside.mono,
   max-height: 100vh;
   overflow-y: scroll;
   padding: 1rem;
-  border-right: 1px solid #2b2b2b;
-  opacity: .7
+  border-right: 1px solid var(--weak-color);
+  opacity: 0.7;
 }
 
 aside.mono:hover,
 .mono-all aside:hover {
-  opacity: 1
+  opacity: 1;
 }
 /* TODO: stick it bottom */
 footer.mono,
@@ -114,7 +181,7 @@ footer.mono,
   justify-content: center;
   margin-top: auto;
   padding: 1rem;
-  border-top: 1px solid var(--mono-main);
+  border-top: 1px solid var(--foreground-color);
 }
 
 blockquote.mono,
@@ -131,7 +198,7 @@ blockquote.mono:before,
   left: 0;
   height: 1rem;
   width: 3rem;
-  background-color: var(--mono-main);
+  background-color: var(--foreground-color);
   clip-path: polygon(
     0 0,
     calc(100% - 0.25rem) 0,
@@ -152,12 +219,12 @@ button.mono,
   outline: none;
   margin-top: 0.4rem;
   margin-bottom: 0.2rem;
-  border: 1px solid var(--mono-main);
+  border: 1px solid var(--foreground-color);
   border-top: none;
   height: 2rem;
   min-width: 5rem;
-  color: var(--mono-main);
-  background-color: var(--mono-back);
+  color: var(--foreground-color);
+  background-color: var(--background-color);
   font-weight: 600;
   display: inline-flex;
   justify-content: center;
@@ -175,7 +242,7 @@ button.mono:before,
   left: -0.2rem;
   width: calc(100% + 0.4rem);
   height: 0.8rem;
-  background-color: var(--mono-main);
+  background-color: var(--foreground-color);
   clip-path: polygon(
     0 30%,
     calc(100% - 0.8rem) 30%,
@@ -197,7 +264,7 @@ button.mono:focus:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 5px
+    var(--foreground-color) 3px 5px
   );
   clip-path: polygon(
     calc(100% - 0.5rem) 0.25rem,
@@ -213,7 +280,7 @@ button.mono:active:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 7px
+    var(--foreground-color) 3px 7px
   );
 }
 
@@ -222,18 +289,19 @@ button.mono:active:after,
   font-family: 'Roboto Mono', monospace;
   padding: 0.15rem 0.45rem 0.25rem 0.35rem;
   border-radius: 4px;
-  background-color: black;
-  color: white;
+  background-color: var(--background-strong-color);
+  color: var(--foreground-strong-color);
+  font-size: 0.9em;
 }
 :not(pre) > code.mono:before,
 .mono-all :not(pre) > code:before,
 :not(pre) > code.mono:after,
 .mono-all :not(pre) > code:after {
   font-weight: bold;
-  color: var(--mono-back);
-  background-color: var(--mono-main);
+  color: var(--background-color);
+  background-color: var(--foreground-color);
   /* fix empty space when scale */
-  box-shadow: 0 0 0 1px var(--mono-main);
+  box-shadow: 0 0 0 1px var(--foreground-color);
   /* FIXME: does not work */
   transform: scaleX(0.5);
 }
@@ -291,7 +359,7 @@ input[type='checkbox'].mono,
   margin-right: 0.5rem;
   margin-bottom: 1rem;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1rem var(--mono-main);
+  box-shadow: inset 0 0 0 1rem var(--foreground-color);
   outline: none;
   cursor: pointer;
 }
@@ -303,12 +371,12 @@ input[type='checkbox'].mono:before,
   top: 0.125rem;
   width: 1.25rem;
   height: 1.25rem;
-  background-color: var(--mono-back);
-  border: 0.25rem solid var(--mono-back);
+  background-color: var(--background-color);
+  border: 0.25rem solid var(--background-color);
 }
 input[type='checkbox'].mono:checked:before,
 .mono-all input[type='checkbox']:checked:before {
-  background-color: var(--mono-main);
+  background-color: var(--foreground-color);
 }
 input[type='checkbox'].mono:focus:after,
 .mono-all input[type='checkbox']:focus:after {
@@ -321,7 +389,7 @@ input[type='checkbox'].mono:focus:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 2px,
-    var(--mono-main) 2px 3px
+    var(--foreground-color) 2px 3px
   );
   clip-path: polygon(
     calc(100% - 0.4rem) 0.2rem,
@@ -337,7 +405,7 @@ input[type='checkbox'].mono:active:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 2px,
-    var(--mono-main) 2px 4px
+    var(--foreground-color) 2px 4px
   );
 }
 
@@ -358,7 +426,7 @@ input[type='color'].mono:focus:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 5px
+    var(--foreground-color) 3px 5px
   );
   clip-path: polygon(
     calc(100% - 0.5rem) 0.25rem,
@@ -374,7 +442,7 @@ input[type='color'].mono:active:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 7px
+    var(--foreground-color) 3px 7px
   );
 }
 
@@ -388,7 +456,7 @@ input[type='radio'].mono,
   margin-right: 0.5rem;
   margin-bottom: 1rem;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1rem var(--mono-main);
+  box-shadow: inset 0 0 0 1rem var(--foreground-color);
   outline: none;
   cursor: pointer;
 }
@@ -400,13 +468,13 @@ input[type='radio'].mono:before,
   top: 0.125rem;
   width: 1.25rem;
   height: 1.25rem;
-  background-color: var(--mono-back);
-  border: 0.15rem solid var(--mono-back);
+  background-color: var(--background-color);
+  border: 0.15rem solid var(--background-color);
   border-radius: 50%;
 }
 input[type='radio'].mono:checked:before,
 .mono-all input[type='radio']:checked:before {
-  background-color: var(--mono-main);
+  background-color: var(--foreground-color);
 }
 input[type='radio'].mono:focus:after,
 .mono-all input[type='radio']:focus:after {
@@ -419,7 +487,7 @@ input[type='radio'].mono:focus:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 2px,
-    var(--mono-main) 2px 3px
+    var(--foreground-color) 2px 3px
   );
   clip-path: polygon(
     calc(100% - 0.4rem) 0.2rem,
@@ -446,21 +514,21 @@ input[type='range'].mono::-webkit-slider-runnable-track,
   width: 100%;
   height: 0.2rem;
   cursor: pointer;
-  background: var(--mono-main);
+  background: var(--foreground-color);
 }
 input[type='range'].mono::-webkit-slider-thumb,
 .mono-all input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
-  border-top: 1px solid var(--mono-main);
+  border-top: 1px solid var(--foreground-color);
   height: 1rem;
   width: 1rem;
-  background: var(--mono-back);
+  background: var(--background-color);
   cursor: pointer;
   margin-top: -0.4rem;
 }
 input[type='range'].mono:active::-webkit-slider-thumb,
 .mono-all input[type='range']:active::-webkit-slider-thumb {
-  background-color: var(--mono-main);
+  background-color: var(--foreground-color);
 }
 input[type='range'].mono:focus:after,
 .mono-all input[type='range']:focus:after {
@@ -473,7 +541,7 @@ input[type='range'].mono:focus:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 5px
+    var(--foreground-color) 3px 5px
   );
   clip-path: polygon(
     calc(100% - 0.5rem) 0.25rem,
@@ -487,7 +555,7 @@ input[type='range'].mono:focus:after,
 
 fieldset.mono,
 .mono-all fieldset {
-  border: 1px solid var(--mono-main);
+  border: 1px solid var(--foreground-color);
 }
 
 legend.mono,
@@ -512,9 +580,9 @@ li.mono:before,
   left: -1.1rem;
   width: 0.3rem;
   height: 0.5rem;
-  color: var(--mono-back);
-  background-color: var(--mono-main);
-  /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--mono-main); */
+  color: var(--background-color);
+  background-color: var(--foreground-color);
+  /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--foreground-color); */
 }
 
 p.mono:before,
@@ -531,7 +599,7 @@ pre.mono,
   margin: 1.5rem 0;
   overflow-x: scroll;
   line-height: 2rem;
-  background-color: rgba(0, 0, 0, 0.3) !important;
+  background-color: none !important;
   border-radius: 8px;
   font-family: 'Roboto Mono', monospace;
 }
@@ -567,7 +635,7 @@ summary.mono:before,
   left: -1.3rem;
   width: 10px;
   height: 16px;
-  background-color: var(--mono-main);
+  background-color: var(--foreground-color);
   clip-path: polygon(
     25% 0,
     25% calc(100% - 0.6rem),
@@ -589,7 +657,7 @@ summary.mono:focus:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 5px
+    var(--foreground-color) 3px 5px
   );
   clip-path: polygon(
     calc(100% - 0.5rem) 0.25rem,
@@ -605,7 +673,7 @@ summary.mono:active:after,
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 3px,
-    var(--mono-main) 3px 7px
+    var(--foreground-color) 3px 7px
   );
 }
 
@@ -622,7 +690,7 @@ td.mono,
 .mono-all td,
 th.mono,
 .mono-all th {
-  border-top: 0.5rem solid var(--mono-main);
+  border-top: 0.5rem solid var(--foreground-color);
   padding: 0 1rem;
 }
 
