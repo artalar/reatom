@@ -1,4 +1,8 @@
-# Contributing
+---
+layout: ../../layouts/Layout.astro
+title: Contributing
+description: How to contribute to Reatom
+---
 
 If you want to contribute to improving the library, use the following instructions to create changes:
 
