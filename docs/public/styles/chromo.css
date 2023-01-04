@@ -34,6 +34,7 @@ pre.mono,
   pre.mono,
   .mono-all pre {
     background-color: var(--background-strong-color) !important;
+    filter: none;
   }
 }
 
