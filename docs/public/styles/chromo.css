@@ -175,10 +175,6 @@ aside.mono,
   opacity: 0.7;
 }
 
-aside.mono:hover,
-.mono-all aside:hover {
-  opacity: 1;
-}
 /* TODO: stick it bottom */
 footer.mono,
 .mono-all footer {
