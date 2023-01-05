@@ -1,0 +1,703 @@
+/* Copied from the origin (https://github.com/artalar/mono) for fast interaction and fixing. Reatom docs is a good playground form mono. */
+
+/* Default case - prefers-color-scheme not supported or not selected */
+:root {
+  --foreground-color: #393939;
+  --background-color: #fff;
+  --foreground-strong-color: #000000;
+  --background-strong-color: #eaeaea;
+  --dimmed-color: rgba(0, 0, 0, 0.2);
+  --weak-color: rgba(0, 0, 0, 0.1);
+  --selection-text-color: var(--background-color);
+  --selection-back-color: var(--foreground-color);
+}
+
+pre.mono,
+.mono-all pre {
+  filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
+  background-color: #191919 !important;
+  position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-color: #a6a5ae;
+    --background-color: #0e1117;
+    --foreground-strong-color: #eaeaea;
+    --background-strong-color: #000;
+    --dimmed-color: rgba(255, 255, 255, 0.2);
+    --weak-color: rgba(255, 255, 255, 0.1);
+    --selection-text-color: var(--background-color);
+    --selection-back-color: var(--foreground-color);
+  }
+
+  pre.mono,
+  .mono-all pre {
+    background-color: var(--background-strong-color) !important;
+    filter: none;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --foreground-color: #393939;
+    --background-color: #fff;
+    --foreground-strong-color: #000000;
+    --background-strong-color: #eaeaea;
+    --dimmed-color: rgba(0, 0, 0, 0.2);
+    --weak-color: rgba(0, 0, 0, 0.1);
+    --selection-text-color: var(--background-color);
+    --selection-back-color: var(--foreground-color);
+  }
+
+  pre.mono,
+  .mono-all pre {
+    filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
+    background-color: #191919 !important;
+    position: relative;
+  }
+}
+
+html {
+  font-size: calc(0.3vw + 0.7em);
+  font-size: max(14px, calc(0.3vw + 0.7em));
+}
+
+pre.mono,
+.mono-all pre {
+  --mono-main: var(--foreground-color);
+  --mono-back: var(--background-color);
+}
+
+.mono-all,
+.mono,
+.mono-all *,
+.mono:before,
+.mono-all *:before,
+.mono:after,
+.mono-all *:after {
+  color: var(--foreground-color, #111111);
+  background-color: var(--background-color, #eeeeee);
+  font-family: 'Roboto', sans;
+  line-height: 1.85rem;
+  font-size: 1;
+  box-sizing: border-box;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.mono::selection,
+.mono-all *::selection {
+  color: var(--selection-text-color);
+  background-color: var(--selection-back-color);
+}
+
+a.mono,
+.mono-all a {
+  position: relative;
+  text-decoration: none;
+  outline: none;
+  border-bottom: 3px solid var(--dimmed-color);
+}
+
+a.mono:hover,
+.mono-all a:hover {
+  color: var(--foreground-strong-color);
+  border-color: var(--foreground-strong-color);
+}
+
+a.mono:visited,
+.mono-all a:visited {
+  border-bottom: 2px solid var(--dimmed-color);
+}
+a.mono:after,
+.mono-all a:after {
+  content: '0';
+  color: transparent;
+  background-color: var(--dimmed-color);
+  clip-path: polygon(25% 25%, 100% 25%, 100% 50%);
+}
+
+a.current {
+  color:  var(--foreground-strong-color)
+}
+
+
+details.mono a,
+.mono-all details a {
+  border-bottom: none;
+}
+
+details.mono a:after,
+.mono-all details a:after {
+  display: none;
+}
+
+b.mono,
+.mono-all b {
+  font-weight: bold;
+}
+
+body.mono,
+body.mono-all,
+.mono-all body {
+  margin: 0;
+  position: relative;
+  min-width: min(calc(100vw + 20rem), 85rem);
+  scroll-snap-type: x mandatory;
+  display: flex;
+}
+
+main.mono,
+.mono-all main {
+  scroll-snap-align: start;
+  margin: auto;
+  width: min(100vw, 65rem);
+  max-width: 800px;
+  display: flex;
+  flex-direction: column;
+  padding: 0 1rem;
+}
+
+aside.mono,
+.mono-all aside {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  width: 20rem;
+  min-width: 20rem;
+  max-width: 20rem;
+  max-height: 100vh;
+  overflow-y: scroll;
+  padding: 1rem;
+  border-right: 1px solid var(--weak-color);
+  opacity: 0.7;
+}
+
+/* TODO: stick it bottom */
+footer.mono,
+.mono-all footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding: 1rem;
+  border-top: 1px solid var(--foreground-color);
+}
+
+blockquote.mono,
+.mono-all blockquote {
+  position: relative;
+  margin: 2rem;
+  margin-left: 3rem;
+}
+blockquote.mono:before,
+.mono-all blockquote:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 1rem;
+  width: 3rem;
+  background-color: var(--foreground-color);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 0.25rem) 0,
+    calc(100% - 0.25rem) 0.25rem,
+    100% 0.25rem,
+    100% calc(100% - 0.25rem),
+    1rem calc(100% - 0.25rem),
+    1rem 100%,
+    0.25rem 100%,
+    0.25rem calc(100% - 0.25rem),
+    0 calc(100% - 0.25rem)
+  );
+}
+
+button.mono,
+.mono-all button {
+  position: relative;
+  outline: none;
+  margin-top: 0.4rem;
+  margin-bottom: 0.2rem;
+  border: 1px solid var(--foreground-color);
+  border-top: none;
+  height: 2rem;
+  min-width: 5rem;
+  color: var(--foreground-color);
+  background-color: var(--background-color);
+  font-weight: 600;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+button.mono + button.mono,
+.mono-all button + button {
+  margin-left: 1rem;
+}
+button.mono:before,
+.mono-all button:before {
+  content: '';
+  position: absolute;
+  top: -0.4rem;
+  left: -0.2rem;
+  width: calc(100% + 0.4rem);
+  height: 0.8rem;
+  background-color: var(--foreground-color);
+  clip-path: polygon(
+    0 30%,
+    calc(100% - 0.8rem) 30%,
+    calc(100% - 0.8rem) 0%,
+    100% 50%,
+    calc(100% - 0.8rem) 100%,
+    calc(100% - 0.8rem) 70%,
+    0 70%
+  );
+}
+button.mono:focus:after,
+.mono-all button:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.8rem);
+  height: calc(100% + 0.8rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+button.mono:active:after,
+.mono-all button:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 7px
+  );
+}
+
+:not(pre) > code.mono,
+.mono-all :not(pre) > code {
+  font-family: 'Roboto Mono', monospace;
+  padding: 0.15rem 0.45rem 0.25rem 0.35rem;
+  border-radius: 4px;
+  background-color: var(--background-strong-color);
+  color: var(--foreground-strong-color);
+  font-size: 0.9em;
+}
+:not(pre) > code.mono:before,
+.mono-all :not(pre) > code:before,
+:not(pre) > code.mono:after,
+.mono-all :not(pre) > code:after {
+  font-weight: bold;
+  color: var(--background-color);
+  background-color: var(--foreground-color);
+  /* fix empty space when scale */
+  box-shadow: 0 0 0 1px var(--foreground-color);
+  /* FIXME: does not work */
+  transform: scaleX(0.5);
+}
+
+details.mono,
+.mono-all details {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  overflow-x: hidden;
+}
+details[open].mono summary.mono,
+.mono-all details[open] summary {
+  margin-bottom: 0.5rem;
+}
+details[open].mono summary.mono::before,
+.mono-all details[open] summary::before {
+  transform: rotate(180deg);
+}
+
+h1.mono,
+.mono-all h1,
+h2.mono,
+.mono-all h2,
+h3.mono,
+.mono-all h3,
+h4.mono,
+.mono-all h4 {
+  margin: 3rem 0 1rem;
+  font-family: 'Roboto Mono', monospace;
+}
+
+h1.mono,
+.mono-all h1 {
+  margin-top: 2rem;
+  font-size: 2.2em;
+}
+
+h2.mono,
+.mono-all h2 {
+  font-size: 1.6em;
+}
+
+h3.mono,
+.mono-all h3 {
+  font-size: 1.2em;
+}
+
+input[type='checkbox'].mono,
+.mono-all input[type='checkbox'] {
+  position: relative;
+  top: 0.5em;
+  margin: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1rem var(--foreground-color);
+  outline: none;
+  cursor: pointer;
+}
+input[type='checkbox'].mono:before,
+.mono-all input[type='checkbox']:before {
+  position: absolute;
+  content: '';
+  left: 0.125rem;
+  top: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--background-color);
+  border: 0.25rem solid var(--background-color);
+}
+input[type='checkbox'].mono:checked:before,
+.mono-all input[type='checkbox']:checked:before {
+  background-color: var(--foreground-color);
+}
+input[type='checkbox'].mono:focus:after,
+.mono-all input[type='checkbox']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.4rem);
+  height: calc(100% + 0.4rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 2px,
+    var(--foreground-color) 2px 3px
+  );
+  clip-path: polygon(
+    calc(100% - 0.4rem) 0.2rem,
+    calc(100% - 0.4rem) calc(100% - 0.4rem),
+    0.2rem calc(100% - 0.4rem),
+    0.2rem 100%,
+    100% 100%,
+    100% 0.2rem
+  );
+}
+input[type='checkbox'].mono:active:after,
+.mono-all input[type='checkbox']:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 2px,
+    var(--foreground-color) 2px 4px
+  );
+}
+
+input[type='color'].mono,
+.mono-all input[type='color'] {
+  position: relative;
+  outline: none;
+  height: 2.5rem;
+}
+input[type='color'].mono:focus:after,
+.mono-all input[type='color']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.6rem);
+  height: calc(100% + 0.6rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+input[type='color'].mono:active:after,
+.mono-all input[type='color']:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 7px
+  );
+}
+
+input[type='radio'].mono,
+.mono-all input[type='radio'] {
+  position: relative;
+  top: 0.5em;
+  margin: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1rem var(--foreground-color);
+  outline: none;
+  cursor: pointer;
+}
+input[type='radio'].mono:before,
+.mono-all input[type='radio']:before {
+  position: absolute;
+  content: '';
+  left: 0.125rem;
+  top: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: var(--background-color);
+  border: 0.15rem solid var(--background-color);
+  border-radius: 50%;
+}
+input[type='radio'].mono:checked:before,
+.mono-all input[type='radio']:checked:before {
+  background-color: var(--foreground-color);
+}
+input[type='radio'].mono:focus:after,
+.mono-all input[type='radio']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.4rem);
+  height: calc(100% + 0.4rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 2px,
+    var(--foreground-color) 2px 3px
+  );
+  clip-path: polygon(
+    calc(100% - 0.4rem) 0.2rem,
+    calc(100% - 0.4rem) calc(100% - 0.4rem),
+    0.2rem calc(100% - 0.4rem),
+    0.2rem 100%,
+    100% 100%,
+    100% 0.2rem
+  );
+}
+
+input[type='range'].mono,
+.mono-all input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  position: relative;
+  padding: 0.8rem 0.5rem;
+  height: 1.5rem;
+  width: 20rem;
+}
+input[type='range'].mono::-webkit-slider-runnable-track,
+.mono-all input[type='range']::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 0.2rem;
+  cursor: pointer;
+  background: var(--foreground-color);
+}
+input[type='range'].mono::-webkit-slider-thumb,
+.mono-all input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  border-top: 1px solid var(--foreground-color);
+  height: 1rem;
+  width: 1rem;
+  background: var(--background-color);
+  cursor: pointer;
+  margin-top: -0.4rem;
+}
+input[type='range'].mono:active::-webkit-slider-thumb,
+.mono-all input[type='range']:active::-webkit-slider-thumb {
+  background-color: var(--foreground-color);
+}
+input[type='range'].mono:focus:after,
+.mono-all input[type='range']:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.7rem);
+  height: calc(100% + 0.7rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+
+fieldset.mono,
+.mono-all fieldset {
+  border: 1px solid var(--foreground-color);
+}
+
+legend.mono,
+.mono-all legend {
+  font-size: 1.4em;
+}
+
+li.mono,
+.mono-all li {
+  list-style: none;
+  position: relative;
+}
+li.mono + li.mono,
+.mono-all li + li {
+  margin-top: 0.3rem;
+}
+li.mono:before,
+.mono-all li:before {
+  content: '';
+  position: absolute;
+  top: 0.85rem;
+  left: -1.1rem;
+  width: 0.3rem;
+  height: 0.5rem;
+  color: var(--background-color);
+  background-color: var(--foreground-color);
+  /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--foreground-color); */
+}
+
+p.mono:before,
+.mono-all p:before {
+  width: 1.5rem;
+  display: inline-block;
+}
+
+pre.mono,
+.mono-all pre {
+  position: relative;
+  flex-shrink: 0;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  overflow-x: scroll;
+  line-height: 2rem;
+  background-color: none !important;
+  border-radius: 8px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+pre.mono,
+pre.mono *,
+.mono-all pre,
+.mono-all pre * {
+  line-height: 2rem;
+  background-color: transparent;
+  font-family: 'Roboto Mono', monospace;
+}
+
+strong.mono,
+.mono-all strong {
+  font-weight: bold;
+}
+
+summary.mono,
+.mono-all summary {
+  display: inline;
+  position: relative;
+  margin-right: 100%;
+  list-style: none;
+  font-size: 1.4rem;
+  outline: none;
+}
+summary.mono:before,
+.mono-all summary:before {
+  content: '';
+  position: absolute;
+  top: 0.6rem;
+  left: -1.3rem;
+  width: 10px;
+  height: 16px;
+  background-color: var(--foreground-color);
+  clip-path: polygon(
+    25% 0,
+    25% calc(100% - 0.6rem),
+    0 calc(100% - 0.6rem),
+    50% 100%,
+    100% calc(100% - 0.6rem),
+    75% calc(100% - 0.6rem),
+    75% 0
+  );
+}
+summary.mono:focus:after,
+.mono-all summary:focus:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + 0.8rem);
+  height: calc(100% + 0.4rem);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 5px
+  );
+  clip-path: polygon(
+    calc(100% - 0.5rem) 0.25rem,
+    calc(100% - 0.5rem) calc(100% - 0.5rem),
+    0.25rem calc(100% - 0.5rem),
+    0.25rem 100%,
+    100% 100%,
+    100% 0.25rem
+  );
+}
+summary.mono:active:after,
+.mono-all summary:active:after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 3px,
+    var(--foreground-color) 3px 7px
+  );
+}
+
+table.mono,
+.mono-all table {
+  display: block;
+  width: 100%;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+}
+
+td.mono,
+.mono-all td,
+th.mono,
+.mono-all th {
+  border-top: 0.5rem solid var(--foreground-color);
+  padding: 0 1rem;
+}
+
+ul.mono,
+.mono-all ul {
+  padding-left: 1.3rem;
+}

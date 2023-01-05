@@ -7,72 +7,22 @@ import Glitch from '../components/Glitch.astro'
 const {
   frontmatter: { title = '404', description } = {} as Record<string, string>,
 } = Astro.props
-
-const DEFAULT_MAIN = '#0e1117'
-const DEFAULT_BACK = '#e0deed'
 ---
 
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="stylesheet" href="/styles/mono.css" />
-    <style
-      is:global
-      define:vars={{
-        'mono-main-default': DEFAULT_BACK,
-        'mono-back-default': DEFAULT_MAIN,
-      }}
-    >
-      @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
-
-      html {
-        font-size: calc(0.3vw + 0.7em);
-      }
-
-      body {
-        --mono-main: var(--mono-back-default);
-        --mono-back: var(--mono-main-default);
-      }
-
-      @media (prefers-color-scheme: light) {
-        body {
-          --mono-main: var(--mono-back-default);
-          --mono-back: var(--mono-main-default);
-        }
-      }
-
-      @media (prefers-color-scheme: dark) {
-        body {
-          --mono-main: var(--mono-main-default);
-          --mono-back: var(--mono-back-default);
-        }
-      }
-
-      pre.mono,
-      .mono-all pre {
-        --mono-main: var(--mono-main-default);
-        --mono-back: var(--mono-back-default);
-      }
-
-      pre.mono,
-      pre.mono *,
-      .mono-all pre,
-      .mono-all pre * {
-        background-color: transparent !important;
-      }
-
-      @media (prefers-color-scheme: light) {
-        pre.mono,
-        .mono-all pre {
-          filter: invert(0.95) hue-rotate(240deg) contrast(1.1);
-        }
-      }
+    <link rel="stylesheet" href="/styles/chromo.css" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto&family=Roboto+Mono&display=swap');
     </style>
   </head>
   <body class="mono-all">
@@ -91,40 +41,45 @@ const DEFAULT_BACK = '#e0deed'
     <HeadingCopyButton />
     <Glitch />
     <script client>
-      requestAnimationFrame(async () => {
-        await navigator.serviceWorker
-          ?.register('/sw.js')
-          .then((registration) => registration.update())
-          .catch(() => null)
+      if (import.meta.env.PROD) {
+        requestAnimationFrame(async () => {
+          await navigator.serviceWorker
+            ?.register('/sw.js')
+            .then((registration) => registration.update())
+            .catch(() => null)
 
-        // console.log('client ready')
+          // console.log('client ready')
 
-        const broadcast = new BroadcastChannel('sw')
-        broadcast.postMessage({ type: 'client-ready' })
-        broadcast.onmessage = ({ data, source }) => {
-          // console.log('client message')
-          if (
-            data?.type === 'hot-update' &&
-            location.pathname === new URL(data.url).pathname
-          ) {
-            source?.postMessage({ type: 'hot-update-received' })
+          const broadcast = new BroadcastChannel('sw')
+          broadcast.postMessage({ type: 'client-ready' })
+          broadcast.onmessage = ({ data, source }) => {
+            // console.log('client message')
+            if (
+              data?.type === 'hot-update' &&
+              location.pathname === new URL(data.url).pathname
+            ) {
+              source?.postMessage({ type: 'hot-update-received' })
 
-            const doc = new DOMParser().parseFromString(data.text, 'text/html')
-            const newMain = doc.querySelector('main')
-            const main = document.querySelector('main')
+              const doc = new DOMParser().parseFromString(
+                data.text,
+                'text/html',
+              )
+              const newMain = doc.querySelector('main')
+              const main = document.querySelector('main')
 
-            if (!newMain || newMain.innerHTML === main.innerHTML) {
-              // console.log('cliens mains is equal')
-              return
+              if (!newMain || newMain.innerHTML === main.innerHTML) {
+                // console.log('cliens mains is equal')
+                return
+              }
+
+              // console.log('cliens mains is not equal')
+
+              // TODO show toast?
+              main.replaceWith(newMain)
             }
-
-            // console.log('cliens mains is not equal')
-
-            // TODO show toast?
-            main.replaceWith(newMain)
           }
-        }
-      })
+        })
+      }
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
   </body>

@@ -28,7 +28,7 @@ connectLogger(
     // `true` by default to made your logs clear
     skipUnnamed: true,
     // fine tuning :)
-    skip: (patch: AtomCache) => false,
+    skip = (patch: AtomCache) => false,
     // `createLogBatched` by default to not spam you a lot
     // you could pass regular `console.log` here
     log: createLogBatched(
@@ -39,7 +39,7 @@ connectLogger(
         // 5000ms by default, it helps to not stuck with WS and so on
         limit: 5000,
         // `toLocaleTimeString` by default
-        getTimeStamp: () => new Date().toLocaleTimeString(),
+        getTimeStamp = () => new Date().toLocaleTimeString()
 
         log: console.log,
       },
