@@ -21,7 +21,7 @@ const {
     <link rel="stylesheet" href="/styles/chromo.css" />
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400&display=swap');
-  </style>
+    </style>
   </head>
   <body class="mono-all">
     <Sidebar />
@@ -39,40 +39,45 @@ const {
     <HeadingCopyButton />
     <Glitch />
     <script client>
-      requestAnimationFrame(async () => {
-        await navigator.serviceWorker
-          ?.register('/sw.js')
-          .then((registration) => registration.update())
-          .catch(() => null)
+      if (import.meta.env.PROD) {
+        requestAnimationFrame(async () => {
+          await navigator.serviceWorker
+            ?.register('/sw.js')
+            .then((registration) => registration.update())
+            .catch(() => null)
 
-        // console.log('client ready')
+          // console.log('client ready')
 
-        const broadcast = new BroadcastChannel('sw')
-        broadcast.postMessage({ type: 'client-ready' })
-        broadcast.onmessage = ({ data, source }) => {
-          // console.log('client message')
-          if (
-            data?.type === 'hot-update' &&
-            location.pathname === new URL(data.url).pathname
-          ) {
-            source?.postMessage({ type: 'hot-update-received' })
+          const broadcast = new BroadcastChannel('sw')
+          broadcast.postMessage({ type: 'client-ready' })
+          broadcast.onmessage = ({ data, source }) => {
+            // console.log('client message')
+            if (
+              data?.type === 'hot-update' &&
+              location.pathname === new URL(data.url).pathname
+            ) {
+              source?.postMessage({ type: 'hot-update-received' })
 
-            const doc = new DOMParser().parseFromString(data.text, 'text/html')
-            const newMain = doc.querySelector('main')
-            const main = document.querySelector('main')
+              const doc = new DOMParser().parseFromString(
+                data.text,
+                'text/html',
+              )
+              const newMain = doc.querySelector('main')
+              const main = document.querySelector('main')
 
-            if (!newMain || newMain.innerHTML === main.innerHTML) {
-              // console.log('cliens mains is equal')
-              return
+              if (!newMain || newMain.innerHTML === main.innerHTML) {
+                // console.log('cliens mains is equal')
+                return
+              }
+
+              // console.log('cliens mains is not equal')
+
+              // TODO show toast?
+              main.replaceWith(newMain)
             }
-
-            // console.log('cliens mains is not equal')
-
-            // TODO show toast?
-            main.replaceWith(newMain)
           }
-        }
-      })
+        })
+      }
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
   </body>
