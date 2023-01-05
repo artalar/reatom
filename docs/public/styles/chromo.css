@@ -21,7 +21,7 @@ pre.mono,
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --foreground-color: #9c9ba2;
+    --foreground-color: #a6a5ae;
     --background-color: #0e1117;
     --foreground-strong-color: #eaeaea;
     --background-strong-color: #000;
@@ -153,7 +153,7 @@ main.mono,
   scroll-snap-align: start;
   margin: auto;
   width: min(100vw, 65rem);
-  max-width: 960px;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
   padding: 0 1rem;
