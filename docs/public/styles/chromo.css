@@ -60,6 +60,7 @@ pre.mono,
 
 html {
   font-size: calc(0.3vw + 0.7em);
+  font-size: clamp(14px, calc(0.3vw + 0.7em), 24px);
 }
 
 pre.mono,
