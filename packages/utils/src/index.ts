@@ -1,4 +1,4 @@
-import { Fn } from '@reatom/core'
+import { Fn, throwReatomError } from '@reatom/core'
 
 /** Remove named generics, show plain type. */
 export type Plain<Intersection> = Intersection extends (...a: any[]) => any
@@ -90,3 +90,13 @@ export const jsonClone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
 /** Get random integer. Parameters should be integers too. */
 export const random = (min = 0, max = Number.MAX_SAFE_INTEGER - 1) =>
   Math.floor(Math.random() * (max - min + 1)) + min
+
+
+/** 
+ * Returns non nullable type of value
+ */
+export const nonNullable =  <T extends unknown>(value: T, message?: string): NonNullable<T> => {
+  throwReatomError(!value, message ?? 'Value is nullable')
+  return value as NonNullable<T>
+}
+  
