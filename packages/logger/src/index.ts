@@ -1,4 +1,4 @@
-import { Atom, AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
+import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -68,11 +68,14 @@ export const createLogBatched = ({
         console.groupCollapsed(
           length ? `Reatom ${length} transactions` : `Reatom transaction`,
         )
-        for (const { changes, time } of queue) {
+        for (const { changes, time, error } of queue) {
           console.log(
             `%c transaction ${time} end`,
             'padding-right: 1ch; border-bottom: 1px solid currentcolor; box-sizing: border-box;',
           )
+
+          if (error) console.error(error)
+
           let inGroup = false
           Object.entries(changes).forEach(([k, change], i, arr) => {
             const name = k.replace(/(\d)*\./, '')
@@ -82,6 +85,7 @@ export const createLogBatched = ({
             const isGroup = nextName?.startsWith(head)
             if (!inGroup && isGroup && isFewTransactions) {
               inGroup = true
+              // TODO show name?
               console.groupCollapsed(head)
             }
             const title = `%c ${name}`
