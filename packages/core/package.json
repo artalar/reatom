@@ -1,6 +1,6 @@
 {
   "name": "@reatom/core",
-  "version": "3.1.18",
+  "version": "3.1.19",
   "private": false,
   "description": "The ultimate state manager",
   "source": "src/index.ts",
@@ -24,6 +24,12 @@
     "bench": "tsx src/index.bench.test.ts"
   },
   "author": "artalar",
+  "contributors": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
   "license": "MIT",
   "readme": "README.md",
   "repository": {

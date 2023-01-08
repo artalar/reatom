@@ -586,6 +586,8 @@ export const createCtx = ({
   return ctx
 }
 
+let counter = 0
+
 // @ts-ignore
 export let atom: {
   <T extends (ctx: CtxSpy) => any>(initState: T, name?: string): Atom<
@@ -594,7 +596,7 @@ export let atom: {
   <State>(initState: State, name?: string): AtomMut<State>
 } = (
   initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
-  name?: string,
+  name = `_atom${++counter}`,
 ): Atom => {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
@@ -652,14 +654,17 @@ export const action: {
 
   assertFunction(fn)
 
-  let actionAtom = atom<Array<any>>([], name)
+  let actionAtom = atom<Array<any>>([], name ?? `_action${++counter}`)
   actionAtom.__reatom.isAction = true
   actionAtom.__reatom.initState = () => []
 
   return Object.assign((...params: [Ctx, ...any[]]) => {
     let state = actionAtom(params[0], (state, patchCtx) => {
       params[0] = patchCtx
-      return [...state, { params: params.slice(1), payload: (fn as Fn)(...params) }]
+      return [
+        ...state,
+        { params: params.slice(1), payload: (fn as Fn)(...params) },
+      ]
     })
     return state[state.length - 1]!.payload
   }, actionAtom)
