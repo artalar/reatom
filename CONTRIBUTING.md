@@ -34,7 +34,7 @@ If you found a bug or want to make an improvement in the library please check wh
    $ git commit -m "<type>[optional scope]: <description>"
    ```
 9. 💍 Send the changes to GitHub and create [Pull Request](https://github.com/artalar/reatom/compare) to the `v3` branch.
-10. 🔗 Link the Pull Request and issue with [keyword](https://help.github.com/en/articles/closing-issues-using-keywords) in the comment. Example: `fix #74`
+10. 🔗 Link the Pull Request and issue with [keyword](https://help.github.com/en/articles/closing-issues-using-keywords) or provide description with motivation and explanation in the comment. Example: `fix #74`.
 11. ⏳ Wait for a decision about accepting the changes.
 
 ## Create a new package
