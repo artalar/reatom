@@ -10,7 +10,7 @@ Tiny logger with a couple nice configurations.
 
 ## Usage
 
-All atoms and actions with names logs automatically
+All atoms and actions with names or without underscore logs automatically
 
 ```ts
 import { connectLogger, createLogBatched } from '@reatom/logger'
@@ -23,6 +23,8 @@ connectLogger(
   ctx,
   // optional configuration
   {
+    // the length of the atom history (patches) to store
+    history: 10,
     // `false` by default to made your logs short
     showCause: false,
     // `true` by default to made your logs clear
@@ -39,7 +41,7 @@ connectLogger(
         // 5000ms by default, it helps to not stuck with WS and so on
         limit: 5000,
         // `toLocaleTimeString` by default
-        getTimeStamp = () => new Date().toLocaleTimeString()
+        getTimeStamp: () => new Date().toLocaleTimeString()
 
         log: console.log,
       },
