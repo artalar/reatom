@@ -161,7 +161,7 @@ export const connectLogger = (
 
       if (skip(patch)) return acc
 
-      if (!name || name.startsWith('_')) {
+      if (!name || name.startsWith('_') || /\._/.test(name)) {
         if (skipUnnamed) return acc
         name ??= 'unnamed'
       }
