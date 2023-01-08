@@ -6,6 +6,7 @@ export interface unstable_ChangeMsg {
   payload?: any
   patch: AtomCache
   cause?: string
+  history: Array<AtomCache>
   param?: any
   [k: `param${number}`]: any
 }
@@ -134,11 +135,13 @@ export const createLogBatched = ({
 export const connectLogger = (
   ctx: Ctx,
   {
+    historyLength = 10,
     log = createLogBatched(),
     showCause = true,
-    skipUnnamed = true,
     skip = () => false,
+    skipUnnamed = true,
   }: {
+    historyLength?: number
     log?: Fn<[LogMsg]>
     showCause?: boolean
     skipUnnamed?: boolean
@@ -149,6 +152,7 @@ export const connectLogger = (
   ctx.get((r) => (read = r))
 
   return ctx.subscribe((logs, error) => {
+    const history = new WeakMap<AtomProto, Array<AtomCache>>()
     const states = new WeakMap<AtomProto, any>()
     const changes = logs.reduce((acc, patch, i) => {
       const { proto, state } = patch
@@ -175,8 +179,16 @@ export const connectLogger = (
         return acc
       }
 
+      let atomHistory = history.get(proto) || []
+      if (historyLength) {
+        atomHistory = atomHistory.slice(-(historyLength - 1))
+        atomHistory.unshift(isAction ? { ...patch, state: [...state] } : patch)
+        history.set(proto, atomHistory)
+      }
+
       const changeMsg: unstable_ChangeMsg = (acc[`${i + 1}.${name}`] = {
         patch,
+        history: atomHistory,
       })
 
       if (isAction) {
