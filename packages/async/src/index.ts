@@ -43,6 +43,8 @@ export interface ControlledPromise<T> extends Promise<T> {
 export const isAbortError = (thing: any): thing is Error =>
   thing instanceof Error && thing.name === 'AbortError'
 
+let counter = 0
+
 export const reatomAsync = <
   Params extends [AsyncCtx, ...any[]] = [AsyncCtx, ...any[]],
   Resp = any,
@@ -51,7 +53,7 @@ export const reatomAsync = <
   options: string | AsyncOptions<CtxParams<Params>, Resp> = {},
 ): AsyncAction<CtxParams<Params>, Resp> => {
   const {
-    name,
+    name = `async${++counter}`,
     onEffect: onEffectHook,
     onFulfill: onFulfillHook,
     onReject: onRejectHook,
@@ -62,7 +64,7 @@ export const reatomAsync = <
 
   type Self = AsyncAction<CtxParams<Params>, Resp>
 
-  const pendingAtom = atom(0, name?.concat('.pendingAtom'))
+  const pendingAtom = atom(0, `${name}.pendingAtom`)
 
   // @ts-ignore
   const onEffect: Self = action((...a) => {
@@ -97,11 +99,11 @@ export const reatomAsync = <
     return promise
   }, name)
 
-  const onFulfill = action<Resp>(name?.concat('.onFulfill'))
-  const onReject = action<unknown>(name?.concat('.onReject'))
+  const onFulfill = action<Resp>(`${name}.onFulfill`)
+  const onReject = action<unknown>(`${name}.onReject`)
   const onSettle = action(
     (ctx) => void pendingAtom(ctx, (s) => --s),
-    name?.concat('.onSettle'),
+    `${name}.onSettle`,
   )
 
   onUpdate(onFulfill, (ctx) => onSettle(ctx))
@@ -191,11 +193,11 @@ export const withDataAtom: {
     if (!anAsync.dataAtom) {
       const dataAtom = (anAsync.dataAtom = atom(
         initState,
-        anAsync.__reatom.name?.concat('.dataAtom'),
+        `${anAsync.__reatom.name}.dataAtom`,
       )) as AsyncDataAtom
       dataAtom.reset = action(
         (ctx) => void dataAtom(ctx, initState),
-        dataAtom.__reatom.name?.concat('.reset'),
+        `${anAsync.__reatom.name}.dataAtom.reset`,
       )
       onUpdate(anAsync.onFulfill, (ctx, payload) =>
         dataAtom(ctx, (state: any) =>
@@ -230,13 +232,13 @@ export const withErrorAtom =
   ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
-      const errorAtomName = anAsync.__reatom.name?.concat('.errorAtom')
+      const errorAtomName = `${anAsync.__reatom.name}.errorAtom`
       const errorAtom = Object.assign(
         atom<undefined | Err>(undefined, errorAtomName),
         {
           reset: action((ctx) => {
             errorAtom(ctx, undefined)
-          }, errorAtomName?.concat('.reset')),
+          }, `${errorAtomName}.reset`),
         },
       )
       anAsync.errorAtom = errorAtom
@@ -275,12 +277,15 @@ export const withAbort =
   (anAsync) => {
     if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom =
-        atom<null | AbortController>(null))
+        atom<null | AbortController>(
+          null,
+          `${anAsync.__reatom.name}._abortControllerAtom`,
+        ))
       anAsync.abort = action((ctx, reason?: string) => {
         const controller = ctx.get(abortControllerAtom)
         if (controller) ctx.schedule(() => controller.abort(reason))
-      }, anAsync.__reatom.name?.concat('.abort'))
-      anAsync.onAbort = action<Error>(anAsync.__reatom.name?.concat('.onAbort'))
+      }, `${anAsync.__reatom.name}.abort`)
+      anAsync.onAbort = action<Error>(`${anAsync.__reatom.name}.onAbort`)
       addOnUpdate(anAsync, (ctx, patch) => {
         const promise = patch.state.at(-1)?.payload
         if (!promise) return
@@ -347,7 +352,7 @@ export const withRetry =
     if (!anAsync.paramsAtom) {
       const paramsAtom = (anAsync.paramsAtom = atom(
         fallbackParams as Params,
-        anAsync.__reatom.name?.concat('.paramsAtom'),
+        `${anAsync.__reatom.name}.paramsAtom`,
       ))
       addOnUpdate(anAsync, (ctx, patch) =>
         paramsAtom(ctx, patch.state.at(-1)?.params as Params),
@@ -357,11 +362,11 @@ export const withRetry =
         const params = ctx.get(anAsync.paramsAtom!)
         throwReatomError(!params, 'no cached params')
         return anAsync(ctx, ...params!) as ActionPayload<T>
-      }, anAsync.__reatom.name?.concat('.retry'))
+      }, `${anAsync.__reatom.name}.retry`)
 
       const retriesAtom = (anAsync.retriesAtom = atom(
         0,
-        anAsync.__reatom.name?.concat('.retriesAtom'),
+        `${anAsync.__reatom.name}.retriesAtom`,
       ))
       addOnUpdate(anAsync.retry, (ctx) => retriesAtom(ctx, (s) => ++s))
       addOnUpdate(anAsync.onFulfill, (ctx) => retriesAtom(ctx, 0))
