@@ -12,8 +12,8 @@ import {
 } from '@reatom/core'
 import { addOnUpdate, isConnected, onConnect } from '@reatom/hooks'
 
-export interface PersistRecord {
-  data: unknown
+export interface PersistRecord<T = unknown> {
+  data: T
   version: number
 }
 
@@ -28,39 +28,43 @@ export interface PersistStorage {
   ): Unsubscribe
 }
 
-const notInitiated: Fn = () =>
-  throwReatomError(1, 'persistStorageAtom is not initiated with any storage')
+export interface WithPersistOptions<T extends Atom> {
+  clearTimeout?: number
+  fromSnapshot?: Fn<[Ctx, unknown], AtomState<T>>
+  key?: string
+  migration?: Fn<[Ctx, PersistRecord], PersistRecord<AtomState<T>>>
+  subscribe?: boolean
+  toSnapshot?: Fn<[Ctx, AtomState<T>], unknown>
+  version?: number
+}
+
+export interface WithPersist {
+  <T extends Atom>(options?: WithPersistOptions<T>): (anAtom: T) => T
+}
 
 export const reatomPersist = (storage: PersistStorage) => {
   const persistStorageAtom = atom(storage, 'persistStorage')
 
-  const withPersist =
-    <A extends Atom>({
+  const withPersist: WithPersist =
+    <T extends Atom>({
       clearTimeout = -1,
       fromSnapshot = (ctx, data: any) => data,
       migration,
       subscribe = false,
       toSnapshot = (ctx, data: any) => data,
       version = 0,
-    }: {
-      clearTimeout?: number
-      fromSnapshot?: Fn<[Ctx, unknown], AtomState<A>>
-      migration?: Fn<[PersistRecord], PersistRecord>
-      subscribe?: boolean
-      toSnapshot?: Fn<[Ctx, AtomState<A>], unknown>
-      version?: number
-    } = {}) =>
-    (anAtom: A): A => {
+    }: WithPersistOptions<T> = {}) =>
+    (anAtom: T): T => {
       const proto = anAtom.__reatom
       const { initState } = proto
 
-      throwReatomError(!proto.name, 'atom name is required for persistence')
+      throwReatomError(!proto.name, 'atom name is required for persistance')
 
       const getData = (ctx: Ctx, rec: null | PersistRecord) =>
         rec?.version === version
           ? fromSnapshot(ctx, rec.data)
           : rec !== null && migration !== undefined
-          ? migration(rec).data
+          ? migration(ctx, rec).data
           : initState(ctx)
 
       anAtom.__reatom.initState = (ctx) =>
