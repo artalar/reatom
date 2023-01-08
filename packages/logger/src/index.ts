@@ -161,9 +161,9 @@ export const connectLogger = (
 
       if (skip(patch)) return acc
 
-      if (!name) {
+      if (!name || name.startsWith('_')) {
         if (skipUnnamed) return acc
-        name = 'unnamed'
+        name ??= 'unnamed'
       }
 
       const oldCache = read(proto)
