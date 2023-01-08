@@ -148,11 +148,11 @@ export const connectLogger = (
     skip?: (patch: AtomCache) => boolean
   } = {},
 ) => {
+  const history = new WeakMap<AtomProto, Array<AtomCache>>()
   let read: Fn<[AtomProto], undefined | AtomCache>
   ctx.get((r) => (read = r))
 
   return ctx.subscribe((logs, error) => {
-    const history = new WeakMap<AtomProto, Array<AtomCache>>()
     const states = new WeakMap<AtomProto, any>()
     const changes = logs.reduce((acc, patch, i) => {
       const { proto, state } = patch
@@ -179,9 +179,9 @@ export const connectLogger = (
         return acc
       }
 
-      let atomHistory = history.get(proto) || []
+      let atomHistory = history.get(proto) ?? []
       if (historyLength) {
-        atomHistory = atomHistory.slice(-(historyLength - 1))
+        atomHistory = atomHistory.slice(0, historyLength - 1)
         atomHistory.unshift(isAction ? { ...patch, state: [...state] } : patch)
         history.set(proto, atomHistory)
       }
