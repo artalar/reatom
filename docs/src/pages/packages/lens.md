@@ -177,7 +177,7 @@ Parse tree-like structure by replacing atoms by its values.
 import { parseAtoms } from '@reatom/lens'
 
 export const submit = action((ctx) => {
-  const data = parseAtoms({ titleAtom, commentsAtom })
+  const data = parseAtoms(ctx, { titleAtom, commentsAtom })
 
   return ctx.schedule(() => api.someSubmit(data))
 })
