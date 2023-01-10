@@ -5,6 +5,7 @@ import { isShallowEqual } from '@reatom/utils'
 
 export type FieldFocus = {
   active: boolean
+  dirty: boolean
   touched: boolean
 }
 
@@ -44,6 +45,7 @@ export type FieldOptions<State = any, Value = State> = {
 
 export const fieldInitFocus: FieldFocus = {
   active: false,
+  dirty: false,
   touched: false,
 }
 
@@ -142,7 +144,7 @@ export const reatomField: {
     if (!filter(ctx, input)) return ctx.get(dataAtom)
 
     const state = dataAtom(ctx, input)
-    focusAtom.merge(ctx, { touched: true })
+    focusAtom.merge(ctx, { touched: true, dirty: true })
 
     if (validationTrigger === 'change') validate(ctx)
 
