@@ -11,14 +11,16 @@ import {
   CtxParams,
   CtxSpy,
   Fn,
+  Rec,
   throwReatomError,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
-import { spyChange } from '@reatom/hooks'
+import { addOnUpdate, spyChange } from '@reatom/hooks'
 import { isShallowEqual } from '@reatom/utils'
 
-export * from './parseAtoms'
 export * from './bind'
+export * from './combine'
+export * from './parseAtoms'
 export * from './withReset'
 
 type PipedAtom<T extends Atom> = T extends Action<any[], infer Payload>
