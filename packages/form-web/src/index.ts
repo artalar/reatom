@@ -10,9 +10,16 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { addOnUpdate } from '@reatom/hooks'
 import { reatomRecord, RecordAtom } from '@reatom/primitives'
 import { isObject } from '@reatom/utils'
-import { FieldAtom, FieldOptions, Form, FormOptions, reatomForm } from '.'
+import {
+  FieldAtom,
+  FieldOptions,
+  Form,
+  FormOptions,
+  reatomForm,
+} from '@reatom/form'
 
 export const UNSUPPORTED_INPUT_TYPES = [
   'button',
@@ -67,8 +74,12 @@ const getElementValue = (
   el: HTMLInputElement | HTMLSelectElement,
   type: string,
 ) => {
-  if (type === 'number') return +(el as HTMLInputElement).value
-  if (type === 'checkbox') return (el as HTMLInputElement).checked
+  if (type === 'number') {
+    return +(el as HTMLInputElement).value
+  }
+  if (type === 'checkbox' || type === 'radio') {
+    return (el as HTMLInputElement).checked
+  }
   if (type === 'select') {
     const res = []
     for (const { value } of (el as HTMLSelectElement).selectedOptions) {
@@ -79,7 +90,7 @@ const getElementValue = (
   return el.value
 }
 const setElementValue = (el: HTMLElement, type: string, value: any) => {
-  if (type === 'checkbox') {
+  if (type === 'checkbox' || type === 'radio') {
     ;(el as HTMLInputElement).checked = value
   }
   if (type === 'select') {
@@ -101,7 +112,6 @@ const getAttributes = (el: HTMLElement) =>
     return acc
   }, {} as Rec)
 
-// TODO
 // @ts-ignore
 export const withHtmlRegistration: {
   (attributes?: HTMLInputAttributes<INPUT_TEXT_TYPES>): Fn<
@@ -173,14 +183,15 @@ export const withHtmlRegistration: {
       }
 
       const validateNative = action((ctx) => {
-        const meta = ctx.get(fieldAtom.validationAtom)
-        if (meta.validating || !meta.valid || el.checkValidity()) return
+        const validation = ctx.get(fieldAtom.validationAtom)
 
-        fieldAtom.validationAtom(ctx, (state) => ({
-          ...state,
-          valid: false,
-          error: el.validationMessage,
-        }))
+        return validation.validating || !validation.valid || el.checkValidity()
+          ? validation
+          : fieldAtom.validationAtom(ctx, (state) => ({
+              ...state,
+              valid: false,
+              error: el.validationMessage,
+            }))
       }, name?.concat('.validateNative'))
 
       elementAtom(ctx, el)
@@ -221,14 +232,9 @@ export const withHtmlRegistration: {
 
       ctx.schedule(() => {
         // TODO el to attributesAtom by MutationObserver (optional)
-        // TODO addOnUpdate
         // FIXME ctx origin!
-        ;(fieldAtom.validate.__reatom.updateHooks ??= new Set()).add(
-          validateNative,
-        )
-        ;(attributesAtom.__reatom.updateHooks ??= new Set()).add(
-          handleChangeAttributes,
-        )
+        addOnUpdate(fieldAtom.validate, validateNative)
+        addOnUpdate(attributesAtom, handleChangeAttributes)
 
         Object.assign(el, ctx.get(attributesAtom))
         setElementValue(el, type, lastInput)
@@ -273,15 +279,20 @@ export type HTMLForm = Form & {
   elementAtom: Atom<null | HTMLFormElement>
   onHTMLSubmit: Action<[event: SubmitEvent]>
   reatomHTMLField: {
-    (initState: string): HTMLFieldAtom<string>
-    (initState: number): HTMLFieldAtom<number>
-    (initState: boolean): HTMLFieldAtom<boolean>
-    <T extends Array<string> = Array<string>>(initState: T): HTMLFieldAtom<
-      T,
+    (initState: string, name?: string): HTMLFieldAtom<string>
+    (initState: number, name?: string): HTMLFieldAtom<number>
+    (initState: boolean, name?: string): HTMLFieldAtom<boolean>
+    (initState: [], name?: string): HTMLFieldAtom<
+      Array<string>,
       HTMLSelectElement
     >
-    (initState: string[]): HTMLFieldAtom<string[], HTMLSelectElement>
-    <T extends Rec<boolean>>(initState: T): AtomMut<keyof T> & {
+    <T extends string>(initState: Array<T>, name?: string): HTMLFieldAtom<
+      Array<T>,
+      HTMLSelectElement
+    >
+    <T extends Rec<boolean>>(initState: T, name?: string): AtomMut<
+      undefined | keyof T
+    > & {
       [K in keyof T]: HTMLFieldAtom<boolean>
     }
     (
@@ -291,14 +302,65 @@ export type HTMLForm = Form & {
       options: FieldOptions<number> & HTMLInputAttributes<'number'>,
     ): HTMLFieldAtom<number>
     (
-      options: FieldOptions<boolean> & HTMLInputAttributes<'checkbox'>,
+      options: FieldOptions<boolean> &
+        HTMLInputAttributes<'checkbox' | 'radio'>,
     ): HTMLFieldAtom<boolean>
-    (
-      options: FieldOptions<string[]> & Partial<HTMLSelectElement>,
-    ): HTMLFieldAtom<string[], HTMLSelectElement>
-    <T extends Array<string> = Array<string>>(
-      options: FieldOptions<T> & Partial<HTMLSelectElement>,
-    ): HTMLFieldAtom<T, HTMLSelectElement>
+    (options: FieldOptions<[]> & Partial<HTMLSelectElement>): HTMLFieldAtom<
+      string[],
+      HTMLSelectElement
+    >
+    <T extends string>(
+      options: FieldOptions<Array<T>> & Partial<HTMLSelectElement>,
+    ): HTMLFieldAtom<Array<T>, HTMLSelectElement>
+    <T extends Rec<boolean>>(
+      options: FieldOptions<T> & HTMLInputAttributes<'radio'>,
+    ): AtomMut<keyof T> & {
+      [K in keyof T]: HTMLFieldAtom<boolean>
+    }
+  }
+  reatomHTMLFields<
+    T extends Rec<
+      | string
+      | number
+      | boolean
+      | []
+      | Array<string>
+      | Rec<boolean>
+      | FieldOptions
+    >,
+  >(
+    fieldsOptions: T,
+  ): {
+    [K in keyof T]: T[K] extends string
+      ? HTMLFieldAtom<string>
+      : T[K] extends number
+      ? HTMLFieldAtom<number>
+      : T[K] extends boolean
+      ? HTMLFieldAtom<boolean>
+      : T[K] extends []
+      ? HTMLFieldAtom<Array<string>, HTMLSelectElement>
+      : T[K] extends Array<infer T extends string>
+      ? HTMLFieldAtom<Array<T>, HTMLSelectElement>
+      : T[K] extends Rec<boolean>
+      ? AtomMut<undefined | keyof T[K]> & {
+          [k in keyof T[K]]: HTMLFieldAtom<boolean>
+        }
+      : T[K] extends FieldOptions<string> &
+          HTMLInputAttributes<INPUT_TEXT_TYPES>
+      ? HTMLFieldAtom<string>
+      : T[K] extends FieldOptions<number> & HTMLInputAttributes<'number'>
+      ? HTMLFieldAtom<number>
+      : T[K] extends FieldOptions<boolean> &
+          HTMLInputAttributes<'checkbox' | 'radio'>
+      ? HTMLFieldAtom<boolean>
+      : T[K] extends FieldOptions<[]> & Partial<HTMLSelectElement>
+      ? HTMLFieldAtom<string[], HTMLSelectElement>
+      : T[K] extends FieldOptions<Array<infer T extends string>> &
+          Partial<HTMLSelectElement>
+      ? HTMLFieldAtom<Array<T>, HTMLSelectElement>
+      : T[K] extends FieldOptions<Rec<boolean>> & HTMLInputAttributes<'radio'>
+      ? AtomMut<keyof T[K]> & { [k in keyof T[K]]: HTMLFieldAtom<boolean> }
+      : never
   }
   register: Action<[null | HTMLFormElement]>
 }
@@ -375,7 +437,7 @@ export const reatomHTMLForm = ({
   }, name?.concat('.register'))
 
   // @ts-expect-error
-  const reatomHTMLField: HTMLForm['reatomHTMLField'] = (options) => {
+  const reatomHTMLField: HTMLForm['reatomHTMLField'] = (options, fieldName) => {
     const {
       filter,
       initState,
@@ -383,11 +445,60 @@ export const reatomHTMLForm = ({
       validationTrigger,
       ...attributes
     }: FieldOptions =
-      typeof options === 'object' && !Array.isArray([])
+      isObject(options) && 'initState' in options
         ? options
         : { initState: options }
+
+    attributes.name ??= fieldName
+
+    if (isObject(initState) && !Array.isArray(initState)) {
+      const kv = Object.entries(initState)
+
+      throwReatomError(
+        kv.length === 0 || kv.some(([k, v]) => typeof v !== 'boolean'),
+        'unexpected initState',
+      )
+
+      // throwReatomError(!attributes.name, 'radio required name')
+      attributes.name ??= `radio${(Math.random() * 1e5) | 0}`
+
+      const radios = kv.reduce((acc, [k, v]) => {
+        acc[k] = reatomHTMLField({
+          filter,
+          initState: v as boolean,
+          type: 'radio',
+          validate,
+          validationTrigger,
+          ...attributes,
+        })
+
+        return acc
+      }, {} as Rec)
+
+      const theAtom = Object.assign(
+        atom(
+          (ctx) =>
+            kv.reduce<string | undefined>(
+              (acc, [value]) => (ctx.spy(radios[value]) ? value : acc),
+              undefined,
+            ),
+          name ? `${name}.${attributes.name}` : attributes.name,
+        ),
+        radios,
+      )
+
+      return theAtom
+    }
+    // @ts-ignore
     /* prettier-ignore */ return form.reatomField({ filter, initState, name: name ? `${name}.${attributes.name}` : attributes.name, validate, validationTrigger }).pipe(withHtmlRegistration(attributes))
   }
+
+  const reatomHTMLFields: HTMLForm['reatomHTMLFields'] = (fields) =>
+    Object.entries(fields).reduce((acc, [k, v]) => {
+      // @ts-expect-error
+      acc[k] = reatomHTMLField(v, k)
+      return acc
+    }, {} as ReturnType<HTMLForm['reatomHTMLFields']>)
 
   const onHTMLSubmit = action((ctx, event: SubmitEvent) => {
     preventDefault && event.preventDefault()
@@ -399,6 +510,7 @@ export const reatomHTMLForm = ({
     elementAtom,
     onHTMLSubmit,
     reatomHTMLField,
+    reatomHTMLFields,
     register,
   }
 }

@@ -4,8 +4,6 @@
 npm i @reatom/form
 ```
 
-<summary></summary>
-
 ## Usage
 
 ```ts

@@ -1,96 +1,37 @@
-import {
-  createCtx,
-  connectLogger,
-  parseAtoms,
-  onUpdate,
-} from '@reatom/framework'
-import { reatomContext, useAtom, useCtxBind } from '@reatom/npm-react'
-import * as ReactDOMClient from 'react-dom/client'
 import React from 'react'
-import { reatomHTMLForm } from './form-web'
+import { createCtx, connectLogger, atom, action } from '@reatom/framework'
+import { reatomContext, useAction, useAtom } from '@reatom/npm-react'
+import * as ReactDOMClient from 'react-dom/client'
 
 import { unstable_batchedUpdates } from 'react-dom'
 import { setupBatch } from '@reatom/npm-react'
 
 setupBatch(unstable_batchedUpdates)
 
-const form = reatomHTMLForm({
-  name: 'example',
-  // you could use `fieldsListAtom` for dynamic forms
-  onSubmit(ctx, { fieldsListAtom }) {
-    const data = parseAtoms(ctx, {
-      name: nameFieldAtom,
-      age: ageFieldAtom,
-      pet: petFieldsAtom,
-      driver: driverFieldAtom,
-      hobby: hobbyFieldAtom,
-    })
-    console.log(data)
-  },
-})
-const nameFieldAtom = form.reatomHTMLField('', 'name')
-const ageFieldAtom = form.reatomHTMLField(14, 'age')
-const driverFieldAtom = form.reatomHTMLField(false, 'driver')
-const petFieldsAtom = form.reatomHTMLField(
-  {
-    cat: false,
-    dog: false,
-  },
-  'sex',
+const inputAtom = atom('', 'inputAtom')
+const greetingAtom = atom((ctx) => {
+  const input = ctx.spy(inputAtom)
+  return input ? `Hello, ${input}!` : ''
+}, 'greetingAtom')
+const onInput = action(
+  (ctx, event: React.ChangeEvent<HTMLInputElement>) =>
+    inputAtom(ctx, event.currentTarget.value),
+  'onInput',
 )
-const hobbyFieldAtom = form.reatomHTMLField(
-  new Array<'swim' | 'walk' | 'draw' | 'music'>(),
-  'hobby',
-)
-onUpdate(ageFieldAtom, (ctx, age) => {
-  driverFieldAtom.attributesAtom.merge(ctx, { disabled: age < 18 })
-})
 
 export default function App() {
-  const bind = useCtxBind()
-  const rerenders = React.useRef(0)
+  const [input] = useAtom(inputAtom)
+  const [greeting] = useAtom(greetingAtom)
+  const handleInput = useAction(onInput)
 
   return (
-    <form ref={bind(form.register)} className="form">
-      <label>
-        Name:
-        <input ref={bind(nameFieldAtom.register)} autoFocus required />
-      </label>
-      <label>
-        Age:
-        <input ref={bind(ageFieldAtom.register)} required min="14" />
-      </label>
-      <label>
-        Sex:
-        <br />
-        <label>
-          Cat
-          <input ref={bind(petFieldsAtom.cat.register)} required />
-        </label>
-        <br />
-        <label>
-          Dog
-          <input ref={bind(petFieldsAtom.dog.register)} required />
-        </label>
-      </label>
-      <label>
-        Hobby:
-        <select ref={bind(hobbyFieldAtom.register)}>
-          <option value="swim">swim</option>
-          <option value="walk">walk</option>
-          <option value="draw">draw</option>
-          <option value="music">music</option>
-        </select>
-      </label>
-      <label>
-        Driver license:
-        <input ref={bind(driverFieldAtom.register)} disabled />
-      </label>
-      <input type="submit" />
-      <button onClick={bind(form.reset)}>reset</button>
-
-      <p>rerenders: {rerenders.current++}</p>
-    </form>
+    <main>
+      <h1>Reatom</h1>
+      <p>
+        <input value={input} onChange={handleInput} placeholder="Your name" />
+      </p>
+      <p>{greeting}</p>
+    </main>
   )
 }
 
