@@ -16,12 +16,19 @@ import {
 import { __thenReatomed } from '@reatom/effects'
 import { addOnUpdate, onUpdate } from '@reatom/hooks'
 
+export { withCache } from './withCache'
+
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
   onFulfill: Action<[Resp], Resp>
   onReject: Action<[unknown], unknown>
   onSettle: Action<[], void>
   pendingAtom: Atom<number>
+  /** temporal solution for `withCache`
+   * @deprecated
+   * @internal
+   */
+  __fn: Fn<[AsyncCtx, ...Params], Promise<Resp>>
 }
 
 export interface AsyncCtx extends Ctx {
@@ -66,8 +73,7 @@ export const reatomAsync = <
 
   const pendingAtom = atom(0, `${name}.pendingAtom`)
 
-  // @ts-ignore
-  const onEffect: Self = action((...a) => {
+  const __fn: Self['__fn'] = (...a) => {
     const ctx = a[0] as AsyncCtx
     const controller = (ctx.controller = new AbortController())
     controller.signal.throwIfAborted ??= () => {
@@ -92,12 +98,14 @@ export const reatomAsync = <
       ctx,
       promise,
       (v) => onFulfill(ctx, v),
-
       (e) => onReject(ctx, e),
     )
 
     return promise
-  }, name)
+  }
+
+  // @ts-ignore
+  const onEffect: Self = action(__fn, name)
 
   const onFulfill = action<Resp>(`${name}.onFulfill`)
   const onReject = action<unknown>(`${name}.onReject`)
@@ -123,6 +131,7 @@ export const reatomAsync = <
     onReject,
     onSettle,
     pendingAtom,
+    __fn: effect,
   })
 }
 
@@ -439,3 +448,5 @@ export const withRetryAction = withRetry
 
 //     return anAsync as T & { onAbort: any }
 //   }
+
+// export const withCache
