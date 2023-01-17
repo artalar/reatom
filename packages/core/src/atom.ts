@@ -435,8 +435,6 @@ export const createCtx = ({
       try {
         var result = atomOrCb(read, actualize)
 
-        if (trLogs.length === 0) return result
-
         for (let i = 0; i < trLogs.length; i++) {
           let { listeners, proto } = trLogs[i]!
           if (listeners.size > 0) actualize(this, proto)
@@ -445,7 +443,7 @@ export const createCtx = ({
           }
         }
 
-        for (let log of logsListeners) log(trLogs)
+        if (trLogs.length) for (let log of logsListeners) log(trLogs)
 
         for (let patch of trLogs) {
           let { proto, state } = patch

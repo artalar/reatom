@@ -492,6 +492,27 @@ test('do not create extra patch', () => {
   ;`👍` //?
 })
 
+test('should catch', async () => {
+  const a = atom(() => {
+    throw new Error()
+  })
+  const ctx = createCtx()
+  assert.throws(() => ctx.get(a))
+
+  const p = ctx.get(() => ctx.schedule(() => ctx.get(a)))
+
+  const res = await p.then(
+    () => 'then',
+    () => 'catch',
+  )
+  assert.is(res, 'catch')
+
+  // should not throw without `then` / `catch`
+  ctx.get(() => ctx.schedule(() => ctx.get(a)))
+  await new Promise((r) => setTimeout(r, 0))
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
