@@ -1,0 +1,57 @@
+{
+  "name": "@reatom/npm-lit",
+  "version": "3.1.0",
+  "private": true,
+  "sideEffects": false,
+  "description": "Reatom for npm-lit",
+  "source": "src/index.ts",
+  "exports": {
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "last 4 chrome versions"
+  ],
+  "scripts": {
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "microbundle",
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
+  },
+  "dependencies": {
+    "@reatom/async": ">=3.1.0",
+    "@reatom/utils": ">=3.1.0",
+    "lit": "^2.6.0",
+    "@reatom/core": ">=3.1.0"
+  },
+  "author": "kaifaty",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    },
+    {
+      "name": "kaifaty",
+      "url": "https://github.com/kaifaty"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://www.reatom.dev/packages/npm-lit",
+  "files": [
+    "/build",
+    "/package.json",
+    "/README.md",
+    "/src"
+  ]
+}
