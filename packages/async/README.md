@@ -8,7 +8,7 @@ This package is helping you to manage async requests by adding additional meta i
 import { reatomAsync } from '@reatom/async'
 
 export const fetchList = reatomAsync(
-  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  (ctx, page: number) => fetch(`/api/list?page=${page}`, ctx.controller),
   'fetchList',
 )
 ```
@@ -19,7 +19,7 @@ You could handle promise states to update other stuff during it batch in the sec
 import { reatomAsync } from '@reatom/async'
 
 export const fetchList = reatomAsync(
-  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  (ctx, page: number) => fetch(`/api/list?page=${page}`, ctx.controller),
   {
     name: 'fetchList',
     onEffect(ctx, promise, params) {
