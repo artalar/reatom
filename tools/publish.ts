@@ -28,9 +28,9 @@ const updateFramework = async () => {
       ),
     )
 
-    isChanged ||= dependencies[name] !== `>=${version}`
+    isChanged ||= dependencies[name] !== version
 
-    dependencies[name] = `>=${version}`
+    dependencies[name] = version
   }
 
   if (!isChanged) return

@@ -21,14 +21,14 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/async": ">=3.1.22",
-    "@reatom/core": ">=3.1.19",
-    "@reatom/effects": ">=3.1.1",
-    "@reatom/hooks": ">=3.1.2",
-    "@reatom/lens": ">=3.1.10",
-    "@reatom/logger": ">=3.1.8",
-    "@reatom/primitives": ">=3.1.2",
-    "@reatom/utils": ">=3.1.4"
+    "@reatom/async": "3.1.22",
+    "@reatom/core": "3.1.19",
+    "@reatom/effects": "3.1.1",
+    "@reatom/hooks": "3.1.2",
+    "@reatom/lens": "3.1.10",
+    "@reatom/logger": "3.1.8",
+    "@reatom/primitives": "3.1.2",
+    "@reatom/utils": "3.1.4"
   },
   "author": "artalar",
   "license": "MIT",
