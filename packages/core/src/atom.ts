@@ -584,7 +584,12 @@ export const createCtx = ({
   return ctx
 }
 
-let counter = 0
+let i = 0
+/**
+ * @internal
+ * @deprecated
+ */
+export let __count = (name: string) => `${name}#${++i}`
 
 // @ts-ignore
 export let atom: {
@@ -594,7 +599,7 @@ export let atom: {
   <State>(initState: State, name?: string): AtomMut<State>
 } = (
   initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
-  name = `_atom${++counter}`,
+  name = __count('_atom'),
 ): Atom => {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
@@ -652,7 +657,7 @@ export const action: {
 
   assertFunction(fn)
 
-  let actionAtom = atom<Array<any>>([], name ?? `_action${++counter}`)
+  let actionAtom = atom<Array<any>>([], name ?? __count('_action'))
   actionAtom.__reatom.isAction = true
   actionAtom.__reatom.initState = () => []
 

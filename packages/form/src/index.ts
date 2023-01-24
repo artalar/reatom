@@ -1,4 +1,4 @@
-import { action, Action, Atom, atom, AtomMut, Ctx, Fn } from '@reatom/core'
+import { action, Action, Atom, atom, AtomMut, Ctx, Fn, __count } from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
 import { RecordAtom, reatomRecord } from '@reatom/primitives'
 import { isShallowEqual } from '@reatom/utils'
@@ -55,7 +55,6 @@ export const fieldInitValidation: FieldValidation = {
   validating: false,
 }
 
-let count = 0
 export const reatomField: {
   <State, Value = State>(options: FieldOptions<State, Value>): FieldAtom<
     State,
@@ -64,7 +63,7 @@ export const reatomField: {
 } = ({
   filter = () => true,
   initState,
-  name = `${typeof initState}Field${++count}`,
+  name = __count(`${typeof initState}Field`),
   validate: validateFn,
   validationTrigger = 'blur',
 }) => {

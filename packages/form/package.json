@@ -1,6 +1,6 @@
 {
   "name": "@reatom/form",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "publishConfig": {
     "tag": "alpha"
   },
@@ -27,7 +27,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
+    "@reatom/core": ">=3.1.21",
     "@reatom/hooks": ">=3.1.0",
     "@reatom/primitives": ">=3.1.0"
   },
