@@ -505,7 +505,8 @@ export const createCtx = ({
         } else {
           ;([{}, nearEffects, lateEffects] as const)[step].push(() => {
             try {
-              res(effect(this))
+              const result = effect(this)
+              result instanceof Promise ? result.then(res, rej) : res(result)
             } catch (error) {
               rej(error)
             }
