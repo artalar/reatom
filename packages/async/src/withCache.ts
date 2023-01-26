@@ -1,4 +1,4 @@
-import { ActionPayload, Ctx, Fn } from '@reatom/core'
+import { ActionPayload, Ctx, Fn, Rec } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { MapAtom, reatomMap } from '@reatom/primitives'
 import { AsyncAction, AsyncDataAtom } from '.'
@@ -7,6 +7,23 @@ interface CacheRecord<T extends AsyncAction> {
   lastUpdate: number
   clearTimeoutId: number
   value: ActionPayload<T['onFulfill']>
+}
+
+// TODO tests
+const stabilize = <T>(thing: T): T => {
+  if (typeof thing !== 'object' || thing === null) return thing
+
+  const isArray = Array.isArray(thing)
+  const entries = Object.entries(thing)
+  const result = (isArray ? [] : {}) as T
+
+  if (!isArray && entries.length > 1) {
+    entries.sort(([a], [b]) => a.localeCompare(b))
+  }
+
+  for (const [key, value] of entries) result[key as keyof T] = stabilize(value)
+
+  return result
 }
 
 export const withCache =
@@ -21,12 +38,12 @@ export const withCache =
   >({
     staleTime = 5 * 60 * 1000,
     length = 5,
-    stabilize = (ctx, params) => JSON.stringify(params),
+    paramsToKey = (ctx, params) => JSON.stringify(stabilize(params)),
   }: {
     staleTime?: number
     //TODO  `staleByDataAtom?: boolean = false`
     length?: number
-    stabilize?: Fn<
+    paramsToKey?: Fn<
       [Ctx, T extends AsyncAction<infer Params> ? Params : never],
       string
     >
@@ -48,7 +65,7 @@ export const withCache =
 
       anAsync.__fn = (ctx, ...params) => {
         const cache = ctx.get(cacheAtom)
-        const key = stabilize(ctx, params as any)
+        const key = paramsToKey(ctx, params as any)
         const cached = cache.get(key)
 
         if (!cached) {
@@ -61,11 +78,12 @@ export const withCache =
             const clearTimeoutId = setTimeout(
               () => cacheAtom.delete(ctx, key),
               staleTime,
-            ) as any as number
+            )
+            clearTimeoutId.unref?.()
             ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
             const cache = cacheAtom.set(ctx, key, {
               lastUpdate: Date.now(),
-              clearTimeoutId,
+              clearTimeoutId: clearTimeoutId as any as number,
               value,
             })
 
@@ -89,7 +107,7 @@ export const withCache =
 
         anAsync.dataAtom?.(ctx, cached.value)
 
-        return Promise.resolve(cached)
+        return Promise.resolve(cached.value)
       }
     }
 

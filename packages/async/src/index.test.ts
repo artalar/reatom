@@ -3,7 +3,7 @@ import * as assert from 'uvu/assert'
 import { fetch } from 'cross-fetch'
 import { mapPayloadAwaited } from '@reatom/lens'
 import { take } from '@reatom/effects'
-import { onConnect, onUpdate } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
@@ -14,6 +14,8 @@ import {
   withRetry,
   withErrorAtom,
 } from './'
+
+import './withCache.test'
 
 test(`base API`, async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => v).pipe(

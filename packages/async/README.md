@@ -55,24 +55,26 @@ export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
-### Cache timeout
+## `withCache`
+
+You could rule cache behavior by optional `length` and `staleTime` parameters. `length` is a number of cached results, `staleTime` is a time in ms after which cache will be dropped. You are not required to use `withDataAtom`, the cache worked for effect results, but if `dataAtom` exists - it will be updated too. You could specify `paramsToKey` option to stabilize your params reference for internal `Map` cache, by default all object properties sorted.
 
 ```ts
-import { reatomAsync, withDataAtom } from '@reatom/async'
-import { onConnect, onDisconnect } from '@reatom/hooks'
+import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
 
-export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
+export const fetchList = reatomAsync(
+  (ctx, filters) => api.getList(filters),
+  'fetchList',
+).pipe(
   withDataAtom([]),
+  withCache({
+    length = /* default: */ 5,
+    staleTime = /* default: */ 5 * 60 * 1000,
+  }),
 )
 
-const staleTime = 1000 * 60 * 5 // 5 min
-onConnect(fetchList.dataAtom, (ctx) => {
-  fetchList(ctx)
-  return () =>
-    setTimeout(() => {
-      if (!ctx.isConnected()) fetchList.dataAtom.reset(ctx)
-    }, staleTime)
-})
+fetchList(ctx, { query: 'foo', page: 1 }) // call the effect
+fetchList(ctx, { page: 1, query: 'foo' }) // returns the prev promise
 ```
 
 ### Invalidate backend data on mutation

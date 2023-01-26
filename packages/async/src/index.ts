@@ -12,6 +12,7 @@ import {
   CtxParams,
   Fn,
   throwReatomError,
+  __count,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { addOnUpdate, onUpdate } from '@reatom/hooks'
@@ -50,8 +51,6 @@ export interface ControlledPromise<T> extends Promise<T> {
 export const isAbortError = (thing: any): thing is Error =>
   thing instanceof Error && thing.name === 'AbortError'
 
-let counter = 0
-
 export const reatomAsync = <
   Params extends [AsyncCtx, ...any[]] = [AsyncCtx, ...any[]],
   Resp = any,
@@ -60,7 +59,7 @@ export const reatomAsync = <
   options: string | AsyncOptions<CtxParams<Params>, Resp> = {},
 ): AsyncAction<CtxParams<Params>, Resp> => {
   const {
-    name = `async${++counter}`,
+    name = __count('async'),
     onEffect: onEffectHook,
     onFulfill: onFulfillHook,
     onReject: onRejectHook,
@@ -73,6 +72,8 @@ export const reatomAsync = <
 
   const pendingAtom = atom(0, `${name}.pendingAtom`)
 
+  // @ts-ignore
+  const onEffect: Self = action((...a) => onEffect.__fn(...a), name)
   const __fn: Self['__fn'] = (...a) => {
     const ctx = a[0] as AsyncCtx
     const controller = (ctx.controller = new AbortController())
@@ -104,9 +105,6 @@ export const reatomAsync = <
     return promise
   }
 
-  // @ts-ignore
-  const onEffect: Self = action(__fn, name)
-
   const onFulfill = action<Resp>(`${name}.onFulfill`)
   const onReject = action<unknown>(`${name}.onReject`)
   const onSettle = action(
@@ -131,7 +129,7 @@ export const reatomAsync = <
     onReject,
     onSettle,
     pendingAtom,
-    __fn: effect,
+    __fn,
   })
 }
 
@@ -414,39 +412,5 @@ export const withRetry =
     }
   }
 
+/** @deprecated use `withRetry` instead */
 export const withRetryAction = withRetry
-
-// TODO extra methods with different retry policies
-// TODO `withCache`
-
-// export interface AsyncStatus {
-//   // status: 'INIT' | 'FIRST_LOADING' | 'ANOTHER_LOADING',
-//   isLoaded: boolean
-//   isLoading: boolean
-//   isError: boolean
-//   isTouched: boolean
-// }
-// export const withStatusAtom =
-//   <T extends AsyncAction & { statusAtom?: Atom<AsyncStatus> }>(): Fn<
-//     [T],
-//     T & { statusAtom: Atom<AsyncStatus> }
-//   > =>
-//   (anAsync) => {
-//     const statusAtom = (anAsync.statusAtom = unstable_reatomPassiveComputed(
-//       {
-//         onFulfill: anAsync.onFulfill,
-//         pending: anAsync.pendingAtom,
-//       },
-//       (ctx, shape) => {
-//         const isLoaded = ctx.cause!.state.isLoaded || shape.onFulfill.length > 0
-//         const isLoading = shape.pending > 0
-//         const isError = boolean
-//         const isTouched = boolean
-//       },
-//       anAsync.__reatom.name?.concat('.statusAtom'),
-//     ))
-
-//     return anAsync as T & { onAbort: any }
-//   }
-
-// export const withCache
