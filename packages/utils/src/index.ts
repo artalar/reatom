@@ -24,10 +24,17 @@ export const isObject = <T>(
   : Record<string | number | symbol, unknown> =>
   typeof thing === 'object' && thing !== null
 
+// TODO infer `b` too
+// export const is: {
+//   <A, B>(a: A, b: B): a is B
+// } = Object.is
+
 /** Compares only primitives, doesn't support Set and Map. */
 export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
-  if (Object.is(a, b)) return true
-  if (!isObject(a) || !isObject(b)) return Object.is(a, b)
+  if (Object.is(a, b) || !isObject(a) || !isObject(b)) return Object.is(a, b)
+
+  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime()
+
   const aKeys = Object.keys(a)
   return (
     a.__proto__ === b.__proto__ &&
