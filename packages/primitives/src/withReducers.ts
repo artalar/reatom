@@ -16,7 +16,7 @@ export const withReducers =
       // @ts-expect-error
       anAtom[k] = action(
         (ctx, ...args) => anAtom(ctx, reducers[k]!(ctx.get(anAtom), ...args)),
-        anAtom.__reatom.name && `${anAtom.__reatom.name}.${k}`,
+        `${anAtom.__reatom.name}._${k}`,
       )
       return anAtom
     }, anAtom) as any
