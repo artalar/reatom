@@ -11,6 +11,22 @@ export type Plain<Intersection> = Intersection extends (...a: any[]) => any
     }
   : Intersection
 
+export type Values<T> = T[keyof T]
+
+export type OmitValuesKeys<T, V> = Values<{
+  [K in keyof T]: T[K] extends V ? never : K
+}>
+export type OmitValues<T, V> = {
+  [K in OmitValuesKeys<T, V>]: T[K]
+}
+
+export type PickValuesKeys<T, V> = Values<{
+  [K in keyof T]: T[K] extends V ? K : never
+}>
+export type PickValues<T, V> = {
+  [K in PickValuesKeys<T, V>]: T[K]
+}
+
 export const noop: Fn = () => {}
 
 export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
