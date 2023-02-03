@@ -496,24 +496,27 @@ export const createCtx = ({
       throwReatomError(this === undefined, 'missed context')
 
       let promise = new Promise<any>((res, rej) => {
-        if (!inTr) return res(effect(this))
+        if (inTr) {
+          if (step === -1) {
+            rej = effect
+          } else if (step === 0) {
+            trUpdates.push(effect)
+          } else {
+            ;([{}, nearEffects, lateEffects] as const)[step].push(() => {
+              try {
+                const result = effect(this)
+                result instanceof Promise ? result.then(res, rej) : res(result)
+              } catch (error) {
+                rej(error)
+              }
+            })
+          }
 
-        if (step === -1) {
-          rej = effect
-        } else if (step === 0) {
-          trUpdates.push(effect)
+          trRollbacks.push(rej)
         } else {
-          ;([{}, nearEffects, lateEffects] as const)[step].push(() => {
-            try {
-              const result = effect(this)
-              result instanceof Promise ? result.then(res, rej) : res(result)
-            } catch (error) {
-              rej(error)
-            }
-          })
+          const result = effect(this)
+          result instanceof Promise ? result.then(res, rej) : res(result)
         }
-
-        trRollbacks.push(rej)
       })
 
       // prevent uncaught error

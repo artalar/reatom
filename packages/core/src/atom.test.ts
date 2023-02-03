@@ -513,6 +513,42 @@ test('should catch', async () => {
   ;`👍` //?
 })
 
+test('no extra tick by schedule', async () => {
+  let isDoneSync = false
+  createCtx()
+    .schedule(() => {
+      console.log('schedule')
+      return 'TEST schedule'
+    })
+    .then(() => (isDoneSync = true))
+
+  await null
+
+  assert.is(isDoneSync, true)
+
+  let isDoneAsync = false
+  createCtx()
+    .schedule(async () => {})
+    .then(() => (isDoneAsync = true))
+
+  await null
+  await null
+
+  assert.is(isDoneAsync, true)
+
+  let isDoneAsyncInTr = false
+  const ctx = createCtx()
+  ctx.get(() =>
+    ctx.schedule(async () => {}).then(() => (isDoneAsyncInTr = true)),
+  )
+
+  await null
+  await null
+
+  assert.is(isDoneAsyncInTr, true)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
