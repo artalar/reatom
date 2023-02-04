@@ -125,14 +125,11 @@ initStatuses.isRejected // false
 initStatuses.isSettled // false
 
 initStatuses.isFirstPending // false
-initStatuses.isAnotherPending // false
 initStatuses.isEverPending // false
-initStatuses.isNeverPending // true
 initStatuses.isEverSettled // false
-initStatuses.isNeverSettled // true
 ```
 
-`isNeverPending` is like `idle` state and `isEverSettled` is like `loaded` state.
+`isEverSettled` is like _loaded_ state, `!isEverPending` is like _idle_ state, `isPending && !isEverSettled` is like *first loading* state.
 
 You could import special types of statuses of each effect state and use it for typesafe conditional logic.
 

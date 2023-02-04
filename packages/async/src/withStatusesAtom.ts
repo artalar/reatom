@@ -8,12 +8,12 @@ export interface AsyncStatusesNeverPending {
   isRejected: false
   isSettled: false
 
-  isFirstPending: false
-  isAnotherPending: false
+  // isFirstPending: false
+  // isAnotherPending: false
   isEverPending: false
-  isNeverPending: true
+  // isNeverPending: true
   isEverSettled: false
-  isNeverSettled: true
+  // isNeverSettled: true
 }
 
 export interface AsyncStatusesFirstPending {
@@ -22,12 +22,12 @@ export interface AsyncStatusesFirstPending {
   isRejected: false
   isSettled: false
 
-  isFirstPending: true
-  isAnotherPending: false
+  // isFirstPending: true
+  // isAnotherPending: false
   isEverPending: true
-  isNeverPending: false
+  // isNeverPending: false
   isEverSettled: false
-  isNeverSettled: true
+  // isNeverSettled: true
 }
 
 export interface AsyncStatusesFulfilled {
@@ -36,12 +36,12 @@ export interface AsyncStatusesFulfilled {
   isRejected: false
   isSettled: true
 
-  isFirstPending: false
-  isAnotherPending: false
+  // isFirstPending: false
+  // isAnotherPending: false
   isEverPending: true
-  isNeverPending: false
+  // isNeverPending: false
   isEverSettled: true
-  isNeverSettled: false
+  // isNeverSettled: false
 }
 
 export interface AsyncStatusesRejected {
@@ -50,12 +50,12 @@ export interface AsyncStatusesRejected {
   isRejected: true
   isSettled: true
 
-  isFirstPending: false
-  isAnotherPending: false
+  // isFirstPending: false
+  // isAnotherPending: false
   isEverPending: true
-  isNeverPending: false
+  // isNeverPending: false
   isEverSettled: true
-  isNeverSettled: false
+  // isNeverSettled: false
 }
 
 export interface AsyncStatusesAnotherPending {
@@ -64,12 +64,12 @@ export interface AsyncStatusesAnotherPending {
   isRejected: false
   isSettled: false
 
-  isFirstPending: false
-  isAnotherPending: true
+  // isFirstPending: false
+  // isAnotherPending: true
   isEverPending: true
-  isNeverPending: false
+  // isNeverPending: false
   isEverSettled: true
-  isNeverSettled: false
+  // isNeverSettled: false
 }
 
 export type AsyncStatusesPending =
@@ -102,34 +102,29 @@ export const withStatusesAtom =
           isRejected: false,
           isSettled: false,
 
-          isFirstPending: false,
-          isAnotherPending: false,
+          // isFirstPending: false,
+          // isAnotherPending: false,
           isEverPending: false,
-          isNeverPending: true,
+          // isNeverPending: true,
           isEverSettled: false,
-          isNeverSettled: true,
+          // isNeverSettled: true,
         },
         `${anAsync.__reatom.name}.statusesAtom`,
       ))
       onUpdate(anAsync, (ctx) =>
-        statusesAtom(
-          ctx,
-          // TODO should work
-          // @ts-expect-error bad `statuses.some` inference
-          (statuses) => ({
-            isPending: true,
-            isFulfilled: false,
-            isRejected: false,
-            isSettled: false,
+        statusesAtom(ctx, (statuses) => ({
+          isPending: true,
+          isFulfilled: false,
+          isRejected: false,
+          isSettled: false,
 
-            isFirstPending: statuses.isNeverPending,
-            isAnotherPending: statuses.isEverPending,
-            isEverPending: true,
-            isNeverPending: false,
-            isEverSettled: statuses.isEverSettled,
-            isNeverSettled: statuses.isNeverSettled,
-          }),
-        ),
+          // isFirstPending: !statuses.isEverPending,
+          // isAnotherPending: statuses.isEverPending,
+          isEverPending: true,
+          // isNeverPending: false,
+          isEverSettled: statuses.isEverSettled,
+          // isNeverSettled: statuses.isNeverSettled,
+        })),
       )
       onUpdate(anAsync.onFulfill, (ctx) =>
         statusesAtom(ctx, (statuses) => ({
@@ -138,12 +133,12 @@ export const withStatusesAtom =
           isRejected: false,
           isSettled: true,
 
-          isFirstPending: false,
-          isAnotherPending: false,
+          // isFirstPending: false,
+          // isAnotherPending: false,
           isEverPending: true,
-          isNeverPending: false,
+          // isNeverPending: false,
           isEverSettled: true,
-          isNeverSettled: false,
+          // isNeverSettled: false,
         })),
       )
       onUpdate(anAsync.onReject, (ctx) =>
@@ -153,12 +148,12 @@ export const withStatusesAtom =
           isRejected: true,
           isSettled: true,
 
-          isFirstPending: false,
-          isAnotherPending: false,
+          // isFirstPending: false,
+          // isAnotherPending: false,
           isEverPending: true,
-          isNeverPending: false,
+          // isNeverPending: false,
           isEverSettled: true,
-          isNeverSettled: false,
+          // isNeverSettled: false,
         })),
       )
     }

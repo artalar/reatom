@@ -18,12 +18,12 @@ const neverPending: AsyncStatusesNeverPending = {
   isRejected: false,
   isSettled: false,
 
-  isFirstPending: false,
-  isAnotherPending: false,
+  // isFirstPending: false,
+  // isAnotherPending: false,
   isEverPending: false,
-  isNeverPending: true,
+  // isNeverPending: true,
   isEverSettled: false,
-  isNeverSettled: true,
+  // isNeverSettled: true,
 }
 
 const firstPending: AsyncStatusesFirstPending = {
@@ -32,12 +32,12 @@ const firstPending: AsyncStatusesFirstPending = {
   isRejected: false,
   isSettled: false,
 
-  isFirstPending: true,
-  isAnotherPending: false,
+  // isFirstPending: true,
+  // isAnotherPending: false,
   isEverPending: true,
-  isNeverPending: false,
+  // isNeverPending: false,
   isEverSettled: false,
-  isNeverSettled: true,
+  // isNeverSettled: true,
 }
 
 const fulfilled: AsyncStatusesFulfilled = {
@@ -46,12 +46,12 @@ const fulfilled: AsyncStatusesFulfilled = {
   isRejected: false,
   isSettled: true,
 
-  isFirstPending: false,
-  isAnotherPending: false,
+  // isFirstPending: false,
+  // isAnotherPending: false,
   isEverPending: true,
-  isNeverPending: false,
+  // isNeverPending: false,
   isEverSettled: true,
-  isNeverSettled: false,
+  // isNeverSettled: false,
 }
 
 const rejected: AsyncStatusesRejected = {
@@ -60,12 +60,12 @@ const rejected: AsyncStatusesRejected = {
   isRejected: true,
   isSettled: true,
 
-  isFirstPending: false,
-  isAnotherPending: false,
+  // isFirstPending: false,
+  // isAnotherPending: false,
   isEverPending: true,
-  isNeverPending: false,
+  // isNeverPending: false,
   isEverSettled: true,
-  isNeverSettled: false,
+  // isNeverSettled: false,
 }
 
 const anotherPending: AsyncStatusesAnotherPending = {
@@ -74,12 +74,12 @@ const anotherPending: AsyncStatusesAnotherPending = {
   isRejected: false,
   isSettled: false,
 
-  isFirstPending: false,
-  isAnotherPending: true,
+  // isFirstPending: false,
+  // isAnotherPending: true,
   isEverPending: true,
-  isNeverPending: false,
+  // isNeverPending: false,
   isEverSettled: true,
-  isNeverSettled: false,
+  // isNeverSettled: false,
 }
 
 test('withStatusesAtom', async () => {
