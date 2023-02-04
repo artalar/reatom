@@ -55,6 +55,55 @@ export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
+### Invalidate backend data on mutation
+
+You could use regular atom / action hooks.
+
+```ts
+import { reatomAsync, withDataAtom, onUpdate } from '@reatom/framework'
+
+export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
+  withDataAtom(),
+  'fetchList',
+)
+export const updateList = reatomAsync(
+  (ctx, newList) => api.updateList(newList),
+  'updateList',
+)
+onUpdate(updateList.onFulfill, fetchList)
+```
+
+You could use specific async hooks.
+
+```ts
+import { reatomAsync, withDataAtom } from '@reatom/framework'
+
+export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
+  withDataAtom(),
+  'fetchList',
+)
+export const updateList = reatomAsync(
+  (ctx, newList) => api.updateList(newList),
+  {
+    name: 'updateList',
+    onEffect(ctx, promise, /*params*/ [newList]) {
+      const oldList = fetchList.dataAtom(ctx)
+      // optimistic update
+      const newList = fetchList.dataAtom(ctx, newList)
+      // rollback on error
+      promise.catch(() => {
+        if (ctx.get(fetchList.dataAtom) === newList) {
+          fetchList.dataAtom(ctx, oldList)
+        } else {
+          // TODO looks like user changed data again
+          // need to notify user about conflict.
+        }
+      })
+    },
+  },
+)
+```
+
 ## `withCache`
 
 You could rule cache behavior by optional `length` and `staleTime` parameters. `length` is a number of cached results, `staleTime` is a time in ms after which cache will be dropped. You are not required to use `withDataAtom`, the cache worked for effect results, but if `dataAtom` exists - it will be updated too. You could specify `paramsToKey` option to stabilize your params reference for internal `Map` cache, by default all object properties sorted.
@@ -75,22 +124,6 @@ export const fetchList = reatomAsync(
 
 fetchList(ctx, { query: 'foo', page: 1 }) // call the effect
 fetchList(ctx, { page: 1, query: 'foo' }) // returns the prev promise
-```
-
-### Invalidate backend data on mutation
-
-```ts
-import { reatomAsync, withDataAtom, onUpdate } from '@reatom/framework'
-
-export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
-  withDataAtom(),
-)
-export const updateList = reatomAsync((ctx, newList) => api.updateList(newList))
-onUpdate(updateList, (ctx, newList) => {
-  // optimistic update
-  fetchList.dataAtom(ctx, newList)
-  fetchList(ctx)
-})
 ```
 
 ## `withErrorAtom`
