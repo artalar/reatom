@@ -1,4 +1,4 @@
-This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`.
+This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count current in pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`. The basic fabric adds minimum features, but you could increase it by adding additional operators, see below.
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
@@ -8,28 +8,29 @@ This package is helping you to manage async requests by adding additional meta i
 import { reatomAsync } from '@reatom/async'
 
 export const fetchList = reatomAsync(
-  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  (ctx, page: number) => fetch(`/api/list?page=${page}`, ctx.controller),
   'fetchList',
 )
 ```
 
-You could handle promise states to update other stuff during it batch in the second parameter.
+You could handle promise states to update other stuff during it batch in the second parameter with a list of optional hooks.
 
 ```ts
 import { reatomAsync } from '@reatom/async'
 
+const listAtom = atom({ data: [], status: 'idle' })
 export const fetchList = reatomAsync(
   (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
   {
     name: 'fetchList',
     onEffect(ctx, promise, params) {
-      notify(ctx, 'fetch start')
+      listAtom(ctx, { data: [], status: 'pending' })
     },
     onFulfill(ctx, result) {
-      notify(ctx, 'fetch end')
+      listAtom(ctx, { data: result, status: 'fulfilled' })
     },
     onReject(ctx, error) {
-      notify(ctx, 'fetch error')
+      listAtom(ctx, { data: [], status: 'rejected' })
     },
     onSettle(ctx) {},
   },
@@ -44,6 +45,8 @@ Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a 
 
 ### Fetch data on demand
 
+Fetch data declaratively and lazy only when needed. This is a super simple and useful combine of `async` and `hooks` packages, which shows the power of reatom.
+
 ```ts
 import { reatomAsync, withDataAtom } from '@reatom/async'
 import { onConnect } from '@reatom/hooks'
@@ -51,7 +54,6 @@ import { onConnect } from '@reatom/hooks'
 export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
   withDataAtom([]),
 )
-
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
@@ -76,7 +78,7 @@ onUpdate(updateList.onFulfill, fetchList)
 You could use specific async hooks.
 
 ```ts
-import { reatomAsync, withDataAtom } from '@reatom/framework'
+import { reatomAsync, withDataAtom } from '@reatom/async'
 
 export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
   withDataAtom(),
@@ -102,6 +104,48 @@ export const updateList = reatomAsync(
     },
   },
 )
+```
+
+## `withStatusesAtom`
+
+Adds property `statusesAtom` with additional statuses, which updates by the effect calling, `onFulfill` and `onReject`.
+
+```ts
+import { reatomAsync, withStatusesAtom } from '@reatom/async'
+
+export const fetchList = reatomAsync((ctx) => api.getList(), 'fetchList').pipe(
+  withStatusesAtom(),
+)
+
+const initStatuses = ctx.get(fetchList.statusesAtom)
+
+initStatuses.isPending // false
+initStatuses.isFulfilled // false
+initStatuses.isRejected // false
+initStatuses.isSettled // false
+
+initStatuses.isFirstPending // false
+initStatuses.isAnotherPending // false
+initStatuses.isEverPending // false
+initStatuses.isNeverPending // true
+initStatuses.isEverSettled // false
+initStatuses.isNeverSettled // true
+```
+
+`isNeverPending` is like `idle` state and `isEverSettled` is like `loaded` state.
+
+You could import special types of statuses of each effect state and use it for typesafe conditional logic.
+
+```ts
+export type AsyncStatusesPending =
+  | AsyncStatusesFirstPending
+  | AsyncStatusesAnotherPending
+
+export type AsyncStatuses =
+  | AsyncStatusesNeverPending
+  | AsyncStatusesPending
+  | AsyncStatusesFulfilled
+  | AsyncStatusesRejected
 ```
 
 ## `withCache`
