@@ -4,7 +4,7 @@ title: async
 description: Reatom for async
 ---
 
-This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`.
+This package is helping you to manage async requests by adding additional meta information, like `pendingAtom` with count current in pending caused promises and action hooks `onFulfill`, `onReject`, `onSettle`. The basic fabric adds minimum features, but you could increase it by adding additional operators, see below.
 
 > included in [@reatom/framework](/packages/framework)
 
@@ -14,28 +14,29 @@ This package is helping you to manage async requests by adding additional meta i
 import { reatomAsync } from '@reatom/async'
 
 export const fetchList = reatomAsync(
-  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  (ctx, page: number) => fetch(`/api/list?page=${page}`, ctx.controller),
   'fetchList',
 )
 ```
 
-You could handle promise states to update other stuff during it batch in the second parameter.
+You could handle promise states to update other stuff during it batch in the second parameter with a list of optional hooks.
 
 ```ts
 import { reatomAsync } from '@reatom/async'
 
+const listAtom = atom({ data: [], status: 'idle' })
 export const fetchList = reatomAsync(
   (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
   {
     name: 'fetchList',
     onEffect(ctx, promise, params) {
-      notify(ctx, 'fetch start')
+      listAtom(ctx, { data: [], status: 'pending' })
     },
     onFulfill(ctx, result) {
-      notify(ctx, 'fetch end')
+      listAtom(ctx, { data: result, status: 'fulfilled' })
     },
     onReject(ctx, error) {
-      notify(ctx, 'fetch error')
+      listAtom(ctx, { data: [], status: 'rejected' })
     },
     onSettle(ctx) {},
   },
@@ -50,6 +51,8 @@ Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a 
 
 ### Fetch data on demand
 
+Fetch data declaratively and lazy only when needed. This is a super simple and useful combine of `async` and `hooks` packages, which shows the power of reatom.
+
 ```ts
 import { reatomAsync, withDataAtom } from '@reatom/async'
 import { onConnect } from '@reatom/hooks'
@@ -57,44 +60,117 @@ import { onConnect } from '@reatom/hooks'
 export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
   withDataAtom([]),
 )
-
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
-### Cache timeout
-
-```ts
-import { reatomAsync, withDataAtom } from '@reatom/async'
-import { onConnect, onDisconnect } from '@reatom/hooks'
-
-export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
-  withDataAtom([]),
-)
-
-const staleTime = 1000 * 60 * 5 // 5 min
-onConnect(fetchList.dataAtom, (ctx) => {
-  fetchList(ctx)
-  return () =>
-    setTimeout(() => {
-      if (!ctx.isConnected()) fetchList.dataAtom.reset(ctx)
-    }, staleTime)
-})
-```
-
 ### Invalidate backend data on mutation
+
+You could use regular atom / action hooks.
 
 ```ts
 import { reatomAsync, withDataAtom, onUpdate } from '@reatom/framework'
 
 export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
   withDataAtom(),
+  'fetchList',
 )
-export const updateList = reatomAsync((ctx, newList) => api.updateList(newList))
-onUpdate(updateList, (ctx, newList) => {
-  // optimistic update
-  fetchList.dataAtom(ctx, newList)
-  fetchList(ctx)
-})
+export const updateList = reatomAsync(
+  (ctx, newList) => api.updateList(newList),
+  'updateList',
+)
+onUpdate(updateList.onFulfill, fetchList)
+```
+
+You could use specific async hooks.
+
+```ts
+import { reatomAsync, withDataAtom } from '@reatom/async'
+
+export const fetchList = reatomAsync((ctx) => api.getList()).pipe(
+  withDataAtom(),
+  'fetchList',
+)
+export const updateList = reatomAsync(
+  (ctx, newList) => api.updateList(newList),
+  {
+    name: 'updateList',
+    onEffect(ctx, promise, /*params*/ [newList]) {
+      const oldList = fetchList.dataAtom(ctx)
+      // optimistic update
+      const newList = fetchList.dataAtom(ctx, newList)
+      // rollback on error
+      promise.catch(() => {
+        if (ctx.get(fetchList.dataAtom) === newList) {
+          fetchList.dataAtom(ctx, oldList)
+        } else {
+          // TODO looks like user changed data again
+          // need to notify user about conflict.
+        }
+      })
+    },
+  },
+)
+```
+
+## `withStatusesAtom`
+
+Adds property `statusesAtom` with additional statuses, which updates by the effect calling, `onFulfill` and `onReject`.
+
+```ts
+import { reatomAsync, withStatusesAtom } from '@reatom/async'
+
+export const fetchList = reatomAsync((ctx) => api.getList(), 'fetchList').pipe(
+  withStatusesAtom(),
+)
+
+const initStatuses = ctx.get(fetchList.statusesAtom)
+
+initStatuses.isPending // false
+initStatuses.isFulfilled // false
+initStatuses.isRejected // false
+initStatuses.isSettled // false
+
+initStatuses.isFirstPending // false
+initStatuses.isEverPending // false
+initStatuses.isEverSettled // false
+```
+
+`isEverSettled` is like _loaded_ state, `!isEverPending` is like _idle_ state, `isPending && !isEverSettled` is like *first loading* state.
+
+You could import special types of statuses of each effect state and use it for typesafe conditional logic.
+
+```ts
+export type AsyncStatusesPending =
+  | AsyncStatusesFirstPending
+  | AsyncStatusesAnotherPending
+
+export type AsyncStatuses =
+  | AsyncStatusesNeverPending
+  | AsyncStatusesPending
+  | AsyncStatusesFulfilled
+  | AsyncStatusesRejected
+```
+
+## `withCache`
+
+You could rule cache behavior by optional `length` and `staleTime` parameters. `length` is a number of cached results, `staleTime` is a time in ms after which cache will be dropped. You are not required to use `withDataAtom`, the cache worked for effect results, but if `dataAtom` exists - it will be updated too. You could specify `paramsToKey` option to stabilize your params reference for internal `Map` cache, by default all object properties sorted.
+
+```ts
+import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx, filters) => api.getList(filters),
+  'fetchList',
+).pipe(
+  withDataAtom([]),
+  withCache({
+    length = /* default: */ 5,
+    staleTime = /* default: */ 5 * 60 * 1000,
+  }),
+)
+
+fetchList(ctx, { query: 'foo', page: 1 }) // call the effect
+fetchList(ctx, { page: 1, query: 'foo' }) // returns the prev promise
 ```
 
 ## `withErrorAtom`

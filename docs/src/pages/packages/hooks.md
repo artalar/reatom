@@ -8,6 +8,10 @@ description: Reatom for hooks
 
 All atoms and actions have a hooks to they lifecycle, this package expose friendly helpers to use this hooks.
 
+As all computations in Reatom are lazy, it is safe to create atoms or actions dynamically in fabrics, for [atomization](/guides/atomization) for example. You could use this hooks for dynamic atoms too if the target atom is dynamic. If the target atom is static (in global scope) and you create a hook dynamically in some fabric you should manage the hook dispose manually, by the returned callback.
+
+A lot of cool examples you could find in [async package docs](/packages/async).
+
 ## `withInit`
 
 Operator to set state creator callback to an atom, which is called by first atom subscription (during transaction).
@@ -37,7 +41,6 @@ const dispose = onConnect(messagesAtom, (ctx) => {
 
   return () => WS.off('message', cb)
 })
-// use `dispose` to remove the hook
 ```
 
 ## `onDisconnect`
@@ -51,11 +54,12 @@ Derive atom or action update during transaction.
 ```ts
 import { onUpdate } from '@reatom/hooks'
 
-const unlink = onUpdate(pagingAtom, (ctx, page) => fetchData(ctx, page))
-// use `unlink` to dispose the hook
+const dispose = onUpdate(pagingAtom, (ctx, page) => fetchData(ctx, page))
 ```
 
-Very simplified example of lazy analytics connection.
+For computed atoms it is called only when the atom is connected.
+
+<!-- Very simplified example of lazy analytics connection.
 
 ```ts
 // analytics.ts
@@ -72,7 +76,7 @@ for (const mod of [moduleA, moduleN]) {
     }
   }
 }
-```
+``` -->
 
 ## `spyChange`
 

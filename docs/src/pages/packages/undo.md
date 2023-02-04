@@ -1,3 +1,9 @@
+---
+layout: ../../layouts/Layout.astro
+title: undo
+description: Reatom for undo
+---
+
 ## Installation
 
 ```sh
