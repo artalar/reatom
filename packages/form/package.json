@@ -1,9 +1,6 @@
 {
   "name": "@reatom/form",
-  "version": "3.1.2",
-  "publishConfig": {
-    "tag": "alpha"
-  },
+  "version": "3.1.4",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for form",

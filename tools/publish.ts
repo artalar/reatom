@@ -70,13 +70,14 @@ const main = async () => {
     const packageJSONPath = path.join(packagePath, 'package.json')
 
     const packageJSON = JSON.parse(await fs.readFile(packageJSONPath, 'utf8'))
+    const tag = packageJSON.publishConfig?.tag ?? 'latest'
 
     if (packageJSON.private) continue
 
     let npmVersion = '-1'
     try {
       npmVersion = (
-        await $`npm view @reatom/${packageName} version`
+        await $`npm view @reatom/${packageName}@${tag} version`
       ).stdout.trim()
     } catch (error) {
       console.warn(`"${packageName}" is not published yet`)
