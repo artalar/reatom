@@ -30,7 +30,7 @@ connectLogger(
     // `true` by default to made your logs clear
     skipUnnamed: true,
     // fine tuning :)
-    skip = (patch: AtomCache) => false,
+    skip: (patch: AtomCache) => false,
     // `createLogBatched` by default to not spam you a lot
     // you could pass regular `console.log` here
     log: createLogBatched(

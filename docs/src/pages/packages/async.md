@@ -130,7 +130,6 @@ initStatuses.isFulfilled // false
 initStatuses.isRejected // false
 initStatuses.isSettled // false
 
-initStatuses.isFirstPending // false
 initStatuses.isEverPending // false
 initStatuses.isEverSettled // false
 ```
