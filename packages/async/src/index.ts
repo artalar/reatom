@@ -18,6 +18,17 @@ import { __thenReatomed } from '@reatom/effects'
 import { addOnUpdate, onUpdate } from '@reatom/hooks'
 
 export { withCache } from './withCache'
+export { withStatusesAtom } from './withStatusesAtom'
+export type {
+  AsyncStatusesNeverPending,
+  AsyncStatusesFirstPending,
+  AsyncStatusesFulfilled,
+  AsyncStatusesRejected,
+  AsyncStatusesAnotherPending,
+  AsyncStatusesPending,
+  AsyncStatuses,
+  AsyncStatusesAtom,
+} from './withStatusesAtom'
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
