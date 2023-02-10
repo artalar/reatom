@@ -1,37 +1,48 @@
-import { Action, action, atom, AtomMut } from '@reatom/core'
+import { Action, action, atom, AtomMut, __count } from '@reatom/core'
 import { withReducers } from '@reatom/primitives'
 import { sleep } from '@reatom/utils'
 
 export interface TimerAtom extends AtomMut<number> {
-  // interval in ms
+  /** interval in ms */
   intervalAtom: AtomMut<number> & {
     setSeconds: Action<[seconds: number], number>
   }
-  // start timer by passed interval
+  /** start timer by passed interval */
   startTimer: Action<[delayInSeconds: number], Promise<void>>
-  // stop timer manually
+  /** stop timer manually */
   stopTimer: Action<[], void>
-  // track end of timer, do not call manually
+  /** track end of timer, do not call manually */
   endTimer: Action<[], void>
+  /** track every interval tick, do not call manually */
+  tick: Action<[remains: number], number>
 }
 
-export const reatomTimer = (name: string): TimerAtom => {
+export const reatomTimer = (
+  options: string | { name?: string; interval?: number } = {},
+): TimerAtom => {
+  const { name = __count('timerAtom'), interval = 1000 } =
+    typeof options === 'string' ? { name: options } : options
   const timerAtom = atom(0, `${name}Atom`)
 
   const intervalAtom: TimerAtom['intervalAtom'] = atom(
-    1000,
-    `${name}IntervalAtom`,
+    interval,
+    `${name}.intervalAtom`,
   ).pipe(
     withReducers({
       setSeconds: (state, seconds: number) => seconds * 1000,
     }),
   )
 
-  const versionAtom = atom(0)
+  const _versionAtom = atom(0, `${name}._versionAtom`)
+
+  const tick: TimerAtom['tick'] = action(
+    (ctx, remains) => remains,
+    `${name}.tick`,
+  )
 
   const startTimer: TimerAtom['startTimer'] = action(
     (ctx, delayInSeconds: number) => {
-      const version = versionAtom(ctx, (s) => s + 1)
+      const version = _versionAtom(ctx, (s) => s + 1)
       const delay = delayInSeconds * 1000
       const start = Date.now()
       const target = delay + start
@@ -43,30 +54,32 @@ export const reatomTimer = (name: string): TimerAtom => {
         while (remains > 0) {
           await sleep(Math.min(remains, ctx.get(intervalAtom)))
 
-          if (version !== ctx.get(versionAtom)) return
+          if (version !== ctx.get(_versionAtom)) return
 
-          timerAtom(ctx, (remains = target - Date.now()))
+          remains = timerAtom(ctx, target - Date.now())
+          tick(ctx, remains)
         }
 
         endTimer(ctx)
       })
     },
-    `${name}.start`,
+    `${name}.startTimer`,
   )
 
   const stopTimer: TimerAtom['stopTimer'] = action((ctx) => {
-    versionAtom(ctx, (s) => s + 1)
+    _versionAtom(ctx, (s) => s + 1)
     endTimer(ctx)
-  }, `${name}.stop`)
+  }, `${name}.stopTimer`)
 
   const endTimer: TimerAtom['endTimer'] = action((ctx) => {
     timerAtom(ctx, 0)
-  }, `${name}.end`)
+  }, `${name}.endTimer`)
 
   return Object.assign(timerAtom, {
     endTimer,
     intervalAtom,
     startTimer,
     stopTimer,
+    tick,
   })
 }
