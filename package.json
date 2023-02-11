@@ -11,7 +11,8 @@
     "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
     "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "publish-packages": "turbo run build test && changeset version && changeset publish"
   },
   "workspaces": [
     "packages/*"
@@ -69,5 +70,8 @@
     "atom",
     "reatom",
     "@reatom"
-  ]
+  ],
+  "dependencies": {
+    "@changesets/cli": "^2.26.0"
+  }
 }
