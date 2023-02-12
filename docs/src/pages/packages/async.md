@@ -26,7 +26,7 @@ import { reatomAsync } from '@reatom/async'
 
 const listAtom = atom({ data: [], status: 'idle' })
 export const fetchList = reatomAsync(
-  (ctx, page: number) => fetch(`/api/list?page={page}`, ctx.controller),
+  (ctx, page: number) => fetch(`/api/list?page=${page}`, ctx.controller),
   {
     name: 'fetchList',
     onEffect(ctx, promise, params) {
