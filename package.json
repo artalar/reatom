@@ -4,14 +4,16 @@
   "description": "Expressive and deterministic state manager",
   "scripts": {
     "release": "npx tsx ./tools/publish.ts",
-    "postinstall": "turbo run build --filter=testing --filter=framework",
+    "postinstall": "turbo run build --filter=core --filter=framework",
     "build": "turbo run build",
+    "reset": "./reset.sh",
     "test": "turbo run test",
     "prettify": "prettier --write **/*.{js,ts,md}",
     "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
     "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "publish-packages": "turbo run build test && changeset version && changeset publish"
   },
   "workspaces": [
     "packages/*"
@@ -50,7 +52,7 @@
     "rimraf": "^3.0.2",
     "svelte": "^3.55.0",
     "tsx": "^3.9.0",
-    "turbo": "^1.4.7",
+    "turbo": "^1.7.4",
     "typescript": "^4.9.4",
     "use-sync-external-store": "^1.2.0",
     "uvu": "^0.5.6",
@@ -71,5 +73,8 @@
     "atom",
     "reatom",
     "@reatom"
-  ]
+  ],
+  "dependencies": {
+    "@changesets/cli": "^2.26.0"
+  }
 }
