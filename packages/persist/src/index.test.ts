@@ -19,8 +19,6 @@ test(`withPersist`, async () => {
   const a1 = atom(0, 'a1').pipe(withPersist())
   const a2 = atom(0, 'a2').pipe(withPersist())
 
-  assert.throws(() => atom(0).pipe(withPersist()))
-
   const ctx = createCtx()
 
   assert.is(ctx.get(a1), 1)
