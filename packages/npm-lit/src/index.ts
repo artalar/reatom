@@ -33,20 +33,20 @@ export const withReatom = <T extends Constructor<LitElement>>(
   superClass: T,
 ): T & Constructor<{ ctx: CtxSpy }> => {
   return class ReatomLit extends superClass {
-    #unsub?: Unsubscribe
-    #deps: Array<Atom> = []
-    #depsList = atom<Array<Atom>>([])
-    #depsTrack = atom((ctx) => ctx.spy(this.#depsList).map(ctx.spy))
+    private unsub?: Unsubscribe
+    private deps: Array<Atom> = []
+    private depsList = atom<Array<Atom>>([])
+    private depsTrack = atom((ctx) => ctx.spy(this.depsList).map(ctx.spy))
     ctx?: CtxSpy
 
-    #tryConnectCtx() {
+    private tryConnectCtx() {
       if (this.ctx) {
         return
       }
       this.ctx = {
         ...ctx,
         spy: (anAtom) => {
-          this.#deps.push(anAtom)
+          this.deps.push(anAtom)
           return ctx.get(anAtom)
         },
       }
@@ -54,8 +54,8 @@ export const withReatom = <T extends Constructor<LitElement>>(
 
     willUpdate(_changedProperties: PropertyValues) {
       super.willUpdate(_changedProperties)
-      this.#deps = []
-      this.#tryConnectCtx()
+      this.deps = []
+      this.tryConnectCtx()
     }
 
     updated(_changedProperties: PropertyValues) {
@@ -63,20 +63,20 @@ export const withReatom = <T extends Constructor<LitElement>>(
       if (!this.ctx) {
         return
       }
-      if (!isShallowEqual(this.#deps, this.ctx.get(this.#depsList))) {
-        this.#depsList(this.ctx, this.#deps)
+      if (!isShallowEqual(this.deps, this.ctx.get(this.depsList))) {
+        this.depsList(this.ctx, this.deps)
       }
     }
 
     connectedCallback() {
       super.connectedCallback()
-      let prevDepsList = this.#deps
-      this.#tryConnectCtx()
+      let prevDepsList = this.deps
+      this.tryConnectCtx()
 
       const ctx = nonNullable(this.ctx, 'Ctx is no set')
 
-      this.#unsub = ctx.subscribe(this.#depsTrack, (deps) => {
-        const depsList = ctx.get(this.#depsList)
+      this.unsub = ctx.subscribe(this.depsTrack, (deps) => {
+        const depsList = ctx.get(this.depsList)
         // skip updates from the deps change during render
         if (isShallowEqual(prevDepsList, depsList)) {
           this.requestUpdate()
@@ -88,7 +88,7 @@ export const withReatom = <T extends Constructor<LitElement>>(
 
     disconnectedCallback() {
       super.disconnectedCallback()
-      this.#unsub?.()
+      this.unsub?.()
     }
   } as T & Constructor<{ ctx: CtxSpy }>
 }

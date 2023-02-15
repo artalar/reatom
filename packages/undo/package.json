@@ -24,7 +24,8 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.21"
+    "@reatom/core": "^3.1.21",
+    "@reatom/hooks": "^3.1.2"
   },
   "author": "artalar",
   "maintainers": [
