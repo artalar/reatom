@@ -1,30 +1,78 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { createCtx } from '@reatom/core'
-import { getDuration } from '@reatom/testing'
+import { createTestCtx, getDuration } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
 import { reatomTimer } from './'
 
 test(`base API`, async () => {
-  const timerModel = reatomTimer(`test`)
-  const ctx = createCtx()
+  const timerAtom = reatomTimer(`test`)
+  const ctx = createTestCtx()
 
-  timerModel.intervalAtom.setSeconds(ctx, 0.001)
+  timerAtom.intervalAtom.setSeconds(ctx, 0.001)
 
   var target = 50
   var duration = await getDuration(() =>
-    timerModel.startTimer(ctx, target / 1000),
+    timerAtom.startTimer(ctx, target / 1000),
   )
 
   assert.ok(duration >= target)
 
   var target = 50
   var [duration] = await Promise.all([
-    getDuration(() => timerModel.startTimer(ctx, target / 1000)),
-    sleep(target / 2).then(() => timerModel.stopTimer(ctx)),
+    getDuration(() => timerAtom.startTimer(ctx, target / 1000)),
+    sleep(target / 2).then(() => timerAtom.stopTimer(ctx)),
   ])
   assert.ok(duration >= target / 2 && duration < target)
+  ;`👍` //?
+})
+
+test('progressAtom', async () => {
+  const timerAtom = reatomTimer({ delayMultiplier: 1 })
+  const ctx = createTestCtx()
+
+  timerAtom.intervalAtom(ctx, 10)
+  const track = ctx.subscribeTrack(timerAtom.progressAtom)
+  track.calls.length = 0
+
+  await timerAtom.startTimer(ctx, 60)
+  assert.equal(
+    track.calls.map(({ i }) => i[0]),
+    [0.17, 0.33, 0.5, 0.67, 0.83, 1],
+  )
+  ;`👍` //?
+})
+
+test('pauseAtom', async () => {
+  const timerAtom = reatomTimer({ delayMultiplier: 1 })
+  const ctx = createTestCtx()
+
+  timerAtom.intervalAtom(ctx, 10)
+  const track = ctx.subscribeTrack(timerAtom.progressAtom)
+  track.calls.length = 0
+
+  timerAtom.startTimer(ctx, 60)
+
+  await sleep(25)
+  assert.equal(
+    track.calls.map(({ i }) => i[0]),
+    [0.17, 0.33],
+  )
+
+  timerAtom.pauseAtom(ctx, true)
+  await sleep(20)
+  assert.equal(
+    track.calls.map(({ i }) => i[0]),
+    [0.17, 0.33],
+  )
+
+  timerAtom.pauseAtom(ctx, false)
+  await sleep(40)
+
+  assert.equal(
+    track.calls.map(({ i }) => i[0]),
+    [0.17, 0.33, 0.5, 0.67, 0.83, 1],
+  )
   ;`👍` //?
 })
 

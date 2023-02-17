@@ -1,6 +1,6 @@
 {
   "name": "@reatom/timer",
-  "version": "3.3.0",
+  "version": "3.4.1",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for timer",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@reatom/core": "^3.1.23",
+    "@reatom/hooks": "^3.1.2",
     "@reatom/primitives": "^3.1.3"
   },
   "author": "artalar",

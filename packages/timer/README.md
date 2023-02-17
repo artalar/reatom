@@ -3,22 +3,32 @@ Simple timer model to manage some countdown.
 ```ts
 import { reatomTimer } from '@reatom/timer'
 
-const timer = reatomTimer({ interval: 1000 })
+// all options are not required
+const pomodoroAtom = reatomTimer({
+  name: 'pomodoroAtom',
+  interval: 1000, // tick each second
+  delayMultiplier: 1000, // allow to pass seconds to startTimer
+  progressPrecision: 2, // progress will be rounded to 2 digits after dot
+})
 ```
+
+Example: https://stackblitz.com/edit/reatom-timer-pomodoro?file=src%2FApp.tsx
 
 ```ts
 export interface TimerAtom extends AtomMut<number> {
+  /** (delay - remains) / delay */
+  progressAtom: AtomMut<number>
   /** interval in ms */
   intervalAtom: AtomMut<number> & {
     setSeconds: Action<[seconds: number], number>
   }
   /** start timer by passed interval */
-  startTimer: Action<[delayInSeconds: number], Promise<void>>
+  startTimer: Action<[delay: number], Promise<void>>
+  /** allow to pause timer */
+  pauseAtom: AtomMut<boolean>
   /** stop timer manually */
   stopTimer: Action<[], void>
-  /** track end of timer, do not call manually */
+  /** track end of timer. Do not call manually! */
   endTimer: Action<[], void>
-  /** track every interval tick, do not call manually */
-  tick: Action<[remains: number], number>
 }
 ```
