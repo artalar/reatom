@@ -9,6 +9,7 @@ const pomodoroAtom = reatomTimer({
   interval: 1000, // tick each second
   delayMultiplier: 1000, // allow to pass seconds to startTimer
   progressPrecision: 2, // progress will be rounded to 2 digits after dot
+  resetProgress: true, // progress will be reset to 0 on end of timer
 })
 ```
 

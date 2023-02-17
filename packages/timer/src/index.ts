@@ -28,6 +28,7 @@ export const reatomTimer = (
         interval?: number
         delayMultiplier?: number
         progressPrecision?: number
+        resetProgress?: boolean
       } = {},
 ): TimerAtom => {
   const {
@@ -35,6 +36,7 @@ export const reatomTimer = (
     interval = 1000,
     delayMultiplier = 1000,
     progressPrecision = 2,
+    resetProgress = true,
   } = typeof options === 'string' ? { name: options } : options
   const progressMultiplier = Math.pow(10, progressPrecision)
   const timerAtom = atom(0, `${name}Atom`)
@@ -121,6 +123,7 @@ export const reatomTimer = (
   const stopTimer: TimerAtom['stopTimer'] = action((ctx) => {
     _versionAtom(ctx, (s) => s + 1)
     endTimer(ctx)
+    if (resetProgress) progressAtom(ctx, 0)
   }, `${name}.stopTimer`)
 
   const endTimer: TimerAtom['endTimer'] = action((ctx) => {
