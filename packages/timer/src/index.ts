@@ -1,21 +1,24 @@
-import { Action, action, atom, AtomMut, __count } from '@reatom/core'
+import { Action, action, Atom, atom, AtomMut, __count } from '@reatom/core'
 import { withReducers } from '@reatom/primitives'
 import { noop, sleep } from '@reatom/utils'
 import { getRootCause, onUpdate } from '@reatom/hooks'
 
 export interface TimerAtom extends AtomMut<number> {
   /** (delay - remains) / delay */
-  progressAtom: AtomMut<number>
+  progressAtom: Atom<number>
   /** interval in ms */
   intervalAtom: AtomMut<number> & {
+    /** @deprecated extra thing */
     setSeconds: Action<[seconds: number], number>
   }
   /** start timer by passed interval */
   startTimer: Action<[delay: number], Promise<void>>
-  /** allow to pause timer */
-  pauseAtom: AtomMut<boolean>
   /** stop timer manually */
   stopTimer: Action<[], void>
+  /** allow to pause timer */
+  pauseAtom: AtomMut<boolean>
+  /** switch pause state */
+  pause: Action<[], boolean>
   /** track end of timer. Do not call manually! */
   endTimer: Action<[], void>
 }
@@ -41,7 +44,7 @@ export const reatomTimer = (
   const progressMultiplier = Math.pow(10, progressPrecision)
   const timerAtom = atom(0, `${name}Atom`)
 
-  const progressAtom: TimerAtom['progressAtom'] = atom(
+  const progressAtom /* : TimerAtom['progressAtom'] */ = atom(
     0,
     `${name}.progressAtom`,
   )
@@ -130,6 +133,11 @@ export const reatomTimer = (
     timerAtom(ctx, 0)
   }, `${name}.endTimer`)
 
+  const pause: TimerAtom['pause'] = action(
+    (ctx) => pauseAtom(ctx, (s) => !s),
+    `${name}.pause`,
+  )
+
   return Object.assign(timerAtom, {
     progressAtom,
     endTimer,
@@ -137,5 +145,6 @@ export const reatomTimer = (
     startTimer,
     stopTimer,
     pauseAtom,
+    pause,
   })
 }

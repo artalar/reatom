@@ -1,9 +1,9 @@
 {
   "name": "@reatom/timer",
-  "version": "3.4.3",
+  "version": "3.5.0",
   "private": false,
   "sideEffects": false,
-  "description": "Reatom for timer",
+  "description": "Reatom for timers",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
