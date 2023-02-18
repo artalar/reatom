@@ -1,19 +1,10 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import {
-  Atom,
-  callSafety,
-  createAtom,
-  createStore,
-  createTemplateCache,
-  createTransaction,
-  Fn,
-  getState,
-  Rec,
-} from '@reatom/core-v2'
-import { createNumberAtom, createPrimitiveAtom } from '@reatom/core-v2/primitives'
-import { createPersist, init } from '@reatom/core-v2/experiments'
+import { Atom, createAtom, createStore, Fn, getState, Rec } from './'
+import { atom, callSafely } from '@reatom/core'
+import { createNumberAtom, createPrimitiveAtom } from '../primitives'
+import { createPersist, init } from '../experiments'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
 
@@ -336,7 +327,7 @@ test(`Manage dynamic dependencies`, () => {
 test(`await all effect`, async () => {
   function createCallSafetyTracked(cb: Fn) {
     let count = 0
-    const callSafetyTracked: typeof callSafety = (...a: any[]) => {
+    const callSafetyTracked: typeof callSafely = (...a: any[]) => {
       // @ts-expect-error
       const result: any = callSafety(...a)
 
@@ -567,6 +558,19 @@ test('State updates order', async () => {
     listener.calls.map((c) => c.i[0]),
     ['a', 'c'],
   )
+})
+
+test('v3', () => {
+  const a = atom(0)
+  const b = createAtom({}, (track) => track.v3ctx.spy(a))
+  const store = createStore()
+  const listener = mockFn()
+
+  store.subscribe(b, listener)
+  assert.is(listener.lastInput(), 0)
+
+  a(store.v3ctx, 1)
+  assert.is(listener.lastInput(), 1)
 })
 
 test.run()

@@ -19,7 +19,7 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
-    "test": "echo FIXME tsx src/index.test.ts",
+    "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {

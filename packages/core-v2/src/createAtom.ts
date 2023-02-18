@@ -1,4 +1,6 @@
 import * as v3 from '@reatom/core'
+import { throwReatomError } from '@reatom/core'
+import { getRootCause, spyChange } from '@reatom/hooks'
 
 import {
   Action,
@@ -7,17 +9,12 @@ import {
   AtomBinded,
   Cache,
   CacheReducer,
-  CacheTemplate,
-  Cause,
-  createReatomError,
-  createTemplateCache,
   defaultStore,
   Fn,
   isActionCreator,
   isAtom,
   isFunction,
   isString,
-  noop,
   OmitValues,
   pushUnique,
   Store,
@@ -25,31 +22,29 @@ import {
   Track,
   TrackReducer,
   Transaction,
+  ActionCreatorBinded,
 } from './internal'
 
 export type AtomSelfBinded<
   State = any,
   Deps extends Rec<PayloadMapper | Atom> = Rec<PayloadMapper | Atom>,
-> = AtomBinded<State> &
-  {
-    [K in keyof Deps]: Deps[K] extends Atom
-      ? never
-      : Deps[K] extends ActionCreator
-      ? never
-      : K extends `_${string}`
-      ? never
-      : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
-          dispatch: (
-            ...args: Parameters<Deps[K]>
-          ) => Action<ReturnType<Deps[K]>>
-        }
-  }
+> = AtomBinded<State> & {
+  [K in keyof Deps]: Deps[K] extends Atom
+    ? never
+    : Deps[K] extends ActionCreator
+    ? never
+    : K extends `_${string}`
+    ? never
+    : ActionCreator<Parameters<Deps[K]>, { payload: ReturnType<Deps[K]> }> & {
+        dispatch: (...args: Parameters<Deps[K]>) => Action<ReturnType<Deps[K]>>
+      }
+}
 
 export type AtomOptions<State = any> =
   | Atom[`id`]
   | {
       id?: Atom[`id`]
-      decorators?: Array<AtomDecorator<State>>,
+      decorators?: Array<AtomDecorator<State>>
       store?: Store
     }
 
@@ -70,7 +65,7 @@ export function createAtom<
   options: AtomOptions<State> = {},
 ): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
   let {
-    decorators = [],
+    // decorators = [],
     id = `atom${++atomsCount}`,
     store = defaultStore,
   } = isString(options)
@@ -79,19 +74,15 @@ export function createAtom<
   const trackedTypes: Array<string> = []
   const types: Array<string> = []
   const actionCreators: Rec<ActionCreator> = {}
-  const externalActions: Rec<string> = {}
+  const externalActions: Rec<ActionCreator> = {}
 
-  if (!isFunction(reducer) || !isString(id)) {
-    throw createReatomError(`Atom arguments`)
-  }
+  throwReatomError(!isFunction(reducer) || !isString(id), 'atom arguments')
 
   Object.entries(dependencies).forEach(([name, dep]) => {
-    if (!isFunction(dep)) {
-      throw createReatomError(
-        `Invalid atom dependencies (type ${typeof dep}) at ${name}`,
-        dep,
-      )
-    }
+    throwReatomError(
+      !isFunction(dep),
+      `Invalid atom dependencies (type ${typeof dep}) at ${name}`,
+    )
 
     if (isAtom(dep)) {
       dep.types.forEach((type) => pushUnique(types, type))
@@ -99,18 +90,21 @@ export function createAtom<
       let type: string
 
       if (isActionCreator(dep)) {
-        externalActions[name] = type = dep.type
+        type = (externalActions[name] = dep).type
       } else {
         type = `${name}_${id}`
 
-        const actionCreator = (...a: any[]) => ({
+        const actionCreator: ActionCreatorBinded = (...a: any[]) => ({
           payload: dep(...a),
           type,
           targets: [atom],
+          v3action: actionCreator.v3action,
         })
         actionCreator.type = type
         actionCreator.dispatch = (...a: any[]) =>
+          // @ts-expect-error
           store.dispatch(actionCreator(...a))
+        actionCreator.v3action = v3.action(type)
 
         actionCreators[name] = actionCreator
 
@@ -125,22 +119,31 @@ export function createAtom<
     }
   })
 
-  const cacheReducer = decorators.reduce(
-    (acc, decorator) => decorator(acc),
-    createDynamicallyTrackedCacheReducer<State, Deps>(
-      reducer,
-      dependencies,
-      trackedTypes,
-      actionCreators,
-      externalActions,
-    ),
+  // const cacheReducer = decorators.reduce(
+  //   (acc, decorator) => decorator(acc),
+  //   createDynamicallyTrackedCacheReducer<State, Deps>(
+  //     reducer,
+  //     dependencies,
+  //     trackedTypes,
+  //     actionCreators,
+  //     externalActions,
+  //   ),
+  // )
+  const cacheReducer = createDynamicallyTrackedCacheReducer<State, Deps>(
+    reducer,
+    dependencies,
+    trackedTypes,
+    actionCreators,
+    externalActions,
   )
 
   function atom(
     transaction: Transaction,
-    cache: CacheTemplate<State> = createTemplateCache(atom),
+    // cache: CacheTemplate<State> = createTemplateCache(atom),
   ): Cache<State> {
-    return cacheReducer(transaction, cache)
+    // return cacheReducer(transaction, cache)
+
+    return transaction.v3ctx.get(atom.v3atom)
   }
 
   atom.id = id
@@ -151,9 +154,16 @@ export function createAtom<
 
   atom.types = types
 
+  atom.v3atom = v3.atom(cacheReducer, id)
+
+  // @ts-expect-error
+  atom.v3atom.__reatom.v2atom = atom
+
   // @ts-expect-error
   return atom
 }
+
+const ctxs = new WeakMap<v3.Ctx['cause'], WeakMap<Fn, Rec>>()
 
 function createDynamicallyTrackedCacheReducer<
   State,
@@ -163,109 +173,55 @@ function createDynamicallyTrackedCacheReducer<
   dependencies: Deps,
   trackedTypes: Array<string>,
   actionCreators: Rec<ActionCreator>,
-  externalActions: Rec<string>,
-): CacheReducer<State> {
+  externalActions: Rec<ActionCreator>,
+) {
   const create: Track<Deps>[`create`] = (name, ...args) =>
-    // TODO
     // @ts-expect-error
     actionCreators[name as string](...args)
 
-  return (
-    { actions, process, schedule }: Transaction,
-    cache: CacheTemplate<State>,
-  ): Cache<State> => {
-    let { atom, ctx, state, listeners } = cache
-    let tracks: Array<Cache> = []
-    let effectCause: undefined | Cause
-    let outdatedCall = noop
-
-    const _get = (depAtom: Atom, atomCache?: Cache): Cache => {
-      outdatedCall()
-
-      const atomPatch = process(depAtom, atomCache)
-
-      if (effectCause == undefined) {
-        if (tracks.every((cache) => cache.atom.id != depAtom.id)) {
-          tracks.push(atomPatch)
-        }
-      }
-
-      return atomPatch
-    }
+  return (v3ctx: v3.CtxSpy, state?: any): any => {
+    const rootCause = getRootCause(v3ctx.cause)
+    if (!ctxs.has(rootCause)) ctxs.set(rootCause, new WeakMap())
+    if (!ctxs.get(rootCause)!.has(reducer))
+      ctxs.get(rootCause)!.set(reducer, {})
+    const ctx = ctxs.get(rootCause)!.get(reducer)!
 
     const get: Track<Deps>[`get`] = (name) =>
-      _get(dependencies[name as string] as Atom).state
+      v3ctx.spy((dependencies[name as string] as Atom).v3atom)
 
-    const getUnlistedState: Track<Deps>[`getUnlistedState`] = (targetAtom) => {
-      outdatedCall()
-      return process(targetAtom).state
-    }
+    const getUnlistedState: Track<Deps>[`getUnlistedState`] = (targetAtom) =>
+      v3ctx.get(targetAtom.v3atom)
 
     const onAction: Track<Deps>[`onAction`] = (name, reaction) => {
-      outdatedCall()
+      const ac =
+        externalActions[name as string] ?? actionCreators[name as string]
 
-      if (effectCause != undefined) {
-        throw createReatomError(
-          `Can not react to action inside another reaction`,
-        )
-      }
+      throwReatomError(ac === undefined, `Unknown action`)
 
-      const type =
-        externalActions[name as string] ?? actionCreators[name as string]?.type
-
-      if (type == undefined) {
-        throw createReatomError(`Unknown action`, { name })
-      }
-
-      actions.forEach((action) => {
-        if (type == action.type) {
-          effectCause = name as string
-          if (name != type) effectCause += ` (${type})`
-          effectCause += ' handler'
-          reaction(action.payload)
-          effectCause = undefined
-        }
-      })
+      spyChange(v3ctx, ac!.v3action, ({ payload }) => reaction(payload))
     }
 
     const onChange: Track<Deps>[`onChange`] = (name, reaction) => {
-      outdatedCall()
-
-      if (effectCause != undefined) {
-        throw createReatomError(
-          `Can not react to atom changes inside another reaction`,
-        )
-      }
-
       const depAtom = dependencies[name] as Atom
-      const atomCache = cache.tracks?.find(
-        (cache) => cache.atom.id == depAtom.id,
-      )
-      const atomPatch = _get(depAtom, atomCache)
 
-      if (
-        atomCache == undefined ||
-        !Object.is(atomCache.state, atomPatch.state)
-      ) {
-        effectCause = name as string
-        if (name != atom.id) effectCause += ` (${atom.id})`
-        effectCause += ' handler'
-        reaction(atomPatch.state, atomCache?.state)
-        effectCause = undefined
-      }
+      spyChange(v3ctx, depAtom.v3atom, (prev, next) => reaction(prev, next))
     }
 
     const onInit: Track<Deps>[`onInit`] = (cb) => {
-      if (cache.tracks == undefined) {
-        cb()
-      }
+      v3ctx.get((read) => read(v3ctx.cause!.proto)) || cb()
     }
 
-    const _schedule: Track<Deps>[`schedule`] = (effect) => {
-      outdatedCall()
-
-      schedule((dispatch, causes) => effect(dispatch, ctx, causes), effectCause)
-    }
+    const schedule: Track<Deps>[`schedule`] = (effect) =>
+      v3ctx.schedule(
+        () =>
+          effect(
+            // @ts-expect-error
+            getRootCause(v3ctx.cause).v2store.dispatch,
+            ctx,
+            [],
+          ),
+        2,
+      )
 
     const track: Track<Deps> = {
       create,
@@ -274,32 +230,13 @@ function createDynamicallyTrackedCacheReducer<
       onAction,
       onChange,
       onInit,
-      schedule: _schedule,
+      schedule,
+      v3ctx,
     }
 
-    let cause = `init`
-    let shouldCallReducer =
-      cache.tracks == undefined ||
-      actions.some(
-        ({ type }) =>
-          trackedTypes.includes(type) && ((cause = `${type} action`), true),
-      ) ||
-      cache.tracks.some(
-        (depCache) =>
-          !Object.is(depCache.state, _get(depCache.atom, depCache).state) &&
-          ((cause = `${depCache.atom.id} atom`), true),
-      )
+    // @ts-expect-error
+    state = reducer(track, state)
 
-    if (shouldCallReducer) {
-      tracks.length = 0
-      // @ts-expect-error
-      state = reducer(track, state)
-    }
-
-    outdatedCall = () => {
-      throw createReatomError(`Outdated track call`)
-    }
-
-    return { atom, cause, ctx, state: state!, tracks, listeners }
+    return state!
   }
 }

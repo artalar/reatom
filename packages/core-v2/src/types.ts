@@ -23,6 +23,7 @@ export type Values<T> = Merge<T[keyof T]>
 export type OmitValues<Collection, Target> = Merge<
   Omit<
     Collection,
+    // @ts-ignore
     Values<{
       [K in keyof Collection]: Collection[K] extends Target ? K : never
     }>
@@ -66,6 +67,8 @@ export type Cache<State = any> = {
   readonly tracks: Array<Cache>
 
   readonly listeners?: Set<AtomListener<State>>
+
+  // readonly v3Cache?: v3.AtomCache<State>
 }
 
 export type CacheTemplate<State = any> = Merge<
@@ -90,7 +93,7 @@ export type Atom<State = any> = {
    */
   types: Array<Action['type']>
 
-  // v3atom: v3.Atom<State>
+  v3atom: v3.Atom<State>
 }
 
 export type AtomBindings<State = any> = {
@@ -189,6 +192,8 @@ export type Track<
 
   /** Schedule effect */
   schedule(effect: AtomEffect): void
+
+  v3ctx: v3.CtxSpy
 }
 
 export type Action<Payload = any> = {
@@ -197,6 +202,8 @@ export type Action<Payload = any> = {
 
   /** Action indeteficator */
   type: string
+
+  v3action: v3.Action<[Payload], Payload>
 
   /** Atoms which will forced achieve this action  */
   targets?: Array<Atom>
@@ -210,15 +217,19 @@ export type ActionData<Payload = any> = Merge<
   }
 >
 
-type CustomAction<Data extends Rec> = Merge<Data & { type: Action['type'] }>
+type CustomAction<Data extends Rec, Args extends any[] = any[]> = Merge<
+  Data & { type: Action['type']; v3action: v3.Action<Args, Data['payload']> }
+>
 
 export type ActionCreator<
   Args extends any[] = any[],
   Data extends ActionData = { payload: Args[0] },
 > = {
-  (...a: Args): CustomAction<Data>
+  (...a: Args): CustomAction<Data, Args>
 
   type: Action['type']
+
+  v3action: v3.Action<Args, Data['payload']>
 }
 
 export type ActionCreatorBindings<Args extends any[] = any[]> = {
@@ -254,23 +265,14 @@ export type Store = {
    */
   dispatch(action: Action | Array<Action>, causes?: Causes): void
 
-  getCache<State>(
-    atom: Atom<State>,
-    fallback?: Cache<State> | CacheTemplate<State>,
-  ): Cache<State> | CacheTemplate<State>
+  getCache<State>(atom: Atom<State>): undefined | v3.AtomCache<State>
 
   getState<State>(atom: Atom<State>): State
-
-  onError(
-    cb: Fn<[error: unknown, transactionData: TransactionData]>,
-  ): Unsubscribe
-
-  onPatch(cb: Fn<[transactionData: TransactionData]>): Unsubscribe
 
   /** Subscribe to dispatch */
   subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe
 
-  // v3ctx: v3.Ctx
+  v3ctx: v3.Ctx
 }
 
 /**
@@ -289,6 +291,8 @@ export type Transaction = {
 
   /** Schedule effect */
   schedule(cb: TransactionEffect, cause?: Cause): void
+
+  v3ctx: v3.Ctx
 }
 
 export type TransactionResult = {

@@ -5,8 +5,6 @@ import {
   createAtom,
   Fn,
   isString,
-  Merge,
-  noop,
   Rec,
 } from '@reatom/core-v2'
 
@@ -97,7 +95,14 @@ export function createPrimitiveAtom<State>(
       {} as Rec<Fn>,
     ),
 
-    noop,
+    (track, state) => {
+      for (const name in actions) {
+        track.onAction(name, (payload) => {
+          state = actions[name](state, ...payload)
+        })
+      }
+      return state
+    },
 
     { decorators, ...restOptions },
   )
