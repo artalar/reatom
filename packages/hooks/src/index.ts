@@ -13,7 +13,7 @@ import {
 } from '@reatom/core'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
-  cause.cause === null ? cause : getRootCause(cause)
+  cause.cause === null ? cause : getRootCause(cause.cause)
 
 export const isSameCtx = (ctx1: Ctx, ctx2: Ctx) =>
   getRootCause(ctx1.cause) === getRootCause(ctx2.cause)
