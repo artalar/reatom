@@ -3,7 +3,7 @@
   "publishConfig": {
     "tag": "alpha"
   },
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for Svelte",
@@ -26,8 +26,8 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
-    "@reatom/lens": ">=3.1.0",
+    "@reatom/core": "^3.1.0",
+    "@reatom/lens": "^3.1.0",
     "svelte": "^3.0.0"
   },
   "author": "artalar",
@@ -42,8 +42,6 @@
   "homepage": "https://github.com/artalar/reatom/packages/npm-svelte",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }

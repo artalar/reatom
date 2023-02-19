@@ -1,6 +1,6 @@
 {
   "name": "@reatom/testing",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom testing package",
@@ -23,14 +23,12 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0"
+    "@reatom/core": "^3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "@reatom/undo",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for undo",
@@ -24,8 +24,8 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.21",
-    "@reatom/hooks": ">=3.1.2"
+    "@reatom/core": "^3.1.21",
+    "@reatom/hooks": "^3.1.2"
   },
   "author": "artalar",
   "maintainers": [
@@ -45,8 +45,6 @@
   "homepage": "https://github.com/artalar/reatom/packages/undo",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }

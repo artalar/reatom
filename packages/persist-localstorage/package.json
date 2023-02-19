@@ -23,8 +23,8 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
-    "@reatom/persist": ">=3.1.0"
+    "@reatom/core": "^3.1.0",
+    "@reatom/persist": "^3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -38,8 +38,6 @@
   "homepage": "https://www.reatom.dev/packages/persist-localstorage",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }

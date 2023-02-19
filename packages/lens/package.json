@@ -1,6 +1,6 @@
 {
   "name": "@reatom/lens",
-  "version": "3.1.10",
+  "version": "3.1.11",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for lens",
@@ -23,9 +23,9 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
-    "@reatom/effects": ">=3.1.0",
-    "@reatom/utils": ">=3.1.0"
+    "@reatom/core": "^3.1.0",
+    "@reatom/effects": "^3.1.0",
+    "@reatom/utils": "^3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -39,8 +39,6 @@
   "homepage": "https://www.reatom.dev/packages/lens",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }

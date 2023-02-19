@@ -1,6 +1,6 @@
 {
   "name": "@reatom/effects",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for effects",
@@ -23,7 +23,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0"
+    "@reatom/core": "^3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -37,8 +37,6 @@
   "homepage": "https://www.reatom.dev/packages/effects",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }

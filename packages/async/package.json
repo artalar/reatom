@@ -1,6 +1,6 @@
 {
   "name": "@reatom/async",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for async",
@@ -23,10 +23,10 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
-    "@reatom/effects": ">=3.1.0",
-    "@reatom/hooks": ">=3.1.0",
-    "@reatom/primitives": ">=3.1.0"
+    "@reatom/core": "^3.1.0",
+    "@reatom/effects": "^3.1.0",
+    "@reatom/hooks": "^3.1.0",
+    "@reatom/primitives": "^3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -40,8 +40,6 @@
   "homepage": "https://www.reatom.dev/packages/async",
   "files": [
     "/build",
-    "/package.json",
-    "/README.md",
-    "/src"
+    "/package.json"
   ]
 }
