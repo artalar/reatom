@@ -98,18 +98,19 @@ export const spyChange: {
   <Params extends any[], Payload>(
     ctx: CtxSpy,
     anAction: Action<Params, Payload>,
-    handler?: Fn<
-      [
-        { params: Params; payload: Payload },
-        { params: Params; payload: Payload }?,
-      ]
-    >,
+    handler?: Fn<[{ params: Params; payload: Payload }]>,
   ): boolean
   <T>(ctx: CtxSpy, anAtom: Atom<T>, handler?: Fn<[T, T?]>): boolean
-} = (ctx: CtxSpy, anAtom: Atom, handler: Fn) => {
+} = (ctx: CtxSpy, anAtom: Atom, handler?: Fn) => {
   const { pubs } = ctx.cause
   const { isAction } = anAtom.__reatom
   let state: any = ctx.spy(anAtom)
+  const handle = handler
+    ? (prevState?: any) =>
+        isAction
+          ? (state as any[]).forEach((v) => handler(v))
+          : handler(state, prevState)
+    : () => {}
 
   // we walk from the end because
   // it is possible to have a few different
@@ -125,20 +126,12 @@ export const spyChange: {
       ) {
         return false
       }
-      handler?.(
-        isAction ? state.at(-1) : state,
-        isAction ? state.at(-2) : pub.state,
-      )
+      handle(pub.state)
       return true
     }
   }
 
-  if (isAction) {
-    if (state.length === 0) return false
-    state = state.at(-1)
-  }
-
-  handler?.(state)
+  handle()
 
   return true
 }
