@@ -1,8 +1,16 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { Atom, createAtom, createStore, Fn, getState, Rec } from './'
-import { atom, callSafely } from '@reatom/core'
+import {
+  Atom,
+  createAtom,
+  createStore,
+  Fn,
+  getState,
+  Rec,
+  callSafety,
+} from './'
+import { atom } from '@reatom/core'
 import { createNumberAtom, createPrimitiveAtom } from '../primitives'
 import { createPersist, init } from '../experiments'
 
@@ -27,7 +35,9 @@ test(`displayName`, () => {
 
   const isFirstNameShortAtom = createAtom(
     { firstNameAtom },
-    ({ get }) => get(`firstNameAtom`).length < 10,
+    ({ get }) => {
+      return get(`firstNameAtom`).length < 10
+    },
     `isFirstNameShort`,
   )
 
@@ -288,7 +298,8 @@ test(`Batched dispatch`, () => {
 
   assert.is(cb.calls.length, 1)
 
-  store.dispatch([a.change((s) => s + 1), a.change((s) => s + 1)])
+  console.log('TEST')
+  store.dispatch([a.change((s) => s + 1), a.change((s) => s + 1)]) //?
   assert.is(cb.calls.length, 2)
   assert.is(cb.lastInput(), 2)
   ;`👍` //?
@@ -327,7 +338,7 @@ test(`Manage dynamic dependencies`, () => {
 test(`await all effect`, async () => {
   function createCallSafetyTracked(cb: Fn) {
     let count = 0
-    const callSafetyTracked: typeof callSafely = (...a: any[]) => {
+    const callSafetyTracked: typeof callSafety = (...a: any[]) => {
       // @ts-expect-error
       const result: any = callSafety(...a)
 

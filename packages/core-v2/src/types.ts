@@ -203,7 +203,7 @@ export type Action<Payload = any> = {
   /** Action indeteficator */
   type: string
 
-  v3action: v3.Action<[Payload], Payload>
+  v3action: v3.Action //<[Payload], Payload>
 
   /** Atoms which will forced achieve this action  */
   targets?: Array<Atom>
@@ -218,7 +218,10 @@ export type ActionData<Payload = any> = Merge<
 >
 
 type CustomAction<Data extends Rec, Args extends any[] = any[]> = Merge<
-  Data & { type: Action['type']; v3action: v3.Action<Args, Data['payload']> }
+  Data & {
+    type: Action['type']
+    v3action: v3.Action //<Args, Data['payload']>
+  }
 >
 
 export type ActionCreator<
@@ -229,7 +232,7 @@ export type ActionCreator<
 
   type: Action['type']
 
-  v3action: v3.Action<Args, Data['payload']>
+  v3action: v3.Action //<Args, Data['payload']>
 }
 
 export type ActionCreatorBindings<Args extends any[] = any[]> = {

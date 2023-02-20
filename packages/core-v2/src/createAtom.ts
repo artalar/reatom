@@ -46,6 +46,7 @@ export type AtomOptions<State = any> =
       id?: Atom[`id`]
       decorators?: Array<AtomDecorator<State>>
       store?: Store
+      v3atom?: v3.Atom
     }
 
 export type AtomDecorator<State> = Fn<
@@ -66,7 +67,8 @@ export function createAtom<
 ): AtomSelfBinded<State, OmitValues<Deps, Atom | ActionCreator>> {
   let {
     // decorators = [],
-    id = `atom${++atomsCount}`,
+    v3atom,
+    id = v3atom?.__reatom.name ?? `atom${++atomsCount}`,
     store = defaultStore,
   } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
@@ -102,7 +104,6 @@ export function createAtom<
         })
         actionCreator.type = type
         actionCreator.dispatch = (...a: any[]) =>
-          // @ts-expect-error
           store.dispatch(actionCreator(...a))
         actionCreator.v3action = v3.action(type)
 
@@ -154,7 +155,7 @@ export function createAtom<
 
   atom.types = types
 
-  atom.v3atom = v3.atom(cacheReducer, id)
+  atom.v3atom = v3atom ?? v3.atom(cacheReducer, id)
 
   // @ts-expect-error
   atom.v3atom.__reatom.v2atom = atom
@@ -186,6 +187,8 @@ function createDynamicallyTrackedCacheReducer<
       ctxs.get(rootCause)!.set(reducer, {})
     const ctx = ctxs.get(rootCause)!.get(reducer)!
 
+    console.log({state})
+
     const get: Track<Deps>[`get`] = (name) =>
       v3ctx.spy((dependencies[name as string] as Atom).v3atom)
 
@@ -198,7 +201,11 @@ function createDynamicallyTrackedCacheReducer<
 
       throwReatomError(ac === undefined, `Unknown action`)
 
-      spyChange(v3ctx, ac!.v3action, ({ payload }) => reaction(payload))
+      console.log(name)
+      spyChange(v3ctx, ac!.v3action, ({ payload }) => {
+        console.log({name, payload})
+        reaction(payload)
+      })
     }
 
     const onChange: Track<Deps>[`onChange`] = (name, reaction) => {

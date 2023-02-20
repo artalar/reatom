@@ -58,56 +58,27 @@ export function createPrimitiveAtom<State>(
       payload(state),
   }
 
-  let { decorators = [], ...restOptions } = isString(options)
+  let { decorators, ...restOptions } = isString(options)
     ? ({ id: options } as Exclude<AtomOptions<State>, string>)
     : options
 
-  decorators = decorators.slice()
-  decorators.unshift((reducer) => (transaction, cache) => {
-    if (cache.tracks == undefined) {
-      cache.tracks = []
-      cache.state ??= initState
-    }
-
-    transaction.actions.forEach((action) => {
-      const idx = actionCreatorsTypes.indexOf(action.type)
-
-      if (idx != -1) {
-        if (cache == cache) {
-          cache = Object.assign({}, cache)
-        }
-
-        cache.state = actions![keys[idx]](
-          cache.state as State,
-          ...action.payload,
-        )
-      }
-    })
-
-    return cache as any
-  })
-
-  const keys = Object.keys(actions!)
-
   const atom = createAtom(
-    keys.reduce(
+    Object.keys(actions).reduce(
       (acc, key) => ((acc[key] = (...payload) => payload), acc),
       {} as Rec<Fn>,
     ),
 
-    (track, state) => {
+    (track, state = initState) => {
       for (const name in actions) {
-        track.onAction(name, (payload) => {
-          state = actions[name](state, ...payload)
+        track.onAction(name, (payload: any[]) => {
+          state = actions![name]!(state, ...payload)
         })
       }
       return state
     },
 
-    { decorators, ...restOptions },
+    restOptions,
   )
-
-  const actionCreatorsTypes = keys.map((key) => atom[key].type)
 
   return atom
 }
