@@ -22,7 +22,9 @@ export const reatomEffect: {
 } = (cb, name) => action((ctx) => ctx.schedule(cb), name)
 ```
 
-> All atoms and actions have optional `name` property, which you may pass as an argument. Correct name simplify debug and it is a good to always define it. Any action name should starts with a verb. An atom name should contain "Atom" word in the end. If you need to create dependent entity, separate dependency name and dependent feature by a dot, like in example below.
+All atoms and actions have optional `name` property, which you may pass as an argument. Correct name simplify debug and it is a good to always define it. Any action name should starts with a verb. An atom name should contain "Atom" word in the end. If you need to create dependent entity, separate dependency name and dependent feature by a dot, like in example below.
+
+> For internal atoms and actions, which you want to hide from logs and debugger, you can use a prefix `_` (underscore) in the name. It is good to not skip the name, for rare, but important deep debugging. You could find example in [custom operator guide](/guides/custom-operator).
 
 It is ok to have a main atom or action and assign all additional things to it just by `Object.assign`.
 
@@ -60,30 +62,3 @@ export const mapState = (anAtom, mapper, name) => {
   return theAtom
 }
 ```
-
-### Operator prefix
-
-Operator for the [pipe](/core#atompipe-api) function should starts with a verb.
-
-```ts
-import { Atom, AtomState, CtxSpy, Fn } from '@reatom/core'
-
-declare function mapState<T extends Atom, Res>(
-  mapper: Fn<[CtxSpy, AtomState<T>, undefined | AtomState<T>], Res>,
-  name?: string,
-): Fn<[T], Atom<Res>>
-```
-
-If operator isn't create a new atom and mutate the passed you should use `with` prefix.
-
-```ts
-import { Atom, AtomState } from '@reatom/core'
-
-declare function withStateHistory<T extends Atom>(
-  length: string,
-): (anAtom: T) => T & {
-  stateHistoryAtom: Atom<AtomState<T>>
-}
-```
-
-We use here `T extends Atom` instead of much simpler `<T>(length: string): (anAtom: Atom<T>) Atom<T> & {...}` to save all additional properties witch added by previous operators.
