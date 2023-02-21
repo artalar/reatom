@@ -1,21 +1,25 @@
 <script>
-  document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach((el) => {
-    const h = el as HTMLHeadingElement
-    const copyButton = document.createElement('button')
+  // TODO declare types globaly
+  // @ts-ignore
+  window.ADD_COPY_BUTTONS = () =>
+    document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach((el) => {
+      const h = el as HTMLHeadingElement
+      const copyButton = document.createElement('button')
 
-    copyButton.classList.add('copy')
+      copyButton.classList.add('copy')
 
-    copyButton.innerText = '#'
+      copyButton.innerText = '#'
 
-    copyButton.ariaLabel = copyButton.title = `copy anchor to "${h.innerText}"`
+      copyButton.ariaLabel =
+        copyButton.title = `copy anchor to "${h.innerText}"`
 
-    copyButton.onclick = () => {
-      location.hash = `#${h.id}`
-      navigator.clipboard.writeText(location.href)
-    }
+      copyButton.onclick = () => {
+        location.hash = `#${h.id}`
+        navigator.clipboard.writeText(location.href)
+      }
 
-    h.appendChild(copyButton)
-  })
+      h.appendChild(copyButton)
+    })
 </script>
 <style is:global>
   button.copy:before {
