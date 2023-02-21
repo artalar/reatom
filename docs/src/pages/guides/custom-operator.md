@@ -79,3 +79,5 @@ export const delay =
     }, name)
   }
 ```
+
+> [Real `debounce`](https://www.reatom.dev/packages/lens#debounce)
