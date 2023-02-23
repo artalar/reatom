@@ -4,11 +4,11 @@ title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
 
-Reatom is the ultimate [state manager](/general/what-is-state-manager) with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
+Reatom is the ultimate [state manager](/general/what-is-state-manager) with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It is an opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
 
 Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
 
-[The core package](/core) is included all this features and you may use it anywhere, from huge apps to even small libs, as the overhead only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We trying to build stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+[The core package](/core) includes all these features and you may use it anywhere, from huge apps to even small libs, as the overhead is only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
@@ -53,13 +53,13 @@ Check out [@reatom/core docs](/core) for detailed explanation of key principles 
 
 We will use [@reatom/core](/core), [@reatom/npm-react](/npm-react), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework).
 
-`reatomAsync` is a simple decorator which wrap your async function and adds extra actions and atoms to track creating promise statuses.
+`reatomAsync` is a simple decorator which wraps your async function and adds extra actions and atoms to track creating promise statuses.
 
-`withDataAtom` adds property `dataAtom` which subscribes to the effect results, it is like a simple cache implementation. `withAbort` allow to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler helps to handle temporal rate limit.
+`withDataAtom` adds property `dataAtom` which subscribes to the effect results, it is like a simple cache implementation. `withAbort` allows to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handlers help to handle temporal rate limit.
 
 Simple `sleep` helper (for debounce) gotten from [utils package](/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
-`onUpdate` is a [hook](/packages/hooks) which subscribes to the atom and call passed callback on every update.
+`onUpdate` is a [hook](/packages/hooks) which subscribes to the atom and calls passed callback on every update.
 
 ```ts
 import {
@@ -119,7 +119,7 @@ export default function App() {
 }
 ```
 
-The whole logic definition is only about 15 LoC, what is the count would be in a different library? The most impressed thing is that the overhead is only [6KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetryAction%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdncYbmhXGF94HCkAX2lEb18YfkE0EXFJDGCrUiN4ExodXQA6bksQf0DkWI9ZKDFkMGSoVIhOdJpyfOFRCQhWOrLg%2BFI4z180ABFiRCYyAG0AXRYqReWMACMQZChSFwtkYnhbM1p-dSgAWhsXpbByGHT9w6g0AAlAQmDA6KzgS5xDzgYEAK3gOnM2j0NCqyDO5kQYEUNE61kkDnwjmhHhg6LOAH46jhJBBELZ4HUbMB-GIACaSCg3fowfxWHC%2BVikskwSkwACMUSiMAAVDAALLENA0mykaJRPEgqySOXysIsEVk8wvCUHDy-A6xcAAVWC7NupHoqEwJBoY0KE0JnA48F0wTOsCuwFktwAwqiYGIEJsfmwgA) and you not limited only for network cache, Reatom is enough powerful and expression for describing any kind of states.
+The whole logic definition is only about 15 LoC, what would the count be in a different library? The most impressive thing is that the overhead is only [6KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetryAction%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdncYbmhXGF94HCkAX2lEb18YfkE0EXFJDGCrUiN4ExodXQA6bksQf0DkWI9ZKDFkMGSoVIhOdJpyfOFRCQhWOrLg%2BFI4z180ABFiRCYyAG0AXRYqReWMACMQZChSFwtkYnhbM1p-dSgAWhsXpbByGHT9w6g0AAlAQmDA6KzgS5xDzgYEAK3gOnM2j0NCqyDO5kQYEUNE61kkDnwjmhHhg6LOAH46jhJBBELZ4HUbMB-GIACaSCg3fowfxWHC%2BVikskwSkwACMUSiMAAVDAALLENA0mykaJRPEgqySOXysIsEVk8wvCUHDy-A6xcAAVWC7NupHoqEwJBoY0KE0JnA48F0wTOsCuwFktwAwqiYGIEJsfmwgA) and you are not limited to network cache, Reatom is powerful and expressive enough for describing any kind of state.
 
 <!-- Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient. -->
 
@@ -184,7 +184,7 @@ https://www.patreon.com/artalar_dev
 
 ### Credits
 
-Software development in 202X is hard and we really appreciate to all [contributors](https://github.com/artalar/reatom/graphs/contributors) and free software maintainers, who make our life easier. Special thanks to:
+Software development in 202X is hard and we really appreciate all [contributors](https://github.com/artalar/reatom/graphs/contributors) and free software maintainers, who make our life easier. Special thanks to:
 
 - [React](https://reactjs.org), [Redux](https://redux.js.org) and [Effector](https://effector.dev/) for inspiration
 - [microbundle](https://github.com/developit/microbundle) for handling all bundling complexity
