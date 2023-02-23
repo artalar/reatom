@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/Layout.astro
 title: timer
-description: Reatom for timer
+description: Reatom for timers
 ---
 
 Simple timer model to manage some countdown.
@@ -9,11 +9,11 @@ Simple timer model to manage some countdown.
 ```ts
 import { reatomTimer } from '@reatom/timer'
 
-// all options are not required
+// all options are not required, here are the defaults
 const pomodoroAtom = reatomTimer({
   name: 'pomodoroAtom',
-  interval: 1000, // tick each second
-  delayMultiplier: 1000, // allow to pass seconds to startTimer
+  interval: 1000, // `1000`ms - tick each second. Than lower, then more precise
+  delayMultiplier: 1000, // `1000`ms allow to pass seconds to startTimer. Use `1` to pass ms
   progressPrecision: 2, // progress will be rounded to 2 digits after dot
   resetProgress: true, // progress will be reset to 0 on end of timer
 })
@@ -24,17 +24,17 @@ Example: https://stackblitz.com/edit/reatom-timer-pomodoro?file=src%2FApp.tsx
 ```ts
 export interface TimerAtom extends AtomMut<number> {
   /** (delay - remains) / delay */
-  progressAtom: AtomMut<number>
+  progressAtom: Atom<number>
   /** interval in ms */
-  intervalAtom: AtomMut<number> & {
-    setSeconds: Action<[seconds: number], number>
-  }
+  intervalAtom: AtomMut<number>
   /** start timer by passed interval */
   startTimer: Action<[delay: number], Promise<void>>
-  /** allow to pause timer */
-  pauseAtom: AtomMut<boolean>
   /** stop timer manually */
   stopTimer: Action<[], void>
+  /** allow to pause timer */
+  pauseAtom: AtomMut<boolean>
+  /** switch pause state */
+  pause: Action<[], boolean>
   /** track end of timer. Do not call manually! */
   endTimer: Action<[], void>
 }
