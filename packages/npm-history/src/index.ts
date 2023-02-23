@@ -34,6 +34,8 @@ onUpdate(historyAtom, (ctx, history) => {
       // @ts-expect-error
       locationAtom(ctx, history.location),
   )
+  // @ts-expect-error
+  locationAtom(ctx, history.location);
 })
 
 // @ts-expect-error
