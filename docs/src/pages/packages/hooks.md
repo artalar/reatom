@@ -85,18 +85,25 @@ Spy an atom or an action change in the atom reducer. The difference with [onUpda
 `spyChange(CtxSpy, anAtom, (value) => any): isChanged`
 
 ```ts
-import { atom } from '@reatom/core'
+import { atom, action } from '@reatom/core'
 import { spyChange } from '@reatom/hooks'
 
+const someAction = action<number>();
+const anotherAtom = atom(0);
+const initState = 0;
+
 export const someAtom = atom((ctx, state = initState) => {
-  spyChange(ctx, someAction, (payload) => {
-    state = state + payload
+  spyChange(ctx, someAction, ({ payload }) => {
+    state = payload
   })
   // OR
-  if (spyChange(ctx, someAction)) {
-    state = state + payload
+  if (spyChange(ctx, anotherAtom)) {
+    state = state + ctx.get(anotherAtom)
   }
+
+  return state;
 })
+
 ```
 
 <!-- ## `controlConnection` -->
