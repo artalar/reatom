@@ -14,6 +14,12 @@ Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
 ## Simple example
 
+#### Install
+
+```sh
+npm i @reatom/core
+```
+
 [vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
 
 [react repl](https://replit.com/@artalar/reatom-react-ts)
@@ -48,6 +54,11 @@ ctx.subscribe(greetingAtom, (greeting) => {
 Check out [@reatom/core docs](/core) for detailed explanation of key principles and features.
 
 ## Advanced example
+
+#### Install 
+```sh
+npm i @reatom/framework
+```
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 

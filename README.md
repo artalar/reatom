@@ -6,18 +6,14 @@ Key principles are **immutability** and **explicit reactivity** (no proxies), im
 
 Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
-## Install
+## Simple example
 
-#### All features 
-```sh
-npm i @reatom/framework
-```
-#### Just core
+#### Install
+
 ```sh
 npm i @reatom/core
 ```
 
-## Simple example
 
 [vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
 
@@ -53,6 +49,11 @@ ctx.subscribe(greetingAtom, (greeting) => {
 Check out [@reatom/core docs](/core) for detailed explanation of key principles and features.
 
 ## Advanced example
+
+#### Install 
+```sh
+npm i @reatom/framework
+```
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 
