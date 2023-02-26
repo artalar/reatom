@@ -8,7 +8,7 @@ description: Reatom for hooks
 
 All atoms and actions have a hooks to they lifecycle, this package expose friendly helpers to use this hooks.
 
-As all computations in Reatom are lazy, it is safe to create atoms or actions dynamically in fabrics, for [atomization](/guides/atomization) for example. You could use this hooks for dynamic atoms too if the target atom is dynamic. If the target atom is static (in global scope) and you create a hook dynamically in some fabric you should manage the hook dispose manually, by the returned callback.
+We assume that you already read > Read more in [lifecycle guild](/guides/lifecycle).
 
 A lot of cool examples you could find in [async package docs](/packages/async).
 

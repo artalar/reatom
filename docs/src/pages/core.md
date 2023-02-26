@@ -365,7 +365,7 @@ The unique feature of Reatom and the schedule specially is ability to define the
 - `1` - the **default** near effect queue, used to schedule regular effects. This effects calling could be redefined (delayed) in `callNearEffect` option of `createCtx`
 - `2` - lates effect queue, used to schedule subscribers. This effects calling could be redefined (delayed) in `callLateEffect` option of `createCtx`.
 
-<img src="/assets/queues.png" width="100%" alt="https://excalidraw.com/#json=zmumjo5W28QArlUyb9KPH,eI1s96x6ri5O4yBzv0StqA">
+> Read more in [lifecycle guild](/guides/lifecycle).
 
 ### `ctx.schedule` rollback API
 
