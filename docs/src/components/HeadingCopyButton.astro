@@ -20,6 +20,8 @@
 
       h.appendChild(copyButton)
     })
+    // @ts-expect-error
+    window.ADD_COPY_BUTTONS()
 </script>
 <style is:global>
   button.copy:before {
