@@ -69,6 +69,7 @@ There is no docs yet, but you could check tests instead:
       '',
     )
     content = content.replaceAll('https://www.reatom.dev', '')
+    content = content.replaceAll('../../docs/public', '')
   }
 
   let layoutPath = '../../layouts/Layout.astro'
@@ -84,6 +85,7 @@ description: ${packageJSON.description}
 ---
 
 ` + content
+
 
   // try {
   //   if (content !== (await fs.readFile(pagePath, 'utf8'))) {
