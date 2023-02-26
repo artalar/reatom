@@ -11,7 +11,7 @@ export const unstable_combine = <Shape extends Rec<Atom>>(
 ): Atom<Combined<Shape>> => {
   const theAtom = atom((ctx, state = {} as Combined<Shape>) => {
     const newState = {} as Combined<Shape>
-    for (const key in shape) state[key] = ctx.spy(shape[key]!)
+    for (const key in shape) newState[key] = ctx.spy(shape[key]!)
     return isShallowEqual(state, newState) ? state : newState
   })
 
