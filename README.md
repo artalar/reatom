@@ -6,6 +6,17 @@ Key principles are **immutability** and **explicit reactivity** (no proxies), im
 
 Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
+## Install
+
+#### All features 
+```sh
+npm i @reatom/framework
+```
+#### Just core
+```sh
+npm i @reatom/core
+```
+
 ## Simple example
 
 [vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
