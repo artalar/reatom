@@ -1,4 +1,12 @@
-import { Action, action, Atom, atom, AtomMut, __count } from '@reatom/core'
+import {
+  Action,
+  action,
+  Atom,
+  atom,
+  AtomMut,
+  throwReatomError,
+  __count,
+} from '@reatom/core'
 import { withReducers } from '@reatom/primitives'
 import { noop, sleep } from '@reatom/utils'
 import { getRootCause, onUpdate } from '@reatom/hooks'
@@ -64,6 +72,9 @@ export const reatomTimer = (
 
   const startTimer: TimerAtom['startTimer'] = action((ctx, delay: number) => {
     delay *= delayMultiplier
+
+    throwReatomError(delay < ctx.get(intervalAtom), 'delay less than interval')
+
     const version = _versionAtom(ctx, (s) => s + 1)
     const start = Date.now()
     let target = delay + start
@@ -78,8 +89,7 @@ export const reatomTimer = (
     pauseAtom(ctx, false)
 
     const cleanupPause = onUpdate(pauseAtom, (pauseCtx, value) =>
-      // TODO: circles?
-      // getRootCause(ctx.cause) === getRootCause(pauseCtx.cause) &&
+      getRootCause(ctx.cause) === getRootCause(pauseCtx.cause) &&
       pauseCtx.schedule(() => {
         if (value) {
           const from = Date.now()
@@ -106,14 +116,13 @@ export const reatomTimer = (
           const batch = ctx.get.bind(ctx)
 
           batch(() => {
+            remains = timerAtom(ctx, Math.max(0, target - Date.now()))
             const interval = ctx.get(intervalAtom)
-            remains = timerAtom(ctx, target - Date.now())
-            const progress = (delay - remains) / delay
-            const roundPart = progress % (interval / delay)
+            const steps = Math.ceil(delay / interval)
+            const stepsRemains = Math.ceil(remains / interval)
             progressAtom(
               ctx,
-              Math.round((progress - roundPart) * progressMultiplier) /
-                progressMultiplier,
+              +(1 - stepsRemains / steps).toFixed(progressPrecision),
             )
           })
         }

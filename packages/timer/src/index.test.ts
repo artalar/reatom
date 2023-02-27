@@ -60,7 +60,7 @@ test('pauseAtom', async () => {
   )
 
   timerAtom.pauseAtom(ctx, true)
-  await sleep(20)
+  await sleep(40)
   assert.equal(
     track.calls.map(({ i }) => i[0]),
     [0.17, 0.33],
@@ -73,6 +73,23 @@ test('pauseAtom', async () => {
     track.calls.map(({ i }) => i[0]),
     [0.17, 0.33, 0.5, 0.67, 0.83, 1],
   )
+  ;`👍` //?
+})
+
+test('do not allow overprogress', async () => {
+  const timerAtom = reatomTimer({ delayMultiplier: 1, interval: 1 })
+  const ctx = createTestCtx()
+
+  const target = 10
+  const start = Date.now()
+  const promise = timerAtom.startTimer(ctx, target)
+
+  await sleep(target / 2)
+  while (Date.now() - start < target) {}
+
+  await promise
+
+  assert.is(ctx.get(timerAtom.progressAtom), 1)
   ;`👍` //?
 })
 
