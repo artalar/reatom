@@ -43,7 +43,9 @@ Here is a scheme of lifecycle hooks and the main flow.
 
 > Check [ctx.schedule](https://www.reatom.dev/core#ctxschedule) docs for more details about the ability to use the queues.
 
-<img data-theme="light" src="/assets/queues_light.png" width="100%" alt="https://excalidraw.com/#json=zmumjo5W28QArlUyb9KPH,eI1s96x6ri5O4yBzv0StqA">
-<img data-theme="dark" src="/assets/queues_dark.png" width="100%" alt="https://excalidraw.com/#json=zmumjo5W28QArlUyb9KPH,eI1s96x6ri5O4yBzv0StqA">
+<!-- https://excalidraw.com/#json=-hQfqMoY0czb6jCGGEGYq,jqnHWK_5UdISjdGPqFHrcQ -->
+
+<img data-theme="light" src="/assets/queues_light.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks">
+<img data-theme="dark" src="/assets/queues_dark.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks">
 
 <br>
