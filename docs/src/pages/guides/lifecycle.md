@@ -25,7 +25,9 @@ onConnect(fetchUser.dataAtom, fetchUser)
 export const userNameAtom = atom((ctx) => ctx.spy(fetchUser.dataAtom)?.name)
 ```
 
-This pattern allow you to stay control of data neednes in view layer, but do it implicitly, and explicitly for data models. It is a more clear and scalable way to design apps, with better testing experience and better ability to reuse components.
+Now, you have lazy computations and **lazy effects**!
+
+This pattern allow you to stay control of data neednes in view layer or any other consumer module, but do it implicitly, and explicitly for data models. It is a more clear and scalable way to design apps, with better testing experience and better ability to reuse components.
 
 ## Lifecycle hooks
 
@@ -41,4 +43,7 @@ Here is a scheme of lifecycle hooks and the main flow.
 
 > Check [ctx.schedule](https://www.reatom.dev/core#ctxschedule) docs for more details about the ability to use the queues.
 
-<img src="/assets/queues.png" width="100%" alt="https://excalidraw.com/#json=zmumjo5W28QArlUyb9KPH,eI1s96x6ri5O4yBzv0StqA">
+<img data-theme="light" src="/assets/queues_light.png" width="100%" alt="https://excalidraw.com/#json=zmumjo5W28QArlUyb9KPH,eI1s96x6ri5O4yBzv0StqA">
+<img data-theme="dark" src="/assets/queues_dark.png" width="100%" alt="https://excalidraw.com/#json=zmumjo5W28QArlUyb9KPH,eI1s96x6ri5O4yBzv0StqA">
+
+<br>

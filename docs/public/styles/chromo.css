@@ -12,6 +12,10 @@
   --selection-back-color: var(--foreground-color);
 }
 
+[data-theme='dark'] {
+  display: none;
+}
+
 pre.mono,
 .mono-all pre {
   filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
@@ -36,6 +40,13 @@ pre.mono,
     background-color: var(--background-strong-color) !important;
     filter: none;
   }
+
+  [data-theme='light'] {
+    display: none;
+  }
+  [data-theme='dark'] {
+    display: block;
+  }
 }
 
 @media (prefers-color-scheme: light) {
@@ -55,6 +66,13 @@ pre.mono,
     filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
     background-color: #191919 !important;
     position: relative;
+  }
+
+  [data-theme='light'] {
+    display: block;
+  }
+  [data-theme='dark'] {
+    display: none;
   }
 }
 
@@ -120,9 +138,8 @@ a.mono:after,
 }
 
 a.current {
-  color:  var(--foreground-strong-color)
+  color: var(--foreground-strong-color);
 }
-
 
 details.mono a,
 .mono-all details a {
