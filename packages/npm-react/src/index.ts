@@ -1,6 +1,7 @@
-import React from 'react'
-import { useSyncExternalStore } from 'use-sync-external-store/shim'
+import React, { useEffect } from 'react'
 import {
+  action,
+  Action,
   atom,
   Atom,
   AtomMut,
@@ -8,21 +9,18 @@ import {
   Ctx,
   CtxSpy,
   Fn,
+  isAction,
   isAtom,
   throwReatomError,
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
-import { Action, action, isAction } from '@reatom/framework'
-
-export let DEBUG_INTERNALS_PARSING = true
 
 let getName = (type: string): string =>
-  (DEBUG_INTERNALS_PARSING && // @ts-expect-error
-    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactDebugCurrentFrame?.getCurrentStack?.()
-      ?.trim?.()
-      .match(/at\s(\w+)\s/)[1]
-      ?.concat('.', type)) ||
-  `_${type}`
+  // @ts-expect-error does we have another way?
+  React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner?.current?.type?.name?.concat(
+    '.',
+    type,
+  ) || `_${type}`
 
 let batch = (cb: Fn) => cb()
 
@@ -66,6 +64,25 @@ let bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
 export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
   bind(useCtx(), bindBind)
 
+// use it instead of `setState` to handle HMR
+const useRefSetup = <T extends Fn<[], { deps: Array<any> }>>(
+  deps: Array<any>,
+  setup: T,
+): React.MutableRefObject<ReturnType<T>> => {
+  let ref = React.useRef<ReturnType<typeof setup>>()
+  if (
+    ref.current === undefined ||
+    ref.current.deps.length !== deps.length ||
+    ref.current!.deps.some((v, i) => !Object.is(v, deps[i]!))
+  ) {
+    // @ts-expect-error
+    ref.current = setup()
+  }
+
+  // @ts-expect-error
+  return ref
+}
+
 // @ts-ignore
 export const useAtom: {
   <T extends Atom>(
@@ -94,7 +111,7 @@ export const useAtom: {
   deps.push(ctx)
   if (isAtom(anAtom)) deps.push(anAtom)
 
-  let setup = () => {
+  let { theAtom, update, sub, get } = useRefSetup(deps, () => {
     let theAtom = isAtom(anAtom)
       ? anAtom
       : atom(anAtom, getName(name ?? `useAtom#${typeof anAtom}`))
@@ -107,61 +124,84 @@ export const useAtom: {
     let get = () => ctx.get(theAtom)
 
     return { theAtom, update, deps, sub, get }
-  }
+  }).current!
 
-  let ref = React.useRef<ReturnType<typeof setup>>()
-  if (
-    ref.current === undefined ||
-    ref.current.deps.length !== deps.length ||
-    ref.current!.deps.some((v, i) => !Object.is(v, deps[i]!))
-  ) {
-    ref.current = setup()
-  }
-
-  let { theAtom, update, sub, get } = ref.current
-
-  let state = subscribe ? useSyncExternalStore(sub, get, get) : get()
-
-  return [state, update, theAtom, ctx]
+  return [
+    subscribe ? React.useSyncExternalStore(sub, get, get) : get(),
+    update,
+    theAtom,
+    ctx,
+  ]
 }
 
 export const useAtomCreator = <T extends Atom>(
   creator: Fn<[], T>,
   deps: Array<any> = [],
-  options: { name?: string; subscribe?: boolean },
-) => useAtom(React.useMemo(creator, deps), [], options)
+  options?: { subscribe?: boolean },
+) => {
+  const ref = useRefSetup(deps, () => ({ deps, theAtom: creator() }))
+  useAtom(ref.current.theAtom, [], options)
+}
+
+export const useUpdate = <T extends [any] | Array<any>>(
+  cb: Fn<
+    [
+      Ctx,
+      // @ts-expect-error
+      ...{
+        [K in keyof T]: T[K] extends Atom ? AtomState<T[K]> : T[K]
+      },
+    ]
+  >,
+  deps: T,
+): null => {
+  const ctx = useCtx()
+
+  useEffect(() => {
+    const call = (ctx: Ctx) => {
+      // @ts-expect-error
+      cb(ctx, ...deps.map((thing) => (isAtom(thing) ? ctx.get(thing) : thing)))
+    }
+
+    call(ctx)
+
+    deps.forEach(
+      (thing, i) =>
+        isAtom(thing) && (thing.__reatom.updateHooks ??= new Set()).add(call),
+    )
+
+    return () =>
+      deps.forEach(
+        (thing, i) => isAtom(thing) && thing.__reatom.updateHooks!.delete(call),
+      )
+  }, deps.concat(ctx))
+
+  return null
+}
 
 export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   fn: T,
-  deps?: Array<any>,
+  deps: Array<any> = [],
   name?: string,
 ): T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : never => {
-  let isCallbackRef = !deps || deps.length === 0
+  let isCallbackRef = deps.length === 0
   deps ??= []
   let ctx = useCtx()
   deps.push(ctx)
   if (isAction(fn)) deps.push(fn)
 
-  let setup = () => {
+  let ref = useRefSetup(deps, () => {
     let theAction: Action = isAction(fn)
       ? fn
       : action((...a) => ref.current!.fn(...a), name ?? getName(`useAction`))
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, deps, cb }
-  }
-
-  let ref = React.useRef<ReturnType<typeof setup>>()
-  if (
-    ref.current === undefined ||
-    ref.current.deps!.length !== deps.length ||
-    ref.current!.deps!.some((v, i) => !Object.is(v, deps![i]!))
-  ) {
-    ref.current = setup()
-  }
-  if (isCallbackRef)
+  })
+  if (isCallbackRef) {
     React.useLayoutEffect(() => {
       ref.current!.fn = fn
     }, [])
+  }
 
   // @ts-ignore
   return ref.current.cb
