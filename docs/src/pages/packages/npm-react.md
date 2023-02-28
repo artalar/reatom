@@ -234,6 +234,40 @@ return (
 // onChange "qw1e" - no rerender
 ```
 
+## Use update
+
+`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [updates hook](/guides/lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching (as it 'on' already). Subscriptions to a values works like regular `useEffect` hook.
+
+The most common use case for this hook is to synchronize some state from a props or context to an atom.
+
+```tsx
+import { action, atom } from '@reatom/core'
+import { useAction, useUpdate } from '@reatom/react'
+import Form from 'form-library'
+
+const formValuesAtom = atom({})
+const submit = action((ctx) => api.submit(ctx.get(formValuesAtom)))
+
+const Sync = () => {
+  const { values } = useFormState()
+  useUpdate((ctx, values) => formValuesAtom(ctx, values), [values])
+  return null
+}
+// or just
+const Sync = () => useUpdate(formValuesAtom, [useFormState().values])
+
+export const MyForm = () => {
+  const handleSubmit = useAction(submit)
+
+  return (
+    <Form onSubmit={handleSubmit}>
+      <Sync />
+      .....
+    </Form>
+  )
+}
+```
+
 ## Examples
 
 - [Migration from RTK to Reatom](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6) (2 times less code, -8kB gzip)
