@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react'
+import React from 'react'
+import { useSyncExternalStore } from 'use-sync-external-store/shim'
 import {
   action,
   Action,
@@ -123,11 +124,11 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, update, deps, sub, get }
+    return { theAtom, update, deps, sub, get, subscribe }
   }).current!
 
   return [
-    subscribe ? React.useSyncExternalStore(sub, get, get) : get(),
+    subscribe ? useSyncExternalStore(sub, get, get) : get(),
     update,
     theAtom,
     ctx,
@@ -157,7 +158,7 @@ export const useUpdate = <T extends [any] | Array<any>>(
 ): null => {
   const ctx = useCtx()
 
-  useEffect(() => {
+  React.useEffect(() => {
     const call = (ctx: Ctx) => {
       // @ts-expect-error
       cb(ctx, ...deps.map((thing) => (isAtom(thing) ? ctx.get(thing) : thing)))
