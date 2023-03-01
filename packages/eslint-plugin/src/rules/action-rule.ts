@@ -1,4 +1,11 @@
 import { Rule } from "eslint";
+import { CallExpression, Identifier, Literal, VariableDeclarator, ArrowFunctionExpression } from "estree";
+import { isIdentifier, isLiteral } from "../lib";
+
+type ActionCallExpression =
+    CallExpression
+    & { callee: Identifier, arguments: [] | [Literal] | [ArrowFunctionExpression] | [ArrowFunctionExpression, Literal] }
+type ActionVariableDeclarator = VariableDeclarator & { id: Identifier, init: ActionCallExpression }
 
 export const actionRule: Rule.RuleModule = {
     meta: {
@@ -11,45 +18,62 @@ export const actionRule: Rule.RuleModule = {
     create: function (context: Rule.RuleContext): Rule.RuleListener {
         return {
             VariableDeclarator: d => {
-                if (d.init?.type !== 'CallExpression') return;
-                if (d.init.callee.type !== 'Identifier') return;
-                if (d.init.callee.name !== 'action') return;
-                if (d.id.type !== 'Identifier') return;
-                
-                if (d.init.arguments.length === 0) {
-                    context.report({ 
+                if (!isActionVariableDeclarator(d)) return;
+
+                const initArgs = d.init.arguments;
+
+                if (initArgs.length === 0) {
+                    context.report({
                         message: `action name is not defined`,
                         node: d,
-                        fix: fixer => fixer.replaceTextRange(d.init.range, `action("${d.id.name}")`)
-                    })
+                        fix: fixer => fixer.replaceText(d.init, `action("${d.id.name}")`)
+                    });
+                    return;
                 }
 
-                if (d.init.arguments[0]?.type === 'Literal' && d.init.arguments[0].value !== d.id.name) {
+                if (isLiteral(initArgs[0]) && initArgs[0].value !== d.id.name) {
                     context.report({
-                        message: `action name is defined bad`, 
+                        message: `action name is defined bad`,
                         node: d,
-                        fix: fixer => fixer.replaceText(d.init.arguments[0], `"${d.id.name}"`)
-                    })
+                        fix: fixer => fixer.replaceText(initArgs[0], `"${d.id.name}"`)
+                    });
+                    return;
                 }
 
-                if (d.init.arguments[0]?.type === 'ArrowFunctionExpression') {
-                    if (d.init.arguments.length === 1) {
-                        context.report({ 
+                if (initArgs[0].type === 'ArrowFunctionExpression') {
+                    if (initArgs.length === 1) {
+                        context.report({
                             message: `action name is not defined`,
                             node: d,
-                            fix: fixer => fixer.insertTextAfterRange(d.init.arguments[0].range, `, "${d.id.name}"`)
-                        })
+                            fix: fixer => fixer.insertTextAfter(d.init.arguments[0], `, "${d.id.name}"`)
+                        });
+                        return;
                     }
 
-                    if (d.init.arguments.length === 2 && d.init.arguments[1]?.type === 'Literal' && d.init.arguments[1].value !== d.id.name) {
+                    if (initArgs.length === 2 && initArgs[1].value !== d.id.name) {
                         context.report({
-                            message: `action name is defined bad`, 
+                            message: `action name is defined bad`,
                             node: d,
                             fix: fixer => fixer.replaceText(d.init.arguments[1], `"${d.id.name}"`)
-                        })
+                        });
+                        return;
                     }
                 }
             }
         };
     }
+}
+
+function isActionCallExpression(node: any): node is ActionCallExpression {
+    return node?.type === 'CallExpression' &&
+        node.callee?.type === 'Identifier' &&
+        node.callee.name === 'action' &&
+        (node.arguments.length === 0 ||
+            (node.arguments.length === 1 && node.arguments[0].type === 'Literal') ||
+            (node.arguments.length === 1 && node.arguments[0].type === 'ArrowFunctionExpression') ||
+            (node.arguments.length === 2 && node.arguments[0].type === 'ArrowFunctionExpression' && node.arguments[1].type == 'Literal'));
+}
+
+function isActionVariableDeclarator(node: any): node is ActionVariableDeclarator {
+    return isActionCallExpression(node.init) && isIdentifier(node.id);
 }
