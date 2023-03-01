@@ -1,5 +1,6 @@
-import { Rule } from "eslint";
-import { Identifier, CallExpression, Literal, VariableDeclarator } from 'estree';
+import {Rule} from "eslint";
+import {CallExpression, Identifier, Literal, VariableDeclarator} from 'estree';
+import {isIdentifier, isLiteral} from "../lib";
 
 type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Literal] | [Literal, Literal] }
 type AtomVariableDeclarator = VariableDeclarator & { id: Identifier, init: AtomCallExpression }
@@ -30,13 +31,6 @@ function isAtomCallExpression(node: any): node is AtomCallExpression {
     return node?.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'atom';
 }
 
-function isIdentifier(node: any): node is Identifier {
-    return node?.type === 'Identifier';
-}
-
-function isLiteral(node: any) {
-    return node?.type === 'Literal';
-}
 function isAtomVariableDeclarator(node: any): node is AtomVariableDeclarator {
     return isAtomCallExpression(node.init) && isIdentifier(node.id);
 }
