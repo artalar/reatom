@@ -1,6 +1,7 @@
 import { RuleTester, Rule } from "eslint";
 import { actionRule } from "../rules/action-rule";
 import { atomRule } from "../rules/atom-rule";
+import { reatomPrefixRule } from "../rules/reatom-prefix-rule";
 
 // @ts-ignore
 RuleTester.setDefaultConfig({
@@ -61,5 +62,46 @@ tester.run('reatom/action-rule', actionRule, {
             errors: [{ message: 'action name is defined bad' }],
             output: 'const doSome = action(() => {}, "doSome");'
         }
+    ]
+});
+
+
+tester.run('reatom/reatom-prefux-rule', reatomPrefixRule, {
+    valid: [
+        {
+            code: 'const fetchUser = reatomAsync(() => {}, "fetchUser");'
+        },
+        {
+            code: `const fetchUser = reatomAsync(() => {}, {
+                name: "fetchUser",
+                onRequest: () => {},
+              });`
+        },
+        {
+            code: `const fetchUser = reatomAsync(() => {}, { name: "fetchUser" });`
+        }
+    ],
+        invalid: [
+            {
+                code: `const fetchUser = reatomAsync(() => {});`,
+                errors: [{ message: `some reatom* name is not defined` }],
+                output: 'const fetchUser = reatomAsync(() => {}, "fetchUser");'
+            },
+            {
+                code: `const fetchUser = reatomAsync(() => {}, "fetch");`,
+                errors: [{ message: `some reatom* name is defined bad` }],
+                output: `const fetchUser = reatomAsync(() => {}, "fetchUser");`
+            },
+            {
+                code: `const fetchUser = reatomAsync(() => {}, { onRequest: () => {} });`,
+                errors: [{ message: `some reatom* name is not defined` }],
+                output: `const fetchUser = reatomAsync(() => {}, { name: "fetchUser", onRequest: () => {} });`
+            },
+            {
+                code: `const fetchUser = reatomAsync(() => {}, { name: "fetch" });`,
+                errors: [{ message: `some reatom* name is defined bad` }],
+                output: `const fetchUser = reatomAsync(() => {}, { name: "fetchUser" });`
+            },
+            
     ]
 });
