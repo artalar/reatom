@@ -1,6 +1,6 @@
-import {Rule} from "eslint";
-import {CallExpression, Identifier, Literal, VariableDeclarator} from 'estree';
-import {isIdentifier, isLiteral} from "../lib";
+import { Rule} from "eslint";
+import { CallExpression, Identifier, Literal, VariableDeclarator } from 'estree';
+import { isIdentifier, isLiteral } from "../lib";
 
 type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Literal] | [Literal, Literal] }
 type AtomVariableDeclarator = VariableDeclarator & { id: Identifier, init: AtomCallExpression }
