@@ -19,11 +19,13 @@ tester.run('reatom/atom-rule', atomRule, {
     invalid: [
         {
             code: `const countAtom = atom(0);`,
-            errors: [{ message: 'atom name is not defined' }]
+            errors: [{ message: 'atom name is not defined', }],
+            output: `const countAtom = atom(0, "countAtom");`,
         },
         {
             code: 'const countAtom = atom(0, "count");',
-            errors: [{ message: 'atom name is defined bad'}]
+            errors: [{ message: 'atom name is defined bad'}],
+            output: `const countAtom = atom(0, "countAtom");`,
         },
     ]
 });
