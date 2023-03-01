@@ -1,5 +1,5 @@
 import { Rule } from "eslint";
-import { CallExpression, Identifier, Literal, VariableDeclarator, ArrowFunctionExpression } from "estree";
+import { CallExpression, Identifier, Literal, VariableDeclarator, ArrowFunctionExpression, Node } from "estree";
 import { isIdentifier, isLiteral } from "../lib";
 
 type ActionCallExpression =
@@ -64,16 +64,16 @@ export const actionRule: Rule.RuleModule = {
     }
 }
 
-function isActionCallExpression(node: any): node is ActionCallExpression {
+function isActionCallExpression(node?: Node | null): node is ActionCallExpression {
     return node?.type === 'CallExpression' &&
         node.callee?.type === 'Identifier' &&
         node.callee.name === 'action' &&
         (node.arguments.length === 0 ||
-            (node.arguments.length === 1 && node.arguments[0].type === 'Literal') ||
-            (node.arguments.length === 1 && node.arguments[0].type === 'ArrowFunctionExpression') ||
-            (node.arguments.length === 2 && node.arguments[0].type === 'ArrowFunctionExpression' && node.arguments[1].type == 'Literal'));
+            (node.arguments.length === 1 && node.arguments[0]?.type === 'Literal') ||
+            (node.arguments.length === 1 && node.arguments[0]?.type === 'ArrowFunctionExpression') ||
+            (node.arguments.length === 2 && node.arguments[0]?.type === 'ArrowFunctionExpression' && node.arguments[1]?.type == 'Literal'));
 }
 
-function isActionVariableDeclarator(node: any): node is ActionVariableDeclarator {
-    return isActionCallExpression(node.init) && isIdentifier(node.id);
+function isActionVariableDeclarator(node: VariableDeclarator): node is ActionVariableDeclarator {
+    return isActionCallExpression(node?.init) && isIdentifier(node.id);
 }

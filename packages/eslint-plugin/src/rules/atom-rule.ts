@@ -1,5 +1,5 @@
 import { Rule} from "eslint";
-import { CallExpression, Identifier, Literal, VariableDeclarator } from 'estree';
+import { CallExpression, Identifier, Literal, VariableDeclarator, Node } from 'estree';
 import { isIdentifier, isLiteral } from "../lib";
 
 type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Literal] | [Literal, Literal] }
@@ -27,11 +27,11 @@ export const atomRule: Rule.RuleModule = {
     }
 }
 
-function isAtomCallExpression(node: any): node is AtomCallExpression {
+function isAtomCallExpression(node?: Node | null): node is AtomCallExpression {
     return node?.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'atom';
 }
 
-function isAtomVariableDeclarator(node: any): node is AtomVariableDeclarator {
+function isAtomVariableDeclarator(node: VariableDeclarator): node is AtomVariableDeclarator {
     return isAtomCallExpression(node.init) && isIdentifier(node.id);
 }
 
