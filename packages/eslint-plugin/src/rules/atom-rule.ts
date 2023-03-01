@@ -1,5 +1,8 @@
 import { Rule } from "eslint";
+import { Identifier, CallExpression, Literal, VariableDeclarator } from 'estree';
 
+type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Literal] | [Literal, Literal] }
+type AtomVariableDeclarator = VariableDeclarator & { id: Identifier, init: AtomCallExpression }
 export const atomRule: Rule.RuleModule = {
     meta: {
         type: 'suggestion',
@@ -10,32 +13,46 @@ export const atomRule: Rule.RuleModule = {
     },
     create: function (context: Rule.RuleContext): Rule.RuleListener {
         return {
-            VariableDeclaration: node => {
-                node.declarations.forEach(d => {
-                    if (d.init?.type !== 'CallExpression') return;
-                    if (d.init.callee.type !== 'Identifier') return;
-                    if (d.init.callee.name !== 'atom') return;
-                    if (d.id.type !== 'Identifier') return;
+            VariableDeclarator: d => {
+                if (!isAtomVariableDeclarator(d)) return;
 
-                    if (d.init.arguments.length === 1) {
-                        context.report({ 
-                            message: `atom name is not defined`,
-                            node,
-                            fix: fixer => fixer.insertTextAfterRange(d.init.arguments[0].range, `, "${d.id.name}"`)
-                        })
-                    }
-
-                    if (d.init.arguments[1]?.type !== 'Literal') return;
-
-                    if (d.init.arguments[1].value !== d.id.name) {
-                        context.report({
-                             message: `atom name is defined bad`, 
-                             node,
-                             fix: fixer => fixer.replaceText(d.init.arguments[1], `"${d.id.name}"`)
-                        })
-                    }
-                })
+                if (d.init.arguments.length === 1) {
+                    reportUndefinedAtomName(context, d);
+                } else if (isLiteral(d.init.arguments[1]) && d.init.arguments[1].value !== d.id.name) {
+                    reportBadAtomName(context, d);
+                }
             }
         };
     }
+}
+
+function isAtomCallExpression(node: any): node is AtomCallExpression {
+    return node?.type === 'CallExpression' && node.callee?.type === 'Identifier' && node.callee.name === 'atom';
+}
+
+function isIdentifier(node: any): node is Identifier {
+    return node?.type === 'Identifier';
+}
+
+function isLiteral(node: any) {
+    return node?.type === 'Literal';
+}
+function isAtomVariableDeclarator(node: any): node is AtomVariableDeclarator {
+    return isAtomCallExpression(node.init) && isIdentifier(node.id);
+}
+
+function reportUndefinedAtomName(context: Rule.RuleContext, d: AtomVariableDeclarator) {
+    context.report({
+        message: `atom name is not defined`,
+        node: d,
+        fix: fixer => fixer.insertTextAfter(d.init.arguments[0], `, "${d.id.name}"`)
+    });
+}
+
+function reportBadAtomName(context: Rule.RuleContext, d: AtomVariableDeclarator) {
+    context.report({
+        message: `atom name is defined bad`,
+        node: d,
+        fix: fixer => fixer.replaceText(d.init.arguments[1], `"${d.id.name}"`)
+    });
 }
