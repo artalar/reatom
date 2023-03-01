@@ -2,6 +2,10 @@ import { Rule } from "eslint";
 
 export const reatomPrefixRule: Rule.RuleModule = {
     meta: {
+        type: 'suggestion',
+        docs: {
+            description: "Add name for every reatom* call"
+        },
         fixable: 'code'
     },
     create: function (context: Rule.RuleContext): Rule.RuleListener {

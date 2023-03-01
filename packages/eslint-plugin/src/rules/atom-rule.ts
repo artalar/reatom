@@ -2,6 +2,10 @@ import { Rule } from "eslint";
 
 export const atomRule: Rule.RuleModule = {
     meta: {
+        type: 'suggestion',
+        docs: {
+            description: "Add name for every atom call"
+        },
         fixable: 'code'
     },
     create: function (context: Rule.RuleContext): Rule.RuleListener {
