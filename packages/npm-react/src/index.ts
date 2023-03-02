@@ -16,12 +16,13 @@ import {
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
 
-let getName = (type: string): string =>
-  // @ts-expect-error does we have another way?
-  React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner?.current?.type?.name?.concat(
-    '.',
-    type,
-  ) || `_${type}`
+let getName = (type: string): string => {
+  let name =
+    // @ts-expect-error does we have another way?
+    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner
+      ?.current?.type?.name
+  return (name && name.concat('.', type)) || `_${type}`
+}
 
 let batch = (cb: Fn) => cb()
 
