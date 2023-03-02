@@ -36,7 +36,7 @@ connectLogger(
     log: createLogBatched(
       // optional configuration
       {
-        // 20ms by default
+        // 500ms by default
         debounce: 500,
         // 5000ms by default, it helps to not stuck with WS and so on
         limit: 5000,
@@ -44,6 +44,8 @@ connectLogger(
         getTimeStamp: () => new Date().toLocaleTimeString()
 
         log: console.log,
+        // `true` by default to group logs by name
+        shouldGroup: true,
       },
     ),
   },

@@ -438,7 +438,7 @@ export const createCtx = ({
         for (let i = 0; i < trLogs.length; i++) {
           let { listeners, proto } = trLogs[i]!
           if (listeners.size > 0) actualize(this, proto)
-          if (trUpdates.length > 0) {
+          if (trUpdates.length > 0 /* TODO `&& trLogs.length === i + 1` */) {
             for (let commit of trUpdates.splice(0)) commit(this)
           }
         }

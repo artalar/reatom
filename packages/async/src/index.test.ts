@@ -266,4 +266,36 @@ test('resetTrigger', async () => {
   ;`👍` //?
 })
 
+test('nested abort', async () => {
+  let result = false
+  let thrown = false
+  const do1 = reatomAsync(async (ctx) => {
+    await sleep()
+    ctx.controller.signal.throwIfAborted()
+    result = true
+  }).pipe(withAbort())
+  const do2 = reatomAsync(do1)
+  const do3 = reatomAsync(do2).pipe(withAbort())
+  const ctx = createTestCtx()
+
+  do3(ctx).catch(() => {
+    thrown = true
+  })
+  assert.is(result, false)
+  await sleep(5)
+  assert.is(result, true)
+  assert.is(thrown, false)
+
+  result = false
+  do3(ctx).catch(() => {
+    thrown = true
+  })
+  do3.abort(ctx)
+  assert.is(result, false)
+  await sleep(5)
+  assert.is(result, false)
+  assert.is(thrown, true)
+  ;`👍` //?
+})
+
 test.run()
