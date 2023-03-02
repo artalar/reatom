@@ -7,7 +7,7 @@ type ActionCallExpression =
     & { callee: Identifier, arguments: [] | [Literal] | [ArrowFunctionExpression] | [ArrowFunctionExpression, Literal] }
 type ActionVariableDeclarator = VariableDeclarator & { id: Identifier, init: ActionCallExpression }
 
-const noname = (actionName: string) => `action "${actionName}" should has a name`;
+const noname = (actionName: string) => `action "${actionName}" should has a name inside action() call`;
 const invalidName = (actionName: string) => `action "${actionName}" should be named as it's variable name, rename it to "${actionName}"`;
 
 export const actionRule: Rule.RuleModule = {
