@@ -6,7 +6,7 @@ description: Complex examples of Reatom state manager
 
 ### Base React template
 
-https://replit.com/@artalar/reatom-react-ts#src/App.tsx
+https://github.com/artalar/reatom-react-ts
 
 ### Data fetching and React
 

@@ -2,11 +2,18 @@ Reatom is the ultimate [state manager](/general/what-is-state-manager) with quit
 
 Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
 
-[The core package](/core) includes all these features and you may use it anywhere, from huge apps to even small libs, as the overhead is only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+[The core package](https://www.reatom.dev/core) includes all these features and you may use it anywhere, from huge apps to even small libs, as the overhead is only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
 ## Simple example
+
+#### Install
+
+```sh
+npm i @reatom/core
+```
+
 
 [vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
 
@@ -42,6 +49,11 @@ ctx.subscribe(greetingAtom, (greeting) => {
 Check out [@reatom/core docs](/core) for detailed explanation of key principles and features.
 
 ## Advanced example
+
+#### Install 
+```sh
+npm i @reatom/framework
+```
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 
