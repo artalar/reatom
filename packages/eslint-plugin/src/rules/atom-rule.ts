@@ -5,7 +5,7 @@ import { isIdentifier, isLiteral } from "../lib";
 type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Literal] | [Literal, Literal] }
 type AtomVariableDeclarator = VariableDeclarator & { id: Identifier, init: AtomCallExpression }
 
-const noname = (atomName: string) => `atom "${atomName}" should has a name`;
+const noname = (atomName: string) => `atom "${atomName}" should has a name inside atom() call`;
 const invalidName = (atomName: string) => `action "${atomName}" should be named as it's variable name, rename it to "${atomName}"`;
 
 export const atomRule: Rule.RuleModule = {
