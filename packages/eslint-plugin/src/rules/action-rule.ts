@@ -7,6 +7,9 @@ type ActionCallExpression =
     & { callee: Identifier, arguments: [] | [Literal] | [ArrowFunctionExpression] | [ArrowFunctionExpression, Literal] }
 type ActionVariableDeclarator = VariableDeclarator & { id: Identifier, init: ActionCallExpression }
 
+const noname = (actionName: string) => `action "${actionName}" should has a name`;
+const invalidName = (actionName: string) => `action "${actionName}" should be named as it's variable name, rename it to "${actionName}"`;
+
 export const actionRule: Rule.RuleModule = {
     meta: {
         type: 'suggestion',
@@ -24,7 +27,7 @@ export const actionRule: Rule.RuleModule = {
 
                 if (initArgs.length === 0) {
                     context.report({
-                        message: `action name is not defined`,
+                        message: noname(d.id.name),
                         node: d,
                         fix: fixer => fixer.replaceText(d.init, `action("${d.id.name}")`)
                     });
@@ -33,7 +36,7 @@ export const actionRule: Rule.RuleModule = {
 
                 if (isLiteral(initArgs[0]) && initArgs[0].value !== d.id.name) {
                     context.report({
-                        message: `action name is defined bad`,
+                        message: invalidName(d.id.name),
                         node: d,
                         fix: fixer => fixer.replaceText(initArgs[0], `"${d.id.name}"`)
                     });
@@ -43,7 +46,7 @@ export const actionRule: Rule.RuleModule = {
                 if (initArgs[0].type === 'ArrowFunctionExpression') {
                     if (initArgs.length === 1) {
                         context.report({
-                            message: `action name is not defined`,
+                            message: noname(d.id.name),
                             node: d,
                             fix: fixer => fixer.insertTextAfter(d.init.arguments[0], `, "${d.id.name}"`)
                         });
@@ -52,7 +55,7 @@ export const actionRule: Rule.RuleModule = {
 
                     if (initArgs.length === 2 && initArgs[1].value !== d.id.name) {
                         context.report({
-                            message: `action name is defined bad`,
+                            message: invalidName(d.id.name),
                             node: d,
                             fix: fixer => fixer.replaceText(d.init.arguments[1], `"${d.id.name}"`)
                         });
