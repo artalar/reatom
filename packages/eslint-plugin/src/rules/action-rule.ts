@@ -19,9 +19,18 @@ export const actionRule: Rule.RuleModule = {
         fixable: 'code'
     },
     create: function (context: Rule.RuleContext): Rule.RuleListener {
+        let importedFromReatom = false;
+
         return {
+            ImportSpecifier(node) {
+                const imported = node.imported.name;
+                const from = node.parent.source.value;
+                if (from.startsWith('@reatom') && imported === 'action') {
+                    importedFromReatom = true;
+                }
+            },
             VariableDeclarator: d => {
-                if (!isActionVariableDeclarator(d)) return;
+                if (!isActionVariableDeclarator(d) || !importedFromReatom) return;
 
                 const initArgs = d.init.arguments;
 
