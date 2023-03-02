@@ -18,6 +18,12 @@ tester.run('reatom/atom-rule', atomRule, {
             const countAtom = atom(0, "countAtom");
             `
         },
+        {
+            code: `const countAtom = atom(0);`,
+        },
+        {
+            code: 'const countAtom = atom(0, "count");',
+        },
     ],
     invalid: [
         {
@@ -58,6 +64,18 @@ tester.run('reatom/action-rule', actionRule, {
             import { action } from '@reatom/framework'
             const doSome = action(() => {}, "doSome");
             `
+        },
+        {
+            code: `const doSome = action();`,
+        },
+        {
+            code: `const doSome = action("do");`,
+        },
+        {
+            code: `const doSome = action(() => {});`,
+        },
+        {
+            code: `const doSome = action(() => {}, "do");`,
         }
     ],
     invalid: [
@@ -131,7 +149,19 @@ tester.run('reatom/reatom-prefux-rule', reatomPrefixRule, {
             import { reatomAsync } from '@reatom/framework'
             const fetchUser = reatomAsync(() => {}, { name: "fetchUser" });
             `
-        }
+        },
+        {
+            code: `const fetchUser = reatomAsync(() => {});`,
+        },
+        {
+            code: `const fetchUser = reatomAsync(() => {}, "fetch");`,
+        },
+        {
+            code: `const fetchUser = reatomAsync(() => {}, { onRequest: () => {} });`,
+        },
+        {
+            code: `const fetchUser = reatomAsync(() => {}, { name: "fetch" });`,
+        },
     ],
         invalid: [
             {
