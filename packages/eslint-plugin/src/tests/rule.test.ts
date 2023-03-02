@@ -1,16 +1,13 @@
-import { RuleTester, Rule } from "eslint";
+import { RuleTester } from "eslint";
 import { actionRule } from "../rules/action-rule";
 import { atomRule } from "../rules/atom-rule";
 import { reatomPrefixRule } from "../rules/reatom-prefix-rule";
 
-// @ts-ignore
-RuleTester.setDefaultConfig({
+const tester = new RuleTester({
     parserOptions: {
-      ecmaVersion: 6,
+        ecmaVersion: 6,
     }
-})
-
-const tester = new RuleTester();
+});
 
 tester.run('reatom/atom-rule', atomRule, {
     valid: [
@@ -102,6 +99,6 @@ tester.run('reatom/reatom-prefux-rule', reatomPrefixRule, {
                 errors: [{ message: `some reatom* name is defined bad` }],
                 output: `const fetchUser = reatomAsync(() => {}, { name: "fetchUser" });`
             },
-            
+
     ]
 });
