@@ -84,7 +84,16 @@ export const reatomAsync = <
   const pendingAtom = atom(0, `${name}.pendingAtom`)
 
   // @ts-ignore
-  const onEffect: Self = action((...a) => onEffect.__fn(...a), name)
+  const _onEffect: Self = action((...a) => onEffect.__fn(...a), name)
+  const onEffect: Self = Object.assign((...a: Array<any>) => {
+    const ctx = a[0] as AsyncCtx
+    // @ts-expect-error
+    const result = _onEffect(...a)
+    ctx.controller?.signal.addEventListener('abort', () =>
+      result.controller.abort(ctx.controller.signal.reason),
+    )
+    return result
+  }, _onEffect)
   const __fn: Self['__fn'] = (...a) => {
     const ctx = a[0] as AsyncCtx
     const controller = (ctx.controller = new AbortController())
