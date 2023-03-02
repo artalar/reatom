@@ -24,6 +24,7 @@ export const actionRule: Rule.RuleModule = {
         return {
             ImportSpecifier(node) {
                 const imported = node.imported.name;
+                // @ts-ignore
                 const from = node.parent.source.value;
                 if (from.startsWith('@reatom') && imported === 'action') {
                     importedFromReatom = true;

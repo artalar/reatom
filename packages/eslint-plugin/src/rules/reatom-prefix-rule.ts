@@ -23,6 +23,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
 
         return {
             ImportSpecifier(node) {
+                // @ts-ignore
                 const from = node.parent.source.value;
                 if (from.startsWith('@reatom')) {
                     importedFromReatom = true;
