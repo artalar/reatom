@@ -4,6 +4,10 @@ import { isIdentifier, isLiteral } from "../lib";
 
 type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Literal] | [Literal, Literal] }
 type AtomVariableDeclarator = VariableDeclarator & { id: Identifier, init: AtomCallExpression }
+
+const noname = (atomName: string) => `atom "${atomName}" should has a name`;
+const invalidName = (atomName: string) => `action "${atomName}" should be named as it's variable name, rename it to "${atomName}"`;
+
 export const atomRule: Rule.RuleModule = {
     meta: {
         type: 'suggestion',
@@ -37,7 +41,7 @@ function isAtomVariableDeclarator(node: VariableDeclarator): node is AtomVariabl
 
 function reportUndefinedAtomName(context: Rule.RuleContext, d: AtomVariableDeclarator) {
     context.report({
-        message: `atom name is not defined`,
+        message: noname(d.id.name),
         node: d,
         fix: fixer => fixer.insertTextAfter(d.init.arguments[0], `, "${d.id.name}"`)
     });
@@ -45,7 +49,7 @@ function reportUndefinedAtomName(context: Rule.RuleContext, d: AtomVariableDecla
 
 function reportBadAtomName(context: Rule.RuleContext, d: AtomVariableDeclarator) {
     context.report({
-        message: `atom name is defined bad`,
+        message: invalidName(d.id.name),
         node: d,
         fix: fixer => fixer.replaceText(d.init.arguments[1], `"${d.id.name}"`)
     });
