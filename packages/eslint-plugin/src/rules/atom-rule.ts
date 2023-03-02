@@ -6,7 +6,7 @@ type AtomCallExpression = CallExpression & { callee: Identifier, arguments: [Lit
 type AtomVariableDeclarator = VariableDeclarator & { id: Identifier, init: AtomCallExpression }
 
 const noname = (atomName: string) => `atom "${atomName}" should has a name inside atom() call`;
-const invalidName = (atomName: string) => `action "${atomName}" should be named as it's variable name, rename it to "${atomName}"`;
+const invalidName = (atomName: string) => `atom "${atomName}" should be named as it's variable name, rename it to "${atomName}"`;
 
 export const atomRule: Rule.RuleModule = {
     meta: {
@@ -17,9 +17,18 @@ export const atomRule: Rule.RuleModule = {
         fixable: 'code'
     },
     create: function (context: Rule.RuleContext): Rule.RuleListener {
+        let importedFromReatom = false;
+
         return {
+            ImportSpecifier(node) {
+                const imported = node.imported.name;
+                const from = node.parent.source.value;
+                if (from.startsWith('@reatom') && imported === 'atom') {
+                    importedFromReatom = true;
+                }
+            },
             VariableDeclarator: d => {
-                if (!isAtomVariableDeclarator(d)) return;
+                if (!isAtomVariableDeclarator(d) || !importedFromReatom) return;
 
                 if (d.init.arguments.length === 1) {
                     reportUndefinedAtomName(context, d);
