@@ -40,11 +40,13 @@ export const createLogBatched = ({
   getTimeStamp = getTimeStampDefault,
   limit = 5000,
   log = console.log,
+  shouldGroup = true,
 }: {
   debounce?: number
   getTimeStamp?: () => string
   limit?: number
   log?: typeof console.log
+  shouldGroup?: boolean
 } = {}) => {
   let queue: Array<LogMsg & { time: string }> = []
   let isBatching = false
@@ -79,32 +81,27 @@ export const createLogBatched = ({
 
           let inGroup = false
           Object.entries(changes).forEach(([k, change], i, arr) => {
+            const isAction = 'payload' in change
+            const color = isAction
+              ? 'background: #ffff80; color: #151134;'
+              : 'background: #151134; color: white;'
+            const style = `${color}font-size: 1.1em; padding: 0.15em;  padding-right: 1ch;`
+
             const name = k.replace(/(\d)*\./, '')
             const head = name.replace(/\..*/, '')
             const nextK = arr[i + 1]?.[0]
             const nextName = nextK?.replace(/(\d)*\./, '')
             const isGroup = nextName?.startsWith(head)
-            if (!inGroup && isGroup && isFewTransactions) {
+            if (shouldGroup && !inGroup && isGroup && isFewTransactions) {
               inGroup = true
               // TODO show name?
-              console.groupCollapsed(head)
+              console.groupCollapsed(`%c ${head}`, style)
             }
             const title = `%c ${name}`
-            const isAction = 'payload' in change
             const data = isAction ? change!.payload : change!.newState
-            const color = isAction
-              ? 'background: #ffff80; color: #151134;'
-              : 'background: #151134; color: white;'
-            log(
-              title,
-              `${color}font-size: 1.1em; padding: 0.15em;  padding-right: 1ch;`,
-              '\n',
-              data,
-              '\n',
-              change,
-            )
+            log(title, style, '\n', data, '\n', change)
 
-            if (!isGroup && inGroup) {
+            if (shouldGroup && !isGroup && inGroup) {
               inGroup = false
               console.groupEnd()
             }
