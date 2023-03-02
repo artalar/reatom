@@ -7,6 +7,9 @@ type ReatomPrefixCallExpression =
     & { callee: Identifier, arguments: [ArrowFunctionExpression] | [ArrowFunctionExpression, Literal] | [ArrowFunctionExpression, ObjectExpression] }
 type ReatomPrefixVariableDeclarator = VariableDeclarator & { id: Identifier, init: ReatomPrefixCallExpression }
 
+const noname = (varName: string) => `variable with prefix reatom "${varName}" should has a name inside reatom*() call`;
+const invalidName = (varName: string) => `variable with prefix reatom "${varName}" should be named as it's variable name, rename it to "${varName}"`;
+
 export const reatomPrefixRule: Rule.RuleModule = {
     meta: {
         type: 'suggestion',
@@ -25,7 +28,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
                 if (initArguments[0]?.type === 'ArrowFunctionExpression') {
                     if (initArguments.length === 1) {
                         context.report({
-                            message: `some reatom* name is not defined`,
+                            message: noname(d.id.name),
                             node: d,
                             fix: fixer => fixer.insertTextAfter(initArguments[0], `, "${d.id.name}"`)
                         })
@@ -34,7 +37,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
                     if (initArguments.length === 2) {
                         if (initArguments[1]?.type === 'Literal' && initArguments[1].value !== d.id.name) {
                             context.report({
-                                message: `some reatom* name is defined bad`,
+                                message: invalidName(d.id.name),
                                 node: d,
                                 fix: fixer => fixer.replaceText(initArguments[1], `"${d.id.name}"`)
                             })
@@ -43,7 +46,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
                         if (initArguments[1]?.type === 'ObjectExpression') {
                             if (initArguments[1].properties.every(value => value.type === 'Property' && value.key.type === 'Identifier' && value.key.name !== 'name')) {
                                 context.report({
-                                    message: `some reatom* name is not defined`,
+                                    message: noname(d.id.name),
                                     node: d,
                                     // TODO fix this
                                     // @ts-ignore
@@ -62,7 +65,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
 
                             if (badProperty) {
                                 context.report({
-                                    message: `some reatom* name is defined bad`,
+                                    message: invalidName(d.id.name),
                                     node: d,
                                     fix: fixer => fixer.replaceText(badProperty.value, `"${d.id.name}"`)
                                 })
