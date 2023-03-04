@@ -11,9 +11,9 @@ export const rules = {
 export const configs = {
     'recommended': {
         rules: {
-            'reatom/atom-rule': 'error',
-            'reatom/action-rule': 'error',
-            'reatom/reatom-prefux-rule': 'error'
+            '@reatom/atom-rule': 'error',
+            '@reatom/action-rule': 'error',
+            '@reatom/reatom-prefux-rule': 'error'
         }
     }
 }

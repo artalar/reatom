@@ -1,5 +1,5 @@
 {
-  "name": "eslint-plugin-reatom",
+  "name": "@reatom/eslint-plugin",
   "version": "3.1.0",
   "private": false,
   "sideEffects": false,
