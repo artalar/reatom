@@ -162,6 +162,12 @@ tester.run('reatom/reatom-prefux-rule', reatomPrefixRule, {
         {
             code: `const fetchUser = reatomAsync(() => {}, { name: "fetch" });`,
         },
+        {
+            code: `
+            import { reatomRecord } from '@reatom/framework'
+            const user = reatomRecord({}, "user");
+            `
+        }
     ],
         invalid: [
             {
@@ -206,6 +212,28 @@ tester.run('reatom/reatom-prefux-rule', reatomPrefixRule, {
                 output: `
                 import { reatomAsync } from '@reatom/framework'
                 const fetchUser = reatomAsync(() => {}, { name: "fetchUser" });
+                `
+            },
+            {
+                code: `
+                import { reatomRecord } from '@reatom/framework'
+                const user = reatomRecord({});
+                `,
+                errors: [{ message: `variable with prefix reatom "user" should has a name inside reatom*() call` } ],
+                output: `
+                import { reatomRecord } from '@reatom/framework'
+                const user = reatomRecord({}, "user");
+                `
+            },
+            {
+                code: `
+                import { reatomRecord } from '@reatom/framework'
+                const user = reatomRecord({}, "u");
+                `,
+                errors: [{ message: `variable with prefix reatom "user" should be named as it's variable name, rename it to "user"` } ],
+                output: `
+                import { reatomRecord } from '@reatom/framework'
+                const user = reatomRecord({}, "user");
                 `
             },
 

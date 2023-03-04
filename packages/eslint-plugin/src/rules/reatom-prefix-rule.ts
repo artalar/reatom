@@ -34,54 +34,52 @@ export const reatomPrefixRule: Rule.RuleModule = {
 
                 const initArguments = d.init.arguments
 
-                if (initArguments[0]?.type === 'ArrowFunctionExpression') {
-                    if (initArguments.length === 1) {
+                if (initArguments.length === 1) {
+                    context.report({
+                        message: noname(d.id.name),
+                        node: d,
+                        fix: fixer => fixer.insertTextAfter(initArguments[0], `, "${d.id.name}"`)
+                    })
+                }
+
+                if (initArguments.length === 2) {
+                    if (initArguments[1]?.type === 'Literal' && initArguments[1].value !== d.id.name) {
                         context.report({
-                            message: noname(d.id.name),
+                            message: invalidName(d.id.name),
                             node: d,
-                            fix: fixer => fixer.insertTextAfter(initArguments[0], `, "${d.id.name}"`)
+                            fix: fixer => fixer.replaceText(initArguments[1], `"${d.id.name}"`)
                         })
                     }
 
-                    if (initArguments.length === 2) {
-                        if (initArguments[1]?.type === 'Literal' && initArguments[1].value !== d.id.name) {
+                    if (initArguments[1]?.type === 'ObjectExpression') {
+                        if (initArguments[1].properties.every(value => value.type === 'Property' && value.key.type === 'Identifier' && value.key.name !== 'name')) {
                             context.report({
-                                message: invalidName(d.id.name),
+                                message: noname(d.id.name),
                                 node: d,
-                                fix: fixer => fixer.replaceText(initArguments[1], `"${d.id.name}"`)
+                                // TODO fix this
+                                // @ts-ignore
+                                fix: fixer => fixer.insertTextBefore(initArguments[1]?.properties[0], `name: "${d.id.name}", `)
                             })
                         }
 
-                        if (initArguments[1]?.type === 'ObjectExpression') {
-                            if (initArguments[1].properties.every(value => value.type === 'Property' && value.key.type === 'Identifier' && value.key.name !== 'name')) {
-                                context.report({
-                                    message: noname(d.id.name),
-                                    node: d,
-                                    // TODO fix this
-                                    // @ts-ignore
-                                    fix: fixer => fixer.insertTextBefore(initArguments[1]?.properties[0], `name: "${d.id.name}", `)
-                                })
-                            }
+                        const badProperty = initArguments[1].properties.find(
+                            value =>
+                                value.type === 'Property' &&
+                                value.key.type === 'Identifier' &&
+                                value.key.name === 'name' &&
+                                value.value.type === 'Literal' &&
+                                value.value.value !== d.id.name
+                        )
 
-                            const badProperty = initArguments[1].properties.find(
-                                value =>
-                                    value.type === 'Property' &&
-                                    value.key.type === 'Identifier' &&
-                                    value.key.name === 'name' &&
-                                    value.value.type === 'Literal' &&
-                                    value.value.value !== d.id.name
-                            )
-
-                            if (badProperty) {
-                                context.report({
-                                    message: invalidName(d.id.name),
-                                    node: d,
-                                    fix: fixer => fixer.replaceText(badProperty.value, `"${d.id.name}"`)
-                                })
-                            }
+                        if (badProperty) {
+                            context.report({
+                                message: invalidName(d.id.name),
+                                node: d,
+                                fix: fixer => fixer.replaceText(badProperty.value, `"${d.id.name}"`)
+                            })
                         }
                     }
-                }
+                }                           
             }
         };
     }
@@ -93,9 +91,9 @@ function isReatomPrefixCallExpression(node?: Node | null): node is ReatomPrefixC
         node.callee?.type === 'Identifier' &&
         node.callee.name.startsWith('reatom') &&
         (
-            (node.arguments.length === 1 && node.arguments[0]?.type === 'ArrowFunctionExpression') ||
-            (node.arguments.length === 2 && node.arguments[0]?.type === 'ArrowFunctionExpression' && node.arguments[1]?.type == 'Literal') ||
-            (node.arguments.length === 2 && node.arguments[0]?.type === 'ArrowFunctionExpression' && node.arguments[1]?.type == 'ObjectExpression')
+            node.arguments.length === 1 ||
+            (node.arguments.length === 2 && node.arguments[1]?.type == 'Literal') ||
+            (node.arguments.length === 2 && node.arguments[1]?.type == 'ObjectExpression')
         )
 }
 
