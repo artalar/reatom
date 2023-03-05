@@ -9,16 +9,13 @@ npm i @reatom/eslint-plugin
 ```ts
 // .eslintrc.js
 {
-    ...,
     plugins: [
         "@reatom"
     ],
-    ...
     // use all rules
     extends: [
         "plugin:@reatom/recommended"
     ],
-    ...
     // or pick some
     rules: {
         '@reatom/atom-rule': 'error',
