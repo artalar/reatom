@@ -14,7 +14,7 @@
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "node 16"
   ],
   "scripts": {
     "sandbox": "vite",
@@ -23,14 +23,15 @@
     "test": "tsx src/**/*.test.ts",
     "test:watch": "tsx watch src/**/*.test.ts"
   },
-  "dependencies": {
-    "@reatom/core": ">=3.1.0"
-  },
-  "author": "artalar",
+  "author": "pivaszbs",
   "maintainers": [
     {
       "name": "artalar",
       "url": "https://github.com/artalar"
+    },
+    {
+      "name": "pivaszbs",
+      "url": "https://github.com/pivaszbs"
     }
   ],
   "license": "MIT",
@@ -47,7 +48,7 @@
     "/package.json"
   ],
   "devDependencies": {
-    "@types/eslint": "^8.21.1",
-    "eslint": "^8.35.0"
+    "@types/eslint": "^8.0.0",
+    "eslint": "^8.0.0"
   }
 }
