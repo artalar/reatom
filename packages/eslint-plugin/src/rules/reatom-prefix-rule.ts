@@ -19,18 +19,9 @@ export const reatomPrefixRule: Rule.RuleModule = {
         fixable: 'code'
     },
     create: function (context: Rule.RuleContext): Rule.RuleListener {
-        let importedFromReatom = false;
-
         return {
-            ImportSpecifier(node) {
-                // @ts-ignore
-                const from = node.parent.source.value;
-                if (from.startsWith('@reatom')) {
-                    importedFromReatom = true;
-                }
-            },
             VariableDeclarator: d => {
-                if (!isReatomPrefixVariableDeclarator(d) || !importedFromReatom) return;
+                if (!isReatomPrefixVariableDeclarator(d)) return;
 
                 const initArguments = d.init.arguments
 
