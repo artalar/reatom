@@ -20,7 +20,7 @@ npm i @reatom/eslint-plugin
     rules: {
         '@reatom/atom-rule': 'error',
         '@reatom/action-rule': 'error',
-        '@reatom/reatom-prefux-rule': 'error'
+        '@reatom/reatom-prefix-rule': 'error'
     }
 }
 ```
