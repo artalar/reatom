@@ -160,6 +160,12 @@ export const reatomAsync = <
     __fn,
   })
 }
+reatomAsync.from = <Params extends any[], Resp = any>(
+  effect: Fn<Params, Promise<Resp>>,
+  options: string | AsyncOptions<Params, Resp> = {},
+): AsyncAction<Params, Resp> =>
+  // @ts-expect-error
+  reatomAsync((ctx, ...a) => effect(...a), options)
 
 export interface AsyncDataAtom<State = any> extends AtomMut<State> {
   reset: Action<[], void>
