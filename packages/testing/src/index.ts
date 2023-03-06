@@ -33,6 +33,9 @@ export function mockFn<I extends any[], O>(
     },
     {
       calls: new Array<{ i: I; o: O }>(),
+      inputs(): Array<I[number]> {
+        return _fn.calls.map(({ i }) => i[0])
+      },
       lastInput(index = 0): I[number] {
         const { length } = _fn.calls
         if (length === 0) throw new TypeError(`Array is empty`)
@@ -61,6 +64,7 @@ export interface TestCtx extends Ctx {
   ): F & {
     unsubscribe: Unsubscribe
     calls: ReturnType<typeof mockFn<[T], any>>['calls']
+    inputs(): ReturnType<typeof mockFn<[T], any>>['inputs']
     lastInput: ReturnType<typeof mockFn<[T], any>>['lastInput']
   }
 }

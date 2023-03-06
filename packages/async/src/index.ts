@@ -86,12 +86,19 @@ export const reatomAsync = <
   // @ts-ignore
   const _onEffect: Self = action((...a) => onEffect.__fn(...a), name)
   const onEffect: Self = Object.assign((...a: Array<any>) => {
-    const ctx = a[0] as AsyncCtx
+    const { controller } = a[0] as AsyncCtx
+
+    if (controller) {
+      controller.signal.throwIfAborted()
+
+      const abort = () => result.controller.abort(controller.signal.reason)
+      if (controller.signal.aborted) abort()
+      else controller.signal.addEventListener('abort', abort)
+    }
+
     // @ts-expect-error
     const result = _onEffect(...a)
-    ctx.controller?.signal.addEventListener('abort', () =>
-      result.controller.abort(ctx.controller.signal.reason),
-    )
+    // TODO `result.then(controller.signal.throwIfAborted)`
     return result
   }, _onEffect)
   const __fn: Self['__fn'] = (...a) => {
@@ -107,6 +114,7 @@ export const reatomAsync = <
         throw controller.signal.reason
       }
     }
+
     pendingAtom(ctx, (s) => ++s)
 
     const promise: ControlledPromise<Resp> = Object.assign(
@@ -152,6 +160,12 @@ export const reatomAsync = <
     __fn,
   })
 }
+reatomAsync.from = <Params extends any[], Resp = any>(
+  effect: Fn<Params, Promise<Resp>>,
+  options: string | AsyncOptions<Params, Resp> = {},
+): AsyncAction<Params, Resp> =>
+  // @ts-expect-error
+  reatomAsync((ctx, ...a) => effect(...a), options)
 
 export interface AsyncDataAtom<State = any> extends AtomMut<State> {
   reset: Action<[], void>

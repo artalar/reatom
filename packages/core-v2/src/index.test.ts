@@ -1,6 +1,8 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
+import { atom } from '@reatom/core'
+
 import {
   Atom,
   createAtom,
@@ -9,12 +11,16 @@ import {
   getState,
   Rec,
   callSafety,
-} from './'
-import { atom } from '@reatom/core'
+  defaultStore,
+} from '../'
 import { createNumberAtom, createPrimitiveAtom } from '../primitives'
-import { createPersist, init } from '../experiments'
 
 import { mockFn, parseCauses, sleep } from '../test_utils'
+
+function init(atoms: Array<Atom>, store = defaultStore) {
+  const unsubscribers = atoms.map((atom) => store.subscribe(atom, () => {}))
+  return () => unsubscribers.forEach((un) => un())
+}
 
 test(`displayName`, () => {
   const firstNameAtom = createPrimitiveAtom(

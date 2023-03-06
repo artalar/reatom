@@ -187,8 +187,6 @@ function createDynamicallyTrackedCacheReducer<
       ctxs.get(rootCause)!.set(reducer, {})
     const ctx = ctxs.get(rootCause)!.get(reducer)!
 
-    console.log({state})
-
     const get: Track<Deps>[`get`] = (name) =>
       v3ctx.spy((dependencies[name as string] as Atom).v3atom)
 
@@ -201,9 +199,7 @@ function createDynamicallyTrackedCacheReducer<
 
       throwReatomError(ac === undefined, `Unknown action`)
 
-      console.log(name)
       spyChange(v3ctx, ac!.v3action, ({ payload }) => {
-        console.log({name, payload})
         reaction(payload)
       })
     }

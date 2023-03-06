@@ -1,3 +1,9 @@
+---
+layout: ../../layouts/Layout.astro
+title: core-v2
+description: Reatom adapter for core-v2
+---
+
 <div align="center">
 <br/>
 

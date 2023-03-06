@@ -40,7 +40,7 @@ export const createLogBatched = ({
   getTimeStamp = getTimeStampDefault,
   limit = 5000,
   log = console.log,
-  shouldGroup = true,
+  shouldGroup = false,
 }: {
   debounce?: number
   getTimeStamp?: () => string
@@ -69,12 +69,15 @@ export const createLogBatched = ({
         const isFewTransactions = queue.length > 0
 
         console.groupCollapsed(
-          length ? `Reatom ${length} transactions` : `Reatom transaction`,
+          `Reatom ${length} transaction${length > 1 ? 's' : ''}`,
         )
+
         for (const { changes, time, error } of queue) {
           console.log(
-            `%c transaction ${time} end`,
-            'padding-right: 1ch; border-bottom: 1px solid currentcolor; box-sizing: border-box;',
+            `%c ${time}`,
+            `padding-left: calc(50% - ${
+              time.length / 2
+            }em); font-size: 0.5rem;`,
           )
 
           if (error) console.error(error)
@@ -85,7 +88,7 @@ export const createLogBatched = ({
             const color = isAction
               ? 'background: #ffff80; color: #151134;'
               : 'background: #151134; color: white;'
-            const style = `${color}font-size: 1.1em; padding: 0.15em;  padding-right: 1ch;`
+            const style = `${color}font-weight: 400; padding: 0.15em;  padding-right: 1ch;`
 
             const name = k.replace(/(\d)*\./, '')
             const head = name.replace(/\..*/, '')
@@ -99,7 +102,10 @@ export const createLogBatched = ({
             }
             const title = `%c ${name}`
             const data = isAction ? change!.payload : change!.newState
-            log(title, style, '\n', data, '\n', change)
+            console.groupCollapsed(title, style)
+            console.log(change)
+            console.groupEnd()
+            log(data)
 
             if (shouldGroup && !isGroup && inGroup) {
               inGroup = false

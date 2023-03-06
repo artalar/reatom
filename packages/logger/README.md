@@ -50,4 +50,4 @@ Every log record includes a number in the start of the name to fix autosorting k
 
 Here is how it looks like ([from this example](https://www.reatom.dev/examples#search-component)):
 
-<img width="100%" alt="logger console output" src="https://user-images.githubusercontent.com/27290320/208033158-0033d0a2-edd5-44ab-8fd6-510d9347a49d.png">
+<img width="100%" alt="logger console output" src="../../docs/public/assets/logger_example.png">

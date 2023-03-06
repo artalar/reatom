@@ -1,11 +1,12 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx } from '@reatom/testing'
-
+import { atom } from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
 import { isDeepEqual, jsonClone, sleep } from '@reatom/utils'
 
 import { reatomAsync, withDataAtom } from './'
+import { withAbort } from '../build'
 
 test('optimistic update without extra updates on invalidation', async () => {
   //#region backend
@@ -74,6 +75,50 @@ test('optimistic update without extra updates on invalidation', async () => {
 
   // cleanup test
   dataTrack.unsubscribe()
+  ;`👍` //?
+})
+
+test('safe pooling', async () => {
+  const createTask = reatomAsync(async () => Math.random())
+
+  const tasks = new Map<number, number>()
+  const poolTask = reatomAsync(async (ctx, taskId: number) => {
+    ctx.controller.signal.aborted
+    await sleep(5)
+    const progress = (tasks.get(taskId) ?? -10) + 10
+    tasks.set(taskId, progress)
+
+    return progress
+  })
+
+  const progressAtom = atom(0)
+
+  const search = reatomAsync(async (ctx) => {
+    const taskId = await createTask(ctx)
+
+    while (true) {
+      const progress = await poolTask(ctx, taskId)
+      progressAtom(ctx, progress)
+
+      if (progress === 100) return
+    }
+  }).pipe(withAbort())
+
+  const ctx = createTestCtx()
+  const track = ctx.subscribeTrack(progressAtom)
+
+  const promise1 = search(ctx)
+  await sleep(15)
+  const promise2 = search(ctx)
+
+  await Promise.allSettled([promise1, promise2])
+
+  assert.is(ctx.get(progressAtom), 100)
+
+  assert.equal(
+    track.inputs(),
+    [0, 10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+  )
   ;`👍` //?
 })
 

@@ -181,8 +181,9 @@ Of course there are no software without limitations. Reatom is trying to be a si
 
 - Immutable data always have an additional performance impact and in critical cases you should think well about your structures and how you could handle it better. The good news is that you [don't have to use normalization](/guides/atomization).
 - Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of hot observables. Anyway, we have [hooks](/packages/hooks) for hot linking.
-- Currently, there is no way to subscribe on error of any dependency, but we are working on it. However, you could subscribe to ctx logs and check `patch?.error` property.
+- Currently, there is no way to subscribe on error of any dependency, but we are working on it. In [reatomAsync](/packages/async) passed effects wraps to an error handler and allow you to handle errors, but again - you should wrap it explicit.
 - Currently, there is no asynchronous transactions support, but we are working on it. It is important feature for simplify building of optimistic UI and we really think it will improve UX a lot.
+- We have a lot of utils and the ecosystem is growing all the time, but the target of that is have a set of well done logic primitives, and there is no architecture framework or codestyle / declarative framework to fit you in one strict flow. Reatom trying to be in the middle of a library and a framework. We love procedural programming with minimum extra API and semantic overhead. Our defaults are good already to help to you to write a better code: immutability and lazyness, transactions and separation of pure computations and effects, `ctx` and connections and processes virtualizations.
 
 ### Community
 
