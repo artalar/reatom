@@ -1,25 +1,23 @@
 {
   "name": "@reatom/core-v2",
-  "version": "3.1.0",
-  "private": true,
+  "version": "3.1.1",
+  "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for core-v2",
   "source": "src/index.ts",
-  "exports": {
-    "require": "./build/index.js",
-    "default": "./build/index.module.js"
-  },
   "main": "build/index.js",
-  "module": "build/index.module.js",
+  "umd:main": "build/index.umd.js",
+  "module": "build/index.es.js",
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
     "last 4 chrome versions"
   ],
   "scripts": {
-    "prepublishOnly": "npm run build && npm run test",
+    "prepublishOnly": "npm run build && npm run build-primitives && npm run test",
     "build": "microbundle",
-    "test": "tsx src/index.test.ts",
+    "build-primitives": "microbundle --cwd primitives",
+    "test": "echo tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
@@ -37,6 +35,7 @@
   "homepage": "https://www.reatom.dev/packages/core-v2",
   "files": [
     "/build",
-    "/package.json"
+    "/package.json",
+    "/primitives"
   ]
 }

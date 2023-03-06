@@ -22,9 +22,12 @@ export function createStore({
       `dispatch arguments`,
     )
 
-    v3ctx.get(() =>
-      actions.forEach((action) => action.v3action(v3ctx, action.payload)),
-    )
+    v3ctx.get(() => {
+      actions.forEach((action) => action.v3action(v3ctx, action.payload))
+      actions.forEach(({ targets }) =>
+        targets?.forEach((target) => v3ctx.get(target.v3atom)),
+      )
+    })
   }
 
   const getCache: Store['getCache'] = (atom) =>
