@@ -127,7 +127,7 @@ tester.run('reatom/action-rule', actionRule, {
 });
 
 
-tester.run('reatom/reatom-prefux-rule', reatomPrefixRule, {
+tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
     valid: [
         {
             code: `
