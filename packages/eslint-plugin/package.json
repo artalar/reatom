@@ -1,0 +1,54 @@
+{
+  "name": "@reatom/eslint-plugin",
+  "version": "3.1.0",
+  "private": false,
+  "sideEffects": false,
+  "description": "Reatom for eslint-plugin",
+  "source": "src/index.ts",
+  "exports": {
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "node 16"
+  ],
+  "scripts": {
+    "sandbox": "vite",
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "microbundle",
+    "test": "tsx src/**/*.test.ts",
+    "test:watch": "tsx watch src/**/*.test.ts"
+  },
+  "author": "pivaszbs",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    },
+    {
+      "name": "pivaszbs",
+      "url": "https://github.com/pivaszbs"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://www.reatom.dev/packages/eslint-plugin",
+  "files": [
+    "/build",
+    "/package.json"
+  ],
+  "devDependencies": {
+    "@types/eslint": "^8.0.0",
+    "eslint": "^8.0.0"
+  }
+}
