@@ -3,6 +3,7 @@
 // const readmes = await Astro.glob('../../../packages/*/README.md')
 // console.log('readmes', readmes)
 import NavSection from './NavSection.astro'
+import packageTypes from '../pages/packages/_packageTypes.json'
 const pages = await Astro.glob('../pages/*.md')
 const general = await Astro.glob('../pages/general/*.md')
 const guides = await Astro.glob('../pages/guides/*.md')
@@ -22,9 +23,27 @@ const sections = [
     pages: general,
   },
   {
+    name: 'adapters',
+    open: false,
+    pages: packages.filter((page) =>
+      packageTypes.adapter.includes(page.frontmatter.title),
+    ),
+  },
+  {
     name: 'packages',
     open: true,
-    pages: packages,
+    pages: packages.filter(
+      (page) =>
+        !packageTypes.adapter.includes(page.frontmatter.title) &&
+        !packageTypes.compat.includes(page.frontmatter.title),
+    ),
+  },
+  {
+    name: 'compat',
+    open: false,
+    pages: packages.filter((page) =>
+      packageTypes.compat.includes(page.frontmatter.title),
+    ),
   },
 ]
 ---

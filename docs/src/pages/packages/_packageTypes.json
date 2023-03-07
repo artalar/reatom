@@ -1,0 +1,14 @@
+{
+  "compat":[
+    "core-v1",
+    "core-v2",
+    "react-v1",
+    "react-v2"
+  ],
+  "adapter":[
+    "npm-cookie-baker",
+    "npm-history",
+    "npm-react",
+    "npm-svelte"
+  ]
+}
