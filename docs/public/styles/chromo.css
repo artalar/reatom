@@ -249,6 +249,7 @@ button.mono,
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  cursor: pointer;
 }
 button.mono + button.mono,
 .mono-all button + button {
@@ -646,6 +647,7 @@ summary.mono,
   list-style: none;
   font-size: 1.4rem;
   outline: none;
+  cursor: pointer;
 }
 summary.mono:before,
 .mono-all summary:before {
