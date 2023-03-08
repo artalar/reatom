@@ -2,6 +2,13 @@
 // FIXME https://discord.com/channels/830184174198718474/845451724738265138/1019770939203915786
 // const readmes = await Astro.glob('../../../packages/*/README.md')
 // console.log('readmes', readmes)
+
+export type Props = {
+  source: string
+}
+
+const { source } = Astro.props
+
 import NavSection from './NavSection.astro'
 const pages = await Astro.glob('../pages/*.md')
 const general = await Astro.glob('../pages/general/*.md')
@@ -32,9 +39,10 @@ const sections = [
 <aside>
   <section aria-details="controls">
     <a
-      aria-details="github"
+      aria-details="Github repo"
+      title="Github repo"
       href="https://github.com/artalar/reatom"
-      target="_blank"
+      target="_parent"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -46,6 +54,12 @@ const sections = [
         ></path>
       </svg>
     </a>
+    <a
+      href={source}
+      target="_blank"
+      aria-details="Edit on GitHub"
+      title="Edit on GitHub">✏</a
+    >
     <select name="theme">
       <option value="light">🌖</option>
       <option value="system">🌓</option>
@@ -74,21 +88,29 @@ const sections = [
     gap: 1rem;
   }
 
+  section[aria-details='controls'] a {
+    border: none;
+    height: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  section[aria-details='controls'] a::after {
+    display: none;
+  }
+  a[aria-details='Github repo'] svg {
+    fill: var(--foreground-color);
+    height: 1.5rem;
+  }
+  a[aria-details='Edit on GitHub'] {
+    font-size: 2.5em;
+  }
   select[name='theme'] {
+    /* this toogled after script load */
     display: none;
     filter: grayscale(1);
     font-size: 1.2rem;
-  }
-
-  a[aria-details='github'] {
     border: none;
-    height: 1.5rem;
-  }
-  a[aria-details='github']::after {
-    display: none;
-  }
-  a[aria-details='github'] svg {
-    fill: var(--foreground-color);
   }
 </style>
 

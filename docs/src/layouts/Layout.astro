@@ -5,8 +5,23 @@ import HeadingCopyButton from '../components/HeadingCopyButton.astro'
 import Glitch from '../components/Glitch.astro'
 
 const {
-  frontmatter: { title = '404', description } = {} as Record<string, string>,
+  frontmatter: { title = '404', description, file } = {} as Record<
+    string,
+    string
+  >,
 } = Astro.props
+
+let source = 'https://github.com/artalar/reatom'
+if (file) {
+  if (file.startsWith('core')) {
+    source = 'https://github.com/artalar/reatom/blob/v3/packages/core/README.md'
+  } else if (file.startsWith('index')) {
+    source = 'https://github.com/artalar/reatom/blob/v3/README.md'
+  } else if (file.includes('packages')) {
+    const name = file.match(/packages\/(.*)\.md/)?.[1]
+    source = `https://github.com/artalar/reatom/tree/v3/packages/${name}/README.md`
+  }
+}
 ---
 
 <!DOCTYPE html>
@@ -26,7 +41,7 @@ const {
     </style>
   </head>
   <body class="mono-all">
-    <Sidebar />
+    <Sidebar source={source} />
     <main>
       <h1>{title}</h1>
       <slot />
