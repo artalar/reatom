@@ -142,7 +142,7 @@ export const useAtomCreator = <T extends Atom>(
   options?: { subscribe?: boolean },
 ) => {
   const ref = useRefSetup(deps, () => ({ deps, theAtom: creator() }))
-  useAtom(ref.current.theAtom, [], options)
+  return useAtom(ref.current.theAtom, [], options)
 }
 
 export const useUpdate = <T extends [any] | Array<any>>(
