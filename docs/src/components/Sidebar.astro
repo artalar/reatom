@@ -17,6 +17,11 @@ const packages = (await Astro.glob('../pages/packages/*.md')).sort((a) =>
   a.frontmatter.title === 'core' ? -1 : 1,
 )
 
+const packageTypes = {
+  compat: ['core-v1', 'core-v2', 'react-v1', 'react-v2'],
+  adapter: ['npm-cookie-baker', 'npm-history', 'npm-react', 'npm-svelte'],
+}
+
 const sections = [
   {
     name: 'guides',
@@ -29,9 +34,27 @@ const sections = [
     pages: general,
   },
   {
+    name: 'adapters',
+    open: false,
+    pages: packages.filter((page) =>
+      packageTypes.adapter.includes(page.frontmatter.title),
+    ),
+  },
+  {
     name: 'packages',
     open: true,
-    pages: packages,
+    pages: packages.filter(
+      (page) =>
+        !packageTypes.adapter.includes(page.frontmatter.title) &&
+        !packageTypes.compat.includes(page.frontmatter.title),
+    ),
+  },
+  {
+    name: 'compat',
+    open: false,
+    pages: packages.filter((page) =>
+      packageTypes.compat.includes(page.frontmatter.title),
+    ),
   },
 ]
 ---
