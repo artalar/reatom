@@ -121,18 +121,24 @@ const sections = [
   section[aria-details='controls'] a::after {
     display: none;
   }
-  a[aria-details='Github repo'] svg {
+  section[aria-details='controls'] a[aria-details='Github repo'] svg {
     fill: var(--foreground-color);
     height: 1.5rem;
   }
-  a[aria-details='Edit on GitHub'] {
-    font-size: 2.5em;
+  section[aria-details='controls'] a[aria-details='Edit on GitHub'] {
+    transform: rotate(-45deg);
+    background: var(--foreground-color);
+    color: var(--background-color);
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1.3rem;
   }
-  select[name='theme'] {
+  section[aria-details='controls'] select[name='theme'] {
     /* this toogled after script load */
     display: none;
     filter: grayscale(1);
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     border: none;
   }
 </style>
