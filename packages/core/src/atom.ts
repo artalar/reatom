@@ -667,13 +667,19 @@ export const action: {
 
   let actionAtom = atom<Array<any>>([], name ?? __count('_action'))
   actionAtom.__reatom.isAction = true
+  // @ts-expect-error
+  actionAtom.__reatom.unstable_fn = fn
 
   return Object.assign((...params: [Ctx, ...any[]]) => {
     let state = actionAtom(params[0], (state, patchCtx) => {
       params[0] = patchCtx
       return [
         ...state,
-        { params: params.slice(1), payload: (fn as Fn)(...params) },
+        {
+          params: params.slice(1),
+          // @ts-expect-error
+          payload: patchCtx.cause.proto.unstable_fn(...params),
+        },
       ]
     })
     return state[state.length - 1]!.payload
