@@ -57,6 +57,16 @@ export const fetchList = reatomAsync((ctx) => fetch('...'), 'fetchList').pipe(
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
+### Adding data you've fetched to data you've fetched before
+
+```ts
+import { reatomAsync, withDataAtom } from '@reatom/async'
+
+export const fetchFeed = reatomAsync((ctx) => fetch('...'), 'fetchFeed').pipe(
+  withDataAtom([], (_ctx, payload, state) => state.concat(payload)),
+)
+```
+
 ### Invalidate backend data on mutation
 
 You could use regular atom / action hooks.
