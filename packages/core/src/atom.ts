@@ -313,6 +313,7 @@ export const createCtx = ({
       let newPubs: typeof pubs = []
 
       patchCtx.spy = ({ __reatom: depProto }: Atom) => {
+        // this changed after computer exit
         if (patch.pubs === pubs) {
           let depPatch = actualize(patchCtx, depProto)
           let prevDepPatch =
@@ -666,7 +667,6 @@ export const action: {
 
   let actionAtom = atom<Array<any>>([], name ?? __count('_action'))
   actionAtom.__reatom.isAction = true
-  actionAtom.__reatom.initState = () => []
 
   return Object.assign((...params: [Ctx, ...any[]]) => {
     let state = actionAtom(params[0], (state, patchCtx) => {
