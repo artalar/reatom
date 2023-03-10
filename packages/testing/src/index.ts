@@ -69,8 +69,18 @@ export interface TestCtx extends Ctx {
   }
 }
 
+const callSafelySilent = (fn: Fn, ...a: any[]) => {
+  try {
+    return fn(...a)
+  } catch {}
+}
+
 export const createTestCtx = (options?: CtxOptions): TestCtx => {
-  const ctx = createCtx(options)
+  const ctx = createCtx({
+    callLateEffect: callSafelySilent,
+    callNearEffect: callSafelySilent,
+    ...options,
+  })
   const { get } = ctx
   const mocks = new Map<AtomProto, any>()
   const actionMocks = new Map<AtomProto, Fn<[Ctx, ...any[]]>>()
