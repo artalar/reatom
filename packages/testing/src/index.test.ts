@@ -25,31 +25,40 @@ test('createTestCtx', async () => {
 })
 
 test('mockAction', () => {
-  const a1 = atom(0)
-  const act = action((ctx) => {
-    return a1(ctx, (s) => ++s)
+  const countAtom = atom(0)
+  const add = action((ctx, value: number) => {
+    return countAtom(ctx, value)
   })
-  const a2 = atom((ctx) =>
-    ctx.spy(act).reduce((state, { payload }) => payload, 0),
-  )
+  const paramsAtom = atom((ctx) => ctx.spy(add).map(({ params }) => params[0]))
+  const payloadAtom = atom((ctx) => ctx.spy(add).map(({ payload }) => payload))
   const ctx = createTestCtx()
 
-  const track1 = ctx.subscribeTrack(a1)
-  const track2 = ctx.subscribeTrack(a2)
-  assert.is(track1.lastInput(), 0)
-  assert.is(track2.lastInput(), 0)
+  const countTrack = ctx.subscribeTrack(countAtom)
+  const paramsTrack = ctx.subscribeTrack(paramsAtom)
+  const payloadTrack = ctx.subscribeTrack(payloadAtom)
 
-  act(ctx)
-  assert.is(track1.lastInput(), 1)
-  assert.is(track2.lastInput(), 1)
+  add(ctx, 1)
+  assert.is(countTrack.lastInput(), 1)
+  assert.equal(paramsTrack.lastInput(), [1])
+  assert.equal(payloadTrack.lastInput(), [1])
 
-  ctx.mockAction(act, () => 2)
-  assert.is(track1.lastInput(), 1)
-  assert.is(track2.lastInput(), 1)
-  act(ctx)
-  assert.is(track1.lastInput(), 1)
-  assert.is(track2.lastInput(), 2)
+  const unmock = ctx.mockAction(add, (ctx, value) => {
+    assert.is(value, 10)
+    return countAtom(ctx, 2)
+  })
+  ctx.get(() => {
+    add(ctx, 10)
+    add(ctx, 10)
+  })
+  assert.is(countTrack.lastInput(), 2)
+  assert.equal(paramsTrack.lastInput(), [10, 10])
+  assert.equal(payloadTrack.lastInput(), [2, 2])
 
+  unmock()
+  add(ctx, 10)
+  assert.is(countTrack.lastInput(), 10)
+  assert.equal(paramsTrack.lastInput(), [10])
+  assert.equal(payloadTrack.lastInput(), [10])
   ;`👍` //?
 })
 
