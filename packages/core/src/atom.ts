@@ -161,12 +161,13 @@ export interface Unsubscribe {
 
 //#region DOMAIN UTILS
 
-// Can't be an arrow function due to 
-//    https://github.com/microsoft/TypeScript/issues/34523
+// Can't be an arrow function due to https://github.com/microsoft/TypeScript/issues/34523
 /** Throws `Reatom error: ${message}` */
-export function throwReatomError(condition: any, message: string): asserts condition {
-  if (condition)
-    throw new Error(`Reatom error: ${message}`)
+export function throwReatomError(
+  condition: any,
+  message: string,
+): asserts condition {
+  if (condition) throw new Error(`Reatom error: ${message}`)
 }
 
 export const isAtom = (thing: any): thing is Atom => {
@@ -495,39 +496,28 @@ export const createCtx = ({
       return result
     },
     spy: undefined,
-    schedule(effect, step = 1) {
-      assertFunction(effect)
-      throwReatomError(this === undefined, 'missed context')
+    schedule(cb, step = 1) {
+      assertFunction(cb)
+      throwReatomError(!this, 'missed context')
 
-      let promise = new Promise<any>((res, rej) => {
-        if (inTr) {
-          if (step === -1) {
-            rej = effect
-          } else if (step === 0) {
-            trUpdates.push(effect)
-          } else {
-            ;([{}, nearEffects, lateEffects] as const)[step].push(() => {
-              try {
-                const result = effect(this)
-                result instanceof Promise ? result.then(res, rej) : res(result)
-              } catch (error) {
-                rej(error)
-              }
-            })
-          }
-
-          trRollbacks.push(rej)
-        } else {
-          const result = effect(this)
-          result instanceof Promise ? result.then(res, rej) : res(result)
+      return new Promise<any>((res, rej) => {
+        if (step === -1) inTr && trRollbacks.push(cb)
+        else if (step === 0) inTr && trUpdates.push(() => cb(this))
+        else {
+          let target = step === 1 ? nearEffects : lateEffects
+          target.push(() => {
+            try {
+              let result = cb(this)
+              result instanceof Promise ? result.then(res, rej) : res(result)
+              return result
+            } catch (error) {
+              rej(error)
+              throw error
+            }
+          })
+          inTr || walkLateEffects()
         }
       })
-
-      // prevent uncaught error
-      // when schedule promise is unused
-      promise.catch(() => {})
-
-      return promise
     },
     // @ts-ignore
     subscribe(atom, cb = atom) {
