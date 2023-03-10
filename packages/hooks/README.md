@@ -1,8 +1,8 @@
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
-All atoms and actions have a hooks to they lifecycle, this package expose friendly helpers to use this hooks.
+All atoms and actions have a hooks to they lifecycle, this package exposes friendly helpers to use this hooks.
 
-We assume that you already read > Read more in [lifecycle guild](https://www.reatom.dev/guides/lifecycle).
+We assumes that you already read [lifecycle guild](https://www.reatom.dev/guides/lifecycle).
 
 A lot of cool examples you could find in [async package docs](https://www.reatom.dev/packages/async).
 
@@ -19,9 +19,7 @@ const dateAtom = atom(0).pipe(withInit(() => Date.now()))
 
 ## `onConnect`
 
-Subscribe to atom subscription, optionally return cleanup callback (called during effect queue).
-
-Passed `ctx` have `isConnected` method which checks the passed atom current status.
+Subscribe to atom subscription, optionally return cleanup callback. All connection (and disconnection) callbacks calling during effects queue - outside batching!
 
 ```ts
 import { onConnect } from '@reatom/hooks'
@@ -36,6 +34,8 @@ const dispose = onConnect(messagesAtom, (ctx) => {
   return () => WS.off('message', cb)
 })
 ```
+
+Passed `ctx` have `isConnected` method which checks the passed atom current status - [async example](https://www.reatom.dev/packages/async#periodic-refresh-for-used-data). Also, `ctx` includes `controller` property which is AbortController - you could reuse it perfectly with `reatomAsync` - [another async example](https://www.reatom.dev/packages/async#abortable-process)
 
 ## `onDisconnect`
 

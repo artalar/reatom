@@ -60,4 +60,28 @@ test('onConnect ctx.isConnect', async () => {
   ;`👍` //?
 })
 
+test('onConnect ctx.controller', async () => {
+  const a = atom(0)
+  const ctx = createTestCtx()
+  let delay = 0
+  let aborted: boolean
+  let connected: boolean
+
+  onConnect(a, async (ctx) => {
+    await sleep(delay)
+    aborted = ctx.controller.signal.aborted
+    connected = ctx.isConnected()
+  })
+
+  const track = ctx.subscribeTrack(a)
+  track.unsubscribe()
+  delay = 5
+  ctx.subscribeTrack(a)
+  await sleep()
+
+  assert.is(aborted!, true)
+  assert.is(connected!, true)
+  ;`👍` //?
+})
+
 test.run()

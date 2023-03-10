@@ -45,24 +45,32 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: Fn<[Ctx & { isConnected(): boolean }]>,
+  cb: Fn<[Ctx & { controller: AbortController; isConnected(): boolean }]>,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
+    const controller = new AbortController()
     const cleanup = cb(
       Object.assign({}, ctx, {
+        // TODO: how to do it more performant
+        cause: ctx.get((read) => read(anAtom.__reatom)!),
+        controller,
         isConnected: () => isConnected(ctx, anAtom),
       }),
     )
 
-    if (typeof cleanup === 'function') {
-      const cleanupHook = (_ctx: Ctx) =>
+    // TODO: abort on `connectHooks.delete`?
+    const cleanupHook = (_ctx: Ctx) => {
+      if (
         isSameCtx(ctx, _ctx) &&
         disconnectHooks.delete(cleanupHook) &&
-        connectHooks.has(connectHook) &&
-        cleanup()
-
-      const disconnectHooks = addOnDisconnect(anAtom, cleanupHook)
+        connectHooks.has(connectHook)
+      ) {
+        controller.abort(`${anAtom.__reatom.name} disconnect`)
+        typeof cleanup === 'function' && cleanup()
+      }
     }
+
+    const disconnectHooks = addOnDisconnect(anAtom, cleanupHook)
   }
 
   const connectHooks = addOnConnect(anAtom, connectHook)
