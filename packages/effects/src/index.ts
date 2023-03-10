@@ -11,6 +11,7 @@ const LISTENERS = new WeakMap<
   Promise<any>,
   { then: Array<Fn>; catch: Array<Fn> }
 >()
+// TODO `reatomPromise`
 /**
  * Subscribe to promise result with batching
  * @internal
@@ -91,11 +92,17 @@ export const disposable = (
 }
 
 export const take = <T extends Atom, Res = AtomReturn<T>>(
-  ctx: Ctx,
+  ctx: Ctx & { controller?: AbortController },
   anAtom: T,
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
+    const signal = ctx.controller?.signal
+    if (signal) {
+      signal.throwIfAborted()
+      signal.addEventListener('abort', () => rej(signal.reason))
+    }
+
     let skipFirst = true,
       fn = ctx.subscribe(anAtom, (state) => {
         if (skipFirst) return (skipFirst = false)
@@ -109,11 +116,17 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
   })
 
 export const takeNested = <I extends any[]>(
-  ctx: Ctx,
+  ctx: Ctx & { controller?: AbortController },
   cb: Fn<[Ctx, ...I]>,
   ...params: I
 ): Promise<void> =>
-  new Promise<void>((r) => {
+  new Promise<void>((res, rej) => {
+    const signal = ctx.controller?.signal
+    if (signal) {
+      signal.throwIfAborted()
+      signal.addEventListener('abort', () => rej(signal.reason))
+    }
+
     let i = 0,
       { schedule } = ctx
 
@@ -126,7 +139,7 @@ export const takeNested = <I extends any[]>(
               const result = cb(ctx)
               if (result instanceof Promise) {
                 ++i
-                result.finally(() => --i === 0 && r())
+                result.finally(() => --i === 0 && res())
               }
               return result
             },
