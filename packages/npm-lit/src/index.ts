@@ -35,8 +35,8 @@ export const withReatom = <T extends Constructor<LitElement>>(
   return class ReatomLit extends superClass {
     private unsub?: Unsubscribe
     private deps: Array<Atom> = []
-    private depsList = atom<Array<Atom>>([])
-    private depsTrack = atom((ctx) => ctx.spy(this.depsList).map(ctx.spy))
+    private depsListAtom = atom<Array<Atom>>([])
+    private depsTrackAtom = atom((ctx) => ctx.spy(this.depsListAtom).map(ctx.spy))
     ctx?: CtxSpy
 
     private tryConnectCtx() {
@@ -63,8 +63,8 @@ export const withReatom = <T extends Constructor<LitElement>>(
       if (!this.ctx) {
         return
       }
-      if (!isShallowEqual(this.deps, this.ctx.get(this.depsList))) {
-        this.depsList(this.ctx, this.deps)
+      if (!isShallowEqual(this.deps, this.ctx.get(this.depsListAtom))) {
+        this.depsListAtom(this.ctx, this.deps)
       }
     }
 
@@ -75,8 +75,8 @@ export const withReatom = <T extends Constructor<LitElement>>(
 
       const ctx = nonNullable(this.ctx, 'Ctx is no set')
 
-      this.unsub = ctx.subscribe(this.depsTrack, (deps) => {
-        const depsList = ctx.get(this.depsList)
+      this.unsub = ctx.subscribe(this.depsTrackAtom, () => {
+        const depsList = ctx.get(this.depsListAtom)
         // skip updates from the deps change during render
         if (isShallowEqual(prevDepsList, depsList)) {
           this.requestUpdate()
