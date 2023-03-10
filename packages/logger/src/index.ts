@@ -77,7 +77,7 @@ export const createLogBatched = ({
             `%c ${time}`,
             `padding-left: calc(50% - ${
               time.length / 2
-            }em); font-size: 0.5rem;`,
+            }em); font-size: 0.7rem;`,
           )
 
           if (error) console.error(error)
