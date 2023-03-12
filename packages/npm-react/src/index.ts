@@ -186,7 +186,6 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   deps: Array<any> = [],
   name?: string,
 ): T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : never => {
-  let isCallbackRef = deps.length === 0
   deps ??= []
   let ctx = useCtx()
   deps.push(ctx)
@@ -199,11 +198,9 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, deps, cb }
   })
-  if (isCallbackRef) {
-    React.useLayoutEffect(() => {
-      ref.current!.fn = fn
-    }, [])
-  }
+  React.useLayoutEffect(() => {
+    ref.current!.fn = fn
+  })
 
   // @ts-ignore
   return ref.current.cb
