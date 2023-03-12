@@ -1,11 +1,13 @@
 import {
   Atom,
+  AtomCache,
   AtomReturn,
   Ctx,
   Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { __findCause } from '@reatom/hooks'
 
 export const disposable = (
   ctx: Ctx,
@@ -59,7 +61,13 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
-    const signal = ctx.controller?.signal
+    const signal =
+      ctx.controller?.signal ??
+      __findCause(
+        ctx.cause,
+        (cause: AtomCache & { controller?: AbortController }) =>
+          cause.controller?.signal,
+      )
     if (signal) {
       signal.throwIfAborted()
       signal.addEventListener('abort', () => rej(signal.reason))
