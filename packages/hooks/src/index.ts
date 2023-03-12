@@ -18,6 +18,14 @@ export const getRootCause = (cause: AtomCache): AtomCache =>
 export const isSameCtx = (ctx1: Ctx, ctx2: Ctx) =>
   getRootCause(ctx1.cause) === getRootCause(ctx2.cause)
 
+/** @deprecated unstable */
+export const __findCause = <T>(
+  cause: null | AtomCache,
+  cb: Fn<[Ctx['cause']], void | T>,
+): void | T => {
+  if (cause) if (!cb(cause)) return __findCause(cause.cause, cb)
+}
+
 export const addOnConnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
   (anAtom.__reatom.connectHooks ??= new Set()).add(cb)
 
