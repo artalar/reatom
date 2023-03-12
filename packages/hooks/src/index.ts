@@ -86,10 +86,8 @@ export const onConnect = (
   return () => connectHooks.delete(connectHook)
 }
 
-export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
-  const disconnectHooks = addOnDisconnect(anAtom, cb)
-  return () => disconnectHooks.delete(cb)
-}
+export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
+  onConnect(anAtom, (ctx) => () => cb(ctx))
 
 export const onUpdate = <T>(
   anAtom: Action<any[], T> | Atom<T>,
@@ -161,13 +159,15 @@ export const controlConnection =
     Atom<T> & { toggleConnection: Action<[boolean?], boolean> }
   > =>
   (anAtom) => {
-    const isActiveAtom = atom(initState)
+    name ??= `${anAtom.__reatom.name}.controlConnection`
+
+    const isActiveAtom = atom(initState, `${name}._isActiveAtom`)
 
     return Object.assign(
       {
         toggleConnection: action(
           (ctx, value) => isActiveAtom(ctx, (state) => value ?? !state),
-          name?.concat('.toggleConnection'),
+          `${name}.toggleConnection`,
         ),
       },
       atom(
