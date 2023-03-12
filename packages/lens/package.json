@@ -1,6 +1,6 @@
 {
   "name": "@reatom/lens",
-  "version": "3.1.12",
+  "version": "3.2.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for lens",
@@ -24,7 +24,6 @@
   },
   "dependencies": {
     "@reatom/core": "^3.1.0",
-    "@reatom/effects": "^3.1.0",
     "@reatom/utils": "^3.1.0"
   },
   "author": "artalar",

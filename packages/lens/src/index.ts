@@ -11,11 +11,9 @@ import {
   CtxParams,
   CtxSpy,
   Fn,
-  Rec,
   throwReatomError,
 } from '@reatom/core'
-import { __thenReatomed } from '@reatom/effects'
-import { addOnUpdate, spyChange } from '@reatom/hooks'
+import { spyChange } from '@reatom/hooks'
 import { isShallowEqual } from '@reatom/utils'
 
 export * from './bind'
@@ -135,6 +133,7 @@ export const mapPayload: {
     return theAtom
   }
 
+const LISTENERS = new WeakMap<Promise<any>, Array<Fn>>()
 /** Transform async action payload */
 export const mapPayloadAwaited: {
   <T, Payload = Awaited<T>>(
@@ -164,7 +163,18 @@ export const mapPayloadAwaited: {
     const params = isAction ? [] : [fallback]
     params.push((ctx: Ctx, promise: any) => {
       if (promise instanceof Promise) {
-        __thenReatomed(ctx, promise, (v, read, actualize) =>
+        let listeners = LISTENERS.get(promise)
+        if (!listeners) {
+          LISTENERS.set(promise, (listeners = []))
+
+          promise.then((value: any) =>
+            ctx.get((read, actualize) =>
+              listeners!.forEach((cb) => cb(value, read, actualize)),
+            ),
+          )
+        }
+
+        listeners.push((v, read, actualize) =>
           actualize!(
             ctx,
             ctx.cause!.proto,
@@ -177,13 +187,15 @@ export const mapPayloadAwaited: {
             },
           ),
         )
+
         return SKIP
       } else {
         return map(ctx, promise)
       }
     }, name || (anAction.__reatom.name && 'mapPayloadAwaited'))
 
-    return anAction.pipe(
+    // @ts-expect-error reatomAsync
+    return (anAction.onFulfill ?? anAction).pipe(
       mapPayload(
         // @ts-ignore
         ...params,
