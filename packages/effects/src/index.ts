@@ -7,44 +7,6 @@ import {
   Unsubscribe,
 } from '@reatom/core'
 
-const LISTENERS = new WeakMap<
-  Promise<any>,
-  { then: Array<Fn>; catch: Array<Fn> }
->()
-// TODO `reatomPromise`
-/**
- * Subscribe to promise result with batching
- * @internal
- * @deprecated
- */
-export const __thenReatomed = <T>(
-  ctx: Ctx,
-  promise: Promise<T>,
-  onFulfill?: Fn<[T, Fn, Fn]>,
-  onReject?: Fn<[unknown, Fn, Fn]>,
-) => {
-  let listeners = LISTENERS.get(promise)
-  if (!listeners) {
-    LISTENERS.set(promise, (listeners = { then: [], catch: [] }))
-
-    promise.then(
-      (value: any) =>
-        ctx.get((read, actualize) =>
-          listeners!.then.forEach((cb) => cb(value, read, actualize)),
-        ),
-      (value: any) =>
-        ctx.get((read, actualize) =>
-          listeners!.catch.forEach((cb) => cb(value, read, actualize)),
-        ),
-    )
-  }
-
-  // TODO call on next tick if promise already resolved
-
-  if (onFulfill) listeners.then.push(onFulfill)
-  if (onReject) listeners.catch.push(onReject)
-}
-
 export const disposable = (
   ctx: Ctx,
 ): Ctx & {
