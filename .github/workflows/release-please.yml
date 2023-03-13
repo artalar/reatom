@@ -1,7 +1,6 @@
 on:
   push:
     branches:
-      - semantic-release
       - v3
 
 name: release-please
