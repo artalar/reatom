@@ -23,7 +23,7 @@ export const __findCause = <T>(
   cause: null | AtomCache,
   cb: Fn<[Ctx['cause']], void | T>,
 ): void | T => {
-  if (cause) if (!cb(cause)) return __findCause(cause.cause, cb)
+  if (cause) return cb(cause) || __findCause(cause.cause, cb)
 }
 
 export const addOnConnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
