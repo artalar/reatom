@@ -60,7 +60,11 @@ export const onConnect = (
     const cleanup = cb(
       Object.assign({}, ctx, {
         // TODO: how to do it more performant
-        cause: ctx.get((read) => read(anAtom.__reatom)!),
+        cause: Object.assign(
+          {},
+          ctx.get((read) => read(anAtom.__reatom)!),
+          { controller },
+        ),
         controller,
         isConnected: () => isConnected(ctx, anAtom),
       }),
