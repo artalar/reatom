@@ -13,7 +13,6 @@
     "packages/eslint-plugin": {},
     "packages/form": {},
     "packages/form-web": {},
-    "packages/framework": {},
     "packages/hooks": {},
     "packages/lens": {},
     "packages/logger": {},
