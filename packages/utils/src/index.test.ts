@@ -1,11 +1,50 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import {} from './'
+import { isDeepEqual } from './'
 
-test(`base API`, async () => {
-  // TODO
-  // // assert.ok(false, `You forgot test you code`)
+test('isDeepEqual Set', () => {
+  assert.ok(
+    isDeepEqual(new Set([{ a: 1 }, { a: 2 }]), new Set([{ a: 1 }, { a: 2 }])),
+  )
+  assert.not.ok(
+    isDeepEqual(new Set([{ a: 1 }, { a: 2 }]), new Set([{ a: 2 }, { a: 1 }])),
+  )
+  ;('👍') //?
+})
+
+test('isDeepEqual Map', () => {
+  assert.ok(
+    isDeepEqual(
+      new Map([[{ a: 1 }, 1], [{ a: 2 }, 2]]) /* prettier-ignore */,
+      new Map([[{ a: 1 }, 1], [{ a: 2 }, 2]]) /* prettier-ignore */,
+    ),
+  )
+  assert.not.ok(
+    isDeepEqual(
+      new Map([[{ a: 1 }, 1], [{ a: 2 }, 2]]) /* prettier-ignore */,
+      new Map([[{ a: 2 }, 2], [{ a: 1 }, 1]]) /* prettier-ignore */,
+    ),
+  )
+  assert.ok(
+    isDeepEqual(
+      new Map([[{ a: 1 }, 1], [{ a: 2 }, 2]]) /* prettier-ignore */,
+      new Map([[{ a: 1 }, 1], [{ a: 2 }, 2]]) /* prettier-ignore */,
+    ),
+  )
+  assert.not.ok(
+    isDeepEqual(
+      new Map([[1, { a: 1 }], [2, { a: 2 }]]) /* prettier-ignore */,
+      new Map([[2, { a: 2 }], [1, { a: 1 }]]) /* prettier-ignore */,
+    ),
+  )
+  assert.ok(
+    isDeepEqual(
+      new Map([[1, { a: 1 }], [2, { a: 2 }]]) /* prettier-ignore */,
+      new Map([[1, { a: 1 }], [2, { a: 2 }]]) /* prettier-ignore */,
+    ),
+  )
+  ;('👍') //?
 })
 
 test.run()

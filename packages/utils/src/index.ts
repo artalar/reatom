@@ -1,8 +1,11 @@
 import { Fn, throwReatomError } from '@reatom/core'
 
+// TODO infer `Atom` and `AtomMut` signature
 /** Remove named generics, show plain type. */
-export type Plain<Intersection> = Intersection extends (...a: any[]) => any
-  ? Intersection
+export type Plain<Intersection> = Intersection extends Fn<infer I, infer O>
+  ? Fn<I, O> & {
+      [Key in keyof Intersection]: Intersection[Key]
+    }
   : Intersection extends new (...a: any[]) => any
   ? Intersection
   : Intersection extends object
@@ -45,25 +48,38 @@ export const isObject = <T>(
 //   <A, B>(a: A, b: B): a is B
 // } = Object.is
 
-/** Compares only primitives, doesn't support Set and Map. */
-export const isShallowEqual = (a: any, b: any, compare = Object.is) => {
-  if (Object.is(a, b) || !isObject(a) || !isObject(b)) return Object.is(a, b)
+/** Compares primitives, doesn't support cyclic references. */
+export const isShallowEqual = (a: any, b: any, is = Object.is) => {
+  if (Object.is(a, b)) return true
 
-  if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime()
+  if (!isObject(a) || !isObject(b) || a.__proto__ !== b.__proto__) return false
 
-  const aKeys = Object.keys(a)
-  return (
-    a.__proto__ === b.__proto__ &&
-    aKeys.length === Object.keys(b).length &&
-    aKeys.every((k) => k in b && compare(a[k], b[k]))
-  )
+  if (a instanceof Date) return a.getTime() === b.getTime()
+
+  if (Symbol.iterator in a) {
+    let equal: typeof is =
+      a instanceof Map ? (a, b) => is(a[0], b[0]) && is(a[1], b[1]) : is
+    let aIter = a[Symbol.iterator]()
+    let bIter = b[Symbol.iterator]()
+    while (1) {
+      let aNext = aIter.next()
+      let bNext = bIter.next()
+      if (aNext.done || bNext.done || !equal(aNext.value, bNext.value)) {
+        return aNext.done && bNext.done
+      }
+    }
+  }
+
+  for (let k in a) if (k in b === false || !is(a[k], b[k])) return false
+  return Object.keys(a).length === Object.keys(b).length
 }
 
-/** Compares only primitives, doesn't support Set and Map. */
+/** Compares primitives, doesn't support cyclic references. */
 export const isDeepEqual = (a: any, b: any) => isShallowEqual(a, b, isDeepEqual)
 
 export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
-  Omit<T1, keyof T2 | keyof T3 | keyof T4> &
+  (T1 extends Fn<infer I, infer O> ? Fn<I, O> : {}) &
+    Omit<T1, keyof T2 | keyof T3 | keyof T4> &
     Omit<T2, keyof T3 | keyof T4> &
     Omit<T3, keyof T4> &
     T4
@@ -114,12 +130,10 @@ export const jsonClone = <T>(value: T): T => JSON.parse(JSON.stringify(value))
 export const random = (min = 0, max = Number.MAX_SAFE_INTEGER - 1) =>
   Math.floor(Math.random() * (max - min + 1)) + min
 
-
-/** 
+/**
  * Returns non nullable type of value
  */
-export const nonNullable =  <T extends unknown>(value: T, message?: string): NonNullable<T> => {
+export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
   throwReatomError(!value, message ?? 'Value is nullable')
   return value as NonNullable<T>
 }
-  
