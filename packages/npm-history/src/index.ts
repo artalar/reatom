@@ -29,13 +29,13 @@ historyAtom.__reatom.computer = (ctx, history?: History) => (
 )
 onUpdate(historyAtom, (ctx, history) => {
   history.listen(
-    ({ location, action }) =>
-      isShallowEqual(ctx.get(locationAtom), location) ||
+    () =>
+      isShallowEqual(ctx.get(locationAtom), history.location) ||
       // @ts-expect-error
       locationAtom(ctx, history.location),
   )
   // @ts-expect-error
-  locationAtom(ctx, history.location);
+  locationAtom(ctx, history.location)
 })
 
 // @ts-expect-error
