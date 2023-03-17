@@ -93,10 +93,13 @@ export const onConnect = (
 export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
   onConnect(anAtom, (ctx) => () => cb(ctx))
 
-export const onUpdate = <T>(
-  anAtom: Action<any[], T> | Atom<T>,
-  cb: Fn<[Ctx, T, AtomCache<T>]>,
-) => {
+export const onUpdate: {
+  <Params extends any[], Payload>(
+    anAction: Action<Params, Payload>,
+    cb: Fn<[Ctx, Payload, AtomCache<AtomState<Action<Params, Payload>>>]>,
+  ): Unsubscribe
+  <T>(anAtom: Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>): Unsubscribe
+} = <T>(anAtom: Action<any[], T> | Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>) => {
   const hook = (ctx: Ctx, patch: AtomCache) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
