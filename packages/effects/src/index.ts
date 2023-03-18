@@ -100,14 +100,15 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
     }
 
     let skipFirst = true,
-      fn = ctx.subscribe(anAtom, (state) => {
+      un = ctx.subscribe(anAtom, (state) => {
         if (skipFirst) return (skipFirst = false)
-        fn()
+        un()
         if (anAtom.__reatom.isAction) state = state[0].payload
         if (state instanceof Promise) {
           state.then((v) => res(mapper(ctx, v)), rej)
+        } else {
+          res(mapper(ctx, state))
         }
-        res(mapper(ctx, state))
       })
   })
 
