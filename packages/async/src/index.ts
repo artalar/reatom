@@ -137,7 +137,7 @@ export const reatomAsync = <
   const onReject = action<unknown>(`${name}.onReject`)
   const onSettle = action(
     (ctx) => void pendingAtom(ctx, (s) => --s),
-    `${name}.onSettle`,
+    `${name}._onSettle`,
   )
 
   onUpdate(onFulfill, (ctx) => onSettle(ctx))
