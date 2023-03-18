@@ -9,6 +9,32 @@ import {
 } from '@reatom/core'
 import { __findCause } from '@reatom/hooks'
 
+const LISTENERS = new WeakMap<Promise<any>, Array<Fn>>()
+// TODO `reatomPromise`
+/**
+ * Subscribe to promise result with batching
+ * @internal
+ * @deprecated
+ */
+export const __thenReatomed = <T>(
+  ctx: Ctx,
+  promise: Promise<T>,
+  onFulfill: Fn<[value: T, read: Fn, actualize: Fn]>,
+) => {
+  let listeners = LISTENERS.get(promise)
+  if (!listeners) {
+    LISTENERS.set(promise, (listeners = []))
+
+    promise.then((value: any) =>
+      ctx.get((read, actualize) =>
+        listeners!.forEach((cb) => cb(value, read, actualize)),
+      ),
+    )
+  }
+
+  listeners.push(onFulfill)
+}
+
 export const disposable = (
   ctx: Ctx,
 ): Ctx & {
