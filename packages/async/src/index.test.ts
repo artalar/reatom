@@ -1,9 +1,9 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { fetch } from 'cross-fetch'
+import { action, atom } from '@reatom/core'
 import { mapPayloadAwaited } from '@reatom/lens'
 import { take } from '@reatom/effects'
-import { onConnect } from '@reatom/hooks'
+import { onConnect, __findCause } from '@reatom/hooks'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
@@ -15,6 +15,7 @@ import {
   withErrorAtom,
 } from './'
 
+import './index.story.test'
 import './withCache.test'
 
 test(`base API`, async () => {
@@ -131,10 +132,10 @@ test('withAbort', async () => {
   assert.equal(abortTrack.calls.length, 1)
 
   const promise1 = a1(ctx, 1)
-  const promise2 = a1(ctx, 2)
-
-  assert.equal(valueTrack.calls.length, 1)
   assert.equal(abortTrack.calls.length, 1)
+  const promise2 = a1(ctx, 2)
+  assert.equal(valueTrack.calls.length, 1)
+  assert.equal(abortTrack.calls.length, 2)
 
   await Promise.any([promise1, promise2])
 
@@ -146,9 +147,12 @@ test('withAbort', async () => {
 })
 
 test('withAbort user abort', async () => {
-  const a1 = reatomAsync(async (ctx) => {
-    ctx.controller.abort()
-    ctx.controller.signal.throwIfAborted()
+  const a1 = reatomAsync(async (ctx, shouldAbort: boolean) => {
+    if (shouldAbort) {
+      ctx.controller.abort()
+      ctx.controller.signal.throwIfAborted()
+    }
+    return 42
   }).pipe(withAbort())
 
   const ctx = createTestCtx()
@@ -161,10 +165,16 @@ test('withAbort user abort', async () => {
   assert.equal(valueSubscriber.calls.length, 1)
   assert.equal(errorSubscriber.calls.length, 1)
 
-  await a1(ctx).catch((v) => {})
+  await a1(ctx, true).catch((v) => {})
 
   assert.equal(valueSubscriber.calls.length, 1)
   assert.equal(errorSubscriber.calls.length, 2)
+
+  const promise = a1(ctx, false)
+  assert.equal(valueSubscriber.calls.length, 1)
+  await promise
+  assert.equal(valueSubscriber.calls.length, 2)
+  assert.equal(valueSubscriber.lastInput().at(-1)?.payload, 42)
   ;`👍` //?
 })
 
@@ -275,7 +285,7 @@ test('nested abort', async () => {
     result = true
   }).pipe(withAbort())
   const do2 = reatomAsync(do1)
-  const do3 = reatomAsync(do2).pipe(withAbort())
+  const do3 = reatomAsync(action(do2)).pipe(withAbort())
   const ctx = createTestCtx()
 
   do3(ctx).catch(() => {
@@ -295,6 +305,33 @@ test('nested abort', async () => {
   await sleep(5)
   assert.is(result, false)
   assert.is(thrown, true)
+  ;`👍` //?
+})
+
+test('onConnect and take ', async () => {
+  const act = action()
+  const res = atom(false)
+  const effect = reatomAsync(async (ctx) => {
+    // extra action to check that the controller could be read even between NO async primitives
+    await action((ctx) => take(ctx, act))(ctx)
+    res(ctx, true)
+  })
+  onConnect(res, effect)
+
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(res)
+  act(ctx)
+  await sleep()
+  assert.is(ctx.get(res), true)
+
+  res(ctx, false)
+  track.unsubscribe()
+
+  ctx.subscribeTrack(res).unsubscribe()
+  act(ctx)
+  await sleep()
+  assert.is(ctx.get(res), false)
   ;`👍` //?
 })
 

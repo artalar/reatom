@@ -5,8 +5,7 @@ import { atom } from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
 import { isDeepEqual, jsonClone, sleep } from '@reatom/utils'
 
-import { reatomAsync, withDataAtom } from './'
-import { withAbort } from '../build'
+import { reatomAsync, withAbort, withDataAtom } from './'
 
 test('optimistic update without extra updates on invalidation', async () => {
   //#region backend
@@ -83,7 +82,6 @@ test('safe pooling', async () => {
 
   const tasks = new Map<number, number>()
   const poolTask = reatomAsync(async (ctx, taskId: number) => {
-    ctx.controller.signal.aborted
     await sleep(5)
     const progress = (tasks.get(taskId) ?? -10) + 10
     tasks.set(taskId, progress)
@@ -102,7 +100,7 @@ test('safe pooling', async () => {
 
       if (progress === 100) return
     }
-  }).pipe(withAbort())
+  }).pipe(withAbort({ strategy: 'last-in-win' }))
 
   const ctx = createTestCtx()
   const track = ctx.subscribeTrack(progressAtom)
