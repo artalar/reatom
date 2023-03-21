@@ -22,37 +22,36 @@ body:
     attributes:
       label: Part
       description: What package or project part is broken?
-      options: []
+      options:
+        - Documentation site
+        - Contributor tooling
+        - CI
+        - Package @reatom/all-settled
+        - Package @reatom/async
+        - Package @reatom/core
+        - Package @reatom/core-v1
+        - Package @reatom/core-v2
+        - Package @reatom/effects
+        - Package @reatom/eslint-plugin
+        - Package @reatom/form
+        - Package @reatom/form-web
+        - Package @reatom/framework
+        - Package @reatom/hooks
+        - Package @reatom/lens
+        - Package @reatom/logger
+        - Package @reatom/npm-cookie-baker
+        - Package @reatom/npm-history
+        - Package @reatom/npm-react
+        - Package @reatom/npm-svelte
+        - Package @reatom/primitives
+        - Package @reatom/react-v1
+        - Package @reatom/react-v2
+        - Package @reatom/testing
+        - Package @reatom/timer
+        - Package @reatom/undo
+        - Package @reatom/utils
     validations:
       required: true
-    options:
-      - Documentation site
-      - Contributor tooling
-      - CI
-      - Package @reatom/all-settled
-      - Package @reatom/async
-      - Package @reatom/core
-      - Package @reatom/core-v1
-      - Package @reatom/core-v2
-      - Package @reatom/effects
-      - Package @reatom/eslint-plugin
-      - Package @reatom/form
-      - Package @reatom/form-web
-      - Package @reatom/framework
-      - Package @reatom/hooks
-      - Package @reatom/lens
-      - Package @reatom/logger
-      - Package @reatom/npm-cookie-baker
-      - Package @reatom/npm-history
-      - Package @reatom/npm-react
-      - Package @reatom/npm-svelte
-      - Package @reatom/primitives
-      - Package @reatom/react-v1
-      - Package @reatom/react-v2
-      - Package @reatom/testing
-      - Package @reatom/timer
-      - Package @reatom/undo
-      - Package @reatom/utils
   - type: input
     id: version
     attributes:
