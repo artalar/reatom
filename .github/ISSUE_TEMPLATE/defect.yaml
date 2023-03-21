@@ -1,0 +1,79 @@
+name: Bug Report
+description: File a bug report
+title: ""
+labels:
+  - T - Defect
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: A bug happened!
+    validations:
+      required: true
+  - type: dropdown
+    id: reatom-part
+    attributes:
+      label: Part
+      description: What package or project part is broken?
+      options: []
+    validations:
+      required: true
+    options:
+      - Documentation site
+      - Contributor tooling
+      - CI
+      - Package @reatom/all-settled
+      - Package @reatom/async
+      - Package @reatom/core
+      - Package @reatom/core-v1
+      - Package @reatom/core-v2
+      - Package @reatom/effects
+      - Package @reatom/eslint-plugin
+      - Package @reatom/form
+      - Package @reatom/form-web
+      - Package @reatom/framework
+      - Package @reatom/hooks
+      - Package @reatom/lens
+      - Package @reatom/logger
+      - Package @reatom/npm-cookie-baker
+      - Package @reatom/npm-history
+      - Package @reatom/npm-react
+      - Package @reatom/npm-svelte
+      - Package @reatom/primitives
+      - Package @reatom/react-v1
+      - Package @reatom/react-v2
+      - Package @reatom/testing
+      - Package @reatom/timer
+      - Package @reatom/undo
+      - Package @reatom/utils
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of our software are you running?
+    validations:
+      required: false
+  - type: dropdown
+    id: browsers
+    attributes:
+      label: What browsers are you seeing the problem on?
+      multiple: true
+      options:
+        - Firefox
+        - Chrome
+        - Safari
+        - Microsoft Edge
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be
+        automatically formatted into code, so no need for backticks.
+      render: shell

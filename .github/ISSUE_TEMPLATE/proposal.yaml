@@ -1,0 +1,16 @@
+name: Idea or new package
+description: If you have an idea for a package or a new system-wide feature
+title: ""
+labels:
+  - T - Proposal
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to bring new ideas to the project!
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have on your mind?
+    validations:
+      required: true
