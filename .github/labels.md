@@ -9,7 +9,7 @@ Labels are divided in three main categories (label count assignable for one issu
 Type labels are prefixed with `T -` and have the following meaning:
 - `T - Defect` -- Things are not working in a way they are *meant* to be working. They way they should work are either defined by tests, documentation, reference implementation (for adapter packages), the system design, or common sense. Part label is **mandatory** with this label.
 - `T - Proposal` -- Entirely new functionality, package or design approach. Part label **may be skipped**.  
-- `T - Enhancement` -- There's a way to make something work in a better way in existing functionality. Improvement of usability, new feature. Part label is **mandatory** with this label.
+- `T - Enhancement` -- There's a way to make something work in a better way in existing functionality, usability improvement, new feature. Part label is **mandatory** with this label.
 - `T - Task` -- Some work to do to proceed with other tasks. General for refactoring or chores like releases.
 
 ## Part labels
