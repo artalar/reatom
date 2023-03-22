@@ -9,6 +9,38 @@ import {
 } from '@reatom/core'
 import { __findCause } from '@reatom/hooks'
 
+export interface AbortError extends Error {
+  name: 'AbortError'
+}
+
+export const toAbortError = (reason: unknown): AbortError => {
+  if (reason instanceof Error) {
+    if (reason.name !== 'AbortError') {
+      reason = new Error(reason.message, { cause: reason })
+    }
+  } else {
+    reason = new Error(String(reason))
+  }
+
+  ;(reason as Error).name = 'AbortError'
+
+  return reason as AbortError
+}
+
+export const throwIfAborted = (
+  controller: AbortController,
+  reason?: string,
+) => {
+  if (reason) controller.abort(reason)
+
+  if (controller.signal.aborted) {
+    throw toAbortError(controller.signal.reason)
+  }
+}
+
+export const isAbort = (thing: any): thing is AbortError =>
+  thing instanceof Error && thing.name === 'AbortError'
+
 const LISTENERS = new WeakMap<
   Promise<any>,
   {
@@ -100,16 +132,18 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
-    const signal =
-      ctx.controller?.signal ??
+    const controller =
+      ctx.controller ??
       __findCause(
         ctx.cause,
         (cause: AtomCache & { controller?: AbortController }) =>
-          cause.controller?.signal,
+          cause.controller,
       )
-    if (signal) {
-      signal.throwIfAborted()
-      signal.addEventListener('abort', () => rej(signal.reason))
+    if (controller) {
+      throwIfAborted(controller)
+      controller.signal.addEventListener('abort', () =>
+        rej(toAbortError(controller.signal.reason)),
+      )
     }
 
     let skipFirst = true,
@@ -131,10 +165,12 @@ export const takeNested = <I extends any[]>(
   ...params: I
 ): Promise<void> =>
   new Promise<void>((res, rej) => {
-    const signal = ctx.controller?.signal
-    if (signal) {
-      signal.throwIfAborted()
-      signal.addEventListener('abort', () => rej(signal.reason))
+    const { controller } = ctx
+    if (controller) {
+      throwIfAborted(controller)
+      controller.signal.addEventListener('abort', () =>
+        rej(toAbortError(controller.signal.reason)),
+      )
     }
 
     let i = 0,
