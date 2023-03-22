@@ -13,6 +13,7 @@ import {
   Fn,
   throwReatomError,
 } from '@reatom/core'
+import { __thenReatomed } from '@reatom/effects'
 import { spyChange } from '@reatom/hooks'
 import { isShallowEqual } from '@reatom/utils'
 
@@ -163,18 +164,7 @@ export const mapPayloadAwaited: {
     const params = isAction ? [] : [fallback]
     params.push((ctx: Ctx, promise: any) => {
       if (promise instanceof Promise) {
-        let listeners = LISTENERS.get(promise)
-        if (!listeners) {
-          LISTENERS.set(promise, (listeners = []))
-
-          promise.then((value: any) =>
-            ctx.get((read, actualize) =>
-              listeners!.forEach((cb) => cb(value, read, actualize)),
-            ),
-          )
-        }
-
-        listeners.push((v, read, actualize) =>
+        __thenReatomed(ctx, promise, (v, read, actualize) =>
           actualize!(
             ctx,
             ctx.cause!.proto,

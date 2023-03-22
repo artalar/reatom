@@ -9,7 +9,13 @@ import {
 } from '@reatom/core'
 import { __findCause } from '@reatom/hooks'
 
-const LISTENERS = new WeakMap<Promise<any>, Array<Fn>>()
+const LISTENERS = new WeakMap<
+  Promise<any>,
+  {
+    then: Array<Fn>
+    catch: Array<Fn>
+  }
+>()
 // TODO `reatomPromise`
 /**
  * Subscribe to promise result with batching
@@ -19,20 +25,27 @@ const LISTENERS = new WeakMap<Promise<any>, Array<Fn>>()
 export const __thenReatomed = <T>(
   ctx: Ctx,
   promise: Promise<T>,
-  onFulfill: Fn<[value: T, read: Fn, actualize: Fn]>,
+  onFulfill?: Fn<[value: T, read: Fn, actualize: Fn]>,
+  onReject?: Fn<[error: unknown, read: Fn, actualize: Fn]>,
 ) => {
   let listeners = LISTENERS.get(promise)
   if (!listeners) {
-    LISTENERS.set(promise, (listeners = []))
+    LISTENERS.set(promise, (listeners = { then: [], catch: [] }))
 
-    promise.then((value: any) =>
-      ctx.get((read, actualize) =>
-        listeners!.forEach((cb) => cb(value, read, actualize)),
-      ),
+    promise.then(
+      (value: any) =>
+        ctx.get((read, actualize) =>
+          listeners!.then.forEach((cb) => cb(value, read, actualize)),
+        ),
+      (error: any) =>
+        ctx.get((read, actualize) =>
+          listeners!.catch.forEach((cb) => cb(error, read, actualize)),
+        ),
     )
   }
 
-  listeners.push(onFulfill)
+  onFulfill && listeners.then.push(onFulfill)
+  onReject && listeners.catch.push(onReject)
 }
 
 export const disposable = (
@@ -147,48 +160,3 @@ export const takeNested = <I extends any[]>(
       ...params,
     )
   })
-
-// export const unstable_actionizeAllChanges = <T extends Rec<Atom> | Array<Atom>>(
-//   shape: T,
-//   name?: string,
-// ): Action<
-//   [NEVER],
-//   {
-//     [K in keyof T]: AtomState<T[K]>
-//   }
-// > => {
-//   const cacheAtom = atom(
-//     Object.keys(shape).reduce((acc, k) => ((acc[k] = SKIP), acc), {} as Rec),
-//   )
-
-//   const theAction = atom((ctx, state = []) => {
-//     for (const key in shape) {
-//       const anAtom = shape[key] as Atom
-//       spyChange(ctx, anAtom, (value) => {
-//         // if (anAtom.__reatom.isAction) {
-//         //   if (value.length === 0) return
-//         //   value = value[0]
-//         // }
-//         cacheAtom(ctx, (state) => ({ ...state, [key]: value }))
-//       })
-//     }
-
-//     let cache = ctx.get(cacheAtom)
-
-//     if (Object.values(cache).some((v) => v === SKIP)) return state
-
-//     for (const key in shape) {
-//       const anAtom = shape[key] as Atom
-//       if (anAtom.__reatom.isAction === false) {
-//         cache = { ...cache, [key]: ctx.get(anAtom) }
-//       }
-//     }
-
-//     return [Array.isArray(shape) ? Object.values(cache) : cache]
-//   }, name)
-//   theAction.__reatom.isAction = true
-
-//   return theAction as any
-// }
-
-// export const take
