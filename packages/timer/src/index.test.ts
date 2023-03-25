@@ -33,46 +33,46 @@ test('progressAtom', async () => {
 
   timerAtom.intervalAtom(ctx, 10)
   const track = ctx.subscribeTrack(timerAtom.progressAtom)
-  track.calls.length = 0
 
-  await timerAtom.startTimer(ctx, 60)
-  assert.equal(
-    track.calls.map(({ i }) => i[0]),
-    [0.17, 0.33, 0.5, 0.67, 0.83, 1],
-  )
+  await timerAtom.startTimer(ctx, 50)
+  assert.equal(track.inputs(), [0, 0.2, 0.4, 0.6, 0.8, 1])
   ;`👍` //?
 })
 
 test('pauseAtom', async () => {
-  const timerAtom = reatomTimer({ delayMultiplier: 1 })
+  const timerAtom = reatomTimer({ interval: 10, delayMultiplier: 1 })
   const ctx = createTestCtx()
 
-  timerAtom.intervalAtom(ctx, 10)
   const track = ctx.subscribeTrack(timerAtom.progressAtom)
   track.calls.length = 0
 
-  timerAtom.startTimer(ctx, 60)
+  timerAtom.startTimer(ctx, 100)
+  let target = Date.now() + 100
 
-  await sleep(25)
-  assert.equal(
-    track.calls.map(({ i }) => i[0]),
-    [0.17, 0.33],
-  )
+  let i = 5
+  while (i--) {
+    await sleep(5)
+  }
+
+  assert.equal(track.inputs(), [0.1, 0.2])
 
   timerAtom.pauseAtom(ctx, true)
-  await sleep(40)
-  assert.equal(
-    track.calls.map(({ i }) => i[0]),
-    [0.17, 0.33],
-  )
+  await sleep(25)
+  target += 25
+  assert.equal(track.inputs(), [0.1, 0.2])
 
   timerAtom.pauseAtom(ctx, false)
-  await sleep(40)
+  await sleep(10)
+  console.log(track.inputs())
+  assert.equal(track.inputs(), [0.1, 0.2, 0.3])
 
-  assert.equal(
-    track.calls.map(({ i }) => i[0]),
-    [0.17, 0.33, 0.5, 0.67, 0.83, 1],
-  )
+  await sleep(target - Date.now() - 5)
+  console.log(track.inputs())
+  assert.equal(track.inputs(), [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+
+  await sleep(10)
+  console.log(track.inputs())
+  assert.equal(track.inputs(), [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
   ;`👍` //?
 })
 
@@ -93,4 +93,5 @@ test('do not allow overprogress', async () => {
   ;`👍` //?
 })
 
+// TODO
 test.run()
