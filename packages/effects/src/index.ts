@@ -7,7 +7,6 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { __findCause } from '@reatom/hooks'
 
 export interface AbortError extends Error {
   name: 'AbortError'
@@ -27,19 +26,27 @@ export const toAbortError = (reason: unknown): AbortError => {
   return reason as AbortError
 }
 
-export const throwIfAborted = (
-  controller: AbortController,
-  reason?: string,
-) => {
-  if (reason) controller.abort(reason)
-
-  if (controller.signal.aborted) {
+export const throwIfAborted = (controller?: void | AbortController) => {
+  if (controller?.signal.aborted) {
     throw toAbortError(controller.signal.reason)
   }
 }
 
 export const isAbort = (thing: any): thing is AbortError =>
   thing instanceof Error && thing.name === 'AbortError'
+
+/** Handle abort signal from a cause */
+export const onAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+  let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
+  while (cause && !cause.controller) cause = cause.cause
+  const controller = cause?.controller
+
+  throwIfAborted(controller)
+
+  controller?.signal.addEventListener('abort', () =>
+    cb(toAbortError(controller.signal.reason)),
+  )
+}
 
 const LISTENERS = new WeakMap<
   Promise<any>,
@@ -132,19 +139,7 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
-    const controller =
-      ctx.controller ??
-      __findCause(
-        ctx.cause,
-        (cause: AtomCache & { controller?: AbortController }) =>
-          cause.controller,
-      )
-    if (controller) {
-      throwIfAborted(controller)
-      controller.signal.addEventListener('abort', () =>
-        rej(toAbortError(controller.signal.reason)),
-      )
-    }
+    onAbort(ctx, rej)
 
     let skipFirst = true,
       un = ctx.subscribe(anAtom, (state) => {
@@ -157,6 +152,7 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
           res(mapper(ctx, state))
         }
       })
+    ctx.schedule(un, -1)
   })
 
 export const takeNested = <I extends any[]>(
@@ -165,13 +161,7 @@ export const takeNested = <I extends any[]>(
   ...params: I
 ): Promise<void> =>
   new Promise<void>((res, rej) => {
-    const { controller } = ctx
-    if (controller) {
-      throwIfAborted(controller)
-      controller.signal.addEventListener('abort', () =>
-        rej(toAbortError(controller.signal.reason)),
-      )
-    }
+    onAbort(ctx, rej)
 
     let i = 0,
       { schedule } = ctx
