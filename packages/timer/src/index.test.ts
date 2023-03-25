@@ -63,15 +63,12 @@ test('pauseAtom', async () => {
 
   timerAtom.pauseAtom(ctx, false)
   await sleep(10)
-  console.log(track.inputs())
   assert.equal(track.inputs(), [0.1, 0.2, 0.3])
 
   await sleep(target - Date.now() - 5)
-  console.log(track.inputs())
   assert.equal(track.inputs(), [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
 
   await sleep(10)
-  console.log(track.inputs())
   assert.equal(track.inputs(), [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1])
   ;`👍` //?
 })
@@ -94,4 +91,4 @@ test('do not allow overprogress', async () => {
 })
 
 // TODO
-test.run()
+// test.run()
