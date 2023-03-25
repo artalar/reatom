@@ -48,13 +48,18 @@ export const isObject = <T>(
 //   <A, B>(a: A, b: B): a is B
 // } = Object.is
 
-/** Compares primitives, doesn't support cyclic references. */
+/** Shallow compare of primitives, objects and dates, arrays, maps, sets. */
 export const isShallowEqual = (a: any, b: any, is = Object.is) => {
   if (Object.is(a, b)) return true
 
-  if (!isObject(a) || !isObject(b) || a.__proto__ !== b.__proto__) return false
-
-  if (a instanceof Date) return a.getTime() === b.getTime()
+  if (
+    !isObject(a) ||
+    !isObject(b) ||
+    a.__proto__ !== b.__proto__ ||
+    a instanceof Error
+  ) {
+    return false
+  }
 
   if (Symbol.iterator in a) {
     let equal: typeof is =
@@ -70,12 +75,39 @@ export const isShallowEqual = (a: any, b: any, is = Object.is) => {
     }
   }
 
-  for (let k in a) if (k in b === false || !is(a[k], b[k])) return false
-  return Object.keys(a).length === Object.keys(b).length
+  if (a instanceof Date) return a.getTime() === b.getTime()
+  if (a instanceof RegExp) return String(a) === String(b)
+
+  for (let k in a) {
+    if (k in b === false || !is(a[k], b[k])) {
+      return false
+    }
+  }
+
+  // let aSymbols = Object.getOwnPropertySymbols(a)
+  // let bSymbols = Object.getOwnPropertySymbols(b)
+
+  return (
+    // aSymbols.length === bSymbols.length &&
+    // aSymbols.every((s) => s in b && is(a[s], b[s])) &&
+    Object.keys(a).length === Object.keys(b).length
+  )
 }
 
-/** Compares primitives, doesn't support cyclic references. */
-export const isDeepEqual = (a: any, b: any) => isShallowEqual(a, b, isDeepEqual)
+/** Recursive compare of primitives, objects and dates, arrays, maps, sets. Cyclic references supported */
+export const isDeepEqual = (a: any, b: any) => {
+  const visited = new WeakMap()
+
+  const is = (a: any, b: any) => {
+    if (isObject(a)) {
+      if (visited.has(a)) return visited.get(a) === b
+      visited.set(a, b)
+    }
+    return isShallowEqual(a, b, is)
+  }
+
+  return isShallowEqual(a, b, is)
+}
 
 export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
   (T1 extends Fn<infer I, infer O> ? Fn<I, O> : {}) &
