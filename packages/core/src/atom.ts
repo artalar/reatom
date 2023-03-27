@@ -71,7 +71,14 @@ export interface Ctx {
       T
     >,
   ): T
-  spy?: <T>(atom: Atom<T>) => T
+  spy?: {
+    <T>(anAtom: Atom<T>): T
+    <Params extends any[] = any[], Payload = any>(
+      anAction: Action<Params, Payload>,
+      cb: Fn<[call: { params: Params; payload: Payload }]>,
+    ): void
+    <T>(atom: Atom<T>, cb: Fn<[newState: T, prevState: undefined | T]>): void
+  }
 
   schedule<T = void>(
     cb: Fn<[Ctx], T>,
@@ -313,7 +320,7 @@ export const createCtx = ({
     ) {
       let newPubs: typeof pubs = []
 
-      patchCtx.spy = ({ __reatom: depProto }: Atom) => {
+      patchCtx.spy = ({ __reatom: depProto }: Atom, cb?: Fn) => {
         // this changed after computer exit
         if (patch.pubs === pubs) {
           let depPatch = actualize(patchCtx, depProto)
@@ -328,9 +335,17 @@ export const createCtx = ({
             toConnect.add(depProto)
           }
 
-          return depProto.isAction && !isDepChanged
-            ? depPatch.state.slice(prevDepPatch!.state.length)
-            : depPatch.state
+          let state =
+            depProto.isAction && !isDepChanged
+              ? depPatch.state.slice(prevDepPatch!.state.length)
+              : depPatch.state
+
+          if (cb && (isDepChanged || !Object.is(state, prevDepPatch!.state))) {
+            if (depProto.isAction) (state as any[]).forEach((call) => cb(call))
+            else cb(state, prevDepPatch?.state)
+          } else {
+            return state
+          }
         } else {
           throwReatomError(true, 'async spy')
         }
