@@ -106,6 +106,7 @@ export const onUpdate: {
   return () => hooks.delete(hook)
 }
 
+/** @deprecated use the second parameter of `ctx.spy` instead */
 // @ts-ignore
 export const spyChange: {
   <Params extends any[], Payload>(
@@ -115,38 +116,12 @@ export const spyChange: {
   ): boolean
   <T>(ctx: CtxSpy, anAtom: Atom<T>, handler?: Fn<[T, T?]>): boolean
 } = (ctx: CtxSpy, anAtom: Atom, handler?: Fn) => {
-  const { pubs } = ctx.cause
-  const { isAction } = anAtom.__reatom
-  let state: any = ctx.spy(anAtom)
-  const handle = handler
-    ? (prevState?: any) =>
-        isAction
-          ? (state as any[]).forEach((v) => handler(v))
-          : handler(state, prevState)
-    : () => {}
-
-  // we walk from the end because
-  // it is possible to have a few different
-  // caches for the same atom
-  // and the last one is the most actual
-  for (let i = pubs.length; i > 0; ) {
-    const pub = pubs[--i]!
-    if (pub.proto === anAtom.__reatom) {
-      if (
-        Object.is(pub.state, state) ||
-        // TODO impossible state?
-        (isAction && state.length === 0)
-      ) {
-        return false
-      }
-      handle(pub.state)
-      return true
-    }
-  }
-
-  handle()
-
-  return true
+  let isChanged = false
+  ctx.spy(anAtom, (newState, prevState) => {
+    isChanged = true
+    handler?.(newState, prevState)
+  })
+  return isChanged
 }
 
 export const controlConnection =
