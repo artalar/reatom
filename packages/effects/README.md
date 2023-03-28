@@ -22,6 +22,7 @@ You could await actions too!
 ```ts
 // ~/features/someForm.ts
 import { take } from '@reatom/effects'
+import { onConnect } from '@reatom/hooks'
 import { historyAtom } from '@reatom/npm-history'
 import { confirmModalAtom } from '~/features/modal'
 

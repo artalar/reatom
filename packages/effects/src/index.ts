@@ -8,22 +8,28 @@ import {
   Unsubscribe,
 } from '@reatom/core'
 
-export interface AbortError extends Error {
+export interface AbortError extends DOMException {
   name: 'AbortError'
 }
 
+const AbortError = (
+  typeof DOMException === 'function' ? DOMException : Error
+) as new (message: string) => AbortError
+
 export const toAbortError = (reason: unknown): AbortError => {
-  if (reason instanceof Error) {
-    if (reason.name !== 'AbortError') {
-      reason = new Error(reason.message, { cause: reason })
+  let error = reason as AbortError
+  if (error instanceof Error) {
+    if (error.name !== 'AbortError') {
+      error = new AbortError(error.message)
+      error.cause = reason
     }
   } else {
-    reason = new Error(String(reason))
+    reason = new AbortError(String(reason))
   }
 
-  ;(reason as Error).name = 'AbortError'
+  error.name = 'AbortError'
 
-  return reason as AbortError
+  return error
 }
 
 export const throwIfAborted = (controller?: void | AbortController) => {
@@ -36,7 +42,7 @@ export const isAbort = (thing: any): thing is AbortError =>
   thing instanceof Error && thing.name === 'AbortError'
 
 /** Handle abort signal from a cause */
-export const onAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
   let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
   while (cause && !cause.controller) cause = cause.cause
   const controller = cause?.controller
@@ -87,6 +93,7 @@ export const __thenReatomed = <T>(
   onReject && listeners.catch.push(onReject)
 }
 
+/** @deprecated use `ctx.controller` which is AbortController instead */
 export const disposable = (
   ctx: Ctx,
 ): Ctx & {
@@ -139,7 +146,7 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
-    onAbort(ctx, rej)
+    onCtxAbort(ctx, rej)
 
     let skipFirst = true,
       un = ctx.subscribe(anAtom, (state) => {
@@ -161,7 +168,7 @@ export const takeNested = <I extends any[]>(
   ...params: I
 ): Promise<void> =>
   new Promise<void>((res, rej) => {
-    onAbort(ctx, rej)
+    onCtxAbort(ctx, rej)
 
     let i = 0,
       { schedule } = ctx
