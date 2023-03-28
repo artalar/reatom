@@ -549,6 +549,42 @@ test('no extra tick by schedule', async () => {
   ;`👍` //?
 })
 
+test('reducer atom types', () => {
+  const simpleAtom = atom(1)
+  const reducerWithExplicitArgumentTypeAndDefault = atom(
+    (ctx, prevState: number = 0) => prevState + 1,
+  )
+
+  const reducerWithConstantReturn = atom(() => 1)
+
+  const reducerWithExplicitArgumentTypeWithoutDefault = atom(
+    // @ts-expect-error because prevState undefined value is not handled
+    (ctx, prevState: number) => prevState + 1,
+  )
+  const reducerWithDifferentReturnAndValue = atom(
+    // @ts-expect-error because prevState and return value don't match
+    (ctx, prevState: number = 1): string => prevState.toString(),
+  )
+
+  // TODO this callback is context-sensitive expression and argument type can't be inferred from default argument
+  //  https://github.com/microsoft/TypeScript/issues/47599
+  const reducerWithDefaultValue = atom(
+    (ctx, prevState = 1) =>
+      // @ts-expect-error because we haven't passed explicit type for prevState
+      prevState + 1,
+  )
+
+  const reducerWithReturnType = atom(
+    (ctx, prevState = 1): number =>
+      // @ts-expect-error because argument type have priority over return type
+      prevState + 1,
+  )
+
+  // This one should have Atom<unknown> and that's correct behaviour
+  const reducerWithUnknownTypes = atom((ctx, prevState) => prevState)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
