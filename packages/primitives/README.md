@@ -61,6 +61,10 @@ thingsAtom.set(ctx, key, el)
 thingsAtom.delete(ctx, key)
 thingsAtom.clear(ctx)
 thingsAtom.reset(ctx)
+
+// built-in functions:
+thingsAtom.get(ctx, key)
+thingsAtom.has(ctx, key)
 ```
 
 ## `reatomNumber`
@@ -108,6 +112,8 @@ setAtom.set(ctx, el)
 setAtom.delete(ctx, el)
 setAtom.clear(ctx)
 setAtom.reset(ctx)
+// built-in functions:
+setAtom.has(ctx, el)
 ```
 
 ## `reatomString`
