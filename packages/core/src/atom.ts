@@ -163,8 +163,8 @@ export interface Unsubscribe {
 
 // We don't have type literal for NaN but other values are presented here
 // https://stackoverflow.com/a/51390763
-type Falsy = false | 0 | "" | null | undefined 
-// Can't be an arrow function due to 
+type Falsy = false | 0 | "" | null | undefined
+// Can't be an arrow function due to
 //    https://github.com/microsoft/TypeScript/issues/34523
 /** Throws `Reatom error: ${message}` */
 export function throwReatomError(condition: any, message: string): asserts condition is Falsy {
@@ -601,16 +601,13 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
-// @ts-ignore
 export let atom: {
-  <T extends (ctx: CtxSpy) => any>(initState: T, name?: string): Atom<
-    ReturnType<T>
-  >
-  <State>(initState: State, name?: string): AtomMut<State>
-} = (
-  initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
-  name = __count('_atom'),
-): Atom => {
+  <T>(
+    reducer: (ctx: CtxSpy, prevState?: T) => T,
+    name?: string,
+  ): Atom<T>
+  <State>(initState: Exclude<State, Fn>, name?: string): AtomMut<State>
+} = (initState: unknown, name = __count('_atom')): Atom & AtomMut => {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
@@ -646,8 +643,7 @@ export let atom: {
     return fns.reduce((acc, fn) => fn(acc), this)
   }
 
-  // @ts-ignore
-  return theAtom
+  return theAtom as Atom & AtomMut
 }
 
 export const action: {
