@@ -19,7 +19,7 @@ import {
   __thenReatomed,
   isAbort,
   throwIfAborted,
-  onAbort,
+  onCtxAbort,
 } from '@reatom/effects'
 import { addOnUpdate, onUpdate, spyChange } from '@reatom/hooks'
 import { assign } from '@reatom/utils'
@@ -89,7 +89,7 @@ export const reatomAsync = <
     controller.signal.throwIfAborted ??= () => throwIfAborted(controller)
     assign(ctx.cause, { controller })
 
-    onAbort({ cause: ctx.cause.cause } as Ctx, (error) =>
+    onCtxAbort({ cause: ctx.cause.cause } as Ctx, (error) =>
       controller.abort(error),
     )
 
