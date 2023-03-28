@@ -1,4 +1,5 @@
 // TODO https://hyperfetch.bettertyped.com/docs/Getting%20Started/Comparison/
+// TODO https://github.com/natemoo-re/ultrafetch
 
 import {
   action,
@@ -7,7 +8,6 @@ import {
   ActionPayload,
   atom,
   Atom,
-  AtomCache,
   AtomMut,
   Ctx,
   CtxParams,
@@ -15,8 +15,13 @@ import {
   throwReatomError,
   __count,
 } from '@reatom/core'
-import { __thenReatomed } from '@reatom/effects'
-import { addOnUpdate, onUpdate, spyChange, __findCause } from '@reatom/hooks'
+import {
+  __thenReatomed,
+  isAbort,
+  throwIfAborted,
+  onAbort,
+} from '@reatom/effects'
+import { addOnUpdate, onUpdate, spyChange } from '@reatom/hooks'
 import { assign } from '@reatom/utils'
 
 import { CACHE } from './cache'
@@ -57,8 +62,7 @@ export interface ControlledPromise<T = any> extends Promise<T> {
   controller: AbortController
 }
 
-export const isAbortError = (thing: any): thing is Error =>
-  thing instanceof Error && thing.name === 'AbortError'
+export const isAbortError = isAbort
 
 export const reatomAsync = <
   Params extends [AsyncCtx, ...any[]] = [AsyncCtx, ...any[]],
@@ -82,36 +86,32 @@ export const reatomAsync = <
   const onEffect = action((...params) => {
     const ctx = params[0] as AsyncCtx
     const controller = (ctx.controller = new AbortController())
-    controller.signal.throwIfAborted ??= () => {
-      if (controller.signal.aborted) {
-        let error = controller.signal.reason
-        if (error instanceof Error === false) {
-          error = new Error(controller.signal.reason)
-          error.name = 'AbortError'
-        }
-        throw error
-      }
-    }
+    controller.signal.throwIfAborted ??= () => throwIfAborted(controller)
     assign(ctx.cause, { controller })
 
-    const topController = __findCause(
-      ctx.cause.cause,
-      (cause: AtomCache & { controller?: AbortController }) => cause.controller,
+    onAbort({ cause: ctx.cause.cause } as Ctx, (error) =>
+      controller.abort(error),
     )
-    if (topController) {
-      const abort = () => controller.abort(topController.signal.reason)
-      if (topController.signal.aborted) abort()
-      else topController.signal.addEventListener('abort', abort)
-    }
 
     pendingAtom(ctx, (s) => ++s)
 
     const promise: ControlledPromise = assign(
       ctx.schedule(() => {
-        controller.signal.throwIfAborted()
-        if (CACHE.has(promise)) return CACHE.get(promise)
+        throwIfAborted(controller)
+
+        const cached = CACHE.get(promise)
+        if (cached) {
+          return cached(() => {
+            // Drop abort strategy for cache invalidation
+            ctx.controller = new AbortController()
+            // @ts-expect-error
+            ctx.controller.signal.setMaxListeners?.(50)
+            return effect(...(params as Params))
+          })
+        }
+
         return effect(...(params as Params)).then(
-          (value: any) => (controller.signal.throwIfAborted(), value),
+          (value: any) => (throwIfAborted(controller), value),
         )
       }),
       { controller },
@@ -122,7 +122,8 @@ export const reatomAsync = <
       promise,
       (v) =>
         CACHE.has(promise) || (onFulfill(ctx, v), pendingAtom(ctx, (s) => --s)),
-      (e) => (onReject(ctx, e), pendingAtom(ctx, (s) => --s)),
+      (e) =>
+        CACHE.has(promise) || (onReject(ctx, e), pendingAtom(ctx, (s) => --s)),
     )
 
     return promise
@@ -154,9 +155,15 @@ export const reatomAsync = <
 reatomAsync.from = <Params extends any[], Resp = any>(
   effect: Fn<Params, Promise<Resp>>,
   options: string | AsyncOptions<Params, Resp> = {},
-): AsyncAction<Params, Resp> =>
+): AsyncAction<Params, Resp> => {
+  // check uglification
+  if (effect.name.length > 2) {
+    if (typeof options === 'object') options.name ??= effect.name
+    else options ??= effect.name
+  }
   // @ts-expect-error
-  reatomAsync((ctx, ...a) => effect(...a), options)
+  return reatomAsync((ctx, ...a) => effect(...a), options)
+}
 
 export interface AsyncDataAtom<State = any> extends AtomMut<State> {
   reset: Action<[], void>

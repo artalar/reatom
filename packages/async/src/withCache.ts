@@ -2,50 +2,64 @@ import { action, ActionParams, ActionPayload, Ctx, Fn } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { onUpdate } from '@reatom/hooks'
 import { MapAtom, reatomMap } from '@reatom/primitives'
-import { isDeepEqual, isObject } from '@reatom/utils'
+import { assign, isDeepEqual } from '@reatom/utils'
 
 import { CACHE } from './cache'
 import { AsyncAction } from '.'
 
-interface CacheRecord<T extends AsyncAction> {
+export interface CacheRecord<T> {
   lastUpdate: number
   clearTimeoutId: ReturnType<typeof setTimeout>
-  value: ActionPayload<T['onFulfill']>
+  value: T
+  promise: null | Promise<T>
 }
 
-const stabilize = (ctx: Ctx, thing: any, visited = new Set<any>()): string => {
-  if (!isObject(thing)) return String(thing)
+export interface CacheAtom<T> extends MapAtom<unknown, CacheRecord<T>> {}
 
-  if (visited.has(thing)) return '[Circular]'
-  visited.add(thing)
+type CacheMapRecord<T extends AsyncAction> =
+  | undefined
+  | CacheRecord<ActionPayload<T['onFulfill']>>
 
-  let result =
-    Symbol.iterator in thing
-      ? ''
-      : ((thing = Object.entries(thing).sort(([a], [b]) => a.localeCompare(b))),
-        // add extra symbol to avoid collisions with arrays
-        '0')
-
-  for (let item of thing) result += stabilize(ctx, item, visited)
-
-  return result
-}
-
-type WithCacheOptions<T extends AsyncAction> = {
-  /** Maximum amount of cache records  */
+export type WithCacheOptions<T extends AsyncAction> = {
+  /** Maximum amount of cache records
+   * @default 5
+   */
   length?: number
-  /** The amount of milliseconds after which a cache record cleanups */
+  /** The amount of milliseconds after which a cache record cleanups
+   * @default 5 * 60 * 1000 ms (5 minutes)
+   */
   staleTime?: number
-  /** The number of excepted parameters, which will used as a cache key */
+  /** The number of excepted parameters, which will used as a cache key
+   * @default undefined (all)
+   */
   paramsLength?: number
-  //TODO  `staleByDataAtom?: boolean = false`
+
+  /** (stale while revalidate) Define if fetching should be triggered even if the cache is exists
+   * @default true
+   */
+  swr?: boolean
+  // TODO
+  // | {
+  //     /** should success revalidation trigger `onFulfill` to notify about the fresh data
+  //      * @default true
+  //      */
+  //     shouldFulfill?: boolean
+  //     // TODO
+  //     // interval?: number
+  //     // auto?: boolean
+  //   }
+
+  // TODO
+  // staleByDataAtom?: boolean = false
 } & (
   | {
       /** convert params to stabilize it and use as a map key */
       paramsToKey?: (ctx: Ctx, params: ActionParams<T>) => string
     }
   | {
-      /** check the equality of a cache record and passed params to find the cache */
+      /** check the equality of a cache record and passed params to find the cache
+       * @default isDeepEqual from @reatom/utils
+       */
       isEqual?: (
         ctx: Ctx,
         prev: ActionParams<T>,
@@ -57,12 +71,13 @@ type WithCacheOptions<T extends AsyncAction> = {
 export const withCache =
   <
     T extends AsyncAction & {
-      cacheAtom?: MapAtom<unknown, null | CacheRecord<T>>
+      cacheAtom?: CacheAtom<ActionPayload<T['onFulfill']>>
     },
   >({
     staleTime = 5 * 60 * 1000,
     length = 5,
     paramsLength,
+    swr = true,
     // @ts-expect-error
     paramsToKey,
     // @ts-expect-error
@@ -70,7 +85,7 @@ export const withCache =
   }: WithCacheOptions<T> = {}): Fn<
     [T],
     T & {
-      cacheAtom: MapAtom<unknown, null | CacheRecord<T>>
+      cacheAtom: CacheAtom<ActionPayload<T['onFulfill']>>
     }
   > =>
   // @ts-ignore
@@ -78,12 +93,12 @@ export const withCache =
     if (!anAsync.cacheAtom) {
       const find: Fn<
         [Ctx, any[]],
-        { cached: undefined | null | CacheRecord<T>; key: unknown }
+        { cached: CacheMapRecord<T>; key: unknown }
       > = paramsToKey
         ? (ctx, params) => {
             const key = paramsToKey(ctx, params as any)
             return {
-              cached: ctx.get(cacheAtom).get(paramsToKey(ctx, params as any)),
+              cached: cacheAtom.get(ctx, paramsToKey(ctx, params as any)),
               key,
             }
           }
@@ -95,11 +110,59 @@ export const withCache =
             return { cached: undefined, key: params }
           })
 
-      const cacheAtom: MapAtom<unknown, null | CacheRecord<T>> =
+      const cacheAtom: CacheAtom<ActionPayload<T['onFulfill']>> =
         (anAsync.cacheAtom = reatomMap(
           new Map(),
           `${anAsync.__reatom.name}._cacheAtom`,
         ))
+
+      const handlePromise = (
+        ctx: Ctx,
+        key: any,
+        promise: Promise<any>,
+        cached: CacheRecord<any>,
+      ) => {
+        cacheAtom.set(ctx, key, cached)
+
+        __thenReatomed(ctx, promise, (value) => {
+          // cache was cleared during promise execution
+          if (cacheAtom.has(ctx, key)) {
+            handleValue(ctx, key, value)
+          }
+        })
+      }
+
+      const handleValue = (ctx: Ctx, key: any, value: any) => {
+        const clearTimeoutId = setTimeout(
+          () => cacheAtom.delete(ctx, key),
+          staleTime,
+        )
+        clearTimeoutId.toString = () => ''
+        clearTimeoutId.unref?.()
+        ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
+        const cache = cacheAtom.set(ctx, key, {
+          lastUpdate: Date.now(),
+          clearTimeoutId,
+          value,
+          promise: null,
+        })
+
+        if (cache.size > length) {
+          let oldest: { key: unknown; lastUpdate: number }
+          for (const [key, cached] of cache.entries()) {
+            const lastUpdate = cached.promise ? Infinity : cached.lastUpdate
+            oldest ??= { key, lastUpdate }
+
+            if (lastUpdate < oldest.lastUpdate) {
+              oldest = { key, lastUpdate }
+            }
+          }
+          // @ts-expect-error
+          if (oldest) {
+            cacheAtom.delete(ctx, oldest.key)
+          }
+        }
+      }
 
       const handleCache = action(
         (ctx, promise: Promise<any>, params: any[]) => {
@@ -107,46 +170,38 @@ export const withCache =
 
           const { cached, key } = find(ctx, params)
 
-          if (cached) {
-            CACHE.set(promise, cached.value)
+          if (!cached) {
+            handlePromise(ctx, key, promise, {
+              lastUpdate: 0,
+              clearTimeoutId: 0 as any,
+              value: undefined as any,
+              promise,
+            })
+          } else {
             // @ts-expect-error
             anAsync.pendingAtom(ctx, (state) => --state)
-            anAsync.onFulfill(ctx, cached.value)
-          } else {
-            cacheAtom.set(ctx, key, null)
-            __thenReatomed(ctx, promise, (value) => {
-              // it is possible that cache was cleared during promise execution
-              if (!find(ctx, params)) return
 
-              const clearTimeoutId = setTimeout(
-                () => cacheAtom.delete(ctx, key),
-                staleTime,
-              )
-              clearTimeoutId.toString = () => ''
-              clearTimeoutId.unref?.()
-              ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
-              const cache = cacheAtom.set(ctx, key, {
-                lastUpdate: Date.now(),
-                clearTimeoutId,
-                value,
+            // the cache is not ready yet
+            if (cached.lastUpdate === 0) {
+              CACHE.set(promise, async () => cached.promise)
+            }
+            // the cache is ready
+            else {
+              anAsync.onFulfill(ctx, cached.value)
+              CACHE.set(promise, async (effect) => {
+                if (cached.promise) return cached.promise
+                if (!swr) return cached.value
+
+                const swrPromise = effect()
+                handlePromise(
+                  ctx,
+                  key,
+                  swrPromise,
+                  assign({}, cached, { promise: swrPromise }),
+                )
+                return swrPromise
               })
-
-              if (cache.size > length) {
-                let oldest: [unknown, null | CacheRecord<T>]
-                for (const [key, cached] of cache.entries()) {
-                  oldest ??= [key, cached]
-
-                  if (!cached) continue
-
-                  if (
-                    cached.lastUpdate < (oldest![1]?.lastUpdate ?? Infinity)
-                  ) {
-                    oldest = [key, cached]
-                  }
-                }
-                cacheAtom.delete(ctx, oldest![0])
-              }
-            })
+            }
           }
         },
         `${anAsync.__reatom.name}._handleCache`,

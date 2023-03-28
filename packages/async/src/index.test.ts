@@ -3,7 +3,7 @@ import * as assert from 'uvu/assert'
 import { action, atom } from '@reatom/core'
 import { mapPayloadAwaited } from '@reatom/lens'
 import { take } from '@reatom/effects'
-import { onConnect, __findCause } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 
