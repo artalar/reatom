@@ -163,8 +163,8 @@ export interface Unsubscribe {
 
 // We don't have type literal for NaN but other values are presented here
 // https://stackoverflow.com/a/51390763
-type Falsy = false | 0 | "" | null | undefined 
-// Can't be an arrow function due to 
+type Falsy = false | 0 | "" | null | undefined
+// Can't be an arrow function due to
 //    https://github.com/microsoft/TypeScript/issues/34523
 /** Throws `Reatom error: ${message}` */
 export function throwReatomError(condition: any, message: string): asserts condition is Falsy {
@@ -187,11 +187,12 @@ const isConnected = (cache: AtomCache): boolean => {
   return cache.subs.size + cache.listeners.size > 0
 }
 
-const assertFunction = (thing: any) =>
+function assertFunction (thing: any): asserts thing is Fn {
   throwReatomError(
     typeof thing !== 'function',
     `invalid "${typeof thing}", function expected`,
   )
+}
 
 //#endregion
 
@@ -531,8 +532,7 @@ export const createCtx = ({
 
       return promise
     },
-    // @ts-ignore
-    subscribe(atom, cb = atom) {
+    subscribe(atom: Atom | Fn, cb: Atom | Fn = atom) {
       assertFunction(cb)
 
       if (atom === cb) {
@@ -601,16 +601,15 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
-// @ts-ignore
 export let atom: {
   <T extends (ctx: CtxSpy) => any>(initState: T, name?: string): Atom<
     ReturnType<T>
   >
-  <State>(initState: State, name?: string): AtomMut<State>
+  <State>(initState: Exclude<State, Fn>, name?: string): AtomMut<State>
 } = (
-  initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
+  initState: unknown,
   name = __count('_atom'),
-): Atom => {
+): AtomMut => {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
@@ -646,8 +645,7 @@ export let atom: {
     return fns.reduce((acc, fn) => fn(acc), this)
   }
 
-  // @ts-ignore
-  return theAtom
+  return theAtom as AtomMut
 }
 
 export const action: {
