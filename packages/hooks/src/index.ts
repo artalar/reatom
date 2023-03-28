@@ -62,6 +62,12 @@ export const onConnect = (
       }),
     )
 
+    if (cleanup instanceof Promise) {
+      cleanup.catch((error) => {
+        if (error.name !== 'AbortError') throw error
+      })
+    }
+
     // TODO: abort on `connectHooks.delete`?
     const cleanupHook = (_ctx: Ctx) => {
       if (
