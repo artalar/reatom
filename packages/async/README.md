@@ -219,6 +219,28 @@ export const filteredListAtom = atom(
 
 When `filteredListAtom` will be connected, `fetchList` will be called automatically too! And when `fetchList` will be fulfilled, `filteredListAtom` will be updated. All things just works together as expected.
 
+### Adding data you've fetched to data you've fetched before
+
+```ts
+import { reatomAsync, withDataAtom } from '@reatom/async'
+
+const PAGE_SIZE = 10
+
+export const fetchFeed = reatomAsync(async (ctx, page: number) => {
+  const data = await request(
+    `api/feed?page=${page}&limit?${page}`,
+    ctx.controller,
+  )
+  return { data, page }
+}, 'fetchFeed').pipe(
+  withDataAtom([], (ctx, { data, page }, state) => {
+    const newState = [...state]
+    state.splice((page - 1) * PAGE_SIZE, PAGE_SIZE, ...data)
+    return newState
+  }),
+)
+```
+
 ### Optimistic update
 
 You could describe optimistic async logic easily with `onEffect` handler, which allow you to read passed parameters by third argument.

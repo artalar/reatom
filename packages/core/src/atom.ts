@@ -168,13 +168,15 @@ export interface Unsubscribe {
 
 //#region DOMAIN UTILS
 
-// Can't be an arrow function due to https://github.com/microsoft/TypeScript/issues/34523
+// We don't have type literal for NaN but other values are presented here
+// https://stackoverflow.com/a/51390763
+type Falsy = false | 0 | "" | null | undefined 
+// Can't be an arrow function due to 
+//    https://github.com/microsoft/TypeScript/issues/34523
 /** Throws `Reatom error: ${message}` */
-export function throwReatomError(
-  condition: any,
-  message: string,
-): asserts condition {
-  if (condition) throw new Error(`Reatom error: ${message}`)
+export function throwReatomError(condition: any, message: string): asserts condition is Falsy {
+  if (condition)
+    throw new Error(`Reatom error: ${message}`)
 }
 
 export const isAtom = (thing: any): thing is Atom => {
