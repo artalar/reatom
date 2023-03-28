@@ -37,6 +37,54 @@ const dispose = onConnect(messagesAtom, (ctx) => {
 
 Passed `ctx` have `isConnected` method which checks the passed atom current status - [async example](https://www.reatom.dev/packages/async#periodic-refresh-for-used-data). Also, `ctx` includes `controller` property which is AbortController - you could reuse it perfectly with `reatomAsync` - [another async example](https://www.reatom.dev/packages/async#abortable-process)
 
+### Comparison with React
+
+For example, in React you should manage abort strategy by yourself by `useEffect`, if you want to cancel async process on unmount.
+
+```tsx
+import { reatomAsync, withAbort } from '@reatom/async'
+import { useAtom, useAction } from '@reatom/npm-react'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(withAbort())
+
+export const List = () => {
+  const [list] = useAtom(fetchList.dataAtom)
+  const handleFetch = useAction(fetchList)
+  const handleAbort = useAction(fetchList.abort)
+
+  useEffect(() => {
+    handleFetch()
+    return handleAbort
+  }, [])
+
+  return <ul>{list.map(() => '...')}</ul>
+}
+```
+
+With Reatom you could simplify it and made more readable.
+
+```tsx
+import { reatomAsync, onConnect } from '@reatom/framework'
+import { useAtom } from '@reatom/npm-react'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+)
+onConnect(fetchList.dataAtom, fetchList)
+
+export const List = () => {
+  const [list] = useAtom(fetchList.dataAtom)
+
+  return <ul>{list.map(() => '...')}</ul>
+}
+```
+
+Isn't it cool, how the size of the code is reduced and how the logic is simplified?
+
 ## `onDisconnect`
 
 Shortcut to `onConnect` return callback.
