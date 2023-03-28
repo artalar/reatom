@@ -45,7 +45,7 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: Fn<[Ctx & { isConnected(): boolean }]>,
+  cb: Fn<[Ctx & { isConnected(): boolean }], (() => void) | unknown>,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
     const cleanup = cb(
