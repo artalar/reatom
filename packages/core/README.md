@@ -236,9 +236,9 @@ export const currencyValueAtom = atom((ctx) => {
 ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
 ```
 
-You could handle each update independently by passing a function to `spy` method. It is useful for react for actions, for example, for sampling.
+You could handle each update independently by passing a function to `spy` method. It is useful for actions reactions or if you need to handle a few concurrent udpates.
 
-````ts
+```ts
 export const changeCurrency = action<string>('changeCurrency')
 export const currencyAtom = atom((ctx, state?: string) => {
   ctx.spy(languageAtom, (language) => {
@@ -251,6 +251,7 @@ export const currencyAtom = atom((ctx, state?: string) => {
 
   return state
 }, 'currencyAtom')
+```
 
 ### `atom.pipe` API
 
@@ -265,7 +266,7 @@ const doubleCountAtom = atom(0).pipe(
 const doubleCountAtom = withStateHistory(1)(
   mapState((ctx, state) => state * 1)(atom(0)),
 )
-````
+```
 
 > `withStateHistory` adds additional `historyAtom` to store previous states and `mapState` operator creates new atom to compute a new state. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix).
 
