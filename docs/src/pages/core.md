@@ -242,6 +242,23 @@ export const currencyValueAtom = atom((ctx) => {
 ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
 ```
 
+You could handle each update independently by passing a function to `spy` method. It is useful for actions reactions or if you need to handle a few concurrent udpates.
+
+```ts
+export const changeCurrency = action<string>('changeCurrency')
+export const currencyAtom = atom((ctx, state?: string) => {
+  ctx.spy(languageAtom, (language) => {
+    state = getCurrencyByLanguage(language)
+  })
+
+  ctx.spy(changeCurrency, (currency) => {
+    state = currency
+  })
+
+  return state
+}, 'currencyAtom')
+```
+
 ### `atom.pipe` API
 
 Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`.
@@ -334,7 +351,7 @@ Start transaction and batch all updates, same as in action call
 
 #### `ctx.subscribe` atom API
 
-Subscribe to atom new state
+Subscribe to atom new state. Passed callback called immediately and after each atom state change.
 
 `subscribe<T>(anAtom: Atom<T>, cb: (newState: T) => void): () => void`
 
@@ -344,7 +361,7 @@ Subscribe to transaction end. Useful for logging.
 
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
-### `ctx.schedule`
+#### `ctx.schedule`
 
 To archive [atomicity](/general/what-is-state-manager#state) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map. To archive pureness of computations and ability to cancel it all side-effects should be called separately in different queue, after all computation. Here is `schedule` come, it accept effect callback and returns a promise which will be resolved after effect call or rejected if transaction will fall.
 
@@ -367,7 +384,7 @@ The unique feature of Reatom and the schedule specially is ability to define the
 
 > Read more in [lifecycle guild](/guides/lifecycle).
 
-### `ctx.schedule` rollback API
+#### `ctx.schedule` rollback API
 
 Sometimes you want to do a side-effect during clean calculations or need to store some artifact of an effect and store it. To made it clean you should describe a rollback (cleanup) function for case of unexpected error by passing `-1` as a second of `ctx.schedule`. Check this example with a debounced action:
 
