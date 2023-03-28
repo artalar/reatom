@@ -1,9 +1,9 @@
-import { Fn, throwReatomError } from '@reatom/core'
-
 // TODO infer `Atom` and `AtomMut` signature
 /** Remove named generics, show plain type. */
-export type Plain<Intersection> = Intersection extends Fn<infer I, infer O>
-  ? Fn<I, O> & {
+export type Plain<Intersection> = Intersection extends (
+  ...a: infer I
+) => infer O
+  ? ((...a: I) => O) & {
       [Key in keyof Intersection]: Intersection[Key]
     }
   : Intersection extends new (...a: any[]) => any
@@ -30,7 +30,7 @@ export type PickValues<T, V> = {
   [K in PickValuesKeys<T, V>]: T[K]
 }
 
-export const noop: Fn = () => {}
+export const noop: (...a: any[]) => any = () => {}
 
 export const sleep = (ms = 0) => new Promise((r) => setTimeout(r, ms))
 
@@ -110,7 +110,7 @@ export const isDeepEqual = (a: any, b: any) => {
 }
 
 export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
-  (T1 extends Fn<infer I, infer O> ? Fn<I, O> : {}) &
+  (T1 extends (...a: infer I) => infer O ? (...a: I) => O : {}) &
     Omit<T1, keyof T2 | keyof T3 | keyof T4> &
     Omit<T2, keyof T3 | keyof T4> &
     Omit<T3, keyof T4> &
@@ -166,6 +166,51 @@ export const random = (min = 0, max = Number.MAX_SAFE_INTEGER - 1) =>
  * Returns non nullable type of value
  */
 export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
-  throwReatomError(!value, message ?? 'Value is nullable')
-  return value as NonNullable<T>
+  if (value != null) return value as NonNullable<T>
+  throw new TypeError(message || 'Value is null or undefined')
+}
+
+const { toString } = Object.prototype
+const visited = new WeakMap<{}, string>()
+/** Stringify any kind of data with some sort of stability.
+ * Support: an object keys sorting, `Map`, `Set`, circular references, custom classes, functions and symbols.
+ * The optional `immutable` could memoize the result for complex objects if you think it will never change
+ */
+export const toStringKey = (thing: any, immutable = true): string => {
+  var tag = typeof thing
+  var isNominal = tag === 'function' || tag === 'symbol'
+
+  if (
+    !isNominal &&
+    (tag !== 'object' ||
+      thing === null ||
+      thing instanceof Date ||
+      thing instanceof RegExp)
+  ) {
+    return tag + thing
+  }
+
+  if (visited.has(thing)) return visited.get(thing)!
+
+  // get a unique prefix for each type to separate same array / map
+  var result = toString.call(thing)
+  var unique = result + random()
+  // thing could be a circular or not stringifiable object from a userspace
+  visited.set(thing, unique)
+
+  if (
+    isNominal ||
+    (thing.constructor !== Object && Symbol.iterator in thing === false)
+  ) {
+    return unique
+  }
+
+  for (let item of Symbol.iterator in thing
+    ? thing
+    : Object.entries(thing).sort(([a], [b]) => a.localeCompare(b)))
+    result += toStringKey(item, immutable)
+
+  immutable ? visited.set(thing, result) : visited.delete(thing)
+
+  return result
 }
