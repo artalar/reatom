@@ -1,4 +1,6 @@
 ---
+import "@fontsource/roboto"
+import "@fontsource/roboto-mono"
 import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
@@ -27,8 +29,6 @@ if (file) {
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -36,9 +36,6 @@ if (file) {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <link rel="stylesheet" href="/styles/chromo.css" />
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Roboto&family=Roboto+Mono&display=swap');
-    </style>
   </head>
   <body class="mono-all">
     <Sidebar source={source} />
