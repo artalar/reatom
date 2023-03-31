@@ -29,7 +29,7 @@ export const fetchList = reatomAsync(
   (ctx, page: number) => fetch(`/api/list?page=${page}`, ctx.controller),
   {
     name: 'fetchList',
-    onEffect(ctx, promise, params) {
+    onEffect(ctx, params, promise) {
       listAtom(ctx, { data: [], status: 'pending' })
     },
     onFulfill(ctx, result) {
