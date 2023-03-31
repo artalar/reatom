@@ -1,6 +1,4 @@
 ---
-import "@fontsource/roboto"
-import "@fontsource/roboto-mono"
 import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
@@ -36,6 +34,7 @@ if (file) {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <link rel="stylesheet" href="/styles/chromo.css" />
+    <link rel="stylesheet" href="/styles/fonts.css" />
   </head>
   <body class="mono-all">
     <Sidebar source={source} />
