@@ -15,7 +15,7 @@
   "browserslist": ["last 4 chrome versions"],
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },

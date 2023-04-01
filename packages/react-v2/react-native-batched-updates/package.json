@@ -10,7 +10,7 @@
   "types": "build/react-native-batched-updates.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "microbundle"
+    "build": "microbundle -f esm,cjs"
   },
   "peerDependencies": {
     "@reatom/react-v2": "^3.1.0"

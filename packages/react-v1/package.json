@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "echo 'ok'"
   },
   "dependencies": {

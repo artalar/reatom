@@ -18,7 +18,7 @@
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "tsx src/**/*.test.ts",
     "test:watch": "tsx watch src/**/*.test.ts"
   },
