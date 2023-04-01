@@ -10,7 +10,6 @@
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "sideEffects": false,
   "browserslist": [
@@ -18,7 +17,7 @@
   ],
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "tsx src/atom.test.ts",
     "test:watch": "tsx watch src/atom.test.ts",
     "bench": "tsx src/index.bench.test.ts"
