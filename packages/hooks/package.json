@@ -1,6 +1,6 @@
 {
   "name": "@reatom/hooks",
-  "version": "3.2.0",
+  "version": "3.1.5",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for hooks",
