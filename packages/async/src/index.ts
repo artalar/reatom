@@ -15,15 +15,9 @@ import {
   throwReatomError,
   __count,
 } from '@reatom/core'
-import {
-  __thenReatomed,
-  isAbort,
-  throwIfAborted,
-  onCtxAbort,
-  toAbortError,
-} from '@reatom/effects'
-import { addOnUpdate, onUpdate, spyChange } from '@reatom/hooks'
-import { assign } from '@reatom/utils'
+import { __thenReatomed, onCtxAbort } from '@reatom/effects'
+import { addOnUpdate, onUpdate } from '@reatom/hooks'
+import { assign, isAbort, throwIfAborted, toAbortError } from '@reatom/utils'
 
 import { CACHE } from './cache'
 export { withCache } from './withCache'
@@ -316,24 +310,22 @@ export const withAbort =
   (anAsync) => {
     if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom = atom(
-        (ctx, state: null | AbortController = null) => {
-          spyChange(ctx, anAsync, (call) => {
+        (ctx, state = new AbortController()) => {
+          ctx.spy(anAsync, (call) => {
             if (strategy === 'last-in-win' && state) {
-              ctx.schedule(
-                state.abort.bind(state, toAbortError('concurrent request')),
-              )
+              const controller = state
+
+              ctx.schedule(() => {
+                controller.abort(toAbortError('concurrent request'))
+              })
             }
 
             state = call.payload.controller
 
-            const { signal } = state
-
-            signal.addEventListener('abort', () =>
-              anAsync.onAbort!(ctx, toAbortError(signal.reason)),
+            state.signal.addEventListener('abort', () =>
+              anAsync.onAbort!(ctx, toAbortError(state.signal.reason)),
             )
           })
-
-          spyChange(ctx, anAsync.onSettle, () => (state = null))
 
           return state
         },
@@ -341,7 +333,6 @@ export const withAbort =
       ))
       // force track computed atom
       addOnUpdate(anAsync, (ctx) => void ctx.get(abortControllerAtom))
-      addOnUpdate(anAsync.onSettle, (ctx) => void ctx.get(abortControllerAtom))
 
       anAsync.abort = action((ctx, reason?: string) => {
         const controller = ctx.get(abortControllerAtom)
