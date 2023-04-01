@@ -44,35 +44,46 @@ test('take', async () => {
 })
 
 test('await transaction', async () => {
-  const effect = (cb: Fn<[Ctx]>) => action((ctx) => ctx.schedule(cb))
+  let resolve1: Fn
+  const promise1 = new Promise<void>((r) => (resolve1 = r))
+  let resolve2: Fn
+  const promise2 = new Promise<void>((r) => (resolve2 = r))
+  let resolve3: Fn
+  const promise3 = new Promise<void>((r) => (resolve3 = r))
 
-  const targetMs = 10
-  const longestMs = targetMs * 2
-  const smallestMS = targetMs / 2
-
-  const flow1_0 = effect(async (ctx) => {
-    flow1_1(ctx)
-    await sleep(smallestMS)
-  })
-  const flow1_1 = effect(() => sleep(targetMs))
-  const flow2_0 = effect(() => sleep(longestMs))
+  const effect1 = action((ctx) =>
+    ctx.schedule(async (ctx) => {
+      effect2(ctx)
+      await promise1
+    }),
+  )
+  const effect2 = action((ctx) => ctx.schedule(() => promise2))
+  const effect3 = action((ctx) => ctx.schedule(() => promise3))
 
   const ctx = createCtx()
 
-  const start = Date.now()
+  let nestedResolved = false
+  let effect3Resolved = false
+  takeNested(ctx, effect1).then(() => {
+    nestedResolved = true
+  })
+  effect3(ctx).then(() => {
+    effect3Resolved = true
+  })
 
-  const flow1Promise = takeNested(ctx, flow1_0)
-  const flow2Promise = flow2_0(ctx)
+  resolve1!()
+  await sleep()
+  assert.is(nestedResolved, false)
+  assert.is(effect3Resolved, false)
 
-  await flow1Promise
+  resolve2!()
+  await sleep()
+  assert.is(nestedResolved, true)
+  assert.is(effect3Resolved, false)
 
-  const flow1Duration = Date.now() - start
-
-  assert.ok(flow1Duration >= targetMs && flow1Duration < longestMs)
-
-  await flow2Promise
-  const flow2Duration = Date.now() - start
-  assert.ok(flow2Duration >= longestMs && flow2Duration < targetMs + longestMs)
+  resolve3!()
+  await sleep()
+  assert.is(effect3Resolved, true)
   ;`👍` //?
 })
 
