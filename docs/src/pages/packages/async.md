@@ -609,11 +609,11 @@ describe('optimistic update', () => {
   //#region BACKEND IMITATION
   let mock = [{ id: 1, value: 1 }]
   const api = {
-    getData: async () => mock,
+    getData: async () => jsonClone(mock),
     putData: async (id: number, value: number) => {
+      const item = mock.find((item) => item.id === id)
+      if (item) item.value = value
       await sleep()
-      mock = jsonClone(mock)
-      mock.find((item) => item.id === id)!.value = value
     },
   }
   //#endregion
@@ -643,13 +643,14 @@ describe('optimistic update', () => {
       state.map((item) => (item.id === id ? { ...item, value } : item)),
     )
     // rollback on error
-    promise.catch(() => {
+    promise.catch((error) => {
       if (ctx.get(getData.dataAtom) === newList) {
         getData.dataAtom(ctx, oldList)
       } else {
         // TODO looks like user changed data again
         // need to notify user about the conflict.
       }
+      throw error;
     })
   })
 
