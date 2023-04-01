@@ -14,7 +14,6 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
-import { spyChange } from '@reatom/hooks'
 import { isShallowEqual } from '@reatom/utils'
 
 export * from './bind'
@@ -302,13 +301,12 @@ export const sample =
     throwReatomError(anAtom.__reatom.isAction, 'atom expected')
 
     return anAtom.pipe(
-      mapState(
-        (ctx, payload, prevPayload, prevState) =>
-          spyChange(ctx, signal) || ctx.cause.pubs.length === 0
-            ? payload
-            : prevState,
-        name || (anAtom.__reatom.name && 'sample'),
-      ),
+      mapState((ctx, payload, prevPayload, prevState) => {
+        let changed = false
+        ctx.spy(signal, () => (changed = true))
+
+        return ctx.cause.pubs.length === 0 || changed ? payload : prevState
+      }, name || (anAtom.__reatom.name && 'sample')),
     )
   }
 
