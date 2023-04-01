@@ -20,6 +20,7 @@ import {
   isAbort,
   throwIfAborted,
   onCtxAbort,
+  toAbortError,
 } from '@reatom/effects'
 import { addOnUpdate, onUpdate, spyChange } from '@reatom/hooks'
 import { assign } from '@reatom/utils'
@@ -318,23 +319,16 @@ export const withAbort =
         (ctx, state: null | AbortController = null) => {
           spyChange(ctx, anAsync, (call) => {
             if (strategy === 'last-in-win' && state) {
-              const error = new Error('concurrent request')
-              error.name = 'AbortError'
-              const controller = state
-              ctx.schedule(() => controller.abort(error))
+              ctx.schedule(
+                state.abort.bind(state, toAbortError('concurrent request')),
+              )
             }
 
             state = call.payload.controller
 
-            const { signal } = state
-            signal.addEventListener('abort', () => {
-              let error = signal.reason
-              if (error instanceof Error === false) {
-                error = new Error(signal.reason)
-                error.name = 'AbortError'
-              }
-              anAsync.onAbort!(ctx, error)
-            })
+            state.signal.addEventListener('abort', () =>
+              anAsync.onAbort!(ctx, toAbortError(state.signal.reason)),
+            )
           })
 
           spyChange(ctx, anAsync.onSettle, () => (state = null))
@@ -343,11 +337,16 @@ export const withAbort =
         },
         `${anAsync.__reatom.name}._abortControllerAtom`,
       ))
+      // force track computed atom
       addOnUpdate(anAsync, (ctx) => void ctx.get(abortControllerAtom))
+      addOnUpdate(anAsync.onSettle, (ctx) => void ctx.get(abortControllerAtom))
 
       anAsync.abort = action((ctx, reason?: string) => {
         const controller = ctx.get(abortControllerAtom)
-        if (controller) ctx.schedule(() => controller.abort(reason))
+        if (controller) {
+          const error = toAbortError(reason)
+          ctx.schedule(() => controller.abort(error))
+        }
       }, `${anAsync.__reatom.name}.abort`)
       anAsync.onAbort = action<Error>(`${anAsync.__reatom.name}.onAbort`)
     }
