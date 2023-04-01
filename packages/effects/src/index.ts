@@ -7,39 +7,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-
-export interface AbortError extends DOMException {
-  name: 'AbortError'
-}
-
-const AbortError = (
-  typeof DOMException === 'function' ? DOMException : Error
-) as new (message: string) => AbortError
-
-export const toAbortError = (reason: unknown): AbortError => {
-  let error = reason as AbortError
-  if (error instanceof Error) {
-    if (error.name !== 'AbortError') {
-      error = new AbortError(error.message)
-      error.cause = reason
-    }
-  } else {
-    error = new AbortError(String(reason))
-  }
-
-  error.name = 'AbortError'
-
-  return error
-}
-
-export const throwIfAborted = (controller?: void | AbortController) => {
-  if (controller?.signal.aborted) {
-    throw toAbortError(controller.signal.reason)
-  }
-}
-
-export const isAbort = (thing: any): thing is AbortError =>
-  thing instanceof Error && thing.name === 'AbortError'
+import { AbortError, throwIfAborted, toAbortError } from '@reatom/utils'
 
 /** Handle abort signal from a cause */
 export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {

@@ -11,7 +11,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { toAbortError } from '@reatom/effects'
+import { toAbortError } from '@reatom/utils'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -92,18 +92,27 @@ export const onConnect = (
 export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
   onConnect(anAtom, (ctx) => () => cb(ctx))
 
+// @ts-expect-error
 export const onUpdate: {
   <Params extends any[], Payload>(
     anAction: Action<Params, Payload>,
-    cb: Fn<[Ctx, Payload, AtomCache<AtomState<Action<Params, Payload>>>]>,
+    cb: Fn<
+      [
+        Ctx,
+        Payload,
+        AtomCache<AtomState<Action<Params, Payload>>> & { params: Params },
+      ]
+    >,
   ): Unsubscribe
   <T>(anAtom: Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>): Unsubscribe
 } = <T>(anAtom: Action<any[], T> | Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>) => {
-  const hook = (ctx: Ctx, patch: AtomCache) => {
+  const hook = (ctx: Ctx, patch: AtomCache & { params?: unknown[] }) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
       if (patch.state.length === 0) return
-      state = state.at(-1)!.payload
+      const call = state.at(-1)!
+      state = call.payload
+      patch.params = call.params
     }
     cb(ctx, state, patch)
   }

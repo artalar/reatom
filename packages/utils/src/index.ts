@@ -214,3 +214,34 @@ export const toStringKey = (thing: any, immutable = true): string => {
 
   return result
 }
+
+export interface AbortError extends DOMException {
+  name: 'AbortError'
+}
+
+export const toAbortError = (reason: unknown): AbortError => {
+  if (!(reason instanceof DOMException) || reason.name !== 'AbortError') {
+    if (reason instanceof Error) {
+      var cause = reason
+      reason = reason.message
+    } else {
+      reason = isObject(reason) ? toString.call(reason) : String(reason)
+    }
+
+    reason = new DOMException(reason as string, 'AbortError')
+
+    // @ts-expect-error
+    cause && (reason.cause = cause)
+  }
+
+  return reason as AbortError
+}
+
+export const throwIfAborted = (controller?: void | AbortController) => {
+  if (controller?.signal.aborted) {
+    throw toAbortError(controller.signal.reason)
+  }
+}
+
+export const isAbort = (thing: any): thing is AbortError =>
+  thing instanceof Error && thing.name === 'AbortError'
