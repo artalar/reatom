@@ -11,8 +11,8 @@ jobs:
     outputs:
       all: ${{ steps.changes.outputs.all}}
     steps:
-        uses: actions/checkout@v2
-          with:
+      - uses: actions/checkout@v2
+        with:
             fetch-depth: 0
       - name: Get changed files
         id: changes
@@ -23,7 +23,7 @@ jobs:
     needs: changedfiles
     if: ${{needs.changedfiles.outputs.ts}}
     steps:
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
       with:
         node-version: 16
