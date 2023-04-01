@@ -7,7 +7,6 @@
   "source": "index.ts",
   "main": "build/primitives.js",
   "module": "build/primitives.module.js",
-  "umd:main": "build/primitives.umd.js",
   "types": "build/primitives.d.ts",
   "license": "MIT",
   "scripts": {
