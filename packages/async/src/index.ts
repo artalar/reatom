@@ -326,8 +326,10 @@ export const withAbort =
 
             state = call.payload.controller
 
-            state.signal.addEventListener('abort', () =>
-              anAsync.onAbort!(ctx, toAbortError(state.signal.reason)),
+            const { signal } = state
+
+            signal.addEventListener('abort', () =>
+              anAsync.onAbort!(ctx, toAbortError(signal.reason)),
             )
           })
 

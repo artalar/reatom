@@ -24,7 +24,7 @@ export const toAbortError = (reason: unknown): AbortError => {
       error.cause = reason
     }
   } else {
-    reason = new AbortError(String(reason))
+    error = new AbortError(String(reason))
   }
 
   error.name = 'AbortError'

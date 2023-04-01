@@ -90,5 +90,7 @@ test('do not allow overprogress', async () => {
   ;`👍` //?
 })
 
+console.warn('@reatom/timer tests are turned off because of flakiness')
+
 // TODO
 // test.run()
