@@ -8,7 +8,7 @@ export interface AsyncStatusesNeverPending {
   isRejected: false
   isSettled: false
 
-  // isFirstPending: false
+  isFirstPending: false
   // isAnotherPending: false
   isEverPending: false
   // isNeverPending: true
@@ -22,7 +22,7 @@ export interface AsyncStatusesFirstPending {
   isRejected: false
   isSettled: false
 
-  // isFirstPending: true
+  isFirstPending: true
   // isAnotherPending: false
   isEverPending: true
   // isNeverPending: false
@@ -36,7 +36,7 @@ export interface AsyncStatusesFulfilled {
   isRejected: false
   isSettled: true
 
-  // isFirstPending: false
+  isFirstPending: false
   // isAnotherPending: false
   isEverPending: true
   // isNeverPending: false
@@ -50,7 +50,7 @@ export interface AsyncStatusesRejected {
   isRejected: true
   isSettled: true
 
-  // isFirstPending: false
+  isFirstPending: false
   // isAnotherPending: false
   isEverPending: true
   // isNeverPending: false
@@ -64,7 +64,7 @@ export interface AsyncStatusesAnotherPending {
   isRejected: false
   isSettled: false
 
-  // isFirstPending: false
+  isFirstPending: false
   // isAnotherPending: true
   isEverPending: true
   // isNeverPending: false
@@ -102,7 +102,7 @@ export const withStatusesAtom =
           isRejected: false,
           isSettled: false,
 
-          // isFirstPending: false,
+          isFirstPending: false,
           // isAnotherPending: false,
           isEverPending: false,
           // isNeverPending: true,
@@ -112,49 +112,57 @@ export const withStatusesAtom =
         `${anAsync.__reatom.name}.statusesAtom`,
       ))
       onUpdate(anAsync, (ctx) =>
-        statusesAtom(ctx, (statuses) => ({
-          isPending: true,
-          isFulfilled: false,
-          isRejected: false,
-          isSettled: false,
+        statusesAtom(ctx, (statuses) => {
+          return {
+            isPending: ctx.get(anAsync.pendingAtom) > 0,
+            isFulfilled: false,
+            isRejected: false,
+            isSettled: false,
 
-          // isFirstPending: !statuses.isEverPending,
-          // isAnotherPending: statuses.isEverPending,
-          isEverPending: true,
-          // isNeverPending: false,
-          isEverSettled: statuses.isEverSettled,
-          // isNeverSettled: statuses.isNeverSettled,
-        })),
+            isFirstPending: !statuses.isEverSettled,
+            // isAnotherPending: statuses.isEverPending,
+            isEverPending: true,
+            // isNeverPending: false,
+            isEverSettled: statuses.isEverSettled,
+            // isNeverSettled: statuses.isNeverSettled,
+          } as AsyncStatuses
+        }),
       )
       onUpdate(anAsync.onFulfill, (ctx) =>
-        statusesAtom(ctx, (statuses) => ({
-          isPending: false,
-          isFulfilled: true,
-          isRejected: false,
-          isSettled: true,
+        statusesAtom(ctx, () => {
+          const isPending = ctx.get(anAsync.pendingAtom) > 0
+          return {
+            isPending,
+            isFulfilled: !isPending,
+            isRejected: false,
+            isSettled: !isPending,
 
-          // isFirstPending: false,
-          // isAnotherPending: false,
-          isEverPending: true,
-          // isNeverPending: false,
-          isEverSettled: true,
-          // isNeverSettled: false,
-        })),
+            isFirstPending: false,
+            // isAnotherPending: false,
+            isEverPending: true,
+            // isNeverPending: false,
+            isEverSettled: true,
+            // isNeverSettled: false,
+          } as AsyncStatuses
+        }),
       )
       onUpdate(anAsync.onReject, (ctx) =>
-        statusesAtom(ctx, (statuses) => ({
-          isPending: false,
-          isFulfilled: false,
-          isRejected: true,
-          isSettled: true,
+        statusesAtom(ctx, () => {
+          const isPending = ctx.get(anAsync.pendingAtom) > 0
+          return {
+            isPending,
+            isFulfilled: false,
+            isRejected: !isPending,
+            isSettled: !isPending,
 
-          // isFirstPending: false,
-          // isAnotherPending: false,
-          isEverPending: true,
-          // isNeverPending: false,
-          isEverSettled: true,
-          // isNeverSettled: false,
-        })),
+            isFirstPending: false,
+            // isAnotherPending: false,
+            isEverPending: true,
+            // isNeverPending: false,
+            isEverSettled: true,
+            // isNeverSettled: false,
+          } as AsyncStatuses
+        }),
       )
     }
 

@@ -1,14 +1,35 @@
 import {
   Atom,
+  AtomCache,
   AtomReturn,
   Ctx,
   Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { AbortError, throwIfAborted, toAbortError } from '@reatom/utils'
 
-const REATOM_THEN = Symbol('REATOM_THEN')
-const REATOM_CATCH = Symbol('REATOM_CATCH')
+/** Handle abort signal from a cause */
+export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+  let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
+  while (cause && !cause.controller) cause = cause.cause
+  const controller = cause?.controller
+
+  throwIfAborted(controller)
+
+  controller?.signal.addEventListener('abort', () =>
+    cb(toAbortError(controller.signal.reason)),
+  )
+}
+
+const LISTENERS = new WeakMap<
+  Promise<any>,
+  {
+    then: Array<Fn>
+    catch: Array<Fn>
+  }
+>()
+// TODO `reatomPromise`
 /**
  * Subscribe to promise result with batching
  * @internal
@@ -17,37 +38,30 @@ const REATOM_CATCH = Symbol('REATOM_CATCH')
 export const __thenReatomed = <T>(
   ctx: Ctx,
   promise: Promise<T>,
-  onFulfill?: Fn<[T, Fn, Fn]>,
-  onReject?: Fn<[unknown, Fn, Fn]>,
+  onFulfill?: Fn<[value: T, read: Fn, actualize: Fn]>,
+  onReject?: Fn<[error: unknown, read: Fn, actualize: Fn]>,
 ) => {
-  // @ts-expect-error
-  let thenListeners: Array<Fn> = promise[REATOM_THEN]
-  // @ts-expect-error
-  let catchListeners: Array<Fn> = promise[REATOM_CATCH]
+  let listeners = LISTENERS.get(promise)
+  if (!listeners) {
+    LISTENERS.set(promise, (listeners = { then: [], catch: [] }))
 
-  const resolver =
-    (listeners: typeof thenListeners | typeof catchListeners) => (value: any) =>
-      ctx.get((read, actualize) =>
-        listeners.forEach((cb) => cb(value, read, actualize)),
-      )
-
-  if (thenListeners == undefined) {
-    Object.defineProperties(promise, {
-      [REATOM_THEN]: {
-        value: (thenListeners = []),
-        enumerable: false,
-      },
-      [REATOM_CATCH]: {
-        value: (catchListeners = []),
-        enumerable: false,
-      },
-    }).then(resolver(thenListeners), resolver(catchListeners))
+    promise.then(
+      (value: any) =>
+        ctx.get((read, actualize) =>
+          listeners!.then.forEach((cb) => cb(value, read, actualize)),
+        ),
+      (error: any) =>
+        ctx.get((read, actualize) =>
+          listeners!.catch.forEach((cb) => cb(error, read, actualize)),
+        ),
+    )
   }
 
-  if (onFulfill) thenListeners.push(onFulfill)
-  if (onReject) catchListeners.push(onReject)
+  onFulfill && listeners.then.push(onFulfill)
+  onReject && listeners.catch.push(onReject)
 }
 
+/** @deprecated use `ctx.controller` which is AbortController instead */
 export const disposable = (
   ctx: Ctx,
 ): Ctx & {
@@ -95,29 +109,35 @@ export const disposable = (
 }
 
 export const take = <T extends Atom, Res = AtomReturn<T>>(
-  ctx: Ctx,
+  ctx: Ctx & { controller?: AbortController },
   anAtom: T,
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
+    onCtxAbort(ctx, rej)
+
     let skipFirst = true,
-      fn = ctx.subscribe(anAtom, (state) => {
+      un = ctx.subscribe(anAtom, (state) => {
         if (skipFirst) return (skipFirst = false)
-        fn()
+        un()
         if (anAtom.__reatom.isAction) state = state[0].payload
         if (state instanceof Promise) {
           state.then((v) => res(mapper(ctx, v)), rej)
+        } else {
+          res(mapper(ctx, state))
         }
-        res(mapper(ctx, state))
       })
+    ctx.schedule(un, -1)
   })
 
 export const takeNested = <I extends any[]>(
-  ctx: Ctx,
+  ctx: Ctx & { controller?: AbortController },
   cb: Fn<[Ctx, ...I]>,
   ...params: I
 ): Promise<void> =>
-  new Promise<void>((r) => {
+  new Promise<void>((res, rej) => {
+    onCtxAbort(ctx, rej)
+
     let i = 0,
       { schedule } = ctx
 
@@ -130,7 +150,7 @@ export const takeNested = <I extends any[]>(
               const result = cb(ctx)
               if (result instanceof Promise) {
                 ++i
-                result.finally(() => --i === 0 && r())
+                result.finally(() => --i === 0 && res())
               }
               return result
             },
@@ -141,48 +161,3 @@ export const takeNested = <I extends any[]>(
       ...params,
     )
   })
-
-// export const unstable_actionizeAllChanges = <T extends Rec<Atom> | Array<Atom>>(
-//   shape: T,
-//   name?: string,
-// ): Action<
-//   [NEVER],
-//   {
-//     [K in keyof T]: AtomState<T[K]>
-//   }
-// > => {
-//   const cacheAtom = atom(
-//     Object.keys(shape).reduce((acc, k) => ((acc[k] = SKIP), acc), {} as Rec),
-//   )
-
-//   const theAction = atom((ctx, state = []) => {
-//     for (const key in shape) {
-//       const anAtom = shape[key] as Atom
-//       spyChange(ctx, anAtom, (value) => {
-//         // if (anAtom.__reatom.isAction) {
-//         //   if (value.length === 0) return
-//         //   value = value[0]
-//         // }
-//         cacheAtom(ctx, (state) => ({ ...state, [key]: value }))
-//       })
-//     }
-
-//     let cache = ctx.get(cacheAtom)
-
-//     if (Object.values(cache).some((v) => v === SKIP)) return state
-
-//     for (const key in shape) {
-//       const anAtom = shape[key] as Atom
-//       if (anAtom.__reatom.isAction === false) {
-//         cache = { ...cache, [key]: ctx.get(anAtom) }
-//       }
-//     }
-
-//     return [Array.isArray(shape) ? Object.values(cache) : cache]
-//   }, name)
-//   theAction.__reatom.isAction = true
-
-//   return theAction as any
-// }
-
-// export const take

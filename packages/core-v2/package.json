@@ -6,16 +6,14 @@
   "description": "Reatom adapter for core-v2",
   "source": "src/index.ts",
   "main": "build/index.js",
-  "umd:main": "build/index.umd.js",
   "module": "build/index.es.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
     "last 4 chrome versions"
   ],
   "scripts": {
     "prepublishOnly": "npm run build && npm run build-primitives && npm run test",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "build-primitives": "microbundle --cwd primitives",
     "test": "echo tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"

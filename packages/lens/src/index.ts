@@ -11,11 +11,9 @@ import {
   CtxParams,
   CtxSpy,
   Fn,
-  Rec,
   throwReatomError,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
-import { addOnUpdate, spyChange } from '@reatom/hooks'
 import { isShallowEqual } from '@reatom/utils'
 
 export * from './bind'
@@ -135,6 +133,7 @@ export const mapPayload: {
     return theAtom
   }
 
+const LISTENERS = new WeakMap<Promise<any>, Array<Fn>>()
 /** Transform async action payload */
 export const mapPayloadAwaited: {
   <T, Payload = Awaited<T>>(
@@ -177,13 +176,15 @@ export const mapPayloadAwaited: {
             },
           ),
         )
+
         return SKIP
       } else {
         return map(ctx, promise)
       }
     }, name || (anAction.__reatom.name && 'mapPayloadAwaited'))
 
-    return anAction.pipe(
+    // @ts-expect-error reatomAsync
+    return (anAction.onFulfill ?? anAction).pipe(
       mapPayload(
         // @ts-ignore
         ...params,
@@ -300,13 +301,12 @@ export const sample =
     throwReatomError(anAtom.__reatom.isAction, 'atom expected')
 
     return anAtom.pipe(
-      mapState(
-        (ctx, payload, prevPayload, prevState) =>
-          spyChange(ctx, signal) || ctx.cause.pubs.length === 0
-            ? payload
-            : prevState,
-        name || (anAtom.__reatom.name && 'sample'),
-      ),
+      mapState((ctx, payload, prevPayload, prevState) => {
+        let changed = false
+        ctx.spy(signal, () => (changed = true))
+
+        return ctx.cause.pubs.length === 0 || changed ? payload : prevState
+      }, name || (anAtom.__reatom.name && 'sample')),
     )
   }
 

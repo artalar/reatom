@@ -180,6 +180,8 @@ export type Form = {
   reatomField: typeof reatomField
   reset: Action
   validationAtom: Atom<FieldValidation>
+  // TODO
+  // isSubmittedAtom: Atom<boolean>
 }
 
 export const reatomForm = ({

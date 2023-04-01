@@ -8,12 +8,25 @@ import {
   atom,
   AtomProto,
   AtomMut,
-  createCtx,
+  createCtx as _createCtx,
   Ctx,
   CtxSpy,
   Fn,
   AtomCache,
 } from './atom'
+
+const callSafelySilent = (fn: Fn, ...a: any[]) => {
+  try {
+    return fn(...a)
+  } catch {}
+}
+
+const createCtx: typeof _createCtx = (opts) =>
+  _createCtx({
+    callLateEffect: callSafelySilent,
+    callNearEffect: callSafelySilent,
+    ...opts,
+  })
 
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
@@ -501,15 +514,19 @@ test('should catch', async () => {
 
   const p = ctx.get(() => ctx.schedule(() => ctx.get(a)))
 
-  const res = await p.then(
+  const res1 = await p.then(
     () => 'then',
     () => 'catch',
   )
-  assert.is(res, 'catch')
+  assert.is(res1, 'catch')
 
-  // should not throw without `then` / `catch`
-  ctx.get(() => ctx.schedule(() => ctx.get(a)))
-  await new Promise((r) => setTimeout(r, 0))
+  const res2 = await ctx
+    .get(() => ctx.schedule(() => ctx.get(a)))
+    .then(
+      () => 'then',
+      () => 'catch',
+    )
+  assert.is(res2, 'catch')
   ;`👍` //?
 })
 

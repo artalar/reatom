@@ -10,9 +10,7 @@
   "license": "MIT",
   "source": "src/index.ts",
   "main": "build/index.js",
-  "umd:main": "build/index.umd.js",
   "module": "build/index.es.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "scripts": {
     "prepublishOnly": "npm run rebuild",

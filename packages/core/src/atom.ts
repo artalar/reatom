@@ -71,7 +71,14 @@ export interface Ctx {
       T
     >,
   ): T
-  spy?: <T>(atom: Atom<T>) => T
+  spy?: {
+    <T>(anAtom: Atom<T>): T
+    <Params extends any[] = any[], Payload = any>(
+      anAction: Action<Params, Payload>,
+      cb: Fn<[call: { params: Params; payload: Payload }]>,
+    ): void
+    <T>(atom: Atom<T>, cb: Fn<[newState: T, prevState: undefined | T]>): void
+  }
 
   schedule<T = void>(
     cb: Fn<[Ctx], T>,
@@ -315,7 +322,8 @@ export const createCtx = ({
     ) {
       let newPubs: typeof pubs = []
 
-      patchCtx.spy = ({ __reatom: depProto }: Atom) => {
+      patchCtx.spy = ({ __reatom: depProto }: Atom, cb?: Fn) => {
+        // this changed after computer exit
         if (patch.pubs === pubs) {
           let depPatch = actualize(patchCtx, depProto)
           let prevDepPatch =
@@ -329,9 +337,17 @@ export const createCtx = ({
             toConnect.add(depProto)
           }
 
-          return depProto.isAction && !isDepChanged
-            ? depPatch.state.slice(prevDepPatch!.state.length)
-            : depPatch.state
+          let state =
+            depProto.isAction && !isDepChanged
+              ? depPatch.state.slice(prevDepPatch!.state.length)
+              : depPatch.state
+
+          if (cb && (isDepChanged || !Object.is(state, prevDepPatch!.state))) {
+            if (depProto.isAction) (state as any[]).forEach((call) => cb(call))
+            else cb(state, prevDepPatch?.state)
+          } else {
+            return state
+          }
         } else {
           throwReatomError(true, 'async spy')
         }
@@ -497,39 +513,28 @@ export const createCtx = ({
       return result
     },
     spy: undefined,
-    schedule(effect, step = 1) {
-      assertFunction(effect)
-      throwReatomError(this === undefined, 'missed context')
+    schedule(cb, step = 1) {
+      assertFunction(cb)
+      throwReatomError(!this, 'missed context')
 
-      let promise = new Promise<any>((res, rej) => {
-        if (inTr) {
-          if (step === -1) {
-            rej = effect
-          } else if (step === 0) {
-            trUpdates.push(effect)
-          } else {
-            ;([{}, nearEffects, lateEffects] as const)[step].push(() => {
-              try {
-                const result = effect(this)
-                result instanceof Promise ? result.then(res, rej) : res(result)
-              } catch (error) {
-                rej(error)
-              }
-            })
-          }
-
-          trRollbacks.push(rej)
-        } else {
-          const result = effect(this)
-          result instanceof Promise ? result.then(res, rej) : res(result)
+      return new Promise<any>((res, rej) => {
+        if (step === -1) inTr && trRollbacks.push(cb)
+        else if (step === 0) inTr && trUpdates.push(() => cb(this))
+        else {
+          let target = step === 1 ? nearEffects : lateEffects
+          target.push(() => {
+            try {
+              let result = cb(this)
+              result instanceof Promise ? result.then(res, rej) : res(result)
+              return result
+            } catch (error) {
+              rej(error)
+              throw error
+            }
+          })
+          inTr || walkLateEffects()
         }
       })
-
-      // prevent uncaught error
-      // when schedule promise is unused
-      promise.catch(() => {})
-
-      return promise
     },
     // @ts-ignore
     subscribe(atom, cb = atom) {
@@ -669,14 +674,19 @@ export const action: {
 
   let actionAtom = atom<Array<any>>([], name ?? __count('_action'))
   actionAtom.__reatom.isAction = true
-  actionAtom.__reatom.initState = () => []
+  // @ts-expect-error
+  actionAtom.__reatom.unstable_fn = fn
 
   return Object.assign((...params: [Ctx, ...any[]]) => {
     let state = actionAtom(params[0], (state, patchCtx) => {
       params[0] = patchCtx
       return [
         ...state,
-        { params: params.slice(1), payload: (fn as Fn)(...params) },
+        {
+          params: params.slice(1),
+          // @ts-expect-error
+          payload: patchCtx.cause.proto.unstable_fn(...params),
+        },
       ]
     })
     return state[state.length - 1]!.payload

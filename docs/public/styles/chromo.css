@@ -352,6 +352,7 @@ h4.mono,
 .mono-all h4 {
   margin: 3rem 0 1rem;
   font-family: 'Roboto Mono', monospace;
+  font-weight: 400;
 }
 
 h1.mono,

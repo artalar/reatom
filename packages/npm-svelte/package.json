@@ -14,14 +14,13 @@
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
     "last 4 chrome versions"
   ],
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },

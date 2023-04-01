@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.1.32",
+  "version": "3.2.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -11,12 +11,11 @@
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": ["last 4 chrome versions"],
   "scripts": {
     "prepublishOnly": "npm run build",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },

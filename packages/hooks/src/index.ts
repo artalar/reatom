@@ -11,6 +11,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { toAbortError } from '@reatom/utils'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -45,24 +46,42 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: Fn<[Ctx & { isConnected(): boolean }]>,
+  cb: Fn<[Ctx & { controller: AbortController; isConnected(): boolean }]>,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
+    const controller = new AbortController()
     const cleanup = cb(
       Object.assign({}, ctx, {
+        // TODO: how to do it more performant
+        cause: Object.assign(
+          {},
+          ctx.get((read) => read(anAtom.__reatom)!),
+          { controller },
+        ),
+        controller,
         isConnected: () => isConnected(ctx, anAtom),
       }),
     )
 
-    if (typeof cleanup === 'function') {
-      const cleanupHook = (_ctx: Ctx) =>
+    if (cleanup instanceof Promise) {
+      cleanup.catch((error) => {
+        if (error.name !== 'AbortError') throw error
+      })
+    }
+
+    // TODO: abort on `connectHooks.delete`?
+    const cleanupHook = (_ctx: Ctx) => {
+      if (
         isSameCtx(ctx, _ctx) &&
         disconnectHooks.delete(cleanupHook) &&
-        connectHooks.has(connectHook) &&
-        cleanup()
-
-      const disconnectHooks = addOnDisconnect(anAtom, cleanupHook)
+        connectHooks.has(connectHook)
+      ) {
+        controller.abort(toAbortError(`${anAtom.__reatom.name} disconnect`))
+        typeof cleanup === 'function' && cleanup()
+      }
     }
+
+    const disconnectHooks = addOnDisconnect(anAtom, cleanupHook)
   }
 
   const connectHooks = addOnConnect(anAtom, connectHook)
@@ -70,20 +89,30 @@ export const onConnect = (
   return () => connectHooks.delete(connectHook)
 }
 
-export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe => {
-  const disconnectHooks = addOnDisconnect(anAtom, cb)
-  return () => disconnectHooks.delete(cb)
-}
+export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
+  onConnect(anAtom, (ctx) => () => cb(ctx))
 
-export const onUpdate = <T>(
-  anAtom: Action<any[], T> | Atom<T>,
-  cb: Fn<[Ctx, T, AtomCache<T>]>,
-) => {
-  const hook = (ctx: Ctx, patch: AtomCache) => {
+// @ts-expect-error
+export const onUpdate: {
+  <Params extends any[], Payload>(
+    anAction: Action<Params, Payload>,
+    cb: Fn<
+      [
+        Ctx,
+        Payload,
+        AtomCache<AtomState<Action<Params, Payload>>> & { params: Params },
+      ]
+    >,
+  ): Unsubscribe
+  <T>(anAtom: Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>): Unsubscribe
+} = <T>(anAtom: Action<any[], T> | Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>) => {
+  const hook = (ctx: Ctx, patch: AtomCache & { params?: unknown[] }) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
       if (patch.state.length === 0) return
-      state = state.at(-1)!.payload
+      const call = state.at(-1)!
+      state = call.payload
+      patch.params = call.params
     }
     cb(ctx, state, patch)
   }
@@ -93,6 +122,7 @@ export const onUpdate = <T>(
   return () => hooks.delete(hook)
 }
 
+/** @deprecated use the second parameter of `ctx.spy` instead */
 // @ts-ignore
 export const spyChange: {
   <Params extends any[], Payload>(
@@ -102,38 +132,12 @@ export const spyChange: {
   ): boolean
   <T>(ctx: CtxSpy, anAtom: Atom<T>, handler?: Fn<[T, T?]>): boolean
 } = (ctx: CtxSpy, anAtom: Atom, handler?: Fn) => {
-  const { pubs } = ctx.cause
-  const { isAction } = anAtom.__reatom
-  let state: any = ctx.spy(anAtom)
-  const handle = handler
-    ? (prevState?: any) =>
-        isAction
-          ? (state as any[]).forEach((v) => handler(v))
-          : handler(state, prevState)
-    : () => {}
-
-  // we walk from the end because
-  // it is possible to have a few different
-  // caches for the same atom
-  // and the last one is the most actual
-  for (let i = pubs.length; i > 0; ) {
-    const pub = pubs[--i]!
-    if (pub.proto === anAtom.__reatom) {
-      if (
-        Object.is(pub.state, state) ||
-        // TODO impossible state?
-        (isAction && state.length === 0)
-      ) {
-        return false
-      }
-      handle(pub.state)
-      return true
-    }
-  }
-
-  handle()
-
-  return true
+  let isChanged = false
+  ctx.spy(anAtom, (newState, prevState) => {
+    isChanged = true
+    handler?.(newState, prevState)
+  })
+  return isChanged
 }
 
 export const controlConnection =
@@ -145,13 +149,15 @@ export const controlConnection =
     Atom<T> & { toggleConnection: Action<[boolean?], boolean> }
   > =>
   (anAtom) => {
-    const isActiveAtom = atom(initState)
+    name ??= `${anAtom.__reatom.name}.controlConnection`
+
+    const isActiveAtom = atom(initState, `${name}._isActiveAtom`)
 
     return Object.assign(
       {
         toggleConnection: action(
           (ctx, value) => isActiveAtom(ctx, (state) => value ?? !state),
-          name?.concat('.toggleConnection'),
+          `${name}.toggleConnection`,
         ),
       },
       atom(

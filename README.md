@@ -1,19 +1,27 @@
-Reatom is the ultimate [state manager](https://www.reatom.dev/general/what-is-state-manager) with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It is an opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
+Reatom is the ultimate [state manager](https://www.reatom.dev/general/what-is-state-manager) with a unique set of features. It offers the most modern techniques for describing, executing, and debugging code in a small package. Reatom is an opinionated data manager with strict but flexible rules that enable you to write simple and maintainable code.
 
-Key principles are **immutability** and **explicit reactivity** (no proxies), implicit **DI** and actor-like **lifecycle hooks**. All this with simple API and **automatic type inference**.
+Key principles:
 
-[The core package](https://www.reatom.dev/core) includes all these features and you may use it anywhere, from huge apps to even small libs, as the overhead is only [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore). Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+- **simple** and powerful abstractions - the whole ecosystem is built on top of a three primitives: ctx, atom, action
+- **immutable** and reliable computations with [atomicity](https://www.reatom.dev/general/what-is-state-manager#state) guaranties
+- **explicit reactivity** - maximum [performance](#how-performant-reatom-is) with [atomization](https://www.reatom.dev/guides/atomization) without proxies
+- perfect **effects management** and **debugging** experience by [immutable cause (call) stack](https://www.reatom.dev/guides/debug). Advanced [async package](https://www.reatom.dev/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation of entire chain - like redux-saga, but with native `await` and `AbortController`
+- implicit **DI** for simple SSR and [testing](https://www.reatom.dev/packages/testing)
+- actor-like **lifecycle hooks** for declarative description of [self-sufficient models](https://www.reatom.dev/guides/lifecycle)
+- **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
+- [automatic type inference](https://www.reatom.dev/guides/typescript)
 
-Do you use React.js? Check out [npm-react](https://www.reatom.dev/packages/npm-react) package!
+[The core package](https://www.reatom.dev/core) includes most these features and you may use it anywhere, from huge apps to even small libs, as the overhead is tiny. Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 ## Simple example
 
-#### Install
+Let's define input state and compute a greeting from it.
+
+### Install
 
 ```sh
 npm i @reatom/core
 ```
-
 
 [vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
 
@@ -25,7 +33,7 @@ import { action, atom, createCtx } from '@reatom/core'
 // primitive mutable atom
 const inputAtom = atom('')
 // computed readonly atom
-// `spy` reads the atom and subscribes to it
+// `spy` dynamically reads the atom and subscribes to it
 const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(inputAtom)}!`)
 
 // all updates in action processed by a smart batching
@@ -48,42 +56,38 @@ ctx.subscribe(greetingAtom, (greeting) => {
 
 Check out [@reatom/core docs](https://www.reatom.dev/core) for detailed explanation of key principles and features.
 
+Do you use React.js? Check out [npm-react](https://www.reatom.dev/packages/npm-react) package!
+
 ## Advanced example
 
-#### Install 
+This example is close to real life and shows the complexity of interactive UI. It is a simple search input with debouncing and autocomplete. It uses [GitHub API](https://docs.github.com/en/rest/reference/search#search-issues-and-pull-requests) to fetch issues by query. The limitations of this API are described in [GitHub docs](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting). We need to reduce the number of requests and retry them if we hit the limit. Also, we need to cancel all previous requests if a new one is created, to prevent race conditions - when the previous request resolves after the new one.
+
+### Install framework
+
 ```sh
-npm i @reatom/framework
+npm i @reatom/framework @reatom/npm-react
 ```
 
 [repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
 
-We will use [@reatom/core](https://www.reatom.dev/core), [@reatom/npm-react](https://www.reatom.dev/npm-react), [@reatom/async](https://www.reatom.dev/packages/async) and [@reatom/hooks](https://www.reatom.dev/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](https://www.reatom.dev/packages/framework).
+We will use [@reatom/core](https://www.reatom.dev/core), [@reatom/async](https://www.reatom.dev/packages/async) and [@reatom/hooks](https://www.reatom.dev/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](https://www.reatom.dev/packages/framework) - it simplifies imports and dependencies management.
 
 `reatomAsync` is a simple decorator which wraps your async function and adds extra actions and atoms to track creating promise statuses.
 
-`withDataAtom` adds property `dataAtom` which subscribes to the effect results, it is like a simple cache implementation. `withAbort` allows to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handlers help to handle temporal rate limit.
+`withDataAtom` adds property `dataAtom` which subscribes to the effect results, it is like a simple cache implementation. `withAbort` allows to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler help to handle temporal rate limit.
 
 Simple `sleep` helper (for debounce) gotten from [utils package](https://www.reatom.dev/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
-`onUpdate` is a [hook](https://www.reatom.dev/packages/hooks) which subscribes to the atom and calls passed callback on every update.
+`onUpdate` is a [hook](https://www.reatom.dev/packages/hooks) which link to the atom and calls passed callback on every update.
 
 ```ts
-import {
-  atom,
-  reatomAsync,
-  withAbort,
-  withDataAtom,
-  withRetry,
-  sleep,
-  onUpdate,
-} from '@reatom/framework'
+import { atom, reatomAsync, withAbort, withDataAtom, withRetry, sleep, onUpdate } from '@reatom/framework' /* prettier-ignore */
 import { useAtom } from '@reatom/npm-react'
 import * as api from './api'
 
 const searchAtom = atom('', 'searchAtom')
 const fetchIssues = reatomAsync(async (ctx, query: string) => {
-  // debounce
-  await sleep(250)
+  await sleep(250) // debounce
   const { items } = await api.fetchIssues(query, ctx.controller)
   return items
 }, 'fetchIssues').pipe(
@@ -91,19 +95,24 @@ const fetchIssues = reatomAsync(async (ctx, query: string) => {
   withAbort({ strategy: 'last-in-win' }),
   withRetry({
     onReject(ctx, error: any, retries) {
+      // return delay in ms or -1 to prevent retries
       return error?.message.includes('rate limit')
         ? 100 * Math.min(500, retries ** 2)
         : -1
     },
   }),
 )
+// run fetchIssues on every searchAtom update
 onUpdate(searchAtom, fetchIssues)
 
 export default function App() {
   const [search, setSearch] = useAtom(searchAtom)
   const [issues] = useAtom(fetchIssues.dataAtom)
+  // we could pass a callback to `useAtom` to create a computed atom
   const [isLoading] = useAtom(
     (ctx) =>
+      // even if there are no pending requests, we need to wait for retries
+      // let do not show the limit error to make him think that everything is fine for a better UX
       ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0,
   )
 
@@ -125,9 +134,7 @@ export default function App() {
 }
 ```
 
-The whole logic definition is only about 15 LoC, what would the count be in a different library? The most impressive thing is that the overhead is only [6KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetryAction%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdncYbmhXGF94HCkAX2lEb18YfkE0EXFJDGCrUiN4ExodXQA6bksQf0DkWI9ZKDFkMGSoVIhOdJpyfOFRCQhWOrLg%2BFI4z180ABFiRCYyAG0AXRYqReWMACMQZChSFwtkYnhbM1p-dSgAWhsXpbByGHT9w6g0AAlAQmDA6KzgS5xDzgYEAK3gOnM2j0NCqyDO5kQYEUNE61kkDnwjmhHhg6LOAH46jhJBBELZ4HUbMB-GIACaSCg3fowfxWHC%2BVikskwSkwACMUSiMAAVDAALLENA0mykaJRPEgqySOXysIsEVk8wvCUHDy-A6xcAAVWC7NupHoqEwJBoY0KE0JnA48F0wTOsCuwFktwAwqiYGIEJsfmwgA) and you are not limited to network cache, Reatom is powerful and expressive enough for describing any kind of state.
-
-<!-- Reatom is a mix of all best from MobX and Redux. It processes immutable data by separated atoms and use single global store, which make dataflow controllable and predictable, but granular and efficient. -->
+The whole logic definition is only about 15 LoC and it is not coupled to React and could be tested easily. What would the lines count be in a different library? The most impressive thing is that the overhead is [less than 4KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetry%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdhgAejiYABN4ACMQMRV4dxhuaFcYX3gcKQBfaURvXyJgqwA6fkE0EXFJUiN4ExodXTruSxB-QOR2HNkoMWQwQqhiiE5SmnJG4VEJCFY62uD4UhzPXzQAEWJEJjIAbQBdFip9w4x05ChSFwtkYnhbM1p-dSgALQ2AEHMDkGClW73KBoABKAhMrxyHnA8IAVvAdNo9DROsgQMhzIgwIoaONrJIHG4PDT4olxpNpik-opCtMSjACTAAQBGGDYGDBWQAN3gYFg5KskmRNIZUxgeIJAH46jhJBBELZ4HUbMB-GIUhAKB9ZjB-FYcL5WDLaUqYDyolEYAAqGAAWWIaFVNlI0SiZIRUqkztdYRYNpp5l5nFpixykLuowSMkyMBWzTWkk503gopMcCQqEwJBgYmCSU%2BHHAAFVy59SPQi%2BcaOmWutRlxZJ8AMJ6UijMQIc6kVuZiB1CtQM4kFhAA&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) could you imagine?! And you are not limited to network cache, Reatom is powerful and expressive enough for describing any kind of state.
 
 To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.reatom.dev/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/core). Also, we have a [package for testing](https://www.reatom.dev/packages/testing)!
 

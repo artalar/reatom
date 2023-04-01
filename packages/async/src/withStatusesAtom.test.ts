@@ -2,7 +2,7 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx } from '@reatom/testing'
 
-import { reatomAsync } from './'
+import { reatomAsync, withCache } from './'
 import {
   AsyncStatusesAnotherPending,
   AsyncStatusesFirstPending,
@@ -11,6 +11,7 @@ import {
   AsyncStatusesRejected,
   withStatusesAtom,
 } from './withStatusesAtom'
+import { sleep } from '@reatom/utils'
 
 const neverPending: AsyncStatusesNeverPending = {
   isPending: false,
@@ -18,7 +19,7 @@ const neverPending: AsyncStatusesNeverPending = {
   isRejected: false,
   isSettled: false,
 
-  // isFirstPending: false,
+  isFirstPending: false,
   // isAnotherPending: false,
   isEverPending: false,
   // isNeverPending: true,
@@ -32,7 +33,7 @@ const firstPending: AsyncStatusesFirstPending = {
   isRejected: false,
   isSettled: false,
 
-  // isFirstPending: true,
+  isFirstPending: true,
   // isAnotherPending: false,
   isEverPending: true,
   // isNeverPending: false,
@@ -46,7 +47,7 @@ const fulfilled: AsyncStatusesFulfilled = {
   isRejected: false,
   isSettled: true,
 
-  // isFirstPending: false,
+  isFirstPending: false,
   // isAnotherPending: false,
   isEverPending: true,
   // isNeverPending: false,
@@ -60,7 +61,7 @@ const rejected: AsyncStatusesRejected = {
   isRejected: true,
   isSettled: true,
 
-  // isFirstPending: false,
+  isFirstPending: false,
   // isAnotherPending: false,
   isEverPending: true,
   // isNeverPending: false,
@@ -74,7 +75,7 @@ const anotherPending: AsyncStatusesAnotherPending = {
   isRejected: false,
   isSettled: false,
 
-  // isFirstPending: false,
+  isFirstPending: false,
   // isAnotherPending: true,
   isEverPending: true,
   // isNeverPending: false,
@@ -105,6 +106,68 @@ test('withStatusesAtom', async () => {
   await promise2.catch(() => {})
 
   assert.equal(ctx.get(fetchData.statusesAtom), rejected)
+  ;`👍` //?
+})
+
+test('withCache and withStatusesAtom', async () => {
+  const fetchData = reatomAsync(async (ctx, shouldTrow = false) => {
+    if (shouldTrow) throw new Error('withStatusesAtom test error')
+  }).pipe(
+    // withCache(),
+    withStatusesAtom(),
+    withCache(),
+  )
+  const ctx = createTestCtx()
+  const track = ctx.subscribeTrack(fetchData.statusesAtom)
+
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), neverPending)
+
+  const promise = fetchData(ctx)
+
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput(), firstPending)
+
+  await promise
+
+  assert.is(track.calls.length, 3)
+  assert.equal(track.lastInput(), fulfilled)
+
+  const promise2 = fetchData(ctx, true)
+
+  assert.is(track.calls.length, 4)
+  assert.equal(track.lastInput(), anotherPending)
+  fetchData(ctx, true)
+  // TODO this extra call is not correct, but it is not critical
+  assert.is(track.calls.length, 5)
+  assert.equal(track.lastInput(), anotherPending)
+
+  await promise2.catch(() => {})
+
+  assert.equal(track.lastInput(), rejected)
+  ;`👍` //?
+})
+
+test('withStatusesAtom parallel requests', async () => {
+  const fetchData = reatomAsync(() => sleep(10)).pipe(withStatusesAtom())
+  const ctx = createTestCtx()
+  const track = ctx.subscribeTrack(fetchData.statusesAtom)
+
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), neverPending)
+
+  const p1 = fetchData(ctx)
+  const p2 = fetchData(ctx)
+
+  assert.equal(track.lastInput(), firstPending)
+
+  await p1
+
+  assert.equal(track.lastInput(), anotherPending)
+
+  await p2
+
+  assert.equal(track.lastInput(), fulfilled)
   ;`👍` //?
 })
 

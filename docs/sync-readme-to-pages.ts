@@ -32,6 +32,7 @@ const getStoryTests = async (packageName: string) => {
 }
 
 for (const packageName of packages) {
+  if (packageName.startsWith('.')) continue
   const readmePath = path.join(packagesPath, packageName, 'README.md')
   const packageJSONPath = path.join(packagesPath, packageName, 'package.json')
   const pagePath =

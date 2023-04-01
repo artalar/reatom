@@ -4,9 +4,11 @@ title: framework
 description: Reatom for framework
 ---
 
+This is a meta package which aggregates general Reatom packages for better handling async logic and models coupling. This package helps to reduce imports boilerplate and simplify dependencies management.
+
 Docs around this package and it combination usage you could find in the [tutorial](/tutorial).
 
-This is a meta package with reexports from:
+Included packages:
 
 - [@reatom/async](https://reatom.dev/packages/async)
 - [@reatom/core](https://reatom.dev/core)
@@ -21,4 +23,5 @@ All size is around [6.5kb](https://bundlejs.com/?q=%40reatom%2Fasync%2C%40reatom
 
 > Also, we have a [package for testing](/packages/testing)!
 
+<!-- TODO -->
 <!-- All exported variables: -->

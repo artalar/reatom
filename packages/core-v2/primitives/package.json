@@ -7,11 +7,10 @@
   "source": "index.ts",
   "main": "build/primitives.js",
   "module": "build/primitives.module.js",
-  "umd:main": "build/primitives.umd.js",
   "types": "build/primitives.d.ts",
   "license": "MIT",
   "scripts": {
-    "build": "microbundle"
+    "build": "microbundle -f esm,cjs"
   },
   "peerDependencies": {
     "@reatom/core-v2": "^3.1.0"

@@ -1,3 +1,9 @@
+---
+layout: ../../layouts/Layout.astro
+title: eslint-plugin
+description: Reatom for eslint-plugin
+---
+
 ## Installation
 
 ```sh

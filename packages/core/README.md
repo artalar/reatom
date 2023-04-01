@@ -1,4 +1,4 @@
-Tiny, efficient, featured and extensible core to handle reactivity right. The ultimate state manager. Build easily anything, from a small widget to a huge application.
+Tiny, efficient, featured and extensible core to handle reactivity right. The ultimate state manager. Build anything, from a small widget to a huge application.
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
@@ -6,38 +6,54 @@ Tiny, efficient, featured and extensible core to handle reactivity right. The ul
 
 The raw API description is [below](#api).
 
+## About
+
+Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data reference, **actions** for logic processing, **context** (`ctx`) for system isolation. The core is a perfect solution for building you own hight-order library or framework.
+
+Reatom is inspired by React and Redux architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`. Only consistent data transaction applying. All prerequisites you could check in this article: [What is a state manager](https://www.reatom.dev/general/what-is-state-manager).
+
 ## Installation
 
 ```sh
 npm i @reatom/core
 ```
 
+> The build target is `last 4 chrome versions`, if you need to support older environments, you should transpile it by yourself.
+
 ## Usage
 
-Reatom allows you to describe both super dumb and extremely complex logic by a three main things: **atoms** for data storing, **actions** for logic processing, **context** (`ctx`) for system isolation.
-
-Reatom is inspired by React and Redux architecture. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure. All side effects should be scheduled for a separate effects queue by `ctx.schedule(callback)`. Only consistent data transaction applying. All prerequisites you could check in this article: [What is a state manager](https://www.reatom.dev/general/what-is-state-manager).
+Let's describe a simple example of a search input with a tip and a list of goods. This code written in TypeScript, but you could use JavaScript too, a lot of types inferred automatically.
+Take your attention to the comments, they will help you to understand the core concepts.
 
 ```ts
-import { createCtx, action, atom } from '@reatom/core'
+// ~/ctx.ts
+import { createCtx } from '@reatom/core'
 
-// create context in the app root
-const ctx = createCtx()
+// create context in the app root and use it to start all computations
+// for tests or SSR you will want to create a different context
+export const ctx = createCtx()
+```
+
+All atoms and actions accepts `ctx` by a first argument, it helps you a lot in many things: testing, debugging, SSR, effects chains management and logging. You could add `ctx.subscribe(logs => console.log(logs))` or connect separate [logger](https://www.reatom.dev/packages/logger) to see all changes in your app.
+
+```ts
+// ~/features/search/model.ts
+import { createCtx, action, atom } from '@reatom/core'
 
 // define your base mutable data references
 // by passing a primitive initial values
 const searchAtom = atom('')
 const isSearchingAtom = atom(false)
-const goodsAtom = atom<Array<Goods>>([])
+const goodsAtom = atom(new Array<Goods>())
 
 // define computed atoms to infer data
 // with smart and optimized caching
 const tipAtom = atom((ctx) => {
-  // read and subscribe by `spy`
+  // read and subscribe by `ctx.spy`
   const goodsCount = ctx.spy(goodsAtom).length
 
   if (goodsCount === 0) {
-    // read without subscribing by `get`
+    // read atom lazy without subscribing by `get`
     return ctx.get(searchAtom) ? 'Nothing found' : 'Try to search something'
   }
   if (goodsCount === 1) {
@@ -46,15 +62,15 @@ const tipAtom = atom((ctx) => {
   return `Found ${goodsCount} goods`
 })
 
-// define your actions to handle any IO and work with atoms
+// define your actions to handle any effects and work with atoms
+
 const onSearch = action((ctx, event) => {
   // mutate base atoms by passing relative ctx and the new state
   searchAtom(ctx, event.currentTarget.value)
 })
+
 const fetchGoods = action((ctx) => {
   const search = ctx.get(searchAtom)
-  // [OPTIONAL] get your services from the context
-  const api = ctx.get(apiAtom)
 
   // all sync updates inside action automatically batched
   // and dependent computations will call after the action callback return
@@ -63,7 +79,9 @@ const fetchGoods = action((ctx) => {
   // schedule side-effects
   // which will be called after successful execution of all computations
   const promise = ctx.schedule(async () => {
-    const goods = await api.getGoods(search)
+    const response = await fetch(`/api/goods?search=${search}`)
+    if (!response.ok) throw new Error('Network response was not ok')
+    const goods = await response.json()
 
     // pass a callback to `get` to batch a few updates inside async resolve
     ctx.get(() => {
@@ -77,9 +95,17 @@ const fetchGoods = action((ctx) => {
 })
 ```
 
-As you can see, most passed callbacks in Reatom units accepts `ctx` by the first argument - it is a main convention, which allow you to not use imports and write more clean. Some advanced helpers could extends or redefine ctx for additional features typesafety, so when you will need it, there will no feature code changes.
+As you can see, most passed callbacks in Reatom units accepts `ctx` by the first argument - it is a main convention, which allow you to not use imports and write more clean. Some advanced helpers packages could extends or redefine ctx for additional features typesafety, so when you will need it, there will no feature code changes.
+
+Here we just described a module logic, which uses `ctx`, but not imported it. This is because we want to use the same module in different contexts like view component and tests. It is a good architecture practice by itself.
+
+So, we should connect an IO and our module together somewhere.
 
 ```ts
+// ~/features/search/index.ts
+import { ctx } from '~/ctx'
+import { searchAtom, tipAtom, onSearch, fetchGoods } from './model'
+
 // subscribe to your atoms
 ctx.subscribe(tipAtom, (tip) => {
   document.getElementById('goods-tip').innerText = tip
@@ -87,22 +113,11 @@ ctx.subscribe(tipAtom, (tip) => {
 // handle user interactions by your actions
 document.getElementById('search-input').addEventListener('input', (event) => {
   onSearch(ctx, event)
-})
-// log all things
-ctx.subscribe((logs) => {
-  console.log(logs)
+  fetchGoods(ctx)
 })
 ```
 
 > Do you want to see next [the docs for React adapter](https://reatom.dev/packages/npm-react)?
-
-Use Reatom ecosystem to made your code clean and readable
-
-```ts
-import { onUpdate } from '@reatom/hooks'
-
-onUpdate(searchAtom, fetchGoods)
-```
 
 ### Action handling (advanced)
 
@@ -236,6 +251,23 @@ export const currencyValueAtom = atom((ctx) => {
 ctx.get(currenciesAtom)[ctx.get(currencyAtom)](ctx, newValue)
 ```
 
+You could handle each update independently by passing a function to `spy` method. It is useful for actions reactions or if you need to handle a few concurrent udpates.
+
+```ts
+export const changeCurrency = action<string>('changeCurrency')
+export const currencyAtom = atom((ctx, state?: string) => {
+  ctx.spy(languageAtom, (language) => {
+    state = getCurrencyByLanguage(language)
+  })
+
+  ctx.spy(changeCurrency, (currency) => {
+    state = currency
+  })
+
+  return state
+}, 'currencyAtom')
+```
+
 ### `atom.pipe` API
 
 Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`.
@@ -328,7 +360,7 @@ Start transaction and batch all updates, same as in action call
 
 #### `ctx.subscribe` atom API
 
-Subscribe to atom new state
+Subscribe to atom new state. Passed callback called immediately and after each atom state change.
 
 `subscribe<T>(anAtom: Atom<T>, cb: (newState: T) => void): () => void`
 
@@ -338,7 +370,7 @@ Subscribe to transaction end. Useful for logging.
 
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
-### `ctx.schedule`
+#### `ctx.schedule`
 
 To archive [atomicity](https://www.reatom.dev/general/what-is-state-manager#state) each update (action call / atom mutation) starts complex batch operation, which trying to optimize your updates and collect them to new immutable [log](#ctx.subscribe-log-API) of new immutable caches snapshot. If some computation throw an error (like `can't use property of undefined`) whole updates will be canceled, otherwise new caches will be merged to context internal `caches` weak map. To archive pureness of computations and ability to cancel it all side-effects should be called separately in different queue, after all computation. Here is `schedule` come, it accept effect callback and returns a promise which will be resolved after effect call or rejected if transaction will fall.
 
@@ -361,7 +393,7 @@ The unique feature of Reatom and the schedule specially is ability to define the
 
 > Read more in [lifecycle guild](https://www.reatom.dev/guides/lifecycle).
 
-### `ctx.schedule` rollback API
+#### `ctx.schedule` rollback API
 
 Sometimes you want to do a side-effect during clean calculations or need to store some artifact of an effect and store it. To made it clean you should describe a rollback (cleanup) function for case of unexpected error by passing `-1` as a second of `ctx.schedule`. Check this example with a debounced action:
 
