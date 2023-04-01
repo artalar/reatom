@@ -11,6 +11,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { toAbortError } from '@reatom/effects'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -75,7 +76,7 @@ export const onConnect = (
         disconnectHooks.delete(cleanupHook) &&
         connectHooks.has(connectHook)
       ) {
-        controller.abort(`${anAtom.__reatom.name} disconnect`)
+        controller.abort(toAbortError(`${anAtom.__reatom.name} disconnect`))
         typeof cleanup === 'function' && cleanup()
       }
     }
