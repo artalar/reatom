@@ -1,11 +1,11 @@
-Reatom is the ultimate [state manager](https://www.reatom.dev/general/what-is-state-manager) with quite unique set of features, it provides the most modern techniques for describing, executing, and debugging code in a tiny package. It is an opinionated data manager with strict, but flexible rules, which allows you to write simple and maintainable code.
+Reatom is the ultimate [state manager](https://www.reatom.dev/general/what-is-state-manager) with a unique set of features. It offers the most modern techniques for describing, executing, and debugging code in a small package. Reatom is an opinionated data manager with strict but flexible rules that enable you to write simple and maintainable code.
 
 Key principles:
 
-- **simple abstractions** - the whole ecosystem is built on top of a three primitives: atom, action, ctx
+- **simple** and powerful abstractions - the whole ecosystem is built on top of a three primitives: ctx, atom, action
 - **immutable** and reliable computations with [atomicity](https://www.reatom.dev/general/what-is-state-manager#state) guaranties
 - **explicit reactivity** - maximum [performance](#how-performant-reatom-is) with [atomization](https://www.reatom.dev/guides/atomization) without proxies
-- perfect **effects management** and **debugging** experience by [immutable cause (call) stack](https://www.reatom.dev/guides/debug), advanced [async package](https://www.reatom.dev/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation of entire query sequences - like redux-saga, but with native `await` and `AbortController`
+- perfect **effects management** and **debugging** experience by [immutable cause (call) stack](https://www.reatom.dev/guides/debug). Advanced [async package](https://www.reatom.dev/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation of entire chain - like redux-saga, but with native `await` and `AbortController`
 - implicit **DI** for simple SSR and [testing](https://www.reatom.dev/packages/testing)
 - actor-like **lifecycle hooks** for declarative description of [self-sufficient models](https://www.reatom.dev/guides/lifecycle)
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
@@ -33,7 +33,7 @@ import { action, atom, createCtx } from '@reatom/core'
 // primitive mutable atom
 const inputAtom = atom('')
 // computed readonly atom
-// `spy` reads the atom and subscribes to it
+// `spy` dynamically reads the atom and subscribes to it
 const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(inputAtom)}!`)
 
 // all updates in action processed by a smart batching
