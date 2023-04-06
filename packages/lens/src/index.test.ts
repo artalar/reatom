@@ -1,4 +1,4 @@
-import { action, atom } from '@reatom/core'
+import { Action, Atom, action, atom } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { reatomNumber } from '@reatom/primitives'
 import { createTestCtx, mockFn } from '@reatom/testing'
@@ -6,16 +6,20 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
 import {
-  readonly,
-  mapState,
-  mapPayloadAwaited,
-  mapInput,
-  filter,
-  plain,
-  toAtom,
-  mapPayload,
+  combine,
   debounce,
+  effect,
+  filter,
+  mapInput,
+  mapPayload,
+  mapPayloadAwaited,
+  mapState,
+  plain,
+  readonly,
   sample,
+  toAtom,
+  onDeepUpdate,
+  withOnUpdate,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -166,40 +170,52 @@ test('filter action', () => {
   ;`👍` //?
 })
 
-test('debounce action', async () => {
-  const act = action<number>()
-  const actD = act.pipe(debounce(0))
-  const a = actD.pipe(mapPayload(0))
+test('debounce atom', async () => {
+  const a = atom(0)
+  const b = a.pipe(debounce(0))
   const ctx = createTestCtx()
-  const track = ctx.subscribeTrack(actD)
-  ctx.subscribeTrack(a)
+  const track = ctx.subscribeTrack(b)
 
-  act(ctx, 1)
+  a(ctx, 1)
+  a(ctx, 2)
+  a(ctx, 3)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), 0)
+
+  await sleep()
+  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput(), 3)
+  ;`👍` //?
+})
+
+test('debounce action', async () => {
+  const a = action<number>()
+  const b = a.pipe(debounce(0))
+  const ctx = createTestCtx()
+  const track = ctx.subscribeTrack(b)
+
+  a(ctx, 1)
   assert.is(track.calls.length, 1)
   assert.equal(track.lastInput(), [])
-  assert.is(ctx.get(a), 0)
 
   await sleep()
   assert.is(track.calls.length, 2)
   assert.is(track.lastInput().at(0)?.payload, 1)
-  assert.is(ctx.get(a), 1)
 
-  act(ctx, 2)
-  act(ctx, 3)
+  a(ctx, 2)
+  a(ctx, 3)
   assert.is(track.calls.length, 2)
-  assert.is(ctx.get(a), 1)
 
   await sleep()
   assert.is(track.calls.length, 3)
   assert.is(track.lastInput().at(0)?.payload, 3)
-  assert.is(ctx.get(a), 3)
   ;`👍` //?
 })
 
-test('sample', () => {
-  const act = action()
+test('sample atom', () => {
+  const signal = action()
   const a = atom(0)
-  const aSampled = a.pipe(sample(act))
+  const aSampled = a.pipe(sample(signal))
   const ctx = createTestCtx()
 
   const track = ctx.subscribeTrack(aSampled)
@@ -210,9 +226,28 @@ test('sample', () => {
   a(ctx, 2)
   assert.is(track.calls.length, 1)
 
-  act(ctx)
+  signal(ctx)
   assert.is(track.calls.length, 2)
   assert.equal(track.lastInput(), 2)
+  ;`👍` //?
+})
+
+test('sample action', () => {
+  const signal = atom(0)
+  const a = action<number>()
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(a.pipe(sample(signal)))
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), [])
+
+  a(ctx, 1)
+  a(ctx, 2)
+  assert.is(track.calls.length, 1)
+
+  signal(ctx, 1)
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput(), [{ params: [2], payload: 2 }])
   ;`👍` //?
 })
 
@@ -247,6 +282,104 @@ test('mapPayloadAwaited atom', async () => {
   await act(ctx, 1)
   assert.is(atomTrack.lastInput(), 1)
   assert.is(actMapTrack.lastInput(), 2)
+  ;`👍` //?
+})
+
+test('effect', async () => {
+  const a = atom(0)
+  const b = a.pipe(mapState((ctx, state) => state))
+  const c = b.pipe(effect((ctx, state) => state))
+  const d = c.pipe(toAtom(0))
+  const e = d.pipe(effect(async (ctx, state) => state))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(e)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), [])
+  assert.is(ctx.get(d), 0)
+
+  await sleep()
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput(), [{ params: [0], payload: 0 }])
+
+  ctx.get(() => {
+    a(ctx, 1)
+    assert.is(ctx.get(b), 1)
+    assert.is(ctx.get(c).length, 0)
+    assert.is(ctx.get(d), 0)
+  })
+
+  assert.is(track.calls.length, 2)
+  assert.is(ctx.get(d), 1)
+
+  await sleep()
+  assert.is(track.calls.length, 3)
+  assert.equal(track.lastInput(), [{ params: [1], payload: 1 }])
+  assert.is(ctx.get(d), 1)
+  ;`👍` //?
+})
+
+test('onDeepUpdate', async () => {
+  const a = atom(0)
+  const b = a.pipe(mapState((ctx, state) => state))
+  const c = b.pipe(effect(async (ctx, state) => state))
+
+  onDeepUpdate(
+    combine({
+      a,
+      c: c.pipe(toAtom(0)),
+    }),
+    (ctx, data) => {
+      data //?
+    },
+  )
+
+  const ctx = createTestCtx()
+
+  a(ctx, 1)
+})
+
+test('withOnUpdate and sampleBuffer example', () => {
+  const sampleBuffer =
+    <T>(signal: Atom) =>
+    (anAction: Action<[T], T>) => {
+      const bufferAtom = atom(
+        new Array<T>(),
+        `${anAction.__reatom.name}._sampleBuffer`,
+      )
+      return anAction.pipe(
+        mapPayload((ctx, value) => bufferAtom(ctx, (v) => [...v, value])),
+        sample(signal),
+        withOnUpdate((ctx, v) => bufferAtom(ctx, [])),
+      )
+    }
+
+  const signal = action()
+  const a = action<number>()
+
+  const ctx = createTestCtx()
+  const track = mockFn()
+
+  onDeepUpdate(a.pipe(sampleBuffer(signal)), (ctx, v) => track(v))
+
+  a(ctx, 1)
+  a(ctx, 2)
+  a(ctx, 3)
+  assert.is(track.calls.length, 0)
+
+  signal(ctx)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), [1, 2, 3])
+
+  signal(ctx)
+  assert.is(track.calls.length, 1)
+
+  a(ctx, 4)
+  assert.is(track.calls.length, 1)
+
+  signal(ctx)
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput(), [4])
   ;`👍` //?
 })
 
