@@ -1,7 +1,8 @@
 on:
-  push:
+  pull_request:
+    types: [opened, reopened]
     branches:
-      - tmp-rp-for-3-2
+      - 'v3'
 
 name: release-please
 permissions:
