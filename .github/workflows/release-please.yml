@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - v3
+      - tmp-rp-for-3-2
 
 name: release-please
 permissions:
