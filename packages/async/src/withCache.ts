@@ -137,7 +137,7 @@ export const withCache =
           () => cacheAtom.delete(ctx, key),
           staleTime,
         )
-        clearTimeoutId.toString = () => ''
+
         clearTimeoutId.unref?.()
         ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
         const cache = cacheAtom.set(ctx, key, {
