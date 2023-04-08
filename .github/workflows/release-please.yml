@@ -1,8 +1,7 @@
 on:
-  pull_request:
-    types: [opened, reopened]
+  push:
     branches:
-      - 'v3'
+      - v3
 
 name: release-please
 permissions:
