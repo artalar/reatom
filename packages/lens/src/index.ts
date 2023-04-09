@@ -11,258 +11,44 @@ import {
   CtxParams,
   CtxSpy,
   Fn,
-  IsAction,
   Rec,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { onUpdate } from '@reatom/hooks'
-import { isShallowEqual, noop } from '@reatom/utils'
+import { Plain } from '@reatom/utils'
+import { mapName } from './utils'
 
 export * from './bind'
+export * from './delay'
+export * from './effect'
+export * from './filter'
 export * from './parseAtoms'
+export * from './sample'
 export * from './withReset'
 
-interface LensAtom<State = any> extends Atom<State> {
+export interface LensAtom<State = any> extends Atom<State> {
   deps: Array<Atom>
 }
-interface LensAction<Params extends any[] = any[], Payload = any>
+export interface LensAction<Params extends any[] = any[], Payload = any>
   extends Action<Params, Payload> {
   deps: Array<Atom>
 }
 
-const mapName = ({ __reatom: proto }: Atom, operator: string, name?: string) =>
-  name ?? `${proto.name}.${operator}`
-
-/** Filter updates by comparator function ("shallow equal" for atoms by default) */
-export const filter: {
-  // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(
-    predicate?: T extends Action<infer Params, infer Payload>
-      ? Fn<[Ctx, Payload, Params], boolean>
-      : Fn<[CtxSpy, AtomState<T>, AtomState<T>], boolean>,
-    name?: string,
-  ): Fn<
-    [T],
-    T extends Action<infer Params, infer Payload>
-      ? LensAction<Params, Payload>
-      : T extends Atom<infer State>
-      ? LensAtom<State>
-      : never
-  >
-} =
-  (predicate?: Fn, name?: string) =>
-  (anAtom: Atom): any => {
-    name = mapName(anAtom, 'filter', name)
-    const { isAction } = anAtom.__reatom
-
-    predicate ??= isAction ? () => true : (ctx, a, b) => !isShallowEqual(a, b)
-
-    // @ts-expect-error
-    const theAtom: LensAtom & LensAction = atom((ctx, prevState?: any) => {
-      const isInit = ctx.cause.pubs.length === 0
-      const state = ctx.spy(anAtom)
-
-      return isAction
-        ? state.reduce(
-            (acc: any, call: any) =>
-              predicate!(ctx, call.payload, call.params) ? [call] : acc,
-            prevState ?? [],
-          )
-        : isInit || predicate!(ctx, state, prevState)
-        ? state
-        : prevState
-    })
-    theAtom.deps = [anAtom]
-    theAtom.__reatom.isAction = isAction
-
-    return theAtom
-  }
-
-/** Delay updates by timeout */
-// @ts-expect-error
-export const debounce: {
-  // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(timeout: number, name?: string): Fn<
-    [T],
-    T extends Action<infer Params, infer Payload>
-      ? LensAction<Params, Payload>
-      : T extends Atom<infer State>
-      ? LensAtom<State>
-      : never
-  >
-} = (timeout: number, name?: string) => (anAtom: Atom) => {
-  const { isAction } = anAtom.__reatom
-  // @ts-expect-error
-  const theAtom: LensAtom & LensAction = atom((ctx, prevState?: any) => {
-    const patch = ctx.cause
-    const state = ctx.spy(anAtom)
-
-    if (!isAction || state.length) {
-      ctx.schedule(() =>
-        setTimeout(
-          () =>
-            ctx.get((read, acualize) => {
-              if (read(patch.proto) === patch) {
-                {
-                  acualize!(
-                    ctx,
-                    patch.proto,
-                    (patchCtx: Ctx, patch: AtomCache) =>
-                      (patch.state = isAction ? [state.at(-1)] : state),
-                  )
-                }
-              }
-            }),
-          timeout,
-        ),
-      )
-    }
-
-    return patch.pubs.length ? prevState : isAction ? [] : state
-  }, mapName(anAtom, 'debounce', name))
-  theAtom.__reatom.isAction = isAction
-  theAtom.deps = [anAtom]
-
-  return theAtom
-}
-
-/** Delay updates until other atom update / action call */
-// https://rxjs.dev/api/operators/sample
-// https://effector.dev/docs/api/effector/sample
-// @ts-expect-error
-export const sample: {
-  // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(signal: Atom, name?: string): Fn<
-    [T],
-    T extends Action<infer Params, infer Payload>
-      ? LensAction<Params, Payload>
-      : T extends Atom<infer State>
-      ? LensAtom<State>
-      : never
-  >
-} =
-  <T>(signal: Atom, name?: string) =>
-  // @ts-ignore
-  (anAtom) => {
-    name = mapName(anAtom, 'sample', name)
-    const { isAction } = anAtom.__reatom
-    const cacheAtom = atom<unknown>(null, `${name}._cacheAtom`)
-
-    // @ts-expect-error
-    const theAtom: LensAtom & LensAction = atom((ctx, prevState?: any) => {
-      const patch = ctx.cause
-      const isInit = patch.pubs.length === 0
-
-      ctx.spy(anAtom, (v) => cacheAtom(ctx, isAction ? [v] : v))
-
-      let changed = false
-      ctx.spy(signal, () => (changed = true))
-
-      if (changed && !(isInit && !signal.__reatom.isAction)) {
-        const state = ctx.get(cacheAtom)
-        // drop action cache
-        cacheAtom(ctx, ctx.get(anAtom))
-        return state
-      }
-
-      return isInit && !(signal.__reatom.isAction && changed)
-        ? isAction
-          ? []
-          : ctx.get(anAtom)
-        : changed
-        ? ctx.get(cacheAtom)
-        : prevState
-    })
-    theAtom.__reatom.isAction = isAction
-    theAtom.deps = [anAtom, signal]
-
-    return theAtom
-  }
-
-// @ts-expect-error
-export const effect: {
-  // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom, Res>(
-    fn: T extends Action<infer Params, infer Payload>
-      ? Fn<[Ctx, Awaited<Payload>, Params], Res>
-      : Fn<[Ctx, AtomState<T>], Res>,
-    name?: string,
-  ): Fn<
-    [T],
-    T extends Action<infer Params, infer Payload>
-      ? LensAction<
-          [
-            {
-              params: [{ params: Params; payload: Awaited<Payload> }]
-              payload: Awaited<Res>
-            },
-          ],
-          Awaited<Res>
-        >
-      : LensAction<
-          [{ params: [AtomState<T>]; payload: Awaited<Res> }],
-          Awaited<Res>
-        >
-  >
-} = (fn: Fn, name?: string) => (anAtom: Atom) => {
-  const { isAction } = anAtom.__reatom
-  // TODO better error handling
-  // @ts-expect-error
-  const theAtom: LensAtom & LensAction = atom((ctx, state = []) => {
-    const resolve = (params: any[], payload: any) =>
-      ctx.get((read, acualize) => {
-        if (payload instanceof Promise) {
-          payload.then((payload) => resolve(params, payload))
-        } else {
-          acualize!(ctx, ctx.cause.proto, (patchCtx: Ctx, patch: AtomCache) => {
-            patch.state = [{ params, payload }]
-          })
-        }
-      })
-
-    ctx.spy(anAtom, (value) => {
-      if (isAction && value.payload instanceof Promise) {
-        __thenReatomed(ctx, value.payload, (payload) =>
-          ctx.schedule(() =>
-            resolve(
-              [{ params: value.params, payload }],
-              fn(ctx, payload, value.params),
-            ),
-          ),
-        )
-      } else {
-        ctx.schedule(() =>
-          resolve(
-            [value],
-            isAction ? fn(ctx, value.payload, value.params) : fn(ctx, value),
-          ),
-        )
-      }
-    })
-
-    return state ?? []
-  }, mapName(anAtom, 'effect', name))
-  theAtom.__reatom.isAction = true
-  theAtom.deps = [anAtom]
-
-  return theAtom
-}
-
-type Combined<Shape extends Rec<Atom>> = {
+type Combined<Shape extends Rec<Atom>> = Plain<{
   [K in keyof Shape]: AtomState<Shape[K]>
-}
+}>
 
 export const combine = <Shape extends Rec<Atom>>(
   shape: Shape,
 ): LensAtom<Combined<Shape>> => {
   // @ts-expect-error
-  const theAtom: LensAtom = atom((ctx, state = {} as Combined<Shape>) => {
+  const theAtom: LensAtom = atom((ctx) => {
     const newState = {} as Combined<Shape>
     for (const key in shape) newState[key] = ctx.spy(shape[key]!)
-    return isShallowEqual(state, newState) ? state : newState
-  })
+    return newState
+  }, '_combine')
   theAtom.deps = Object.values(shape)
 
   return theAtom
@@ -281,14 +67,14 @@ export const readonly = <T extends Atom & { deps?: Array<Atom> }>({
   __reatom,
   pipe,
   deps,
-}: T): Atom<AtomState<T>> =>
+}: T): LensAtom<AtomState<T>> =>
   Object.assign(
     {
       __reatom,
       pipe,
     },
     deps ? { deps } : {},
-  )
+  ) as LensAtom<AtomState<T>>
 
 /** Remove all extra properties from the atom to pick the essence */
 export const plain = <T extends Atom>(
@@ -332,20 +118,20 @@ export const mapPayload: {
   <Payload, T, Params extends any[] = any[]>(
     map: Fn<[Ctx, Payload, Params], T>,
     name?: string,
-  ): Fn<[Action<Params, Payload>], Action<[], T>>
+  ): Fn<[Action<Params, Payload>], LensAction<[], T>>
   <T extends Action>(fallback: ActionPayload<T>, name?: string): Fn<
     [T],
-    Atom<ActionPayload<T>>
+    LensAtom<ActionPayload<T>>
   >
   <T, State>(fallback: State, name?: string): Fn<
     [Action<any[], T>],
-    Atom<State | T>
+    LensAtom<State | T>
   >
   <Payload, State, Params extends any[] = any[]>(
     fallback: State,
     map: Fn<[Ctx, Payload, Params], State>,
     name?: string,
-  ): Fn<[Action<Params, Payload>], Atom<State>>
+  ): Fn<[Action<Params, Payload>], LensAtom<State>>
 } =
   (fallbackOrMapper: any, mapOrName?: any, name?: string) =>
   (anAction: Action): any => {
@@ -392,20 +178,20 @@ export const mapPayloadAwaited: {
   <T, Payload = Awaited<T>>(
     mapper: Fn<[Ctx, Awaited<T>], Payload>,
     name?: string,
-  ): Fn<[Action<any[], T>], Action<[], Payload>>
+  ): Fn<[Action<any[], T>], LensAction<[], Payload>>
   <T extends Action>(fallback: Awaited<ActionPayload<T>>, name?: string): Fn<
     [T],
-    Atom<Awaited<ActionPayload<T>>>
+    LensAtom<Awaited<ActionPayload<T>>>
   >
   <T, State>(fallback: State, name?: string): Fn<
     [Action<any[], T>],
-    Atom<State | Awaited<T>>
+    LensAtom<State | Awaited<T>>
   >
   <T, State>(
     fallback: State,
     map: Fn<[Ctx, Awaited<T>], State>,
     name?: string,
-  ): Fn<[Action<any[], T>], Atom<State>>
+  ): Fn<[Action<any[], T>], LensAtom<State>>
 } =
   (...a: [any?, any?, any?]) =>
   (anAction: Action): any => {
@@ -463,21 +249,28 @@ export const mapInput =
     )
 
 /** Convert action to atom with optional fallback state */
+// @ts-expect-error
 export const toAtom: {
   <T extends Action>(fallback: ReturnType<T>, name?: string): Fn<
     [T],
-    Atom<ReturnType<T>>
+    LensAtom<ReturnType<T>>
   >
   <T extends Action>(fallback?: undefined, name?: string): Fn<
     [T],
-    Atom<undefined | ReturnType<T>>
+    LensAtom<undefined | ReturnType<T>>
   >
   <T extends Action, State>(fallback: State, name?: string): Fn<
     [T],
-    Atom<State | ReturnType<T>>
+    LensAtom<State | ReturnType<T>>
   >
-} = (fallback?: any, name?: string): Fn<[Action], Atom> =>
-  mapPayload(fallback, (ctx, v: any) => v, name)
+} =
+  (fallback?: any, name?: string): Fn<[Action], Atom> =>
+  (anAction) =>
+    mapPayload(
+      fallback,
+      (ctx, v: any) => v,
+      mapName(anAction, 'toAtom', name),
+    )(anAction)
 
 // https://rxjs.dev/api/operators/tap
 export const withOnUpdate =
@@ -505,8 +298,10 @@ export const toAction =
 
     // @ts-expect-error
     const theAction: LensAction<[T], T> = atom((ctx) => {
+      // TODO handle atom mutation in the same transaction
+      const isInit = ctx.cause.pubs.length === 0
       const state = ctx.spy(anAtom)
-      return [{ params: [state], payload: state }]
+      return isInit ? [] : [{ params: [state], payload: state }]
     }, mapName(anAtom, 'toAction', name))
     theAction.__reatom.isAction = true
     theAction.deps = [anAtom]
@@ -514,9 +309,11 @@ export const toAction =
     return theAction
   }
 
-export const onDeepUpdate: typeof onUpdate = (anAtom: Atom, fn: Fn) =>
+/** The behavior of this function is stable and safe,
+ * but the name of this API could be changed in the future. */
+export const unstable_onDeepUpdate: typeof onUpdate = (anAtom: Atom, fn: Fn) =>
   ((anAtom as LensAtom).deps ?? []).reduce((acc, dep) => {
-    const un = onDeepUpdate(dep, (ctx) => {
+    const un = unstable_onDeepUpdate(dep, (ctx) => {
       ctx.get(anAtom)
     })
     return () => {
@@ -524,27 +321,3 @@ export const onDeepUpdate: typeof onUpdate = (anAtom: Atom, fn: Fn) =>
       acc()
     }
   }, onUpdate(anAtom, fn) as Unsubscribe)
-
-// type StatesShape<Shape extends Rec<Atom>> = {
-//   [K in keyof Shape]: AtomState<Shape[K]>
-// }
-// export const unstable_weakAtom = <Shape extends Rec<Atom>, State>(
-//   shape: Shape,
-//   reducer: Fn<[Ctx, StatesShape<Shape>], State>,
-//   name?: string,
-// ): Atom<StatesShape<Shape>> => {
-//   const theAtom = atom((ctx) => {
-//     const state = {} as StatesShape<Shape>
-//     for (const key in shape) state[key] = ctx.spy(shape[key]!)
-//     return state
-//   }, name)
-
-//   for (const name in shape) {
-//     addOnUpdate(shape[name]!, (ctx) => ctx.schedule(() => ctx.get(theAtom), 0))
-//   }
-
-//   return theAtom
-// }
-
-// TODO
-// mapDebounced, mapThrottled

@@ -18,8 +18,9 @@ import {
   readonly,
   sample,
   toAtom,
-  onDeepUpdate,
+  unstable_onDeepUpdate,
   withOnUpdate,
+  throttle,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -323,20 +324,26 @@ test('onDeepUpdate', async () => {
   const a = atom(0)
   const b = a.pipe(mapState((ctx, state) => state))
   const c = b.pipe(effect(async (ctx, state) => state))
+  const track = mockFn()
+  const ctx = createTestCtx()
 
-  onDeepUpdate(
+  unstable_onDeepUpdate(
     combine({
       a,
       c: c.pipe(toAtom(0)),
     }),
-    (ctx, data) => {
-      data //?
-    },
+    (ctx, value) => track(value),
   )
 
-  const ctx = createTestCtx()
+  assert.is(track.calls.length, 0)
 
   a(ctx, 1)
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), { a: 1, c: 0 })
+  await sleep()
+  assert.is(track.calls.length, 2)
+  assert.equal(track.lastInput(), { a: 1, c: 1 })
+  ;`👍` //?
 })
 
 test('withOnUpdate and sampleBuffer example', () => {
@@ -360,7 +367,7 @@ test('withOnUpdate and sampleBuffer example', () => {
   const ctx = createTestCtx()
   const track = mockFn()
 
-  onDeepUpdate(a.pipe(sampleBuffer(signal)), (ctx, v) => track(v))
+  unstable_onDeepUpdate(a.pipe(sampleBuffer(signal)), (ctx, v) => track(v))
 
   a(ctx, 1)
   a(ctx, 2)
@@ -380,6 +387,22 @@ test('withOnUpdate and sampleBuffer example', () => {
   signal(ctx)
   assert.is(track.calls.length, 2)
   assert.equal(track.lastInput(), [4])
+  ;`👍` //?
+})
+
+test('throttle', async () => {
+  const a = atom(0)
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(a.pipe(throttle(30)))
+  assert.is(track.calls.length, 1)
+  assert.equal(track.lastInput(), 0)
+
+  while (track.calls.length === 1) {
+    assert.is(a(ctx, (s) => ++s) <= 5, true)
+    await sleep(10)
+  }
+
   ;`👍` //?
 })
 
