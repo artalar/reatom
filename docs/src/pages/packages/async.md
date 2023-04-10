@@ -56,7 +56,7 @@ export const fetchList = reatomAsync(
     onReject(ctx, error) {
       errorAtom(ctx, error)
     },
-    onEffect(ctx, promise, params) {
+    onEffect(ctx, params, promise) {
       // clear outdated data on request start
       listAtom(ctx, [])
       errorAtom(ctx, null)
@@ -267,7 +267,7 @@ export const updateList = reatomAsync(
   },
   {
     name: 'updateList',
-    onEffect(ctx, promise, params) {
+    onEffect(ctx, params, promise) {
       const [newList] = params
       const newList = fetchList.dataAtom(ctx, newList)
     },
@@ -629,13 +629,7 @@ describe('optimistic update', () => {
     ),
   )
   const putData = reatomAsync.from(api.putData)
-  onUpdate(putData, (ctx, promise, { state }) => {
-    // `state` is a list of calls during transaction
-    // this callback will be called on each action call
-    // and `state.at(-1)` will always(!) contain the call data
-    // here `promise == payload` and `params == [newList]`
-    const { payload, params } = state.at(-1)!
-
+  onUpdate(putData, (ctx, promise, { params }) => {
     const [id, value] = params
     const oldList = ctx.get(getData.dataAtom)
     // optimistic update
@@ -650,7 +644,7 @@ describe('optimistic update', () => {
         // TODO looks like user changed data again
         // need to notify user about the conflict.
       }
-      throw error;
+      throw error
     })
   })
 
