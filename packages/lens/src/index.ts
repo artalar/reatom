@@ -129,7 +129,7 @@ export const mapPayload: {
   >
   <Payload, State, Params extends any[] = any[]>(
     fallback: State,
-    map: Fn<[Ctx, Payload, Params], State>,
+    map: Fn<[Ctx, Payload, Params, State], State>,
     name?: string,
   ): Fn<[Action<Params, Payload>], LensAtom<State>>
 } =
@@ -162,7 +162,7 @@ export const mapPayload: {
                   : [...acc, { params: [v], payload }]
               }, prevState))
             : depState.reduce((acc, { payload, params }) => {
-                const state = map(ctx, payload, params)
+                const state = map(ctx, payload, params, acc)
                 return state === SKIP ? acc : state
               }, prevState)
         }, name || (anAction.__reatom.name && 'mapPayload')),
