@@ -13,7 +13,6 @@ import {
   Fn,
   Rec,
   throwReatomError,
-  Unsubscribe,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { onUpdate } from '@reatom/hooks'
@@ -24,6 +23,7 @@ export * from './bind'
 export * from './delay'
 export * from './effect'
 export * from './filter'
+export * from './onLensUpdate'
 export * from './parseAtoms'
 export * from './sample'
 export * from './withReset'
@@ -308,16 +308,3 @@ export const toAction =
 
     return theAction
   }
-
-/** The behavior of this function is stable and safe,
- * but the name of this API could be changed in the future. */
-export const unstable_onDeepUpdate: typeof onUpdate = (anAtom: Atom, fn: Fn) =>
-  ((anAtom as LensAtom).deps ?? []).reduce((acc, dep) => {
-    const un = unstable_onDeepUpdate(dep, (ctx) => {
-      ctx.get(anAtom)
-    })
-    return () => {
-      un()
-      acc()
-    }
-  }, onUpdate(anAtom, fn) as Unsubscribe)

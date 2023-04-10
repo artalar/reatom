@@ -1,4 +1,4 @@
-import { Action, Atom, action, atom } from '@reatom/core'
+import { Action, Atom, AtomState, action, atom } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { reatomNumber } from '@reatom/primitives'
 import { createTestCtx, mockFn } from '@reatom/testing'
@@ -18,9 +18,10 @@ import {
   readonly,
   sample,
   toAtom,
-  unstable_onDeepUpdate,
+  onLensUpdate,
   withOnUpdate,
   throttle,
+  toLens,
 } from './'
 
 test(`map and mapInput`, async () => {
@@ -320,18 +321,26 @@ test('effect', async () => {
   ;`👍` //?
 })
 
-test('onDeepUpdate', async () => {
+test('onLensUpdate', async () => {
   const a = atom(0)
   const b = a.pipe(mapState((ctx, state) => state))
   const c = b.pipe(effect(async (ctx, state) => state))
+  const d = combine({
+    a,
+    c: c.pipe(toAtom(0)),
+  })
+  const e = action<AtomState<typeof d>>()
   const track = mockFn()
   const ctx = createTestCtx()
 
-  unstable_onDeepUpdate(
-    combine({
-      a,
-      c: c.pipe(toAtom(0)),
-    }),
+  onLensUpdate(
+    d.pipe(
+      mapState((ctx, state) => {
+        ctx.spy(e, ({ payload }) => (state = payload))
+        return state
+      }),
+      toLens([e]),
+    ),
     (ctx, value) => track(value),
   )
 
@@ -339,10 +348,15 @@ test('onDeepUpdate', async () => {
 
   a(ctx, 1)
   assert.is(track.calls.length, 1)
+  track.lastInput() //?
   assert.equal(track.lastInput(), { a: 1, c: 0 })
   await sleep()
   assert.is(track.calls.length, 2)
   assert.equal(track.lastInput(), { a: 1, c: 1 })
+
+  e(ctx, { a: 2, c: 2 })
+  assert.is(track.calls.length, 3)
+  assert.equal(track.lastInput(), { a: 2, c: 2 })
   ;`👍` //?
 })
 
@@ -367,7 +381,7 @@ test('withOnUpdate and sampleBuffer example', () => {
   const ctx = createTestCtx()
   const track = mockFn()
 
-  unstable_onDeepUpdate(a.pipe(sampleBuffer(signal)), (ctx, v) => track(v))
+  onLensUpdate(a.pipe(sampleBuffer(signal)), (ctx, v) => track(v))
 
   a(ctx, 1)
   a(ctx, 2)
