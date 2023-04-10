@@ -1,4 +1,4 @@
-A set of helper operators to transform actions payload or an atoms state.
+A set of operators to transform actions payload or an atoms state in a FRP style. Simply put, this package is convenient for reactive processing of actions and effects. But some operators could be useful for data processing too, like `filter`, `delay` (`debounce`, `throttle`) and `sample`.
 
 > included in [@reatom/framework](https://www.reatom.dev/packages/framework)
 
@@ -9,9 +9,45 @@ Simple map utility, which allow you to receive previous dependency state by a se
 ```ts
 import { mapState } from '@reatom/lens'
 
-export const bAtom = atom((ctx) => ctx.spy(aAtom) + 1)
-// equal to
-export const bAtom = aAtom.pipe(mapState((ctx, state, prevState) => state + 1))
+// this is a typical code which have a problem with extra updates
+// in case when an element of the list changes not `myProp`
+export const filteredListAtom = atom((ctx) =>
+  ctx.spy(listAtom).map((obj) => obj.myProp),
+)
+// `mapState` could help to solve this problem, as it pass previous state as a second argument
+export const bAtom = listAtom.pipe(
+  mapState((ctx, list, prevState) => {
+    const newState = list.map((obj) => obj.myProp)
+    return isShallowEqual(newState, prevState) ? prevState : newState
+  }),
+)
+```
+
+## `filter`
+
+Sometimes you already have `filteredListAtom` from the previous example and it have no internal memoization. So you could use `filter` operator to prevent extra updates.
+
+Updates filtered by comparator function, which should return `true`, if new state should continue to propagate. It uses `isShallowEqual` from utils package by default.
+
+```ts
+import { filter } from '@reatom/lens'
+import { isShallowEqual } from '@reatom/utils'
+
+export const listMemoAtom = filteredListAtom.pipe(filter())
+// equals to
+export const listMemoAtom = filteredListAtom.pipe(
+  filter((ctx, next, prev) => !isShallowEqual(next, prev)),
+)
+```
+
+This operator could filter actions too!
+
+```ts
+import { filter } from '@reatom/lens'
+
+export const linkClicked = onDocumentClick.pipe(
+  filter((ctx, event) => event.target.tagName === 'A'),
+)
 ```
 
 ## `mapPayload`
@@ -75,20 +111,6 @@ import { mapInput } from '@reatom/lens'
 export const inputAtom = atom('', 'inputAtom')
 export const changeInput = inputAtom.pipe(
   mapInput((ctx, event) => event.currentTarget.value, 'changeInput'),
-)
-```
-
-## `filter`
-
-Filter updates by comparator function, which should return `true`, if new state should continue to propagate ("shallow equal" by default).
-
-```ts
-import { filter } from '@reatom/lens'
-
-export const listMemoAtom = listAtom.pipe(filter())
-// equals to
-export const listMemoAtom = listAtom.pipe(
-  filter((ctx, next, prev) => !isShallowEqual(next, prev)),
 )
 ```
 
