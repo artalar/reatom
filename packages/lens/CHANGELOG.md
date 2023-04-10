@@ -2,7 +2,24 @@
 
 ## [3.3.0](https://github.com/artalar/reatom/compare/lens-v3.2.0...lens-v3.3.0) (2023-04-10)
 
+**feat(lens): new operators for onLensUpdate**
 
-### Features
+Add onDeepUpdate to handle updates from the whole chain.
 
-* **lens:** add new operators and onLensUpdate ([#533](https://github.com/artalar/reatom/issues/533)) ([2442ca3](https://github.com/artalar/reatom/commit/2442ca34b6ab1fdc0c0aff52d18e85999e6de607))
+add new operators: combine, effect, withOnUpdate, toAction.
+
+Refactor existed operators to add "deps" property with a list of dependencies.
+
+**feat(lens): add general delay operator**
+
+made limits optional atoms (for debounce too) add throttle, add tests
+
+separate operators to different files
+
+change return type of all operators to LensAtom / LensAction
+
+**docs(lens): add small peace of docs**
+
+**feat(lens): rename onDeepUpdate to onLensUpdate**
+
+add toLens
