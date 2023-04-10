@@ -41,13 +41,7 @@ describe('optimistic update', () => {
     ),
   )
   const putData = reatomAsync.from(api.putData)
-  onUpdate(putData, (ctx, promise, { state }) => {
-    // `state` is a list of calls during transaction
-    // this callback will be called on each action call
-    // and `state.at(-1)` will always(!) contain the call data
-    // here `promise == payload` and `params == [newList]`
-    const { payload, params } = state.at(-1)!
-
+  onUpdate(putData, (ctx, promise, { params }) => {
     const [id, value] = params
     const oldList = ctx.get(getData.dataAtom)
     // optimistic update
@@ -62,7 +56,7 @@ describe('optimistic update', () => {
         // TODO looks like user changed data again
         // need to notify user about the conflict.
       }
-      throw error;
+      throw error
     })
   })
 

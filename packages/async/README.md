@@ -50,7 +50,7 @@ export const fetchList = reatomAsync(
     onReject(ctx, error) {
       errorAtom(ctx, error)
     },
-    onEffect(ctx, promise, params) {
+    onEffect(ctx, params, promise) {
       // clear outdated data on request start
       listAtom(ctx, [])
       errorAtom(ctx, null)
@@ -261,7 +261,7 @@ export const updateList = reatomAsync(
   },
   {
     name: 'updateList',
-    onEffect(ctx, promise, params) {
+    onEffect(ctx, params, promise) {
       const [newList] = params
       const newList = fetchList.dataAtom(ctx, newList)
     },
