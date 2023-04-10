@@ -3,6 +3,7 @@ import { __thenReatomed } from '@reatom/effects'
 import { mapName } from './utils'
 import { type LensAtom, type LensAction } from './'
 
+/** Create action which will invoked with the result of effect */
 // @ts-expect-error
 export const effect: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
@@ -24,7 +25,7 @@ export const effect: {
           Awaited<Res>
         >
       : LensAction<
-          [{ params: [AtomState<T>]; payload: Awaited<Res> }],
+          [{ params: [AtomState<T>]; payload: AtomState<T> }],
           Awaited<Res>
         >
   >
