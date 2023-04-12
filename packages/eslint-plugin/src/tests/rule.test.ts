@@ -283,6 +283,15 @@ tester.run('reatom/action-rule', actionRule, {
   ],
 })
 
+const expectedReatomMessage = {
+  noname(assignedVariable: string, methodName: string) {
+    return `variable assigned to ${methodName} should has a name "${assignedVariable}" inside ${methodName} call`
+  },
+  unCorrect(assignedVariable: string, methodName: string) {
+    return `variable assigned to ${methodName} should be named as it's variable name, rename it to "${assignedVariable}"`
+  },
+}
+
 tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
   valid: [
     {
@@ -321,7 +330,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should has a name inside reatom*() call`,
+          message: expectedReatomMessage.noname('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -336,7 +345,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should be named as it's variable name, rename it to "fetchUser"`,
+          message: expectedReatomMessage.unCorrect('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -351,7 +360,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should has a name inside reatom*() call`,
+          message: expectedReatomMessage.noname('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -366,7 +375,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should be named as it's variable name, rename it to "fetchUser"`,
+          message: expectedReatomMessage.unCorrect('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -381,7 +390,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
             `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should has a name inside reatom*() call`,
+          message: expectedReatomMessage.noname('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -396,7 +405,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
             `,
       errors: [
         {
-          message: `variable with prefix reatom "user" should be named as it's variable name, rename it to "user"`,
+          message: expectedReatomMessage.unCorrect('user', 'reatomRecord'),
         },
       ],
       output: `
@@ -411,7 +420,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchTodo" should be named as it's variable name, rename it to "fetchTodo"`,
+          message: expectedReatomMessage.unCorrect('fetchTodo', 'asyncFn'),
         },
       ],
       output: `
@@ -426,7 +435,10 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "openModalState" should be named as it's variable name, rename it to "openModalState"`,
+          message: expectedReatomMessage.unCorrect(
+            'openModalState',
+            'booleanState',
+          ),
         },
       ],
       output: `
