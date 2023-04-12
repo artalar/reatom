@@ -236,6 +236,50 @@ tester.run('reatom/action-rule', actionRule, {
       const inputChanged = createAction(() => {}, "inputChanged")
       `,
     },
+    {
+      code: `
+      import { action } from "@reatom/framework"
+      const handler = {
+        draggable: action(ctx => {})
+      }
+      `,
+      errors: [
+        {
+          message: `action "draggable" should has a name inside action() call`,
+        },
+      ],
+      output: `
+      import { action } from "@reatom/framework"
+      const handler = {
+        draggable: action(ctx => {}, "draggable")
+      }
+      `,
+    },
+    {
+      code: `
+      import { action } from "@reatom/framework";
+      const SomeModule = () => {
+        const factory = () => {
+          return action(ctx => {}, "")
+        }
+        return factory
+      }
+      `,
+      errors: [
+        {
+          message: `action "factory" should be named as it's variable name, rename it to "factory"`,
+        },
+      ],
+      output: `
+      import { action } from "@reatom/framework";
+      const SomeModule = () => {
+        const factory = () => {
+          return action(ctx => {}, "factory")
+        }
+        return factory
+      }
+      `,
+    },
   ],
 })
 
