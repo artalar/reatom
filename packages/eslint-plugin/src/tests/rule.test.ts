@@ -5,7 +5,7 @@ import { reatomPrefixRule } from '../rules/reatom-prefix-rule'
 
 const tester = new RuleTester({
   parserOptions: {
-    ecmaVersion: 6,
+    ecmaVersion: 2022,
     sourceType: 'module',
   },
 })
