@@ -42,6 +42,16 @@ export function extractImportDeclaration({
   }
 }
 
+export function extractAssignedVariable(node: Node | null) {
+  if (node?.type === 'VariableDeclarator' && 'name' in node.id) {
+    return node.id.name
+  }
+
+  return node && 'key' in node && node.key?.type === 'Identifier'
+    ? node.key.name
+    : null
+}
+
 export function traverseBy<T extends Node>(
   field: keyof T,
   config: {

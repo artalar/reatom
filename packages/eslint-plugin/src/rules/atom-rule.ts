@@ -1,6 +1,11 @@
 import type { Rule } from 'eslint'
 import type { CallExpression, Identifier, Literal, Node } from 'estree'
-import { extractImportDeclaration, isLiteral, traverseBy } from '../lib'
+import {
+  extractAssignedVariable,
+  extractImportDeclaration,
+  isLiteral,
+  traverseBy,
+} from '../lib'
 
 type AtomCallExpression = CallExpression & {
   callee: Identifier
@@ -73,16 +78,6 @@ export const atomRule: Rule.RuleModule = {
       },
     }
   },
-}
-
-function extractAssignedVariable(node: Node | null) {
-  if (node?.type === 'VariableDeclarator' && 'name' in node.id) {
-    return node.id.name
-  }
-
-  return node && 'key' in node && node.key?.type === 'Identifier'
-    ? node.key.name
-    : null
 }
 
 function validAtomVariable(node: CallExpression, correctName: string) {
