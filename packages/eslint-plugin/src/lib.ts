@@ -47,3 +47,40 @@ export function extractImportDeclaration({
     }
   }
 }
+
+export function traverseBy<T extends Node>(
+  field: keyof T,
+  config: {
+    node: T
+    match: Set<string>
+    exit?: string[]
+  },
+) {
+  const { match, exit = ['Program'], node } = config
+
+  const stack = [node]
+
+  while (stack.length > 0) {
+    const currentNode = stack.pop()
+
+    if (
+      !currentNode ||
+      !includeField(currentNode, field) ||
+      exit.includes(currentNode.type)
+    ) {
+      return null
+    }
+
+    if (match.has(currentNode.type)) {
+      return currentNode
+    }
+
+    stack.push(currentNode[field] as T)
+  }
+
+  return null
+}
+
+function includeField<T extends Node>(node: Partial<T>, field: keyof T) {
+  return node && field in node && Boolean(node[field])
+}
