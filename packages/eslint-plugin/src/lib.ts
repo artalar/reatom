@@ -1,10 +1,4 @@
-import {
-  Identifier,
-  Literal,
-  Node,
-  CallExpression,
-  ImportDeclaration,
-} from 'estree'
+import type { Identifier, Literal, Node, ImportDeclaration } from 'estree'
 
 export function isIdentifier(node: Node): node is Identifier {
   return node?.type === 'Identifier'
