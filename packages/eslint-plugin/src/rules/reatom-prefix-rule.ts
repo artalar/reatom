@@ -1,5 +1,5 @@
-import { Rule } from 'eslint'
-import {
+import type { Rule } from 'eslint'
+import type {
   ArrowFunctionExpression,
   CallExpression,
   Identifier,
@@ -32,6 +32,10 @@ export const reatomPrefixRule: Rule.RuleModule = {
     type: 'suggestion',
     docs: {
       description: 'Add name for every reatom* call',
+    },
+    messages: {
+      noname: `variable assigned to {{ methodName }} should has a name inside {{ methodName }} call`,
+      invalidName: `variable assigned to {{ methodName }} should be named as it's variable name, rename it to "{{ assignedVariable }}"`,
     },
     fixable: 'code',
   },

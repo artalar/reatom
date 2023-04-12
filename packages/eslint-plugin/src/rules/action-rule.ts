@@ -17,15 +17,6 @@ type ActionCallExpression = CallExpression & {
     | [ArrowFunctionExpression]
     | [ArrowFunctionExpression, Literal]
 }
-type ActionVariableDeclarator = VariableDeclarator & {
-  id: Identifier
-  init: ActionCallExpression
-}
-
-const noname = (actionName: string) =>
-  `action "${actionName}" should has a name inside action() call`
-const invalidName = (actionName: string) =>
-  `action "${actionName}" should be named as it's variable name, rename it to "${actionName}"`
 
 export const actionRule: Rule.RuleModule = {
   meta: {
@@ -33,9 +24,13 @@ export const actionRule: Rule.RuleModule = {
     docs: {
       description: 'Add name for every action call',
     },
+    messages: {
+      noname: `action "{{ actionName }}" should has a name inside action() call`,
+      invalidName: `action "{{ actionName }}" should be named as it's variable name, rename it to "{{ actionName }}"`,
+    },
     fixable: 'code',
   },
-  create: function (context: Rule.RuleContext): Rule.RuleListener {
+  create(context: Rule.RuleContext): Rule.RuleListener {
     const importedFromReatom = new Map<string, string>()
 
     return {
