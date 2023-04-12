@@ -446,5 +446,24 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       const openModalState = booleanState(() => {}, "openModalState")
       `,
     },
+    {
+      code: `
+      import { reatomRecord as record } from "@reatom/framework"
+      class SomeService {
+        someRecord = record({})
+      }
+      `,
+      errors: [
+        {
+          message: expectedReatomMessage.noname('someRecord', 'record'),
+        },
+      ],
+      output: `
+      import { reatomRecord as record } from "@reatom/framework"
+      class SomeService {
+        someRecord = record({}, "someRecord")
+      }
+      `,
+    },
   ],
 })
