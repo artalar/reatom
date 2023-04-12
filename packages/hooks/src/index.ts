@@ -11,7 +11,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { toAbortError } from '@reatom/utils'
+import { noop, toAbortError } from '@reatom/utils'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -93,10 +93,10 @@ export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
   onConnect(anAtom, (ctx) => () => cb(ctx))
 
 // @ts-expect-error
-export const onUpdate: {
+const _onUpdate: {
   <Params extends any[], Payload>(
-    anAction: Action<Params, Payload>,
-    cb: Fn<
+    anAction: Action<Params, Payload> & { deps?: Array<Atom> },
+    cb?: Fn<
       [
         Ctx,
         Payload,
@@ -104,8 +104,14 @@ export const onUpdate: {
       ]
     >,
   ): Unsubscribe
-  <T>(anAtom: Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>): Unsubscribe
-} = <T>(anAtom: Action<any[], T> | Atom<T>, cb: Fn<[Ctx, T, AtomCache<T>]>) => {
+  <T>(
+    anAtom: Atom<T> & { deps?: Array<Atom> },
+    cb?: Fn<[Ctx, T, AtomCache<T>]>,
+  ): Unsubscribe
+} = <T>(
+  anAtom: Action<any[], T> | Atom<T>,
+  cb: Fn<[Ctx, T, AtomCache<T>]> = noop,
+) => {
   const hook = (ctx: Ctx, patch: AtomCache & { params?: unknown[] }) => {
     let { state } = patch
     if (anAtom.__reatom.isAction) {
@@ -121,6 +127,15 @@ export const onUpdate: {
 
   return () => hooks.delete(hook)
 }
+
+export const onUpdate: typeof _onUpdate = (anAtom: Atom, cb = noop) =>
+  ((anAtom as Atom & { deps?: Array<Atom> }).deps ?? []).reduce((acc, dep) => {
+    const un = onUpdate(dep, (ctx) => ctx.get(anAtom))
+    return () => {
+      un()
+      acc()
+    }
+  }, _onUpdate(anAtom, cb) as Unsubscribe)
 
 /** @deprecated use the second parameter of `ctx.spy` instead */
 // @ts-ignore
