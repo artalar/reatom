@@ -1,7 +1,23 @@
-import { Action, atom, Atom, AtomCache, AtomState, Ctx, Fn } from '@reatom/core'
+import {
+  Action,
+  atom,
+  Atom,
+  AtomCache,
+  AtomState,
+  Ctx,
+  Fn,
+  Unsubscribe,
+} from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { mapName } from './utils'
-import { type LensAtom, type LensAction } from './'
+import { type LensAction } from './'
+import { onUpdate } from '@reatom/hooks'
+import { noop } from '@reatom/utils'
+
+export interface LensEffect<Params extends any[] = any[], Payload = any>
+  extends LensAction<Params, Payload> {
+  unstable_unhook: Unsubscribe
+}
 
 /** Create action which will invoked with the result of effect */
 // @ts-expect-error
@@ -15,7 +31,7 @@ export const effect: {
   ): Fn<
     [T],
     T extends Action<infer Params, infer Payload>
-      ? LensAction<
+      ? LensEffect<
           [
             {
               params: [{ params: Params; payload: Awaited<Payload> }]
@@ -24,7 +40,7 @@ export const effect: {
           ],
           Awaited<Res>
         >
-      : LensAction<
+      : LensEffect<
           [{ params: [AtomState<T>]; payload: AtomState<T> }],
           Awaited<Res>
         >
@@ -33,7 +49,7 @@ export const effect: {
   const { isAction } = anAtom.__reatom
   // TODO better error handling
   // @ts-expect-error
-  const theAtom: LensAtom & LensAction = atom((ctx, state = []) => {
+  const theAtom: LensEffect = atom((ctx, state = []) => {
     const resolve = (params: any[], payload: any) =>
       ctx.get((read, acualize) => {
         if (payload instanceof Promise) {
@@ -69,6 +85,7 @@ export const effect: {
   }, mapName(anAtom, 'effect', name))
   theAtom.__reatom.isAction = true
   theAtom.deps = [anAtom]
+  theAtom.unstable_unhook = onUpdate(theAtom, noop)
 
   return theAtom
 }
