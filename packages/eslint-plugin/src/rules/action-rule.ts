@@ -67,11 +67,27 @@ export const actionRule: Rule.RuleModule = {
         const amountOfArguments = node.arguments.length
 
         if (amountOfArguments === 0 && node.arguments) {
+          const sourceCode = context.getSourceCode()
+          const parenthesesToken = sourceCode.getTokens(node)
+
+          const [betweenParentheses] = parenthesesToken.filter((token, idx) => {
+            return (
+              token.value === '(' && parenthesesToken[idx + 1]?.value === ')'
+            )
+          })
+
+          if (!betweenParentheses) return
+
           context.report({
             node,
             messageId: 'noname',
             data: { actionName },
-            fix: (fixer) => fixer.replaceText(node, `action("${actionName}")`),
+            fix(fixer) {
+              return fixer.insertTextAfter(
+                betweenParentheses,
+                `"${actionName}"`,
+              )
+            },
           })
           return
         }
