@@ -135,7 +135,7 @@ export const onUpdate: typeof _onUpdate = (anAtom: Atom, cb = noop) =>
       un()
       acc()
     }
-  }, onUpdate(anAtom, cb) as Unsubscribe)
+  }, _onUpdate(anAtom, cb) as Unsubscribe)
 
 /** @deprecated use the second parameter of `ctx.spy` instead */
 // @ts-ignore
