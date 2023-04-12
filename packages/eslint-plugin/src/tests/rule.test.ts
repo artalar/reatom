@@ -24,6 +24,18 @@ tester.run('reatom/atom-rule', atomRule, {
     {
       code: 'const countAtom = atom(0, "count");',
     },
+    {
+      code: `
+      import { atom } from "@reatom/framework"
+      const factory = ()=> {
+        const someAtom = atom("", "someAtom")
+        const set = action(ctx => {}, "set")
+        return Object.assign(someAtom, {
+          set
+        })
+      }
+      `,
+    },
   ],
   invalid: [
     {
@@ -82,6 +94,44 @@ tester.run('reatom/atom-rule', atomRule, {
       output: `
       import { atom as createAtom } from '@reatom/framework'
       const storeAtom = createAtom((ctx) => {}, "storeAtom")
+      `,
+    },
+    {
+      code: `
+      import { atom } from "@reatom/framework"
+      const handler = {
+        draggableAtom: atom({})
+      } 
+      `,
+      errors: [
+        {
+          message: `atom "draggableAtom" should has a name inside atom() call`,
+        },
+      ],
+      output: `
+      import { atom } from "@reatom/framework"
+      const handler = {
+        draggableAtom: atom({}, "draggableAtom")
+      } 
+      `,
+    },
+    {
+      code: `
+      import { atom } from "@reatom/core"
+      class SomeService {
+        someAtom = atom({}, "")
+      }
+      `,
+      errors: [
+        {
+          message: `atom "someAtom" should be named as it's variable name, rename it to "someAtom"`,
+        },
+      ],
+      output: `
+      import { atom } from "@reatom/core"
+      class SomeService {
+        someAtom = atom({}, "someAtom")
+      }
       `,
     },
   ],
