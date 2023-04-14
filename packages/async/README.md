@@ -113,6 +113,8 @@ export const updateElement = reatomAsync(
 onUpdate(updateElement.onFulfill, (ctx) => fetchList(ctx, 1))
 ```
 
+> You could get `params` with `onUpdate` as a property of the third argument: `onUpdate(anAction, (ctx, payload, { params }) => {/* ... */})`.
+
 ### Operators usage
 
 The code above is a good example of well designed async code. As you could see, it is not so different from a regular code without a state manager, but it has a lot of benefits: automatic batching, perfect cause logging, easy to test, and reactivity ofcourse.
