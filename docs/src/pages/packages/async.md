@@ -152,7 +152,7 @@ export const updateElement = reatomAsync(
 onUpdate(updateElement.onFulfill, (ctx) => fetchList(ctx, 1))
 ```
 
-Now `listAtom` is `fetchList.dataAtom`, `errorAtom` is `fetchList.errorAtom` and loading state you could get from `fetchList.statusesAtom` as `isPending` property.
+Now `listAtom` is `fetchList.dataAtom`, `errorAtom` is `fetchList.errorAtom` and loading state you could get from `fetchList.statusesAtom` as `isPending` property. As in the hand written example, `fetchList.errorAtom` will not be updated on abort, even more, `onReject` will not be called too.
 
 The amount of the _list resource_ logic reduced dramatically. All thous features work together perfectly with most efficient batching and static types guaranties. All extra atoms and actions has obvious names, based on `fetchList` (second parameter of `reatomAsync`), which helps with debug. The overhead of thous operators is only ~1KB. And it includes a lot of useful helpers, like `reset` action for `dataAtom`, `abort` action on `fetchList` for manual abort, a few understandable statuses in `statusesAtom` and so on.
 
@@ -553,7 +553,7 @@ This is the most powerful feature for advanced async flow management. Allow to c
 
 Currently, automatic aborting is supported only for features from @reatom/effects package. `onConnect`, `take`, `takeNested` automatically provides AbortController or subscribes to it.
 
-`withAbort` operator adds `onAbort` action for handling abort from any cause, `abort` action for manual aborting, `abortControllerAtom` witch stores AbortController of the last effect call.
+`withAbort` operator adds `onAbort` action for handling abort from any cause, `abort` action for manual aborting, `abortControllerAtom` witch stores AbortController of the last effect call. Be noted that abort errors do not trigger `onReject` hook, but `onAbort` hook.
 
 An example of a simple resource fabric with aborting request on a data usage disconnect.
 
@@ -579,7 +579,7 @@ const reatomResource = (initState, url, concurrent = true) => {
 }
 ```
 
-Check the real-world example in pooling example from [below story tests](/packages/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
+Check the real-world example in pooling example from [story tests below](/packages/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
 
 ## Story test
 
