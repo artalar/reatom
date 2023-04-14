@@ -59,8 +59,11 @@ const sections = [
 ]
 ---
 
-<aside>
-  <section aria-details="controls">
+<aside
+  class="subtle bcolor-bg-order"
+  style="width: 15rem; overflow-y: auto; height: 100vh; max-width: 30vw;"
+>
+  <section aria-details="controls" style="display: none;">
     <a
       aria-details="Github repo"
       title="Github repo"
@@ -89,22 +92,25 @@ const sections = [
       <option value="dark">🌒</option>
     </select>
   </section>
-  <nav id="nav-main" aria-label="main">
-    <ul>
-      {
-        pages
-          .sort(({ frontmatter: { title } }) => (title === 'Main' ? -1 : 1))
-          .map(({ url, frontmatter }) => (
-            <li>
-              <a href={url || '/'}>{frontmatter.title}</a>
-            </li>
-          ))
-      }
-    </ul>
+  <nav aria-label="main" class="SideNav border">
+    {
+      pages
+        .sort(({ frontmatter: { title } }) => (title === 'Main' ? -1 : 1))
+        .map(({ url, frontmatter }) => (
+          <a href={url || '/'} class="SideNav-item">
+            {frontmatter.title}
+          </a>
+        ))
+    }
   </nav>
   {sections.map((section) => <NavSection section={section} />)}
 </aside>
 <style>
+  aside {
+    overflow-y: auto;
+    height: 100vh;
+  }
+
   section[aria-details='controls'] {
     display: flex;
     align-items: center;

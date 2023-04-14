@@ -1,8 +1,9 @@
 ---
+// import '@primer/css/dist/primer.css'
 import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
-import Glitch from '../components/Glitch.astro'
+// import Glitch from '../components/Glitch.astro'
 
 const {
   frontmatter: { title = '404', description, file } = {} as Record<
@@ -25,7 +26,12 @@ if (file) {
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html
+  lang="en"
+  data-color-mode="dark"
+  data-light-theme="light"
+  data-dark-theme="dark_dimmed"
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -33,15 +39,34 @@ if (file) {
     {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="stylesheet" href="/styles/chromo.css" />
-    <link rel="stylesheet" href="/styles/fonts.css" />
+    <link
+      href="https://unpkg.com/@primer/css@^20.2.4/dist/primer.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      main {
+        width: calc(100vw - 20rem);
+        max-width: 70rem;
+        margin: auto;
+        overflow-y: auto;
+        height: 100vh;
+      }
+
+      @media (orientation: portrait) {
+        main {
+          min-width: calc(100% - 10rem);
+        }
+      }
+    </style>
   </head>
-  <body class="mono-all">
+
+  <body style="display: flex;">
     <Sidebar source={source} />
-    <main>
+    <main class="markdown-body">
       <h1>{title}</h1>
       <slot />
-      <footer>
+      <footer class="d-flex flex-justify-center border-top p-3">
         <a href="https://github.com/artalar/reatom" target="_blank">github</a>
       </footer>
     </main>
@@ -50,7 +75,7 @@ if (file) {
     </script>
     <CurrentLinkHighlight />
     <HeadingCopyButton />
-    <Glitch />
+    <!-- <Glitch /> -->
     <script client>
       if (import.meta.env.PROD) {
         requestAnimationFrame(async () => {

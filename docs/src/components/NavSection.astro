@@ -14,18 +14,21 @@ const { name } = section
 const id = `nav-${section.name}`
 ---
 
-<nav id={id} aria-label={section.name}>
+<style>
+  nav > details > summary::marker {
+    content: '▶';
+  }
+</style>
+<nav id={id} aria-label={section.name} class="SideNav border">
   <details open={section.open}>
-    <summary>{section.name}</summary>
-    <ul>
-      {
-        section.pages.map((v) => (
-          <li>
-            <a href={v.url || '/'}>{v.frontmatter.title}</a>
-          </li>
-        ))
-      }
-    </ul>
+    <summary class="SideNav-item">{'▶ ' + section.name}</summary>
+    {
+      section.pages.map((v) => (
+        <a href={v.url || '/'} class="SideNav-item" style="border: none;">
+          {v.frontmatter.title}
+        </a>
+      ))
+    }
   </details>
 </nav>
 <script define:vars={{ id, name }}>

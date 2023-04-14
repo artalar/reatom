@@ -3,7 +3,15 @@
     const a = el as HTMLAnchorElement
 
     if (new URL(a.href).pathname === location.pathname) {
-      a.classList.add('current')
+      a.setAttribute('aria-current', 'page')
+
+      a.parentElement
+        ?.querySelector('summary')
+        ?.setAttribute('aria-current', 'page')
+
+      a.closest('nav')?.classList.add('color-bg-default')
+
+      a.closest('details')?.setAttribute('open', 'true')
     }
   })
 </script>
