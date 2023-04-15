@@ -1,9 +1,10 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { createTestCtx } from '@reatom/testing'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { onConnect } from '@reatom/hooks'
 
 import { reatomAsync, withDataAtom, withCache } from './'
+import { Ctx } from '@reatom/core'
 
 test('withCache', async () => {
   const fetchData = reatomAsync(
@@ -102,16 +103,16 @@ test('withCache swr false', async () => {
 
 test('withCache parallel', async () => {
   let i = 0
-  const fetchData = reatomAsync((ctx) => Promise.resolve(++i)).pipe(
-    withDataAtom(0),
-    withCache(),
-  )
+  const effect = mockFn((ctx: Ctx) => Promise.resolve(++i))
+  const fetchData = reatomAsync(effect).pipe(withDataAtom(0), withCache())
 
   const ctx = createTestCtx()
   const track = ctx.subscribeTrack(fetchData.dataAtom)
   track.calls.length = 0
 
   const p1 = Promise.all([fetchData(ctx), fetchData(ctx)])
+  assert.is(effect.calls.length, 1)
+  assert.is(ctx.get(fetchData.pendingAtom), 1)
   assert.is(track.calls.length, 0)
   assert.is(ctx.get(fetchData.dataAtom), 0)
   assert.equal(await p1, [1, 1])
