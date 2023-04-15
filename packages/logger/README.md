@@ -42,6 +42,8 @@ connectLogger(
         shouldGroup: true,
       },
     ),
+    // You could customize a logs group: `Reatom ${domain}N transactions`
+    domain: '',
   },
 )
 ```

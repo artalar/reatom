@@ -40,14 +40,17 @@ export const createLogBatched = ({
   getTimeStamp = getTimeStampDefault,
   limit = 5000,
   log = console.log,
+  domain = '',
   shouldGroup = false,
 }: {
   debounce?: number
   getTimeStamp?: () => string
   limit?: number
   log?: typeof console.log
+  domain?: string
   shouldGroup?: boolean
 } = {}) => {
+  if (domain) domain = `(${domain}) `
   let queue: Array<LogMsg & { time: string }> = []
   let isBatching = false
   let batchingStart = Date.now()
@@ -69,7 +72,7 @@ export const createLogBatched = ({
         const isFewTransactions = queue.length > 0
 
         console.groupCollapsed(
-          `Reatom ${length} transaction${length > 1 ? 's' : ''}`,
+          `Reatom ${domain}${length} transaction${length > 1 ? 's' : ''}`,
         )
 
         for (const { changes, time, error } of queue) {
@@ -139,13 +142,15 @@ export const connectLogger = (
   ctx: Ctx,
   {
     historyLength = 10,
-    log = createLogBatched(),
+    domain = '',
+    log = createLogBatched({ domain }),
     showCause = true,
     skip = () => false,
     skipUnnamed = true,
   }: {
     historyLength?: number
     log?: Fn<[LogMsg]>
+    domain?: string
     showCause?: boolean
     skipUnnamed?: boolean
     skip?: (patch: AtomCache) => boolean
