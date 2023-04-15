@@ -5,7 +5,7 @@ import { reatomPrefixRule } from '../rules/reatom-prefix-rule'
 
 const tester = new RuleTester({
   parserOptions: {
-    ecmaVersion: 6,
+    ecmaVersion: 2022,
     sourceType: 'module',
   },
 })
@@ -23,6 +23,18 @@ tester.run('reatom/atom-rule', atomRule, {
     },
     {
       code: 'const countAtom = atom(0, "count");',
+    },
+    {
+      code: `
+      import { atom } from "@reatom/framework"
+      const factory = ()=> {
+        const someAtom = atom("", "someAtom")
+        const set = action(ctx => {}, "set")
+        return Object.assign(someAtom, {
+          set
+        })
+      }
+      `,
     },
   ],
   invalid: [
@@ -82,6 +94,44 @@ tester.run('reatom/atom-rule', atomRule, {
       output: `
       import { atom as createAtom } from '@reatom/framework'
       const storeAtom = createAtom((ctx) => {}, "storeAtom")
+      `,
+    },
+    {
+      code: `
+      import { atom } from "@reatom/framework"
+      const handler = {
+        draggableAtom: atom({})
+      } 
+      `,
+      errors: [
+        {
+          message: `atom "draggableAtom" should has a name inside atom() call`,
+        },
+      ],
+      output: `
+      import { atom } from "@reatom/framework"
+      const handler = {
+        draggableAtom: atom({}, "draggableAtom")
+      } 
+      `,
+    },
+    {
+      code: `
+      import { atom } from "@reatom/core"
+      class SomeService {
+        someAtom = atom({}, "")
+      }
+      `,
+      errors: [
+        {
+          message: `atom "someAtom" should be named as it's variable name, rename it to "someAtom"`,
+        },
+      ],
+      output: `
+      import { atom } from "@reatom/core"
+      class SomeService {
+        someAtom = atom({}, "someAtom")
+      }
       `,
     },
   ],
@@ -186,8 +236,61 @@ tester.run('reatom/action-rule', actionRule, {
       const inputChanged = createAction(() => {}, "inputChanged")
       `,
     },
+    {
+      code: `
+      import { action } from "@reatom/framework"
+      const handler = {
+        draggable: action(ctx => {})
+      }
+      `,
+      errors: [
+        {
+          message: `action "draggable" should has a name inside action() call`,
+        },
+      ],
+      output: `
+      import { action } from "@reatom/framework"
+      const handler = {
+        draggable: action(ctx => {}, "draggable")
+      }
+      `,
+    },
+    {
+      code: `
+      import { action } from "@reatom/framework";
+      const SomeModule = () => {
+        const factory = () => {
+          return action(ctx => {}, "")
+        }
+        return factory
+      }
+      `,
+      errors: [
+        {
+          message: `action "factory" should be named as it's variable name, rename it to "factory"`,
+        },
+      ],
+      output: `
+      import { action } from "@reatom/framework";
+      const SomeModule = () => {
+        const factory = () => {
+          return action(ctx => {}, "factory")
+        }
+        return factory
+      }
+      `,
+    },
   ],
 })
+
+const expectedReatomMessage = {
+  noname(assignedVariable: string, methodName: string) {
+    return `variable assigned to ${methodName} should has a name "${assignedVariable}" inside ${methodName} call`
+  },
+  unCorrect(assignedVariable: string, methodName: string) {
+    return `variable assigned to ${methodName} should be named as it's variable name, rename it to "${assignedVariable}"`
+  },
+}
 
 tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
   valid: [
@@ -227,7 +330,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should has a name inside reatom*() call`,
+          message: expectedReatomMessage.noname('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -242,7 +345,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should be named as it's variable name, rename it to "fetchUser"`,
+          message: expectedReatomMessage.unCorrect('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -257,7 +360,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should has a name inside reatom*() call`,
+          message: expectedReatomMessage.noname('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -272,7 +375,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should be named as it's variable name, rename it to "fetchUser"`,
+          message: expectedReatomMessage.unCorrect('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -287,7 +390,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
             `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchUser" should has a name inside reatom*() call`,
+          message: expectedReatomMessage.noname('fetchUser', 'reatomAsync'),
         },
       ],
       output: `
@@ -302,7 +405,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
             `,
       errors: [
         {
-          message: `variable with prefix reatom "user" should be named as it's variable name, rename it to "user"`,
+          message: expectedReatomMessage.unCorrect('user', 'reatomRecord'),
         },
       ],
       output: `
@@ -317,7 +420,7 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "fetchTodo" should be named as it's variable name, rename it to "fetchTodo"`,
+          message: expectedReatomMessage.unCorrect('fetchTodo', 'asyncFn'),
         },
       ],
       output: `
@@ -332,12 +435,34 @@ tester.run('reatom/reatom-prefix-rule', reatomPrefixRule, {
       `,
       errors: [
         {
-          message: `variable with prefix reatom "openModalState" should be named as it's variable name, rename it to "openModalState"`,
+          message: expectedReatomMessage.unCorrect(
+            'openModalState',
+            'booleanState',
+          ),
         },
       ],
       output: `
       import { reatomBoolean as booleanState } from '@reatom/framework'
       const openModalState = booleanState(() => {}, "openModalState")
+      `,
+    },
+    {
+      code: `
+      import { reatomRecord as record } from "@reatom/framework"
+      class SomeService {
+        someRecord = record({})
+      }
+      `,
+      errors: [
+        {
+          message: expectedReatomMessage.noname('someRecord', 'record'),
+        },
+      ],
+      output: `
+      import { reatomRecord as record } from "@reatom/framework"
+      class SomeService {
+        someRecord = record({}, "someRecord")
+      }
       `,
     },
   ],

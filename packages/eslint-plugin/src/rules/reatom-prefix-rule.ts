@@ -1,14 +1,16 @@
-import { Rule } from 'eslint'
-import {
+import type { Rule } from 'eslint'
+import type {
   ArrowFunctionExpression,
   CallExpression,
   Identifier,
   Literal,
-  Node,
-  VariableDeclarator,
   ObjectExpression,
 } from 'estree'
-import { extractImportDeclaration, isIdentifier } from '../lib'
+import {
+  extractAssignedVariable,
+  extractImportDeclaration,
+  traverseBy,
+} from '../lib'
 
 type ReatomPrefixCallExpression = CallExpression & {
   callee: Identifier
@@ -17,21 +19,16 @@ type ReatomPrefixCallExpression = CallExpression & {
     | [ArrowFunctionExpression, Literal]
     | [ArrowFunctionExpression, ObjectExpression]
 }
-type ReatomPrefixVariableDeclarator = VariableDeclarator & {
-  id: Identifier
-  init: ReatomPrefixCallExpression
-}
-
-const noname = (varName: string) =>
-  `variable with prefix reatom "${varName}" should has a name inside reatom*() call`
-const invalidName = (varName: string) =>
-  `variable with prefix reatom "${varName}" should be named as it's variable name, rename it to "${varName}"`
 
 export const reatomPrefixRule: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
     docs: {
       description: 'Add name for every reatom* call',
+    },
+    messages: {
+      noname: `variable assigned to {{ methodName }} should has a name "{{ assignedVariable }}" inside {{ methodName }} call`,
+      invalidName: `variable assigned to {{ methodName }} should be named as it's variable name, rename it to "{{ assignedVariable }}"`,
     },
     fixable: 'code',
   },
@@ -47,60 +44,91 @@ export const reatomPrefixRule: Rule.RuleModule = {
           filter: (name) => name.startsWith('reatom'),
         })
       },
-
-      VariableDeclarator: (node) => {
+      CallExpression(node) {
         const methods = Array.from(importedFromReatom.values())
         const imported =
-          node.init?.type === 'CallExpression' &&
-          'name' in node.init?.callee &&
-          methods.includes(node.init.callee.name)
+          'name' in node.callee && methods.includes(node.callee.name)
 
-        if (!isReatomPrefixVariableDeclarator(node) || !imported) {
+        if (!isReatomPrefixCallExpression(node) || !imported) {
           return
         }
 
-        const initArguments = node.init.arguments
+        const matchBy = new Set([
+          'VariableDeclarator',
+          'PropertyDefinition',
+          'Property',
+        ])
+
+        const assignedVariable = traverseBy('parent', {
+          match: matchBy,
+          node,
+        })
+
+        const assignedVariableName = extractAssignedVariable(assignedVariable)
+
+        if (!assignedVariableName) {
+          return
+        }
+
+        const initArguments = node.arguments
+
+        const reportMessageConfig = {
+          methodName: node.callee.name,
+          assignedVariable: assignedVariableName,
+        }
 
         if (initArguments.length === 1) {
           context.report({
-            message: noname(node.id.name),
             node,
-            fix: (fixer) =>
-              fixer.insertTextAfter(initArguments[0], `, "${node.id.name}"`),
+            messageId: 'noname',
+            data: reportMessageConfig,
+            fix(fixer) {
+              return fixer.insertTextAfter(
+                initArguments[0],
+                `, "${assignedVariableName}"`,
+              )
+            },
           })
         }
 
         if (initArguments.length === 2) {
-          if (
-            initArguments[1]?.type === 'Literal' &&
-            initArguments[1].value !== node.id.name
-          ) {
+          const last = initArguments[1]
+
+          if (last?.type === 'Literal' && last.value !== assignedVariableName) {
             context.report({
-              message: invalidName(node.id.name),
               node,
-              fix: (fixer) =>
-                fixer.replaceText(initArguments[1], `"${node.id.name}"`),
+              messageId: 'invalidName',
+              data: reportMessageConfig,
+              fix(fixer) {
+                return fixer.replaceText(last, `"${assignedVariableName}"`)
+              },
             })
           }
 
           if (initArguments[1]?.type === 'ObjectExpression') {
+            const methodConfig = initArguments[1]
+
             if (
-              initArguments[1].properties.every(
+              methodConfig.properties.every(
                 (value) =>
                   value.type === 'Property' &&
                   value.key.type === 'Identifier' &&
                   value.key.name !== 'name',
-              )
+              ) &&
+              'properties' in methodConfig
             ) {
+              const beforeInsert = methodConfig.properties.at(0)
+
+              if (!beforeInsert) return
+
               context.report({
-                message: noname(node.id.name),
                 node,
+                messageId: 'noname',
+                data: reportMessageConfig,
                 fix: (fixer) =>
                   fixer.insertTextBefore(
-                    // TODO fix this
-                    // @ts-ignore
-                    initArguments[1]?.properties[0],
-                    `name: "${node.id.name}", `,
+                    beforeInsert,
+                    `name: "${assignedVariableName}", `,
                   ),
               })
             }
@@ -111,15 +139,20 @@ export const reatomPrefixRule: Rule.RuleModule = {
                 value.key.type === 'Identifier' &&
                 value.key.name === 'name' &&
                 value.value.type === 'Literal' &&
-                value.value.value !== node.id.name,
+                value.value.value !== assignedVariableName,
             )
 
             if (badProperty) {
               context.report({
-                message: invalidName(node.id.name),
                 node,
-                fix: (fixer) =>
-                  fixer.replaceText(badProperty.value, `"${node.id.name}"`),
+                messageId: 'invalidName',
+                data: reportMessageConfig,
+                fix(fixer) {
+                  return fixer.replaceText(
+                    badProperty.value,
+                    `"${assignedVariableName}"`,
+                  )
+                },
               })
             }
           }
@@ -130,7 +163,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
 }
 
 function isReatomPrefixCallExpression(
-  node?: Node | null,
+  node?: CallExpression | null,
 ): node is ReatomPrefixCallExpression {
   return (
     node?.type === 'CallExpression' &&
@@ -140,10 +173,4 @@ function isReatomPrefixCallExpression(
       (node.arguments.length === 2 &&
         node.arguments[1]?.type == 'ObjectExpression'))
   )
-}
-
-function isReatomPrefixVariableDeclarator(
-  node: VariableDeclarator,
-): node is ReatomPrefixVariableDeclarator {
-  return isReatomPrefixCallExpression(node?.init) && isIdentifier(node.id)
 }

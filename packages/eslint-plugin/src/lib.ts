@@ -1,17 +1,11 @@
-import {
-  Identifier,
-  Literal,
-  Node,
-  CallExpression,
-  ImportDeclaration,
-} from 'estree'
+import type { Identifier, Literal, Node, ImportDeclaration } from 'estree'
 
 export function isIdentifier(node: Node): node is Identifier {
   return node?.type === 'Identifier'
 }
 
-export function isLiteral(node: Node): node is Literal {
-  return node?.type === 'Literal'
+export function isLiteral(node: any): node is Literal {
+  return node && 'type' in node && node.type === 'Literal'
 }
 
 export interface ExtractConfig {
@@ -46,4 +40,51 @@ export function extractImportDeclaration({
       }
     }
   }
+}
+
+export function extractAssignedVariable(node: Node | null) {
+  if (node?.type === 'VariableDeclarator' && 'name' in node.id) {
+    return node.id.name
+  }
+
+  return node && 'key' in node && node.key?.type === 'Identifier'
+    ? node.key.name
+    : null
+}
+
+export function traverseBy<T extends Node>(
+  field: keyof T,
+  config: {
+    node: T
+    match: Set<string>
+    exit?: string[]
+  },
+) {
+  const { match, exit = ['Program'], node } = config
+
+  const stack = [node]
+
+  while (stack.length > 0) {
+    const currentNode = stack.pop()
+
+    if (
+      !currentNode ||
+      !includeField(currentNode, field) ||
+      exit.includes(currentNode.type)
+    ) {
+      return null
+    }
+
+    if (match.has(currentNode.type)) {
+      return currentNode
+    }
+
+    stack.push(currentNode[field] as T)
+  }
+
+  return null
+}
+
+function includeField<T extends Node>(node: Partial<T>, field: keyof T) {
+  return node && field in node && Boolean(node[field])
 }
