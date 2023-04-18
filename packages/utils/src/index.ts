@@ -219,8 +219,18 @@ export interface AbortError extends DOMException {
   name: 'AbortError'
 }
 
+const _DOMException =
+  typeof DOMException === 'undefined'
+    ? class DOMException extends Error {
+        constructor(message: string, name: string) {
+          super(message)
+          this.name = name
+        }
+      }
+    : DOMException
+
 export const toAbortError = (reason: unknown): AbortError => {
-  if (!(reason instanceof DOMException) || reason.name !== 'AbortError') {
+  if (!(reason instanceof _DOMException) || reason.name !== 'AbortError') {
     if (reason instanceof Error) {
       var cause = reason
       reason = reason.message
@@ -228,7 +238,7 @@ export const toAbortError = (reason: unknown): AbortError => {
       reason = isObject(reason) ? toString.call(reason) : String(reason)
     }
 
-    reason = new DOMException(reason as string, 'AbortError')
+    reason = new _DOMException(reason as string, 'AbortError')
 
     // @ts-expect-error
     cause && (reason.cause = cause)
