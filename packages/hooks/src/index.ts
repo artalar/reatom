@@ -11,7 +11,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { noop, toAbortError } from '@reatom/utils'
+import { noop, toAbortError, isAbort } from '@reatom/utils'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -65,7 +65,7 @@ export const onConnect = (
 
     if (cleanup instanceof Promise) {
       cleanup.catch((error) => {
-        if (error.name !== 'AbortError') throw error
+        if (!isAbort(error)) throw error
       })
     }
 
