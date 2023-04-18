@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.2](https://github.com/artalar/reatom/compare/async-v3.5.1...async-v3.5.2) (2023-04-18)
+
+
+### Bug Fixes
+
+* **async:** withCache for reject ([034d5ec](https://github.com/artalar/reatom/commit/034d5ec5cc4e7581083707275a6c3dd83f1507e0))
+
 ## [3.5.1](https://github.com/artalar/reatom/compare/async-v3.5.0...async-v3.5.1) (2023-04-10)
 
 
