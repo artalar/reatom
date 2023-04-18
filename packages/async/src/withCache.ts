@@ -124,12 +124,17 @@ export const withCache =
       ) => {
         cacheAtom.set(ctx, key, cached)
 
-        __thenReatomed(ctx, promise, (value) => {
-          // cache was cleared during promise execution
-          if (cacheAtom.has(ctx, key)) {
-            handleValue(ctx, key, value)
-          }
-        })
+        __thenReatomed(
+          ctx,
+          promise,
+          (value) => {
+            // cache wasn't cleared during promise execution
+            if (cacheAtom.has(ctx, key)) {
+              handleValue(ctx, key, value)
+            }
+          },
+          (error) => cacheAtom.delete(ctx, key),
+        )
       }
 
       const handleValue = (ctx: Ctx, key: any, value: any) => {
@@ -207,8 +212,8 @@ export const withCache =
         `${anAsync.__reatom.name}._handleCache`,
       )
 
-      onUpdate(anAsync, (ctx, promise, { state }) =>
-        handleCache(ctx, promise, state.at(-1)!.params),
+      onUpdate(anAsync, (ctx, promise, { params }) =>
+        handleCache(ctx, promise, params),
       )
     }
 
