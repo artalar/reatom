@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint'
 import type { CallExpression, Identifier, Literal, Node } from 'estree'
 import {
-    extractAssignedVariable,
+  extractAssignedVariable,
   extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
