@@ -10,7 +10,7 @@ If you want to contribute to improving the library, use the following instructio
 
 ## Creating an issue
 
-If you found a bug or want to make an improvement in the library please check whether the same issue already exists in the [list of issues](https://github.com/artalar/reatom/issues). If you don't find the issue there, [create a new one](https://github.com/artalar/reatom/issues/new) including a description of the problem.
+If you found a bug or want to make an improvement in the library please check whether the same issue already exists in the [list of issues](https://github.com/artalar/reatom/issues). If you don't find the issue there, [create a new one](https://github.com/artalar/reatom/issues/new) including a description of the problem. Note [labels used](#labels-used-in-repository).
 
 ## Sending a Pull Request
 
@@ -91,3 +91,36 @@ Directory name from `/packages/<scope>`
 docs: fix typo in npm-react
 fix(core): add check for atoms with equal ids
 ```
+
+## Labels used in repository
+
+Labels are divided in three main categories (label count assignable for one issue/PR):
+1. Type (exactly one) -- used to mark issues type
+2. Part (at most one) -- used to mark affected project component
+3. Meta (any number) -- are used by bots and other functionality
+
+### Type labels
+Type labels are prefixed with `T -` and have the following meaning:
+- `T - Defect` -- Things are not working in a way they are *meant* to be working. They way they should work are either defined by tests, documentation, reference implementation (for adapter packages), the system design, or common sense. Part label is **mandatory** with this label.
+- `T - Proposal` -- Entirely new functionality, package or design approach. Part label **may be skipped**.
+- `T - Enhancement` -- There's a way to make something work in a better way in existing functionality, usability improvement, new feature. Part label is **mandatory** with this label.
+- `T - Task` -- Some work to do to proceed with other tasks. General for refactoring or chores like releases.
+
+### Part labels
+Part labels are prefixed with `P -` and are associated primarily with packages.
+
+Every package published in npm and located in `packages/<package-name>` should have corresponding `P - <package-name>` label.
+
+Special parts are:
+- `P - CI` -- CI and repository automation
+- `P - Tools` -- Tools used by developers, such as eslint, publishing scripts, etc.
+- `P - Docs` -- Documentation website
+
+### Meta labels
+- `Hacktoberfest`, `hacktoberfest-accepted` are used to attend [Hacktoberfest](https://hacktoberfest.com/).
+- `duplicate` is used to mark issues and pull requests that already exist
+- `good first issue` is used to mark issues that can be solved by newcommers and are shown at [/contribute](https://github.com/artalar/reatom/contribute) page
+- `dependencies` is used by [Dependabot](https://github.com/apps/dependabot)
+- `wontfix` this will not be worked on
+- `need info` description is partial and describe only the topic 
+

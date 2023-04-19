@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Reatom Community Support
+    url: https://github.com/artalar/reatom/discussions
+    about: Please ask and answer questions here.
+#  - name: GitHub Security Bug Bounty
+#    url: https://bounty.github.com/
+#    about: Please report security vulnerabilities here.
+
+x-reatom:
+  nonPackageParts:
+    - Documentation site
+    - Contributor tooling
+    - CI

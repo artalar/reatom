@@ -13,7 +13,8 @@
     "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u",
     "prepare": "husky install",
-    "publish-packages": "turbo run build test && changeset version && changeset publish"
+    "publish-packages": "turbo run build test && changeset version && changeset publish",
+    "actualize-issue-templates": "npx tsx ./tools/actualize-issue-templates.ts"
   },
   "workspaces": [
     "packages/*"
