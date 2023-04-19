@@ -1,7 +1,7 @@
 import type { Rule } from 'eslint'
 import type { CallExpression, Identifier, Literal, Node } from 'estree'
 import {
-  extractAssignedVariable,
+  extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
   traverseBy,
@@ -22,6 +22,7 @@ export const atomRule: Rule.RuleModule = {
     messages: {
       missingName: `atom "{{ atomName }}" should has a name inside atom() call`,
       unCorrectName: `atom "{{ atomName }}" should be named as it's variable name, rename it to "{{ atomName }}"`,
+      incorrectVariableName: `atom "{{ atomName }}" should have postfix "{{ postfix }}"`,
     },
   },
   create: function (context: Rule.RuleContext): Rule.RuleListener {
@@ -50,7 +51,7 @@ export const atomRule: Rule.RuleModule = {
           node,
         })
 
-        const atomName = extractAssignedVariable(atomVariable)
+        const atomName = extractAssignedVariableName(atomVariable)
 
         if (!atomName) {
           return
@@ -106,7 +107,7 @@ function reportUnCorrectName(config: {
   })
 }
 
-function isAtomCallExpression(
+export function isAtomCallExpression(
   node: CallExpression,
   imported: Map<string, string>,
 ): node is AtomCallExpression {

@@ -6,7 +6,7 @@ import type {
   ArrowFunctionExpression,
 } from 'estree'
 import {
-  extractAssignedVariable,
+  extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
   traverseBy,
@@ -58,7 +58,7 @@ export const actionRule: Rule.RuleModule = {
           node,
         })
 
-        const actionName = extractAssignedVariable(actionVariable)
+        const actionName = extractAssignedVariableName(actionVariable)
 
         if (!actionName) {
           return
