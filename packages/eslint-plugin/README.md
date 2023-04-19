@@ -53,6 +53,9 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
   "rules": {
     "@typescript-eslint/explicit-function-return-type": "off",
     "prettier/prettier": "error"
+  },
+  "settings": {
+    "atomPostfix": "Atom"
   }
 }
 ```

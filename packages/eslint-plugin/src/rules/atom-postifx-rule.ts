@@ -27,12 +27,8 @@ export const atomPostfixRule: Rule.RuleModule = {
   },
   create: function (context: Rule.RuleContext): Rule.RuleListener {
     const importedFromReatom = new Map<string, string>()
-    const postfix = context.settings.atomPostfix;
-    const badPostfix = (atomName: string) => {
-        if (!postfix) return false;
-
-        return !atomName.endsWith(postfix)
-    };
+    const postfix = context.settings.atomPostfix || "Atom";
+    const badPostfix = (atomName: string) => !atomName.endsWith(postfix);
 
     return {
       ImportDeclaration(node) {
