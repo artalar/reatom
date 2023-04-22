@@ -11,6 +11,43 @@ const tester = new RuleTester({
   }
 })
 
+const tester2 = new RuleTester({
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+  },
+  settings: {
+    atomPostfix: '$'
+  }
+});
+
+tester2.run('reatom/atom-postfix-rule', atomPostfixRule, {
+  valid: [
+    {
+      code: `
+            import { atom } from '@reatom/framework'
+            const count$ = atom(0, "count$");
+            `,
+    },
+    {
+      code: `const count = atom(0);`,
+    },
+    {
+      code: `
+      import { atom } from "@reatom/framework"
+      const factory = ()=> {
+        const some$ = atom("", "some$")
+        const set = action(ctx => {}, "set")
+        return Object.assign(someAtom, {
+          set
+        })
+      }
+      `,
+    },
+  ],
+  invalid: []
+})
+
 tester.run('reatom/atom-postfix-rule', atomPostfixRule, {
   valid: [
     {
@@ -20,10 +57,7 @@ tester.run('reatom/atom-postfix-rule', atomPostfixRule, {
             `,
     },
     {
-      code: `const countAtom = atom(0);`,
-    },
-    {
-      code: 'const countAtom = atom(0, "count");',
+      code: `const count = atom(0);`,
     },
     {
       code: `
