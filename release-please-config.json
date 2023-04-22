@@ -21,7 +21,6 @@
     "packages/npm-history": {},
     "packages/npm-lit": {},
     "packages/npm-react": {},
-    "packages/npm-redaxios": {},
     "packages/npm-svelte": {},
     "packages/persist": {},
     "packages/persist-localstorage": {},
