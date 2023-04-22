@@ -60,7 +60,7 @@ export const atomPostfixRule: Rule.RuleModule = {
         }
 
         if (badPostfix(atomName)) {
-            reportIncorrectVariableName({
+          reportIncorrectVariableName({
             context,
             messageId: 'incorrectVariableName',
             source: atomIdentifier,

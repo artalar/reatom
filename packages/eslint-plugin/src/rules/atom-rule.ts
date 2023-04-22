@@ -21,8 +21,7 @@ export const atomRule: Rule.RuleModule = {
     fixable: 'code',
     messages: {
       missingName: `atom "{{ atomName }}" should has a name inside atom() call`,
-      unCorrectName: `atom "{{ atomName }}" should be named as it's variable name, rename it to "{{ atomName }}"`,
-      incorrectVariableName: `atom "{{ atomName }}" should have postfix "{{ postfix }}"`,
+      unCorrectName: `atom "{{ atomName }}" should be named as it's variable name, rename it to "{{ atomName }}"`
     },
   },
   create: function (context: Rule.RuleContext): Rule.RuleListener {
