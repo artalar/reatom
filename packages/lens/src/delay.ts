@@ -13,18 +13,17 @@ import { __thenReatomed } from '@reatom/effects'
 import { mapName } from './utils'
 import { type LensAtom, type LensAction } from './'
 
+export interface DelayOptions {
+  min?: number | Atom<number>
+  max?: number | Atom<number>
+  leading?: boolean
+  trailing?: boolean
+}
+
 /** Flexible updates delayer */
 export const delay: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(
-    options: {
-      min?: number | Atom<number>
-      max?: number | Atom<number>
-      leading?: boolean
-      trailing?: boolean
-    },
-    name?: string,
-  ): Fn<
+  <T extends Atom>(options: DelayOptions, name?: string): Fn<
     [T],
     T extends Action<infer Params, infer Payload>
       ? LensAction<Params, Payload>
@@ -109,31 +108,35 @@ export const delay: {
 /** Delay updates by timeout */
 export const debounce: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(wait: number | Atom<number>, name?: string): Fn<
+  <T extends Atom>(wait: DelayOptions['min'], name?: string): Fn<
     [T],
     T extends Action<infer Params, infer Payload>
       ? LensAction<Params, Payload>
       : LensAtom<AtomState<T>>
   >
-} = (min, name) => (anAtom) =>
-  // @ts-expect-error
-  delay(
-    { min, leading: false, trailing: true },
-    mapName(anAtom, 'debounce', name),
-  )(anAtom)
+} =
+  (min = 1, name) =>
+  (anAtom) =>
+    // @ts-expect-error
+    delay(
+      { min, leading: false, trailing: true },
+      mapName(anAtom, 'debounce', name),
+    )(anAtom)
 
 /** Skip updates by interval */
 export const throttle: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(wait: number | Atom<number>, name?: string): Fn<
+  <T extends Atom>(wait: DelayOptions['max'], name?: string): Fn<
     [T],
     T extends Action<infer Params, infer Payload>
       ? LensAction<Params, Payload>
       : LensAtom<AtomState<T>>
   >
-} = (max, name) => (anAtom) =>
-  // @ts-expect-error
-  delay(
-    { max, leading: true, trailing: false },
-    mapName(anAtom, 'throttle', name),
-  )(anAtom)
+} =
+  (max = 1, name) =>
+  (anAtom) =>
+    // @ts-expect-error
+    delay(
+      { max, leading: true, trailing: false },
+      mapName(anAtom, 'throttle', name),
+    )(anAtom)
