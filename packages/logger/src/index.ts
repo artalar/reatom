@@ -116,6 +116,7 @@ export const createLogBatched = ({
             }
           })
         }
+        console.log(queue)
         console.groupEnd()
         queue = []
       },
