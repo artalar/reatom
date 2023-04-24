@@ -8,9 +8,11 @@ import {
   CtxOptions,
   Fn,
   isAtom,
+  Rec,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { PersistRecord, PersistStorage } from '@reatom/persist'
 
 export function mockFn<I extends any[], O>(
   fn: (...input: I) => O = (...i: any) => void 0 as any,
@@ -155,4 +157,26 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
       return () => actionMocks.delete(proto)
     },
   })
+}
+
+export const createMockStorage = (
+  snapshot: Rec<PersistRecord> = {},
+): PersistStorage & { snapshot: Rec<PersistRecord> } => {
+  const listeners = new Map<string, Set<Fn<[PersistRecord]>>>()
+
+  return {
+    name: 'mock',
+    get: (ctx, key) => snapshot[key] ?? null,
+    set: (ctx, key, rec) => {
+      snapshot[key] = rec
+      listeners.get(key)?.forEach((callback) => callback(rec))
+    },
+    subscribe: (ctx, key, callback) => {
+      listeners.set(key, (listeners.get(key) ?? new Set()).add(callback))
+      return () => {
+        listeners.get(key)?.delete(callback)
+      }
+    },
+    snapshot,
+  }
 }
