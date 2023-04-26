@@ -7,7 +7,7 @@ import type {
   ObjectExpression,
 } from 'estree'
 import {
-  extractAssignedVariable,
+  extractAssignedVariableName,
   extractImportDeclaration,
   traverseBy,
 } from '../lib'
@@ -64,7 +64,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
           node,
         })
 
-        const assignedVariableName = extractAssignedVariable(assignedVariable)
+        const assignedVariableName = extractAssignedVariableName(assignedVariable)
 
         if (!assignedVariableName) {
           return
