@@ -5,6 +5,7 @@ import type {
   Identifier,
   Literal,
   ObjectExpression,
+  Property,
 } from 'estree'
 import {
   extractAssignedVariableName,
@@ -64,7 +65,8 @@ export const reatomPrefixRule: Rule.RuleModule = {
           node,
         })
 
-        const assignedVariableName = extractAssignedVariableName(assignedVariable)
+        const assignedVariableName =
+          extractAssignedVariableName(assignedVariable)
 
         if (!assignedVariableName) {
           return
@@ -134,7 +136,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
             }
 
             const badProperty = initArguments[1].properties.find(
-              (value) =>
+              (value): value is Property =>
                 value.type === 'Property' &&
                 value.key.type === 'Identifier' &&
                 value.key.name === 'name' &&
