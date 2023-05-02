@@ -49,6 +49,7 @@
   "devDependencies": {
     "@types/eslint": "^8.0.0",
     "@types/estree": "^1.0.0",
-    "eslint": "^8.0.0"
+    "eslint": "^8.0.0",
+    "eslint-plugin-eslint-plugin": "^5.0.8"
   }
 }
