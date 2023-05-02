@@ -1,0 +1,26 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/core",
+    "packages/async",
+    "packages/all-settled",
+    "packages/core-v1",
+    "packages/eslint-plugin",
+    "packages/hooks",
+    "packages/lens",
+    "packages/logger",
+    "packages/navigation",
+    "packages/npm-cookie-baker",
+    "packages/npm-react",
+    "packages/npm-svelte",
+    "packages/persist",
+    "packages/primitives",
+    "packages/testing",
+    "packages/timer",
+    "packages/utils"
+  ],
+  "exclude": ["**/*.test.ts"],
+  "out": "build/docs"
+}
