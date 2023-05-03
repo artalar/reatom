@@ -1,5 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
+  "plugin": ["typedoc-plugin-markdown"],
   "entryPointStrategy": "packages",
   "entryPoints": [
     "packages/core",
@@ -21,5 +22,7 @@
     "packages/utils"
   ],
   "exclude": ["**/*.test.ts"],
-  "out": "build/html"
+  "out": "build/markdown",
+  "hideBreadcrumbs": true,
+  "hideInPageTOC": true
 }

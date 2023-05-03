@@ -54,6 +54,7 @@
     "tsx": "^3.12.6",
     "turbo": "^1.8.8",
     "typedoc": "^0.24.0",
+    "typedoc-plugin-markdown": "^3.15.3",
     "typescript": "^5.0.2",
     "use-sync-external-store": "^1.2.0",
     "uvu": "^0.5.6",
