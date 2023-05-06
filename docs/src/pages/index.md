@@ -29,9 +29,9 @@ Let's define input state and compute a greeting from it.
 npm i @reatom/core
 ```
 
-[vanilla repl](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
+[vanilla codesandbox](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
 
-[react repl](https://replit.com/@artalar/reatom-react-ts)
+[react codesandbox](https://codesandbox.io/s/github/artalar/reatom-react-ts?file=/src/App.tsx)
 
 ```ts
 import { action, atom, createCtx } from '@reatom/core'
@@ -74,7 +74,7 @@ This example is close to real life and shows the complexity of interactive UI. I
 npm i @reatom/framework @reatom/npm-react
 ```
 
-[repl](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx)
+[codesandbox](https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx) //TODO
 
 We will use [@reatom/core](/core), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework) - it simplifies imports and dependencies management.
 
