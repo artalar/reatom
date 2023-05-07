@@ -9,7 +9,6 @@ import {
   AtomState,
   Ctx,
   CtxSpy,
-  Fn,
   isAction,
   isAtom,
   throwReatomError,
@@ -24,14 +23,14 @@ let getName = (type: string): string => {
   return (name && name.concat('.', type)) || `_${type}`
 }
 
-let batch = (cb: Fn) => cb()
+let batch = (cb: (...args: any[]) => any) => cb()
 
 export const setupBatch = (newBatch: typeof batch) => {
   batch = newBatch
 }
 
 export const withBatching = (ctx: Ctx): Ctx => {
-  let queue: Array<Fn> = []
+  let queue: Array<(...args: any[]) => any> = []
   return {
     ...ctx,
     // @ts-ignore
@@ -62,12 +61,13 @@ export const useCtx = (): Ctx => {
   return ctx!
 }
 
-let bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
-export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
-  bind(useCtx(), bindBind)
+let bindBind = (ctx: Ctx, fn: (...args: any[]) => any) => bind(ctx, fn)
+export const useCtxBind = (): (<T extends (...args: any[]) => any>(
+  fn: T,
+) => Binded<T>) => bind(useCtx(), bindBind)
 
 // use it instead of `setState` to handle HMR
-const useRefSetup = <T extends Fn<[], { deps: Array<any> }>>(
+const useRefSetup = <T extends () => { deps: Array<any> }>(
   deps: Array<any>,
   setup: T,
 ): React.MutableRefObject<ReturnType<T>> => {
@@ -93,15 +93,17 @@ export const useAtom: {
     options?: boolean | { name?: string; subscribe?: boolean },
   ): [
     AtomState<T>,
-    T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : undefined,
+    T extends (ctx: Ctx, ...rest: infer Args) => infer Res
+      ? (...rest: Args) => Res
+      : undefined,
     T,
     Ctx,
   ]
   <T>(
-    init: T | Fn<[CtxSpy], T>,
+    init: T | ((ctx: CtxSpy) => T),
     deps?: Array<any>,
     options?: boolean | { name?: string; subscribe?: boolean },
-  ): [T, Fn<[T | Fn<[T, Ctx], T>], T>, AtomMut<T>, Ctx]
+  ): [T, (atom: T | ((atom: T, ctx: Ctx) => T)) => T, AtomMut<T>, Ctx]
 } = (
   anAtom: any,
   deps: Array<any> = [],
@@ -122,7 +124,7 @@ export const useAtom: {
         ? // @ts-expect-error
           (...a) => batch(() => theAtom(ctx, ...a))
         : undefined
-    let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
+    let sub = (cb: (...args: any[]) => any) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
     return { theAtom, update, deps, sub, get, subscribe }
@@ -137,7 +139,7 @@ export const useAtom: {
 }
 
 export const useAtomCreator = <T extends Atom>(
-  creator: Fn<[], T>,
+  creator: () => T,
   deps: Array<any> = [],
   options?: { subscribe?: boolean },
 ) => {
@@ -146,15 +148,14 @@ export const useAtomCreator = <T extends Atom>(
 }
 
 export const useUpdate = <T extends [any] | Array<any>>(
-  cb: Fn<
-    [
-      Ctx,
-      // @ts-expect-error
-      ...{
-        [K in keyof T]: T[K] extends Atom ? AtomState<T[K]> : T[K]
-      },
-    ]
-  >,
+  cb: (
+    ctx: Ctx,
+    // @ts-expect-error
+    ...rest: {
+      [K in keyof T]: T[K] extends Atom ? AtomState<T[K]> : T[K]
+    }
+  ) => any,
+
   deps: T,
 ): null => {
   const ctx = useCtx()
@@ -181,11 +182,13 @@ export const useUpdate = <T extends [any] | Array<any>>(
   return null
 }
 
-export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
+export const useAction = <T extends (ctx: Ctx, ...rest: any[]) => any>(
   fn: T,
   deps: Array<any> = [],
   name?: string,
-): T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : never => {
+): T extends (ctx: Ctx, ...rest: infer Args) => infer Res
+  ? (...rest: Args) => Res
+  : never => {
   deps ??= []
   let ctx = useCtx()
   deps.push(ctx)
