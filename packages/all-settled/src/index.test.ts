@@ -1,4 +1,4 @@
-import { action, createCtx, Ctx, Fn } from '@reatom/core'
+import { action, createCtx, Ctx } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
@@ -6,7 +6,7 @@ import * as assert from 'uvu/assert'
 import { allSettled } from './'
 
 test(`await transaction`, async () => {
-  const effect = (cb: Fn<[Ctx]>) => action((ctx) => ctx.schedule(cb))
+  const effect = (cb: (ctx: Ctx) => any) => action((ctx) => ctx.schedule(cb))
 
   const targetMs = 10
   const longestMs = targetMs * 2
