@@ -1,4 +1,4 @@
-import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
+import { AtomCache, AtomProto, Ctx, Rec, __root } from '@reatom/core'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -149,7 +149,7 @@ export const connectLogger = (
     skipUnnamed = true,
   }: {
     historyLength?: number
-    log?: Fn<[LogMsg]>
+    log?: (logMsg: LogMsg) => any
     domain?: string
     showCause?: boolean
     skipUnnamed?: boolean
@@ -157,7 +157,7 @@ export const connectLogger = (
   } = {},
 ) => {
   const history = new WeakMap<AtomProto, Array<AtomCache>>()
-  let read: Fn<[AtomProto], undefined | AtomCache>
+  let read: (atom: AtomProto) => undefined | AtomCache
   ctx.get((r) => (read = r))
 
   return ctx.subscribe((logs, error) => {
