@@ -1,12 +1,18 @@
-import { Ctx, CtxParams, Fn } from '@reatom/core'
+import { Ctx, CtxParams} from '@reatom/core'
 
-export type Binded<T extends Fn> = Fn<CtxParams<T>, ReturnType<T>>
+export type Binded<T extends (...args: any[]) => any> = (
+  ...ctxParams: CtxParams<T>
+) => ReturnType<T>
 // & {
 //   [K in keyof T]: T[K]
 // }
 
-const ctxMap = new WeakMap<Ctx, WeakMap<Fn, Binded<Fn>>>()
-export const bind = <T extends Fn>(ctx: Ctx, fn: T): Binded<T> => {
+const ctxMap = new WeakMap<
+  Ctx,
+  WeakMap<(...args: any[]) => any, Binded<(...args: any[]) => any>>
+>()
+
+export const bind = <T extends (...args: any[]) => any>(ctx: Ctx, fn: T): Binded<T> => {
   let fnMap = ctxMap.get(ctx)
   if (!fnMap) ctxMap.set(ctx, (fnMap = new WeakMap()))
 
