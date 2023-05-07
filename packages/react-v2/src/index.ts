@@ -4,7 +4,6 @@ import {
   AtomState,
   createAtom,
   defaultStore,
-  Fn,
   getState,
   isActionCreator,
   Rec,
@@ -58,10 +57,10 @@ export function useAtom<T extends Atom>(
 ): [state: AtomState<T>, bindedActionCreators: ActionCreators<T>]
 export function useAtom<T extends Atom, Res>(
   atom: T,
-  map: Fn<[AtomState<T>], Res>,
+  map: (state: AtomState<T>) => Res,
   deps?: any[],
 ): [state: Res, bindedActionCreators: ActionCreators<T>]
-export function useAtom(atom: Atom, mapOrDeps?: Fn | any[], deps?: any[]) {
+export function useAtom(atom: Atom, mapOrDeps?: ((...args: any[]) => any) | any[], deps?: any[]) {
   const origin = atom
   if (typeof mapOrDeps === 'function') {
     deps ??= []
