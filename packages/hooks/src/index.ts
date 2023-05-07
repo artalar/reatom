@@ -7,7 +7,6 @@ import {
   AtomState,
   Ctx,
   CtxSpy,
-  Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
@@ -19,21 +18,21 @@ export const getRootCause = (cause: AtomCache): AtomCache =>
 export const isSameCtx = (ctx1: Ctx, ctx2: Ctx) =>
   getRootCause(ctx1.cause) === getRootCause(ctx2.cause)
 
-export const addOnConnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
+export const addOnConnect = (anAtom: Atom, cb: (ctx: Ctx) => any) =>
   (anAtom.__reatom.connectHooks ??= new Set()).add(cb)
 
-export const addOnDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
+export const addOnDisconnect = (anAtom: Atom, cb: (ctx: Ctx) => any) =>
   (anAtom.__reatom.disconnectHooks ??= new Set()).add(cb)
 
 export const addOnUpdate = <T extends Atom>(
   anAtom: T,
-  cb: Fn<[Ctx, AtomCache<AtomState<T>>]>,
+  cb: (ctx: Ctx, cache: AtomCache<AtomState<T>>) => any,
 ) => (anAtom.__reatom.updateHooks ??= new Set()).add(cb)
 
 export const withInit =
   <T extends Atom>(
-    createState: Fn<[Ctx, T['__reatom']['initState']], AtomState<T>>,
-  ): Fn<[T], T> =>
+    createState: (ctx: Ctx, arg: T['__reatom']['initState']) => AtomState<T>,
+  ): ((arg: T) => T) =>
   (anAtom) => {
     const { initState, isAction } = anAtom.__reatom
 
@@ -46,7 +45,9 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: Fn<[Ctx & { controller: AbortController; isConnected(): boolean }]>,
+  cb: (
+    ctx: Ctx & { controller: AbortController; isConnected(): boolean },
+  ) => any,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
     const controller = new AbortController()
@@ -89,28 +90,28 @@ export const onConnect = (
   return () => connectHooks.delete(connectHook)
 }
 
-export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
-  onConnect(anAtom, (ctx) => () => cb(ctx))
+export const onDisconnect = (
+  anAtom: Atom,
+  cb: (ctx: Ctx) => any,
+): Unsubscribe => onConnect(anAtom, (ctx) => () => cb(ctx))
 
 // @ts-expect-error
 const _onUpdate: {
   <Params extends any[], Payload>(
     anAction: Action<Params, Payload> & { deps?: Array<Atom> },
-    cb?: Fn<
-      [
-        Ctx,
-        Payload,
-        AtomCache<AtomState<Action<Params, Payload>>> & { params: Params },
-      ]
-    >,
+    cb?: (
+      ctx: Ctx,
+      payload: Payload,
+      cache: AtomCache<AtomState<Action<Params, Payload>>> & { params: Params },
+    ) => any,
   ): Unsubscribe
   <T>(
     anAtom: Atom<T> & { deps?: Array<Atom> },
-    cb?: Fn<[Ctx, T, AtomCache<T>]>,
+    cb?: (ctx: Ctx, arg: T, cache: AtomCache<T>) => any,
   ): Unsubscribe
 } = <T>(
   anAtom: Action<any[], T> | Atom<T>,
-  cb: Fn<[Ctx, T, AtomCache<T>]> = noop,
+  cb: (ctx: Ctx, arg: T, cache: AtomCache<T>) => any = noop,
 ) => {
   const hook = (ctx: Ctx, patch: AtomCache & { params?: unknown[] }) => {
     let { state } = patch
@@ -143,10 +144,14 @@ export const spyChange: {
   <Params extends any[], Payload>(
     ctx: CtxSpy,
     anAction: Action<Params, Payload>,
-    handler?: Fn<[{ params: Params; payload: Payload }]>,
+    handler?: (arg: { params: Params; payload: Payload }) => any,
   ): boolean
-  <T>(ctx: CtxSpy, anAtom: Atom<T>, handler?: Fn<[T, T?]>): boolean
-} = (ctx: CtxSpy, anAtom: Atom, handler?: Fn) => {
+  <T>(
+    ctx: CtxSpy,
+    anAtom: Atom<T>,
+    handler?: (arg: T, arg2?: T) => any,
+  ): boolean
+} = (ctx: CtxSpy, anAtom: Atom, handler?: (...args: any[]) => any) => {
   let isChanged = false
   ctx.spy(anAtom, (newState, prevState) => {
     isChanged = true
@@ -159,10 +164,9 @@ export const controlConnection =
   <T>(
     initState = true,
     name?: string,
-  ): Fn<
-    [Atom<T>],
-    Atom<T> & { toggleConnection: Action<[boolean?], boolean> }
-  > =>
+  ): ((
+    atom: Atom<T>,
+  ) => Atom<T> & { toggleConnection: Action<[boolean?], boolean> }) =>
   (anAtom) => {
     name ??= `${anAtom.__reatom.name}.controlConnection`
 
