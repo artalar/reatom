@@ -1,4 +1,4 @@
-import { action, ActionParams, ActionPayload, Ctx, Fn } from '@reatom/core'
+import { action, ActionParams, ActionPayload, Ctx } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { onUpdate } from '@reatom/hooks'
 import { MapAtom, reatomMap } from '@reatom/primitives'
@@ -82,19 +82,16 @@ export const withCache =
     paramsToKey,
     // @ts-expect-error
     isEqual,
-  }: WithCacheOptions<T> = {}): Fn<
-    [T],
-    T & {
-      cacheAtom: CacheAtom<ActionPayload<T['onFulfill']>>
-    }
-  > =>
+  }: WithCacheOptions<T> = {}): ((arg: T) => T & {
+    cacheAtom: CacheAtom<ActionPayload<T['onFulfill']>>
+  }) =>
   // @ts-ignore
   (anAsync) => {
     if (!anAsync.cacheAtom) {
-      const find: Fn<
-        [Ctx, any[]],
-        { cached: CacheMapRecord<T>; key: unknown }
-      > = paramsToKey
+      const find: (
+        ctx: Ctx,
+        arg: any[],
+      ) => { cached: CacheMapRecord<T>; key: unknown } = paramsToKey
         ? (ctx, params) => {
             const key = paramsToKey(ctx, params as any)
             return {
