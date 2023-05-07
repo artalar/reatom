@@ -4,7 +4,6 @@ import {
   createCtx,
   Ctx,
   CtxParams,
-  Fn,
   isAtom,
   throwReatomError,
   Unsubscribe,
@@ -17,14 +16,17 @@ export const setupCtx = (ctx = createCtx()) => setContext(KEY, ctx)
 
 export const withSvelte = <
   T extends Atom & {
-    subscribe?: Fn<[Fn<[any]>], Unsubscribe>
-    set?: Fn<[any]>
+    subscribe?: (cb: (arg: any) => any) => Unsubscribe
+    set?: (arg: any) => any
   },
 >(
   anAtom: T,
 ): T & {
-  subscribe: Fn<[Fn<[AtomState<T>]>], Unsubscribe>
-  set: T extends Fn ? Fn<CtxParams<T>, ReturnType<T>> : never
+  subscribe: (cb: (atom: AtomState<T>) => any) => Unsubscribe
+
+  set: T extends (...args: any[]) => any
+    ? (...ctxParams: CtxParams<T>) => ReturnType<T>
+    : never
 } => {
   throwReatomError(!isAtom(anAtom), 'atom expected')
 
