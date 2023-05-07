@@ -3,14 +3,13 @@ import {
   AtomCache,
   AtomReturn,
   Ctx,
-  Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
 import { AbortError, throwIfAborted, toAbortError } from '@reatom/utils'
 
 /** Handle abort signal from a cause */
-export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+export const onCtxAbort = (ctx: Ctx, cb: (error: AbortError) => any) => {
   let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
   while (cause && !cause.controller) cause = cause.cause
   const controller = cause?.controller
@@ -25,8 +24,8 @@ export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
 const LISTENERS = new WeakMap<
   Promise<any>,
   {
-    then: Array<Fn>
-    catch: Array<Fn>
+    then: Array<(...args: any[]) => any>
+    catch: Array<(...args: any[]) => any>
   }
 >()
 // TODO `reatomPromise`
@@ -38,8 +37,16 @@ const LISTENERS = new WeakMap<
 export const __thenReatomed = <T>(
   ctx: Ctx,
   promise: Promise<T>,
-  onFulfill?: Fn<[value: T, read: Fn, actualize: Fn]>,
-  onReject?: Fn<[error: unknown, read: Fn, actualize: Fn]>,
+  onFulfill?: (
+    value: T,
+    read: (...args: any[]) => any,
+    actualize: (...args: any[]) => any,
+  ) => any,
+  onReject?: (
+    error: unknown,
+    read: (...args: any[]) => any,
+    actualize: (...args: any[]) => any,
+  ) => any,
 ) => {
   let listeners = LISTENERS.get(promise)
   if (!listeners) {
@@ -111,9 +118,9 @@ export const disposable = (
 export const take = <T extends Atom, Res = AtomReturn<T>>(
   ctx: Ctx & { controller?: AbortController },
   anAtom: T,
-  mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
+  mapper: (ctx: Ctx, arg: Awaited<AtomReturn<T>>) => Res = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
-  new Promise<Awaited<Res>>((res: Fn, rej) => {
+  new Promise<Awaited<Res>>((res: (...args: any[]) => any, rej) => {
     onCtxAbort(ctx, rej)
 
     let skipFirst = true,
@@ -132,7 +139,7 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
 
 export const takeNested = <I extends any[]>(
   ctx: Ctx & { controller?: AbortController },
-  cb: Fn<[Ctx, ...I]>,
+  cb: (ctx: Ctx, ...rest: I) => any,
   ...params: I
 ): Promise<void> =>
   new Promise<void>((res, rej) => {
@@ -143,7 +150,11 @@ export const takeNested = <I extends any[]>(
 
     return cb(
       Object.assign({}, ctx, {
-        schedule(this: Ctx, cb: Fn, step?: -1 | 0 | 1 | 2) {
+        schedule(
+          this: Ctx,
+          cb: (...args: any[]) => any,
+          step?: -1 | 0 | 1 | 2,
+        ) {
           return schedule.call<Ctx, Parameters<Ctx['schedule']>, Promise<any>>(
             this,
             (ctx) => {
