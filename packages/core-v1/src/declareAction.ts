@@ -97,7 +97,7 @@ export function declareAction<
       reactions,
       v3action,
     }
-  } as BaseActionCreator & v3.Fn
+  } as BaseActionCreator & ((...args: any) => any)
 
   actionCreator[TREE] = ACTree
   actionCreator.getType = () => id as Type

@@ -158,7 +158,7 @@ export function createStore(
 
   function dispatch(action: Action<any>) {
     if (!action.v3action) {
-      const registeredAction = actions.get(action.type) as v3.Fn
+      const registeredAction = actions.get(action.type) as (...args: any) => any
       if (!registeredAction) {
         throwError('Unregistered action, use "declareAction" first')
       }
