@@ -7,7 +7,6 @@ import {
   Atom,
   createAtom,
   createStore,
-  Fn,
   getState,
   Rec,
   callSafety,
@@ -342,7 +341,7 @@ test(`Manage dynamic dependencies`, () => {
 })
 
 test(`await all effect`, async () => {
-  function createCallSafetyTracked(cb: Fn) {
+  function createCallSafetyTracked(cb: (...args: any[]) => any) {
     let count = 0
     const callSafetyTracked: typeof callSafety = (...a: any[]) => {
       // @ts-expect-error
