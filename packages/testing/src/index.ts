@@ -6,7 +6,6 @@ import {
   createCtx,
   Ctx,
   CtxOptions,
-  Fn,
   isAtom,
   throwReatomError,
   Unsubscribe,
@@ -58,10 +57,10 @@ export interface TestCtx extends Ctx {
 
   mockAction<I extends any[], O>(
     anAction: Action<I, O>,
-    cb: Fn<[Ctx, ...I], O>,
+    cb: (ctx: Ctx, ...rest: I) => O,
   ): Unsubscribe
 
-  subscribeTrack<T, F extends Fn<[T]>>(
+  subscribeTrack<T, F extends (arg: T) => any>(
     anAtom: Atom<T>,
     cb?: F,
   ): F & {
@@ -72,7 +71,7 @@ export interface TestCtx extends Ctx {
   }
 }
 
-const callSafelySilent = (fn: Fn, ...a: any[]) => {
+const callSafelySilent = (fn: (...args: any[]) => any, ...a: any[]) => {
   try {
     return fn(...a)
   } catch {}
@@ -86,38 +85,41 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
   })
   const { get } = ctx
   const mocks = new Map<AtomProto, any>()
-  const actionMocks = new Map<AtomProto, Fn<[Ctx, ...any[]]>>()
+  const actionMocks = new Map<AtomProto, (ctx: Ctx, ...rest: any[]) => any>()
 
   return Object.assign(ctx, {
-    get(value: Atom | Fn) {
+    get(value: Atom | ((...args: any[]) => any)) {
       if (isAtom(value)) {
         // @ts-expect-error
         return get.call(ctx, value)
       }
       return get.call(ctx, (read, actualize) =>
-        value(read, (ctx: Ctx, proto: AtomProto, mutator: Fn) => {
-          if (mocks.has(proto)) {
-            mutator = (patchCtx: Ctx, patch: AtomCache) => {
-              const state = mocks.get(proto)
-              patch.state = proto.isAction ? state.slice() : state
+        value(
+          read,
+          (ctx: Ctx, proto: AtomProto, mutator: (...args: any[]) => any) => {
+            if (mocks.has(proto)) {
+              mutator = (patchCtx: Ctx, patch: AtomCache) => {
+                const state = mocks.get(proto)
+                patch.state = proto.isAction ? state.slice() : state
+              }
             }
-          }
-          if (!actionMocks.has(proto)) return actualize!(ctx, proto, mutator)
+            if (!actionMocks.has(proto)) return actualize!(ctx, proto, mutator)
 
-          // @ts-expect-error
-          const fn: Fn = proto.unstable_fn
-          try {
             // @ts-expect-error
-            proto.unstable_fn = (...a: any[]) => actionMocks.get(proto)!(...a)
-            return actualize!(ctx, proto, mutator)
-          } finally {
-            // @ts-expect-error
-            proto.unstable_fn = fn
-          }
-        }),
+            const fn: (...args: any[]) => any = proto.unstable_fn
+            try {
+              // @ts-expect-error
+              proto.unstable_fn = (...a: any[]) => actionMocks.get(proto)!(...a)
+              return actualize!(ctx, proto, mutator)
+            } finally {
+              // @ts-expect-error
+              proto.unstable_fn = fn
+            }
+          },
+        ),
       )
     },
-    subscribeTrack(anAtom: Atom, cb: Fn = () => {}): any {
+    subscribeTrack(anAtom: Atom, cb: (...args: any[]) => any = () => {}): any {
       const track = Object.assign(mockFn(cb), cb)
       const unsubscribe = ctx.subscribe(anAtom, track)
 
@@ -125,7 +127,7 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
     },
     mock<T>(anAtom: Atom<T>, fallback: T) {
       const proto = anAtom.__reatom
-      let read: Fn
+      let read: (...args: any[]) => any
 
       get((_read, actualize) => {
         read = _read
@@ -144,13 +146,13 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
     },
     mockAction<I extends any[], O>(
       anAction: Action<I, O>,
-      cb: Fn<[Ctx, ...I], O>,
+      cb: (ctx: Ctx, ...rest: I) => O,
     ) {
       const proto = anAction.__reatom
 
       throwReatomError(!proto.isAction, 'action expected')
 
-      actionMocks.set(proto, cb as Fn<[Ctx, ...any[]]>)
+      actionMocks.set(proto, cb as (ctx: Ctx, ...rest: any[]) => any)
 
       return () => actionMocks.delete(proto)
     },
