@@ -1,4 +1,4 @@
-import { action, AtomProto, Fn } from '@reatom/core'
+import { action, AtomProto } from '@reatom/core'
 import { PersistRecord, reatomPersist } from '@reatom/persist'
 
 interface PersistRecordThrottled extends PersistRecord {
@@ -8,7 +8,7 @@ interface PersistRecordThrottled extends PersistRecord {
 const THROTTLE = 250
 
 const caches = new WeakMap<AtomProto, PersistRecordThrottled>()
-let queue: Array<{ cb: Fn; rec: PersistRecord }> = []
+let queue: Array<{ cb: ((...args: any[]) => any); rec: PersistRecord }> = []
 
 export const persistLS = reatomPersist({
   get(ctx, proto) {
