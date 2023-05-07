@@ -16,7 +16,7 @@ Operator for the pipe function should starts with a verb.
 import { Atom, CtxSpy } from '@reatom/core'
 
 declare function mapState<T, Res>(
-  mapper: Fn<[CtxSpy, T, undefined | T], Res>,
+  mapper: (ctx: CtxSpy, arg1: T,  arg2: undefined | T) => Res,
   name?: string,
 ): (anAtom: Atom<T>) => Atom<Res>
 ```
