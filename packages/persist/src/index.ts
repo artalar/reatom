@@ -6,7 +6,6 @@ import {
   AtomProto,
   AtomState,
   Ctx,
-  Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
@@ -24,17 +23,17 @@ export interface PersistStorage {
   subscribe?(
     ctx: Ctx,
     proto: AtomProto,
-    callback: Fn<[PersistRecord]>,
+    callback: (rec: PersistRecord) => any,
   ): Unsubscribe
 }
 
 export interface WithPersistOptions<T extends Atom> {
   clearTimeout?: number
-  fromSnapshot?: Fn<[Ctx, unknown], AtomState<T>>
+  fromSnapshot?: (ctx: Ctx, arg: unknown) => AtomState<T>
   key?: string
-  migration?: Fn<[Ctx, PersistRecord], PersistRecord<AtomState<T>>>
+  migration?: (ctx: Ctx, rec: PersistRecord) => PersistRecord<AtomState<T>>
   subscribe?: boolean
-  toSnapshot?: Fn<[Ctx, AtomState<T>], unknown>
+  toSnapshot?: (ctx: Ctx, state: AtomState<T>) => unknown
   version?: number
 }
 
