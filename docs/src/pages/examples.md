@@ -22,13 +22,16 @@ https://github.com/artalar/RTK-entities-basic-example/pull/1
 
 ### Search component
 
-This example uses `withAbort` and `withRetry` from [async package](https://www.reatom.dev/packages/async) to handle classic search edge cases and made perfect UX.
+This example is close to real life and shows the complexity of interactive UI. It uses [async package](https://www.reatom.dev/packages/async) to handle classic search edge cases and made perfect UX.
 
-https://replit.com/@artalar/reatom-react-ts-search-example#src/App.tsx
-
+https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx
 
 ### Dynamic atom creation
 
 This example shoes how to use [atomization](https://www.reatom.dev/guides/atomization) to improve editable fields performance, persists it to localStorage.
 
-https://replit.com/@artalar/reatom-react-ts-dynamic-list#src/App.tsx
+https://codesandbox.io/s/reatom-react-atomization-k39vrs?file=/src/App.tsx
+
+### All codesandboxes
+
+You could find more interesting examples in our [sandbox folder](https://codesandbox.io/dashboard/sandboxes/reatom?workspace=e7923738-fe21-45f8-9cee-424de14adf18)

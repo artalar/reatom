@@ -36,27 +36,50 @@ npm i @reatom/core
 ```ts
 import { action, atom, createCtx } from '@reatom/core'
 
-// primitive mutable atom
-const inputAtom = atom('')
-// computed readonly atom
-// `spy` dynamically reads the atom and subscribes to it
-const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(inputAtom)}!`)
+export const initState = localStorage.getItem('name') ?? ''
+// mutable atom with primitive value (you could pass an object too)
+export const inputAtom = atom(initState, 'inputAtom')
 
-// all updates in action processed by a smart batching
-const onInput = action((ctx, event) => {
-  // update the atom value by call it as a function
-  inputAtom(ctx, event.currentTarget.value)
-})
+// computed readonly atom with reduce function
+// `spy` dynamically reads the atom and subscribes to it
+export const greetingAtom = atom((ctx) => {
+  const input = ctx.spy(inputAtom)
+  return input ? `Hello, ${input}!` : ''
+}, 'greetingAtom')
+
+// An action is a logic container
+// all side-effects (IO) should be scheduled
+export const onSubmit = action((ctx) => {
+  const input = ctx.get(inputAtom)
+  ctx.schedule(() => {
+    localStorage.setItem('name', input)
+  })
+}, 'onSubmit')
+
+// the second argument of computed is nullable state
+export const isSavedAtom = atom((ctx, state = false) => {
+  // You could react to changes separately by a callback
+  ctx.spy(onSubmit, () => (state = true))
+  ctx.spy(inputAtom, () => (state = false))
+
+  return state
+}, 'isSavedAtom')
 
 // global application context
 const ctx = createCtx()
 
-document
-  .getElementById('name-input')
-  .addEventListener('input', (event) => onInput(ctx, event))
-
 ctx.subscribe(greetingAtom, (greeting) => {
-  document.getElementById('greeting').innerText = greeting
+  document.getElementById('greeting')!.innerText = greeting
+})
+ctx.subscribe(isSavedAtom, (isSaved) => {
+  document.getElementById('save')!.style.opacity = isSaved ? '0.4' : '1'
+})
+
+document.getElementById('name')!.addEventListener('input', (event) => {
+  inputAtom(ctx, event.currentTarget.value)
+})
+document.getElementById('save')!.addEventListener('click', () => {
+  onSubmit(ctx)
 })
 ```
 
@@ -80,47 +103,51 @@ We will use [@reatom/core](/core), [@reatom/async](/packages/async) and [@reatom
 
 `reatomAsync` is a simple decorator which wraps your async function and adds extra actions and atoms to track creating promise statuses.
 
-`withDataAtom` adds property `dataAtom` which subscribes to the effect results, it is like a simple cache implementation. `withAbort` allows to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler help to handle temporal rate limit.
+`withDataAtom` adds property `dataAtom` which saves the last effect result and allow you to subscribe to it. `withCache` enable function middleware which prevent it's extra calls based on passed arguments identity - classic cache. `withAbort` allows to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler help to handle temporal rate limit.
 
 Simple `sleep` helper (for debounce) gotten from [utils package](/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
 `onUpdate` is a [hook](/packages/hooks) which link to the atom and calls passed callback on every update.
 
-```ts
-import { atom, reatomAsync, withAbort, withDataAtom, withRetry, sleep, onUpdate } from '@reatom/framework' /* prettier-ignore */
-import { useAtom } from '@reatom/npm-react'
-import * as api from './api'
+```tsx
+// /#advanced-example
+import { atom, reatomAsync, withAbort, withDataAtom, withRetry, onUpdate, sleep, withCache } from "@reatom/framework"; // prettier-ignore
+import { useAtom } from "@reatom/npm-react";
+import * as api from "./api";
 
-const searchAtom = atom('', 'searchAtom')
+const searchAtom = atom("", "searchAtom");
+
 const fetchIssues = reatomAsync(async (ctx, query: string) => {
-  await sleep(250) // debounce
-  const { items } = await api.fetchIssues(query, ctx.controller)
-  return items
-}, 'fetchIssues').pipe(
+  await sleep(350); // debounce
+  const { items } = await api.fetchIssues(query, ctx.controller);
+  return items;
+}, "fetchIssues").pipe(
+  withAbort({ strategy: "last-in-win" }),
   withDataAtom([]),
-  withAbort({ strategy: 'last-in-win' }),
+  withCache({ length: 50, swr: false, paramsLength: 1 }),
   withRetry({
     onReject(ctx, error: any, retries) {
       // return delay in ms or -1 to prevent retries
-      return error?.message.includes('rate limit')
+      return error?.message.includes("rate limit")
         ? 100 * Math.min(500, retries ** 2)
-        : -1
-    },
-  }),
-)
-// run fetchIssues on every searchAtom update
-onUpdate(searchAtom, fetchIssues)
+        : -1;
+    }
+  })
+);
 
-export default function App() {
-  const [search, setSearch] = useAtom(searchAtom)
-  const [issues] = useAtom(fetchIssues.dataAtom)
-  // we could pass a callback to `useAtom` to create a computed atom
+// run fetchIssues on every searchAtom update
+onUpdate(searchAtom, fetchIssues);
+
+export const App = () => {
+  const [search, setSearch] = useAtom(searchAtom);
+  const [issues] = useAtom(fetchIssues.dataAtom);
+  // you could pass a callback to `useAtom` to create a computed atom
   const [isLoading] = useAtom(
     (ctx) =>
       // even if there are no pending requests, we need to wait for retries
       // let do not show the limit error to make him think that everything is fine for a better UX
-      ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0,
-  )
+      ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0
+  );
 
   return (
     <main>
@@ -129,15 +156,15 @@ export default function App() {
         onChange={(e) => setSearch(e.currentTarget.value)}
         placeholder="Search"
       />
-      {isLoading && 'Loading...'}
+      {isLoading && "Loading..."}
       <ul>
         {issues.map(({ title }, i) => (
           <li key={i}>{title}</li>
         ))}
       </ul>
     </main>
-  )
-}
+  );
+};
 ```
 
 The whole logic definition is only about 15 LoC and it is not coupled to React and could be tested easily. What would the lines count be in a different library? The most impressive thing is that the overhead is [less than 4KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetry%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdhgAejiYABN4ACMQMRV4dxhuaFcYX3gcKQBfaURvXyJgqwA6fkE0EXFJUiN4ExodXTruSxB-QOR2HNkoMWQwQqhiiE5SmnJG4VEJCFY62uD4UhzPXzQAEWJEJjIAbQBdFip9w4x05ChSFwtkYnhbM1p-dSgALQ2AEHMDkGClW73KBoABKAhMrxyHnA8IAVvAdNo9DROsgQMhzIgwIoaONrJIHG4PDT4olxpNpik-opCtMSjACTAAQBGGDYGDBWQAN3gYFg5KskmRNIZUxgeIJAH46jhJBBELZ4HUbMB-GIUhAKB9ZjB-FYcL5WDLaUqYDyolEYAAqGAAWWIaFVNlI0SiZIRUqkztdYRYNpp5l5nFpixykLuowSMkyMBWzTWkk503gopMcCQqEwJBgYmCSU%2BHHAAFVy59SPQi%2BcaOmWutRlxZJ8AMJ6UijMQIc6kVuZiB1CtQM4kFhAA&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) could you imagine?! And you are not limited to network cache, Reatom is powerful and expressive enough for describing any kind of state.
