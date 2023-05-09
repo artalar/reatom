@@ -29,7 +29,7 @@ Let's define input state and compute a greeting from it.
 npm i @reatom/core
 ```
 
-[vanilla codesandbox](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
+[vanilla codesandbox](https://codesandbox.io/s/reatom-vanila-hello-world-6oo36v?file=/src/index.ts)
 
 [react codesandbox](https://codesandbox.io/s/reatom-react-hello-world-fgt6jn?file=/src/model.ts)
 
