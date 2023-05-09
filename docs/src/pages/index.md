@@ -74,7 +74,7 @@ This example is close to real life and shows the complexity of interactive UI. I
 npm i @reatom/framework @reatom/npm-react
 ```
 
-[codesandbox](https://codesandbox.io/s/reatom-react-hello-world-fgt6jn)
+[codesandbox](https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx)
 
 We will use [@reatom/core](/core), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework) - it simplifies imports and dependencies management.
 
