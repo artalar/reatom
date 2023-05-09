@@ -31,7 +31,7 @@ npm i @reatom/core
 
 [vanilla codesandbox](https://codesandbox.io/s/reatom-first-example-6oo36v?file=/src/index.ts)
 
-[react codesandbox](https://codesandbox.io/s/github/artalar/reatom-react-ts?file=/src/App.tsx)
+[react codesandbox](https://codesandbox.io/s/reatom-react-hello-world-fgt6jn?file=/src/model.ts)
 
 ```ts
 import { action, atom, createCtx } from '@reatom/core'
