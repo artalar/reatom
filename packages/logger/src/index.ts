@@ -1,4 +1,5 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
+import { isShallowEqual } from '@reatom/utils'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -7,8 +8,7 @@ export interface unstable_ChangeMsg {
   patch: AtomCache
   cause?: string
   history: Array<AtomCache>
-  param?: any
-  [k: `param${number}`]: any
+  params?: Array<any>
 }
 export interface LogMsg {
   error: undefined | Error
@@ -108,6 +108,10 @@ export const createLogBatched = ({
             console.groupCollapsed(title, style)
             console.log(change)
             console.groupEnd()
+            // do not log the same data twice if action just pass the data
+            if (isAction && !isShallowEqual(change.params, [data])) {
+              log(...change.params!)
+            }
             log(data)
 
             if (shouldGroup && !isGroup && inGroup) {
@@ -202,13 +206,8 @@ export const connectLogger = (
 
       if (isAction) {
         const call = state.at(-1) as { params: Array<any>; payload: any }
+        changeMsg.params = call.params
         changeMsg.payload = call.payload
-        if (call.params.length <= 1) {
-          changeMsg.param = call.params[0]
-        } else
-          call.params.forEach((param, i) => {
-            changeMsg[`param${i + 1}`] = param
-          })
       } else {
         changeMsg.newState = state
         changeMsg.oldState = oldState
