@@ -1,7 +1,6 @@
 {
   "name": "@reatom/persist",
-  "version": "3.1.0",
-  "private": true,
+  "version": "3.0.0",
   "sideEffects": false,
   "description": "Reatom for persist",
   "source": "src/index.ts",
@@ -22,8 +21,10 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.1.0",
-    "@reatom/hooks": "^3.1.0"
+    "@reatom/core": "^3.3.0",
+    "@reatom/hooks": "^3.4.0",
+    "@reatom/lens": "^3.4.0",
+    "@reatom/utils": "^3.2.1"
   },
   "author": "artalar",
   "license": "MIT",
