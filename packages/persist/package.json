@@ -6,7 +6,8 @@
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
