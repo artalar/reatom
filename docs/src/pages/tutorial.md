@@ -20,7 +20,7 @@ TODO..
 Plan:
 
 - Search component
-- https://replit.com/@artalar/reatom-react-ts-search-example
+- https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx
 - index.tsx `createCtx`
 - search input, fetch handler
 - results
