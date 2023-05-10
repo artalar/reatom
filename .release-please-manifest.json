@@ -19,7 +19,7 @@
   "packages/npm-react": "3.3.3",
   "packages/npm-svelte": "3.1.1",
   "packages/persist": "3.1.0",
-  "packages/persist-localstorage": "3.1.0",
+  "packages/persist-web-storage": "3.1.0",
   "packages/primitives": "3.2.0",
   "packages/react-v1": "3.1.2",
   "packages/react-v2": "3.1.0",
