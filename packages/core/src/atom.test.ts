@@ -566,6 +566,28 @@ test('no extra tick by schedule', async () => {
   ;`👍` //?
 })
 
+test('update callback should accept the fresh state', () => {
+  const a = atom(0)
+  const b = atom(0)
+  b.__reatom.computer = (ctx) => ctx.spy(a)
+  const ctx = createCtx()
+
+  assert.is(ctx.get(b), 0)
+
+  a(ctx, 1)
+  assert.is(ctx.get(b), 1)
+
+  a(ctx, 2)
+  let state
+  b(ctx, (s) => {
+    state = s
+    return s
+  })
+  assert.is(ctx.get(b), 2)
+  assert.is(state, 2)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

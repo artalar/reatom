@@ -377,12 +377,12 @@ export const createCtx = ({
   let actualize = (
     ctx: Ctx,
     proto: AtomProto,
-    mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
+    updater?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
   ): AtomCache => {
     let { patch } = proto
-    let isMutating = mutator !== undefined
+    let updating = updater !== undefined
 
-    if (patch?.cause && !isMutating) return patch
+    if (patch?.cause && !updating) return patch
 
     let cache = patch ?? read(proto)
 
@@ -395,7 +395,7 @@ export const createCtx = ({
         subs: new Set(),
         listeners: new Set(),
       }
-    } else if (proto.computer === null && !isMutating) {
+    } else if (proto.computer === null && !updating) {
       return cache
     }
 
@@ -411,15 +411,14 @@ export const createCtx = ({
     }
 
     try {
-      if (isMutating) mutator!(patchCtx, patch)
-
       if (proto.computer) actualizePubs(patchCtx, patch)
+      if (updating) updater!(patchCtx, patch)
     } catch (error) {
       throw (patch.error = error)
     }
 
     if (!Object.is(state, patch.state)) {
-      if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
+      if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
         enqueueComputers(patch.subs)
       }
 
