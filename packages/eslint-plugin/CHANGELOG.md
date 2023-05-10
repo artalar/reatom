@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.1.3...eslint-plugin-v3.2.0) (2023-05-10)
+
+
+### Features
+
+* **eslint-plugin:** postfix atom rule ([#552](https://github.com/artalar/reatom/issues/552)) ([80c8710](https://github.com/artalar/reatom/commit/80c8710e3710b6c6696a0540e65dd90a44112343))
+
 ## [3.1.3](https://github.com/artalar/reatom/compare/eslint-plugin-v3.1.2...eslint-plugin-v3.1.3) (2023-04-18)
 
 
