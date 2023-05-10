@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/lens-v3.4.0...lens-v3.5.0) (2023-05-10)
+
+
+### Features
+
+* **lens:** make parseAtoms reactive ([5fc55f9](https://github.com/artalar/reatom/commit/5fc55f956ab010118dbbae5354fc53d5c5c72236))
+* **lens:** map function for toAction ([691801d](https://github.com/artalar/reatom/commit/691801d675bb9d62b15e46b923cd12f19ebb4de6))
+
+
+### Bug Fixes
+
+* **lens:** add DelayOptions interface ([535c406](https://github.com/artalar/reatom/commit/535c40685a03655c074f8e165c38e9f097bf06db))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/lens-v3.3.3...lens-v3.4.0) (2023-04-18)
 
 

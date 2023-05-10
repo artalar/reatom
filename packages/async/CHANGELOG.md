@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/async-v3.5.2...async-v3.6.0) (2023-05-10)
+
+
+### Features
+
+* **async:** add withPersist for withCache ([dab74e9](https://github.com/artalar/reatom/commit/dab74e964d8092387e9bcfb24f3724cb088ec38c))
+
 ## [3.5.2](https://github.com/artalar/reatom/compare/async-v3.5.1...async-v3.5.2) (2023-04-18)
 
 
