@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.2.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.1.3...eslint-plugin-v3.2.0) (2023-05-10)
+## [3.3.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.1.3...eslint-plugin-v3.2.0) (2023-05-10)
 
 
 ### Features
