@@ -1,20 +1,32 @@
-import { action, ActionParams, ActionPayload, Ctx, Fn } from '@reatom/core'
+import {
+  Action,
+  action,
+  ActionParams,
+  ActionPayload,
+  Atom,
+  Ctx,
+  Fn,
+} from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
-import { onUpdate } from '@reatom/hooks'
+import { onConnect, onUpdate } from '@reatom/hooks'
 import { MapAtom, reatomMap } from '@reatom/primitives'
 import { assign, isDeepEqual } from '@reatom/utils'
+import { type WithPersist } from '@reatom/persist'
 
 import { CACHE } from './cache'
 import { AsyncAction } from '.'
 
-export interface CacheRecord<T> {
-  lastUpdate: number
+export interface CacheRecord<T = any> {
   clearTimeoutId: ReturnType<typeof setTimeout>
-  value: T
+  lastUpdate: number
+  params: Array<unknown>
   promise: null | Promise<T>
+  value: T
 }
 
-export interface CacheAtom<T> extends MapAtom<unknown, CacheRecord<T>> {}
+export interface CacheAtom<T = any> extends MapAtom<unknown, CacheRecord<T>> {
+  invalidate: Action<[] /* Promise<ActionPayload<T['onFulfill']>> */>
+}
 
 type CacheMapRecord<T extends AsyncAction> =
   | undefined
@@ -51,6 +63,8 @@ export type WithCacheOptions<T extends AsyncAction> = {
 
   // TODO
   // staleByDataAtom?: boolean = false
+
+  withPersist?: WithPersist
 } & (
   | {
       /** convert params to stabilize it and use as a map key */
@@ -82,6 +96,7 @@ export const withCache =
     paramsToKey,
     // @ts-expect-error
     isEqual,
+    withPersist,
   }: WithCacheOptions<T> = {}): Fn<
     [T],
     T & {
@@ -92,29 +107,90 @@ export const withCache =
   (anAsync) => {
     if (!anAsync.cacheAtom) {
       const find: Fn<
-        [Ctx, any[]],
-        { cached: CacheMapRecord<T>; key: unknown }
+        [ctx: Ctx, params: any[], state?: any],
+        { cached?: CacheMapRecord<T>; key: unknown }
       > = paramsToKey
-        ? (ctx, params) => {
+        ? (ctx, params, state = ctx.get(cacheAtom)) => {
             const key = paramsToKey(ctx, params as any)
             return {
-              cached: cacheAtom.get(ctx, paramsToKey(ctx, params as any)),
+              cached: state.get(paramsToKey(ctx, params as any)),
               key,
             }
           }
         : ((isEqual ??= (ctx: Ctx, a: any, b: any) => isDeepEqual(a, b)),
-          (ctx, params) => {
-            for (const [key, cached] of ctx.get(cacheAtom)) {
+          (ctx, params, state = ctx.get(cacheAtom)) => {
+            for (const [key, cached] of state) {
               if (isEqual(ctx, key, params)) return { cached, key }
             }
             return { cached: undefined, key: params }
           })
 
-      const cacheAtom: CacheAtom<ActionPayload<T['onFulfill']>> =
-        (anAsync.cacheAtom = reatomMap(
-          new Map(),
-          `${anAsync.__reatom.name}._cacheAtom`,
-        ))
+      const cacheAtom = (anAsync.cacheAtom = reatomMap(
+        new Map(),
+        `${anAsync.__reatom.name}._cacheAtom`,
+      ) as CacheAtom)
+
+      cacheAtom.invalidate = action((ctx) => {
+        for (const cached of ctx.get(cacheAtom).values()) {
+          // @ts-expect-error falsy `>` with undefined is expected
+          if (!cached.promise && cached.lastUpdate > lastCached?.lastUpdate) {
+            var lastCached: undefined | CacheRecord = cached
+          }
+        }
+
+        cacheAtom.clear(ctx)
+
+        if (lastCached) {
+          anAsync(ctx, ...lastCached.params)
+        }
+      }, `${cacheAtom.__reatom.name}.invalidate`)
+
+      if (withPersist) {
+        cacheAtom.pipe(
+          withPersist({
+            key: cacheAtom.__reatom.name!,
+            // @ts-expect-error
+            fromSnapshot: (
+              ctx,
+              snapshot: Array<[unknown, CacheRecord]>,
+              state = new Map(),
+            ) => {
+              if (
+                snapshot.length === state?.size &&
+                snapshot.every(([, { params, value }]) => {
+                  const { cached, key } = find(ctx, params, state)
+                  return state.has(key) && isDeepEqual(cached!.value, value)
+                })
+              ) {
+                return state
+              }
+
+              const newState = new Map(snapshot)
+
+              for (const [, rec] of newState) {
+                const { key } = find(ctx, rec.params, state)
+                const clearTimeoutId = setTimeout(
+                  () => cacheAtom.delete(ctx, key),
+                  staleTime - (Date.now() - rec.lastUpdate),
+                )
+                clearTimeoutId.unref?.()
+                ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
+                rec.clearTimeoutId = clearTimeoutId
+              }
+
+              return newState
+            },
+            time: staleTime,
+            toSnapshot: (ctx, cache) =>
+              [...cache].filter(([, v]) => !v.promise),
+          }),
+        )
+        if ('dataAtom' in anAsync) {
+          onConnect(anAsync.dataAtom as Atom, (ctx) =>
+            ctx.subscribe(cacheAtom, () => {}),
+          )
+        }
+      }
 
       const handlePromise = (
         ctx: Ctx,
@@ -130,43 +206,42 @@ export const withCache =
           (value) => {
             // cache wasn't cleared during promise execution
             if (cacheAtom.has(ctx, key)) {
-              handleValue(ctx, key, value)
+              const clearTimeoutId = setTimeout(
+                () => cacheAtom.delete(ctx, key),
+                staleTime,
+              )
+
+              clearTimeoutId.unref?.()
+              ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
+              const cache = cacheAtom.set(ctx, key, {
+                clearTimeoutId,
+                lastUpdate: Date.now(),
+                params: cached.params,
+                promise: null,
+                value,
+              })
+
+              if (cache.size > length) {
+                let oldest: { key: unknown; lastUpdate: number }
+                for (const [key, cached] of cache.entries()) {
+                  const lastUpdate = cached.promise
+                    ? Infinity
+                    : cached.lastUpdate
+                  oldest ??= { key, lastUpdate }
+
+                  if (lastUpdate < oldest.lastUpdate) {
+                    oldest = { key, lastUpdate }
+                  }
+                }
+                // @ts-expect-error
+                if (oldest) {
+                  cacheAtom.delete(ctx, oldest.key)
+                }
+              }
             }
           },
           (error) => cacheAtom.delete(ctx, key),
         )
-      }
-
-      const handleValue = (ctx: Ctx, key: any, value: any) => {
-        const clearTimeoutId = setTimeout(
-          () => cacheAtom.delete(ctx, key),
-          staleTime,
-        )
-
-        clearTimeoutId.unref?.()
-        ctx.schedule(() => clearTimeout(clearTimeoutId), -1)
-        const cache = cacheAtom.set(ctx, key, {
-          lastUpdate: Date.now(),
-          clearTimeoutId,
-          value,
-          promise: null,
-        })
-
-        if (cache.size > length) {
-          let oldest: { key: unknown; lastUpdate: number }
-          for (const [key, cached] of cache.entries()) {
-            const lastUpdate = cached.promise ? Infinity : cached.lastUpdate
-            oldest ??= { key, lastUpdate }
-
-            if (lastUpdate < oldest.lastUpdate) {
-              oldest = { key, lastUpdate }
-            }
-          }
-          // @ts-expect-error
-          if (oldest) {
-            cacheAtom.delete(ctx, oldest.key)
-          }
-        }
       }
 
       const handleCache = action(
@@ -177,10 +252,11 @@ export const withCache =
 
           if (!cached) {
             handlePromise(ctx, key, promise, {
-              lastUpdate: 0,
               clearTimeoutId: 0 as any,
-              value: undefined as any,
+              lastUpdate: 0,
+              params,
               promise,
+              value: undefined as any,
             })
           } else {
             // @ts-expect-error

@@ -384,6 +384,7 @@ You could rule the cache behavior by set of optional parameters.
 - **paramsToKey** - convert params to a string as a key of the cache map. Not used by default, equality check (`isEqual`) is used instead. This option is useful if you have a complex object as a params which equality check is too expensive, or you was set large `length` option and want to speed up the cache search.
   > You could import and use [toStringKey](https://www.reatom.dev/packages/utils#tostringkey) function from the utils package for this purposes.
 - **swr** - enable "stale while revalidate" pattern. Default is `true`. Allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). The SWR fetch will not call `onFulfill` and `dataAtom` updates, it is just a background silent synchronization to speedup a next fetch.
+- **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](https://www.reatom.dev/packages/persist), check out [@reatom/persist-web-storage](https://www.reatom.dev/packages/persist-web-storage)
 
 ```ts
 import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
