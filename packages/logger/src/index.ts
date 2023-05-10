@@ -188,15 +188,15 @@ export const connectLogger = (
         patch.cause!.proto.name === 'root' &&
         (!isAction || state.length === 0)
 
-      if (isConnection || Object.is(state, oldState)) {
-        return acc
-      }
-
       let atomHistory = history.get(proto) ?? []
-      if (historyLength) {
+      if (!Object.is(state, oldState) && historyLength) {
         atomHistory = atomHistory.slice(0, historyLength - 1)
         atomHistory.unshift(isAction ? { ...patch, state: [...state] } : patch)
         history.set(proto, atomHistory)
+      }
+
+      if (isConnection || Object.is(state, oldState)) {
+        return acc
       }
 
       const changeMsg: unstable_ChangeMsg = (acc[`${i + 1}.${name}`] = {
