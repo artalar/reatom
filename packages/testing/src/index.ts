@@ -160,21 +160,42 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
 }
 
 export const createMockStorage = (
-  snapshot: Rec<PersistRecord> = {},
+  snapshot: Rec<any> = {},
 ): PersistStorage & { snapshot: Rec<PersistRecord> } => {
+  snapshot = Object.entries(snapshot).reduce(
+    (acc, [key, data]) => (
+      (acc[key] = {
+        data,
+        fromState: false,
+        id: 0,
+        timestamp: Date.now(),
+        to: 10 ** 10,
+        version: 0,
+      }),
+      acc
+    ),
+    {} as Rec<PersistRecord>,
+  )
   const listeners = new Map<string, Set<Fn<[PersistRecord]>>>()
 
   return {
     name: 'mock',
     get: (ctx, key) => snapshot[key] ?? null,
     set: (ctx, key, rec) => {
+      rec = { ...rec, fromState: false }
+      const prev = snapshot[key]
       snapshot[key] = rec
-      listeners.get(key)?.forEach((callback) => callback(rec))
+      ctx.schedule(() => (snapshot[key] = prev!), -1)
+      ctx.schedule(() => listeners.get(key)?.forEach((cb) => cb(rec)))
     },
     subscribe: (ctx, key, callback) => {
       listeners.set(key, (listeners.get(key) ?? new Set()).add(callback))
       return () => {
-        listeners.get(key)?.delete(callback)
+        const keyListeners = listeners.get(key)
+        if (keyListeners) {
+          keyListeners.delete(callback)
+          if (keyListeners.size === 0) listeners.delete(key)
+        }
       }
     },
     snapshot,
