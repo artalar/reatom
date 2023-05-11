@@ -635,10 +635,10 @@ summary.mono:before,
 .mono-all summary:before {
   content: '';
   position: absolute;
-  top: 0.6rem;
+  top: 0.5rem;
   left: -1.3rem;
-  width: 10px;
-  height: 16px;
+  width: 0.75rem;
+  height: 1rem;
   background-color: var(--foreground-color);
   clip-path: polygon(
     25% 0,
