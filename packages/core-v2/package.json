@@ -9,7 +9,7 @@
   "module": "build/index.es.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
   "scripts": {
     "prepublishOnly": "npm run build && npm run build-primitives && npm run test",

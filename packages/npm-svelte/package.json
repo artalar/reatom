@@ -17,7 +17,7 @@
   "module": "build/index.module.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
