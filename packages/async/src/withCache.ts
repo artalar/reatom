@@ -13,7 +13,7 @@ import { MapAtom, reatomMap } from '@reatom/primitives'
 import { assign, isDeepEqual } from '@reatom/utils'
 import { type WithPersist } from '@reatom/persist'
 
-import { CACHE } from './cache'
+import { PROMISES } from './promises'
 import { AsyncAction } from '.'
 
 export interface CacheRecord<T = any> {
@@ -264,12 +264,12 @@ export const withCache =
 
             // the cache is not ready yet
             if (cached.lastUpdate === 0) {
-              CACHE.set(promise, async () => cached.promise)
+              PROMISES.set(promise, async () => cached.promise)
             }
             // the cache is ready
             else {
               anAsync.onFulfill(ctx, cached.value)
-              CACHE.set(promise, async (effect) => {
+              PROMISES.set(promise, async (effect) => {
                 if (cached.promise) return cached.promise
                 if (!swr) return cached.value
 

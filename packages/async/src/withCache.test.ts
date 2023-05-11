@@ -137,7 +137,7 @@ test('withCache parallel', async () => {
   ;`👍` //?
 })
 
-test('withCache withAbort', async () => {
+test('withCache withAbort vary params', async () => {
   const effect = mockFn(async (ctx: any, n: number) => n)
   const fetchData = reatomAsync(effect).pipe(
     withDataAtom(0),
@@ -164,6 +164,36 @@ test('withCache withAbort', async () => {
 
   fetchData(ctx, 2)
   assert.is(track.calls.length, 3)
+  assert.is(ctx.get(fetchData.dataAtom), 2)
+  ;`👍` //?
+})
+
+test('withCache withAbort same params', async () => {
+  const effect = mockFn(async (ctx: any, n: number) => n)
+  const fetchData = reatomAsync(effect).pipe(
+    withDataAtom(0),
+    withCache(),
+    withAbort(),
+  )
+
+  const ctx = createTestCtx()
+  const track = ctx.subscribeTrack(fetchData.dataAtom)
+  track.calls.length = 0
+
+  const p1 = Promise.allSettled([fetchData(ctx, 1), fetchData(ctx, 1)])
+  assert.is(track.calls.length, 0)
+  assert.is(ctx.get(fetchData.dataAtom), 0)
+  const res1 = await p1
+  assert.equal(res1[0], { status: 'fulfilled', value: 1 })
+  assert.equal(res1[1], { status: 'fulfilled', value: 1 })
+  assert.is(track.calls.length, 1)
+  assert.is(ctx.get(fetchData.dataAtom), 1)
+
+  await fetchData(ctx, 1)
+  assert.is(track.calls.length, 1)
+
+  await fetchData(ctx, 2)
+  assert.is(track.calls.length, 2)
   assert.is(ctx.get(fetchData.dataAtom), 2)
   ;`👍` //?
 })

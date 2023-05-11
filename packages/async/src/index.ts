@@ -19,7 +19,7 @@ import { __thenReatomed, onCtxAbort } from '@reatom/effects'
 import { addOnUpdate, onUpdate } from '@reatom/hooks'
 import { assign, isAbort, throwIfAborted, toAbortError } from '@reatom/utils'
 
-import { CACHE } from './cache'
+import { PROMISES } from './promises'
 export { withCache } from './withCache'
 export { withStatusesAtom } from './withStatusesAtom'
 export type {
@@ -94,13 +94,11 @@ export const reatomAsync = <
       ctx.schedule(() => {
         throwIfAborted(controller)
 
-        const cached = CACHE.get(promise)
+        const cached = PROMISES.get(promise)
         if (cached) {
           return cached(() => {
             // Drop abort strategy for cache invalidation
             ctx.controller = new AbortController()
-            // @ts-expect-error
-            ctx.controller.signal.setMaxListeners?.(50)
             return effect(...(params as Params))
           })
         }
@@ -116,9 +114,11 @@ export const reatomAsync = <
       ctx,
       promise,
       (v) =>
-        CACHE.has(promise) || (onFulfill(ctx, v), pendingAtom(ctx, (s) => --s)),
+        PROMISES.has(promise) ||
+        (onFulfill(ctx, v), pendingAtom(ctx, (s) => --s)),
       (e) =>
-        CACHE.has(promise) || (onReject(ctx, e), pendingAtom(ctx, (s) => --s)),
+        PROMISES.has(promise) ||
+        (onReject(ctx, e), pendingAtom(ctx, (s) => --s)),
     )
 
     return promise
@@ -312,7 +312,11 @@ export const withAbort =
       const abortControllerAtom = (anAsync.abortControllerAtom = atom(
         (ctx, state = new AbortController()) => {
           ctx.spy(anAsync, (call) => {
-            if (strategy === 'last-in-win' && state) {
+            if (
+              strategy === 'last-in-win' &&
+              state &&
+              !PROMISES.has(call.payload)
+            ) {
               const controller = state
 
               ctx.schedule(() => {
