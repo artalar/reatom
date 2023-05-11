@@ -10,6 +10,7 @@
   --weak-color: rgba(0, 0, 0, 0.1);
   --selection-text-color: var(--background-color);
   --selection-back-color: var(--foreground-color);
+  --code-filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
 }
 
 [data-theme='dark'] {
@@ -18,9 +19,10 @@
 
 pre.mono,
 .mono-all pre {
-  filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
-  background-color: #191919 !important;
+  filter: var(--code-filter);
+  /* background-color: var(--foreground-color) !important; */
   position: relative;
+  border: 1px dashed;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -33,12 +35,7 @@ pre.mono,
     --weak-color: rgba(255, 255, 255, 0.1);
     --selection-text-color: var(--background-color);
     --selection-back-color: var(--foreground-color);
-  }
-
-  pre.mono,
-  .mono-all pre {
-    background-color: var(--background-strong-color) !important;
-    filter: none;
+    --code-filter: none;
   }
 
   [data-theme='light'] {
@@ -59,13 +56,7 @@ pre.mono,
     --weak-color: rgba(0, 0, 0, 0.1);
     --selection-text-color: var(--background-color);
     --selection-back-color: var(--foreground-color);
-  }
-
-  pre.mono,
-  .mono-all pre {
-    filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
-    background-color: #191919 !important;
-    position: relative;
+    --code-filter: invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%);
   }
 
   [data-theme='light'] {
@@ -79,12 +70,6 @@ pre.mono,
 html {
   font-size: calc(0.3vw + 0.7em);
   font-size: max(14px, calc(0.3vw + 0.7em));
-}
-
-pre.mono,
-.mono-all pre {
-  --mono-main: var(--foreground-color);
-  --mono-back: var(--background-color);
 }
 
 .mono-all,
@@ -329,13 +314,9 @@ button.mono:active:after,
 
 details.mono,
 .mono-all details {
-  margin: 1rem 0;
-  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0 0.5rem 1.5rem;
   overflow-x: hidden;
-}
-details[open].mono summary.mono,
-.mono-all details[open] summary {
-  margin-bottom: 0.5rem;
 }
 details[open].mono summary.mono::before,
 .mono-all details[open] summary::before {
@@ -353,6 +334,7 @@ h4.mono,
   margin: 3rem 0 1rem;
   font-family: 'Roboto Mono', monospace;
   font-weight: 400;
+  color: var(--foreground-strong-color);
 }
 
 h1.mono,
@@ -598,10 +580,10 @@ li.mono:before,
 .mono-all li:before {
   content: '';
   position: absolute;
-  top: 0.85rem;
-  left: -1.1rem;
-  width: 0.3rem;
-  height: 0.5rem;
+  bottom: 1ch;
+  left: -2ch;
+  width: 1ch;
+  height: 1ch;
   color: var(--background-color);
   background-color: var(--foreground-color);
   /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--foreground-color); */
@@ -620,8 +602,7 @@ pre.mono,
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
   overflow-x: scroll;
-  line-height: 2rem;
-  background-color: none !important;
+  line-height: 1.75rem;
   border-radius: 8px;
   font-family: 'Roboto Mono', monospace;
 }
@@ -630,7 +611,7 @@ pre.mono,
 pre.mono *,
 .mono-all pre,
 .mono-all pre * {
-  line-height: 2rem;
+  line-height: 1.75rem;
   background-color: transparent;
   font-family: 'Roboto Mono', monospace;
 }
@@ -646,7 +627,7 @@ summary.mono,
   position: relative;
   margin-right: 100%;
   list-style: none;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   outline: none;
   cursor: pointer;
 }
