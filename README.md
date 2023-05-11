@@ -223,7 +223,13 @@ Of course there are no software without limitations. Reatom is trying to be a si
 
 https://www.patreon.com/artalar_dev
 
-### Credits
+## Zen
+
+- **Good primitive is better than a framework**
+- Composition is better that configuration
+- Hidden context is explicit if it is general
+
+## Credits
 
 Software development in 202X is hard and we really appreciate all [contributors](https://github.com/artalar/reatom/graphs/contributors) and free software maintainers, who make our life easier. Special thanks to:
 
