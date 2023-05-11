@@ -580,13 +580,12 @@ li.mono:before,
 .mono-all li:before {
   content: '';
   position: absolute;
-  bottom: 1ch;
+  top: 1.2ch;
   left: -2ch;
   width: 1ch;
   height: 1ch;
   color: var(--background-color);
   background-color: var(--foreground-color);
-  /* box-shadow: 0.4rem -0.4rem 0 -0.1rem var(--foreground-color); */
 }
 
 p.mono:before,
