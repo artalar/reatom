@@ -225,8 +225,8 @@ https://www.patreon.com/artalar_dev
 
 ## Zen
 
-- **Good primitive is better than a framework**
-- Composition is better that configuration
+- **Good primitive is more than a framework**
+- Composition is better than configuration
 - Hidden context is explicit if it is general
 
 ## Credits
