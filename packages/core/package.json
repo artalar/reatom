@@ -16,9 +16,12 @@
   "browserslist": [
     "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs",
+    "build": "microbundle -f esm,cjs --raw=true",
     "test": "tsx src/atom.test.ts",
     "test:watch": "tsx watch src/atom.test.ts",
     "bench": "tsx src/index.bench.test.ts"

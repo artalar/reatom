@@ -16,6 +16,9 @@
   "browserslist": [
     "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
