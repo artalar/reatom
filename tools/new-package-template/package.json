@@ -15,8 +15,11 @@
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
