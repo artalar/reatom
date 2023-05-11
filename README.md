@@ -106,42 +106,42 @@ Simple `sleep` helper (for debounce) gotten from [utils package](https://www.rea
 ```tsx
 // https://www.reatom.dev/#advanced-example
 import { atom, reatomAsync, withAbort, withDataAtom, withRetry, onUpdate, sleep, withCache } from "@reatom/framework"; // prettier-ignore
-import { useAtom } from "@reatom/npm-react";
-import * as api from "./api";
+import { useAtom } from '@reatom/npm-react'
+import * as api from './api'
 
-const searchAtom = atom("", "searchAtom");
+const searchAtom = atom('', 'searchAtom')
 
 const fetchIssues = reatomAsync(async (ctx, query: string) => {
-  await sleep(350); // debounce
-  const { items } = await api.fetchIssues(query, ctx.controller);
-  return items;
-}, "fetchIssues").pipe(
-  withAbort({ strategy: "last-in-win" }),
+  await sleep(350) // debounce
+  const { items } = await api.fetchIssues(query, ctx.controller)
+  return items
+}, 'fetchIssues').pipe(
+  withAbort({ strategy: 'last-in-win' }),
   withDataAtom([]),
   withCache({ length: 50, swr: false, paramsLength: 1 }),
   withRetry({
     onReject(ctx, error: any, retries) {
       // return delay in ms or -1 to prevent retries
-      return error?.message.includes("rate limit")
+      return error?.message.includes('rate limit')
         ? 100 * Math.min(500, retries ** 2)
-        : -1;
-    }
-  })
-);
+        : -1
+    },
+  }),
+)
 
 // run fetchIssues on every searchAtom update
-onUpdate(searchAtom, fetchIssues);
+onUpdate(searchAtom, fetchIssues)
 
 export const App = () => {
-  const [search, setSearch] = useAtom(searchAtom);
-  const [issues] = useAtom(fetchIssues.dataAtom);
+  const [search, setSearch] = useAtom(searchAtom)
+  const [issues] = useAtom(fetchIssues.dataAtom)
   // you could pass a callback to `useAtom` to create a computed atom
   const [isLoading] = useAtom(
     (ctx) =>
       // even if there are no pending requests, we need to wait for retries
       // let do not show the limit error to make him think that everything is fine for a better UX
-      ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0
-  );
+      ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0,
+  )
 
   return (
     <main>
@@ -150,15 +150,15 @@ export const App = () => {
         onChange={(e) => setSearch(e.currentTarget.value)}
         placeholder="Search"
       />
-      {isLoading && "Loading..."}
+      {isLoading && 'Loading...'}
       <ul>
         {issues.map(({ title }, i) => (
           <li key={i}>{title}</li>
         ))}
       </ul>
     </main>
-  );
-};
+  )
+}
 ```
 
 The whole logic definition is only about 15 LoC and it is not coupled to React and could be tested easily. What would the lines count be in a different library? The most impressive thing is that the overhead is [less than 4KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetry%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdhgAejiYABN4ACMQMRV4dxhuaFcYX3gcKQBfaURvXyJgqwA6fkE0EXFJUiN4ExodXTruSxB-QOR2HNkoMWQwQqhiiE5SmnJG4VEJCFY62uD4UhzPXzQAEWJEJjIAbQBdFip9w4x05ChSFwtkYnhbM1p-dSgALQ2AEHMDkGClW73KBoABKAhMrxyHnA8IAVvAdNo9DROsgQMhzIgwIoaONrJIHG4PDT4olxpNpik-opCtMSjACTAAQBGGDYGDBWQAN3gYFg5KskmRNIZUxgeIJAH46jhJBBELZ4HUbMB-GIUhAKB9ZjB-FYcL5WDLaUqYDyolEYAAqGAAWWIaFVNlI0SiZIRUqkztdYRYNpp5l5nFpixykLuowSMkyMBWzTWkk503gopMcCQqEwJBgYmCSU%2BHHAAFVy59SPQi%2BcaOmWutRlxZJ8AMJ6UijMQIc6kVuZiB1CtQM4kFhAA&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) could you imagine?! And you are not limited to network cache, Reatom is powerful and expressive enough for describing any kind of state.
