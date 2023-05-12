@@ -178,7 +178,7 @@ export const createMockStorage = (
     ),
     {} as Rec<PersistRecord>,
   )
-  const listeners = new Map<string, Set<Fn<[PersistRecord]>>>()
+  const listeners = new Map<string, Set<(persistRecord:PersistRecord) => any>>()
 
   return {
     name: 'mock',
