@@ -23,7 +23,7 @@
     "packages/npm-react": {},
     "packages/npm-svelte": {},
     "packages/persist": {},
-    "packages/persist-localstorage": {},
+    "packages/persist-web-storage": {},
     "packages/primitives": {},
     "packages/react-v1": {},
     "packages/react-v2": {},

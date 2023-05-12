@@ -1,118 +1,153 @@
 import {
-  action,
   atom,
   Atom,
-  AtomCache,
-  AtomProto,
+  AtomMut,
   AtomState,
   Ctx,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { addOnUpdate, isConnected, onConnect } from '@reatom/hooks'
+import { onConnect, onUpdate } from '@reatom/hooks'
+import { random } from '@reatom/utils'
 
-export interface PersistRecord<T = unknown> {
-  data: T
+export interface PersistRecord {
+  data: unknown
+  fromState: boolean
+  id: number
+  timestamp: number
   version: number
+  to: number
 }
 
 export interface PersistStorage {
-  get(ctx: Ctx, proto: AtomProto): null | PersistRecord
-  set(ctx: Ctx, proto: AtomProto, rec: PersistRecord): void
-  clear?(ctx: Ctx, proto: AtomProto): void
-  subscribe?(
-    ctx: Ctx,
-    proto: AtomProto,
-    callback: (rec: PersistRecord) => any,
-  ): Unsubscribe
+  name: string
+  get(ctx: Ctx, key: string): null | PersistRecord
+  set(ctx: Ctx, key: string, rec: PersistRecord): void
+  clear?(ctx: Ctx, key: string): void
+  subscribe?(ctx: Ctx, key: string, callback: () => any): Unsubscribe
 }
 
-export interface WithPersistOptions<T extends Atom> {
-  clearTimeout?: number
-  fromSnapshot?: (ctx: Ctx, arg: unknown) => AtomState<T>
-  key?: string
-  migration?: (ctx: Ctx, rec: PersistRecord) => PersistRecord<AtomState<T>>
+export interface WithPersistOptions<T> {
+  /** parse data on init or subscription update @optional */
+  fromSnapshot?:  (ctx: Ctx, snapshot: unknown, state?: T) => T
+  /** the key! */
+  key: string
+  /** migration callback which will be called if the version changed  @optional */
+  migration?: (ctx: Ctx, persistRecord: PersistRecord) => T
+  /** turn on/off subscription  @default true */
   subscribe?: boolean
-  toSnapshot?: (ctx: Ctx, state: AtomState<T>) => unknown
+  /** time to live in milliseconds @default 10 ** 10 */
+  time?: number
+  /** transform data before persisting  @optional */
+  toSnapshot?: (ctx: Ctx, state: T) => unknown
+  /** version of the data which change used to trigger the migration @default 0 */
   version?: number
 }
 
 export interface WithPersist {
-  <T extends Atom>(options?: WithPersistOptions<T>): (anAtom: T) => T
+  <T extends Atom>(
+    options:
+      | WithPersistOptions<AtomState<T>>['key']
+      | WithPersistOptions<AtomState<T>>,
+  ): (anAtom: T) => T
 }
 
-export const reatomPersist = (storage: PersistStorage) => {
-  const persistStorageAtom = atom(storage, 'persistStorage')
+export const reatomPersist = (
+  storage: PersistStorage,
+): WithPersist & {
+  storageAtom: AtomMut<PersistStorage>
+} => {
+  const storageAtom = atom(storage, `storageAtom#${storage.name}`)
 
   const withPersist: WithPersist =
-    <T extends Atom>({
-      clearTimeout = -1,
-      fromSnapshot = (ctx, data: any) => data,
-      migration,
-      subscribe = false,
-      toSnapshot = (ctx, data: any) => data,
-      version = 0,
-    }: WithPersistOptions<T> = {}) =>
+    <T extends Atom>(
+      options:
+        | WithPersistOptions<AtomState<T>>['key']
+        | WithPersistOptions<AtomState<T>>,
+    ) =>
     (anAtom: T): T => {
+      const {
+        key,
+        fromSnapshot = (ctx, data: any) => data,
+        migration,
+        subscribe = true,
+        time = 10 ** 10,
+        toSnapshot = (ctx, data: any) => data,
+        version = 0,
+      }: WithPersistOptions<AtomState<T>> = typeof options === 'string'
+        ? { key: options }
+        : options
       const proto = anAtom.__reatom
       const { initState } = proto
 
-      throwReatomError(!proto.name, 'atom name is required for persistance')
+      const getPersistRecord = (ctx: Ctx, state?: any) => {
+        const rec = ctx.get(storageAtom).get(ctx, key)
 
-      const getData = (ctx: Ctx, rec: null | PersistRecord) =>
-        rec?.version === version
-          ? fromSnapshot(ctx, rec.data)
-          : rec !== null && migration !== undefined
-          ? migration(ctx, rec).data
-          : initState(ctx)
+        return rec?.fromState ? state : rec
+      }
 
-      anAtom.__reatom.initState = (ctx) =>
-        getData(ctx, ctx.get(persistStorageAtom).get(ctx, proto))
+      const fromPersistRecord = (
+        ctx: Ctx,
+        rec: null | PersistRecord = getPersistRecord(ctx),
+        state?: AtomState<T>,
+      ) =>
+        rec === null || (rec.version !== version && migration === undefined)
+          ? initState(ctx)
+          : fromSnapshot(
+              ctx,
+              rec.version !== version ? migration!(ctx, rec) : rec.data,
+              state,
+            )
 
-      addOnUpdate(anAtom, (ctx, { state }) =>
-        ctx
-          .get(persistStorageAtom)
-          .set(ctx, proto, { data: toSnapshot(ctx, state), version }),
+      const toPersistRecord = (
+        ctx: Ctx,
+        state: AtomState<T>,
+      ): PersistRecord => ({
+        data: toSnapshot(ctx, state),
+        fromState: true,
+        id: random(),
+        timestamp: Date.now(),
+        to: Date.now() + time,
+        version,
+      })
+
+      throwReatomError(!key, 'missed key')
+
+      const persistRecordAtom = atom(
+        getPersistRecord,
+        `${anAtom.__reatom.name}._${storage.name}Atom`,
       )
 
       if (subscribe) {
+        const { computer } = anAtom.__reatom
+        // @ts-expect-error hard to type optional `state`
+        anAtom.__reatom.computer = (ctx, state?: AtomState<T>) => {
+          ctx.spy(persistRecordAtom, (rec) => {
+            state = fromPersistRecord(ctx, rec, state)
+          })
+
+          return computer ? computer(ctx, state) : state
+        }
+
         onConnect(anAtom, (ctx) =>
-          ctx
-            .get(persistStorageAtom)
-            .subscribe?.(ctx, proto, (rec) =>
-              ctx.get((read, actualize) =>
-                actualize!(
-                  ctx,
-                  proto,
-                  (patchCtx: Ctx, patch: AtomCache) =>
-                    (patch.state = fromSnapshot(ctx, rec.data)),
-                ),
-              ),
-            ),
+          ctx.get(storageAtom).subscribe?.(ctx, key, () => {
+            ctx.get((read, actualize) =>
+              actualize!(ctx, persistRecordAtom.__reatom, () => {
+                /* this will rerun the computed */
+              }),
+            )
+          }),
         )
+      } else {
+        anAtom.__reatom.initState = fromPersistRecord
       }
 
-      if (clearTimeout !== -1) {
-        ;(proto.disconnectHooks ??= new Set()).add((ctx) =>
-          // FIXME: drop timeout when reconnect
-          setTimeout(
-            () =>
-              ctx.get(
-                (read) =>
-                  isConnected(ctx, anAtom) ||
-                  ctx.get(persistStorageAtom).clear?.(ctx, proto),
-              ),
-            clearTimeout,
-          ),
-        )
-      }
+      onUpdate(anAtom, (ctx, state) => {
+        ctx.get(storageAtom).set(ctx, key, toPersistRecord(ctx, state))
+      })
 
       return anAtom
     }
 
-  const clearPersist = action((ctx, anAtom: Atom) =>
-    ctx.get(persistStorageAtom).clear?.(ctx, anAtom.__reatom),
-  )
-
-  return { withPersist, persistStorageAtom, clearPersist }
+  return Object.assign(withPersist, { storageAtom })
 }

@@ -1,7 +1,7 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { isDeepEqual } from './'
+import { isDeepEqual, toAbortError } from './'
 
 test('isDeepEqual Set', () => {
   assert.ok(
@@ -44,6 +44,15 @@ test('isDeepEqual Map', () => {
       new Map([[1, { a: 1 }], [2, { a: 2 }]]) /* prettier-ignore */,
     ),
   )
+  ;('👍') //?
+})
+
+test('toAbortError', () => {
+  const err = new Error('test')
+  const abortErr = toAbortError(err)
+  assert.is(abortErr.name, 'AbortError')
+  assert.is(abortErr.message, 'test')
+  assert.is(abortErr.cause, err)
   ;('👍') //?
 })
 

@@ -78,7 +78,7 @@ export interface Ctx {
     step?: -1 | 0 | 1 | 2,
   ): Promise<Awaited<T>>
 
-  subscribe<T>(atom: Atom<T>, cb: (arg: T) => any): Unsubscribe
+  subscribe<T>(atom: Atom<T>, cb: (newState: T) => any): Unsubscribe
 
   subscribe(cb: (patches: Logs, error?: Error) => any): Unsubscribe
 
@@ -106,7 +106,7 @@ export interface AtomProto<State = any> {
   /** temporal cache of the last patch during transaction */
   patch: null | AtomCache
   initState: (ctx: Ctx) => State
-  computer: null | ((ctxSpy: CtxSpy, arg: unknown) => unknown)
+  computer: null | ((ctxSpy: CtxSpy, state: unknown) => unknown)
   connectHooks: null | Set<(ctx: Ctx) => any>
   disconnectHooks: null | Set<(ctx: Ctx) => any>
   updateHooks: null | Set<(ctx: Ctx, atomCache: AtomCache) => any>
@@ -380,12 +380,12 @@ export const createCtx = ({
   let actualize = (
     ctx: Ctx,
     proto: AtomProto,
-    mutator?: (patchCtx: Ctx, patch: AtomCache) => any,
+    updater?: (patchCtx: Ctx, patch: AtomCache) => any,
   ): AtomCache => {
     let { patch } = proto
-    let isMutating = mutator !== undefined
+    let updating = updater !== undefined
 
-    if (patch?.cause && !isMutating) return patch
+    if (patch?.cause && !updating) return patch
 
     let cache = patch ?? read(proto)
 
@@ -398,7 +398,7 @@ export const createCtx = ({
         subs: new Set(),
         listeners: new Set(),
       }
-    } else if (proto.computer === null && !isMutating) {
+    } else if (proto.computer === null && !updating) {
       return cache
     }
 
@@ -414,15 +414,14 @@ export const createCtx = ({
     }
 
     try {
-      if (isMutating) mutator!(patchCtx, patch)
-
       if (proto.computer) actualizePubs(patchCtx, patch)
+      if (updating) updater!(patchCtx, patch)
     } catch (error) {
       throw (patch.error = error)
     }
 
     if (!Object.is(state, patch.state)) {
-      if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
+      if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
         enqueueComputers(patch.subs)
       }
 
@@ -617,7 +616,7 @@ export let atom: {
   <State>(initState: State, name?: string): AtomMut<State>
 } = (
   initState:
-    | ((ctxSpy: CtxSpy, arg?: any) => any)
+    | ((ctxSpy: CtxSpy, state?: any) => any)
     | Exclude<AllTypes, (...args: any[]) => any>,
   name = __count('_atom'),
 ): Atom => {

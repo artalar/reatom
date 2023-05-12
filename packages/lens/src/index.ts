@@ -181,7 +181,7 @@ export const mapPayload: {
 /** Transform async action payload */
 export const mapPayloadAwaited: {
   <T, Payload = Awaited<T>>(
-    mapper: (ctx: Ctx, arg: Awaited<T>) => Payload,
+    mapper: (ctx: Ctx, prevState: Awaited<T>) => Payload,
     name?: string,
   ): (action: Action<any[], T>) => LensAction<[], Payload>
 
@@ -192,9 +192,10 @@ export const mapPayloadAwaited: {
   <T, State>(fallback: State, name?: string): (
     action: Action<any[], T>,
   ) => LensAtom<State | Awaited<T>>
+
   <T, State>(
     fallback: State,
-    map: (ctx: Ctx, arg: Awaited<T>) => State,
+    map: (ctx: Ctx, prevState: Awaited<T>) => State,
     name?: string,
   ): (action: Action<any[], T>) => LensAtom<State>
 } =
@@ -298,20 +299,29 @@ export const withOnUpdate =
   }
 
 /** Convert an atom to action */
-export const toAction =
-  <T>(name?: string): ((atom: Atom<T>) => LensAction<[T], T>) =>
-  (anAtom) => {
-    throwReatomError(anAtom.__reatom.isAction, 'atom expected')
+export const toAction: {
+  <State, T>(map: (ctx: Ctx, state: State) => T, name?: string): (atom: Atom<State>) =>
+    LensAction<[State], T>
+  
+  <T>(name?: string): (atom: Atom<T>) => LensAction<[T], T>
+} = (map?: string | ((...args: any[]) => any), name?: string) => (anAtom: Atom) => {
+  throwReatomError(anAtom.__reatom.isAction, 'atom expected')
 
-    // @ts-expect-error
-    const theAction: LensAction<[T], T> = atom((ctx) => {
-      // TODO handle atom mutation in the same transaction
-      const isInit = ctx.cause.pubs.length === 0
-      const state = ctx.spy(anAtom)
-      return isInit ? [] : [{ params: [state], payload: state }]
-    }, mapName(anAtom, 'toAction', name))
-    theAction.__reatom.isAction = true
-    theAction.deps = [anAtom]
-
-    return theAction
+  if (typeof map === 'string') {
+    name = map
+    map = undefined
   }
+  map ??= (ctx: Ctx, v: any) => v
+
+  // @ts-expect-error
+  const theAction: LensAction<[T], T> = atom((ctx) => {
+    // TODO handle atom mutation in the same transaction
+    const isInit = ctx.cause.pubs.length === 0
+    const state = ctx.spy(anAtom)
+    return isInit ? [] : [{ params: [state], payload: (map as ((...args: any[]) => any))(ctx, state) }]
+  }, mapName(anAtom, 'toAction', name))
+  theAction.__reatom.isAction = true
+  theAction.deps = [anAtom]
+
+  return theAction
+}

@@ -1,6 +1,12 @@
-Base primitive to create your own persist adapters. Check https://www.reatom.dev/packages/persist-web-storage for product usage or inspiration.
+---
+layout: ../../layouts/Layout.astro
+title: persist
+description: Reatom for persist
+---
 
-One of the features is that each adapter has `storageAtom` which you could change for testing purposes.[testing package](https://www.reatom.dev/packages/testing#createmockstorage) has `createMockStorage` util. Check out [tests of this package](https://github.com/artalar/reatom/blob/v3/packages/persist/src/index.test.ts)
+Base primitive to create your own persist adapters. Check /packages/persist-web-storage for product usage or inspiration.
+
+One of the features is that each adapter has `storageAtom` which you could change for testing purposes.[testing package](/packages/testing#createmockstorage) has `createMockStorage` util. Check out [tests of this package](https://github.com/artalar/reatom/blob/v3/packages/persist/src/index.test.ts)
 
 Main types.
 

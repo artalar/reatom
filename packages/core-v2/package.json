@@ -9,8 +9,11 @@
   "module": "build/index.es.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run build-primitives && npm run test",
     "build": "microbundle -f esm,cjs",

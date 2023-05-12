@@ -1,20 +1,24 @@
 {
   "name": "@reatom/async",
-  "version": "3.5.2",
+  "version": "3.6.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for async",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
@@ -27,6 +31,9 @@
     "@reatom/hooks": "^3.2.0",
     "@reatom/primitives": "^3.1.0",
     "@reatom/utils": "^3.2.0"
+  },
+  "devDependencies": {
+    "@reatom/persist": "^3.1.0"
   },
   "author": "artalar",
   "license": "MIT",
