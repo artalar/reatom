@@ -377,7 +377,7 @@ export const withRetry =
     if (!anAsync.paramsAtom) {
       const paramsAtom = (anAsync.paramsAtom = atom(
         fallbackParams as Params,
-        `${anAsync.__reatom.name}.paramsAtom`,
+        `${anAsync.__reatom.name}._paramsAtom`,
       ))
       addOnUpdate(anAsync, (ctx, patch) =>
         paramsAtom(ctx, patch.state.at(-1)?.params as Params),

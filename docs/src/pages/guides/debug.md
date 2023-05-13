@@ -6,9 +6,9 @@ description: How to debug state change cause and asynchronous requests
 
 Immutable nature of Reatom give us incredible possibilities for debugging any data flow kind: synchronous and asynchronous. The internal data structures of atoms data designed specially for simple investigation and analytics. The simples way to debug data states and it change causes is by logging `ctx`, which includes `cause` property with internal representation and all meta information.
 
-Lets check out [this example](https://replit.com/@artalar/reatom-debug-example#src/App.tsx).
+Lets check out [this example](https://codesandbox.io/s/reatom-react-debug-4tvezk?file=/src/App.tsx).
 
-```ts
+```tsx
 import {
   atom,
   reatomAsync,

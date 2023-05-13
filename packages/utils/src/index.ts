@@ -219,19 +219,21 @@ export interface AbortError extends DOMException {
   name: 'AbortError'
 }
 
-export const toAbortError = (reason: unknown): AbortError => {
-  if (!(reason instanceof DOMException) || reason.name !== 'AbortError') {
+export const toAbortError = (reason: any): AbortError => {
+  if (reason instanceof Error === false || reason.name !== 'AbortError') {
     if (reason instanceof Error) {
-      var cause = reason
+      var options: undefined | ErrorOptions = { cause: reason }
       reason = reason.message
     } else {
       reason = isObject(reason) ? toString.call(reason) : String(reason)
     }
 
-    reason = new DOMException(reason as string, 'AbortError')
-
-    // @ts-expect-error
-    cause && (reason.cause = cause)
+    if (typeof DOMException === 'undefined') {
+      reason = new Error(reason, options)
+      reason.name = 'AbortError'
+    } else {
+      reason = assign(new DOMException(reason, 'AbortError'), options)
+    }
   }
 
   return reason as AbortError

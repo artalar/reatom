@@ -1,23 +1,27 @@
 {
   "name": "@reatom/core",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "private": false,
   "description": "The ultimate state manager",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
   "types": "build/index.d.ts",
   "sideEffects": false,
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs",
+    "build": "microbundle -f esm,cjs --raw=true",
     "test": "ts-node src/atom.test.ts",
     "test:watch": "tsx watch src/atom.test.ts",
     "bench": "ts-node src/index.bench.test.ts"

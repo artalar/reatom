@@ -27,7 +27,8 @@ You should add `@reatom` to `plugins` and specify `extends` or `rules` into your
   "rules": {
     "@reatom/atom-rule": "error",
     "@reatom/action-rule": "error",
-    "@reatom/reatom-prefix-rule": "error"
+    "@reatom/reatom-prefix-rule": "error",
+    "@reatom/atom-postfix-rule": "error"
   }
 }
 ```
@@ -59,6 +60,9 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
   "rules": {
     "@typescript-eslint/explicit-function-return-type": "off",
     "prettier/prettier": "error"
+  },
+  "settings": {
+    "atomPostfix": "Atom"
   }
 }
 ```

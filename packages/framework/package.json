@@ -1,18 +1,24 @@
 {
   "name": "@reatom/framework",
-  "version": "3.4.4",
+  "version": "3.4.6",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
   "types": "build/index.d.ts",
-  "browserslist": ["last 4 chrome versions"],
+  "browserslist": [
+    "last 1 year"
+  ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build",
     "build": "microbundle -f esm,cjs",
@@ -20,14 +26,14 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/async": "^3.5.1",
-    "@reatom/core": "^3.2.0",
+    "@reatom/async": "^3.6.0",
+    "@reatom/core": "^3.3.0",
     "@reatom/effects": "^3.2.0",
-    "@reatom/hooks": "^3.3.1",
-    "@reatom/lens": "^3.3.3",
-    "@reatom/logger": "^3.3.1",
+    "@reatom/hooks": "^3.4.0",
+    "@reatom/lens": "^3.5.0",
+    "@reatom/logger": "^3.4.1",
     "@reatom/primitives": "^3.2.0",
-    "@reatom/utils": "^3.2.0"
+    "@reatom/utils": "^3.2.2"
   },
   "author": "artalar",
   "license": "MIT",
@@ -35,7 +41,12 @@
     "type": "git",
     "url": "git+ssh://git@github.com/artalar/reatom.git"
   },
-  "bugs": { "url": "https://github.com/artalar/reatom/issues" },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
   "homepage": "https://www.reatom.dev/packages/framework",
-  "files": ["/build", "/package.json"]
+  "files": [
+    "/build",
+    "/package.json"
+  ]
 }

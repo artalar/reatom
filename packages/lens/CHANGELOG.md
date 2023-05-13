@@ -1,5 +1,32 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/lens-v3.4.0...lens-v3.5.0) (2023-05-10)
+
+
+### Features
+
+* **lens:** make parseAtoms reactive ([5fc55f9](https://github.com/artalar/reatom/commit/5fc55f956ab010118dbbae5354fc53d5c5c72236))
+* **lens:** map function for toAction ([691801d](https://github.com/artalar/reatom/commit/691801d675bb9d62b15e46b923cd12f19ebb4de6))
+
+
+### Bug Fixes
+
+* **lens:** add DelayOptions interface ([535c406](https://github.com/artalar/reatom/commit/535c40685a03655c074f8e165c38e9f097bf06db))
+
+## [3.4.0](https://github.com/artalar/reatom/compare/lens-v3.3.3...lens-v3.4.0) (2023-04-18)
+
+
+### Features
+
+* **lens:** add new operators and onLensUpdate ([#533](https://github.com/artalar/reatom/issues/533)) ([2442ca3](https://github.com/artalar/reatom/commit/2442ca34b6ab1fdc0c0aff52d18e85999e6de607))
+
+
+### Bug Fixes
+
+* **lens:** add LensEffect ([c304f4d](https://github.com/artalar/reatom/commit/c304f4d5a6d5230a906fdad3891043c5f1543a63))
+* **lens:** mapPayload 4 arg state ([0f527ed](https://github.com/artalar/reatom/commit/0f527ed66a9b1f7d622f17fa77d995652edfe7d7))
+* **lens:** use onUpdate ([230a9c9](https://github.com/artalar/reatom/commit/230a9c9f920273d16eae67344acc309ad583f068))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/lens-v3.2.0...lens-v3.3.0) (2023-04-10)
 
 **feat(lens): new operators for onLensUpdate**

@@ -1,6 +1,9 @@
 <script>
-  // TODO declare types globaly
-  // @ts-ignore
+  declare global {
+    interface  Window {
+      ADD_COPY_BUTTONS(): void
+    }
+  }
   window.ADD_COPY_BUTTONS = () =>
     document.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach((el) => {
       const h = el as HTMLHeadingElement
@@ -20,7 +23,6 @@
 
       h.appendChild(copyButton)
     })
-    // @ts-expect-error
     window.ADD_COPY_BUTTONS()
 </script>
 <style is:global>

@@ -7,14 +7,18 @@
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "echo microbundle",

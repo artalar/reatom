@@ -16,7 +16,11 @@ export const parseAtoms = <Value>(
   ctx: Ctx,
   value: Value,
 ): ParseAtoms<Value> => {
-  const state = isAtom(value) ? ctx.get(value) : value
+  const state = isAtom(value)
+    ? ctx.spy
+      ? ctx.spy(value)
+      : ctx.get(value)
+    : value
 
   if (typeof state !== 'object' || state === null) return state
 

@@ -186,17 +186,90 @@ export const countAtom = _countAtom.pipe(readonly)
 
 ## `parseAtoms`
 
-Parse tree-like structure by replacing atoms by its values.
+Jsonify [atomized](https://www.reatom.dev/guides/atomization) structure. Needed for parse values of deep structures with nested atoms.
+Useful for snapshots. Will be reactive if the passed `ctx` is `CtxSpy`.
+
+### parseAtoms snapshot example
+
+https://codesandbox.io/s/reatom-react-atomization-k39vrs?file=/src/model.ts
 
 ```ts
-// some_form.ts
+import { action, atom, Action, AtomMut } from '@reatom/core'
+import { onUpdate, withInit } from '@reatom/hooks'
+import { parseAtoms, ParseAtoms } from '@reatom/lens'
+
+export type Field = {
+  id: number;
+  name: string;
+  value: AtomMut<string>;
+  remove: Action;
+};
+
+const KEY = "FIELDS";
+const fromLS = () => {
+  const snap = localStorage.getItem(KEY);
+  if (!snap) return [];
+  const json: ParseAtoms<Array<Field>> = JSON.parse(snap);
+  return json.map(({ id, name, value }) => getField(id, name, value));
+};
+const toLS = action((ctx) => {
+  const list = parseAtoms(ctx, listAtom);
+  localStorage.setItem(KEY, JSON.stringify(list));
+}, "toLS");
+
+const getField = (id: number, name: string, value: string): Field => {
+  // ...
+};
+
+export const listAtom = atom(new Array<Field>(), "listAtom").pipe(
+  withInit(fromLS)
+);
+onUpdate(listAtom, toLS);
+```
+
+### parseAtoms shortcut example
+
+It could be handy to use `parseAtoms` to reduce the amount of "read atom" code.
+
+For example, we have a few-fields structure.
+
+```ts
+interface User {
+  name: AtomMut<string>
+  bio: AtomMut<string>
+  website: AtomMut<string>
+  address: AtomMut<string>
+}
+```
+
+How could you display it without `parseAtoms`?
+
+```tsx
+import { useAtom } from '@reatom/npm-react'
+
+export const User = ({ user }: { user: User }) => {
+  const [name] = useAtom(user.name)
+  const [bio] = useAtom(user.bio)
+  const [website] = useAtom(user.website)
+  const [address] = useAtom(user.address)
+
+  return <form>...</form>
+}
+```
+
+How could `parseAtoms` helps you?
+
+```tsx
 import { parseAtoms } from '@reatom/lens'
+import { useAtom, useAction } from '@reatom/npm-react'
 
-export const submit = action((ctx) => {
-  const data = parseAtoms({ titleAtom, commentsAtom })
+export const User = ({ user }: { user: User }) => {
+  const [{ name, bio, website, address }] = useAtom((ctx) =>
+    parseAtoms(ctx, user),
+  )
 
-  return ctx.schedule(() => api.someSubmit(data))
-})
+  return <form>...</form>
+}
 ```
 
 ## `bind`

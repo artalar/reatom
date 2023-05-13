@@ -1,4 +1,4 @@
-import type { Identifier, Literal, Node, ImportDeclaration } from 'estree'
+import type { Identifier, Literal, Node, ImportDeclaration, VariableDeclarator } from 'estree'
 
 export function isIdentifier(node: Node): node is Identifier {
   return node?.type === 'Identifier'
@@ -42,13 +42,20 @@ export function extractImportDeclaration({
   }
 }
 
+export function extractAssignedVariableName(node: Node | null) {
+  const identifier = extractAssignedVariable(node);
+  if (!identifier) return null;
+  
+  return identifier.name;
+}
+
 export function extractAssignedVariable(node: Node | null) {
   if (node?.type === 'VariableDeclarator' && 'name' in node.id) {
-    return node.id.name
+    return node.id
   }
 
   return node && 'key' in node && node.key?.type === 'Identifier'
-    ? node.key.name
+    ? node.key
     : null
 }
 

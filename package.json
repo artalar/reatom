@@ -12,8 +12,7 @@
     "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
     "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u",
-    "prepare": "husky install",
-    "publish-packages": "turbo run build test && changeset version && changeset publish"
+    "prepare": "husky install"
   },
   "workspaces": [
     "packages/*"
@@ -33,7 +32,6 @@
   },
   "homepage": "https://github.com/artalar/reatom/tree/v2",
   "devDependencies": {
-    "@changesets/cli": "^2.26.1",
     "@commitlint/cli": "^17.5.1",
     "@commitlint/config-conventional": "^17.4.4",
     "@cookie-baker/core": "^0.2.1",

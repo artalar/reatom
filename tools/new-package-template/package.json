@@ -7,15 +7,19 @@
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
   "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",

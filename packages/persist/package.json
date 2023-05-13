@@ -1,20 +1,23 @@
 {
   "name": "@reatom/persist",
-  "version": "3.1.0",
-  "private": true,
+  "version": "3.2.0",
   "sideEffects": false,
   "description": "Reatom for persist",
   "source": "src/index.ts",
   "exports": {
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.module.js",
+    "types": "./build/index.d.ts"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
@@ -22,8 +25,10 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.1.0",
-    "@reatom/hooks": "^3.1.0"
+    "@reatom/core": "^3.3.0",
+    "@reatom/hooks": "^3.4.0",
+    "@reatom/lens": "^3.4.0",
+    "@reatom/utils": "^3.2.1"
   },
   "author": "artalar",
   "license": "MIT",

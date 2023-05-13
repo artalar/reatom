@@ -170,13 +170,15 @@ export interface Unsubscribe {
 
 // We don't have type literal for NaN but other values are presented here
 // https://stackoverflow.com/a/51390763
-type Falsy = false | 0 | "" | null | undefined 
-// Can't be an arrow function due to 
+type Falsy = false | 0 | '' | null | undefined
+// Can't be an arrow function due to
 //    https://github.com/microsoft/TypeScript/issues/34523
 /** Throws `Reatom error: ${message}` */
-export function throwReatomError(condition: any, message: string): asserts condition is Falsy {
-  if (condition)
-    throw new Error(`Reatom error: ${message}`)
+export function throwReatomError(
+  condition: any,
+  message: string,
+): asserts condition is Falsy {
+  if (condition) throw new Error(`Reatom error: ${message}`)
 }
 
 export const isAtom = (thing: any): thing is Atom => {
@@ -377,12 +379,12 @@ export const createCtx = ({
   let actualize = (
     ctx: Ctx,
     proto: AtomProto,
-    mutator?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
+    updater?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
   ): AtomCache => {
     let { patch } = proto
-    let isMutating = mutator !== undefined
+    let updating = updater !== undefined
 
-    if (patch?.cause && !isMutating) return patch
+    if (patch?.cause && !updating) return patch
 
     let cache = patch ?? read(proto)
 
@@ -395,7 +397,7 @@ export const createCtx = ({
         subs: new Set(),
         listeners: new Set(),
       }
-    } else if (proto.computer === null && !isMutating) {
+    } else if (proto.computer === null && !updating) {
       return cache
     }
 
@@ -411,15 +413,14 @@ export const createCtx = ({
     }
 
     try {
-      if (isMutating) mutator!(patchCtx, patch)
-
       if (proto.computer) actualizePubs(patchCtx, patch)
+      if (updating) updater!(patchCtx, patch)
     } catch (error) {
       throw (patch.error = error)
     }
 
     if (!Object.is(state, patch.state)) {
-      if (patch.subs.size > 0 && (isMutating || patch.listeners.size > 0)) {
+      if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
         enqueueComputers(patch.subs)
       }
 
