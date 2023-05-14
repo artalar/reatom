@@ -193,14 +193,13 @@ blockquote.mono,
 .mono-all blockquote {
   position: relative;
   margin: 2rem;
-  margin-left: 3rem;
 }
 blockquote.mono:before,
 .mono-all blockquote:before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
+  left: -2rem;
   height: 1rem;
   width: 3rem;
   background-color: var(--foreground-color);
