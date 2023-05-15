@@ -1,0 +1,40 @@
+---
+import Layout from './Layout.astro'
+
+const { frontmatter = {} as Record<string, string> } = Astro.props
+---
+
+<Layout frontmatter={frontmatter}>
+  <slot />
+</Layout>
+<style is:global>
+  #key-features + ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0;
+  }
+  #key-features + ul li {
+    position: relative;
+    flex: 30%;
+    margin: 0;
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 1.1em;
+    min-width: 10rem;
+  }
+  #key-features + ul li::before {
+    display: none;
+  }
+  #key-features + ul li::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: 1rem;
+    background-color: var(--foreground-strong-color);
+    opacity: 0.05;
+  }
+</style>
