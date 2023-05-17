@@ -62,7 +62,7 @@
 }
 
 html {
-  font-size: max(14px, calc(0.4vw + 0.8em));
+  font-size: max(14px, calc(0.4vw + 0.7em));
 }
 
 .mono-all,
