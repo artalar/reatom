@@ -1,10 +1,9 @@
 ---
+import Header from '../components/Header.astro'
 import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
 import Glitch from '../components/Glitch.astro'
-import '../index.css'
-import '../fonts.css'
 
 const {
   frontmatter: { title = '404', description, file } = {} as Record<
@@ -34,10 +33,14 @@ if (file) {
     <title>{title}</title>
     {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/styles/common.css" />
+    <link rel="stylesheet" href="/styles/tags.css" />
+    <link rel="stylesheet" href="/styles/fonts.css" />
     <meta name="generator" content={Astro.generator} />
   </head>
-  <body class="mono-all">
-    <Sidebar source={source} />
+  <body>
+    <Header source={source} />
+    <Sidebar />
     <main>
       <h1>{title}</h1>
       <slot />
