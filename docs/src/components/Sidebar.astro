@@ -122,13 +122,13 @@ const sections = [
     display: none;
   }
   section[aria-details='controls'] a[aria-details='Github repo'] svg {
-    fill: var(--foreground-color);
+    fill: var(--fg);
     height: 1.5rem;
   }
   section[aria-details='controls'] a[aria-details='Edit on GitHub'] {
     transform: rotate(-45deg);
-    background: var(--foreground-color);
-    color: var(--background-color);
+    background: var(--fg);
+    color: var(--bg);
     border-radius: 50%;
     width: 1.5rem;
     height: 1.5rem;
@@ -146,27 +146,18 @@ const sections = [
 <script client>
   const pallete = {
     light: {
-      '--foreground-color': '#393939',
-      '--background-color': '#fff',
-      '--foreground-strong-color': '#000000',
-      '--background-strong-color': '#eaeaea',
-      '--dimmed-color': 'rgba(0, 0, 0, 0.2)',
-      '--weak-color': 'rgba(0, 0, 0, 0.1)',
-      '--selection-text-color': 'var(--background-color)',
-      '--selection-back-color': 'var(--foreground-color)',
-      '--code-filter':
-        'invert(1) hue-rotate(240deg) contrast(1.2) saturate(135%)',
+      '--fg': 'var(--fg-default-light)',
+      '--bg': 'var(--bg-default-light)',
+      '--fg1': 'var(--fg1-default-light)',
+      '--bg1': 'var(--bg1-default-light)',
+      '--code-filter': 'var(--code-filter-default-light)',
     },
     dark: {
-      '--foreground-color': '#a6a5ae',
-      '--background-color': '#0e1117',
-      '--foreground-strong-color': '#eaeaea',
-      '--background-strong-color': '#000',
-      '--dimmed-color': 'rgba(255, 255, 255, 0.2)',
-      '--weak-color': 'rgba(255, 255, 255, 0.1)',
-      '--selection-text-color': 'var(--background-color)',
-      '--selection-back-color': 'var(--foreground-color)',
-      '--code-filter': 'none',
+      '--fg': 'var(--fg-default-dark)',
+      '--bg': 'var(--bg-default-dark)',
+      '--fg1': 'var(--fg1-default-dark)',
+      '--bg1': 'var(--bg1-default-dark)',
+      '--code-filter': 'var(--code-filter-default-dark)',
     },
   }
 

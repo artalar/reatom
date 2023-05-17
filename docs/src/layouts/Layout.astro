@@ -3,6 +3,8 @@ import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
 import Glitch from '../components/Glitch.astro'
+import '../index.css'
+import '../fonts.css'
 
 const {
   frontmatter: { title = '404', description, file } = {} as Record<
@@ -33,8 +35,6 @@ if (file) {
     {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="stylesheet" href="/styles/chromo.css" />
-    <link rel="stylesheet" href="/styles/fonts.css" />
   </head>
   <body class="mono-all">
     <Sidebar source={source} />

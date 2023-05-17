@@ -11,8 +11,8 @@ Reatom is the ultimate [state manager](/general/what-is-state-manager) with a un
 - **simple** and powerful abstractions with only three primitives: ctx, atom, action
 - **immutable** and reliable computations with [atomicity](/general/what-is-state-manager#state) guaranties
 - **explicit reactivity** - [maximum](#how-performant-reatom-is) performance [without proxies](/guides/atomization)
-- perfect **effects management** with async context and automatic chains cancellation
-- nice **debugging** experience by [immutable cause (call) stack](/guides/debug)
+- advanced primitives for **effects management**
+- nice **debugging** experience by out of the box
 - implicit **DI** for simple SSR and [testing](/packages/testing)
 - actor-like **lifecycle hooks** for [self-sufficient models](/guides/lifecycle)
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
