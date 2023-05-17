@@ -59,6 +59,7 @@ const sections = [
 ]
 ---
 
+<input type="checkbox" checked="true" aria-details="sidebar toggler" />
 <aside>
   <section aria-details="controls">
     <a
@@ -104,6 +105,45 @@ const sections = [
   </nav>
   {sections.map((section) => <NavSection section={section} />)}
 </aside>
+
+<style>
+  input[aria-details='sidebar toggler'] {
+    position: relative;
+    left: 18rem;
+    margin: 0;
+    z-index: 1;
+    outline: none;
+    width: 0;
+  }
+
+  input[aria-details='sidebar toggler']::before {
+    content: '←';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1rem;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    background-color: var(--bg1);
+  }
+
+  input[aria-details='sidebar toggler']:not(:checked) {
+    left: 0;
+  }
+  input[aria-details='sidebar toggler']:not(:checked)::before {
+    content: '→';
+  }
+  input[aria-details='sidebar toggler']:not(:checked) + aside {
+    display: none;
+  }
+</style>
+<script is:inline>
+  document.querySelector(`input[aria-details='sidebar toggler']`).checked =
+    window.innerWidth >= 768
+</script>
 <style>
   section[aria-details='controls'] {
     display: flex;
@@ -137,13 +177,13 @@ const sections = [
   section[aria-details='controls'] select[name='theme'] {
     /* this toogled after script load */
     display: none;
-    filter: grayscale(1);
+    filter: hue-rotate(180deg) grayscale(0.8);
     font-size: 1.5rem;
     border: none;
   }
 </style>
 
-<script client>
+<script is:inline>
   const pallete = {
     light: {
       '--fg': 'var(--fg-default-light)',

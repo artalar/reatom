@@ -108,35 +108,30 @@ a.current {
 body.mono-all,
 .mono-all body {
   margin: 0;
-  position: relative;
-  min-width: min(calc(100vw + 20rem), 85rem);
-  scroll-snap-type: x mandatory;
   display: flex;
 }
 
 .mono-all main {
-  scroll-snap-align: start;
   margin: auto;
   width: min(100vw, 65rem);
-  max-width: 800px;
+  max-width: 1000px;
+  max-height: 100vh;
+  overflow-y: scroll;
   display: flex;
   flex-direction: column;
-  padding: 0 1rem;
+  padding: 2rem 1rem 0 2rem;
 }
 
 .mono-all aside {
-  position: sticky;
-  top: 0;
   display: flex;
   flex-direction: column;
-  width: 20rem;
-  min-width: 20rem;
-  max-width: 20rem;
+  width: 18rem;
+  min-width: 18rem;
+  max-width: 18rem;
   max-height: 100vh;
   overflow-y: scroll;
   padding: 1rem;
-  border-right: 1px solid var(--bg1);
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
 /* TODO: stick it bottom */
@@ -153,7 +148,7 @@ body.mono-all,
 .mono-all blockquote {
   position: relative;
   margin: 1rem;
-  padding: 1rem;
+  padding: 0.5rem 1rem;
   background-color: var(--bg1);
   border-start-end-radius: 1rem;
   border-end-end-radius: 1rem;
@@ -187,6 +182,9 @@ body.mono-all,
   padding: 0.5rem;
   border: 0.15rem solid var(--fg);
   border-radius: 0.5rem;
+}
+.mono-all nav > details {
+  margin-left: 0;
 }
 
 .mono-all h1,
@@ -226,8 +224,6 @@ body.mono-all,
   padding-left: 1em;
   background-color: var(--bg1);
   background: linear-gradient(90deg, var(--bg1) 0%, var(--bg) 100%);
-  /* border-start-start-radius: 0.5rem;
-  border-end-start-radius: 0.5rem; */
   border-radius: 0.5rem;
 }
 .mono-all li.current {
@@ -293,4 +289,10 @@ body.mono-all,
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+.mono-all nav > ul {
+  padding-left: 0;
+}
+.mono-all details > ul {
+  padding-left: 0.5rem;
 }
