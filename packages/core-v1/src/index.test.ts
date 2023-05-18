@@ -1020,4 +1020,30 @@ test(`v3 computed`, () => {
   assert.is(cb.lastInput(), 4)
 })
 
+test('stale unconnected atom', () => {
+  const createEntityAtom = <T>(name: string, initState: T) => {
+    const set = declareAction<T>(`${name}.set`)
+
+    const entityAtom = declareAtom<T>([name], initState, (on) => [
+      on(set, (_, n) => n),
+    ])
+
+    return Object.assign(entityAtom, { set })
+  }
+
+  const a1 = createEntityAtom('a1', 'test1')
+  const a2 = createEntityAtom('a2', 'test2')
+
+  const a3 = map(combine([a1, a2]), ([s1, s2]) => s1 + s2)
+
+  const store = createStore(combine([a1, a2]))
+
+  assert.is(store.getState(a1), 'test1')
+  assert.is(store.getState(a2), 'test2')
+  assert.is(store.getState(a3), 'test1test2')
+
+  store.dispatch(a2.set('qwe'))
+  assert.is(store.getState(a3), 'test1qwe')
+})
+
 test.run()
