@@ -153,12 +153,7 @@ const { source } = Astro.props
     else turnOffSidebar()
   }
 
-    ; (async () => {
-      while (!document.querySelector('aside')) {
-        await new Promise((r) => requestAnimationFrame(r))
-      }
-      if (!getSidebarStatus()) turnOffSidebar()
-    })()
+
 </script>
 
 <script is:inline>
