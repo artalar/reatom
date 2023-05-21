@@ -130,11 +130,7 @@ const { source } = Astro.props
 </style>
 
 <script is:inline>
-  const getSidebarStatus = () => {
-    return JSON.parse(
-      localStorage.getItem('sidebar') ?? (window.innerWidth >= 768).toString(),
-    )
-  }
+  let sidebar = window.innerWidth >= 768
 
   const turnOnSidebar = () => {
     document.querySelector('aside').style.removeProperty('display')
@@ -145,15 +141,18 @@ const { source } = Astro.props
   }
 
   window.toggleSidebar = () => {
-    const sidebar = !getSidebarStatus()
-
-    localStorage.setItem('sidebar', JSON.parse(sidebar))
+    sidebar = !sidebar
 
     if (sidebar) turnOnSidebar()
     else turnOffSidebar()
   }
 
-
+    ; (async () => {
+      while (!document.querySelector('aside')) {
+        await new Promise((r) => requestAnimationFrame(r))
+      }
+      if (!sidebar) turnOffSidebar()
+    })()
 </script>
 
 <script is:inline>

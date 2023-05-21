@@ -62,7 +62,8 @@
 }
 
 html {
-  font-size: max(14px, calc(0.4vw + 0.7em));
+  font-size: calc(0.4vw + 0.7em);
+  font-size: clamp(14px, calc(0.4vw + 0.7em), 18px);
 }
 
 body,
