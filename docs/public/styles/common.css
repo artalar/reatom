@@ -1,0 +1,97 @@
+:root {
+  --fg-default-light: #303050;
+  --bg-default-light: #fefeff;
+  --fg1-default-light: #000005;
+  --bg1-default-light: #f5f5f9;
+  --code-filter-default-light: invert(1) hue-rotate(240deg) contrast(1.2)
+    saturate(135%);
+
+  --fg-default-dark: #b6b5be;
+  --bg-default-dark: #111117;
+  --fg1-default-dark: #f9f9ff;
+  --bg1-default-dark: #202027;
+  --code-filter-default-dark: none;
+
+  --fg: var(--fg-default-light);
+  --bg: var(--bg-default-light);
+  --fg1: var(--fg1-default-light);
+  --bg1: var(--bg1-default-light);
+
+  --code-filter: var(--code-filter-default-light);
+  --line-height: 1.85rem;
+  --header-height: 3rem;
+  --aside-width: 18rem;
+}
+
+[data-theme='dark'] {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: var(--fg-default-dark);
+    --bg: var(--bg-default-dark);
+    --fg1: var(--fg1-default-dark);
+    --bg1: var(--bg1-default-dark);
+    --code-filter: var(--code-filter-default-dark);
+  }
+
+  [data-theme='light'] {
+    display: none;
+  }
+  [data-theme='dark'] {
+    display: block;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --fg: var(--fg-default-light);
+    --bg: var(--bg-default-light);
+    --fg1: var(--fg1-default-light);
+    --bg1: var(--bg1-default-light);
+    --code-filter: var(--code-filter-default-light);
+  }
+
+  [data-theme='light'] {
+    display: block;
+  }
+  [data-theme='dark'] {
+    display: none;
+  }
+}
+
+html {
+  font-size: max(14px, calc(0.4vw + 0.7em));
+}
+
+body,
+body *,
+body *:before,
+body *:after {
+  color: var(--fg);
+  font-family: 'Roboto', sans;
+  line-height: var(--line-height);
+  box-sizing: border-box;
+
+  scrollbar-color: var(--fg) var(--fg1);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body,
+button,
+select {
+  background-color: var(--bg);
+}
+
+body *:focus,
+body *:focus:before,
+body *:focus:after {
+  outline: 0.05rem dashed var(--fg1);
+}
+
+body *::selection {
+  color: var(--bg);
+  background-color: var(--fg);
+}

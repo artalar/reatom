@@ -1,0 +1,206 @@
+---
+export type Props = {
+  source: string
+}
+
+const { source } = Astro.props
+---
+
+<header aria-details="controls">
+  <a aria-details="Main page" title="Main page" href="/">
+    <img src="/favicon.svg" alt="logo" />
+  </a>
+  <div class="border"><button aria-details="sidebar toggler" onclick="toggleSidebar()">=</button></div>
+  <div class="border">
+    <a aria-details="Github repo" title="Github repo" href="https://github.com/artalar/reatom" target="_parent">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <path
+          d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z">
+        </path>
+      </svg>
+    </a>
+  </div>
+  <div class="border">
+    <a href={source} target="_blank" aria-details="Edit on GitHub" title="Edit on GitHub">✏</a>
+  </div>
+  <div class="border select">
+    <select name="theme">
+      <option value="light">🌖</option>
+      <option value="system">🌓</option>
+      <option value="dark">🌒</option>
+    </select>
+  </div>
+</header>
+
+<style scoped>
+  header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--header-height);
+    display: flex;
+    align-items: center;
+    gap: 3rem;
+    padding-left: 2rem;
+    background-color: var(--bg1);
+    opacity: 0.7;
+  }
+
+  header * {
+    background-color: transparent;
+  }
+
+  .border {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 2rem;
+    height: 2rem;
+    border: 0.1rem solid var(--fg);
+    border-radius: 0.25rem;
+  }
+
+  .border.select {
+    position: relative;
+    overflow: hidden;
+    padding-left: 0.75rem;
+  }
+
+  .border.select::after {
+    content: "";
+    position: absolute;
+    width: 0.25rem;
+    height: 100%;
+    top: 0;
+    right: 0rem;
+    background-color: var(--bg1);
+  }
+
+  button {
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    margin: -0.25rem;
+    font-size: 3rem;
+  }
+
+  a {
+    border: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  a::after {
+    display: none;
+  }
+
+  a:hover {
+    border-bottom: none;
+  }
+
+  a img {
+    width: 2rem;
+  }
+
+  a[aria-details='Github repo'] svg {
+    fill: var(--fg);
+    height: 1.5rem;
+  }
+
+  a[aria-details='Edit on GitHub'] {
+    transform: rotate(-45deg);
+    background: var(--fg);
+    color: var(--bg);
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1rem;
+  }
+
+  select {
+    /* this toogled after script load */
+    display: none;
+    filter: hue-rotate(185deg) grayscale(0.7);
+    /* font-size: 1rem; */
+    border: none;
+    cursor: pointer;
+  }
+</style>
+
+<script is:inline>
+  const getSidebarStatus = () => {
+    return JSON.parse(
+      localStorage.getItem('sidebar') ?? (window.innerWidth >= 768).toString(),
+    )
+  }
+
+  const turnOnSidebar = () => {
+    document.querySelector('aside').style.removeProperty('display')
+  }
+
+  const turnOffSidebar = () => {
+    document.querySelector('aside').style.display = 'none'
+  }
+
+  window.toggleSidebar = () => {
+    const sidebar = !getSidebarStatus()
+
+    localStorage.setItem('sidebar', JSON.parse(sidebar))
+
+    if (sidebar) turnOnSidebar()
+    else turnOffSidebar()
+  }
+
+    ; (async () => {
+      while (!document.querySelector('aside')) {
+        await new Promise((r) => requestAnimationFrame(r))
+      }
+      if (!getSidebarStatus()) turnOffSidebar()
+    })()
+</script>
+
+<script is:inline>
+  const pallete = {
+    light: {
+      '--fg': 'var(--fg-default-light)',
+      '--bg': 'var(--bg-default-light)',
+      '--fg1': 'var(--fg1-default-light)',
+      '--bg1': 'var(--bg1-default-light)',
+      '--code-filter': 'var(--code-filter-default-light)',
+    },
+    dark: {
+      '--fg': 'var(--fg-default-dark)',
+      '--bg': 'var(--bg-default-dark)',
+      '--fg1': 'var(--fg1-default-dark)',
+      '--bg1': 'var(--bg1-default-dark)',
+      '--code-filter': 'var(--code-filter-default-dark)',
+    },
+  }
+
+  if (globalThis.matchMedia) {
+    const theme = localStorage.getItem('theme') ?? 'system'
+    const select = document.querySelector('select[name="theme"]')
+    select.value = theme
+    select.style.display = 'block'
+
+    select.addEventListener('change', (e) => toggle(e.target.value))
+
+    toggle(theme)
+
+    function toggle(theme) {
+      localStorage.setItem('theme', theme)
+
+      if (theme === 'system') {
+        for (const k in pallete.dark) {
+          document.documentElement.style.removeProperty(k)
+        }
+      } else {
+        for (const [k, v] of Object.entries(pallete[theme])) {
+          document.documentElement.style.setProperty(k, v)
+        }
+      }
+    }
+  }
+</script>
