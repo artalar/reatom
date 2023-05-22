@@ -89,6 +89,12 @@ select {
 body *:focus,
 body *:focus:before,
 body *:focus:after {
+  outline: none;
+}
+
+body *:focus-visible,
+body *:focus-visible:before,
+body *:focus-visible:after {
   outline: 0.05rem dashed var(--fg1);
 }
 
