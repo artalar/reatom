@@ -1,6 +1,6 @@
 <script>
   declare global {
-    interface  Window {
+    interface Window {
       ADD_COPY_BUTTONS(): void
     }
   }
@@ -22,29 +22,38 @@
       }
 
       h.appendChild(copyButton)
+      h.classList.add('with-copy')
     })
-    window.ADD_COPY_BUTTONS()
+  window.ADD_COPY_BUTTONS()
 </script>
 <style is:global>
   button.copy:before {
     content: unset;
   }
   button.copy {
-    display: inline;
+    display: none;
     border: none;
     background: unset;
     margin: 0;
     padding: 0;
     min-width: unset;
     margin-left: 1rem;
-    font-size: 1rem;
-    line-height: 1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
     height: 1rem;
-    position: relative;
-    top: -0.5rem;
+    cursor: pointer;
   }
+
   h1 button.copy,
   h2 button.copy {
-    top: -1rem;
+    font-size: 1.3rem;
+  }
+
+  .with-copy {
+    position: relative;
+  }
+
+  .with-copy:hover button.copy {
+    display: inline;
   }
 </style>
