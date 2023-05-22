@@ -21,9 +21,6 @@ body {
 aside {
   display: flex;
   flex-direction: column;
-  width: var(--aside-width);
-  min-width: var(--aside-width);
-  max-width: var(--aside-width);
   max-height: calc(100vh - var(--header-height));
   overflow-y: scroll;
   padding: 1rem;
@@ -31,14 +28,7 @@ aside {
 }
 
 main {
-  margin: auto;
-  width: min(100vw, 55rem);
-  max-width: 55rem;
-  max-height: calc(100vh - var(--header-height));
-  overflow-y: scroll;
-  display: flex;
-  flex-direction: column;
-  padding: 0 1rem;
+  overflow-y: auto;
 }
 
 /* TODO: stick it bottom */

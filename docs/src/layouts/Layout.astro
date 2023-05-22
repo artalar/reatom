@@ -40,14 +40,20 @@ if (file) {
   </head>
   <body>
     <Header source={source} />
-    <Sidebar />
-    <main>
-      <h1>{title}</h1>
-      <slot />
-      <footer>
-        <a href="https://github.com/artalar/reatom" target="_blank">github</a>
-      </footer>
-    </main>
+    <div class="container">
+      <Sidebar />
+      <main>
+        <div class="wrapper">
+          <h1>{title}</h1>
+          <slot />
+          <footer>
+            <a href="https://github.com/artalar/reatom" target="_blank"
+              >github</a
+            >
+          </footer>
+        </div>
+      </main>
+    </div>
     <script>
       document.querySelector('main')?.scrollIntoView()
     </script>
@@ -99,3 +105,21 @@ if (file) {
     <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>
+
+<style scoped>
+  .container {
+    display: grid;
+    width: 100%;
+    grid-template-columns: var(--aside-width) auto;
+  }
+
+  main .wrapper {
+    max-height: calc(100vh - var(--header-height));
+    margin: auto;
+    width: min(100vw, 55rem);
+    max-width: 55rem;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+</style>
