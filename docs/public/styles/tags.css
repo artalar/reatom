@@ -120,7 +120,6 @@ li {
   padding: 0.5em;
   padding-left: 1em;
   background-color: var(--bg1);
-  background: linear-gradient(45deg, var(--bg1) 0%, var(--bg) 100%);
   border-radius: 0.5rem;
 }
 li.current {
