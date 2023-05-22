@@ -15,7 +15,7 @@ b {
 body {
   margin: 0;
   display: flex;
-  padding-top: var(--header-height);
+  flex-direction: column;
 }
 
 aside {
