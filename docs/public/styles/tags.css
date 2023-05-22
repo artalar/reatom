@@ -22,6 +22,7 @@ aside {
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - var(--header-height));
+  width: var(--aside-width);
   overflow-y: scroll;
   padding: 1rem;
   opacity: 0.8;
@@ -29,6 +30,7 @@ aside {
 
 main {
   overflow-y: auto;
+  flex: 1;
 }
 
 /* TODO: stick it bottom */
