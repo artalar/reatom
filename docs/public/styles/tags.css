@@ -1,11 +1,11 @@
 a {
   text-decoration: none;
-  border-bottom: 0.15rem solid var(--fg);
+  border-bottom: 0.1rem solid var(--fg);
 }
 
 a:hover,
 a.current {
-  border-bottom: 0.25rem solid var(--fg1);
+  border-bottom: 0.15rem solid var(--fg1);
 }
 
 b {
