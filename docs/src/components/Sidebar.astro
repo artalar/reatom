@@ -61,9 +61,7 @@ const sections = [
           .sort(({ frontmatter: { title } }) => (title === 'Main' ? -1 : 1))
           .map(({ url, frontmatter }) => (
             <li>
-              <a href={url || '/'} class="menu-link">
-                {frontmatter.title}
-              </a>
+              <a href={url || '/'}>{frontmatter.title}</a>
             </li>
           ))
       }
@@ -71,24 +69,3 @@ const sections = [
   </nav>
   {sections.map((section) => <NavSection section={section} />)}
 </aside>
-
-<style is:global>
-  .menu-link,
-  .menu-link:hover,
-  .menu-link.current {
-    border: none;
-    display: inline-flex;
-    width: 100%;
-    padding: 0.5em;
-    padding-left: 1em;
-  }
-
-  nav li {
-    background: transparent;
-    padding: 0;
-    transition: background 0.3s ease-in-out;
-  }
-  nav li:hover {
-    background-color: var(--bg1);
-  }
-</style>

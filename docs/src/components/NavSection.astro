@@ -21,9 +21,7 @@ const id = `nav-${section.name}`
       {
         section.pages.map((v) => (
           <li>
-            <a href={v.url || '/'} class="menu-link">
-              {v.frontmatter.title}
-            </a>
+            <a href={v.url || '/'}>{v.frontmatter.title}</a>
           </li>
         ))
       }

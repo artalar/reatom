@@ -193,3 +193,22 @@ details > ul {
   padding-left: 0.5rem;
   margin: 0.5rem 0 0.5rem 0;
 }
+
+nav li {
+  background: transparent;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+nav li:hover {
+  background-color: var(--bg1);
+}
+
+nav a,
+nav a:hover,
+nav a.current {
+  border: none;
+  display: inline-flex;
+  width: 100%;
+  padding: 0.5em;
+  padding-left: 1em;
+}
