@@ -25,7 +25,6 @@ aside {
   width: var(--aside-width);
   overflow-y: scroll;
   padding: 1rem;
-  /* opacity: 0.8; */
   gap: 0.3rem;
 }
 

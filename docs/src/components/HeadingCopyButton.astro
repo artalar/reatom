@@ -31,29 +31,32 @@
     content: unset;
   }
   button.copy {
-    display: none;
+    opacity: 0;
     border: none;
     background: unset;
     margin: 0;
     padding: 0;
     min-width: unset;
     margin-left: 1rem;
-    font-size: 1.2rem;
+    font-size: 1em;
     font-weight: 500;
-    height: 1rem;
+    line-height: 1rem;
     cursor: pointer;
   }
 
-  h1 button.copy,
+  h1 button.copy {
+    font-size: 0.8em;
+  }
   h2 button.copy {
-    font-size: 1.3rem;
+    font-size: 0.9em;
   }
 
   .with-copy {
     position: relative;
   }
 
-  .with-copy:hover button.copy {
-    display: inline;
+  .with-copy:hover button.copy,
+  button.copy:focus {
+    opacity: 1;
   }
 </style>
