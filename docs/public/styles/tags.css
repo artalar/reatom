@@ -1,11 +1,11 @@
 a {
   text-decoration: none;
-  border-bottom: 0.15rem solid var(--fg);
+  border-bottom: 0.1rem solid var(--fg);
 }
 
 a:hover,
 a.current {
-  border-bottom: 0.25rem solid var(--fg1);
+  border-bottom: 0.15rem solid var(--fg1);
 }
 
 b {
@@ -15,30 +15,22 @@ b {
 body {
   margin: 0;
   display: flex;
-  padding-top: var(--header-height);
+  flex-direction: column;
 }
 
 aside {
   display: flex;
   flex-direction: column;
-  width: var(--aside-width);
-  min-width: var(--aside-width);
-  max-width: var(--aside-width);
   max-height: calc(100vh - var(--header-height));
+  width: var(--aside-width);
   overflow-y: scroll;
   padding: 1rem;
-  opacity: 0.8;
+  gap: 0.3rem;
 }
 
 main {
-  margin: auto;
-  width: min(100vw, 55rem);
-  max-width: 55rem;
-  max-height: calc(100vh - var(--header-height));
-  overflow-y: scroll;
-  display: flex;
-  flex-direction: column;
-  padding: 0 1rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* TODO: stick it bottom */
@@ -85,7 +77,6 @@ blockquote::before {
 }
 
 details {
-  margin: 0.5rem 0 0.5rem 1rem;
   padding: 0.5rem;
 }
 nav > details {
@@ -128,7 +119,6 @@ li {
   padding: 0.5em;
   padding-left: 1em;
   background-color: var(--bg1);
-  background: linear-gradient(45deg, var(--bg1) 0%, var(--bg) 100%);
   border-radius: 0.5rem;
 }
 li.current {
@@ -171,6 +161,7 @@ strong {
 summary {
   list-style: none;
   font-size: 1.2rem;
+  font-weight: 500;
   cursor: pointer;
   padding: 0 0.5rem;
 }
@@ -200,4 +191,24 @@ nav > ul {
 }
 details > ul {
   padding-left: 0.5rem;
+  margin: 0.5rem 0 0.5rem 0;
+}
+
+nav li {
+  background: transparent;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+nav li:hover {
+  background-color: var(--bg1);
+}
+
+nav a,
+nav a:hover,
+nav a.current {
+  border: none;
+  display: inline-flex;
+  width: 100%;
+  padding: 0.5em;
+  padding-left: 1em;
 }
