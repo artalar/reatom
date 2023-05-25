@@ -138,20 +138,22 @@ pre {
   flex-shrink: 0;
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
-  overflow-x: scroll;
+  overflow-x: auto;
   line-height: calc(var(--line-height) * 0.9);
   border-radius: 8px;
   font-family: 'Roboto Mono', monospace;
   border: 1px dashed;
-
-  filter: var(--code-filter);
+  background-color: hsl(240deg 30% 50% / 3%) !important;
 }
 
 pre,
 pre * {
   line-height: calc(var(--line-height) * 0.9);
-  background-color: transparent;
   font-family: 'Roboto Mono', monospace;
+}
+pre * {
+  background-color: transparent !important;
+  filter: var(--code-filter);
 }
 
 strong {

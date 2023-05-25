@@ -6,10 +6,10 @@
   --code-filter-default-light: invert(1) hue-rotate(240deg) contrast(1.2)
     saturate(135%);
 
-  --fg-default-dark: #b6b5be;
-  --bg-default-dark: #111117;
-  --fg1-default-dark: #f9f9ff;
-  --bg1-default-dark: #202027;
+  --fg-default-dark: hsl(240 6% 87%);
+  --bg-default-dark: hsl(240 15% 13%);
+  --fg1-default-dark: hsl(240 100% 100%);
+  --bg1-default-dark: hsl(240 10% 18%);
   --code-filter-default-dark: none;
 
   --fg: var(--fg-default-light);
