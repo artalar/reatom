@@ -1,4 +1,5 @@
 ---
+import Header from '../components/Header.astro'
 import Sidebar from '../components/Sidebar.astro'
 import CurrentLinkHighlight from '../components/CurrentLinkHighlight.astro'
 import HeadingCopyButton from '../components/HeadingCopyButton.astro'
@@ -32,21 +33,47 @@ if (file) {
     <title>{title}</title>
     {description ? <meta name="description" content={description} /> : null}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="generator" content={Astro.generator} />
-    <link rel="stylesheet" href="/styles/chromo.css" />
+    <link rel="stylesheet" href="/styles/common.css" />
+    <link rel="stylesheet" href="/styles/tags.css" />
     <link rel="stylesheet" href="/styles/fonts.css" />
+    <meta name="generator" content={Astro.generator} />
   </head>
-  <body class="mono-all">
-    <Sidebar source={source} />
-    <main>
-      <h1>{title}</h1>
-      <slot />
-      <footer>
-        <a href="https://github.com/artalar/reatom" target="_blank">github</a>
-      </footer>
-    </main>
+  <body>
+    <Header source={source} />
+    <div class="container">
+      <Sidebar />
+      <main>
+        <div class="wrapper">
+          <h1>{title}</h1>
+          <slot />
+          <footer>
+            <a href="https://github.com/artalar/reatom" target="_blank"
+              >github</a
+            >
+          </footer>
+        </div>
+      </main>
+    </div>
     <script>
       document.querySelector('main')?.scrollIntoView()
+    </script>
+    <script>
+      const main = document.querySelector('main')
+      const header = document.querySelector('header')
+
+      if (main && header) {
+        main.addEventListener('scroll', (e) => {
+          if (!e.target) {
+            return
+          }
+
+          if (e.target.scrollTop !== 0) {
+            header.classList.add('shadow')
+          } else {
+            header.classList.remove('shadow')
+          }
+        })
+      }
     </script>
     <CurrentLinkHighlight />
     <HeadingCopyButton />
@@ -96,3 +123,19 @@ if (file) {
     <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>
+
+<style scoped>
+  .container {
+    display: flex;
+    width: 100%;
+  }
+
+  main .wrapper {
+    max-height: calc(100vh - var(--header-height));
+    margin: auto;
+    max-width: 55rem;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+</style>

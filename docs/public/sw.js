@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 
-const CACHE = 'cache-and-update-v4'
+const CACHE = 'cache-and-update-v5'
 const cacheTypes = ['html', 'css', 'font', 'image']
 // const _log = console.log
 const _log = () => {}

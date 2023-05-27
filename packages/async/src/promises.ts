@@ -1,4 +1,6 @@
-export const CACHE = new WeakMap<
+
+
+export const PROMISES = new WeakMap<
   Promise<any>,
   (fn: () => Promise<any>) => any
 >()

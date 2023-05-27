@@ -1,13 +1,14 @@
 Reatom is the ultimate [state manager](https://www.reatom.dev/general/what-is-state-manager) with a unique set of features. It offers the most modern techniques for describing, executing, and debugging code in a small package. Reatom is an opinionated data manager with strict but flexible rules that enable you to write simple and maintainable code.
 
-Key principles:
+## Key features
 
-- **simple** and powerful abstractions - the whole ecosystem is built on top of a three primitives: ctx, atom, action
+- **simple** and powerful abstractions with only three primitives: ctx, atom, action
 - **immutable** and reliable computations with [atomicity](https://www.reatom.dev/general/what-is-state-manager#state) guaranties
-- **explicit reactivity** - maximum [performance](#how-performant-reatom-is) with [atomization](https://www.reatom.dev/guides/atomization) without proxies
-- perfect **effects management** and **debugging** experience by [immutable cause (call) stack](https://www.reatom.dev/guides/debug). Advanced [async package](https://www.reatom.dev/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation of entire chain - like redux-saga, but with native `await` and `AbortController`
+- **explicit reactivity** - [maximum](#how-performant-reatom-is) performance [without proxies](https://www.reatom.dev/guides/atomization)
+- perfect **effects management** with async context and automatic chains cancellation
+- nice **debugging** experience by [immutable cause (call) stack](https://www.reatom.dev/guides/debug)
 - implicit **DI** for simple SSR and [testing](https://www.reatom.dev/packages/testing)
-- actor-like **lifecycle hooks** for declarative description of [self-sufficient models](https://www.reatom.dev/guides/lifecycle)
+- actor-like **lifecycle hooks** for [self-sufficient models](https://www.reatom.dev/guides/lifecycle)
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
 - [automatic type inference](https://www.reatom.dev/guides/typescript)
 
@@ -213,11 +214,11 @@ Of course there are no software without limitations. Reatom is trying to be a si
 - Currently, there is no asynchronous transactions support, but we are working on it. It is important feature for simplify building of optimistic UI and we really think it will improve UX a lot.
 - We have a lot of utils and the ecosystem is growing all the time, but the target of that is have a set of well done logic primitives, and there is no architecture framework or codestyle / declarative framework to fit you in one strict flow. Reatom trying to be in the middle of a library and a framework. We love procedural programming with minimum extra API and semantic overhead. Our defaults are good already to help to you to write a better code: immutability and lazyness, transactions and separation of pure computations and effects, `ctx` and connections and processes virtualizations.
 
-### Community
+### Media
 
-- [en](https://github.com/artalar/reatom/discussions)
-- [ru](https://t.me/reatom_ru)
-- [twitter](https://twitter.com/ReatomJS)
+- [en twitter](https://twitter.com/ReatomJS)
+- [ru telegram](https://t.me/reatom_ru)
+- [ru youtube](https://www.youtube.com/playlist?list=PLXObawgXpIfxERCN8Lqd89wdsXeUHm9XU)
 
 ### How to support the project?
 
@@ -226,8 +227,12 @@ https://www.patreon.com/artalar_dev
 ## Zen
 
 - **Good primitive is more than a framework**
-- Composition is better than configuration
-- Hidden context is explicit if it is general
+- Composition beats configuration
+<!--
+- General context explicit enough to be hidden
+  - A feature semantic should be visible
+
+-->
 
 ## Credits
 

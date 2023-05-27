@@ -4,6 +4,7 @@
 
     if (new URL(a.href).pathname === location.pathname) {
       a.classList.add('current')
+      a.closest('li')?.classList.add('current')
     }
   })
 </script>

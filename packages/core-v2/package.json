@@ -1,6 +1,6 @@
 {
   "name": "@reatom/core-v2",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for core-v2",
