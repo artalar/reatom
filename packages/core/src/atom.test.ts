@@ -588,6 +588,17 @@ test('update callback should accept the fresh state', () => {
   ;`👍` //?
 })
 
+test('updateHooks should not call on init', () => {
+  const a = atom((ctx, state = 1) => state)
+  const ctx = createCtx()
+  const track = mockFn()
+  ;(a.__reatom.updateHooks = new Set()).add(track)
+
+  assert.is(ctx.get(a), 1)
+  assert.is(track.calls.length, 0)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

@@ -387,8 +387,9 @@ export const createCtx = ({
     if (patch?.cause && !updating) return patch
 
     let cache = patch ?? read(proto)
+    let isInt = !cache
 
-    if (!cache) {
+    if (isInt) {
       cache = {
         state: proto.initState(ctx),
         proto,
@@ -398,10 +399,10 @@ export const createCtx = ({
         listeners: new Set(),
       }
     } else if (proto.computer === null && !updating) {
-      return cache
+      return cache!
     }
 
-    if (!patch || patch.cause) patch = addPatch(cache)
+    if (!patch || patch.cause) patch = addPatch(cache!)
 
     let { state } = patch
     let patchCtx: Ctx = {
@@ -419,7 +420,7 @@ export const createCtx = ({
       throw (patch.error = error)
     }
 
-    if (!Object.is(state, patch.state)) {
+    if (!isInt && !Object.is(state, patch.state)) {
       if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
         enqueueComputers(patch.subs)
       }
