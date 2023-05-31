@@ -609,10 +609,9 @@ export let __count = (name: string) => `${name}#${++i}`
 
 // @ts-ignore
 export let atom: {
-  <T extends (ctx: CtxSpy) => any>(initState: T, name?: string): Atom<
-    ReturnType<T>
-  >
-  <State>(initState: State, name?: string): AtomMut<State>
+  <T>(initState: ((ctx: CtxSpy) => T), name?: string): Atom<T>
+  <T>(initState: T, name?: string): AtomMut<T>
+  <T>(initState: T | ((ctx: CtxSpy) => T), name?: string): Atom<T> | AtomMut<T>
 } = (
   initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
   name = __count('_atom'),
