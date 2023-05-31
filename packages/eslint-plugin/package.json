@@ -20,7 +20,7 @@
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
-    "test": "tsx src/**/*.test.ts",
+    "test": "ts-node src/**/*.test.ts",
     "test:watch": "tsx watch src/**/*.test.ts"
   },
   "author": "pivaszbs",

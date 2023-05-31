@@ -607,7 +607,6 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
-// @ts-ignore
 export let atom: {
   <T extends (ctx: CtxSpy) => any>(initState: T, name?: string): Atom<
     ReturnType<T>
@@ -616,7 +615,7 @@ export let atom: {
 } = (
   initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
   name = __count('_atom'),
-): Atom => {
+): AtomMut => {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
@@ -652,7 +651,6 @@ export let atom: {
     return fns.reduce((acc, fn) => fn(acc), this)
   }
 
-  // @ts-ignore
   return theAtom
 }
 
