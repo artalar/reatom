@@ -18,7 +18,7 @@
     "prepublishOnly": "npm run build && npm run build-primitives && npm run test",
     "build": "microbundle -f esm,cjs",
     "build-primitives": "microbundle --cwd primitives",
-    "test": "echo tsx src/index.test.ts",
+    "test": "echo ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
