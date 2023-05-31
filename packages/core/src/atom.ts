@@ -608,14 +608,9 @@ let i = 0
 export let __count = (name: string) => `${name}#${++i}`
 
 // @ts-ignore
-export let atom: {
-  <T>(initState: ((ctx: CtxSpy) => T), name?: string): Atom<T>
-  <T>(initState: T, name?: string): AtomMut<T>
-  <T>(initState: T | ((ctx: CtxSpy) => T), name?: string): Atom<T> | AtomMut<T>
-} = (
-  initState: Fn<[CtxSpy, any?]> | Exclude<AllTypes, Fn>,
-  name = __count('_atom'),
-): Atom => {
+function atom<T>(initState: ((ctx: CtxSpy) => T), name?: string): Atom<T>
+function atom<T>(initState: T, name?: string): AtomMut<T>
+function atom<T>(initState: T | ((ctx: CtxSpy) => T), name = __count('_atom')): Atom<T> | AtomMut<T> {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
