@@ -607,9 +607,9 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
-function atom<T>(initState: (ctx: CtxSpy) => T, name?: string): Atom<T>
-function atom<T>(initState: T, name?: string): AtomMut<T>
-function atom<T>(
+export function atom<T>(initState: (ctx: CtxSpy) => T, name?: string): Atom<T>
+export function atom<T>(initState: T, name?: string): AtomMut<T>
+export function atom<T>(
   initState: T | ((ctx: CtxSpy) => T),
   name = __count('_atom'),
 ): Atom<T> | AtomMut<T> {
