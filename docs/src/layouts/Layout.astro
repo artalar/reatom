@@ -27,101 +27,105 @@ if (file) {
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title}</title>
-    {description ? <meta name="description" content={description} /> : null}
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="/styles/common.css" />
-    <link rel="stylesheet" href="/styles/tags.css" />
-    <link rel="stylesheet" href="/styles/fonts.css" />
-    <meta name="generator" content={Astro.generator} />
-  </head>
-  <body>
-    <Header source={source} />
-    <div class="container">
-      <Sidebar />
-      <main>
-        <div class="wrapper">
-          <h1>{title}</h1>
-          <slot />
-          <footer>
-            <a href="https://github.com/artalar/reatom" target="_blank"
-              >github</a
-            >
-          </footer>
-        </div>
-      </main>
-    </div>
-    <script>
-      document.querySelector('main')?.scrollIntoView()
-    </script>
-    <script>
-      const main = document.querySelector('main')
-      const header = document.querySelector('header')
 
-      if (main && header) {
-        main.addEventListener('scroll', (e) => {
-          if (!e.target) {
-            return
-          }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {description ?
+  <meta name="description" content={description} /> : null}
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/styles/common.css" />
+  <link rel="stylesheet" href="/styles/tags.css" />
+  <link rel="stylesheet" href="/styles/fonts.css" />
+  <meta name="generator" content={Astro.generator} />
+</head>
 
-          if (e.target.scrollTop !== 0) {
-            header.classList.add('shadow')
-          } else {
-            header.classList.remove('shadow')
-          }
-        })
-      }
-    </script>
-    <CurrentLinkHighlight />
-    <HeadingCopyButton />
-    <Glitch />
-    <script client>
-      if (import.meta.env.PROD) {
-        requestAnimationFrame(async () => {
-          await navigator.serviceWorker
-            ?.register('/sw.js')
-            .then((registration) => registration.update())
-            .catch(() => null)
+<body>
+  <Header source={source} />
+  <div class="container">
+    <Sidebar />
+    <main>
+      <div class="wrapper">
+        <h1>{title}</h1>
+        <slot />
+        <footer>
+          <a href="https://github.com/artalar/reatom" target="_blank">github</a>
+        </footer>
+      </div>
+    </main>
+  </div>
+  <script>
+    if (location.pathname === '/') {
+      document.body.classList.add('landing')
+    }
+  </script>
+  <script>
+    const main = document.querySelector('main')
+    const header = document.querySelector('header')
 
-          // console.log('client ready')
+    if (main && header) {
+      main.addEventListener('scroll', (e) => {
+        if (!e.target) {
+          return
+        }
 
-          const broadcast = new BroadcastChannel('sw')
-          broadcast.postMessage({ type: 'client-ready' })
-          broadcast.onmessage = ({ data, source }) => {
-            // console.log('client message')
-            if (
-              data?.type === 'hot-update' &&
-              location.pathname === new URL(data.url).pathname
-            ) {
-              source?.postMessage({ type: 'hot-update-received' })
+        if (e.target.scrollTop !== 0) {
+          header.classList.add('shadow')
+        } else {
+          header.classList.remove('shadow')
+        }
+      })
+    }
+  </script>
+  <CurrentLinkHighlight />
+  <HeadingCopyButton />
+  <Glitch />
+  <script client>
+    if (import.meta.env.PROD) {
+      requestAnimationFrame(async () => {
+        await navigator.serviceWorker
+          ?.register('/sw.js')
+          .then((registration) => registration.update())
+          .catch(() => null)
 
-              const doc = new DOMParser().parseFromString(
-                data.text,
-                'text/html',
-              )
-              const newMain = doc.querySelector('main')
-              const main = document.querySelector('main')
+        // console.log('client ready')
 
-              if (!newMain || newMain.innerHTML === main.innerHTML) {
-                // console.log('cliens mains is equal')
-                return
-              }
+        const broadcast = new BroadcastChannel('sw')
+        broadcast.postMessage({ type: 'client-ready' })
+        broadcast.onmessage = ({ data, source }) => {
+          // console.log('client message')
+          if (
+            data?.type === 'hot-update' &&
+            location.pathname === new URL(data.url).pathname
+          ) {
+            source?.postMessage({ type: 'hot-update-received' })
 
-              // console.log('cliens mains is not equal')
+            const doc = new DOMParser().parseFromString(
+              data.text,
+              'text/html',
+            )
+            const newMain = doc.querySelector('main')
+            const main = document.querySelector('main')
 
-              // TODO show toast?
-              main.replaceWith(newMain)
-              setTimeout(() => window.ADD_COPY_BUTTONS())
+            if (!newMain || newMain.innerHTML === main.innerHTML) {
+              // console.log('cliens mains is equal')
+              return
             }
+
+            // console.log('cliens mains is not equal')
+
+            // TODO show toast?
+            main.replaceWith(newMain)
+            setTimeout(() => window.ADD_COPY_BUTTONS())
           }
-        })
-      }
-    </script>
-    <script defer src="/_vercel/insights/script.js"></script>
-  </body>
+        }
+      })
+    }
+  </script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</body>
+
 </html>
 
 <style scoped>
@@ -137,5 +141,48 @@ if (file) {
     padding: 0 1rem;
     display: flex;
     flex-direction: column;
+  }
+</style>
+
+<style is:global>
+  .landing:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url(/favicon.svg);
+    background-size: 120%;
+    background-repeat: no-repeat;
+    background-position-y: 20%;
+    background-position-x: var(--aside-width);
+    opacity: 0.01;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+
+  #key-features+ul {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0;
+    font-size: 1.2em;
+  }
+
+  #key-features+ul li {
+    flex: 30%;
+    margin: 0;
+    padding: 1rem;
+    font-size: 1.1em;
+    min-width: 10rem;
+  }
+
+  #key-features+ul li small {
+    display: block;
+    font-size: 0.9rem;
+    margin-top: 1rem;
   }
 </style>
