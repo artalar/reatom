@@ -66,6 +66,17 @@ html {
   font-size: clamp(14px, calc(0.4vw + 0.7em), 18px);
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--fg);
+  border-radius: 999px;
+}
+
 body,
 body *,
 body *:before,
