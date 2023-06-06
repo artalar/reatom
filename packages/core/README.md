@@ -270,32 +270,53 @@ export const currencyAtom = atom((ctx, state?: string) => {
 
 ### `atom.pipe` API
 
-Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`.
+Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`. The main reason is a readable and type-safe way to apply decorators.
 
 ```ts
-const doubleCountAtom = atom(0).pipe(
-  mapState((ctx, state) => state * 1),
-  withStateHistory(1),
+const countAtom = atom(0).pipe(
+  withInit(() => localStorage.getItem('COUNT') ?? 0),
 )
 // equals to
-const doubleCountAtom = withStateHistory(1)(
-  mapState((ctx, state) => state * 1)(atom(0)),
-)
+const countAtom = withInit(() => localStorage.getItem('COUNT') ?? 0)(atom(0))
 ```
 
-> `withStateHistory` adds additional `historyAtom` to store previous states and `mapState` operator creates new atom to compute a new state. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix).
+> `withInit` allows you to configure the init state of the atom reading, which is more pridictable and safe for a testing sometimes. It is a part of [reatom/hooks](https://www.reatom.dev/packages/hooks#withinit) package.
 
-Chain operator is just a more prettier way to apply decorations
-
-```ts
-// ugly for a few decorators, the applying order is less obvious
-const doubleCountAtom = withStateHistory(
-  1,
-  mapState((ctx, state) => state * 1, atom(0)),
-)
-```
+Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](https://www.reatom.dev/packages/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix)
 
 Btw, actions has `pipe` too!
+
+### `atom.onChange` API
+
+All links and computations between atoms and actions performs in a separate context. But you could have a lot of cases when you need to describe some logic between two things statically outside a context, like action trigger on a data change and so on. `onChange` hook allows you to define this common logic right in place of your atoms definition.
+
+```ts
+const searchAtom = atom('', 'searchAtom')
+const fetchSearchSuggestion = action((ctx, search) => {
+  /* ... */
+}, 'fetchSearchSuggestion')
+searchAtom.onChange((ctx, state) => fetchSearchSuggestion(ctx, state))
+// or just
+searchAtom.onChange(fetchSearchSuggestion)
+```
+
+`onChange` returns un unsubscribe function which you should use if you adding a hook dynamically to a global atom.
+
+The important difference of a hook from a subscription is that it is not activate the connections.
+
+```ts
+const searchAtom = atom('', 'searchAtom')
+const fetchSearchSuggestion = action((ctx, search) => {
+  /* ... */
+}, 'fetchSearchSuggestion')
+
+const filteredSearchAtom = atom((ctx, state = '') => {
+  const search = ctx.spy(searchAtom)
+  return search.length >= 3 ? search : state
+}, 'filteredSearchAtom')
+// the hook will not called if the atom have no subscription, as it lazy.
+filteredSearchAtom.onChange(fetchSearchSuggestion)
+```
 
 ### `action` API
 
@@ -341,6 +362,18 @@ ctx.get(() => {
 
   ctx.get(submit)
   // [{ name: 'Joe', password: 'Bom' }, { name: 'Koe', password: 'Rog' }]
+})
+```
+
+### `action.onCall` API
+
+The same as [atom.onChange](#atomonchange-api), but with the relative arguments: `payload` and `params`.
+
+```ts
+const doSome = action((ctx, a, b) => ({ a, b }), 'doSome')
+doSome.onCall((ctx, payload, params) => {
+  console.log(payload, params)
+  // `doSome(ctx, 1, 2)` will log "{ a: 1, b: 2 }, [1, 2]"
 })
 ```
 

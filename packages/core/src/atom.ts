@@ -98,6 +98,16 @@ export interface Logs extends Array<AtomCache> {}
 export interface Atom<State = any> {
   __reatom: AtomProto<State>
   pipe: Pipe<this>
+
+  onChange: (
+    cb: (
+      ctx: Ctx,
+      newState: State,
+      // TODO there could be different `prevState` for each ctx
+      // prevState: State,
+      // patch: AtomCache<State>,
+    ) => void,
+  ) => Unsubscribe
 }
 
 type Update<State> = State | Fn<[State, Ctx], State>
@@ -131,6 +141,15 @@ export interface AtomCache<State = any> {
 export interface Action<Params extends any[] = any[], Payload = any>
   extends Atom<Array<{ params: Params; payload: Payload }>> {
   (ctx: Ctx, ...params: Params): Payload
+
+  onCall: (
+    cb: (
+      ctx: Ctx,
+      payload: Payload,
+      params: Params,
+      patch: AtomCache<Array<{ params: Params; payload: Payload }>>,
+    ) => void,
+  ) => Unsubscribe
 }
 
 export type AtomState<T> = T extends Atom<infer State> ? State : never
@@ -647,8 +666,15 @@ export let atom: {
     updateHooks: null,
   }
 
-  theAtom.pipe = function (...fns: Array<Fn>) {
+  theAtom.pipe = function (this: Atom, ...fns: Array<Fn>) {
     return fns.reduce((acc, fn) => fn(acc), this)
+  }
+  theAtom.onChange = function (this: Atom, cb: Fn) {
+    const hook = (ctx: Ctx, patch: AtomCache) => cb(ctx, patch.state)
+
+    ;(this.__reatom.updateHooks ??= new Set()).add(hook)
+
+    return () => this.__reatom.updateHooks!.delete(hook)
   }
 
   // @ts-ignore
@@ -677,20 +703,31 @@ export const action: {
   // @ts-expect-error
   actionAtom.__reatom.unstable_fn = fn
 
-  return Object.assign((...params: [Ctx, ...any[]]) => {
-    let state = actionAtom(params[0], (state, patchCtx) => {
-      params[0] = patchCtx
-      return [
-        ...state,
-        {
-          params: params.slice(1),
-          // @ts-expect-error
-          payload: patchCtx.cause.proto.unstable_fn(...params),
-        },
-      ]
-    })
-    return state[state.length - 1]!.payload
-  }, actionAtom)
+  return Object.assign(
+    (...params: [Ctx, ...any[]]) => {
+      let state = actionAtom(params[0], (state, patchCtx) => {
+        params[0] = patchCtx
+        return [
+          ...state,
+          {
+            params: params.slice(1),
+            // @ts-expect-error
+            payload: patchCtx.cause.proto.unstable_fn(...params),
+          },
+        ]
+      })
+      return state[state.length - 1]!.payload
+    },
+    actionAtom,
+    {
+      onCall(this: Action, cb: Fn): Unsubscribe {
+        return this.onChange((ctx, state) => {
+          const { params, payload } = state[state.length - 1]!
+          cb(ctx, payload, params)
+        })
+      },
+    },
+  )
 }
 
 /**

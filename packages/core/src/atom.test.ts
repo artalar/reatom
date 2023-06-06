@@ -599,6 +599,35 @@ test('updateHooks should not call on init', () => {
   ;`👍` //?
 })
 
+test('hooks', () => {
+  const theAtom = atom(0)
+  const atomHook = mockFn()
+  theAtom.onChange(atomHook)
+
+  const theAction = action((ctx, param) => `param:${param}`)
+  const actionHook = mockFn()
+  theAction.onCall(actionHook)
+
+  const ctx = createCtx()
+
+  ctx.get(theAtom)
+  ctx.get(theAction)
+  assert.is(atomHook.calls.length, 0)
+  assert.is(actionHook.calls.length, 0)
+
+  theAtom(ctx, 1)
+  assert.is(atomHook.calls.length, 1)
+  assert.is(atomHook.lastInput(0).subscribe, ctx.subscribe)
+  assert.is(atomHook.lastInput(1), 1)
+
+  theAction(ctx, 1)
+  assert.is(actionHook.calls.length, 1)
+  assert.is(actionHook.lastInput(0).subscribe, ctx.subscribe)
+  assert.is(actionHook.lastInput(1), 'param:1')
+  assert.equal(actionHook.lastInput(2), [1])
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
