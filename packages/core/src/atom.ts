@@ -430,7 +430,7 @@ export const createCtx = ({
       )
     }
 
-    patch.cause ??= root
+    patch.cause ??= ctx.cause
 
     return patch
   }
@@ -595,8 +595,7 @@ export const createCtx = ({
     cause: undefined as any,
   }
 
-  var root = (ctx.cause = ctx.get(() => actualize(ctx, __root)))
-  ctx.cause.cause = null
+  ;(ctx.cause = ctx.get(() => actualize(ctx, __root))).cause = null
 
   return ctx
 }
@@ -623,7 +622,6 @@ export let atom: {
     ctx.get(
       (read, actualize) =>
         actualize!(ctx, theAtom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
-          patch.cause = ctx.cause
           patch.state =
             typeof update === 'function'
               ? update(patch.state, patchCtx)
