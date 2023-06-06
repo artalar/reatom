@@ -439,7 +439,7 @@ export const createCtx = ({
       throw (patch.error = error)
     }
 
-    if (!isInt && !Object.is(state, patch.state)) {
+    if ((updating || !isInt) && !Object.is(state, patch.state)) {
       if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
         enqueueComputers(patch.subs)
       }

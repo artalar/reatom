@@ -628,6 +628,17 @@ test('hooks', () => {
   ;`👍` //?
 })
 
+test('update hook for atom without cache', () => {
+  const a = atom(0)
+  const hook = mockFn()
+  a.onChange(hook)
+  const ctx = createCtx()
+
+  a(ctx, 1)
+  assert.is(hook.calls.length, 1)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
