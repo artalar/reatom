@@ -117,10 +117,7 @@ export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
     T4
 >
 
-/** Runtime equivalent version of `Object.assign`
- * values from first objects will be overwritten by values from next objects,
- * not union as in std type.
- */
+/** `Object.assign` with fixed types, equal properties replaced instead of changed to a union */
 export const assign: {
   <T1, T2, T3 = {}, T4 = {}>(a1: T1, a2: T2, a3?: T3, a4?: T4): Assign<
     T1,
@@ -129,6 +126,9 @@ export const assign: {
     T4
   >
 } = Object.assign
+
+/** `Object.assign` which set an empty object to the first argument */
+export const merge: typeof assign = (...a) => Object.assign({}, ...a)
 
 /** Get a new object only with the passed keys*/
 export const pick = <T, K extends keyof T>(
