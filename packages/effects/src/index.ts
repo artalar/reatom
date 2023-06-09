@@ -11,15 +11,21 @@ import { AbortError, throwIfAborted, toAbortError } from '@reatom/utils'
 
 /** Handle abort signal from a cause */
 export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
-  let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
-  while (cause && !cause.controller) cause = cause.cause
-  const controller = cause?.controller
+  const find = () => {
+    let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
+    while (cause && !cause.controller) cause = cause.cause
+    const controller = cause?.controller
 
-  throwIfAborted(controller)
+    if (controller) {
+      const handler = () => cb(toAbortError(controller.signal.reason))
 
-  controller?.signal.addEventListener('abort', () =>
-    cb(toAbortError(controller.signal.reason)),
-  )
+      if (controller.signal.aborted) handler()
+      else controller?.signal.addEventListener('abort', handler)
+    }
+
+    return controller
+  }
+  if (!find()) ctx.schedule(find)
 }
 
 const LISTENERS = new WeakMap<
