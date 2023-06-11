@@ -181,7 +181,7 @@ export const mapPayload: {
 /** Transform async action payload */
 export const mapPayloadAwaited: {
   <T, Payload = Awaited<T>>(
-    mapper: (ctx: Ctx, prevState: Awaited<T>) => Payload,
+    mapper?: (ctx: Ctx, prevState: Awaited<T>) => Payload,
     name?: string,
   ): (action: Action<any[], T>) => LensAction<[], Payload>
 

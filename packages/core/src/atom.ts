@@ -608,18 +608,12 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
-// @ts-ignore
-export let atom: {
-  <T extends (ctx: CtxSpy) => any>(initState: T, name?: string): Atom<
-    ReturnType<T>
-  >
-  <State>(initState: State, name?: string): AtomMut<State>
-} = (
-  initState:
-    | ((ctxSpy: CtxSpy, state?: any) => any)
-    | Exclude<AllTypes, (...args: any[]) => any>,
+export function atom<T>(initState: (ctx: CtxSpy) => T, name?: string): Atom<T>
+export function atom<T>(initState: T, name?: string): AtomMut<T>
+export function atom<T>(
+  initState: T | ((ctx: CtxSpy) => T),
   name = __count('_atom'),
-): Atom => {
+): Atom<T> | AtomMut<T> {
   // TODO: it took much longer than expected in profiling
   let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
@@ -634,17 +628,18 @@ export let atom: {
     )
   let computer = null
 
+  let initStateResult: typeof initState | undefined = initState
   if (typeof initState === 'function') {
     theAtom = {}
     computer = initState
-    initState = undefined
+    initStateResult = undefined
   }
 
   theAtom.__reatom = {
     name,
     isAction: false,
     patch: null,
-    initState: () => initState,
+    initState: () => initStateResult,
     computer,
     connectHooks: null,
     disconnectHooks: null,
@@ -655,7 +650,6 @@ export let atom: {
     return fns.reduce((acc, fn) => fn(acc), this)
   }
 
-  // @ts-ignore
   return theAtom
 }
 
