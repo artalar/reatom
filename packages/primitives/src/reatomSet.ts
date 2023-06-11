@@ -7,7 +7,7 @@ export interface SetAtom<T> extends AtomMut<Set<T>> {
   delete: Action<[el: T], Set<T>>
   clear: Action<[], Set<T>>
   reset: Action<[], Set<T>>
-  has: (ctx: Ctx, arg: T) => boolean
+  has: (ctx: Ctx, el: T) => boolean
 }
 
 export const reatomSet = <T>(

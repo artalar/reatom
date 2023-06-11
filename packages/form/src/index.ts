@@ -38,7 +38,7 @@ export type FieldOptions<State = any, Value = State> = {
   name?: string
   validate?: (
     ctx: Ctx,
-    arg: { state: State; focus: FieldFocus; validation: FieldValidation },
+    payload: { state: State; focus: FieldFocus; validation: FieldValidation },
   ) => Value | Promise<Value>
 
   validationTrigger?: 'change' | 'blur' | 'submit'

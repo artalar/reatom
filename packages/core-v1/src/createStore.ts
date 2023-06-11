@@ -212,7 +212,7 @@ export function createStore(
   return store
 }
 
-function callFromList(list: Function[], ...arg: any[]) {
+function callFromList(list: Function[], ...args: any[]) {
   let i = -1
-  while (++i < list.length) list[i]!(...arg)
+  while (++i < list.length) list[i]!(...args)
 }
