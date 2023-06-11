@@ -101,7 +101,7 @@ export const mapState =
       ctx: CtxSpy,
       atomState1: AtomState<T>,
       atomState2: undefined | AtomState<T>,
-      arg: unknown,
+      state: unknown,
     ) => Res,
     name?: string,
   ): ((atom: T) => LensAtom<Res>) =>

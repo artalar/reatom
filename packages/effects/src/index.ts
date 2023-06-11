@@ -118,7 +118,7 @@ export const disposable = (
 export const take = <T extends Atom, Res = AtomReturn<T>>(
   ctx: Ctx & { controller?: AbortController },
   anAtom: T,
-  mapper: (ctx: Ctx, arg: Awaited<AtomReturn<T>>) => Res = (ctx, v: any) => v,
+  mapper: (ctx: Ctx, value: Awaited<AtomReturn<T>>) => Res = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: (...args: any[]) => any, rej) => {
     onCtxAbort(ctx, rej)

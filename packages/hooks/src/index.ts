@@ -31,9 +31,10 @@ export const addOnUpdate = <T extends Atom>(
 
 export const withInit =
   <T extends Atom>(
-    createState: (ctx: Ctx, arg: T['__reatom']['initState']) => AtomState<T>,
-  ): ((arg: T) => T) =>
+    createState: (ctx: Ctx, initState: T['__reatom']['initState']) => AtomState<T>,
+  ): ((atom: T) => T) =>
   (anAtom) => {
+
     const { initState, isAction } = anAtom.__reatom
 
     throwReatomError(isAction, 'action state is not manageable')
@@ -107,11 +108,11 @@ const _onUpdate: {
   ): Unsubscribe
   <T>(
     anAtom: Atom<T> & { deps?: Array<Atom> },
-    cb?: (ctx: Ctx, arg: T, cache: AtomCache<T>) => any,
+    cb?: (ctx: Ctx, value: T, cache: AtomCache<T>) => any,
   ): Unsubscribe
 } = <T>(
   anAtom: Action<any[], T> | Atom<T>,
-  cb: (ctx: Ctx, arg: T, cache: AtomCache<T>) => any = noop,
+  cb: (ctx: Ctx, value: T, cache: AtomCache<T>) => any = noop,
 ) => {
   const hook = (ctx: Ctx, patch: AtomCache & { params?: unknown[] }) => {
     let { state } = patch
@@ -144,7 +145,7 @@ export const spyChange: {
   <Params extends any[], Payload>(
     ctx: CtxSpy,
     anAction: Action<Params, Payload>,
-    handler?: (arg: { params: Params; payload: Payload }) => any,
+    handler?: (action: { params: Params; payload: Payload }) => any,
   ): boolean
   <T>(
     ctx: CtxSpy,
