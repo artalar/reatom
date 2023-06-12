@@ -1,7 +1,7 @@
 import { action, atom, createCtx, Ctx, Fn } from '@reatom/core'
 import { sleep } from '@reatom/utils'
-import { createTestCtx, mockFn } from '@reatom/testing'
-import { mapPayloadAwaited, toAtom } from '@reatom/lens'
+import { createTestCtx } from '@reatom/testing'
+import { mapPayloadAwaited } from '@reatom/lens'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
@@ -9,7 +9,7 @@ import { disposable, take, takeNested } from './'
 
 test('disposable async branch', async () => {
   const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
-  const actRes = act.pipe(mapPayloadAwaited())
+  const actRes = act.pipe(mapPayloadAwaited((ctx, v) => v))
   const ctx = createTestCtx()
   const track = ctx.subscribeTrack(actRes)
 
