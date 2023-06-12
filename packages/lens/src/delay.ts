@@ -9,15 +9,31 @@ import {
   isAtom,
   throwReatomError,
 } from '@reatom/core'
-import { __thenReatomed } from '@reatom/effects'
+import { onCtxAbort } from '@reatom/effects'
 import { mapName } from './utils'
 import { type LensAtom, type LensAction } from './'
 
 export interface DelayOptions {
+  /** The minimum amount of the delay (debounce-like)
+   * @default `max`
+   */
   min?: number | Atom<number>
+  /** The maximum amount of the delay (throttle-like)
+   * @default `min`
+   */
   max?: number | Atom<number>
+  /** Should the first update be captured (throttle-like)?
+   * @default true
+   */
   leading?: boolean
+  /** Should the last update be captured (debounce-like)?
+   * @default true
+   */
   trailing?: boolean
+  /** Should subscribe to an AbortController from the cause?
+   * @default true
+   */
+  abortable?: boolean
 }
 
 /** Flexible updates delayer */
@@ -31,8 +47,14 @@ export const delay: {
   >
 } = (options, name) => (anAtom: Atom) => {
   // listeners is a unique object for each atom instance
-  const starts = new WeakMap<AtomCache['listeners'], number>()
-  let { min: minOption, max: maxOption, leading, trailing } = options
+  const running = new WeakMap<AtomCache['listeners'], number>()
+  let {
+    min: minOption,
+    max: maxOption,
+    leading = true,
+    trailing = true,
+    abortable = true,
+  } = options
 
   throwReatomError(
     minOption === undefined && maxOption === undefined,
@@ -67,22 +89,22 @@ export const delay: {
       state = proto.isAction ? [] : depState
     } else {
       const now = Date.now()
-      const isRunning = starts.has(startsKey)
-      const start = starts.get(startsKey) ?? now
+      const isRunning = running.has(startsKey)
+      const start = running.get(startsKey) ?? now
       const skip = isRunning || !leading
 
       state = skip ? prevState : proto.isAction ? [depState[0]] : depState
 
       const delay = Math.max(0, Math.min(min!, max! - (now - start)))
 
-      starts.set(startsKey, start!)
-      ctx.schedule(() => starts.delete(startsKey), -1)
+      running.set(startsKey, start!)
+      ctx.schedule(() => running.delete(startsKey), -1)
 
       const timeoutId = setTimeout(
         () =>
           ctx.get((read, acualize) => {
             if (read(proto) === ctx.cause) {
-              starts.delete(startsKey)
+              running.delete(startsKey)
               if (trailing && skip) {
                 acualize!(ctx, proto, (patchCtx: Ctx, patch: AtomCache) => {
                   patch.state = proto.isAction ? [depState.at(-1)] : depState
@@ -94,6 +116,7 @@ export const delay: {
       )
       timeoutId.unref?.()
       ctx.schedule(() => clearTimeout(timeoutId), -1)
+      if (abortable) onCtxAbort(ctx, () => clearTimeout(timeoutId))
     }
 
     return state
