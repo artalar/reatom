@@ -147,7 +147,6 @@ export interface Action<Params extends any[] = any[], Payload = any>
       ctx: Ctx,
       payload: Payload,
       params: Params,
-      patch: AtomCache<Array<{ params: Params; payload: Payload }>>,
     ) => void,
   ) => Unsubscribe
 }
