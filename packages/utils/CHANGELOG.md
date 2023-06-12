@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/artalar/reatom/compare/utils-v3.2.3...utils-v3.3.0) (2023-06-12)
+
+
+### Features
+
+* **utils:** add merge ([7d7063a](https://github.com/artalar/reatom/commit/7d7063a5eaff2b6f2f0f1677d4d3bba34dad38a8))
+
 ## [3.2.3](https://github.com/artalar/reatom/compare/utils-v3.2.2...utils-v3.2.3) (2023-05-21)
 
 

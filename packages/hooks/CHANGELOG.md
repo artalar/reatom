@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/artalar/reatom/compare/hooks-v3.4.1...hooks-v3.4.2) (2023-06-12)
+
+
+### Bug Fixes
+
+* **hooks:** pretty code ([4b06eed](https://github.com/artalar/reatom/commit/4b06eed424cae8b73963db5498c000e694f697ce))
+
 ## [3.4.1](https://github.com/artalar/reatom/compare/hooks-v3.4.0...hooks-v3.4.1) (2023-05-21)
 
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0](https://github.com/artalar/reatom/compare/effects-v3.2.1...effects-v3.3.0) (2023-06-12)
+
+
+### Features
+
+* **effects:** change the behavior of __thenReatomed ([6a7ccba](https://github.com/artalar/reatom/commit/6a7ccba6a46521807d5d1e5eef3c3ad219454779))
+
+
+### Bug Fixes
+
+* **effects:** onCtxAbort for sync and async usage ([bc52760](https://github.com/artalar/reatom/commit/bc52760aa54d767744ba07ce17124d1f48f0a4ee))
+
 ## [3.2.1](https://github.com/artalar/reatom/compare/effects-v3.2.0...effects-v3.2.1) (2023-05-21)
 
 
