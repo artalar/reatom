@@ -5,7 +5,7 @@ export type Leaf = string // unique
 export type TreeId = string | symbol // unique
 export type State = Record<TreeId, unknown>
 // reatom specific
-export type Fn = {
+type Fn = {
   (ctx: Ctx): any
   _ownerAtomId: TreeId
 }

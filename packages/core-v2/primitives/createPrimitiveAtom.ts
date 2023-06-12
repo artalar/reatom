@@ -3,14 +3,13 @@ import {
   AtomOptions,
   AtomSelfBinded,
   createAtom,
-  Fn,
   isString,
   Rec,
 } from '@reatom/core-v2'
 
 export type PrimitiveAtom<
   State,
-  Reducers extends Rec<Fn> = {
+  Reducers extends Rec<(...args: any[]) => any> = {
     set: (newState: State) => State
     change: (map: (state: State) => State) => (state: State) => State
   },
@@ -21,7 +20,11 @@ export type PrimitiveAtomCreator<
   ActionsPayloads extends Rec<any[]>,
 > = PrimitiveAtom<
   State,
-  { [K in keyof ActionsPayloads]: Fn<ActionsPayloads[K], ActionsPayloads[K]> }
+  {
+    [K in keyof ActionsPayloads]: (
+      ...actionsPayloads: ActionsPayloads[K]
+    ) => ActionsPayloads[K]
+  }
 >
 
 let count = 0
@@ -32,7 +35,7 @@ export function createPrimitiveAtom<State>(
 ): PrimitiveAtom<State>
 export function createPrimitiveAtom<
   State,
-  ActionsMappers extends Rec<Fn<[State, ...any[]], State>>,
+  ActionsMappers extends Rec<(state: State, ...rest: any[]) => State>,
 >(
   initState: State,
   actions: ActionsMappers,
@@ -40,16 +43,17 @@ export function createPrimitiveAtom<
 ): PrimitiveAtom<
   State,
   {
-    [K in keyof ActionsMappers]: ActionsMappers[K] extends Fn<
-      [any, ...infer Payload]
-    >
+    [K in keyof ActionsMappers]: ActionsMappers[K] extends (
+      first: any,
+      ...payload: infer Payload
+    ) => any
       ? (...payload: Payload) => Payload
       : never
   }
 >
 export function createPrimitiveAtom<State>(
   initState: State,
-  actions?: null | undefined | Rec<Fn<[State, ...any[]], State>>,
+  actions?: null | undefined | Rec<(state: State, ...rest: any[]) => State>,
   options: AtomOptions<State> = `primitive${++count}`,
 ): AtomBinded<State> {
   actions ??= {
@@ -65,7 +69,7 @@ export function createPrimitiveAtom<State>(
   const atom = createAtom(
     Object.keys(actions).reduce(
       (acc, key) => ((acc[key] = (...payload) => payload), acc),
-      {} as Rec<Fn>,
+      {} as Rec<(...args: any[]) => any>,
     ),
 
     (track, state = initState) => {

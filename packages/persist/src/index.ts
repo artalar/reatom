@@ -4,7 +4,6 @@ import {
   AtomMut,
   AtomState,
   Ctx,
-  Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
@@ -25,22 +24,22 @@ export interface PersistStorage {
   get(ctx: Ctx, key: string): null | PersistRecord
   set(ctx: Ctx, key: string, rec: PersistRecord): void
   clear?(ctx: Ctx, key: string): void
-  subscribe?(ctx: Ctx, key: string, callback: Fn<[]>): Unsubscribe
+  subscribe?(ctx: Ctx, key: string, callback: () => any): Unsubscribe
 }
 
 export interface WithPersistOptions<T> {
   /** parse data on init or subscription update @optional */
-  fromSnapshot?: Fn<[ctx: Ctx, snapshot: unknown, state?: T], T>
+  fromSnapshot?:  (ctx: Ctx, snapshot: unknown, state?: T) => T
   /** the key! */
   key: string
   /** migration callback which will be called if the version changed  @optional */
-  migration?: Fn<[ctx: Ctx, persistRecord: PersistRecord], T>
+  migration?: (ctx: Ctx, persistRecord: PersistRecord) => T
   /** turn on/off subscription  @default true */
   subscribe?: boolean
   /** time to live in milliseconds @default 10 ** 10 */
   time?: number
   /** transform data before persisting  @optional */
-  toSnapshot?: Fn<[ctx: Ctx, state: T], unknown>
+  toSnapshot?: (ctx: Ctx, state: T) => unknown
   /** version of the data which change used to trigger the migration @default 0 */
   version?: number
 }

@@ -1,7 +1,6 @@
 import {
   action,
   atom,
-  Fn,
   Ctx,
   Action,
   Atom,
@@ -26,8 +25,11 @@ export interface RouteAtom extends Atom<Route> {
   positionAtom: Atom<number>
   // public adapter for DI purposes
   syncAtom: Atom<{
-    go: Fn<[Ctx, string, string] | [Ctx, number, undefined]>
-    subscribe: Fn<[ctx: Ctx, routeAtom: RouteAtom], Unsubscribe>
+    go: {
+      (ctx: Ctx, arg1: string, arg2: string): any
+      (ctx: Ctx, arg1: number, arg2: undefined): any
+    }
+    subscribe: (ctx: Ctx, routeAtom: RouteAtom) => Unsubscribe
   }>
 }
 
