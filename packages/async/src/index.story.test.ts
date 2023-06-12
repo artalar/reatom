@@ -2,7 +2,7 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx } from '@reatom/testing'
 import { atom } from '@reatom/core'
-import { onConnect, onUpdate } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 import { isDeepEqual, jsonClone, sleep } from '@reatom/utils'
 
 import { reatomAsync, withAbort, withDataAtom } from './'
@@ -41,7 +41,7 @@ describe('optimistic update', () => {
     ),
   )
   const putData = reatomAsync.from(api.putData)
-  onUpdate(putData, (ctx, promise, { params }) => {
+  putData.onCall((ctx, promise, params) => {
     const [id, value] = params
     const oldList = ctx.get(getData.dataAtom)
     // optimistic update

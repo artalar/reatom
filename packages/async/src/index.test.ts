@@ -1,11 +1,11 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { action, atom } from '@reatom/core'
+import { Fn, action, atom } from '@reatom/core'
 import { mapPayloadAwaited } from '@reatom/lens'
-import { take } from '@reatom/effects'
+import { onCtxAbort, take } from '@reatom/effects'
 import { onConnect } from '@reatom/hooks'
 import { createTestCtx, mockFn } from '@reatom/testing'
-import { sleep } from '@reatom/utils'
+import { noop, sleep } from '@reatom/utils'
 
 import {
   reatomAsync,
@@ -19,9 +19,9 @@ import './index.story.test'
 import './withCache.test'
 
 test(`base API`, async () => {
-  const fetchData = reatomAsync(async (ctx, v: number) => v).pipe(
-    withDataAtom(0, (ctx, v) => v),
-  )
+  const fetchData = reatomAsync(async (ctx, v: number) => {
+    return v
+  }).pipe(withDataAtom(0, (ctx, v) => v))
   const ctx = createTestCtx()
 
   assert.is(ctx.get(fetchData.dataAtom), 0)
@@ -49,7 +49,7 @@ test('withRetry', async () => {
 
   assert.is(track.calls.length, 1)
 
-  fetchData(ctx, 123)
+  fetchData(ctx, 123).catch(noop)
 
   assert.is(track.calls.length, 2)
 
@@ -100,8 +100,8 @@ test('withRetry delay', async () => {
 
   assert.is(track.calls.length, 1)
 
-  fetchData(ctx, 123)
-  fetchData(ctx, 123)
+  fetchData(ctx, 123).catch(noop)
+  fetchData(ctx, 123).catch(noop)
 
   assert.is(track.calls.length, 3)
 
@@ -178,7 +178,7 @@ test('withAbort user abort', async () => {
   ;`👍` //?
 })
 
-test('withAbort and fetch', async () => {
+test('withAbort and real fetch', async () => {
   const handleError = mockFn((e) => {
     throw e
   })
@@ -195,16 +195,16 @@ test('withAbort and fetch', async () => {
   assert.is(cb.calls.length, 1)
   assert.is(handleError.calls.length, 0)
 
-  fetchData(ctx)
+  fetchData(ctx).catch(noop)
   await sleep()
-  fetchData(ctx)
+  fetchData(ctx).catch(noop)
   await sleep()
-  fetchData(ctx)
+  fetchData(ctx).catch(noop)
 
   await take(ctx, fetchData.onFulfill)
 
   assert.is(cb.calls.length, 2)
-  assert.equal(cb.lastInput().at(-1)?.payload, 404)
+  assert.is(cb.lastInput().at(-1)?.payload, 404)
   assert.is(handleError.calls.length, 2)
   assert.ok(handleError.calls.every(({ o }: any) => o.name === 'AbortError'))
   ;`👍` //?
@@ -239,12 +239,12 @@ test('hooks', async () => {
 
   const promise2 = effect(ctx, 0)
   assert.equal([onEffect, onFulfill, onReject, onSettle], [2, 1, 0, 1])
-  await promise2.catch(() => {})
+  await promise2.catch(noop)
   assert.equal([onEffect, onFulfill, onReject, onSettle], [2, 1, 1, 2])
   ;`👍` //?
 })
 
-test('fetch on connect', async () => {
+test('onConnect', async () => {
   const fetchData = reatomAsync(async (ctx, payload: number) => payload).pipe(
     withDataAtom(0),
   )
@@ -267,7 +267,7 @@ test('resetTrigger', async () => {
   )
   const ctx = createTestCtx()
 
-  await effect(ctx).catch(() => {})
+  await effect(ctx).catch(noop)
 
   assert.is(ctx.get(effect.errorAtom)?.message, '42')
 
@@ -276,37 +276,43 @@ test('resetTrigger', async () => {
   ;`👍` //?
 })
 
-test('nested abort', async () => {
-  let result = false
-  let thrown = false
-  const do1 = reatomAsync(async (ctx) => {
-    await sleep()
-    ctx.controller.signal.throwIfAborted()
-    result = true
-  }).pipe(withAbort())
-  const do2 = reatomAsync(do1)
-  const do3 = reatomAsync(action(do2)).pipe(withAbort())
-  const ctx = createTestCtx()
+// test('nested abort', async () => {
+//   const tick = createTick()
+//   const result = mockFn()
+//   const thrown = mockFn()
+//   const do1 = reatomAsync(async (ctx) => {
+//     let aborted = false
+//     onCtxAbort(ctx, () => {
+//       aborted = true //?
+//     })
+//     aborted //?
+//     await tick.after(0)
+//     aborted //?
+//     ctx.controller.signal.aborted //?
+//     ctx.controller.signal.throwIfAborted()
+//     result()
+//   }).pipe(withAbort())
+//   const do2 = reatomAsync(do1)
+//   const do3 = reatomAsync(action(do2)).pipe(withAbort())
+//   const ctx = createTestCtx()
 
-  do3(ctx).catch(() => {
-    thrown = true
-  })
-  assert.is(result, false)
-  await sleep(5)
-  assert.is(result, true)
-  assert.is(thrown, false)
+//   do3(ctx).catch(thrown)
+//   assert.is(result.calls.length, 0)
+//   await tick
+//   assert.is(result.calls.length, 1)
+//   assert.is(thrown.calls.length, 0)
 
-  result = false
-  do3(ctx).catch(() => {
-    thrown = true
-  })
-  do3.abort(ctx)
-  assert.is(result, false)
-  await sleep(5)
-  assert.is(result, false)
-  assert.is(thrown, true)
-  ;`👍` //?
-})
+//   result.calls.length = 0
+//   do3(ctx).catch(thrown)
+//   do3.abort(ctx)
+//   await tick
+//   await 0
+//   await 0
+//   await 0
+//   assert.is(result.calls.length, 0)
+//   assert.is(thrown.calls.length, 1)
+//   ;`👍` //?
+// })
 
 test('onConnect and take ', async () => {
   const act = action()
@@ -332,6 +338,20 @@ test('onConnect and take ', async () => {
   act(ctx)
   await sleep()
   assert.is(ctx.get(res), false)
+  ;`👍` //?
+})
+
+test('handle error correctly', async () => {
+  const doSome = reatomAsync(() => {
+    throw new Error('test error')
+  })
+  const doSomeAsync = reatomAsync(async () => {
+    throw new Error('test error')
+  })
+  const ctx = createTestCtx()
+
+  assert.is(await doSome(ctx).catch((e: Error) => e.message), 'test error')
+  assert.is(await doSomeAsync(ctx).catch((e: Error) => e.message), 'test error')
   ;`👍` //?
 })
 

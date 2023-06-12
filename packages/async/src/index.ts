@@ -14,12 +14,13 @@ import {
   Fn,
   throwReatomError,
   __count,
+  AtomCache,
 } from '@reatom/core'
 import { __thenReatomed, onCtxAbort } from '@reatom/effects'
-import { addOnUpdate, onUpdate } from '@reatom/hooks'
-import { assign, isAbort, throwIfAborted, toAbortError } from '@reatom/utils'
+import { addOnUpdate } from '@reatom/hooks'
+import { assign, isAbort, noop, toAbortError } from '@reatom/utils'
 
-import { PROMISES } from './promises'
+import { createAbortController } from './createAbortController'
 export { withCache } from './withCache'
 export { withStatusesAtom } from './withStatusesAtom'
 export type {
@@ -39,7 +40,12 @@ export interface AsyncAction<Params extends any[] = any[], Resp = any>
   onReject: Action<[unknown], unknown>
   onSettle: Action<[], void>
   pendingAtom: Atom<number>
+
+  /** @deprecated @internal */
+  __cacheDecorator?: Fn<[AsyncCtx, ...Params], ControlledPromise>
 }
+
+export type AsyncResp<T extends AsyncAction> = ActionPayload<T['onFulfill']>
 
 export interface AsyncCtx extends Ctx {
   controller: AbortController
@@ -58,6 +64,34 @@ export interface ControlledPromise<T = any> extends Promise<T> {
 }
 
 export const isAbortError = isAbort
+
+/** @deprecated @internal */
+export const __handleEffect = (
+  ctx: Ctx & { controller: AbortController },
+  anAsync: AsyncAction,
+  cb: Fn,
+): ControlledPromise => {
+  const pendingAtom = anAsync.pendingAtom as AtomMut<number>
+
+  pendingAtom(ctx, (s) => ++s)
+
+  const origin = ctx.schedule(async () => {
+    ctx.controller.signal.throwIfAborted()
+    const value = await cb()
+    ctx.controller.signal.throwIfAborted()
+    return value
+  })
+
+  return assign(
+    __thenReatomed(
+      ctx,
+      origin,
+      (v) => (anAsync.onFulfill(ctx, v), pendingAtom(ctx, (s) => --s)),
+      (e) => (anAsync.onReject(ctx, e), pendingAtom(ctx, (s) => --s)),
+    ),
+    { controller: ctx.controller },
+  )
+}
 
 export const reatomAsync = <
   Params extends [AsyncCtx, ...any[]] = [AsyncCtx, ...any[]],
@@ -78,67 +112,64 @@ export const reatomAsync = <
 
   const pendingAtom = atom(0, `${name}.pendingAtom`)
 
-  const onEffect = action((...params) => {
-    const ctx = params[0] as AsyncCtx
-    const controller = (ctx.controller = new AbortController())
-    controller.signal.throwIfAborted ??= () => throwIfAborted(controller)
-    assign(ctx.cause, { controller })
+  // @ts-expect-error the missed properties assigned later
+  const onEffect: AsyncAction = Object.assign(
+    (...params: Params) =>
+      params[0].get((read, actualize) => {
+        const { state } = actualize!(
+          params[0],
+          onEffect.__reatom,
+          (ctx: AsyncCtx, patch: AtomCache) => {
+            // @ts-expect-error could be reassigned by the testing package
+            const targetEffect: typeof effect = onEffect.__reatom.unstable_fn
 
-    onCtxAbort({ cause: ctx.cause.cause } as Ctx, (error) =>
-      controller.abort(error),
-    )
+            onCtxAbort(params[0], (error) => ctx.controller.abort(error))
 
-    pendingAtom(ctx, (s) => ++s)
+            params[0] = ctx
 
-    const promise: ControlledPromise = assign(
-      ctx.schedule(() => {
-        throwIfAborted(controller)
+            // userspace controller
+            ctx.controller =
+              // @ts-expect-error cause stack controller
+              ctx.cause.controller = createAbortController()
 
-        const cached = PROMISES.get(promise)
-        if (cached) {
-          return cached(() => {
-            // Drop abort strategy for cache invalidation
-            ctx.controller = new AbortController()
-            return effect(...(params as Params))
-          })
-        }
+            if (onEffect.__cacheDecorator) {
+              var payload = onEffect.__cacheDecorator(
+                // @ts-ignore TODO would be nice to fix this types issue
+                ...params,
+              )
+            } else {
+              payload = __handleEffect(ctx, onEffect, () =>
+                targetEffect(...params),
+              )
+            }
 
-        return effect(...(params as Params)).then(
-          (value: any) => (throwIfAborted(controller), value),
+            patch.state = [...patch.state, { params: params.slice(1), payload }]
+          },
         )
+        return state[state.length - 1]!.payload
       }),
-      { controller },
-    )
-
-    __thenReatomed(
-      ctx,
-      promise,
-      (v) =>
-        PROMISES.has(promise) ||
-        (onFulfill(ctx, v), pendingAtom(ctx, (s) => --s)),
-      (e) =>
-        PROMISES.has(promise) ||
-        (onReject(ctx, e), pendingAtom(ctx, (s) => --s)),
-    )
-
-    return promise
-  }, name)
+    action(
+      // @ts-expect-error TODO need a better way to pass a custom Ctx.
+      effect,
+      name,
+    ),
+  )
 
   const onFulfill = action<Resp>(`${name}.onFulfill`)
   const onReject = action<unknown>(`${name}.onReject`)
   const onSettle = action(`${name}._onSettle`)
 
-  onUpdate(onFulfill, (ctx) => onSettle(ctx))
-  onUpdate(onReject, (ctx) => onSettle(ctx))
+  onFulfill.onCall((ctx) => onSettle(ctx))
+  onReject.onCall((ctx) => onSettle(ctx))
 
-  if (onEffectHook)
-    // @ts-ignore
-    onUpdate(onEffect, (ctx, promise, { state }) =>
-      onEffectHook(ctx, state.at(-1)!.params as any, promise),
+  if (onEffectHook) {
+    onEffect.onCall((ctx, promise, params) =>
+      onEffectHook(ctx, params as any, promise),
     )
-  if (onFulfillHook) onUpdate(onFulfill, onFulfillHook)
-  if (onRejectHook) onUpdate(onReject, onRejectHook)
-  if (onSettleHook) onUpdate(onSettle, onSettleHook)
+  }
+  if (onFulfillHook) onFulfill.onCall(onFulfillHook)
+  if (onRejectHook) onReject.onCall(onRejectHook)
+  if (onSettleHook) onSettle.onCall(onSettleHook)
 
   return assign(onEffect, {
     onFulfill,
@@ -169,45 +200,35 @@ export interface AsyncDataAtom<State = any> extends AtomMut<State> {
 export const withDataAtom: {
   <
     T extends AsyncAction & {
-      dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<AsyncResp<T>>
     },
-  >(): Fn<
-    [T],
-    T & { dataAtom: AtomMut<undefined | ActionPayload<T['onFulfill']>> }
-  >
+  >(): Fn<[T], T & { dataAtom: AtomMut<undefined | AsyncResp<T>> }>
   <
     T extends AsyncAction & {
-      dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<AsyncResp<T>>
     },
   >(
-    initState: ActionPayload<T['onFulfill']>,
-  ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
+    initState: AsyncResp<T>,
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<AsyncResp<T>> }>
   <
     T extends AsyncAction & {
-      dataAtom?: AsyncDataAtom<State | ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<State | AsyncResp<T>>
     },
     State,
   >(
     initState: State,
-  ): Fn<
-    [T],
-    T & { dataAtom: AsyncDataAtom<State | ActionPayload<T['onFulfill']>> }
-  >
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<State | AsyncResp<T>> }>
   <
     T extends AsyncAction & {
-      dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
+      dataAtom?: AsyncDataAtom<AsyncResp<T>>
     },
   >(
-    initState: ActionPayload<T['onFulfill']>,
+    initState: AsyncResp<T>,
     map?: Fn<
-      [
-        ctx: Ctx,
-        payload: ActionPayload<T['onFulfill']>,
-        state: ActionPayload<T['onFulfill']>,
-      ],
-      ActionPayload<T['onFulfill']>
+      [ctx: Ctx, payload: AsyncResp<T>, state: AsyncResp<T>],
+      AsyncResp<T>
     >,
-  ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<AsyncResp<T>> }>
   <
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<State>
@@ -215,25 +236,23 @@ export const withDataAtom: {
     State,
   >(
     initState: State,
-    map?: Fn<
-      [ctx: Ctx, payload: ActionPayload<T['onFulfill']>, state: State],
-      State
-    >,
+    map?: Fn<[ctx: Ctx, payload: AsyncResp<T>, state: State], State>,
   ): Fn<[T], T & { dataAtom: AsyncDataAtom<State> }>
 } =
   (initState: any, map?: Fn) =>
   // @ts-ignore
-  (anAsync) => {
+  (anAsync: AsyncAction & { dataAtom?: AsyncDataAtom }) => {
     if (!anAsync.dataAtom) {
-      const dataAtom = (anAsync.dataAtom = atom(
-        initState,
-        `${anAsync.__reatom.name}.dataAtom`,
-      )) as AsyncDataAtom
-      dataAtom.reset = action(
-        (ctx) => void dataAtom(ctx, initState),
-        `${anAsync.__reatom.name}.dataAtom.reset`,
-      )
-      onUpdate(anAsync.onFulfill, (ctx, payload) =>
+      const dataAtom: AsyncDataAtom = (anAsync.dataAtom = Object.assign(
+        atom(initState, `${anAsync.__reatom.name}.dataAtom`),
+        {
+          reset: action(
+            (ctx) => void dataAtom(ctx, initState),
+            `${anAsync.__reatom.name}.dataAtom.reset`,
+          ),
+        },
+      ) as AsyncDataAtom)
+      anAsync.onFulfill.onCall((ctx, payload) =>
         dataAtom(ctx, (state: any) =>
           map ? map(ctx, payload, state) : payload,
         ),
@@ -299,7 +318,7 @@ export const withAbort =
     },
   >({
     strategy = 'last-in-win',
-  }: { strategy?: 'none' | 'last-in-win' } = {}): Fn<
+  }: { strategy?: 'none' | 'last-in-win' | 'first-in-win' } = {}): Fn<
     [T],
     T & {
       abort: Action<[reason?: string], void>
@@ -310,25 +329,43 @@ export const withAbort =
   (anAsync) => {
     if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom = atom(
-        (ctx, state = new AbortController()) => {
-          ctx.spy(anAsync, (call) => {
-            if (
-              strategy === 'last-in-win' &&
-              state &&
-              !PROMISES.has(call.payload)
-            ) {
+        (
+          ctx,
+          state: AbortController & {
+            settled?: boolean
+          } = createAbortController(),
+        ) => {
+          ctx.spy(anAsync, ({ payload: promise }) => {
+            if (strategy === 'last-in-win' && state) {
               const controller = state
 
               ctx.schedule(() => {
-                controller.abort(toAbortError('concurrent request'))
+                controller.abort(
+                  toAbortError('concurrent request (last-in-win)'),
+                )
               })
             }
 
-            state = call.payload.controller
+            if (strategy === 'first-in-win' && state && !state.settled) {
+              promise.controller.abort(
+                toAbortError('concurrent request (first-in-win)'),
+              )
+              return
+            }
 
-            state.signal.addEventListener('abort', () =>
-              anAsync.onAbort!(ctx, toAbortError(state.signal.reason)),
-            )
+            state = promise.controller
+
+            const handleAbort = () => {
+              state.settled = true
+              anAsync.onAbort!(ctx, toAbortError(state.signal.reason))
+            }
+
+            state.signal.addEventListener('abort', handleAbort)
+
+            const removeAbortHandler = () =>
+              state.signal.removeEventListener('abort', handleAbort)
+
+            __thenReatomed(ctx, promise, removeAbortHandler, removeAbortHandler)
           })
 
           return state
@@ -337,6 +374,7 @@ export const withAbort =
       ))
       // force track computed atom
       addOnUpdate(anAsync, (ctx) => void ctx.get(abortControllerAtom))
+      // addOnUpdate(anAsync.onSettle, (ctx) => void ctx.get(abortControllerAtom))
 
       anAsync.abort = action((ctx, reason?: string) => {
         const controller = ctx.get(abortControllerAtom)
@@ -410,7 +448,7 @@ export const withRetry =
           if (timeout < 0) return
 
           if (timeout === 0) {
-            anAsync.retry!(ctx)
+            anAsync.retry!(ctx).catch(noop)
           } else {
             const rejectCache = anAsync.onReject.__reatom.patch
             setTimeout(
@@ -418,7 +456,7 @@ export const withRetry =
                 ctx.get(
                   (r) =>
                     rejectCache === r(anAsync.onReject.__reatom) &&
-                    anAsync.retry!(ctx),
+                    anAsync.retry!(ctx).catch(noop),
                 ),
               timeout,
             )

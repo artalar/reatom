@@ -1,5 +1,4 @@
 import { atom, Atom } from '@reatom/core'
-import { onUpdate } from '@reatom/hooks'
 import { AsyncAction } from '.'
 
 export interface AsyncStatusesNeverPending {
@@ -111,7 +110,7 @@ export const withStatusesAtom =
         },
         `${anAsync.__reatom.name}.statusesAtom`,
       ))
-      onUpdate(anAsync, (ctx) =>
+      anAsync.onCall((ctx) =>
         statusesAtom(ctx, (statuses) => {
           return {
             isPending: ctx.get(anAsync.pendingAtom) > 0,
@@ -128,7 +127,7 @@ export const withStatusesAtom =
           } as AsyncStatuses
         }),
       )
-      onUpdate(anAsync.onFulfill, (ctx) =>
+      anAsync.onFulfill.onCall((ctx) =>
         statusesAtom(ctx, () => {
           const isPending = ctx.get(anAsync.pendingAtom) > 0
           return {
@@ -146,7 +145,7 @@ export const withStatusesAtom =
           } as AsyncStatuses
         }),
       )
-      onUpdate(anAsync.onReject, (ctx) =>
+      anAsync.onReject.onCall((ctx) =>
         statusesAtom(ctx, () => {
           const isPending = ctx.get(anAsync.pendingAtom) > 0
           return {
