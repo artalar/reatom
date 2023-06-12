@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/core-v3.3.1...core-v3.4.0) (2023-06-12)
+
+
+### Features
+
+* **core:** [#578](https://github.com/artalar/reatom/issues/578) add update hooks ([fd5f92a](https://github.com/artalar/reatom/commit/fd5f92abe270f59531ad3af41e8073509eedec4a))
+
+
+### Bug Fixes
+
+* **core:** do not call updateHooks on init ([300281f](https://github.com/artalar/reatom/commit/300281f1f7610cbe37201be914292d5c811d6cdd))
+* **core:** fix type error  (nullable atom) ([#574](https://github.com/artalar/reatom/issues/574)) ([06d123b](https://github.com/artalar/reatom/commit/06d123ba118ac98996d6653ab2377e56516ad84b))
+* **core:** onCall types ([d3c6940](https://github.com/artalar/reatom/commit/d3c6940ca1f6001a4136e558cf00965de304a6ab))
+* **core:** unify cause setter ([e565d1f](https://github.com/artalar/reatom/commit/e565d1fd647583bbb6098b3b41024c9b7d458439))
+* **core:** update hook for atom without cache ([d4c164a](https://github.com/artalar/reatom/commit/d4c164ad9b17406adaae7baa7e3e337df0e43a3d))
+* **core:** updateHooks should be called only for computers ([acfa682](https://github.com/artalar/reatom/commit/acfa68243e6d48323a90dceb81755e5826cd9215))
+
 ## [3.3.1](https://github.com/artalar/reatom/compare/core-v3.3.0...core-v3.3.1) (2023-05-21)
 
 

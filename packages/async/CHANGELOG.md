@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/async-v3.6.1...async-v3.7.0) (2023-06-12)
+
+
+### Features
+
+* **async:** refactor withCache, add shouldFulfill option for SWR ([eb54d34](https://github.com/artalar/reatom/commit/eb54d34598ad48dd51ee21cfd2e3c0964bfdc7ae))
+
 ## [3.6.1](https://github.com/artalar/reatom/compare/async-v3.6.0...async-v3.6.1) (2023-05-21)
 
 

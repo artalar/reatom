@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/lens-v3.5.1...lens-v3.6.0) (2023-06-12)
+
+
+### Features
+
+* **lens:** add abortable option to delay ([d532f1c](https://github.com/artalar/reatom/commit/d532f1c0c3f207827136cd5804d57aa337e4665d))
+* **lens:** use onChange and onCall in "plain" and "readonly" ([fb50938](https://github.com/artalar/reatom/commit/fb50938aba30ffefb99f570b894a58df489d2d44))
+
 ## [3.5.1](https://github.com/artalar/reatom/compare/lens-v3.5.0...lens-v3.5.1) (2023-05-21)
 
 
