@@ -1,5 +1,4 @@
 import { Action, atom, Atom, AtomState, Fn } from '@reatom/core'
-import { __thenReatomed } from '@reatom/effects'
 import { mapName } from './utils'
 import { type LensAtom, type LensAction } from './'
 

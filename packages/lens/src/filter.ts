@@ -1,5 +1,4 @@
 import { Action, atom, Atom, AtomState, Ctx, CtxSpy, Fn } from '@reatom/core'
-import { __thenReatomed } from '@reatom/effects'
 import { isShallowEqual } from '@reatom/utils'
 import { mapName } from './utils'
 import { type LensAtom, type LensAction } from './'

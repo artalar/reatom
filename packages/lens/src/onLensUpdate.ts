@@ -1,5 +1,4 @@
 import { Atom } from '@reatom/core'
-import { __thenReatomed } from '@reatom/effects'
 import { onUpdate } from '@reatom/hooks'
 import { assign } from '@reatom/utils'
 import { type LensAtom } from './'
