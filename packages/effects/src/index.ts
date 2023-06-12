@@ -28,9 +28,10 @@ export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
   if (!find()) ctx.schedule(find)
 }
 
-const LISTENERS = new WeakMap<
+const CHAINS = new WeakMap<
   Promise<any>,
   {
+    promise: Promise<any>
     then: Array<Fn>
     catch: Array<Fn>
   }
@@ -43,28 +44,38 @@ const LISTENERS = new WeakMap<
  */
 export const __thenReatomed = <T>(
   ctx: Ctx,
-  promise: Promise<T>,
+  origin: Promise<T>,
   onFulfill?: Fn<[value: T, read: Fn, actualize: Fn]>,
   onReject?: Fn<[error: unknown, read: Fn, actualize: Fn]>,
-) => {
-  let listeners = LISTENERS.get(promise)
-  if (!listeners) {
-    LISTENERS.set(promise, (listeners = { then: [], catch: [] }))
+): Promise<T> => {
+  let chain = CHAINS.get(origin)
+  if (!chain) {
+    const promise = origin
+      .then(
+        (value: any) => {
+          ctx.get((read, actualize) =>
+            chain!.then.forEach((cb) => cb(value, read, actualize)),
+          )
+          return value
+        },
+        (error: any) => {
+          ctx.get((read, actualize) =>
+            chain!.catch.forEach((cb) => cb(error, read, actualize)),
+          )
+          throw error
+        },
+      )
+      // need to chain caught promise to not prevent error propagation
+      .then((v) => v)
 
-    promise.then(
-      (value: any) =>
-        ctx.get((read, actualize) =>
-          listeners!.then.forEach((cb) => cb(value, read, actualize)),
-        ),
-      (error: any) =>
-        ctx.get((read, actualize) =>
-          listeners!.catch.forEach((cb) => cb(error, read, actualize)),
-        ),
-    )
+    CHAINS.set(origin, (chain = { promise, then: [], catch: [] }))
+    CHAINS.set(promise, chain)
   }
 
-  onFulfill && listeners.then.push(onFulfill)
-  onReject && listeners.catch.push(onReject)
+  onFulfill && chain.then.push(onFulfill)
+  onReject && chain.catch.push(onReject)
+
+  return chain.promise
 }
 
 /** @deprecated use `ctx.controller` which is AbortController instead */
