@@ -149,7 +149,6 @@ export const useUpdate = <T extends [any] | Array<any>>(
   cb: Fn<
     [
       Ctx,
-      // @ts-expect-error
       ...{
         [K in keyof T]: T[K] extends Atom ? AtomState<T[K]> : T[K]
       },
