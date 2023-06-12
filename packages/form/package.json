@@ -1,6 +1,6 @@
 {
   "name": "@reatom/form",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for form",
@@ -23,7 +23,7 @@
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
-    "test": "tsx src/index.test.ts",
+    "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {

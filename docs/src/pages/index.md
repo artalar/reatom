@@ -4,18 +4,28 @@ title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
 
-Reatom is the ultimate [state manager](/general/what-is-state-manager) with a unique set of features. It offers the most modern techniques for describing, executing, and debugging code in a small package. Reatom is an opinionated data manager with strict but flexible rules that enable you to write simple and maintainable code.
+**Reatom is the ultimate logic and state manager for small widgets and huge SPAs.**
 
-Key principles:
+## Key features
 
-- **simple** and powerful abstractions - the whole ecosystem is built on top of a three primitives: ctx, atom, action
-- **immutable** and reliable computations with [atomicity](/general/what-is-state-manager#state) guaranties
-- **explicit reactivity** - maximum [performance](#how-performant-reatom-is) with [atomization](/guides/atomization) without proxies
-- perfect **effects management** and **debugging** experience by [immutable cause (call) stack](/guides/debug). Advanced [async package](/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation of entire chain - like redux-saga, but with native `await` and `AbortController`
-- implicit **DI** for simple SSR and [testing](/packages/testing)
-- actor-like **lifecycle hooks** for declarative description of [self-sufficient models](/guides/lifecycle)
-- **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
-- [automatic type inference](/guides/typescript)
+- **Simple** and powerful abstractions.
+  <small>There are only three main primitives: ctx, atom, action. All other features and packages work on top of that.</small>
+- **Immutable** and reliable.
+  <small>All pure computations are processed with [atomicity](/general/what-is-state-manager#state) guarantees.</small>
+- **Explicit reactivity** without proxies.
+  <small>To achieve [maximum](#how-performant-reatom-is) performance, we have the [atomization](/guides/atomization) pattern.</small>
+- Perfect **effects management**.
+  <small>The advanced [async package](/packages/async) allows you to describe complex async flows with caching, retrying, and automatic cancellation using native `await` and `AbortController`.</small>
+- Nice **debugging** experience.
+  <small>Each atom and action update stores an [immutable cause (call) stack](/guides/debug), which is super helpful for debugging complex async flows. To simplify this, we have the [logger package](/packages/logger).</small>
+- Implicit **DI**.
+  <small>To run tests and SSR with **100% safety**, you need an isolation layer, which `ctx` provides! We also have the extra [testing package](/packages/testing) with a pack of helpers for mocking.</small>
+- Actor-like **lifecycle hooks**.
+  <small>To achieve true modularity, you have the ability to describe [self-sufficient models](/guides/lifecycle).</small>
+- **Smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped.
+  <small>Because of the power of the base primitives, the entire ecosystem with a lot of enterprise-grade helpers takes only [~15KB](https://bundlejs.com/?q=%40reatom%2Fframework%2C%40reatom%2Fnpm-react%2C%40reatom%2Fpersist-web-storage%2C%40reatom%2Fundo%2C%40reatom%2Fform-web&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) - insane!</small>
+- **Best TypeScript** experience.
+  <small>[Automatic type inference](/guides/typescript) is one of the main priorities of Reatom development.</small>
 
 [The core package](/core) includes most these features and you may use it anywhere, from huge apps to even small libs, as the overhead is tiny. Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
@@ -34,9 +44,10 @@ npm i @reatom/core
 [react codesandbox](https://codesandbox.io/s/reatom-react-hello-world-fgt6jn?file=/src/model.ts)
 
 ```ts
-import { action, atom, createCtx } from '@reatom/core'
+// model.ts
+import { action, atom } from '@reatom/core'
 
-export const initState = localStorage.getItem('name') ?? ''
+const initState = localStorage.getItem('name') ?? ''
 // mutable atom with primitive value (you could pass an object too)
 export const inputAtom = atom(initState, 'inputAtom')
 
@@ -64,6 +75,12 @@ export const isSavedAtom = atom((ctx, state = false) => {
 
   return state
 }, 'isSavedAtom')
+```
+
+```ts
+// view.ts
+import { inputAtom, greetingAtom, onSubmit, isSavedAtom } from './model'
+import { createCtx } from '@reatom/core'
 
 // global application context
 const ctx = createCtx()
@@ -88,6 +105,8 @@ Check out [@reatom/core docs](/core) for detailed explanation of key principles 
 Do you use React.js? Check out [npm-react](/packages/npm-react) package!
 
 ## Advanced example
+
+The core package is already profitable and you could use only it as a most simple and featured solution for your state and logic management. If you want to solve common system logic with advanced libraries to care more optimizations and UX tasks - continue and check this small guid out.
 
 This example is close to real life and shows the complexity of interactive UI. It is a simple search input with debouncing and autocomplete. It uses [GitHub API](https://docs.github.com/en/rest/reference/search#search-issues-and-pull-requests) to fetch issues by query. The limitations of this API are described in [GitHub docs](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting). We need to reduce the number of requests and retry them if we hit the limit. Also, we need to cancel all previous requests if a new one is created, to prevent race conditions - when the previous request resolves after the new one.
 
@@ -219,11 +238,11 @@ Of course there are no software without limitations. Reatom is trying to be a si
 - Currently, there is no asynchronous transactions support, but we are working on it. It is important feature for simplify building of optimistic UI and we really think it will improve UX a lot.
 - We have a lot of utils and the ecosystem is growing all the time, but the target of that is have a set of well done logic primitives, and there is no architecture framework or codestyle / declarative framework to fit you in one strict flow. Reatom trying to be in the middle of a library and a framework. We love procedural programming with minimum extra API and semantic overhead. Our defaults are good already to help to you to write a better code: immutability and lazyness, transactions and separation of pure computations and effects, `ctx` and connections and processes virtualizations.
 
-### Community
+### Media
 
-- [en](https://github.com/artalar/reatom/discussions)
-- [ru](https://t.me/reatom_ru)
-- [twitter](https://twitter.com/ReatomJS)
+- [en twitter](https://twitter.com/ReatomJS)
+- [ru telegram](https://t.me/reatom_ru)
+- [ru youtube](https://www.youtube.com/playlist?list=PLXObawgXpIfxERCN8Lqd89wdsXeUHm9XU)
 
 ### How to support the project?
 
@@ -232,8 +251,12 @@ https://www.patreon.com/artalar_dev
 ## Zen
 
 - **Good primitive is more than a framework**
-- Composition is better than configuration
-- Hidden context is explicit if it is general
+- Composition beats configuration
+<!--
+- General context explicit enough to be hidden
+  - A feature semantic should be visible
+
+-->
 
 ## Credits
 

@@ -1,6 +1,6 @@
 {
   "name": "@reatom/primitives",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for primitives",
@@ -22,7 +22,7 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
-    "test": "tsx src/index.test.ts",
+    "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {

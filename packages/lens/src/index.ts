@@ -184,7 +184,7 @@ export const mapPayload: {
 /** Transform async action payload */
 export const mapPayloadAwaited: {
   <T, Payload = Awaited<T>>(
-    mapper: Fn<[Ctx, Awaited<T>], Payload>,
+    mapper?: Fn<[Ctx, Awaited<T>], Payload>,
     name?: string,
   ): Fn<[Action<any[], T>], LensAction<[], Payload>>
   <T extends Action>(fallback: Awaited<ActionPayload<T>>, name?: string): Fn<

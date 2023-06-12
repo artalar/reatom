@@ -113,7 +113,7 @@ const rootPagePath = path.join(root, 'docs', 'src', 'pages', 'index.md')
 let readme = await fs.readFile(rootReadmePath, 'utf8')
 readme =
   `---
-layout: ../layouts/Layout.astro
+layout: ../layouts/MainLayout.astro
 title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---

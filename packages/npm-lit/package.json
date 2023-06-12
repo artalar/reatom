@@ -1,6 +1,6 @@
 {
   "name": "@reatom/npm-lit",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "sideEffects": false,
   "description": "Reatom for npm-lit",
@@ -22,7 +22,7 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "echo microbundle",
-    "test": "tsx src/index.test.ts",
+    "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {

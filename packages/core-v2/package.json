@@ -1,6 +1,6 @@
 {
   "name": "@reatom/core-v2",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for core-v2",
@@ -18,7 +18,7 @@
     "prepublishOnly": "npm run build && npm run build-primitives && npm run test",
     "build": "microbundle -f esm,cjs",
     "build-primitives": "microbundle --cwd primitives",
-    "test": "echo tsx src/index.test.ts",
+    "test": "echo ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
