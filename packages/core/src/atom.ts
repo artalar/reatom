@@ -143,11 +143,7 @@ export interface Action<Params extends any[] = any[], Payload = any>
   (ctx: Ctx, ...params: Params): Payload
 
   onCall: (
-    cb: (
-      ctx: Ctx,
-      payload: Payload,
-      params: Params,
-    ) => void,
+    cb: (ctx: Ctx, payload: Payload, params: Params) => void,
   ) => Unsubscribe
 }
 
@@ -438,7 +434,7 @@ export const createCtx = ({
       throw (patch.error = error)
     }
 
-    if ((updating || !isInt) && !Object.is(state, patch.state)) {
+    if (!Object.is(state, patch.state)) {
       if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
         enqueueComputers(patch.subs)
       }

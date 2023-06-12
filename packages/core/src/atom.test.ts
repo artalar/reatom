@@ -588,14 +588,25 @@ test('update callback should accept the fresh state', () => {
   ;`👍` //?
 })
 
-test('updateHooks should not call on init', () => {
-  const a = atom((ctx, state = 1) => state)
-  const ctx = createCtx()
+test('updateHooks should be called only for computers', () => {
   const track = mockFn()
-  ;(a.__reatom.updateHooks = new Set()).add(track)
+
+  const a = atom(1)
+  a.onChange(() => track('a'))
+
+  const b = atom(0)
+  b.__reatom.initState = () => 2
+  b.onChange(() => track('b'))
+
+  const c = atom((ctx, state = 3) => state)
+  c.onChange(() => track('c'))
+
+  const ctx = createCtx()
 
   assert.is(ctx.get(a), 1)
-  assert.is(track.calls.length, 0)
+  assert.is(ctx.get(b), 2)
+  assert.is(ctx.get(c), 3)
+  assert.equal(track.inputs(), ['c'])
   ;`👍` //?
 })
 
