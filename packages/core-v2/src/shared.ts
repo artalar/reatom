@@ -3,7 +3,7 @@ import { Action, ActionCreator, Atom, defaultStore } from './internal'
 
 export const callSafety = v3.callSafely
 
-export const noop: (...args: any) => any = () => {}
+export const noop: v3.Fn = () => {}
 
 export function pushUnique<T>(list: Array<T>, el: T): void {
   if (!list.includes(el)) list.push(el)

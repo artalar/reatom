@@ -11,10 +11,11 @@ import {
   createCtx as _createCtx,
   Ctx,
   CtxSpy,
+  Fn,
   AtomCache,
 } from './atom'
 
-const callSafelySilent = (fn: (...args: any[]) => any, ...a: any[]) => {
+const callSafelySilent = (fn: Fn, ...a: any[]) => {
   try {
     return fn(...a)
   } catch {}
@@ -30,12 +31,12 @@ const createCtx: typeof _createCtx = (opts) =>
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
 {
-  var onDisconnect = (atom: Atom, cb: (ctx: Ctx) => any) => {
+  var onDisconnect = (atom: Atom, cb: Fn<[Ctx]>) => {
     const hooks = (atom.__reatom.disconnectHooks ??= new Set())
     hooks.add(cb)
     return () => hooks.delete(cb)
   }
-  var onConnect = (atom: Atom, cb: (ctx: Ctx) => any) => {
+  var onConnect = (atom: Atom, cb: Fn<[Ctx]>) => {
     const hooks = (atom.__reatom.connectHooks ??= new Set())
     hooks.add(cb)
     return () => hooks.delete(cb)

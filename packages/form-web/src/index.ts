@@ -5,6 +5,7 @@ import {
   atom,
   AtomMut,
   Ctx,
+  Fn,
   Rec,
   throwReatomError,
   Unsubscribe,
@@ -118,25 +119,25 @@ const getAttributes = (el: HTMLElement) =>
 
 // @ts-ignore
 export const withHtmlRegistration: {
-  (attributes?: HTMLInputAttributes<INPUT_TEXT_TYPES>): (
-    atom: FieldAtom<string>
-  ) => HTMLFieldAtom<string>
-
-  (attributes?: HTMLInputAttributes<'number'>): (
-    atom: FieldAtom<number>
-  ) => HTMLFieldAtom<number>
-
-  (attributes?: HTMLInputAttributes<'checkbox'>): (
-    atom: FieldAtom<boolean>
-  ) => HTMLFieldAtom<boolean>
-
-  (attributes?: Partial<HTMLSelectElement>): (
-    atom: FieldAtom<string[]>
-  ) => HTMLFieldAtom<string[], HTMLSelectElement>
-
+  (attributes?: HTMLInputAttributes<INPUT_TEXT_TYPES>): Fn<
+    [FieldAtom<string>],
+    HTMLFieldAtom<string>
+  >
+  (attributes?: HTMLInputAttributes<'number'>): Fn<
+    [FieldAtom<number>],
+    HTMLFieldAtom<number>
+  >
+  (attributes?: HTMLInputAttributes<'checkbox'>): Fn<
+    [FieldAtom<boolean>],
+    HTMLFieldAtom<boolean>
+  >
+  (attributes?: Partial<HTMLSelectElement>): Fn<
+    [FieldAtom<string[]>],
+    HTMLFieldAtom<string[], HTMLSelectElement>
+  >
   // TODO
-  // <T extends FieldAtom<[]>>(options: { multiple?: boolean }): (atom: T) => HTMLFieldAtom<HTMLSelectElement, T>
-  // <T extends FieldAtom<string>>(options: { multiple?: boolean }): (atom: T) => HTMLFieldAtom<HTMLTextAreaElement, T>
+  // <T extends FieldAtom<[]>>(options: { multiple?: boolean }): Fn<[T], HTMLFieldAtom<HTMLSelectElement, T>>
+  // <T extends FieldAtom<string>>(options: { multiple?: boolean }): Fn<[T], HTMLFieldAtom<HTMLTextAreaElement, T>>
   // radio
 } =
   (attributes: HTMLInputAttributes | Partial<HTMLSelectElement> = {}) =>

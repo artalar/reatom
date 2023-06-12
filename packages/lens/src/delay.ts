@@ -5,6 +5,7 @@ import {
   AtomCache,
   AtomState,
   Ctx,
+  Fn,
   isAtom,
   throwReatomError,
 } from '@reatom/core'
@@ -22,11 +23,12 @@ export interface DelayOptions {
 /** Flexible updates delayer */
 export const delay: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(options: DelayOptions, name?: string): (atom: T) =>
+  <T extends Atom>(options: DelayOptions, name?: string): Fn<
+    [T],
     T extends Action<infer Params, infer Payload>
       ? LensAction<Params, Payload>
       : LensAtom<AtomState<T>>
-  
+  >
 } = (options, name) => (anAtom: Atom) => {
   // listeners is a unique object for each atom instance
   const starts = new WeakMap<AtomCache['listeners'], number>()
@@ -106,10 +108,12 @@ export const delay: {
 /** Delay updates by timeout */
 export const debounce: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(wait: DelayOptions['min'], name?: string): (atom: T) =>
+  <T extends Atom>(wait: DelayOptions['min'], name?: string): Fn<
+    [T],
     T extends Action<infer Params, infer Payload>
       ? LensAction<Params, Payload>
       : LensAtom<AtomState<T>>
+  >
 } =
   (min = 1, name) =>
   (anAtom) =>
@@ -122,11 +126,12 @@ export const debounce: {
 /** Skip updates by interval */
 export const throttle: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(wait: DelayOptions['max'], name?: string): (atom: T ) =>
+  <T extends Atom>(wait: DelayOptions['max'], name?: string): Fn<
+    [T],
     T extends Action<infer Params, infer Payload>
       ? LensAction<Params, Payload>
       : LensAtom<AtomState<T>>
-  
+  >
 } =
   (max = 1, name) =>
   (anAtom) =>

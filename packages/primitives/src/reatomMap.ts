@@ -1,4 +1,4 @@
-import { Action, atom, AtomMut, Ctx } from '@reatom/core'
+import { Action, atom, AtomMut, Ctx, Fn } from '@reatom/core'
 import { assign } from '@reatom/utils'
 import { withReducers } from './withReducers'
 
@@ -14,8 +14,8 @@ export interface MapAtom<Key, Element> extends AtomMut<Map<Key, Element>> {
   delete: Action<[key: Key], Map<Key, Element>>
   clear: Action<[], Map<Key, Element>>
   reset: Action<[], Map<Key, Element>>
-  get: (ctx: Ctx, key: Key) => Element | undefined
-  has: (ctx: Ctx, key: Key) => undefined
+  get: Fn<[Ctx, Key], Element | undefined>
+  has: Fn<[Ctx, Key], boolean>
 }
 
 export const reatomMap = <Key, Element>(

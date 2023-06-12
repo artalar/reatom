@@ -1,4 +1,4 @@
-import { Action, atom, Atom, AtomState } from '@reatom/core'
+import { Action, atom, Atom, AtomState, Fn } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { mapName } from './utils'
 import { type LensAtom, type LensAction } from './'
@@ -9,11 +9,12 @@ import { type LensAtom, type LensAction } from './'
 // @ts-expect-error
 export const sample: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
-  <T extends Atom>(signal: Atom, name?: string): (
-    atom: T,
-  ) => T extends Action<infer _Params, infer Payload>
-    ? LensAction<[], Payload>
-    : LensAtom<AtomState<T>>
+  <T extends Atom>(signal: Atom, name?: string): Fn<
+    [T],
+    T extends Action<infer Params, infer Payload>
+      ? LensAction<[], Payload>
+      : LensAtom<AtomState<T>>
+  >
 } =
   <T>(signal: Atom, name?: string) =>
   // @ts-ignore

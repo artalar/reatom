@@ -10,6 +10,7 @@ import {
   Cache,
   CacheReducer,
   defaultStore,
+  Fn,
   isActionCreator,
   isAtom,
   isFunction,
@@ -48,11 +49,12 @@ export type AtomOptions<State = any> =
       v3atom?: v3.Atom
     }
 
-export type AtomDecorator<State> = (
-  cacheReducer: CacheReducer<State>,
-) => CacheReducer<State>
+export type AtomDecorator<State> = Fn<
+  [cacheReducer: CacheReducer<State>],
+  CacheReducer<State>
+>
 
-type PayloadMapper = (...args: any[]) => any
+type PayloadMapper = Fn
 
 let atomsCount = 0
 export function createAtom<
@@ -149,7 +151,7 @@ export function createAtom<
 
   atom.getState = () => store.getState(atom)
 
-  atom.subscribe = (cb: (...args: any[]) => any) => store.subscribe(atom, cb)
+  atom.subscribe = (cb: Fn) => store.subscribe(atom, cb)
 
   atom.types = types
 
@@ -162,10 +164,7 @@ export function createAtom<
   return atom
 }
 
-const ctxs = new WeakMap<
-  v3.Ctx['cause'],
-  WeakMap<(...args: any[]) => any, Rec>
->()
+const ctxs = new WeakMap<v3.Ctx['cause'], WeakMap<Fn, Rec>>()
 
 function createDynamicallyTrackedCacheReducer<
   State,

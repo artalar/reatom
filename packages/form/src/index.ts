@@ -1,4 +1,4 @@
-import { action, Action, Atom, atom, AtomMut, Ctx, __count } from '@reatom/core'
+import { action, Action, Atom, atom, AtomMut, Ctx, Fn, __count } from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
 import { RecordAtom, reatomRecord } from '@reatom/primitives'
 import { isShallowEqual } from '@reatom/utils'
@@ -33,14 +33,13 @@ export type FieldAtom<State = any, Value = State> = AtomMut<State> &
   }
 
 export type FieldOptions<State = any, Value = State> = {
-  filter?: (ctx: Ctx, state: State) => boolean
+  filter?: Fn<[Ctx, State], boolean>
   initState: State
   name?: string
-  validate?: (
-    ctx: Ctx,
-    payload: { state: State; focus: FieldFocus; validation: FieldValidation },
-  ) => Value | Promise<Value>
-
+  validate?: Fn<
+    [Ctx, { state: State; focus: FieldFocus; validation: FieldValidation }],
+    Value | Promise<Value>
+  >
   validationTrigger?: 'change' | 'blur' | 'submit'
 }
 
@@ -171,8 +170,8 @@ export const reatomField: {
 
 export type FormOptions = {
   name?: string
-  onSubmit: (ctx: Ctx, form: Form) => any
-  onSubmitError?: (ctx: Ctx) => any
+  onSubmit: Fn<[Ctx, Form]>
+  onSubmitError?: Fn<[Ctx]>
 }
 
 export type Form = {

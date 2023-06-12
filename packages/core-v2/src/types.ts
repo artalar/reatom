@@ -2,6 +2,10 @@ import * as v3 from '@reatom/core'
 
 /* UTILITY */
 
+export type Fn<Args extends any[] = any[], Return = any> = (
+  ...a: Args
+) => Return
+
 export type Rec<Values = any> = Record<string, Values>
 
 export type Merge<Intersection> = Intersection extends (...a: any[]) => any
@@ -104,9 +108,7 @@ export type AtomBinded<State = any> = Atom<State> & AtomBindings<State>
 
 export type TrackReducer<
   State = any,
-  Deps extends Rec<((...args: any) => any) | Atom> = Rec<
-    ((...args: any) => any) | Atom
-  >,
+  Deps extends Rec<Fn | Atom> = Rec<Fn | Atom>,
 > = {
   (track: Track<Deps>): State
   // TODO: how to infer type from default value of optional argument?
@@ -114,45 +116,35 @@ export type TrackReducer<
   // (track: Track<Deps>, state?: undefined | State): State
 }
 
-export type CacheReducer<State = any> = (
-  transaction: Transaction,
-  cache: CacheTemplate<State>,
-) => Cache<State>
+export type CacheReducer<State = any> = Fn<
+  [transaction: Transaction, cache: CacheTemplate<State>],
+  Cache<State>
+>
 
-export type AtomListener<State> = (state: State, ctx: Causes) => any
+export type AtomListener<State> = Fn<[state: State, ctx: Causes]>
 
-export type AtomEffect<Ctx extends Cache['ctx'] = Cache['ctx']> = (
-  dispatch: Store['dispatch'],
-  ctx: Ctx,
-  causes: Causes,
-) => any
+export type AtomEffect<Ctx extends Cache['ctx'] = Cache['ctx']> = Fn<
+  [dispatch: Store['dispatch'], ctx: Ctx, causes: Causes]
+>
 
 export type DepsPayloadMappers<
-  Deps extends Rec<((...args: any) => any) | Atom | ActionCreator> = Rec<
-    ((...args: any) => any) | Atom | ActionCreator
-  >,
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom | ActionCreator>,
 > = OmitValues<Deps, Atom | ActionCreator>
 
 export type DepsActionCreators<
-  Deps extends Rec<((...args: any) => any) | Atom | ActionCreator> = Rec<
-    ((...args: any) => any) | Atom
-  >,
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
 > = {
   [K in keyof Deps]: Deps[K] extends ActionCreator ? Deps[K] : never
 }
 
 export type DepsAtoms<
-  Deps extends Rec<((...args: any) => any) | Atom | ActionCreator> = Rec<
-    ((...args: any) => any) | Atom
-  >,
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
 > = {
   [K in keyof Deps]: Deps[K] extends Atom ? Deps[K] : never
 }
 
 export type Track<
-  Deps extends Rec<((...args: any) => any) | Atom | ActionCreator> = Rec<
-    ((...args: any) => any) | Atom
-  >,
+  Deps extends Rec<Fn | Atom | ActionCreator> = Rec<Fn | Atom>,
 > = {
   /** Create action */
   create: <Name extends keyof DepsPayloadMappers<Deps>>(
@@ -171,28 +163,32 @@ export type Track<
   /** React to action dispatch */
   onAction<Name extends keyof OmitValues<Deps, Atom>>(
     name: Name,
-    reaction: (
-      payload: Name extends keyof PickValues<Deps, ActionCreator>
-        ? // TODO
-          // @ts-ignore
-          ActionPayload<Deps[Name]>
-        : // TODO
-          // @ts-ignore
-          ReturnType<Deps[Name]>,
-    ) => any,
+    reaction: Fn<
+      [
+        payload: Name extends keyof PickValues<Deps, ActionCreator>
+          ? // TODO
+            // @ts-ignore
+            ActionPayload<Deps[Name]>
+          : // TODO
+            // @ts-ignore
+            ReturnType<Deps[Name]>,
+      ]
+    >,
   ): void
 
   /** Subscribe to atom state changes and react to it */
   onChange<Name extends keyof DepsAtoms<Deps>>(
     name: Name,
-    reaction: (
-      newState: AtomState<DepsAtoms<Deps>[Name]>,
-      oldState: undefined | AtomState<DepsAtoms<Deps>[Name]>,
-    ) => any,
+    reaction: Fn<
+      [
+        newState: AtomState<DepsAtoms<Deps>[Name]>,
+        oldState: undefined | AtomState<DepsAtoms<Deps>[Name]>,
+      ]
+    >,
   ): void
 
   /** React only at first reducer call */
-  onInit(reaction: () => any): void
+  onInit(reaction: Fn<[]>): void
 
   /** Schedule effect */
   schedule(effect: AtomEffect): void
@@ -251,7 +247,7 @@ export type ActionCreatorBinded<
 
 export type AtomsCache = WeakMap<Atom, Cache>
 
-export type Effect = (dispatch: Store['dispatch']) => any
+export type Effect = Fn<[dispatch: Store['dispatch']]>
 
 export type Patch = Map<Atom, Cache>
 
@@ -261,10 +257,9 @@ export type Cause = Atom['id'] | Action['type'] | string
 // export type Causes = [TransactionResult, ...(Array<Cause> | Causes)]
 export type Causes = Array<Cause | TransactionResult>
 
-export type TransactionEffect = (
-  dispatch: Store['dispatch'],
-  causes: Causes,
-) => any
+export type TransactionEffect = Fn<
+  [dispatch: Store['dispatch'], causes: Causes]
+>
 
 export type Store = {
   /**
@@ -278,10 +273,7 @@ export type Store = {
   getState<State>(atom: Atom<State>): State
 
   /** Subscribe to dispatch */
-  subscribe<State>(
-    atom: Atom<State>,
-    cb: (state: State, causes: Causes) => any,
-  ): Unsubscribe
+  subscribe<State>(atom: Atom<State>, cb: Fn<[State, Causes]>): Unsubscribe
 
   v3ctx: v3.Ctx
 }

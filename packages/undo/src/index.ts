@@ -8,6 +8,7 @@ import {
   AtomProto,
   AtomState,
   Ctx,
+  Fn,
   isAction,
   isAtom,
   Rec,
@@ -42,8 +43,8 @@ export const withUndo =
     shouldUpdate = () => true,
   }: {
     length?: number
-    shouldUpdate?: (ctx: Ctx, state: AtomState<T>) => boolean
-  } = {}): (atom: T) =>( T & WithUndo<AtomState<T>>) =>
+    shouldUpdate?: Fn<[ctx: Ctx, state: AtomState<T>], boolean>
+  } = {}): Fn<[T], T & WithUndo<AtomState<T>>> =>
   (anAtom) => {
     throwReatomError(
       isAction(anAtom) || !isAtom(anAtom) || typeof anAtom !== 'function',

@@ -1,4 +1,4 @@
-import { Action, atom, Atom, AtomState, Ctx, CtxSpy } from '@reatom/core'
+import { Action, atom, Atom, AtomState, Ctx, CtxSpy, Fn } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { isShallowEqual } from '@reatom/utils'
 import { mapName } from './utils'
@@ -9,22 +9,19 @@ export const filter: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
   <T extends Atom>(
     predicate?: T extends Action<infer Params, infer Payload>
-      ? (ctx: Ctx, payload: Payload, params: Params) => boolean
-      : (
-          ctx: CtxSpy,
-          atomState1: AtomState<T>,
-          atomState2: AtomState<T>,
-        ) => boolean,
+      ? Fn<[Ctx, Payload, Params], boolean>
+      : Fn<[CtxSpy, AtomState<T>, AtomState<T>], boolean>,
     name?: string,
-  ): (
-    atom: T,
-  ) => T extends Action<infer Params, infer Payload>
-    ? LensAction<Params, Payload>
-    : T extends Atom<infer State>
-    ? LensAtom<State>
-    : never
+  ): Fn<
+    [T],
+    T extends Action<infer Params, infer Payload>
+      ? LensAction<Params, Payload>
+      : T extends Atom<infer State>
+      ? LensAtom<State>
+      : never
+  >
 } =
-  (predicate?: (...args: any[]) => any, name?: string) =>
+  (predicate?: Fn, name?: string) =>
   (anAtom: Atom): any => {
     name = mapName(anAtom, 'filter', name)
     const { isAction } = anAtom.__reatom

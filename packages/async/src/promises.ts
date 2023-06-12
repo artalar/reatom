@@ -1,6 +1,6 @@
-
+import { Fn } from '@reatom/core'
 
 export const PROMISES = new WeakMap<
   Promise<any>,
-  (fn: () => Promise<any>) => any
+  Fn<[Fn<[], Promise<any>>]>
 >()

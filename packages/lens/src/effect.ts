@@ -5,6 +5,7 @@ import {
   AtomCache,
   AtomState,
   Ctx,
+  Fn,
   Unsubscribe,
 } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
@@ -24,24 +25,27 @@ export const effect: {
   // TODO for some reason an atom not handled by overloads, if an action overload is first
   <T extends Atom, Res>(
     fn: T extends Action<infer Params, infer Payload>
-      ? (ctx: Ctx, poayload: Awaited<Payload>, params: Params) => Res
-      : (ctx: Ctx, atomState: AtomState<T>) => Res,
+      ? Fn<[Ctx, Awaited<Payload>, Params], Res>
+      : Fn<[Ctx, AtomState<T>], Res>,
     name?: string,
-  ): (atom: T) => T extends Action<infer Params, infer Payload>
-    ? LensEffect<
-        [
-          {
-            params: [{ params: Params; payload: Awaited<Payload> }]
-            payload: Awaited<Res>
-          },
-        ],
-        Awaited<Res>
-      >
-    : LensEffect<
-        [{ params: [AtomState<T>]; payload: AtomState<T> }],
-        Awaited<Res>
-      >
-} = (fn: (...args: any[]) => any, name?: string) => (anAtom: Atom) => {
+  ): Fn<
+    [T],
+    T extends Action<infer Params, infer Payload>
+      ? LensEffect<
+          [
+            {
+              params: [{ params: Params; payload: Awaited<Payload> }]
+              payload: Awaited<Res>
+            },
+          ],
+          Awaited<Res>
+        >
+      : LensEffect<
+          [{ params: [AtomState<T>]; payload: AtomState<T> }],
+          Awaited<Res>
+        >
+  >
+} = (fn: Fn, name?: string) => (anAtom: Atom) => {
   const { isAction } = anAtom.__reatom
   // TODO better error handling
   // @ts-expect-error

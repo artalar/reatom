@@ -24,9 +24,9 @@ import { createTestCtx, mockFn } from '@reatom/testing'
 export interface TestCtx extends Ctx {
   mock<T>(anAtom: Atom<T>, fallback: T): Unsubscribe
 
-  mockAction<T>(anAction: Action<any[], T>, cb: (ctx: Ctx) => T): Unsubscribe
+  mockAction<T>(anAction: Action<any[], T>, cb: Fn<[Ctx], T>): Unsubscribe
 
-  subscribeTrack<T, F extends (arg: T) => any>(
+  subscribeTrack<T, F extends Fn<[T]>>(
     anAtom: Atom<T>,
     cb?: F,
   ): F & {
@@ -40,7 +40,7 @@ declare function mockFn<I extends any[], O>(
   fn?: (...input: I) => O,
 ): ((...input: I) => O) & {
   calls: Array<{ i: I; o: O }>
-  lastInput: () => I[0]
+  lastInput: Fn<[], I[0]>
 }
 ```
 

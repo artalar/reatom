@@ -7,6 +7,7 @@ import {
   AtomState,
   Ctx,
   CtxSpy,
+  Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
@@ -18,23 +19,22 @@ export const getRootCause = (cause: AtomCache): AtomCache =>
 export const isSameCtx = (ctx1: Ctx, ctx2: Ctx) =>
   getRootCause(ctx1.cause) === getRootCause(ctx2.cause)
 
-export const addOnConnect = (anAtom: Atom, cb: (ctx: Ctx) => any) =>
+export const addOnConnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
   (anAtom.__reatom.connectHooks ??= new Set()).add(cb)
 
-export const addOnDisconnect = (anAtom: Atom, cb: (ctx: Ctx) => any) =>
+export const addOnDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>) =>
   (anAtom.__reatom.disconnectHooks ??= new Set()).add(cb)
 
 export const addOnUpdate = <T extends Atom>(
   anAtom: T,
-  cb: (ctx: Ctx, cache: AtomCache<AtomState<T>>) => any,
+  cb: Fn<[Ctx, AtomCache<AtomState<T>>]>,
 ) => (anAtom.__reatom.updateHooks ??= new Set()).add(cb)
 
 export const withInit =
   <T extends Atom>(
-    createState: (ctx: Ctx, initState: T['__reatom']['initState']) => AtomState<T>,
-  ): ((atom: T) => T) =>
+    createState: Fn<[Ctx, T['__reatom']['initState']], AtomState<T>>,
+  ): Fn<[T], T> =>
   (anAtom) => {
-
     const { initState, isAction } = anAtom.__reatom
 
     throwReatomError(isAction, 'action state is not manageable')
@@ -46,9 +46,7 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: (
-    ctx: Ctx & { controller: AbortController; isConnected(): boolean },
-  ) => any,
+  cb: Fn<[Ctx & { controller: AbortController; isConnected(): boolean }]>,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
     const controller = new AbortController()
@@ -91,28 +89,28 @@ export const onConnect = (
   return () => connectHooks.delete(connectHook)
 }
 
-export const onDisconnect = (
-  anAtom: Atom,
-  cb: (ctx: Ctx) => any,
-): Unsubscribe => onConnect(anAtom, (ctx) => () => cb(ctx))
+export const onDisconnect = (anAtom: Atom, cb: Fn<[Ctx]>): Unsubscribe =>
+  onConnect(anAtom, (ctx) => () => cb(ctx))
 
 // @ts-expect-error
 const _onUpdate: {
   <Params extends any[], Payload>(
     anAction: Action<Params, Payload> & { deps?: Array<Atom> },
-    cb?: (
-      ctx: Ctx,
-      payload: Payload,
-      cache: AtomCache<AtomState<Action<Params, Payload>>> & { params: Params },
-    ) => any,
+    cb?: Fn<
+      [
+        Ctx,
+        Payload,
+        AtomCache<AtomState<Action<Params, Payload>>> & { params: Params },
+      ]
+    >,
   ): Unsubscribe
   <T>(
     anAtom: Atom<T> & { deps?: Array<Atom> },
-    cb?: (ctx: Ctx, value: T, cache: AtomCache<T>) => any,
+    cb?: Fn<[Ctx, T, AtomCache<T>]>,
   ): Unsubscribe
 } = <T>(
   anAtom: Action<any[], T> | Atom<T>,
-  cb: (ctx: Ctx, value: T, cache: AtomCache<T>) => any = noop,
+  cb: Fn<[Ctx, T, AtomCache<T>]> = noop,
 ) => {
   const hook = (ctx: Ctx, patch: AtomCache & { params?: unknown[] }) => {
     let { state } = patch
@@ -145,14 +143,10 @@ export const spyChange: {
   <Params extends any[], Payload>(
     ctx: CtxSpy,
     anAction: Action<Params, Payload>,
-    handler?: (action: { params: Params; payload: Payload }) => any,
+    handler?: Fn<[{ params: Params; payload: Payload }]>,
   ): boolean
-  <T>(
-    ctx: CtxSpy,
-    anAtom: Atom<T>,
-    handler?: (arg: T, arg2?: T) => any,
-  ): boolean
-} = (ctx: CtxSpy, anAtom: Atom, handler?: (...args: any[]) => any) => {
+  <T>(ctx: CtxSpy, anAtom: Atom<T>, handler?: Fn<[T, T?]>): boolean
+} = (ctx: CtxSpy, anAtom: Atom, handler?: Fn) => {
   let isChanged = false
   ctx.spy(anAtom, (newState, prevState) => {
     isChanged = true
@@ -165,9 +159,10 @@ export const controlConnection =
   <T>(
     initState = true,
     name?: string,
-  ): ((
-    atom: Atom<T>,
-  ) => Atom<T> & { toggleConnection: Action<[boolean?], boolean> }) =>
+  ): Fn<
+    [Atom<T>],
+    Atom<T> & { toggleConnection: Action<[boolean?], boolean> }
+  > =>
   (anAtom) => {
     name ??= `${anAtom.__reatom.name}.controlConnection`
 

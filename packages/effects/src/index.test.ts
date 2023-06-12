@@ -1,4 +1,4 @@
-import { action, atom, createCtx, Ctx } from '@reatom/core'
+import { action, atom, createCtx, Ctx, Fn } from '@reatom/core'
 import { sleep } from '@reatom/utils'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { mapPayloadAwaited, toAtom } from '@reatom/lens'
@@ -44,11 +44,11 @@ test('take', async () => {
 })
 
 test('await transaction', async () => {
-  let resolve1: (...args: any[]) => any
+  let resolve1: Fn
   const promise1 = new Promise<void>((r) => (resolve1 = r))
-  let resolve2: (...args: any[]) => any
+  let resolve2: Fn
   const promise2 = new Promise<void>((r) => (resolve2 = r))
-  let resolve3: (...args: any[]) => any
+  let resolve3: Fn
   const promise3 = new Promise<void>((r) => (resolve3 = r))
 
   const effect1 = action((ctx) =>

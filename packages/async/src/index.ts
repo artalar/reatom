@@ -11,6 +11,7 @@ import {
   AtomMut,
   Ctx,
   CtxParams,
+  Fn,
   throwReatomError,
   __count,
 } from '@reatom/core'
@@ -46,14 +47,10 @@ export interface AsyncCtx extends Ctx {
 
 export interface AsyncOptions<Params extends any[] = any[], Resp = any> {
   name?: string
-  onEffect?: (
-    ctx: Ctx,
-    params: Params,
-    controlledPromise: ControlledPromise<Resp>,
-  ) => any
-  onFulfill?: (ctx: Ctx, resp: Resp) => any
-  onReject?: (ctx: Ctx, error: unknown) => any
-  onSettle?: (ctx: Ctx) => any
+  onEffect?: Fn<[Ctx, Params, ControlledPromise<Resp>]>
+  onFulfill?: Fn<[Ctx, Resp]>
+  onReject?: Fn<[Ctx, unknown]>
+  onSettle?: Fn<[Ctx]>
 }
 
 export interface ControlledPromise<T = any> extends Promise<T> {
@@ -62,12 +59,11 @@ export interface ControlledPromise<T = any> extends Promise<T> {
 
 export const isAbortError = isAbort
 
-// REFACTOR: rewrite types to use function type expression
 export const reatomAsync = <
   Params extends [AsyncCtx, ...any[]] = [AsyncCtx, ...any[]],
   Resp = any,
 >(
-  effect: (...params: Params) => Promise<Resp>,
+  effect: Fn<Params, Promise<Resp>>,
   options: string | AsyncOptions<CtxParams<Params>, Resp> = {},
 ): AsyncAction<CtxParams<Params>, Resp> => {
   const {
@@ -152,7 +148,7 @@ export const reatomAsync = <
   })
 }
 reatomAsync.from = <Params extends any[], Resp = any>(
-  effect: (...args: Params) => Promise<Resp>,
+  effect: Fn<Params, Promise<Resp>>,
   options: string | AsyncOptions<Params, Resp> = {},
 ): AsyncAction<Params, Resp> => {
   // check uglification
@@ -175,17 +171,17 @@ export const withDataAtom: {
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
     },
-  >(): (
-    asyncAction: T,
-  ) => T & { dataAtom: AtomMut<undefined | ActionPayload<T['onFulfill']>> }
-
+  >(): Fn<
+    [T],
+    T & { dataAtom: AtomMut<undefined | ActionPayload<T['onFulfill']>> }
+  >
   <
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
     },
   >(
     initState: ActionPayload<T['onFulfill']>,
-  ): (asyncAction: T) => T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
   <
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<State | ActionPayload<T['onFulfill']>>
@@ -193,22 +189,25 @@ export const withDataAtom: {
     State,
   >(
     initState: State,
-  ): (
-    asyncAction: T,
-  ) => T & { dataAtom: AsyncDataAtom<State | ActionPayload<T['onFulfill']>> }
-
+  ): Fn<
+    [T],
+    T & { dataAtom: AsyncDataAtom<State | ActionPayload<T['onFulfill']>> }
+  >
   <
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<ActionPayload<T['onFulfill']>>
     },
   >(
     initState: ActionPayload<T['onFulfill']>,
-    map?: (
-      ctx: Ctx,
-      payload: ActionPayload<T['onFulfill']>,
-      state: ActionPayload<T['onFulfill']>,
-    ) => ActionPayload<T['onFulfill']>,
-  ): (asyncAction: T) => T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }
+    map?: Fn<
+      [
+        ctx: Ctx,
+        payload: ActionPayload<T['onFulfill']>,
+        state: ActionPayload<T['onFulfill']>,
+      ],
+      ActionPayload<T['onFulfill']>
+    >,
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<ActionPayload<T['onFulfill']>> }>
   <
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<State>
@@ -216,14 +215,13 @@ export const withDataAtom: {
     State,
   >(
     initState: State,
-    map?: (
-      ctx: Ctx,
-      payload: ActionPayload<T['onFulfill']>,
-      state: State,
-    ) => State,
-  ): (asyncAction: T) => T & { dataAtom: AsyncDataAtom<State> }
+    map?: Fn<
+      [ctx: Ctx, payload: ActionPayload<T['onFulfill']>, state: State],
+      State
+    >,
+  ): Fn<[T], T & { dataAtom: AsyncDataAtom<State> }>
 } =
-  (initState: any, map?: (...args: any[]) => any) =>
+  (initState: any, map?: Fn) =>
   // @ts-ignore
   (anAsync) => {
     if (!anAsync.dataAtom) {
@@ -252,7 +250,7 @@ export const withErrorAtom =
     },
     Err = Error,
   >(
-    parseError: (ctx: Ctx, error: unknown) => Err = (ctx, e) =>
+    parseError: Fn<[Ctx, unknown], Err> = (ctx, e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
     {
       resetTrigger,
@@ -265,9 +263,7 @@ export const withErrorAtom =
     } = {
       resetTrigger: 'onEffect',
     },
-  ): ((
-    asyncAction: T,
-  ) => T & { errorAtom: Atom<undefined | Err> & { reset: Action } }) =>
+  ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
       const errorAtomName = `${anAsync.__reatom.name}.errorAtom`
@@ -303,11 +299,14 @@ export const withAbort =
     },
   >({
     strategy = 'last-in-win',
-  }: { strategy?: 'none' | 'last-in-win' } = {}): ((asyncAction: T) => T & {
-    abort: Action<[reason?: string], void>
-    onAbort: Action<[Error], Error>
-    abortControllerAtom: Atom<AbortController | null>
-  }) =>
+  }: { strategy?: 'none' | 'last-in-win' } = {}): Fn<
+    [T],
+    T & {
+      abort: Action<[reason?: string], void>
+      onAbort: Action<[Error], Error>
+      abortControllerAtom: Atom<AbortController | null>
+    }
+  > =>
   (anAsync) => {
     if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom = atom(
@@ -369,12 +368,15 @@ export const withRetry =
     onReject,
   }: {
     fallbackParams?: Params
-    onReject?: (ctx: Ctx, error: unknown, retries: number) => void | number
-  } = {}): ((asyncAction: T) => T & {
-    paramsAtom: Atom<undefined | ActionParams<T>>
-    retry: Action<[], ActionPayload<T>>
-    retriesAtom: Atom<number>
-  }) =>
+    onReject?: Fn<[ctx: Ctx, error: unknown, retries: number], void | number>
+  } = {}): Fn<
+    [T],
+    T & {
+      paramsAtom: Atom<undefined | ActionParams<T>>
+      retry: Action<[], ActionPayload<T>>
+      retriesAtom: Atom<number>
+    }
+  > =>
   (anAsync) => {
     if (!anAsync.paramsAtom) {
       const paramsAtom = (anAsync.paramsAtom = atom(
