@@ -11,7 +11,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { noop, toAbortError, isAbort } from '@reatom/utils'
+import { noop, toAbortError, isAbort, merge } from '@reatom/utils'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -51,10 +51,9 @@ export const onConnect = (
   const connectHook = (ctx: Ctx) => {
     const controller = new AbortController()
     const cleanup = cb(
-      Object.assign({}, ctx, {
+      merge(ctx, {
         // TODO: how to do it more performant
-        cause: Object.assign(
-          {},
+        cause: merge(
           ctx.get((read) => read(anAtom.__reatom)!),
           { controller },
         ),
