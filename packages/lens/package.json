@@ -26,7 +26,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.2.0",
+    "@reatom/core": "^3.4.0",
     "@reatom/effects": "^3.2.0",
     "@reatom/hooks": "^3.3.1",
     "@reatom/utils": "^3.1.0"

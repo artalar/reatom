@@ -66,14 +66,19 @@ export const SKIP: never = 'REATOM_SKIP_MARK' as any as never
 export const readonly = <T extends Atom & { deps?: Array<Atom> }>({
   __reatom,
   pipe,
+  onChange,
+  // @ts-expect-error the atom could be an action
+  onCall,
   deps,
 }: T): LensAtom<AtomState<T>> =>
   Object.assign(
     {
       __reatom,
       pipe,
+      onChange,
     },
     deps ? { deps } : {},
+    onCall ? { onCall } : {},
   ) as LensAtom<AtomState<T>>
 
 /** Remove all extra properties from the atom to pick the essence */
@@ -91,6 +96,9 @@ export const plain = <T extends Atom>(
       : {}
   theAtom.__reatom = anAtom.__reatom
   theAtom.pipe = anAtom.pipe
+  theAtom.pipe = anAtom.pipe
+  theAtom.onChange = anAtom.onChange
+  if ('onCall' in anAtom) theAtom.onCall = anAtom.onCall
 
   return theAtom
 }
