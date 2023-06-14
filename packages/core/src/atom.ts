@@ -125,6 +125,7 @@ export interface AtomProto<State = any> {
   connectHooks: null | Set<Fn<[Ctx]>>
   disconnectHooks: null | Set<Fn<[Ctx]>>
   updateHooks: null | Set<Fn<[Ctx, AtomCache]>>
+  actual: boolean
 }
 
 export interface AtomCache<State = any> {
@@ -264,27 +265,31 @@ export const createCtx = ({
     trNearEffectsStart = trLateEffectsStart = 0
   }
 
-  let addPatch = (cache: AtomCache) => {
+  let addPatch = (
+    { state, proto, pubs, subs, listeners }: AtomCache,
+    cause: AtomCache,
+  ) => {
+    proto.actual = false
     trLogs.push(
-      (cache.proto.patch = {
-        state: cache.state,
-        proto: cache.proto,
-        cause: null,
-        pubs: cache.pubs,
-        subs: cache.subs,
-        listeners: cache.listeners,
+      (proto.patch = {
+        state: state,
+        proto: proto,
+        cause,
+        pubs: pubs,
+        subs: subs,
+        listeners: listeners,
       }),
     )
-    return cache.proto.patch
+    return proto.patch
   }
 
-  let enqueueComputers = (subs: AtomCache['subs']) => {
-    for (let subProto of subs.keys()) {
+  let enqueueComputers = (cache: AtomCache) => {
+    for (let subProto of cache.subs.keys()) {
       let subCache = subProto.patch ?? read(subProto)!
 
-      if (subCache.cause !== null) {
-        if (addPatch(subCache).listeners.size === 0) {
-          enqueueComputers(subCache.subs)
+      if (!subProto.patch || subProto.actual) {
+        if (addPatch(subCache, cache).listeners.size === 0) {
+          enqueueComputers(subCache)
         }
       }
     }
@@ -325,7 +330,7 @@ export const createCtx = ({
   }
 
   let actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
-    let { cause, proto, pubs } = patch
+    let { proto, pubs } = patch
     let toDisconnect = new Set<AtomProto>()
     let toConnect = new Set<AtomProto>()
 
@@ -333,7 +338,7 @@ export const createCtx = ({
       pubs.length === 0 ||
       pubs.some(
         ({ proto, state }) =>
-          !Object.is(state, (cause = actualize(patchCtx, proto)).state),
+          !Object.is(state, (patch.cause = actualize(patchCtx, proto)).state),
       )
     ) {
       let newPubs: typeof pubs = []
@@ -370,7 +375,6 @@ export const createCtx = ({
       }
 
       patch.state = patch.proto.computer!(patchCtx as CtxSpy, patch.state)
-      patch.cause = cause
       patch.pubs = newPubs
 
       for (let i = newPubs.length; i < pubs.length; i++) {
@@ -395,10 +399,10 @@ export const createCtx = ({
     proto: AtomProto,
     updater?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
   ): AtomCache => {
-    let { patch } = proto
+    let { patch, actual } = proto
     let updating = updater !== undefined
 
-    if (patch?.cause && !updating) return patch
+    if (actual && !updating) return patch!
 
     let cache = patch ?? read(proto)
     let isInt = !cache
@@ -407,7 +411,7 @@ export const createCtx = ({
       cache = {
         state: proto.initState(ctx),
         proto,
-        cause: null,
+        cause: ctx.cause,
         pubs: [],
         subs: new Set(),
         listeners: new Set(),
@@ -416,7 +420,7 @@ export const createCtx = ({
       return cache!
     }
 
-    if (!patch || patch.cause) patch = addPatch(cache!)
+    if (!patch || actual) patch = addPatch(cache!, ctx.cause)
 
     let { state } = patch
     let patchCtx: Ctx = {
@@ -430,21 +434,20 @@ export const createCtx = ({
     try {
       if (proto.computer) actualizePubs(patchCtx, patch)
       if (updating) updater!(patchCtx, patch)
+      proto.actual = true
     } catch (error) {
       throw (patch.error = error)
     }
 
     if (!Object.is(state, patch.state)) {
       if (patch.subs.size > 0 && (updating || patch.listeners.size > 0)) {
-        enqueueComputers(patch.subs)
+        enqueueComputers(patch)
       }
 
       proto.updateHooks?.forEach((hook) =>
         trUpdates.push(() => hook(patchCtx, patch!)),
       )
     }
-
-    patch.cause ??= ctx.cause
 
     return patch
   }
@@ -489,19 +492,18 @@ export const createCtx = ({
 
           if (patch === proto.patch) {
             proto.patch = null
+            proto.actual = false
 
-            if (patch.cause !== null) {
-              caches.set(proto, patch)
+            caches.set(proto, patch)
 
-              if (proto.isAction) {
-                if (state.length === 0) continue
-                for (let cb of patch.listeners) {
-                  nearEffects.push(() => cb(state))
-                }
-              } else {
-                for (let cb of patch.listeners) {
-                  lateEffects.push(() => cb(read(proto)!.state))
-                }
+            if (proto.isAction) {
+              if (state.length === 0) continue
+              for (let cb of patch.listeners) {
+                nearEffects.push(() => cb(state))
+              }
+            } else {
+              for (let cb of patch.listeners) {
+                lateEffects.push(() => cb(read(proto)!.state))
               }
             }
           }
@@ -510,7 +512,10 @@ export const createCtx = ({
         trError = e = e instanceof Error ? e : new Error(String(e))
         for (let log of logsListeners) log(trLogs, e)
         for (let cb of trRollbacks) callSafely(cb, e)
-        for (let { proto } of trLogs) proto.patch = null
+        for (let { proto } of trLogs) {
+          proto.patch = null
+          proto.actual = false
+        }
 
         nearEffects.length = trNearEffectsStart
         lateEffects.length = trLateEffectsStart
@@ -656,6 +661,7 @@ export function atom<T>(
     connectHooks: null,
     disconnectHooks: null,
     updateHooks: null,
+    actual: false,
   }
 
   theAtom.pipe = function (this: Atom, ...fns: Array<Fn>) {

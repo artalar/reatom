@@ -650,6 +650,22 @@ test('update hook for atom without cache', () => {
   ;`👍` //?
 })
 
+test('cause available inside a computation', () => {
+  let test = false
+  const a = atom(0, 'a')
+  const b = atom((ctx) => {
+    ctx.spy(a)
+    if (test) assert.is(ctx.cause?.cause?.proto, a.__reatom)
+  }, 'b')
+  const ctx = createCtx()
+
+  ctx.get(b) // init
+  a(ctx, 123)
+  test = true
+  ctx.get(b)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
