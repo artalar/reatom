@@ -110,12 +110,11 @@ export const mapState =
     name?: string,
   ): Fn<[T], LensAtom<Res>> =>
   (anAtom: Atom) => {
-    // @ts-expect-error
-    const theAtom: LensAtom = atom(
+    const theAtom = atom(
       (ctx, state?: any) =>
         mapper(ctx, ctx.spy(anAtom), ctx.cause!.pubs.at(0)?.state, state),
       mapName(anAtom, 'mapState', name),
-    )
+    ) as LensAtom<Res>
     theAtom.deps = [anAtom]
 
     return theAtom
