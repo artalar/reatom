@@ -15,9 +15,11 @@ import {
   throwReatomError,
   __count,
   AtomCache,
+  Unsubscribe,
+  AtomState,
 } from '@reatom/core'
 import { __thenReatomed, onCtxAbort } from '@reatom/effects'
-import { addOnUpdate } from '@reatom/hooks'
+import { addOnUpdate, onUpdate } from '@reatom/hooks'
 import { assign, isAbort, noop, toAbortError } from '@reatom/utils'
 
 import { createAbortController } from './createAbortController'
@@ -474,3 +476,32 @@ export const withRetry =
 
 /** @deprecated use `withRetry` instead */
 export const withRetryAction = withRetry
+
+export interface MappedAsyncAction<
+  Params extends any[] = unknown[],
+  Payload = unknown,
+> extends AsyncAction<Params, Payload> {
+  /**
+   * Function that unsubscribes from source atom
+   * @experimental
+   */
+  unstable_unhook: Unsubscribe
+}
+
+/**
+ * Transform atom state into reatomAsync arguments
+ */
+export function mapToAsync<T extends Atom, Res>(
+  effect: Fn<[AsyncCtx, AtomState<T>], Promise<Res>>,
+  options: AsyncOptions<[AtomState<T>], Res> = {},
+): Fn<[T], MappedAsyncAction<[AtomState<T>], Res>> {
+  return (sourceAtom: Atom) => {
+    const asyncAction = reatomAsync(effect, {
+      ...options,
+      name: options.name ?? `${sourceAtom.__reatom.name}.mapToAsync`,
+    }) as MappedAsyncAction<[AtomState<T>], Res>
+    asyncAction.unstable_unhook = onUpdate(sourceAtom, asyncAction)
+
+    return asyncAction
+  }
+}
