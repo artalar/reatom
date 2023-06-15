@@ -1,9 +1,10 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { take } from '@reatom/effects'
+import { take, takeNested } from '@reatom/effects'
 import { createTestCtx } from '@reatom/testing'
-import { action, atom } from '@reatom/core'
+import { atom } from '@reatom/core'
 import { mapToAsync, withDataAtom } from './index'
+import { sleep } from '@reatom/utils'
 
 export const testMapToAsync = suite('mapToAsync')
 
@@ -38,22 +39,21 @@ testMapToAsync(`is called whenever argument is changed`, async () => {
 testMapToAsync(`can be unhooked`, async () => {
   const argumentAtom = atom(0, 'argumentAtom')
   const asyncAction = argumentAtom.pipe(
-    mapToAsync(async (): Promise<number> => {
-      throw new Error('Callback should not be invoked')
-    }),
+    mapToAsync(async (ctx, n) => n),
     withDataAtom(0),
   )
-  asyncAction.unstable_unhook()
 
   const ctx = createTestCtx()
 
-  argumentAtom(ctx, 123)
+  await takeNested(ctx, argumentAtom, 123)
+  assert.is(ctx.get(asyncAction.dataAtom), 123)
 
-  const queuesAreEmptyAction = action()
-  await ctx.schedule(queuesAreEmptyAction, 2)
-
-  assert.is(ctx.get(asyncAction.dataAtom), 0)
+  asyncAction.unstable_unhook()
+  argumentAtom(ctx, 400)
+  // wait macrotask to make shure that all microtasks ended
+  await sleep()
+  assert.is(ctx.get(asyncAction.dataAtom), 123)
   ;`👍` //?
 })
 
-
+testMapToAsync.run()
