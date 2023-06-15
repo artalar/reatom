@@ -1,4 +1,4 @@
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn, createMockStorage } from '@reatom/testing'
 import { reatomPersist } from '@reatom/persist'
@@ -6,6 +6,8 @@ import { onConnect } from '@reatom/hooks'
 
 import { reatomAsync, withAbort, withDataAtom, withCache } from './'
 import { sleep } from '@reatom/utils'
+
+const test = suite('withCache')
 
 test('withCache', async () => {
   const fetchData = reatomAsync(

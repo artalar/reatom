@@ -7,7 +7,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { AbortError, throwIfAborted, toAbortError } from '@reatom/utils'
+import { AbortError, noop, toAbortError } from '@reatom/utils'
 
 /** Handle abort signal from a cause */
 export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
@@ -152,13 +152,19 @@ export const takeNested = <I extends any[]>(
   cb: Fn<[Ctx, ...I]>,
   ...params: I
 ): Promise<void> =>
-  new Promise<void>((res, rej) => {
-    onCtxAbort(ctx, rej)
+  new Promise<void>((resolve, reject) => {
+    onCtxAbort(ctx, reject)
 
-    let i = 0,
-      { schedule } = ctx
+    let i = 1 // one for extra check
+    const { schedule } = ctx
+    const check = () => {
+      if (i === 0) resolve()
 
-    return cb(
+      // add extra tick to make shure there is no microtask races
+      if (--i === 0) Promise.resolve().then(check)
+    }
+
+    const result = cb(
       Object.assign({}, ctx, {
         schedule(this: Ctx, cb: Fn, step?: -1 | 0 | 1 | 2) {
           return schedule.call<Ctx, Parameters<Ctx['schedule']>, Promise<any>>(
@@ -167,7 +173,7 @@ export const takeNested = <I extends any[]>(
               const result = cb(ctx)
               if (result instanceof Promise) {
                 ++i
-                result.finally(() => --i === 0 && res())
+                result.finally(check).catch(noop)
               }
               return result
             },
@@ -177,4 +183,8 @@ export const takeNested = <I extends any[]>(
       }),
       ...params,
     )
+
+    check()
+
+    return result
   })

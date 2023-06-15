@@ -17,6 +17,7 @@ import {
 
 import './index.story.test'
 import './withCache.test'
+import './mapToAsync.test'
 
 test(`base API`, async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => {
