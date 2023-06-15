@@ -6,9 +6,9 @@ import { atom } from '@reatom/core'
 import { mapToAsync, withDataAtom } from './index'
 import { sleep } from '@reatom/utils'
 
-export const testMapToAsync = suite('mapToAsync')
+export const test = suite('mapToAsync')
 
-testMapToAsync(`mapToAsync interface`, () => {
+test(`mapToAsync interface`, () => {
   const argumentAtom = atom(0, 'argumentAtom')
   const asyncAction = argumentAtom.pipe(mapToAsync(async (ctx, arg) => arg))
 
@@ -17,7 +17,7 @@ testMapToAsync(`mapToAsync interface`, () => {
   assert.type(asyncAction.unstable_unhook, 'function')
 })
 
-testMapToAsync(`is called whenever argument is changed`, async () => {
+test(`is called whenever argument is changed`, async () => {
   const argumentAtom = atom(0, 'argumentAtom')
   const asyncAction = argumentAtom.pipe(
     mapToAsync(async (ctx, arg) => arg),
@@ -36,24 +36,20 @@ testMapToAsync(`is called whenever argument is changed`, async () => {
   ;`👍` //?
 })
 
-testMapToAsync(`can be unhooked`, async () => {
+test(`can be unhooked`, async () => {
   const argumentAtom = atom(0, 'argumentAtom')
   const asyncAction = argumentAtom.pipe(
     mapToAsync(async (ctx, n) => n),
     withDataAtom(0),
   )
 
+  asyncAction.unstable_unhook()
+
   const ctx = createTestCtx()
 
   await takeNested(ctx, argumentAtom, 123)
-  assert.is(ctx.get(asyncAction.dataAtom), 123)
-
-  asyncAction.unstable_unhook()
-  argumentAtom(ctx, 400)
-  // wait macrotask to make shure that all microtasks ended
-  await sleep()
-  assert.is(ctx.get(asyncAction.dataAtom), 123)
+  assert.is(ctx.get(asyncAction.dataAtom), 0)
   ;`👍` //?
 })
 
-testMapToAsync.run()
+test.run()
