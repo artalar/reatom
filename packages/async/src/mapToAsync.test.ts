@@ -18,37 +18,37 @@ test(`mapToAsync interface`, () => {
 })
 
 test(`is called whenever argument is changed`, async () => {
-  const argumentAtom = atom(0, 'argumentAtom')
+  const argumentAtom = atom('initial', 'argumentAtom')
   const asyncAction = argumentAtom.pipe(
     mapToAsync(async (ctx, arg) => arg),
-    withDataAtom(0),
+    withDataAtom('default'),
   )
   const ctx = createTestCtx()
 
-  assert.is(ctx.get(asyncAction.dataAtom), 0)
+  assert.is(ctx.get(asyncAction.dataAtom), 'default')
 
   const hijackedCall = take(ctx, asyncAction)
 
-  argumentAtom(ctx, 123)
+  argumentAtom(ctx, 'updated')
 
-  assert.is(await hijackedCall, 123)
-  assert.is(ctx.get(asyncAction.dataAtom), 123)
+  assert.is(await hijackedCall, 'updated')
+  assert.is(ctx.get(asyncAction.dataAtom), 'updated')
   ;`👍` //?
 })
 
 test(`can be unhooked`, async () => {
-  const argumentAtom = atom(0, 'argumentAtom')
+  const argumentAtom = atom('initial', 'argumentAtom')
   const asyncAction = argumentAtom.pipe(
     mapToAsync(async (ctx, n) => n),
-    withDataAtom(0),
+    withDataAtom('default'),
   )
 
   asyncAction.unstable_unhook()
 
   const ctx = createTestCtx()
 
-  await takeNested(ctx, argumentAtom, 123)
-  assert.is(ctx.get(asyncAction.dataAtom), 0)
+  await takeNested(ctx, argumentAtom, 'updated')
+  assert.is(ctx.get(asyncAction.dataAtom), 'default')
   ;`👍` //?
 })
 
