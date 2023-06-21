@@ -8,7 +8,7 @@ import {
   __count,
 } from '@reatom/core'
 import { withReducers } from '@reatom/primitives'
-import { noop, sleep } from '@reatom/utils'
+import { MAX_SAFE_TIMEOUT, noop, sleep } from '@reatom/utils'
 import { getRootCause, onUpdate } from '@reatom/hooks'
 
 export interface TimerAtom extends AtomMut<number> {
@@ -84,7 +84,7 @@ export const reatomTimer = (
   const startTimer: TimerAtom['startTimer'] = action((ctx, delay: number) => {
     delay *= delayMultiplier
 
-    if (delay === Infinity) delay = Number.MAX_SAFE_INTEGER
+    delay = Math.min(MAX_SAFE_TIMEOUT, delay)
 
     throwReatomError(delay < ctx.get(intervalAtom), 'delay less than interval')
 
