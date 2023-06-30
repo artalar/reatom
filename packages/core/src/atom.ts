@@ -173,8 +173,6 @@ export type CtxParams<T, Else = never> = T extends Fn<[Ctx, ...infer Params]>
   ? Params
   : Else
 
-type AtomProperties<T> = keyof Omit<T, '__reatom' | 'pipe'>
-
 export interface Unsubscribe {
   (): void
 }
@@ -225,6 +223,11 @@ export interface CtxOptions {
   /** Use it to delay or track near effects such as API calls */
   callNearEffect?: typeof callSafely
 }
+
+const getRootCause = (cause: AtomCache): AtomCache =>
+  cause.cause === null ? cause : getRootCause(cause.cause)
+
+let CTX: undefined | Ctx
 
 export const createCtx = ({
   callLateEffect = callSafely,
@@ -454,6 +457,11 @@ export const createCtx = ({
 
   let ctx: Ctx = {
     get(atomOrCb) {
+      throwReatomError(
+        CTX && getRootCause(CTX.cause) !== read(__root),
+        'cause collision',
+      )
+
       if (isAtom(atomOrCb)) {
         let proto = atomOrCb.__reatom
         if (inTr) return actualize(this, proto).state
@@ -472,6 +480,8 @@ export const createCtx = ({
       inTr = true
       trNearEffectsStart = nearEffects.length
       trLateEffectsStart = lateEffects.length
+      let start = CTX === undefined
+      if (start) CTX = this
 
       try {
         var result = atomOrCb(read, actualize)
@@ -527,6 +537,7 @@ export const createCtx = ({
         trUpdates = []
         trRollbacks = []
         trLogs = []
+        if (start) CTX = undefined
       }
 
       walkLateEffects()

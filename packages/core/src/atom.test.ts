@@ -666,6 +666,15 @@ test('cause available inside a computation', () => {
   ;`👍` //?
 })
 
+test('ctx collision', () => {
+  const a = atom(0)
+  const ctx1 = createCtx()
+  const ctx2 = createCtx()
+
+  assert.throws(() => ctx1.get(() => ctx2.get(a)))
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

@@ -379,6 +379,10 @@ doSome.onCall((ctx, payload, params) => {
 
 ### `ctx` API
 
+`Ctx` is the main shell for a state of all atoms, all user and meta data leaves here. Each atom and action produces an immutable version of the context and you should not mutate it!
+
+One more rule, which you probably won't need, but we should still mention it: don't run one context inside another, such as `ctx1.get(() => ctx2.get(anAtom))` - this will throw an error.
+
 #### `ctx.get` atom API
 
 Get fresh atom state
