@@ -8,11 +8,12 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { onConnect, onUpdate } from '@reatom/hooks'
-import { random } from '@reatom/utils'
+import { getRootCause, onConnect, onUpdate } from '@reatom/hooks'
+import { MAX_SAFE_TIMEOUT, random } from '@reatom/utils'
 
 export interface PersistRecord {
   data: unknown
+  /** @deprecated not need anymore */
   fromState: boolean
   id: number
   timestamp: number
@@ -72,7 +73,7 @@ export const reatomPersist = (
         fromSnapshot = (ctx, data: any) => data,
         migration,
         subscribe = true,
-        time = 10 ** 10,
+        time = MAX_SAFE_TIMEOUT,
         toSnapshot = (ctx, data: any) => data,
         version = 0,
       }: WithPersistOptions<AtomState<T>> = typeof options === 'string'
@@ -81,10 +82,13 @@ export const reatomPersist = (
       const proto = anAtom.__reatom
       const { initState } = proto
 
-      const getPersistRecord = (ctx: Ctx, state?: any) => {
+      const getPersistRecord = (
+        ctx: Ctx,
+        state: PersistRecord | null = null,
+      ) => {
         const rec = ctx.get(storageAtom).get(ctx, key)
 
-        return rec?.fromState ? state : rec
+        return rec?.id === state?.id ? state : rec ?? state
       }
 
       const fromPersistRecord = (
@@ -114,10 +118,13 @@ export const reatomPersist = (
 
       throwReatomError(!key, 'missed key')
 
-      const persistRecordAtom = atom(
-        getPersistRecord,
+      const persistRecordAtom = atom<PersistRecord | null>(
+        null,
         `${anAtom.__reatom.name}._${storage.name}Atom`,
       )
+      const recProto = persistRecordAtom.__reatom
+      // @ts-expect-error TODO
+      recProto.computer = getPersistRecord
 
       if (subscribe) {
         const { computer } = anAtom.__reatom
@@ -132,19 +139,33 @@ export const reatomPersist = (
 
         onConnect(anAtom, (ctx) =>
           ctx.get(storageAtom).subscribe?.(ctx, key, () => {
-            ctx.get((read, actualize) =>
-              actualize!(ctx, persistRecordAtom.__reatom, () => {
-                /* this will rerun the computed */
-              }),
-            )
+            // this will rerun the computed
+            persistRecordAtom(ctx, (state) => state)
           }),
         )
       } else {
         anAtom.__reatom.initState = fromPersistRecord
       }
 
-      onUpdate(anAtom, (ctx, state) => {
-        ctx.get(storageAtom).set(ctx, key, toPersistRecord(ctx, state))
+      onUpdate(anAtom, (ctx, state, patch) => {
+        // put a patch to the proto
+        ctx.get(persistRecordAtom)
+        let recPatch = recProto.patch!
+        if (anAtom.__reatom.patch === patch && patch.cause !== recPatch) {
+          const { subs } = recPatch
+          // @ts-expect-error hack to prevent cycles
+          recPatch.subs = new Set()
+          const rec = persistRecordAtom(ctx, toPersistRecord(ctx, state))!
+          // @ts-expect-error hack to prevent cycles
+          ;(recPatch = recProto.patch).subs = recPatch.subs = subs
+
+          recPatch.cause = getRootCause(ctx.cause)
+
+          const idx = patch.pubs.findIndex(({ proto }) => proto === recProto)
+          patch.pubs[idx] = recPatch
+
+          ctx.get(storageAtom).set(ctx, key, rec)
+        }
       })
 
       return anAtom
