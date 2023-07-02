@@ -38,7 +38,7 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
       }
       memCache.set(key, rec)
       ctx.schedule(() =>
-        storage.setItem(key, JSON.stringify({ ...rec, fromState: false })),
+        storage.setItem(key, JSON.stringify(rec)),
       )
     },
     clear(ctx, key) {
