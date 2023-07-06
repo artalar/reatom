@@ -50,6 +50,7 @@ test('withUndo', async () => {
   assert.is(ctx.get(a.isUndoAtom), false)
   assert.is(ctx.get(a.isRedoAtom), true)
   assert.is(ctx.get(a), 0)
+  ;`👍` //?
 })
 
 test('reatomUndo', () => {
@@ -85,6 +86,7 @@ test('reatomUndo', () => {
   b(ctx, 5)
   assert.equal(ctx.get(c), { a: 2, b: 5 })
   assert.is(ctx.get(c.isRedoAtom), false)
+  ;`👍` //?
 })
 
 test.run()
