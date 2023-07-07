@@ -1,6 +1,8 @@
 import {
+  __root,
   atom,
   Atom,
+  AtomCache,
   AtomMut,
   AtomState,
   Ctx,
@@ -8,7 +10,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { getRootCause, onConnect, onUpdate } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 import { MAX_SAFE_TIMEOUT, random } from '@reatom/utils'
 
 export interface PersistRecord {
@@ -122,9 +124,8 @@ export const reatomPersist = (
         null,
         `${anAtom.__reatom.name}._${storage.name}Atom`,
       )
-      const recProto = persistRecordAtom.__reatom
       // @ts-expect-error TODO
-      recProto.computer = getPersistRecord
+      persistRecordAtom.__reatom.computer = getPersistRecord
 
       if (subscribe) {
         const { computer } = anAtom.__reatom
@@ -147,21 +148,32 @@ export const reatomPersist = (
         anAtom.__reatom.initState = fromPersistRecord
       }
 
-      onUpdate(anAtom, (ctx, state, patch) => {
+      anAtom.onChange((ctx, state) => {
+        const { cause: patch } = ctx
+        const rootCause = ctx.get((read) => read(__root))!
         // put a patch to the proto
         ctx.get(persistRecordAtom)
-        let recPatch = recProto.patch!
+        let recPatch: AtomCache = ctx.get((read, actualize) =>
+          actualize!(ctx, persistRecordAtom.__reatom),
+        )
+
+        if (patch.cause === recPatch && recPatch.cause === patch) {
+          recPatch.cause = rootCause
+        }
+
         if (anAtom.__reatom.patch === patch && patch.cause !== recPatch) {
           const { subs } = recPatch
           // @ts-expect-error hack to prevent cycles
           recPatch.subs = new Set()
           const rec = persistRecordAtom(ctx, toPersistRecord(ctx, state))!
           // @ts-expect-error hack to prevent cycles
-          ;(recPatch = recProto.patch).subs = recPatch.subs = subs
+          ;(recPatch = recPatch.proto.patch).subs = recPatch.subs = subs
 
-          recPatch.cause = getRootCause(ctx.cause)
+          recPatch.cause = rootCause
 
-          const idx = patch.pubs.findIndex(({ proto }) => proto === recProto)
+          const idx = patch.pubs.findIndex(
+            ({ proto }) => proto === recPatch.proto,
+          )
           patch.pubs[idx] = recPatch
 
           ctx.get(storageAtom).set(ctx, key, rec)
