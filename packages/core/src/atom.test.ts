@@ -43,8 +43,8 @@ const createCtx: typeof _createCtx = (opts) =>
   }
 }
 
-export const isConnected = (ctx: Ctx, anAtom: Atom) => {
-  const cache = ctx.get((read) => read(anAtom.__reatom))
+export const isConnected = (ctx: Ctx, { __reatom: proto }: Atom) => {
+  const cache = proto.patch ?? ctx.get((read) => read(proto))
 
   if (!cache) return false
 
