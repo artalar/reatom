@@ -400,7 +400,8 @@ export const reatomHTMLForm = ({
         }
 
         if (htmlFieldAtom?.elementAtom) {
-          ctx.get(htmlFieldAtom.elementAtom)?.focus()
+          // TODO
+          // if(options.shouldFocusOnError) ctx.get(htmlFieldAtom.elementAtom)?.focus()
         }
 
         onSubmitError?.(ctx)
