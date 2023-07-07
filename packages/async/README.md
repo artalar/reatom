@@ -13,11 +13,10 @@ As the main point of this package is general management of async functions, ther
 For examples below lets define our own simple helper.
 
 ```ts
-function request<T>(...params: Parameters<typeof fetch>): Promise<T> {
-  return fetch(...params).then((response) => {
-    if (response.status !== 200) throw new Error(response.statusText)
-    return response.json()
-  })
+async function request<T>(...params: Parameters<typeof fetch>): Promise<T> {
+  const response = await fetch(...params)
+  if (!response.ok) throw new Error(response.statusText)
+  return await response.json()
 }
 ```
 
@@ -383,6 +382,7 @@ You could rule the cache behavior by set of optional parameters.
   > You could import and use [toStringKey](https://www.reatom.dev/packages/utils#tostringkey) function from the utils package for this purposes.
 - **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch.
 - **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](https://www.reatom.dev/packages/persist). It will used with predefined optimal parameters for internal Map (de)serialization and so on.
+- **ignoreAbort** - define if the effect should be prevented from abort. The outer abort strategy is not affected, which means that all hooks and returned promise will behave the same. But the effect execution could be continued even if abort appears, to save the result in the cache. Default is `true`.
 
 ```ts
 import { reatomAsync, withDataAtom, withCache } from '@reatom/async'

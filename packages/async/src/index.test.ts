@@ -1,11 +1,11 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { Fn, action, atom } from '@reatom/core'
+import { action, atom } from '@reatom/core'
 import { mapPayloadAwaited } from '@reatom/lens'
-import { onCtxAbort, take } from '@reatom/effects'
+import { take } from '@reatom/effects'
 import { onConnect } from '@reatom/hooks'
 import { createTestCtx, mockFn } from '@reatom/testing'
-import { noop, sleep } from '@reatom/utils'
+import { noop, random, sleep } from '@reatom/utils'
 
 import {
   reatomAsync,
@@ -84,7 +84,7 @@ test('withRetry fallbackParams', async () => {
 })
 
 test('withRetry delay', async () => {
-  const fetchData = reatomAsync(async (ctx, v: number) => {
+  const fetchData = reatomAsync(async (ctx) => {
     await sleep(5)
     if (1) throw new Error('TEST')
   }).pipe(
@@ -101,8 +101,8 @@ test('withRetry delay', async () => {
 
   assert.is(track.calls.length, 1)
 
-  fetchData(ctx, 123).catch(noop)
-  fetchData(ctx, 123).catch(noop)
+  fetchData(ctx).catch(noop)
+  fetchData(ctx).catch(noop)
 
   assert.is(track.calls.length, 3)
 
@@ -113,12 +113,10 @@ test('withRetry delay', async () => {
 })
 
 test('withAbort', async () => {
-  const a1 = reatomAsync((ctx, v: number) =>
-    sleep().then(() => {
-      ctx.controller.signal.throwIfAborted()
-      return v
-    }),
-  ).pipe(withAbort())
+  const a1 = reatomAsync(async (ctx, v: number) => {
+    await sleep()
+    return v
+  }).pipe(withAbort())
 
   const ctx = createTestCtx()
 
@@ -128,32 +126,38 @@ test('withAbort', async () => {
   const errorTrack = ctx.subscribeTrack(a1.onReject)
   const abortTrack = ctx.subscribeTrack(a1.onAbort)
 
-  assert.equal(valueTrack.calls.length, 1)
-  assert.equal(errorTrack.calls.length, 1)
-  assert.equal(abortTrack.calls.length, 1)
+  valueTrack.calls.length = 0
+  errorTrack.calls.length = 0
+  abortTrack.calls.length = 0
 
   const promise1 = a1(ctx, 1)
-  assert.equal(abortTrack.calls.length, 1)
+  assert.equal(abortTrack.calls.length, 0)
   const promise2 = a1(ctx, 2)
-  assert.equal(valueTrack.calls.length, 1)
-  assert.equal(abortTrack.calls.length, 2)
+  assert.equal(abortTrack.calls.length, 1)
 
   await Promise.any([promise1, promise2])
 
-  assert.equal(valueTrack.calls.length, 2)
+  assert.equal(valueTrack.calls.length, 1)
   assert.equal(valueTrack.lastInput().at(-1)?.payload, 2)
-  assert.equal(errorTrack.calls.length, 2)
-  assert.equal(abortTrack.calls.length, 2)
+  assert.equal(errorTrack.calls.length, 0)
+  assert.equal(abortTrack.calls.length, 1)
   ;`👍` //?
 })
 
 test('withAbort user abort', async () => {
-  const a1 = reatomAsync(async (ctx, shouldAbort: boolean) => {
+  let shouldAbort = false
+  let shouldThrow = false
+  const error = random()
+  const result = random()
+  const a1 = reatomAsync(async (ctx) => {
     if (shouldAbort) {
       ctx.controller.abort()
       ctx.controller.signal.throwIfAborted()
     }
-    return 42
+    if (shouldThrow) {
+      throw error
+    }
+    return result
   }).pipe(withAbort())
 
   const ctx = createTestCtx()
@@ -161,21 +165,29 @@ test('withAbort user abort', async () => {
   const valueSubscriber = ctx.subscribeTrack(
     a1.pipe(mapPayloadAwaited((ctx, v) => v)),
   )
+  valueSubscriber.calls.length = 0
   const errorSubscriber = ctx.subscribeTrack(a1.onReject)
+  errorSubscriber.calls.length = 0
 
-  assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(errorSubscriber.calls.length, 1)
+  await a1(ctx)
 
-  await a1(ctx, true).catch((v) => {})
+  assert.equal(valueSubscriber.lastInput().at(-1)?.payload, result)
 
-  assert.equal(valueSubscriber.calls.length, 1)
-  assert.equal(errorSubscriber.calls.length, 2)
+  shouldAbort = true
+  const isError = await a1(ctx).then(
+    () => false,
+    () => true,
+  )
+  assert.is(isError, true)
+  assert.is(valueSubscriber.calls.length, 1)
+  assert.is(errorSubscriber.calls.length, 0)
 
-  const promise = a1(ctx, false)
-  assert.equal(valueSubscriber.calls.length, 1)
-  await promise
-  assert.equal(valueSubscriber.calls.length, 2)
-  assert.equal(valueSubscriber.lastInput().at(-1)?.payload, 42)
+  shouldAbort = false
+  shouldThrow = true
+  await a1(ctx).catch(noop)
+  assert.is(valueSubscriber.calls.length, 1)
+  assert.is(errorSubscriber.calls.length, 1)
+  assert.is(errorSubscriber.lastInput().at(-1)?.payload, error)
   ;`👍` //?
 })
 
@@ -277,45 +289,39 @@ test('resetTrigger', async () => {
   ;`👍` //?
 })
 
-// test('nested abort', async () => {
-//   const tick = createTick()
-//   const result = mockFn()
-//   const thrown = mockFn()
-//   const do1 = reatomAsync(async (ctx) => {
-//     let aborted = false
-//     onCtxAbort(ctx, () => {
-//       aborted = true //?
-//     })
-//     aborted //?
-//     await tick.after(0)
-//     aborted //?
-//     ctx.controller.signal.aborted //?
-//     ctx.controller.signal.throwIfAborted()
-//     result()
-//   }).pipe(withAbort())
-//   const do2 = reatomAsync(do1)
-//   const do3 = reatomAsync(action(do2)).pipe(withAbort())
-//   const ctx = createTestCtx()
+test('nested abort', async () => {
+  let result = false
+  let thrown = false
+  const do1 = reatomAsync(async (ctx) => {
+    await sleep()
+    ctx.controller.signal.throwIfAborted()
+    result = true
+  }).pipe(withAbort())
+  const do2 = reatomAsync(do1)
+  const do3 = reatomAsync(action(do2)).pipe(withAbort())
+  const ctx = createTestCtx()
 
-//   do3(ctx).catch(thrown)
-//   assert.is(result.calls.length, 0)
-//   await tick
-//   assert.is(result.calls.length, 1)
-//   assert.is(thrown.calls.length, 0)
+  do3(ctx).catch(() => {
+    thrown = true
+  })
+  assert.is(result, false)
+  await sleep()
+  assert.is(result, true)
+  assert.is(thrown, false)
 
-//   result.calls.length = 0
-//   do3(ctx).catch(thrown)
-//   do3.abort(ctx)
-//   await tick
-//   await 0
-//   await 0
-//   await 0
-//   assert.is(result.calls.length, 0)
-//   assert.is(thrown.calls.length, 1)
-//   ;`👍` //?
-// })
+  result = false
+  do3(ctx).catch(() => {
+    thrown = true
+  })
+  do3.abort(ctx)
+  assert.is(result, false)
+  await sleep()
+  assert.is(result, false)
+  assert.is(thrown, true)
+  ;`👍` //?
+})
 
-test('onConnect and take ', async () => {
+test('onConnect and take', async () => {
   const act = action()
   const res = atom(false)
   const effect = reatomAsync(async (ctx) => {

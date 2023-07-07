@@ -4,7 +4,6 @@ import { take, takeNested } from '@reatom/effects'
 import { createTestCtx } from '@reatom/testing'
 import { atom } from '@reatom/core'
 import { mapToAsync, withDataAtom } from './index'
-import { sleep } from '@reatom/utils'
 
 export const test = suite('mapToAsync')
 
@@ -15,6 +14,7 @@ test(`mapToAsync interface`, () => {
   assert.type(asyncAction, 'function')
   assert.is(asyncAction.__reatom.name, 'argumentAtom.mapToAsync')
   assert.type(asyncAction.unstable_unhook, 'function')
+  ;`👍` //?
 })
 
 test(`is called whenever argument is changed`, async () => {
