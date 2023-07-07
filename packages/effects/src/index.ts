@@ -9,23 +9,27 @@ import {
 } from '@reatom/core'
 import { AbortError, noop, toAbortError } from '@reatom/utils'
 
+export const getTopController = (
+  patch: AtomCache & { controller?: AbortController },
+): null | AbortController =>
+  patch.controller ?? (patch.cause && getTopController(patch.cause))
+
 /** Handle abort signal from a cause */
 export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
-  const find = () => {
-    let cause: null | (AtomCache & { controller?: AbortController }) = ctx.cause
-    while (cause && !cause.controller) cause = cause.cause
-    const controller = cause?.controller
+  const controller = getTopController(ctx.cause)
 
-    if (controller) {
-      const handler = () => cb(toAbortError(controller.signal.reason))
+  if (controller) {
+    const handler = () => cb(toAbortError(controller.signal.reason))
 
-      if (controller.signal.aborted) handler()
-      else controller?.signal.addEventListener('abort', handler)
+    if (controller.signal.aborted) handler()
+    else {
+      controller.signal.addEventListener('abort', handler)
+      ctx.schedule(
+        () => controller.signal.removeEventListener('abort', handler),
+        -1,
+      )
     }
-
-    return controller
   }
-  if (!find()) ctx.schedule(find)
 }
 
 const CHAINS = new WeakMap<
