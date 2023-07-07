@@ -120,7 +120,7 @@ export const createLogBatched = ({
             }
           })
         }
-        console.log(queue)
+        console.log('\n\n', 'transactions:', queue)
         console.groupEnd()
         queue = []
       },
