@@ -17,17 +17,11 @@ export interface LogMsg {
   ctx: Ctx
 }
 
-export const getCause = (patch: AtomCache) => {
-  let log = ''
-  let cause: typeof patch.cause = patch
-
-  while (cause.cause !== null && cause.cause.proto !== __root) {
-    if (log.length > 0) log += ' <-- '
-    log += (cause = cause.cause).proto.name ?? 'unnamed'
-  }
-
-  return log || 'root'
-}
+// use recursion to drop stack limit error for circle causes
+export const getCause = (patch: AtomCache, log = ''): string =>
+  patch.cause !== null && patch.cause.proto !== __root
+    ? getCause(patch.cause, log + ' <-- ' + patch.cause.proto.name ?? 'unnamed')
+    : log || 'root'
 
 const getTimeStampDefault = () => {
   let ms: number | string = new Date().getMilliseconds()
