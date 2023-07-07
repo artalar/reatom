@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/async-v3.7.0...async-v3.8.0) (2023-07-07)
+
+
+### Features
+
+* **async:** add "ignoreAbort" and refactor withCache ([f404abf](https://github.com/artalar/reatom/commit/f404abfa36e91db9d109094eee672098ad7c6536))
+
+
+### Bug Fixes
+
+* **async:** shallow equal memo for withStatusesAtom ([8042e18](https://github.com/artalar/reatom/commit/8042e18dc0d38844628c73ba6a7a2bb2beaf4256))
+* **async:** withStatusesAtom and SWR ([b8d2798](https://github.com/artalar/reatom/commit/b8d2798a29b37cbb5f3a441adf4ca332a449ace9))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/async-v3.6.1...async-v3.7.0) (2023-06-12)
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.2.2](https://github.com/artalar/reatom/compare/persist-v3.2.1...persist-v3.2.2) (2023-07-07)
+
+
+### Bug Fixes
+
+* **persist:** cyclic updates ([c1321e3](https://github.com/artalar/reatom/commit/c1321e34cb9893ed5c8041d8e2c3c51c73bb80b6))
+* **persist:** improve an update necessities track ([e4afa65](https://github.com/artalar/reatom/commit/e4afa6528becc333c97cffac5550621b4525cb81))
+
 ## [3.2.1](https://github.com/artalar/reatom/compare/persist-v3.2.0...persist-v3.2.1) (2023-05-21)
 
 

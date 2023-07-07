@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.3.1](https://github.com/artalar/reatom/compare/effects-v3.3.0...effects-v3.3.1) (2023-07-07)
+
+
+### Bug Fixes
+
+* **effects:** __thenReatomed error propagation ([6a7536f](https://github.com/artalar/reatom/commit/6a7536f7b5afcad22fc90fc0afbfc7b71bfd71ec))
+* **effects:** improve onCtxAbort ([16ee497](https://github.com/artalar/reatom/commit/16ee497b08810aef908bcd7b2b2e7151d5f4ff12))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/effects-v3.2.1...effects-v3.3.0) (2023-06-12)
 
 
