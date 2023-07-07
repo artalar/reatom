@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/core-v3.4.0...core-v3.5.0) (2023-07-07)
+
+
+### Features
+
+* **core:** make cause not nullable for a user ([b62b9ec](https://github.com/artalar/reatom/commit/b62b9ec968327e5364a16c415ae5822a175ed6b7))
+
+
+### Bug Fixes
+
+* **core:** ensure that ctx collision is impossible ([ecd8d73](https://github.com/artalar/reatom/commit/ecd8d7353cb0c229e80dba26224d0de268bde5ff))
+* **core:** improve cause tracking ([f578511](https://github.com/artalar/reatom/commit/f578511f8b2a44bc91d3b9f82a791229c095193f))
+* **core:** onChange, onCall types ([581e7a0](https://github.com/artalar/reatom/commit/581e7a01f1f7ba033744f0b508af718b287f5f7f))
+* **core:** use only change cause ([21752ad](https://github.com/artalar/reatom/commit/21752ad6255f6c3ba0634c50da05fae3d401b7bd))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/core-v3.3.1...core-v3.4.0) (2023-06-12)
 
 

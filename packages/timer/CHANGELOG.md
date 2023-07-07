@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.5](https://github.com/artalar/reatom/compare/timer-v3.5.4...timer-v3.5.5) (2023-07-07)
+
+
+### Bug Fixes
+
+* **timer:** delay overflow ([3113e07](https://github.com/artalar/reatom/commit/3113e07bf0a06e9f53f40a72807634e457624719))
+
 ## [3.5.4](https://github.com/artalar/reatom/compare/timer-v3.5.3...timer-v3.5.4) (2023-05-21)
 
 

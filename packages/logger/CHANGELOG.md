@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.3](https://github.com/artalar/reatom/compare/logger-v3.4.2...logger-v3.4.3) (2023-07-07)
+
+
+### Bug Fixes
+
+* **logger:** add transactions list log ([f171f99](https://github.com/artalar/reatom/commit/f171f99af5d120235222bb7bc293c808c95c84d9))
+* **logger:** improve getCause ([856853d](https://github.com/artalar/reatom/commit/856853d4dad0387773dd54358c3f8addc7e11cce))
+
 ## [3.4.2](https://github.com/artalar/reatom/compare/logger-v3.4.1...logger-v3.4.2) (2023-05-21)
 
 

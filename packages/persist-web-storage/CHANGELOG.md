@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.2](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.1...persist-web-storage-v3.2.2) (2023-07-07)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** rm `fromState` work ([106fdca](https://github.com/artalar/reatom/commit/106fdca81fd1644d374ae70755cbcfbcbafd2583))
+
 ## [3.2.1](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.0...persist-web-storage-v3.2.1) (2023-05-21)
 
 

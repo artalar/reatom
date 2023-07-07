@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/utils-v3.3.0...utils-v3.4.0) (2023-07-07)
+
+
+### Features
+
+* **utils:** add MAX_SAFE_TIMEOUT ([17a23d2](https://github.com/artalar/reatom/commit/17a23d2917d42855c0b2872e0c504e5d1ed83172))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/utils-v3.2.3...utils-v3.3.0) (2023-06-12)
 
 
