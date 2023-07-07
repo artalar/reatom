@@ -436,7 +436,10 @@ export const createCtx = ({
 
     try {
       if (proto.computer) actualizePubs(patchCtx, patch)
-      if (updating) updater!(patchCtx, patch)
+      if (updating) {
+        patch.cause = ctx.cause
+        updater!(patchCtx, patch)
+      }
       proto.actual = true
     } catch (error) {
       throw (patch.error = error)
