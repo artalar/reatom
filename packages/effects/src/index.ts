@@ -50,23 +50,20 @@ export const __thenReatomed = <T>(
 ): Promise<T> => {
   let chain = CHAINS.get(origin)
   if (!chain) {
-    const promise = origin
-      .then(
-        (value: any) => {
-          ctx.get((read, actualize) =>
-            chain!.then.forEach((cb) => cb(value, read, actualize)),
-          )
-          return value
-        },
-        (error: any) => {
-          ctx.get((read, actualize) =>
-            chain!.catch.forEach((cb) => cb(error, read, actualize)),
-          )
-          throw error
-        },
-      )
-      // need to chain caught promise to not prevent error propagation
-      .then((v) => v)
+    const promise = origin.then(
+      (value: any) => {
+        ctx.get((read, actualize) =>
+          chain!.then.forEach((cb) => cb(value, read, actualize)),
+        )
+        return value
+      },
+      (error: any) => {
+        ctx.get((read, actualize) =>
+          chain!.catch.forEach((cb) => cb(error, read, actualize)),
+        )
+        throw error
+      },
+    )
 
     CHAINS.set(origin, (chain = { promise, then: [], catch: [] }))
     CHAINS.set(promise, chain)
