@@ -106,7 +106,7 @@ export interface Atom<State = any> {
       // TODO there could be different `prevState` for each ctx
       // prevState: State,
       // patch: AtomCache<State>,
-    ) => void,
+    ) => any,
   ) => Unsubscribe
 }
 
@@ -144,7 +144,7 @@ export interface Action<Params extends any[] = any[], Payload = any>
   (ctx: Ctx, ...params: Params): Payload
 
   onCall: (
-    cb: (ctx: Ctx, payload: Payload, params: Params) => void,
+    cb: (ctx: Ctx, payload: Payload, params: Params) => any,
   ) => Unsubscribe
 }
 
