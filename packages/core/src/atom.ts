@@ -409,12 +409,13 @@ export const createCtx = ({
 
     let cache = patch ?? read(proto)
     let isInt = !cache
+    let cause = updating ? ctx.cause : read(__root)!
 
     if (isInt) {
       cache = {
         state: proto.initState(ctx),
         proto,
-        cause: ctx.cause,
+        cause,
         pubs: [],
         subs: new Set(),
         listeners: new Set(),
@@ -423,7 +424,7 @@ export const createCtx = ({
       return cache!
     }
 
-    if (!patch || actual) patch = addPatch(cache!, ctx.cause)
+    if (!patch || actual) patch = addPatch(cache!, cause)
 
     let { state } = patch
     let patchCtx: Ctx = {
@@ -437,6 +438,7 @@ export const createCtx = ({
     try {
       if (proto.computer) actualizePubs(patchCtx, patch)
       if (updating) {
+        // updater's cause is a more important, than computer's cause
         patch.cause = ctx.cause
         updater!(patchCtx, patch)
       }
