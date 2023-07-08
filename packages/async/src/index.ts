@@ -254,7 +254,7 @@ export const withDataAtom: {
 export const withErrorAtom =
   <
     T extends AsyncAction & {
-      errorAtom?: Atom<undefined | Err> & { reset: Action }
+      errorAtom?: AtomMut<undefined | Err> & { reset: Action }
     },
     Err = Error,
   >(
