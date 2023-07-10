@@ -6,9 +6,9 @@
   "description": "Reatom for <%= name %>",
   "source": "src/index.ts",
   "exports": {
+    "types": "./build/index.d.ts",
     "require": "./build/index.js",
-    "default": "./build/index.module.js",
-    "types": "./build/index.d.ts"
+    "default": "./build/index.module.js"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
