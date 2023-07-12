@@ -130,7 +130,7 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, depsAtom, update, deps, sub, get, subscribe }
+    return { theAtom, depsAtom, update, deps: [], sub, get, subscribe }
   }).current
 
   return ctx.get(() => {
