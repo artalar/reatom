@@ -113,10 +113,14 @@ export const useAtom: {
   deps.push(ctx)
   if (isAtom(anAtom)) deps.push(anAtom)
 
-  let { theAtom, update, sub, get } = useRefSetup(deps, () => {
+  let { theAtom, depsAtom, update, sub, get } = useRefSetup([], () => {
     let theAtom = isAtom(anAtom)
       ? anAtom
-      : atom(anAtom, getName(name ?? `useAtom#${typeof anAtom}`))
+      : atom((ctx, state?: any) => {
+          ctx.spy(depsAtom)
+          return anAtom(ctx, state)
+        }, getName(name ?? `useAtom#${typeof anAtom}`))
+    let depsAtom = atom<any[]>([], `${theAtom.__reatom.name}._depsAtom`)
     let update =
       typeof theAtom === 'function'
         ? // @ts-expect-error
@@ -125,15 +129,25 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, update, deps, sub, get, subscribe }
-  }).current!
+    return { theAtom, depsAtom, update, deps, sub, get, subscribe }
+  }).current
 
-  return [
-    subscribe ? useSyncExternalStore(sub, get, get) : get(),
-    update,
-    theAtom,
-    ctx,
-  ]
+  return ctx.get(() => {
+    const prevDeps = ctx.get(depsAtom)
+    if (
+      deps.length !== prevDeps.length ||
+      deps.some((dep, i) => !Object.is(dep, prevDeps[i]))
+    ) {
+      depsAtom(ctx, deps)
+    }
+
+    return [
+      subscribe ? useSyncExternalStore(sub, get, get) : get(),
+      update,
+      theAtom,
+      ctx,
+    ]
+  })
 }
 
 export const useAtomCreator = <T extends Atom>(
