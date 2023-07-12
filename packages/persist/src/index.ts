@@ -7,14 +7,15 @@ import {
   AtomState,
   Ctx,
   Fn,
+  Rec,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
 import { MAX_SAFE_TIMEOUT, random } from '@reatom/utils'
 
-export interface PersistRecord {
-  data: unknown
+export interface PersistRecord<T = unknown> {
+  data: T
   /** @deprecated not need anymore */
   fromState: boolean
   id: number
@@ -40,7 +41,7 @@ export interface WithPersistOptions<T> {
   migration?: Fn<[ctx: Ctx, persistRecord: PersistRecord], T>
   /** turn on/off subscription  @default true */
   subscribe?: boolean
-  /** time to live in milliseconds @default 10 ** 10 */
+  /** time to live in milliseconds @default MAX_SAFE_TIMEOUT */
   time?: number
   /** transform data before persisting  @optional */
   toSnapshot?: Fn<[ctx: Ctx, state: T], unknown>
@@ -74,7 +75,7 @@ export const reatomPersist = (
         key,
         fromSnapshot = (ctx, data: any) => data,
         migration,
-        subscribe = true,
+        subscribe = !!storage.subscribe,
         time = MAX_SAFE_TIMEOUT,
         toSnapshot = (ctx, data: any) => data,
         version = 0,
@@ -184,4 +185,83 @@ export const reatomPersist = (
     }
 
   return Object.assign(withPersist, { storageAtom })
+}
+
+export const createMemStorage = ({
+  name,
+  mutable = true,
+  snapshot = {},
+  subscribe = true,
+}: {
+  name: string
+  mutable?: boolean
+  snapshot?: Rec
+  subscribe?: boolean
+}): PersistStorage & { snapshotAtom: AtomMut<Rec<PersistRecord>> } => {
+  const timestamp = Date.now()
+  const to = timestamp + MAX_SAFE_TIMEOUT
+  // eslint-disable-next-line @reatom/atom-rule
+  const snapshotAtom = atom(
+    Object.entries(snapshot).reduce(
+      (acc, [key, data]) => (
+        (acc[key] = {
+          data,
+          fromState: false,
+          id: 0,
+          timestamp,
+          to,
+          version: 0,
+        }),
+        acc
+      ),
+      {} as Rec<PersistRecord>,
+    ),
+    `${name}._snapshotAtom`,
+  )
+  // eslint-disable-next-line @reatom/atom-rule
+  const listenersAtom = atom(
+    (ctx, state = new Map<string, Set<Fn<[PersistRecord]>>>()) => state,
+    `${name}._listenersAtom`,
+  )
+
+  return {
+    name,
+    get: (ctx, key) => ctx.get(snapshotAtom)[key] ?? null,
+    set: (ctx, key, rec) => {
+      if (mutable) {
+        const snapshot = ctx.get(snapshotAtom)
+        const prev = snapshot[key]
+        snapshot[key] = rec
+        ctx.schedule(() => (snapshot[key] = prev!), -1)
+      } else {
+        snapshotAtom(ctx, (snapshot) => ({ ...snapshot, [key]: rec }))
+      }
+
+      ctx.schedule(() =>
+        ctx
+          .get(listenersAtom)
+          .get(key)
+          ?.forEach((cb) => cb(rec)),
+      )
+    },
+    subscribe: subscribe
+      ? (ctx, key, callback) => {
+          const listeners = ctx.get(listenersAtom)
+          listeners.set(key, (listeners.get(key) ?? new Set()).add(callback))
+
+          const cleanup = () => {
+            const keyListeners = listeners.get(key)
+            if (keyListeners) {
+              keyListeners.delete(callback)
+              if (keyListeners.size === 0) listeners.delete(key)
+            }
+          }
+
+          ctx.schedule(cleanup, -1)
+
+          return cleanup
+        }
+      : undefined,
+    snapshotAtom,
+  }
 }

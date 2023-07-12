@@ -1,13 +1,13 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { atom } from '@reatom/core'
-import { createMockStorage, createTestCtx } from '@reatom/testing'
+import { createTestCtx } from '@reatom/testing'
 import { noop } from '@reatom/utils'
 import { onUpdate } from '@reatom/hooks'
 
-import { reatomPersist } from './'
+import { createMemStorage, reatomPersist } from './'
 
-const withSomePersist = reatomPersist(createMockStorage())
+const withSomePersist = reatomPersist(createMemStorage({ name: 'test' }))
 
 test(`withPersist`, async () => {
   const a1 = atom(0).pipe(withSomePersist('a1'))
@@ -16,9 +16,12 @@ test(`withPersist`, async () => {
   const ctx = createTestCtx()
   withSomePersist.storageAtom(
     ctx,
-    createMockStorage({
-      a1: 1,
-      a2: 2,
+    createMemStorage({
+      name: 'test',
+      snapshot: {
+        a1: 1,
+        a2: 2,
+      },
     }),
   )
 
