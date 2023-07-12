@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/artalar/reatom/compare/persist-v3.2.2...persist-v3.3.0) (2023-07-12)
+
+
+### Features
+
+* **persist:** add createMemStorage ([98e23c8](https://github.com/artalar/reatom/commit/98e23c89cc56a18be7f2252b6f9e0b90abe4cbc0))
+
 ## [3.2.2](https://github.com/artalar/reatom/compare/persist-v3.2.1...persist-v3.2.2) (2023-07-07)
 
 

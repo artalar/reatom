@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.3](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.2...persist-web-storage-v3.2.3) (2023-07-12)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** wrap memCache to atom ([c8ebba7](https://github.com/artalar/reatom/commit/c8ebba732ea613b01112f0abd51334299ed05f15))
+
 ## [3.2.2](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.1...persist-web-storage-v3.2.2) (2023-07-07)
 
 

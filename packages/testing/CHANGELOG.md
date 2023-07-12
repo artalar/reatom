@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/artalar/reatom/compare/testing-v3.4.1...testing-v3.4.2) (2023-07-12)
+
+
+### Bug Fixes
+
+* **testing:** deprecate createMockStorage and bump deps ([da28598](https://github.com/artalar/reatom/commit/da28598f0039933db2b181c9e22cb222ae2449bf))
+
 ## [3.4.1](https://github.com/artalar/reatom/compare/testing-v3.4.0...testing-v3.4.1) (2023-05-21)
 
 

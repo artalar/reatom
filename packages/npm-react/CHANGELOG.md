@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/npm-react-v3.3.4...npm-react-v3.4.0) (2023-07-12)
+
+
+### Features
+
+* **npm-react:** add useCreateCtx ([fdffc19](https://github.com/artalar/reatom/commit/fdffc190be9e2deee9f24a7c8da1088c3e23252b))
+* **npm-react:** do not recreate computed atom for deps change ([a4523c2](https://github.com/artalar/reatom/commit/a4523c269812da97fd310b4246bab9779a6596dd))
+
 ## [3.3.4](https://github.com/artalar/reatom/compare/npm-react-v3.3.3...npm-react-v3.3.4) (2023-05-21)
 
 
