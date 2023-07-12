@@ -1,5 +1,5 @@
 ---
-layout: ../layouts/MainLayout.astro
+layout: ../layouts/Layout.astro
 title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
