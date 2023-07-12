@@ -1,0 +1,63 @@
+{
+  "name": "@reatom/jsx",
+  "version": "3.1.0",
+  "private": false,
+  "sideEffects": false,
+  "description": "Reatom for jsx",
+  "source": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.module.js"
+    },
+    "./jsx-runtime": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.module.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.module.js"
+    }
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "last 1 year"
+  ],
+  "minify": {
+    "mangle": false
+  },
+  "scripts": {
+    "sandbox": "vite",
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "microbundle && cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build",
+    "test": "ts-node src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
+  },
+  "dependencies": {
+    "@reatom/core": ">=3.1.0",
+    "csstype": "^3.1.2"
+  },
+  "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://github.com/artalar/reatom/packages/jsx",
+  "files": [
+    "/build",
+    "/package.json"
+  ]
+}

@@ -1,0 +1,3 @@
+[submodule "reatom-jsx"]
+	path = reatom-jsx
+	url = git@github.com:artalar/reatom-jsx.git
