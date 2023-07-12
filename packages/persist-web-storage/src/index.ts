@@ -1,12 +1,17 @@
+import { atom } from '@reatom/core'
 import { PersistRecord, reatomPersist } from '@reatom/persist'
 
 const reatomPersistWebStorage = (name: string, storage: Storage) => {
-  const memCache = new Map<string, PersistRecord>()
+  const memCacheAtom = atom(
+    new Map<string, PersistRecord>(),
+    `${name}._memCacheAtom`,
+  )
 
   return reatomPersist({
     name,
     get(ctx, key) {
       try {
+        const memCache = ctx.get(memCacheAtom)
         const dataStr = storage.getItem(key)
 
         if (dataStr) {
@@ -32,16 +37,16 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
       return null
     },
     set(ctx, key, rec) {
+      const memCache = ctx.get(memCacheAtom)
       if (memCache.has(key)) {
         const prev = memCache.get(key)
         ctx.schedule(() => memCache.set(key, prev!), -1)
       }
       memCache.set(key, rec)
-      ctx.schedule(() =>
-        storage.setItem(key, JSON.stringify(rec)),
-      )
+      ctx.schedule(() => storage.setItem(key, JSON.stringify(rec)))
     },
     clear(ctx, key) {
+      const memCache = ctx.get(memCacheAtom)
       if (memCache.has(key)) {
         const prev = memCache.get(key)
         ctx.schedule(() => memCache.set(key, prev!), -1)
@@ -50,6 +55,7 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
       ctx.schedule(() => storage.removeItem(key))
     },
     subscribe(ctx, key, cb) {
+      const memCache = ctx.get(memCacheAtom)
       const handler = (event: StorageEvent) => {
         if (event.storageArea === storage && event.key === key) {
           if (event.newValue === null) {
