@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.1](https://github.com/artalar/reatom/compare/async-v3.8.0...async-v3.8.1) (2023-07-12)
+
+
+### Bug Fixes
+
+* **async:** errorAtom AtomMut ([774ebc0](https://github.com/artalar/reatom/commit/774ebc0c649cac50073c0bdeae47a27780577c5c))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/async-v3.7.0...async-v3.8.0) (2023-07-07)
 
 
