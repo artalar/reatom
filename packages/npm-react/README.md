@@ -129,7 +129,7 @@ export const Greeting = ({ initialGreeting = '' }) => {
 
 What, why? In the example bellow we creating "inline" atoms, which will live only during the component lifetime. Here are the benefits of this pattern instead of using regular hooks:
 
-- You could depend your atoms by a props (deps changing will cause atom recreation and it state dropping).
+- You could depend your atoms by a props (deps changing will cause the callback rerun, the atom will the same).
 - Easy access to services, in case you use reatom as a DI.
 - Component inline atoms could be used for other computations, which could prevent rerenders ([see above](#prevent-rerenders)).
 - Created actions and atoms will be visible in logger / debugger with async `cause` tracking, witch is much better for debugging than `useEffect`.
@@ -258,6 +258,27 @@ export const MyForm = () => {
       <Sync />
       .....
     </Form>
+  )
+}
+```
+
+## Use context creator
+
+Sometimes, you can only create `ctx` inside a React component, for example, in SSR. For that case, we have the `useCreateCtx` hook.
+
+```tsx
+export const App = () => {
+  const ctx = useCreateCtx((ctx) => {
+    // do not use logger in a server (SSR)
+    if (typeof window !== 'undefined') {
+      connectLogger(ctx)
+    }
+  })
+
+  return (
+    <reatomContext.Provider value={ctx}>
+      <Component {...pageProps} />
+    </reatomContext.Provider>
   )
 }
 ```

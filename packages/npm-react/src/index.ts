@@ -7,6 +7,7 @@ import {
   Atom,
   AtomMut,
   AtomState,
+  createCtx,
   Ctx,
   CtxSpy,
   Fn,
@@ -217,6 +218,15 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
 
   // @ts-ignore
   return ref.current.cb
+}
+
+export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
+  const ctxRef = React.useRef(null as null | Ctx)
+  if (!ctxRef.current) {
+    ctxRef.current = createCtx()
+    extension?.(ctxRef.current)
+  }
+  return ctxRef.current
 }
 
 // export let unstable_reatomComponent =
