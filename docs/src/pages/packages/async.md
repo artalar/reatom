@@ -19,11 +19,10 @@ As the main point of this package is general management of async functions, ther
 For examples below lets define our own simple helper.
 
 ```ts
-function request<T>(...params: Parameters<typeof fetch>): Promise<T> {
-  return fetch(...params).then((response) => {
-    if (response.status !== 200) throw new Error(response.statusText)
-    return response.json()
-  })
+async function request<T>(...params: Parameters<typeof fetch>): Promise<T> {
+  const response = await fetch(...params)
+  if (!response.ok) throw new Error(response.statusText)
+  return await response.json()
 }
 ```
 
@@ -67,13 +66,12 @@ export const fetchList = reatomAsync(
 
 ### Qualified usage
 
-Let's add loading state and abort strategy. To be more idiomatic with other Reatom code you could use `onUpdate` helper - it is like lazy subscription.
+Let's add loading state and abort strategy. To be more idiomatic with other Reatom code you could use `onCall` hook - it is like lazy subscription.
 
 ```ts
 // ~/features/entities/model.ts
 import { reatomAsync } from '@reatom/async'
 import { atom } from '@reatom/core'
-import { onUpdate } from '@reatom/hooks'
 
 type Element = {
   id: string
@@ -99,8 +97,8 @@ export const fetchList = reatomAsync((ctx, page: number) => {
 
   return request<Array<Element>>(`/api/list?page=${page}`, ctx.controller)
 }, 'fetchList')
-onUpdate(fetchList.onFulfill, listAtom)
-onUpdate(fetchList.onReject, (ctx, thing) => {
+fetchList.onFulfill.onCall(listAtom)
+fetchList.onReject.onCall((ctx, thing) => {
   if (thing !== ABORT) {
     const error = thing instanceof Error ? thing : new Error(String(thing))
     errorAtom(ctx, error)
@@ -116,10 +114,10 @@ export const updateElement = reatomAsync(
   'updateElement',
 )
 // refresh backend data on successful update
-onUpdate(updateElement.onFulfill, (ctx) => fetchList(ctx, 1))
+updateElement.onFulfill.onCall((ctx) => fetchList(ctx, 1))
 ```
 
-> You could get `params` with `onUpdate` as a property of the third argument: `onUpdate(anAction, (ctx, payload, { params }) => {/* ... */})`.
+> You could get `params` with `onCall` from the third argument: `anAction.onCall((ctx, payload, params) => {/* ... */})`.
 
 ### Operators usage
 
@@ -129,7 +127,7 @@ However, there is a lot of boilerplate code, which could be reduced with a coupl
 
 ```ts
 // ~/features/entities/model.ts
-import { reatomAsync, onUpdate, withAbort, withDataAtom, withErrorAtom, withStatusesAtom } from "@reatom/framework"; /* prettier-ignore */
+import { reatomAsync, withAbort, withDataAtom, withErrorAtom, withStatusesAtom } from "@reatom/framework"; /* prettier-ignore */
 
 type Element = {
   id: string
@@ -151,7 +149,7 @@ export const updateElement = reatomAsync(
   },
   'updateElement',
 )
-onUpdate(updateElement.onFulfill, (ctx) => fetchList(ctx, 1))
+updateElement.onFulfill.onCall((ctx) => fetchList(ctx, 1))
 ```
 
 Now `listAtom` is `fetchList.dataAtom`, `errorAtom` is `fetchList.errorAtom` and loading state you could get from `fetchList.statusesAtom` as `isPending` property. As in the hand written example, `fetchList.errorAtom` will not be updated on abort, even more, `onReject` will not be called too.
@@ -281,12 +279,11 @@ For more details of optimistic update check the story tests in [the sources](htt
 
 ### Custom dataAtom
 
-If you need to persist effect result to local state and want to use some additional atom, you could describe that logic just by using `onUpdate(fetchList.onFulfill, listAtom)`.
+If you need to persist effect result to local state and want to use some additional atom, you could describe that logic just by using `fetchList.onFulfill.onCall(listAtom)`.
 
 ```ts
 import { reatomArray } from '@reatom/primitives'
 import { reatomAsync } from '@reatom/async'
-import { onUpdate } from '@reatom/hooks'
 
 export type Element = {
   id: string
@@ -298,7 +295,7 @@ export const fetchList = reatomAsync(
   'fetchList',
 )
 export const listAtom = reatomArray(new Array<Element>(), 'listAtom')
-onUpdate(fetchList.onFulfill, listAtom)
+fetchList.onFulfill.onCall(listAtom)
 ```
 
 Here the interface of `onFulfill` update hook and `listAtom` update is the same and because of that we could pass `listAtom` just by a reference. If you have a different type of the cache atom, you could map payload just by a function.
@@ -307,7 +304,7 @@ Here the interface of `onFulfill` update hook and `listAtom` update is the same 
 import { reatomMap } from '@reatom/primitives'
 // ....
 export const mapAtom = reatomMap(new Map<string, Element>(), 'mapAtom')
-onUpdate(fetchList.onFulfill, (ctx, payload) =>
+fetchList.onFulfill.onCall((ctx, payload) =>
   mapAtom(ctx, new Map(payload.map((el) => [el.id, el]))),
 )
 ```
@@ -384,13 +381,14 @@ If the async action will called with the same params during existing fetching - 
 You could rule the cache behavior by set of optional parameters.
 
 - **length** - maximum amount of cache records. Default is `5`.
-- **staleTime** - the amount of milliseconds after which a cache record will cleanup. Default is `5 * 60 * 1000`ms.
+- **staleTime** - the amount of milliseconds after which a cache record will cleanup. Default is `5 * 60 * 1000`ms which is 5 minutes.
 - **paramsLength** - the number of excepted parameters, which will used as a cache key. Default is "all".
 - **isEqual** - check the equality of a cache record and passed params to find the cache. Default is `isDeepEqual` from [@reatom/utils](/packages/utils).
 - **paramsToKey** - convert params to a string as a key of the cache map. Not used by default, equality check (`isEqual`) is used instead. This option is useful if you have a complex object as a params which equality check is too expensive, or you was set large `length` option and want to speed up the cache search.
   > You could import and use [toStringKey](/packages/utils#tostringkey) function from the utils package for this purposes.
-- **swr** - enable "stale while revalidate" pattern. Default is `true`. Allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). The SWR fetch will not call `onFulfill` and `dataAtom` updates, it is just a background silent synchronization to speedup a next fetch.
-- **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](/packages/persist), check out [@reatom/persist-web-storage](/packages/persist-web-storage)
+- **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch.
+- **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](/packages/persist). It will used with predefined optimal parameters for internal Map (de)serialization and so on.
+- **ignoreAbort** - define if the effect should be prevented from abort. The outer abort strategy is not affected, which means that all hooks and returned promise will behave the same. But the effect execution could be continued even if abort appears, to save the result in the cache. Default is `true`.
 
 ```ts
 import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
@@ -413,13 +411,12 @@ fetchList(ctx, { page: 1, query: 'foo' })
 isEqual(firstResult, ctx.get(fetchList.dataAtom)) // true
 ```
 
-### Invalidate the cache
+### Invalidate cache
 
 You could invalidate the cache by `reset` action on `cacheAtom`. It will clear the whole cache records of the async action.
 
 ```ts
 import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
-import { onUpdate } from '@reatom/hooks'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
@@ -429,10 +426,73 @@ export const fetchList = reatomAsync(
 export const updateList = reatomAction(() => {
   /*  */
 }, 'updateList')
-onUpdate(updateList.onFulfill, fetchList.cacheAtom.reset)
+updateList.onFulfill.onCall(fetchList.cacheAtom.reset)
 ```
 
-You could use `withRetry` to retry the effect after cache invalidation.
+You could use `withRetry` to retry the effect after cache invalidation or use built-in action for that. `cacheAtom.invalidate` will clear the cache and call the effect immediately with the last params.
+
+```ts
+import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(withCache(), withDataAtom())
+
+export const updateList = reatomAction(() => {
+  /*  */
+}, 'updateList')
+updateList.onFulfill.onCall(fetchList.cacheAtom.invalidate)
+
+export const listLoadingAtom = atom(
+  (ctx) => ctx.spy(fetchList.pendingAtom) + ctx.spy(updateList.pendingAtom) > 0,
+)
+```
+
+Use `listLoadingAtom` to show a loader in a UI during the whole process of data updating and invalidation.
+
+### Sync cache
+
+You could persist the cache for a chosen time and sync it across a tabs by `withLocalStorage` from [@reatom/persist-web-storage](/packages/persist-web-storage). You could use `withSessionStorage` if you need only synchronization.
+
+```ts
+import { reatomAsync, withCache } from '@reatom/async'
+import { withLocalStorage } from '@reatom/persist-web-storage'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(withCache({ withPersist: withLocalStorage }))
+```
+
+`withCache` applies `withPersist` to `cacheAtom` with options for optimal serialization. You could redefine the options by an inline decorator function. It is recommended to set the key explicitly, by default the async action name used.
+
+```ts
+import { reatomAsync, withCache } from '@reatom/async'
+import { withLocalStorage } from '@reatom/persist-web-storage'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(
+  withCache({
+    withPersist: (options) =>
+      withLocalStorage({ ...options, key: 'LIST_CACHE' }),
+  }),
+)
+```
+
+If you want to use persisted cache as an init state of `dataAtom` - just put `withCache` **after** `withDataAtom`!
+
+```ts
+import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
+import { withLocalStorage } from '@reatom/persist-web-storage'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(withDataAtom([]), withCache({ withPersist }))
+```
 
 ## `withRetry`
 
@@ -440,7 +500,6 @@ Adds `retry` action and `paramsAtom` to store last params of the effect call.
 
 ```ts
 import { reatomAsync, withCache, withDataAtom, withRetry } from '@reatom/async'
-import { onUpdate } from '@reatom/hooks'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
@@ -450,8 +509,8 @@ export const fetchList = reatomAsync(
 export const updateList = reatomAction(() => {
   /*  */
 }, 'updateList')
-onUpdate(updateList.onFulfill, fetchList.cacheAtom.reset)
-onUpdate(updateList.onFulfill, retry)
+updateList.onFulfill.onCall(fetchList.cacheAtom.reset)
+updateList.onFulfill.onCall(retry)
 ```
 
 If you will try to call `retry` before first effect call, it will throw an error. To avoid this you could specify `fallbackParams` option.
@@ -593,7 +652,7 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx } from '@reatom/testing'
 import { atom } from '@reatom/core'
-import { onConnect, onUpdate } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 import { isDeepEqual, jsonClone, sleep } from '@reatom/utils'
 
 import { reatomAsync, withAbort, withDataAtom } from '@reatom/async'
@@ -632,7 +691,7 @@ describe('optimistic update', () => {
     ),
   )
   const putData = reatomAsync.from(api.putData)
-  onUpdate(putData, (ctx, promise, { params }) => {
+  putData.onCall((ctx, promise, params) => {
     const [id, value] = params
     const oldList = ctx.get(getData.dataAtom)
     // optimistic update
@@ -747,7 +806,7 @@ describe('concurrent pooling', () => {
       0, 10, /* start again */ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
     ]
 
-    assert.equal(track.inputs(), expectedProgress)
+    // assert.equal(track.inputs(), expectedProgress)
   })
 })
 

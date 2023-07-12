@@ -1,31 +1,31 @@
 ---
-layout: ../layouts/Layout.astro
+layout: ../layouts/MainLayout.astro
 title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---
 
-**Reatom is the ultimate logic and state manager for small widgets and huge SPAs.**
+**Reatom is a ultimate logic and state manager for small widgets and huge SPAs.**
 
 ## Key features
 
-- **Simple** and powerful abstractions.
-  <small>There are only three main primitives: ctx, atom, action. All other features and packages work on top of that.</small>
-- **Immutable** and reliable.
-  <small>All pure computations are processed with [atomicity](/general/what-is-state-manager#state) guarantees.</small>
-- **Explicit reactivity** without proxies.
-  <small>To achieve [maximum](#how-performant-reatom-is) performance, we have the [atomization](/guides/atomization) pattern.</small>
-- Perfect **effects management**.
-  <small>The advanced [async package](/packages/async) allows you to describe complex async flows with caching, retrying, and automatic cancellation using native `await` and `AbortController`.</small>
-- Nice **debugging** experience.
-  <small>Each atom and action update stores an [immutable cause (call) stack](/guides/debug), which is super helpful for debugging complex async flows. To simplify this, we have the [logger package](/packages/logger).</small>
-- Implicit **DI**.
-  <small>To run tests and SSR with **100% safety**, you need an isolation layer, which `ctx` provides! We also have the extra [testing package](/packages/testing) with a pack of helpers for mocking.</small>
-- Actor-like **lifecycle hooks**.
-  <small>To achieve true modularity, you have the ability to describe [self-sufficient models](/guides/lifecycle).</small>
-- **Smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped.
-  <small>Because of the power of the base primitives, the entire ecosystem with a lot of enterprise-grade helpers takes only [~15KB](https://bundlejs.com/?q=%40reatom%2Fframework%2C%40reatom%2Fnpm-react%2C%40reatom%2Fpersist-web-storage%2C%40reatom%2Fundo%2C%40reatom%2Fform-web&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) - insane!</small>
-- **Best TypeScript** experience.
-  <small>[Automatic type inference](/guides/typescript) is one of the main priorities of Reatom development.</small>
+- **simple** and powerful abstractions.
+  <small>There are only three main primitives: `ctx`, `atom`, `action`, all other features and packages works on top of that.</small>
+- **immutable** and reliable.
+  <small>All pure computations processed with [atomicity](/general/what-is-state-manager#state) guaranties.</small>
+- **explicit reactivity** without proxies.
+  <small>To archive [maximum](#how-performant-reatom-is) performance we have [atomization](/guides/atomization) pattern.</small>
+- perfect **effects management**.
+  <small>Advanced [async package](/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation with native `await` and `AbortController`.</small>
+- nice **debugging** experience.
+  <small>Each atom and action update stores [immutable cause (call) stack](/guides/debug) which is super helpful for debugging complex async flows. To simplify this we have [logger package](/packages/logger).</small>
+- implicit **DI**.
+  <small>To run tests and SSR <strong>100% safety</strong> you need an isolation layer, which `ctx` is! We have the extra [testing package](/packages/testing) with pack of helpers for a mocking.</small>
+- actor-like **lifecycle hooks**
+  <small> To archive a trhtully modularity you have ability to describe [self-sufficient models](/guides/lifecycle)</small>
+- **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
+  <small>Because of the power of the base primitives all ecosystem with A LOT of enterprize-grade helpers took only [~15KB](https://bundlejs.com/?q=%40reatom%2Fframework%2C%40reatom%2Fnpm-react%2C%40reatom%2Fpersist-web-storage%2C%40reatom%2Fundo%2C%40reatom%2Fform-web&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) - insane!</small>
+- **best TypeScript** experience
+  <small>[Automatic type inference](/guides/typescript) is one of the main priority of Reatom developement.</small>
 
 [The core package](/core) includes most these features and you may use it anywhere, from huge apps to even small libs, as the overhead is tiny. Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 

@@ -4,7 +4,7 @@ title: utils
 description: Reatom for utils
 ---
 
-This is a super tiny package which includes a set of well-typed simple utils: `noop`, `sleep`, `isObject`, `isShallowEqual`, `isDeepEqual`, `assign`, `pick`, `omit`, `jsonClone`, `random`.
+This is a super tiny package which includes a set of well-typed simple utils: `noop`, `sleep`, `isObject`, `isShallowEqual`, `isDeepEqual`, `assign`, `merge`, `pick`, `omit`, `jsonClone`, `random`, `MAX_SAFE_TIMEOUT`.
 
 A lot of edge cases are missing here, but this is a necessary start for any TypeScript project.
 

@@ -44,39 +44,6 @@ declare function mockFn<I extends any[], O>(
 }
 ```
 
-## createMockStorage
-
-`createMockStorage` allows you to create a mock storage to simplify an atoms testing with [persist storage](/packages/persist)
-
-```ts
-// feature.ts
-import { atom } from '@reatom/framework'
-import { withLocalStorage } from '@reatom/persist-web-storage'
-
-export const tokenAtom = atom('', 'tokenAtom').pipe(withLocalStorage('token'))
-```
-
-```ts
-// feature.test.ts
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
-import { createMockStorage, createTestCtx } from '@reatom/testing'
-import { withLocalStorage } from '@reatom/persist-web-storage'
-import { tokenAtom } from './feature'
-
-test('token', () => {
-  const ctx = createTestCtx
-  withLocalStorage.storageAtom(
-    ctx,
-    createMockStorage({
-      token: '123',
-    }),
-  )
-
-  assert.is(ctx.get(tokenAtom), '123')
-})
-```
-
 ## Story test
 
 [source](https://github.com/artalar/reatom/blob/v3/packages/testing/src/index.story.test.ts)
