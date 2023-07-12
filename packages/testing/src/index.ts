@@ -160,5 +160,5 @@ export const createTestCtx = (options?: CtxOptions): TestCtx => {
 }
 
 /** @deprecated use `createMemStorage` fromm `@reatom/persist` instead */
-export const createMockStorage = (snapshot: Rec) =>
+export const createMockStorage = (snapshot?: Rec) =>
   createMemStorage({ name: 'test', snapshot })
