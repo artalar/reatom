@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/artalar/reatom/compare/npm-react-v3.4.0...npm-react-v3.4.1) (2023-07-12)
+
+
+### Bug Fixes
+
+* **npm-react:** useAtom recreation ([65fb433](https://github.com/artalar/reatom/commit/65fb4338ac2b7dbcbdbcb26759ad9259dba0226c))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/npm-react-v3.3.4...npm-react-v3.4.0) (2023-07-12)
 
 
