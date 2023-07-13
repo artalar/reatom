@@ -105,23 +105,30 @@ export const useAtom: {
   ): [T, Fn<[T | Fn<[T, Ctx], T>], T>, AtomMut<T>, Ctx]
 } = (
   anAtom: any,
-  deps: Array<any> = [],
+  userDeps: Array<any> = [],
   options: boolean | { name?: string; subscribe?: boolean } = {},
 ) => {
   let { name, subscribe = true }: { name?: string; subscribe?: boolean } =
     typeof options === 'boolean' ? { subscribe: options } : options
   let ctx = useCtx()
-  deps.push(ctx)
+  let deps: any[] = [ctx]
   if (isAtom(anAtom)) deps.push(anAtom)
 
-  let { theAtom, depsAtom, update, sub, get } = useRefSetup([], () => {
-    let theAtom = isAtom(anAtom)
-      ? anAtom
-      : atom((ctx, state?: any) => {
-          ctx.spy(depsAtom)
-          return anAtom(ctx, state)
-        }, getName(name ?? `useAtom#${typeof anAtom}`))
-    let depsAtom = atom<any[]>([], `${theAtom.__reatom.name}._depsAtom`)
+  let { theAtom, depsAtom, update, sub, get } = useRefSetup(deps, () => {
+    let atomName = getName(name ?? `useAtom#${typeof anAtom}`)
+    let depsAtom = atom<any[]>([], `${atomName}._depsAtom`)
+    let theAtom = anAtom
+    if (!isAtom(theAtom)) {
+      theAtom = atom(
+        typeof anAtom === 'function'
+          ? (ctx: CtxSpy, state?: any) => {
+              ctx.spy(depsAtom)
+              return anAtom(ctx, state)
+            }
+          : anAtom,
+        atomName,
+      )
+    }
     let update =
       typeof theAtom === 'function'
         ? // @ts-expect-error
@@ -130,16 +137,19 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, depsAtom, update, deps: [], sub, get, subscribe }
+    return { theAtom, depsAtom, update, deps, sub, get, subscribe }
   }).current
 
   return ctx.get(() => {
-    const prevDeps = ctx.get(depsAtom)
-    if (
-      deps.length !== prevDeps.length ||
-      deps.some((dep, i) => !Object.is(dep, prevDeps[i]))
-    ) {
-      depsAtom(ctx, deps)
+    if (!isAtom(anAtom)) {
+      const prevDeps = ctx.get(depsAtom)
+      if (
+        userDeps.length !== prevDeps.length ||
+        userDeps.some((dep, i) => !Object.is(dep, prevDeps[i]))
+      ) {
+        if (typeof anAtom === 'function') depsAtom(ctx, userDeps)
+        else update!(ctx, anAtom)
+      }
     }
 
     return [
