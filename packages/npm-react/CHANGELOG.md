@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/artalar/reatom/compare/npm-react-v3.4.1...npm-react-v3.4.2) (2023-07-13)
+
+
+### Bug Fixes
+
+* **npm-react:** computed atom ([f5deadf](https://github.com/artalar/reatom/commit/f5deadf87270e47592194d5b98e6803d708686b4))
+
 ## [3.4.1](https://github.com/artalar/reatom/compare/npm-react-v3.4.0...npm-react-v3.4.1) (2023-07-12)
 
 
