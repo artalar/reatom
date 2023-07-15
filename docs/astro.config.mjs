@@ -10,7 +10,7 @@ export default defineConfig({
   output: 'static',
   integrations: [
     starlight({
-      title: 'Reatom Docs',
+      title: 'Reatom',
       logo: {
         src: './src/assets/logo_light.svg',
       },
