@@ -1,0 +1,71 @@
+---
+title: npm-cookie-baker
+description: Reatom for cookies by cookie-baker
+---
+
+Adapter for [cookie-baker](https://github.com/BataevDaniil/cookie-baker).
+
+## Install
+
+```
+npm i @reatom/npm-cookie-baker @cookie-baker/core
+```
+
+or
+
+```sh
+yarn add @reatom/npm-cookie-baker @cookie-baker/core
+```
+
+### browser
+
+```
+yarn add @cookie-baker/browser
+```
+
+or
+
+```
+npm install @cookie-baker/browser
+```
+
+### node
+
+```
+yarn add @cookie-baker/node
+```
+
+or
+
+```
+npm install @cookie-baker/node
+```
+
+## Example
+[codesandbox](https://codesandbox.io/s/reatom-cookie-baker-ec6h63-ec6h63?file=/src/App.tsx)
+
+
+```ts
+import {
+  Cookie as CookieClient,
+  createRealTimeCookie,
+} from '@cookie-baker/browser'
+import { reatomCookie } from '@reatom/npm-cookie-baker'
+
+type CookieModel = {
+  ga?: string
+  adc?: string
+}
+
+const cookie = new CookieClient<CookieModel>()
+const realTimeCookie = createRealTimeCookie(cookie)
+
+const { cookieAtom, set, remove } = reatomCookie(cookie, realTimeCookie)
+
+const ctx = createContext()
+ctx.subscribe(cookieAtom, console.log)
+
+set(ctx, 'adc', 'dasf')
+remove(ctx, 'ga')
+cookie.set('adc', 'set-cookie-from-imperative-modify')
+```
