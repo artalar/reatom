@@ -12,7 +12,7 @@ export default async function middleware(req: Request): Promise<Response> {
     try {
       await supabase.from('logs').insert({
         created_at: new Date().toISOString(),
-        path: req.url,
+        path: new URL(req.url).pathname,
         country: geolocation(req).country,
       })
     } catch (error) {
