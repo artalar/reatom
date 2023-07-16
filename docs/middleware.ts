@@ -8,11 +8,15 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 })
 
 export default async function middleware(req: Request): Promise<Response> {
-  if (req.headers.get('accept')?.includes('text/html')) {
+  const url = new URL(req.url)
+  if (
+    url.origin.endsWith('reatom.dev') &&
+    req.headers.get('accept')?.includes('text/html')
+  ) {
     try {
       await supabase.from('logs').insert({
         created_at: new Date().toISOString(),
-        path: new URL(req.url).pathname,
+        path: url.pathname,
         country: geolocation(req).country,
       })
     } catch (error) {
