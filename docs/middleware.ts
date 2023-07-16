@@ -9,10 +9,10 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
 
 const log = async (req: Request) => {
   try {
-    let requestData = {
+    const requestData = {
       created_at: new Date().toISOString(),
       path: req.url,
-      geo: geolocation(req),
+      country: geolocation(req).country,
     }
 
     await supabase.from('logs').insert(requestData)
