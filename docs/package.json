@@ -16,10 +16,13 @@
     "@astrojs/prefetch": "^0.3.0",
     "@astrojs/sitemap": "^1.4.0",
     "@astrojs/starlight": "^0.5.1",
+    "@supabase/supabase-js": "^2.26.0",
     "@vercel/analytics": "^1.0.1",
+    "@vercel/edge": "^0.3.4",
     "astro": "^2.8.3",
     "sharp": "^0.32.3",
-    "tsx": "^3.12.7"
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
     "zx": "^7.2.3"
