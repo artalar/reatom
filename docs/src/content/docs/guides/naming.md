@@ -5,7 +5,7 @@ description: Main advices for things naming
 
 ### Packages
 
-We want to grow a huge ecosystem of packages, which will be useful for everyone. So, it's crucial to have naming convention for packages, especially when different platforms could have packages with the same name. For this reason we use prefixes for adapter packages related to a specific scope. For example [`npm-history`](https://www.reatom.dev/packages/npm-history) for [history package](https://www.npmjs.com/package/history) adapter, `web-history` for potential [History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) wrapper, and `node-http` for potential [Node HTTP](https://nodejs.org/docs/latest-v18.x/api/http.html) adapter. 
+We want to grow a huge ecosystem of packages, which will be useful for everyone. So, it's crucial to have naming convention for packages, especially when different platforms could have packages with the same name. For this reason we use prefixes for adapter packages related to a specific scope. For example [`npm-history`](https://www.reatom.dev/adapter/npm-history) for [history package](https://www.npmjs.com/package/history) adapter, `web-history` for potential [History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) wrapper, and `node-http` for potential [Node HTTP](https://nodejs.org/docs/latest-v18.x/api/http.html) adapter. 
 
 ### Fabric and model
 

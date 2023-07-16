@@ -208,7 +208,7 @@ export const fetchList = reatomAsync(
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
-What this code do? When you connect to `fetchList.dataAtom` it will automatically call `fetchList` action. Connection could appear in any place of your application, by `ctx.subscribe(fetchList.dataAtom, cb)` or by using `useAtom(fetchList.dataAtom)` hook from [@reatom/npm-react](https://www.reatom.dev/packages/npm-react). Even by a different atom.
+What this code do? When you connect to `fetchList.dataAtom` it will automatically call `fetchList` action. Connection could appear in any place of your application, by `ctx.subscribe(fetchList.dataAtom, cb)` or by using `useAtom(fetchList.dataAtom)` hook from [@reatom/npm-react](https://www.reatom.dev/adapter/npm-react). Even by a different atom.
 
 ```ts
 export const filteredListAtom = atom(

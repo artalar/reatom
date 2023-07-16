@@ -96,7 +96,7 @@ document.getElementById('save')!.addEventListener('click', () => {
 
 Check out [@reatom/core docs](https://www.reatom.dev/core) for detailed explanation of key principles and features.
 
-Do you use React.js? Check out [npm-react](https://www.reatom.dev/packages/npm-react) package!
+Do you use React.js? Check out [npm-react](https://www.reatom.dev/adapter/npm-react) package!
 
 ## Advanced example
 
@@ -188,7 +188,7 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.rea
 
 - Finish [forms package](https://github.com/artalar/reatom/tree/v3/packages/form)
 - Finish [persist](https://github.com/artalar/reatom/tree/v3/packages/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
-- Add adapters for most popular ui frameworks: ~~[react](https://www.reatom.dev/packages/npm-react)~~, angular, vue, ~~[svelte](https://www.reatom.dev/packages/npm-svelte)~~, solid.
+- Add adapters for most popular ui frameworks: ~~[react](https://www.reatom.dev/adapter/npm-react)~~, angular, vue, ~~[svelte](https://www.reatom.dev/adapter/npm-svelte)~~, solid.
 - Port some components logic from reakit.io, to made it fast, light and portable.
 - Add ability to made async transaction and elaborate optimistic-ui patterns and helpers / package.
 - Try to write own jsx renderer.

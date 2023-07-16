@@ -122,7 +122,7 @@ document.getElementById('search-input').addEventListener('input', (event) => {
 })
 ```
 
-> Do you want to see next [the docs for React adapter](https://reatom.dev/packages/npm-react)?
+> Do you want to see next [the docs for React adapter](https://reatom.dev/adapter/npm-react)?
 
 ### Action handling (advanced)
 
