@@ -14,11 +14,13 @@ export default async function middleware(req: Request): Promise<Response> {
       const today = new Date()
       today.setUTCMilliseconds(0)
       today.setUTCSeconds(0)
-      today.setUTCMilliseconds(0)
+      today.setUTCMinutes(0)
       today.setUTCHours(0)
+      const key = today.toISOString()
 
+      console.log('key', key)
       console.time('kv.incr')
-      await kv.incr(today.toUTCString())
+      await kv.incr(key)
       console.timeEnd('kv.incr')
     } catch (error) {
       console.error(error)
