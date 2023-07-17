@@ -10,10 +10,7 @@ export default async function middleware(req: Request): Promise<Response> {
   ) {
     try {
       const today = new Date()
-      today.setUTCMilliseconds(0)
-      today.setUTCSeconds(0)
-      today.setUTCMinutes(0)
-      today.setUTCHours(0)
+      today.setUTCHours(0, 0, 0, 0)
 
       headers['x-visit-count'] = String(await kv.incr(today.toISOString()))
     } catch (error) {
