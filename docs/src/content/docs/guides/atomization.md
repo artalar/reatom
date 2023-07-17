@@ -53,7 +53,7 @@ const handleSubmit = useAction(syncUserName)
 
 In case you have a list of users and you will CRUD this list (paging / sorting / adding) you should wrap it to atom too:
 
-> Check out our simple primitives for working with arrays: [reatomArray](/packages/primitives#reatomArray)
+> Check out our simple primitives for working with arrays: [reatomArray](/package/primitives#reatomArray)
 
 ```ts
 // DTO

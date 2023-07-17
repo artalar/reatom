@@ -5,7 +5,7 @@ description: Reatom lifecycle hooks
 
 Reatom is a heavy inspired by [actor model](https://en.wikipedia.org/wiki/Actor_model), which important quality is that each component of the system is isolated from the others. This isolation is achieved by the fact that each component has its own state and its own lifecycle. This is the same for an atoms. We have API that allows you to create a system of components that are independent of each other and can be used in different modules with minimum setup. This is the main advantage of Reatom over other state management libraries.
 
-For example, you could create some data resource, which depends of a backend service and will connect to the service only when the data atom used. This is a very common case for a frontend application. In Reatom you could do it with [lifecycle hooks](https://www.reatom.dev/packages/hooks).
+For example, you could create some data resource, which depends of a backend service and will connect to the service only when the data atom used. This is a very common case for a frontend application. In Reatom you could do it with [lifecycle hooks](https://www.reatom.dev/package/hooks).
 
 ```ts
 import { atom, action } from '@reatom/core'
@@ -49,7 +49,7 @@ Now, you have lazy computations and **lazy effects**!
 
 This pattern allow you to stay control of data neednes in view layer or any other consumer module, but do it implicitly, and explicitly for data models. You don't need extra _start_ actions or something like that. It is a more clean and scalable way to design your code, with better ability to reuse a components.
 
-A lot of cool examples you could find in [async package docs](https://www.reatom.dev/packages/async).
+A lot of cool examples you could find in [async package docs](https://www.reatom.dev/package/async).
 
 ## Lifecycle scheme
 

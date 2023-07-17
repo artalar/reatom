@@ -20,7 +20,7 @@ declare function mapState<T, Res>(
 ): (anAtom: Atom<T>) => Atom<Res>
 ```
 
-> [Real `mapState`](/packages/lens#mapstate)
+> [Real `mapState`](/package/lens#mapstate)
 
 If operator isn't create a new atom and mutate the passed you should use `with` prefix.
 
@@ -36,7 +36,7 @@ declare function withStateHistory<T extends Atom>(
 
 We use here `T extends Atom` instead of much simpler `<T>(length: string): (anAtom: Atom<T>) Atom<T> & {...}` to save all additional properties witch added by previous operators.
 
-> [Real `historyAtom`](/packages/undo)
+> [Real `historyAtom`](/package/undo)
 
 ## Example
 
@@ -79,4 +79,4 @@ export const delay =
   }
 ```
 
-> [Real `debounce`](https://www.reatom.dev/packages/lens#debounce)
+> [Real `debounce`](https://www.reatom.dev/package/lens#debounce)

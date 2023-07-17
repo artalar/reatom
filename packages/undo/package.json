@@ -45,7 +45,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/undo",
+  "homepage": "https://www.reatom.dev/package/undo",
   "files": [
     "/build",
     "/package.json"

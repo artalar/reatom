@@ -5,7 +5,7 @@ description: Reatom for logger
 
 Tiny logger with a couple nice configurations.
 
-> included in [@reatom/framework](/packages/framework)
+> included in [@reatom/framework](/package/framework)
 
 ## Usage
 

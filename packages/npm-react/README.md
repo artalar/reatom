@@ -63,7 +63,7 @@ export const App = () => (
 )
 ```
 
-We recommend to setup [logger](https://www.reatom.dev/packages/logger) here.
+We recommend to setup [logger](https://www.reatom.dev/package/logger) here.
 
 ## Use atom selector
 

@@ -46,7 +46,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/adapter/npm-history",
+  "homepage": "https://www.reatom.dev/adapter/npm-history",
   "files": [
     "/build",
     "/package.json"

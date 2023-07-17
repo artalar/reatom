@@ -40,7 +40,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/packages/lens",
+  "homepage": "https://www.reatom.dev/package/lens",
   "files": [
     "/build",
     "/package.json"
