@@ -68,7 +68,7 @@ export const App = () => (
 )
 ```
 
-We recommend to setup [logger](/packages/logger) here.
+We recommend to setup [logger](/package/logger) here.
 
 ## Use atom selector
 

@@ -14,11 +14,11 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 - **explicit reactivity** without proxies.
   <small>To archive [maximum](#how-performant-reatom-is) performance we have [atomization](/guides/atomization) pattern.</small>
 - perfect **effects management**.
-  <small>Advanced [async package](/packages/async) allows you to describe complex async flows with caching, retrying and automatic cancellation with native `await` and `AbortController`.</small>
+  <small>Advanced [async package](/package/async) allows you to describe complex async flows with caching, retrying and automatic cancellation with native `await` and `AbortController`.</small>
 - nice **debugging** experience.
-  <small>Each atom and action update stores [immutable cause (call) stack](/guides/debug) which is super helpful for debugging complex async flows. To simplify this we have [logger package](/packages/logger).</small>
+  <small>Each atom and action update stores [immutable cause (call) stack](/guides/debug) which is super helpful for debugging complex async flows. To simplify this we have [logger package](/package/logger).</small>
 - implicit **DI**.
-  <small>To run tests and SSR <strong>100% safety</strong> you need an isolation layer, which `ctx` is! We have the extra [testing package](/packages/testing) with pack of helpers for a mocking.</small>
+  <small>To run tests and SSR <strong>100% safety</strong> you need an isolation layer, which `ctx` is! We have the extra [testing package](/package/testing) with pack of helpers for a mocking.</small>
 - actor-like **lifecycle hooks**
   <small> To archive a trhtully modularity you have ability to describe [self-sufficient models](/guides/lifecycle)</small>
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
@@ -26,7 +26,7 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 - **best TypeScript** experience
   <small>[Automatic type inference](/guides/typescript) is one of the main priority of Reatom developement.</small>
 
-[The core package](/core) includes most these features and you may use it anywhere, from huge apps to even small libs, as the overhead is tiny. Also, you could reuse our carefully written [helper tools](/packages/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
+[The core package](/core) includes most these features and you may use it anywhere, from huge apps to even small libs, as the overhead is tiny. Also, you could reuse our carefully written [helper tools](/package/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 ## Simple example
 
@@ -117,15 +117,15 @@ npm i @reatom/framework @reatom/npm-react
 
 [codesandbox](https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx)
 
-We will use [@reatom/core](/core), [@reatom/async](/packages/async) and [@reatom/hooks](/packages/hooks) packages in this example by importing it from the meta package [@reatom/framework](/packages/framework) - it simplifies imports and dependencies management.
+We will use [@reatom/core](/core), [@reatom/async](/package/async) and [@reatom/hooks](/package/hooks) packages in this example by importing it from the meta package [@reatom/framework](/package/framework) - it simplifies imports and dependencies management.
 
 `reatomAsync` is a simple decorator which wraps your async function and adds extra actions and atoms to track creating promise statuses.
 
 `withDataAtom` adds property `dataAtom` which saves the last effect result and allow you to subscribe to it. `withCache` enable function middleware which prevent it's extra calls based on passed arguments identity - classic cache. `withAbort` allows to define concurrent requests abort strategy, by using `ctx.controller` ([AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)) from `reatomAsync`. `withRetry` and `onReject` handler help to handle temporal rate limit.
 
-Simple `sleep` helper (for debounce) gotten from [utils package](/packages/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
+Simple `sleep` helper (for debounce) gotten from [utils package](/package/utils) - it is a built-in microscopic lodash alternative for most popular and tiny helpers.
 
-`onUpdate` is a [hook](/packages/hooks) which link to the atom and calls passed callback on every update.
+`onUpdate` is a [hook](/package/hooks) which link to the atom and calls passed callback on every update.
 
 ```tsx
 // /#advanced-example
@@ -187,7 +187,7 @@ export const App = () => {
 
 The whole logic definition is only about 15 LoC and it is not coupled to React and could be tested easily. What would the lines count be in a different library? The most impressive thing is that the overhead is [less than 4KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetry%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdhgAejiYABN4ACMQMRV4dxhuaFcYX3gcKQBfaURvXyJgqwA6fkE0EXFJUiN4ExodXTruSxB-QOR2HNkoMWQwQqhiiE5SmnJG4VEJCFY62uD4UhzPXzQAEWJEJjIAbQBdFip9w4x05ChSFwtkYnhbM1p-dSgALQ2AEHMDkGClW73KBoABKAhMrxyHnA8IAVvAdNo9DROsgQMhzIgwIoaONrJIHG4PDT4olxpNpik-opCtMSjACTAAQBGGDYGDBWQAN3gYFg5KskmRNIZUxgeIJAH46jhJBBELZ4HUbMB-GIUhAKB9ZjB-FYcL5WDLaUqYDyolEYAAqGAAWWIaFVNlI0SiZIRUqkztdYRYNpp5l5nFpixykLuowSMkyMBWzTWkk503gopMcCQqEwJBgYmCSU%2BHHAAFVy59SPQi%2BcaOmWutRlxZJ8AMJ6UijMQIc6kVuZiB1CtQM4kFhAA&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) could you imagine?! And you are not limited to network cache, Reatom is powerful and expressive enough for describing any kind of state.
 
-To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If you need something tiny - check out [the core package docs](https://reatom.dev/core). Also, we have a [package for testing](/packages/testing)!
+To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If you need something tiny - check out [the core package docs](/core). Also, we have a [package for testing](/package/testing)!
 
 ## Roadmap
 
@@ -232,8 +232,8 @@ Also, check out [atomization guild](/guides/atomization).
 Of course there are no software without limitations. Reatom is trying to be a silver bullet but we still have some cases witch you should know about.
 
 - Immutable data always have an additional performance impact and in critical cases you should think well about your structures and how you could handle it better. The good news is that you [don't have to use normalization](/guides/atomization).
-- Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of hot observables. Anyway, we have [hooks](/packages/hooks) for hot linking.
-- Currently, there is no way to subscribe on error of any dependency, but we are working on it. In [reatomAsync](/packages/async) passed effects wraps to an error handler and allow you to handle errors, but again - you should wrap it explicit.
+- Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of hot observables. Anyway, we have [hooks](/package/hooks) for hot linking.
+- Currently, there is no way to subscribe on error of any dependency, but we are working on it. In [reatomAsync](/package/async) passed effects wraps to an error handler and allow you to handle errors, but again - you should wrap it explicit.
 - Currently, there is no asynchronous transactions support, but we are working on it. It is important feature for simplify building of optimistic UI and we really think it will improve UX a lot.
 - We have a lot of utils and the ecosystem is growing all the time, but the target of that is have a set of well done logic primitives, and there is no architecture framework or codestyle / declarative framework to fit you in one strict flow. Reatom trying to be in the middle of a library and a framework. We love procedural programming with minimum extra API and semantic overhead. Our defaults are good already to help to you to write a better code: immutability and lazyness, transactions and separation of pure computations and effects, `ctx` and connections and processes virtualizations.
 

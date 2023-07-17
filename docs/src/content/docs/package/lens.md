@@ -5,7 +5,7 @@ description: Reatom for lens
 
 A set of operators to transform actions payload or an atoms state in a FRP style. Simply put, this package is convenient for reactive processing of actions and effects. But some operators could be useful for data processing too, like `filter`, `delay` (`debounce`, `throttle`) and `sample`.
 
-> included in [@reatom/framework](/packages/framework)
+> included in [@reatom/framework](/package/framework)
 
 ## `mapState`
 

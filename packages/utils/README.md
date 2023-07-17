@@ -2,7 +2,7 @@ This is a super tiny package which includes a set of well-typed simple utils: `n
 
 A lot of edge cases are missing here, but this is a necessary start for any TypeScript project.
 
-> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+> included in [@reatom/framework](https://www.reatom.dev/package/framework)
 
 ## `toStringKey`
 

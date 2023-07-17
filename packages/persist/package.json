@@ -39,7 +39,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/packages/persist",
+  "homepage": "https://www.reatom.dev/package/persist",
   "files": [
     "/build",
     "/package.json"

@@ -48,7 +48,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/form-web",
+  "homepage": "https://www.reatom.dev/package/form-web",
   "files": [
     "/build",
     "/package.json"

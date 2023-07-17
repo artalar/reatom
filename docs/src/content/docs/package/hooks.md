@@ -3,13 +3,13 @@ title: hooks
 description: Reatom for hooks
 ---
 
-> included in [@reatom/framework](/packages/framework)
+> included in [@reatom/framework](/package/framework)
 
 All atoms and actions have a hooks to they lifecycle, this package exposes friendly helpers to use this hooks.
 
 We assumes that you already read [lifecycle guild](/guides/lifecycle).
 
-A lot of cool examples you could find in [async package docs](/packages/async).
+A lot of cool examples you could find in [async package docs](/package/async).
 
 ## `withInit`
 
@@ -40,7 +40,7 @@ const dispose = onConnect(messagesAtom, (ctx) => {
 })
 ```
 
-Passed `ctx` have `isConnected` method which checks the passed atom current status - [async example](/packages/async#periodic-refresh-for-used-data). Also, `ctx` includes `controller` property which is AbortController - you could reuse it perfectly with `reatomAsync` - [another async example](/packages/async#abortable-process)
+Passed `ctx` have `isConnected` method which checks the passed atom current status - [async example](/package/async#periodic-refresh-for-used-data). Also, `ctx` includes `controller` property which is AbortController - you could reuse it perfectly with `reatomAsync` - [another async example](/package/async#abortable-process)
 
 ### Comparison with React
 

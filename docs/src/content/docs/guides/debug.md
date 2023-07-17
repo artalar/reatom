@@ -75,6 +75,6 @@ Here is what you will see inside `issuesTitlesAtom ctx` log (some data below omi
 
 As you could see `cause` property includes all state changes causes, even asynchronous.
 
-**Important note** you should care: `ctx.cause` specifying after atom reducer return, so do not log `ctx.cause` directly, log `ctx` and read `cause` property in your console. Also, empty array in `state` property of actions is ok, coz it clears after transaction (computations) end, normally it includes `{ params: [...], payload: ReturnType }` of each call, you could see it persisted values by `connectLogger` from [@reatom/logger](https://www.reatom.dev/packages/logger).
+**Important note** you should care: `ctx.cause` specifying after atom reducer return, so do not log `ctx.cause` directly, log `ctx` and read `cause` property in your console. Also, empty array in `state` property of actions is ok, coz it clears after transaction (computations) end, normally it includes `{ params: [...], payload: ReturnType }` of each call, you could see it persisted values by `connectLogger` from [@reatom/logger](https://www.reatom.dev/package/logger).
 
 By the way, you could inspect all atom and action patches by `ctx.subscribe(logs => console.log(logs))` or in the second log of `connectLogger` output.
