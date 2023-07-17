@@ -38,7 +38,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/adapter/core-v1",
+  "homepage": "https://www.reatom.dev/compat/core-v1",
   "files": [
     "/build",
     "/package.json"
