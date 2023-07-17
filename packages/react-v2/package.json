@@ -2,7 +2,7 @@
   "name": "@reatom/react-v2",
   "version": "3.1.0",
   "description": "React bindings for @reatom/core-v2",
-  "homepage": "https://github.com/artalar/reatom/tree/master/packages/react",
+  "homepage": "https://www.reatom.dev/compat/react-v2",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/artalar/reatom.git"

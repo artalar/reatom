@@ -5,7 +5,7 @@ description: How to describe TypeScript types correctly for Reatom
 
 All interfaces in Reatom designed with focus in automatic type inference. You almost never need to define types by your hand in fabrics generics in a regular code, all you need is **correct types for passed data / options**.
 
-For example, most [lens](/packages/lens) operators processed passed atom type in generics and defining it manually is annoying, but if you need to define passed options types, define exactly the passed data!
+For example, most [lens](/package/lens) operators processed passed atom type in generics and defining it manually is annoying, but if you need to define passed options types, define exactly the passed data!
 
 ```ts
 import { action } from '@reatom/core'

@@ -5,7 +5,7 @@ description: Reatom for async
 
 This package is all you need to handle async requests / logic / flow effectively and predictable. You could wrap your async functions to the main primitive `reatomAsync` and get basic action hooks: `onFulfill`, `onReject`, `onSettle` and `pendingAtom` with count of pending requests. But you could grow as you need and add extra features by adding additional operators: [withDataAtom](#withdataatom) (resolve payload memoization), [withErrorAtom](#witherroratom) (reject payload memoization), [withStatusesAtom](#withstatusesatom) (`isPending`, `isEverSettled` and so on), [withCache](#withcache) (advanced cache policies), [withAbort](#withabort) (concurrent management), [withRetry](#withretry) (flexible retry management).
 
-> included in [@reatom/framework](/packages/framework)
+> included in [@reatom/framework](/package/framework)
 
 `reatomAsync` accepts effect function which returns a promise (it could be just `async` function) and call it in effects queue. `ctx` already includes `controller` which is a native [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController). The most cool feature of this package and game changer for your DX and your code reliability is automatic linking of nested abort controllers. It means that if you have concurrent ([abortable](#withabort)) process, like on input search with a few serial requests, when a new search starts, previous search and all generated effects cancel automatically.
 
@@ -274,7 +274,7 @@ export const updateList = reatomAsync(
 )
 ```
 
-For more details of optimistic update check the story tests in [the sources](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts) or in [the end of this doc](/packages/async#story-test).
+For more details of optimistic update check the story tests in [the sources](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts) or in [the end of this doc](/package/async#story-test).
 
 ### Custom dataAtom
 
@@ -373,7 +373,7 @@ export type AsyncStatuses =
 
 This is the most famous feature of any resource management. You are not required to use `withDataAtom`, the cache worked for effect results, but if `dataAtom` exists - it will worked as well and you could react on data changes immediately.
 
-This operator adds `cacheAtom` property which is `MapAtom` from [@reatom/primitives](/packages/primitives) and contains the cache of effect results. Do not change it manually! But you could use `reset` action for cache invalidation.
+This operator adds `cacheAtom` property which is `MapAtom` from [@reatom/primitives](/package/primitives) and contains the cache of effect results. Do not change it manually! But you could use `reset` action for cache invalidation.
 
 If the async action will called with the same params during existing fetching - the same promise will returned.
 
@@ -382,11 +382,11 @@ You could rule the cache behavior by set of optional parameters.
 - **length** - maximum amount of cache records. Default is `5`.
 - **staleTime** - the amount of milliseconds after which a cache record will cleanup. Default is `5 * 60 * 1000`ms which is 5 minutes.
 - **paramsLength** - the number of excepted parameters, which will used as a cache key. Default is "all".
-- **isEqual** - check the equality of a cache record and passed params to find the cache. Default is `isDeepEqual` from [@reatom/utils](/packages/utils).
+- **isEqual** - check the equality of a cache record and passed params to find the cache. Default is `isDeepEqual` from [@reatom/utils](/package/utils).
 - **paramsToKey** - convert params to a string as a key of the cache map. Not used by default, equality check (`isEqual`) is used instead. This option is useful if you have a complex object as a params which equality check is too expensive, or you was set large `length` option and want to speed up the cache search.
-  > You could import and use [toStringKey](/packages/utils#tostringkey) function from the utils package for this purposes.
+  > You could import and use [toStringKey](/package/utils#tostringkey) function from the utils package for this purposes.
 - **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch.
-- **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](/packages/persist). It will used with predefined optimal parameters for internal Map (de)serialization and so on.
+- **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](/package/persist). It will used with predefined optimal parameters for internal Map (de)serialization and so on.
 - **ignoreAbort** - define if the effect should be prevented from abort. The outer abort strategy is not affected, which means that all hooks and returned promise will behave the same. But the effect execution could be continued even if abort appears, to save the result in the cache. Default is `true`.
 
 ```ts
@@ -452,7 +452,7 @@ Use `listLoadingAtom` to show a loader in a UI during the whole process of data 
 
 ### Sync cache
 
-You could persist the cache for a chosen time and sync it across a tabs by `withLocalStorage` from [@reatom/persist-web-storage](/packages/persist-web-storage). You could use `withSessionStorage` if you need only synchronization.
+You could persist the cache for a chosen time and sync it across a tabs by `withLocalStorage` from [@reatom/persist-web-storage](/package/persist-web-storage). You could use `withSessionStorage` if you need only synchronization.
 
 ```ts
 import { reatomAsync, withCache } from '@reatom/async'
@@ -566,7 +566,7 @@ export const fetchList = reatomAsync(
 
 ### Periodic refresh for used data
 
-Lets use `onConnect` from [@reatom/hooks](/packages/hooks) to control the data neediness.
+Lets use `onConnect` from [@reatom/hooks](/package/hooks) to control the data neediness.
 
 ```ts
 import {
@@ -640,7 +640,7 @@ const reatomResource = (initState, url, concurrent = true) => {
 }
 ```
 
-Check the real-world example in pooling example from [story tests below](/packages/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
+Check the real-world example in pooling example from [story tests below](/package/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
 
 ## Story test
 

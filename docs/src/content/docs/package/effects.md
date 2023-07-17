@@ -5,9 +5,9 @@ description: Reatom for effects
 
 This package is inspired by [sagas](https://redux-saga.js.org) and give you advanced effect management solutions.
 
-> included in [@reatom/framework](/packages/framework)
+> included in [@reatom/framework](/package/framework)
 
-First of all you should know that many effects and async ([@reatom/async](/packages/async) + [@reatom/hooks](/packages/hooks)) logic uses [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) under the hood and if some of the controller aborted all nested effects will aborted too! It is a powerful feature for managing async logic which allows you to easily write concurrent logic, like in redux-saga or rxjs, but with the simpler API.
+First of all you should know that many effects and async ([@reatom/async](/package/async) + [@reatom/hooks](/package/hooks)) logic uses [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) under the hood and if some of the controller aborted all nested effects will aborted too! It is a powerful feature for managing async logic which allows you to easily write concurrent logic, like in redux-saga or rxjs, but with the simpler API.
 
 To mange check and abort logic there are few exports: `AbortError` type, `toAbortError` function for converting an abort reason to the abort error, `throwIfAborted` function for checking a controller status and throwing the correct error, `isAbort` function for checking an error is the abort error or not.
 

@@ -50,7 +50,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/packages/npm-lit",
+  "homepage": "https://www.reatom.dev/package/npm-lit",
   "files": [
     "/build",
     "/package.json"

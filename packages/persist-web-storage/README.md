@@ -42,4 +42,4 @@ export const tokenAtom = atom('', 'tokenAtom').pipe(withLocalStorage('token'))
 
 ## Testing
 
-It is simple to test data with persist adapter as we have a special util for that: https://www.reatom.dev/packages/testing#createmockstorage
+It is simple to test data with persist adapter as we have a special util for that: https://www.reatom.dev/package/testing#createmockstorage

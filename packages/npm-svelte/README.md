@@ -14,7 +14,7 @@ import { setupCtx } from '@reatom/npm-svelte'
 setupCtx()
 ```
 
-We recommend to add logger for dev environment, from [@reatom/logger](https://www.reatom.dev/packages/logger) directly, or from [@reatom/framework](https://www.reatom.dev/packages/framework).
+We recommend to add logger for dev environment, from [@reatom/logger](https://www.reatom.dev/package/logger) directly, or from [@reatom/framework](https://www.reatom.dev/package/framework).
 
 ```ts
 import { createCtx, connectLogger } from '@reatom/framework'
@@ -51,7 +51,7 @@ Of course, you could describe atoms as a [separate module](https://www.reatom.de
 <script>
 	import { withSvelte } from '@reatom/npm-svelte'
   import { countAtom, timesAtom, increment } from './model'
-	
+
 	const count = withSvelte(countAtom)
 	const times = withSvelte(timesAtom)
 	const handleIncrement = withSvelte(increment).set

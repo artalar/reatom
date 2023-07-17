@@ -1,4 +1,4 @@
-This package provides base primitives to create your own persist adapters. It helps to manage data transformation (serialization), versioning and migrations, autoupdates (subscription). Check https://www.reatom.dev/packages/persist-web-storage for product usage or inspiration.
+This package provides base primitives to create your own persist adapters. It helps to manage data transformation (serialization), versioning and migrations, autoupdates (subscription). Check https://www.reatom.dev/package/persist-web-storage for product usage or inspiration.
 
 ## Installation
 

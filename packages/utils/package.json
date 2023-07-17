@@ -34,7 +34,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/packages/utils",
+  "homepage": "https://www.reatom.dev/package/utils",
   "files": [
     "/build",
     "/package.json"

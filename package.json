@@ -30,7 +30,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/tree/v2",
+  "homepage": "https://github.com/artalar/reatom/tree/v3",
   "devDependencies": {
     "@commitlint/cli": "^17.6.5",
     "@commitlint/config-conventional": "^17.6.5",

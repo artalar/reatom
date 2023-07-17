@@ -1,6 +1,6 @@
 Tiny, efficient, featured and extensible core to handle reactivity right. The ultimate state manager. Build anything, from a small widget to a huge application.
 
-> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+> included in [@reatom/framework](https://www.reatom.dev/package/framework)
 
 [Main introduction](https://www.reatom.dev).
 
@@ -34,7 +34,7 @@ import { createCtx } from '@reatom/core'
 export const ctx = createCtx()
 ```
 
-All atoms and actions accepts `ctx` by a first argument, it helps you a lot in many things: testing, debugging, SSR, effects chains management and logging. You could add `ctx.subscribe(logs => console.log(logs))` or connect separate [logger](https://www.reatom.dev/packages/logger) to see all changes in your app.
+All atoms and actions accepts `ctx` by a first argument, it helps you a lot in many things: testing, debugging, SSR, effects chains management and logging. You could add `ctx.subscribe(logs => console.log(logs))` or connect separate [logger](https://www.reatom.dev/package/logger) to see all changes in your app.
 
 ```ts
 // ~/features/search/model.ts
@@ -117,7 +117,7 @@ document.getElementById('search-input').addEventListener('input', (event) => {
 })
 ```
 
-> Do you want to see next [the docs for React adapter](https://reatom.dev/adapter/npm-react)?
+> Do you want to see next [the docs for React adapter](https://www.reatom.dev/adapter/npm-react)?
 
 ### Action handling (advanced)
 
@@ -170,9 +170,9 @@ socket.on(
 import { atom } from '@reatom/core'
 ```
 
-`atom` function is a fabric for an atom - base reactive primitive. Atom don't store it data (state, listeners, dependencies) in itself, it only key to a cache in [ctx](#ctx-api) (context). You may imagine atom as a prototype for a cache. One of the most powerful Reatom feature is that a cache is immutable, it recreates on each relative update. Cache immutability helps to process [transactions](#transaction-api) and it super handy for debugging. Don't worry, it is pretty [efficient](https://reatom.dev#performance).
+`atom` function is a fabric for an atom - base reactive primitive. Atom don't store it data (state, listeners, dependencies) in itself, it only key to a cache in [ctx](#ctx-api) (context). You may imagine atom as a prototype for a cache. One of the most powerful Reatom feature is that a cache is immutable, it recreates on each relative update. Cache immutability helps to process [transactions](#transaction-api) and it super handy for debugging. Don't worry, it is pretty [efficient](https://www.reatom.dev#performance).
 
-As atom is a key, it should be mapped somewhere to it cache. `ctx` has internal [WeakMap](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap) `caches`, which store your data until you have a link to atom. When you subscribe (connect) and unsubscribe (disconnect) from atom the state isn't reseted or deleted, it still stored in cache, which will cleared by GC only after link to the atom disappears from you closures. This behavior is most intuitive and works just like any variable storing. So, if you define global atom available in a few your modules the state will always persists in memory during application lifetime, neither you subscribed or unsubscribed for the atom, which is useful. If you need to clear state on disconnect or doing other lifetime transformations check the [hooks package](https://reatom.dev/packages/hooks) and [withreset](https://www.reatom.dev/packages/lens#withreset) helper.
+As atom is a key, it should be mapped somewhere to it cache. `ctx` has internal [WeakMap](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap) `caches`, which store your data until you have a link to atom. When you subscribe (connect) and unsubscribe (disconnect) from atom the state isn't reseted or deleted, it still stored in cache, which will cleared by GC only after link to the atom disappears from you closures. This behavior is most intuitive and works just like any variable storing. So, if you define global atom available in a few your modules the state will always persists in memory during application lifetime, neither you subscribed or unsubscribed for the atom, which is useful. If you need to clear state on disconnect or doing other lifetime transformations check the [hooks package](https://www.reatom.dev/package/hooks) and [withreset](https://www.reatom.dev/package/lens#withreset) helper.
 
 If you need to create base mutable atom just pass the initial value to `atom`. Pass the atom name by a second argument (it is optional, but strongly recommended). Resulted atom will be mutable (`Mut`) with a callable signature (a function), you could mutate it by passing context and new value or reducer function.
 
@@ -280,9 +280,9 @@ const countAtom = atom(0).pipe(
 const countAtom = withInit(() => localStorage.getItem('COUNT') ?? 0)(atom(0))
 ```
 
-> `withInit` allows you to configure the init state of the atom reading, which is more pridictable and safe for a testing sometimes. It is a part of [reatom/hooks](https://www.reatom.dev/packages/hooks#withinit) package.
+> `withInit` allows you to configure the init state of the atom reading, which is more pridictable and safe for a testing sometimes. It is a part of [reatom/hooks](https://www.reatom.dev/package/hooks#withinit) package.
 
-Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](https://www.reatom.dev/packages/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix)
+Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](https://www.reatom.dev/package/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix)
 
 Btw, actions has `pipe` too!
 
