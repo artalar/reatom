@@ -23,10 +23,6 @@
   --aside-width: 18rem;
 }
 
-[data-theme='dark'] {
-  display: none;
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
     --fg: var(--fg-default-dark);
@@ -34,13 +30,6 @@
     --fg1: var(--fg1-default-dark);
     --bg1: var(--bg1-default-dark);
     --code-filter: var(--code-filter-default-dark);
-  }
-
-  [data-theme='light'] {
-    display: none;
-  }
-  [data-theme='dark'] {
-    display: block;
   }
 }
 
@@ -51,13 +40,6 @@
     --fg1: var(--fg1-default-light);
     --bg1: var(--bg1-default-light);
     --code-filter: var(--code-filter-default-light);
-  }
-
-  [data-theme='light'] {
-    display: block;
-  }
-  [data-theme='dark'] {
-    display: none;
   }
 }
 
