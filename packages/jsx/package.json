@@ -32,7 +32,7 @@
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle && cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build",
+    "build": "microbundle && echo '&& cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build'",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
