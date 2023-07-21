@@ -143,7 +143,7 @@ export const withStatusesAtom =
         __thenReatomed(
           ctx,
           payload,
-          (ctx) =>
+          () =>
             statusesAtom(
               ctx,
               memo(() => {

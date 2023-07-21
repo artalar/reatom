@@ -113,7 +113,6 @@ test('withCache and withStatusesAtom', async () => {
   const fetchData = reatomAsync(async (ctx, shouldTrow = false) => {
     if (shouldTrow) throw new Error('withStatusesAtom test error')
   }).pipe(
-    // withCache(),
     withStatusesAtom(),
     withCache(),
   )
@@ -137,9 +136,8 @@ test('withCache and withStatusesAtom', async () => {
 
   assert.is(track.calls.length, 4)
   assert.equal(track.lastInput(), anotherPending)
-  fetchData(ctx, true)
-  // TODO this extra call is not correct, but it is not critical
-  assert.is(track.calls.length, 5)
+  fetchData(ctx, true).catch(() => {})
+  assert.is(track.calls.length, 4)
   assert.equal(track.lastInput(), anotherPending)
 
   await promise2.catch(() => {})
