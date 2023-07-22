@@ -1,6 +1,6 @@
 This package contains tiny wrappers around JS primitives with a few helper actions to mutate data type-safety and efficiently.
 
-> included in [@reatom/framework](https://www.reatom.dev/packages/framework)
+> included in [@reatom/framework](https://www.reatom.dev/package/framework)
 
 Under the hood all changes produced immutably by state recreation, but every action firstly check the new data for equality to the existent state to trying to prevent extra updates. However you could update all primitives directly (as it's type `AtomMut`) by a function call, like: `thingsAtom(ctx, list => list.filter(el => ...))`.
 
@@ -61,6 +61,10 @@ thingsAtom.set(ctx, key, el)
 thingsAtom.delete(ctx, key)
 thingsAtom.clear(ctx)
 thingsAtom.reset(ctx)
+
+// built-in functions:
+thingsAtom.get(ctx, key)
+thingsAtom.has(ctx, key)
 ```
 
 ## `reatomNumber`
@@ -108,6 +112,8 @@ setAtom.set(ctx, el)
 setAtom.delete(ctx, el)
 setAtom.clear(ctx)
 setAtom.reset(ctx)
+// built-in functions:
+setAtom.has(ctx, el)
 ```
 
 ## `reatomString`

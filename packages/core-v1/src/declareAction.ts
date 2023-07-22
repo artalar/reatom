@@ -77,8 +77,6 @@ export function declareAction<
 
   const v3action = v3.action(
     (ctx, payload, r: Array<Reaction<Payload>> = reactions) => {
-      if (Array.isArray(payload) && payload.some((v) => 'payload' in v))
-        throw new Error('HERE')
       r.forEach((cb) => ctx.schedule(() => cb(payload, getStoreByCtx(ctx)!)))
 
       return payload

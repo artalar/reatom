@@ -1,5 +1,5 @@
 import * as v3 from '@reatom/core'
-import { spyChange } from '@reatom/hooks'
+import { isConnected } from '@reatom/hooks'
 import { Tree, State, TreeId, Leaf } from './kernel'
 import {
   TREE,
@@ -84,19 +84,19 @@ export function declareAtom<TState>(
   const depsIds = new Set<TreeId>()
 
   const v3atom = v3.atom((ctx, state?: any) => {
-    const isConnected = ctx.get((r) => {
-      const cache = r(v3atom.__reatom)
-      return !!cache && cache.subs.size + cache.listeners.size > 0
-    })
-    if (!isConnected) {
+    const connected = isConnected(ctx, v3atom)
+    if (!connected) {
       state = ctx.get(init.v3action).at(-1)?.payload[id] ?? initialState
+      // TODO dirty hack for case in `stale unconnected atom` test
+      // needed to retriger `spy`es
+      ctx.cause.pubs.length = 0
     }
 
     ctx.spy(replace).forEach(({ payload }) => (state = payload[id] ?? state))
 
     for (const { dep, reducer } of deps) {
-      spyChange(ctx, dep, (payload) => {
-        if (dep !== init.v3action || !isConnected) {
+      ctx.spy(dep, (payload) => {
+        if (dep !== init.v3action || !connected) {
           const { isAction, name } = dep.__reatom
           state = reducer(state, isAction ? payload.payload : payload)
 
@@ -256,9 +256,9 @@ export function combine<T extends AtomsMap | TupleOfAtoms>(
         )
       : Symbol(`{${keys.map(getName).join()}}`)
 
-  const atom = declareAtom(name as AtomName, isArray ? [] : {}, (reduce) =>
+  const atom = declareAtom(name as AtomName, isArray ? [] : {}, (on) =>
     keys.forEach((key) =>
-      reduce((shape as any)[key], (state, payload) => {
+      on((shape as any)[key], (state, payload) => {
         const newState: any = isArray
           ? (state as any[]).slice(0)
           : assign({}, state)

@@ -1,29 +1,33 @@
 {
   "name": "@reatom/testing",
-  "version": "3.2.0",
+  "version": "3.4.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom testing package",
   "source": "src/index.ts",
   "exports": {
+    "types": "./build/index.d.ts",
     "require": "./build/index.js",
     "default": "./build/index.module.js"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
-    "test": "tsx src/index.test.ts",
+    "build": "microbundle -f esm,cjs",
+    "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.1.0"
+    "@reatom/core": "^3.5.0",
+    "@reatom/persist": "^3.3.0"
   },
   "author": "artalar",
   "license": "MIT",

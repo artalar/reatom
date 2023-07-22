@@ -43,7 +43,7 @@ const updateFramework = async () => {
   )
   await fs.writeFile(
     path.join(process.cwd(), 'packages', 'framework', 'package.json'),
-    prettier.format(JSON.stringify(packageJson), {
+    await prettier.format(JSON.stringify(packageJson), {
       ...prettierConfig,
       parser: 'json',
     }),

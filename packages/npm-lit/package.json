@@ -1,25 +1,28 @@
 {
   "name": "@reatom/npm-lit",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "sideEffects": false,
   "description": "Reatom for npm-lit",
   "source": "src/index.ts",
   "exports": {
+    "types": "./build/index.d.ts",
     "require": "./build/index.js",
     "default": "./build/index.module.js"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
-    "test": "tsx src/index.test.ts",
+    "build": "echo microbundle",
+    "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
@@ -47,7 +50,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/packages/npm-lit",
+  "homepage": "https://www.reatom.dev/package/npm-lit",
   "files": [
     "/build",
     "/package.json"

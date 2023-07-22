@@ -8,17 +8,20 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "update": "npx npm-check-updates -u"
   },
   "dependencies": {
-    "@artalar/mono": "^1.0.3",
-    "@astrojs/prefetch": "^0.1.1",
-    "@astrojs/sitemap": "^1.0.0",
-    "@vercel/analytics": "^0.1.5",
-    "astro": "^1.9.0",
-    "tsx": "^3.12.1"
+    "@astrojs/starlight": "^0.5.5",
+    "@vercel/edge": "^0.3.4",
+    "@vercel/kv": "^0.2.2",
+    "@vercel/postgres": "^0.4.0",
+    "astro": "^2.9.1",
+    "sharp": "^0.32.4",
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
-    "zx": "^7.1.1"
+    "zx": "^7.2.3"
   }
 }

@@ -1,93 +1,176 @@
-import { Rule } from "eslint";
-import { ArrowFunctionExpression, CallExpression, Identifier, Literal, Node, VariableDeclarator, ObjectExpression } from "estree";
-import { isIdentifier } from "../lib";
+import type { Rule } from 'eslint'
+import type {
+  ArrowFunctionExpression,
+  CallExpression,
+  Identifier,
+  Literal,
+  ObjectExpression,
+} from 'estree'
+import {
+  extractAssignedVariableName,
+  extractImportDeclaration,
+  traverseBy,
+} from '../lib'
 
-type ReatomPrefixCallExpression =
-    CallExpression
-    & { callee: Identifier, arguments: [ArrowFunctionExpression] | [ArrowFunctionExpression, Literal] | [ArrowFunctionExpression, ObjectExpression] }
-type ReatomPrefixVariableDeclarator = VariableDeclarator & { id: Identifier, init: ReatomPrefixCallExpression }
-
-const noname = (varName: string) => `variable with prefix reatom "${varName}" should has a name inside reatom*() call`;
-const invalidName = (varName: string) => `variable with prefix reatom "${varName}" should be named as it's variable name, rename it to "${varName}"`;
+type ReatomPrefixCallExpression = CallExpression & {
+  callee: Identifier
+  arguments:
+    | [ArrowFunctionExpression]
+    | [ArrowFunctionExpression, Literal]
+    | [ArrowFunctionExpression, ObjectExpression]
+}
 
 export const reatomPrefixRule: Rule.RuleModule = {
-    meta: {
-        type: 'suggestion',
-        docs: {
-            description: "Add name for every reatom* call"
-        },
-        fixable: 'code'
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description: 'Add name for every reatom* call',
     },
-    create: function (context: Rule.RuleContext): Rule.RuleListener {
-        return {
-            VariableDeclarator: d => {
-                if (!isReatomPrefixVariableDeclarator(d)) return;
+    messages: {
+      noname: `variable assigned to {{ methodName }} should has a name "{{ assignedVariable }}" inside {{ methodName }} call`,
+      invalidName: `variable assigned to {{ methodName }} should be named as it's variable name, rename it to "{{ assignedVariable }}"`,
+    },
+    fixable: 'code',
+  },
+  create: function (context: Rule.RuleContext): Rule.RuleListener {
+    const importedFromReatom = new Map<string, string>()
 
-                const initArguments = d.init.arguments
+    return {
+      ImportDeclaration(node) {
+        extractImportDeclaration({
+          from: node,
+          importsAlias: importedFromReatom,
+          packageName: '@reatom',
+          filter: (name) => name.startsWith('reatom'),
+        })
+      },
+      CallExpression(node) {
+        const methods = Array.from(importedFromReatom.values())
+        const imported =
+          'name' in node.callee && methods.includes(node.callee.name)
 
-                if (initArguments.length === 1) {
-                    context.report({
-                        message: noname(d.id.name),
-                        node: d,
-                        fix: fixer => fixer.insertTextAfter(initArguments[0], `, "${d.id.name}"`)
-                    })
-                }
+        if (!isReatomPrefixCallExpression(node) || !imported) {
+          return
+        }
 
-                if (initArguments.length === 2) {
-                    if (initArguments[1]?.type === 'Literal' && initArguments[1].value !== d.id.name) {
-                        context.report({
-                            message: invalidName(d.id.name),
-                            node: d,
-                            fix: fixer => fixer.replaceText(initArguments[1], `"${d.id.name}"`)
-                        })
-                    }
+        const matchBy = new Set([
+          'VariableDeclarator',
+          'PropertyDefinition',
+          'Property',
+        ])
 
-                    if (initArguments[1]?.type === 'ObjectExpression') {
-                        if (initArguments[1].properties.every(value => value.type === 'Property' && value.key.type === 'Identifier' && value.key.name !== 'name')) {
-                            context.report({
-                                message: noname(d.id.name),
-                                node: d,
-                                // TODO fix this
-                                // @ts-ignore
-                                fix: fixer => fixer.insertTextBefore(initArguments[1]?.properties[0], `name: "${d.id.name}", `)
-                            })
-                        }
+        const assignedVariable = traverseBy('parent', {
+          match: matchBy,
+          node,
+        })
 
-                        const badProperty = initArguments[1].properties.find(
-                            value =>
-                                value.type === 'Property' &&
-                                value.key.type === 'Identifier' &&
-                                value.key.name === 'name' &&
-                                value.value.type === 'Literal' &&
-                                value.value.value !== d.id.name
-                        )
+        const assignedVariableName = extractAssignedVariableName(assignedVariable)
 
-                        if (badProperty) {
-                            context.report({
-                                message: invalidName(d.id.name),
-                                node: d,
-                                fix: fixer => fixer.replaceText(badProperty.value, `"${d.id.name}"`)
-                            })
-                        }
-                    }
-                }                           
+        if (!assignedVariableName) {
+          return
+        }
+
+        const initArguments = node.arguments
+
+        const reportMessageConfig = {
+          methodName: node.callee.name,
+          assignedVariable: assignedVariableName,
+        }
+
+        if (initArguments.length === 1) {
+          context.report({
+            node,
+            messageId: 'noname',
+            data: reportMessageConfig,
+            fix(fixer) {
+              return fixer.insertTextAfter(
+                initArguments[0],
+                `, "${assignedVariableName}"`,
+              )
+            },
+          })
+        }
+
+        if (initArguments.length === 2) {
+          const last = initArguments[1]
+
+          if (last?.type === 'Literal' && last.value !== assignedVariableName) {
+            context.report({
+              node,
+              messageId: 'invalidName',
+              data: reportMessageConfig,
+              fix(fixer) {
+                return fixer.replaceText(last, `"${assignedVariableName}"`)
+              },
+            })
+          }
+
+          if (initArguments[1]?.type === 'ObjectExpression') {
+            const methodConfig = initArguments[1]
+
+            if (
+              methodConfig.properties.every(
+                (value) =>
+                  value.type === 'Property' &&
+                  value.key.type === 'Identifier' &&
+                  value.key.name !== 'name',
+              ) &&
+              'properties' in methodConfig
+            ) {
+              const beforeInsert = methodConfig.properties.at(0)
+
+              if (!beforeInsert) return
+
+              context.report({
+                node,
+                messageId: 'noname',
+                data: reportMessageConfig,
+                fix: (fixer) =>
+                  fixer.insertTextBefore(
+                    beforeInsert,
+                    `name: "${assignedVariableName}", `,
+                  ),
+              })
             }
-        };
+
+            const badProperty = initArguments[1].properties.find(
+              (value) =>
+                value.type === 'Property' &&
+                value.key.type === 'Identifier' &&
+                value.key.name === 'name' &&
+                value.value.type === 'Literal' &&
+                value.value.value !== assignedVariableName,
+            )
+
+            if (badProperty) {
+              context.report({
+                node,
+                messageId: 'invalidName',
+                data: reportMessageConfig,
+                fix(fixer) {
+                  return fixer.replaceText(
+                    badProperty.value,
+                    `"${assignedVariableName}"`,
+                  )
+                },
+              })
+            }
+          }
+        }
+      },
     }
+  },
 }
 
-
-function isReatomPrefixCallExpression(node?: Node | null): node is ReatomPrefixCallExpression {
-    return node?.type === 'CallExpression' &&
-        node.callee?.type === 'Identifier' &&
-        node.callee.name.startsWith('reatom') &&
-        (
-            node.arguments.length === 1 ||
-            (node.arguments.length === 2 && node.arguments[1]?.type == 'Literal') ||
-            (node.arguments.length === 2 && node.arguments[1]?.type == 'ObjectExpression')
-        )
-}
-
-function isReatomPrefixVariableDeclarator(node: VariableDeclarator): node is ReatomPrefixVariableDeclarator {
-    return isReatomPrefixCallExpression(node?.init) && isIdentifier(node.id);
+function isReatomPrefixCallExpression(
+  node?: CallExpression | null,
+): node is ReatomPrefixCallExpression {
+  return (
+    node?.type === 'CallExpression' &&
+    node.callee?.type === 'Identifier' &&
+    (node.arguments.length === 1 ||
+      (node.arguments.length === 2 && node.arguments[1]?.type == 'Literal') ||
+      (node.arguments.length === 2 &&
+        node.arguments[1]?.type == 'ObjectExpression'))
+  )
 }

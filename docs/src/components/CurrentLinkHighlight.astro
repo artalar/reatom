@@ -1,9 +1,0 @@
-<script>
-  document.querySelectorAll('nav a').forEach((el) => {
-    const a = el as HTMLAnchorElement
-
-    if (new URL(a.href).pathname === location.pathname) {
-      a.classList.add('current')
-    }
-  })
-</script>

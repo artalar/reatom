@@ -1,6 +1,17 @@
 import fs from 'fs/promises'
 import path from 'path'
 
+const TYPES: Record<string, string> = {
+  'core-v1': 'compat',
+  'core-v2': 'compat',
+  'react-v1': 'compat',
+  'react-v2': 'compat',
+  'npm-cookie-baker': 'adapter',
+  'npm-history': 'adapter',
+  'npm-react': 'adapter',
+  'npm-svelte': 'adapter',
+}
+
 const root = path.join(process.cwd(), '..')
 const packagesPath = path.join(root, 'packages')
 const packages = await fs.readdir(path.join(process.cwd(), '..', 'packages'))
@@ -32,16 +43,18 @@ const getStoryTests = async (packageName: string) => {
 }
 
 for (const packageName of packages) {
+  if (packageName.startsWith('.')) continue
   const readmePath = path.join(packagesPath, packageName, 'README.md')
   const packageJSONPath = path.join(packagesPath, packageName, 'package.json')
   const pagePath =
     packageName == 'core'
-      ? path.join(process.cwd(), 'src', 'pages', `${packageName}.md`)
+      ? path.join(process.cwd(), 'src', 'content', 'docs', `${packageName}.md`)
       : path.join(
           process.cwd(),
           'src',
-          'pages',
-          'packages',
+          'content',
+          'docs',
+          TYPES[packageName] ?? 'package',
           `${packageName}.md`,
         )
   let content = await fs.readFile(readmePath, 'utf8')
@@ -72,20 +85,13 @@ There is no docs yet, but you could check tests instead:
     content = content.replaceAll('../../docs/public', '')
   }
 
-  let layoutPath = '../../layouts/Layout.astro'
-  if (packageName === 'core') {
-    layoutPath = layoutPath.replace('../', '')
-  }
-
   content =
     `---
-layout: ${layoutPath}
 title: ${packageName}
 description: ${packageJSON.description}
 ---
 
 ` + content
-
 
   // try {
   //   if (content !== (await fs.readFile(pagePath, 'utf8'))) {
@@ -108,11 +114,17 @@ description: ${packageJSON.description}
 }
 
 const rootReadmePath = path.join(root, 'README.md')
-const rootPagePath = path.join(root, 'docs', 'src', 'pages', 'index.md')
+const rootPagePath = path.join(
+  root,
+  'docs',
+  'src',
+  'content',
+  'docs',
+  'index.md',
+)
 let readme = await fs.readFile(rootReadmePath, 'utf8')
 readme =
   `---
-layout: ../layouts/Layout.astro
 title: Main
 description: Reatom - tiny and powerful reactive system with immutable nature
 ---

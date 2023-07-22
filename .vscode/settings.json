@@ -5,5 +5,5 @@
   "files.trimFinalNewlines": true,
   "editor.tabCompletion": "on",
   "diffEditor.codeLens": true,
-  "cSpell.words": ["localstorage", "redaxios"]
+  "cSpell.words": ["localstorage"],
 }

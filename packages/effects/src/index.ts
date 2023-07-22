@@ -1,14 +1,46 @@
 import {
   Atom,
+  AtomCache,
   AtomReturn,
   Ctx,
   Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
+import { AbortError, noop, toAbortError } from '@reatom/utils'
 
-const REATOM_THEN = Symbol('REATOM_THEN')
-const REATOM_CATCH = Symbol('REATOM_CATCH')
+export const getTopController = (
+  patch: AtomCache & { controller?: AbortController },
+): null | AbortController =>
+  patch.controller ?? (patch.cause && getTopController(patch.cause))
+
+/** Handle abort signal from a cause */
+export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+  const controller = getTopController(ctx.cause)
+
+  if (controller) {
+    const handler = () => cb(toAbortError(controller.signal.reason))
+
+    if (controller.signal.aborted) handler()
+    else {
+      controller.signal.addEventListener('abort', handler)
+      ctx.schedule(
+        () => controller.signal.removeEventListener('abort', handler),
+        -1,
+      )
+    }
+  }
+}
+
+const CHAINS = new WeakMap<
+  Promise<any>,
+  {
+    promise: Promise<any>
+    then: Array<Fn>
+    catch: Array<Fn>
+  }
+>()
+// TODO `reatomPromise`
 /**
  * Subscribe to promise result with batching
  * @internal
@@ -16,38 +48,38 @@ const REATOM_CATCH = Symbol('REATOM_CATCH')
  */
 export const __thenReatomed = <T>(
   ctx: Ctx,
-  promise: Promise<T>,
-  onFulfill?: Fn<[T, Fn, Fn]>,
-  onReject?: Fn<[unknown, Fn, Fn]>,
-) => {
-  // @ts-expect-error
-  let thenListeners: Array<Fn> = promise[REATOM_THEN]
-  // @ts-expect-error
-  let catchListeners: Array<Fn> = promise[REATOM_CATCH]
-
-  const resolver =
-    (listeners: typeof thenListeners | typeof catchListeners) => (value: any) =>
-      ctx.get((read, actualize) =>
-        listeners.forEach((cb) => cb(value, read, actualize)),
-      )
-
-  if (thenListeners == undefined) {
-    Object.defineProperties(promise, {
-      [REATOM_THEN]: {
-        value: (thenListeners = []),
-        enumerable: false,
+  origin: Promise<T>,
+  onFulfill?: Fn<[value: T, read: Fn, actualize: Fn]>,
+  onReject?: Fn<[error: unknown, read: Fn, actualize: Fn]>,
+): Promise<T> => {
+  let chain = CHAINS.get(origin)
+  if (!chain) {
+    const promise = origin.then(
+      (value: any) => {
+        ctx.get((read, actualize) =>
+          chain!.then.forEach((cb) => cb(value, read, actualize)),
+        )
+        return value
       },
-      [REATOM_CATCH]: {
-        value: (catchListeners = []),
-        enumerable: false,
+      (error: any) => {
+        ctx.get((read, actualize) =>
+          chain!.catch.forEach((cb) => cb(error, read, actualize)),
+        )
+        throw error
       },
-    }).then(resolver(thenListeners), resolver(catchListeners))
+    )
+
+    CHAINS.set(origin, (chain = { promise, then: [], catch: [] }))
+    CHAINS.set(promise, chain)
   }
 
-  if (onFulfill) thenListeners.push(onFulfill)
-  if (onReject) catchListeners.push(onReject)
+  onFulfill && chain.then.push(onFulfill)
+  onReject && chain.catch.push(onReject)
+
+  return chain.promise
 }
 
+/** @deprecated use `ctx.controller` which is AbortController instead */
 export const disposable = (
   ctx: Ctx,
 ): Ctx & {
@@ -95,33 +127,45 @@ export const disposable = (
 }
 
 export const take = <T extends Atom, Res = AtomReturn<T>>(
-  ctx: Ctx,
+  ctx: Ctx & { controller?: AbortController },
   anAtom: T,
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
 ): Promise<Awaited<Res>> =>
   new Promise<Awaited<Res>>((res: Fn, rej) => {
+    onCtxAbort(ctx, rej)
+
     let skipFirst = true,
-      fn = ctx.subscribe(anAtom, (state) => {
+      un = ctx.subscribe(anAtom, (state) => {
         if (skipFirst) return (skipFirst = false)
-        fn()
+        un()
         if (anAtom.__reatom.isAction) state = state[0].payload
         if (state instanceof Promise) {
           state.then((v) => res(mapper(ctx, v)), rej)
+        } else {
+          res(mapper(ctx, state))
         }
-        res(mapper(ctx, state))
       })
+    ctx.schedule(un, -1)
   })
 
 export const takeNested = <I extends any[]>(
-  ctx: Ctx,
+  ctx: Ctx & { controller?: AbortController },
   cb: Fn<[Ctx, ...I]>,
   ...params: I
 ): Promise<void> =>
-  new Promise<void>((r) => {
-    let i = 0,
-      { schedule } = ctx
+  new Promise<void>((resolve, reject) => {
+    onCtxAbort(ctx, reject)
 
-    return cb(
+    let i = 1 // one for extra check
+    const { schedule } = ctx
+    const check = () => {
+      if (i === 0) resolve()
+
+      // add extra tick to make shure there is no microtask races
+      if (--i === 0) Promise.resolve().then(check)
+    }
+
+    const result = cb(
       Object.assign({}, ctx, {
         schedule(this: Ctx, cb: Fn, step?: -1 | 0 | 1 | 2) {
           return schedule.call<Ctx, Parameters<Ctx['schedule']>, Promise<any>>(
@@ -130,7 +174,7 @@ export const takeNested = <I extends any[]>(
               const result = cb(ctx)
               if (result instanceof Promise) {
                 ++i
-                result.finally(() => --i === 0 && r())
+                result.finally(check).catch(noop)
               }
               return result
             },
@@ -140,49 +184,8 @@ export const takeNested = <I extends any[]>(
       }),
       ...params,
     )
+
+    check()
+
+    return result
   })
-
-// export const unstable_actionizeAllChanges = <T extends Rec<Atom> | Array<Atom>>(
-//   shape: T,
-//   name?: string,
-// ): Action<
-//   [NEVER],
-//   {
-//     [K in keyof T]: AtomState<T[K]>
-//   }
-// > => {
-//   const cacheAtom = atom(
-//     Object.keys(shape).reduce((acc, k) => ((acc[k] = SKIP), acc), {} as Rec),
-//   )
-
-//   const theAction = atom((ctx, state = []) => {
-//     for (const key in shape) {
-//       const anAtom = shape[key] as Atom
-//       spyChange(ctx, anAtom, (value) => {
-//         // if (anAtom.__reatom.isAction) {
-//         //   if (value.length === 0) return
-//         //   value = value[0]
-//         // }
-//         cacheAtom(ctx, (state) => ({ ...state, [key]: value }))
-//       })
-//     }
-
-//     let cache = ctx.get(cacheAtom)
-
-//     if (Object.values(cache).some((v) => v === SKIP)) return state
-
-//     for (const key in shape) {
-//       const anAtom = shape[key] as Atom
-//       if (anAtom.__reatom.isAction === false) {
-//         cache = { ...cache, [key]: ctx.get(anAtom) }
-//       }
-//     }
-
-//     return [Array.isArray(shape) ? Object.values(cache) : cache]
-//   }, name)
-//   theAction.__reatom.isAction = true
-
-//   return theAction as any
-// }
-
-// export const take

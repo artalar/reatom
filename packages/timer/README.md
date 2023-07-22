@@ -13,7 +13,7 @@ const pomodoroAtom = reatomTimer({
 })
 ```
 
-Example: https://stackblitz.com/edit/reatom-timer-pomodoro?file=src%2FApp.tsx
+Example: https://codesandbox.io/s/reatom-react-pomodoro-f219zu?file=/src/App.tsx
 
 ```ts
 export interface TimerAtom extends AtomMut<number> {

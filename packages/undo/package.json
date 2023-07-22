@@ -1,26 +1,29 @@
 {
   "name": "@reatom/undo",
-  "version": "3.2.3",
+  "version": "3.2.4",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for undo",
   "source": "src/index.ts",
   "exports": {
+    "types": "./build/index.d.ts",
     "require": "./build/index.js",
     "default": "./build/index.module.js"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
-    "test": "tsx src/index.test.ts",
+    "build": "microbundle -f esm,cjs",
+    "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
@@ -42,7 +45,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/undo",
+  "homepage": "https://www.reatom.dev/package/undo",
   "files": [
     "/build",
     "/package.json"

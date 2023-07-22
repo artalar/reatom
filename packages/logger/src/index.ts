@@ -1,4 +1,5 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
+import { isShallowEqual } from '@reatom/utils'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -7,8 +8,7 @@ export interface unstable_ChangeMsg {
   patch: AtomCache
   cause?: string
   history: Array<AtomCache>
-  param?: any
-  [k: `param${number}`]: any
+  params?: Array<any>
 }
 export interface LogMsg {
   error: undefined | Error
@@ -17,17 +17,11 @@ export interface LogMsg {
   ctx: Ctx
 }
 
-export const getCause = (patch: AtomCache) => {
-  let log = ''
-  let cause: typeof patch.cause = patch
-
-  while (cause.cause !== null && cause.cause.proto !== __root) {
-    if (log.length > 0) log += ' <-- '
-    log += (cause = cause.cause).proto.name ?? 'unnamed'
-  }
-
-  return log || 'root'
-}
+// use recursion to drop stack limit error for circle causes
+export const getCause = (patch: AtomCache, log = ''): string =>
+  patch.cause !== null && patch.cause.proto !== __root
+    ? getCause(patch.cause, log + ' <-- ' + patch.cause.proto.name ?? 'unnamed')
+    : log || 'root'
 
 const getTimeStampDefault = () => {
   let ms: number | string = new Date().getMilliseconds()
@@ -40,14 +34,17 @@ export const createLogBatched = ({
   getTimeStamp = getTimeStampDefault,
   limit = 5000,
   log = console.log,
+  domain = '',
   shouldGroup = false,
 }: {
   debounce?: number
   getTimeStamp?: () => string
   limit?: number
   log?: typeof console.log
+  domain?: string
   shouldGroup?: boolean
 } = {}) => {
+  if (domain) domain = `(${domain}) `
   let queue: Array<LogMsg & { time: string }> = []
   let isBatching = false
   let batchingStart = Date.now()
@@ -69,7 +66,7 @@ export const createLogBatched = ({
         const isFewTransactions = queue.length > 0
 
         console.groupCollapsed(
-          `Reatom ${length} transaction${length > 1 ? 's' : ''}`,
+          `Reatom ${domain}${length} transaction${length > 1 ? 's' : ''}`,
         )
 
         for (const { changes, time, error } of queue) {
@@ -77,7 +74,7 @@ export const createLogBatched = ({
             `%c ${time}`,
             `padding-left: calc(50% - ${
               time.length / 2
-            }em); font-size: 0.5rem;`,
+            }em); font-size: 0.7rem;`,
           )
 
           if (error) console.error(error)
@@ -105,6 +102,10 @@ export const createLogBatched = ({
             console.groupCollapsed(title, style)
             console.log(change)
             console.groupEnd()
+            // do not log the same data twice if action just pass the data
+            if (isAction && !isShallowEqual(change.params, [data])) {
+              log(...change.params!)
+            }
             log(data)
 
             if (shouldGroup && !isGroup && inGroup) {
@@ -113,6 +114,7 @@ export const createLogBatched = ({
             }
           })
         }
+        console.log('\n\n', 'transactions:', queue)
         console.groupEnd()
         queue = []
       },
@@ -139,13 +141,15 @@ export const connectLogger = (
   ctx: Ctx,
   {
     historyLength = 10,
-    log = createLogBatched(),
+    domain = '',
+    log = createLogBatched({ domain }),
     showCause = true,
     skip = () => false,
     skipUnnamed = true,
   }: {
     historyLength?: number
     log?: Fn<[LogMsg]>
+    domain?: string
     showCause?: boolean
     skipUnnamed?: boolean
     skip?: (patch: AtomCache) => boolean
@@ -178,15 +182,15 @@ export const connectLogger = (
         patch.cause!.proto.name === 'root' &&
         (!isAction || state.length === 0)
 
-      if (isConnection || Object.is(state, oldState)) {
-        return acc
-      }
-
       let atomHistory = history.get(proto) ?? []
-      if (historyLength) {
+      if (!Object.is(state, oldState) && historyLength) {
         atomHistory = atomHistory.slice(0, historyLength - 1)
         atomHistory.unshift(isAction ? { ...patch, state: [...state] } : patch)
         history.set(proto, atomHistory)
+      }
+
+      if (isConnection || Object.is(state, oldState)) {
+        return acc
       }
 
       const changeMsg: unstable_ChangeMsg = (acc[`${i + 1}.${name}`] = {
@@ -196,13 +200,8 @@ export const connectLogger = (
 
       if (isAction) {
         const call = state.at(-1) as { params: Array<any>; payload: any }
+        changeMsg.params = call.params
         changeMsg.payload = call.payload
-        if (call.params.length <= 1) {
-          changeMsg.param = call.params[0]
-        } else
-          call.params.forEach((param, i) => {
-            changeMsg[`param${i + 1}`] = param
-          })
       } else {
         changeMsg.newState = state
         changeMsg.oldState = oldState

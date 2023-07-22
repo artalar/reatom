@@ -8,12 +8,25 @@ import {
   atom,
   AtomProto,
   AtomMut,
-  createCtx,
+  createCtx as _createCtx,
   Ctx,
   CtxSpy,
   Fn,
   AtomCache,
 } from './atom'
+
+const callSafelySilent = (fn: Fn, ...a: any[]) => {
+  try {
+    return fn(...a)
+  } catch {}
+}
+
+const createCtx: typeof _createCtx = (opts) =>
+  _createCtx({
+    callLateEffect: callSafelySilent,
+    callNearEffect: callSafelySilent,
+    ...opts,
+  })
 
 // FIXME: get it from @reatom/utils
 // (right now there is cyclic dependency, we should move tests to separate package probably)
@@ -30,8 +43,8 @@ import {
   }
 }
 
-export const isConnected = (ctx: Ctx, anAtom: Atom) => {
-  const cache = ctx.get((read) => read(anAtom.__reatom))
+export const isConnected = (ctx: Ctx, { __reatom: proto }: Atom) => {
+  const cache = proto.patch ?? ctx.get((read) => read(proto))
 
   if (!cache) return false
 
@@ -501,15 +514,19 @@ test('should catch', async () => {
 
   const p = ctx.get(() => ctx.schedule(() => ctx.get(a)))
 
-  const res = await p.then(
+  const res1 = await p.then(
     () => 'then',
     () => 'catch',
   )
-  assert.is(res, 'catch')
+  assert.is(res1, 'catch')
 
-  // should not throw without `then` / `catch`
-  ctx.get(() => ctx.schedule(() => ctx.get(a)))
-  await new Promise((r) => setTimeout(r, 0))
+  const res2 = await ctx
+    .get(() => ctx.schedule(() => ctx.get(a)))
+    .then(
+      () => 'then',
+      () => 'catch',
+    )
+  assert.is(res2, 'catch')
   ;`👍` //?
 })
 
@@ -546,6 +563,115 @@ test('no extra tick by schedule', async () => {
   await null
 
   assert.is(isDoneAsyncInTr, true)
+  ;`👍` //?
+})
+
+test('update callback should accept the fresh state', () => {
+  const a = atom(0)
+  const b = atom(0)
+  b.__reatom.computer = (ctx) => ctx.spy(a)
+  const ctx = createCtx()
+
+  assert.is(ctx.get(b), 0)
+
+  a(ctx, 1)
+  assert.is(ctx.get(b), 1)
+
+  a(ctx, 2)
+  let state
+  b(ctx, (s) => {
+    state = s
+    return s
+  })
+  assert.is(ctx.get(b), 2)
+  assert.is(state, 2)
+  ;`👍` //?
+})
+
+test('updateHooks should be called only for computers', () => {
+  const track = mockFn()
+
+  const a = atom(1)
+  a.onChange(() => track('a'))
+
+  const b = atom(0)
+  b.__reatom.initState = () => 2
+  b.onChange(() => track('b'))
+
+  const c = atom((ctx, state = 3) => state)
+  c.onChange(() => track('c'))
+
+  const ctx = createCtx()
+
+  assert.is(ctx.get(a), 1)
+  assert.is(ctx.get(b), 2)
+  assert.is(ctx.get(c), 3)
+  assert.equal(track.inputs(), ['c'])
+  ;`👍` //?
+})
+
+test('hooks', () => {
+  const theAtom = atom(0)
+  const atomHook = mockFn()
+  theAtom.onChange(atomHook)
+
+  const theAction = action((ctx, param) => `param:${param}`)
+  const actionHook = mockFn()
+  theAction.onCall(actionHook)
+
+  const ctx = createCtx()
+
+  ctx.get(theAtom)
+  ctx.get(theAction)
+  assert.is(atomHook.calls.length, 0)
+  assert.is(actionHook.calls.length, 0)
+
+  theAtom(ctx, 1)
+  assert.is(atomHook.calls.length, 1)
+  assert.is(atomHook.lastInput(0).subscribe, ctx.subscribe)
+  assert.is(atomHook.lastInput(1), 1)
+
+  theAction(ctx, 1)
+  assert.is(actionHook.calls.length, 1)
+  assert.is(actionHook.lastInput(0).subscribe, ctx.subscribe)
+  assert.is(actionHook.lastInput(1), 'param:1')
+  assert.equal(actionHook.lastInput(2), [1])
+  ;`👍` //?
+})
+
+test('update hook for atom without cache', () => {
+  const a = atom(0)
+  const hook = mockFn()
+  a.onChange(hook)
+  const ctx = createCtx()
+
+  a(ctx, 1)
+  assert.is(hook.calls.length, 1)
+  ;`👍` //?
+})
+
+test('cause available inside a computation', () => {
+  let test = false
+  const a = atom(0, 'a')
+  const b = atom((ctx) => {
+    ctx.spy(a)
+    if (test) assert.is(ctx.cause?.cause?.proto, a.__reatom)
+  }, 'b')
+  const ctx = createCtx()
+
+  ctx.get(b) // init
+  a(ctx, 123)
+  test = true
+  ctx.get(b)
+  ;`👍` //?
+})
+
+test('ctx collision', () => {
+  const a = atom(0)
+  const ctx1 = createCtx()
+  const ctx2 = createCtx()
+
+  assert.throws(() => ctx1.get(() => ctx2.get(a)))
   ;`👍` //?
 })
 

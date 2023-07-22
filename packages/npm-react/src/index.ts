@@ -7,6 +7,7 @@ import {
   Atom,
   AtomMut,
   AtomState,
+  createCtx,
   Ctx,
   CtxSpy,
   Fn,
@@ -18,7 +19,7 @@ import { bind, Binded } from '@reatom/lens'
 
 let getName = (type: string): string => {
   let name =
-    // @ts-expect-error does we have another way?
+    // @ts-expect-error do we have another way?
     React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner
       ?.current?.type?.name
   return (name && name.concat('.', type)) || `_${type}`
@@ -104,19 +105,30 @@ export const useAtom: {
   ): [T, Fn<[T | Fn<[T, Ctx], T>], T>, AtomMut<T>, Ctx]
 } = (
   anAtom: any,
-  deps: Array<any> = [],
+  userDeps: Array<any> = [],
   options: boolean | { name?: string; subscribe?: boolean } = {},
 ) => {
   let { name, subscribe = true }: { name?: string; subscribe?: boolean } =
     typeof options === 'boolean' ? { subscribe: options } : options
   let ctx = useCtx()
-  deps.push(ctx)
+  let deps: any[] = [ctx]
   if (isAtom(anAtom)) deps.push(anAtom)
 
-  let { theAtom, update, sub, get } = useRefSetup(deps, () => {
-    let theAtom = isAtom(anAtom)
-      ? anAtom
-      : atom(anAtom, getName(name ?? `useAtom#${typeof anAtom}`))
+  let { theAtom, depsAtom, update, sub, get } = useRefSetup(deps, () => {
+    let atomName = getName(name ?? `useAtom#${typeof anAtom}`)
+    let depsAtom = atom<any[]>([], `${atomName}._depsAtom`)
+    let theAtom = anAtom
+    if (!isAtom(theAtom)) {
+      theAtom = atom(
+        typeof anAtom === 'function'
+          ? (ctx: CtxSpy, state?: any) => {
+              ctx.spy(depsAtom)
+              return anAtom(ctx, state)
+            }
+          : anAtom,
+        atomName,
+      )
+    }
     let update =
       typeof theAtom === 'function'
         ? // @ts-expect-error
@@ -125,15 +137,28 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, update, deps, sub, get, subscribe }
-  }).current!
+    return { theAtom, depsAtom, update, deps, sub, get, subscribe }
+  }).current
 
-  return [
-    subscribe ? useSyncExternalStore(sub, get, get) : get(),
-    update,
-    theAtom,
-    ctx,
-  ]
+  return ctx.get(() => {
+    if (!isAtom(anAtom)) {
+      const prevDeps = ctx.get(depsAtom)
+      if (
+        userDeps.length !== prevDeps.length ||
+        userDeps.some((dep, i) => !Object.is(dep, prevDeps[i]))
+      ) {
+        if (typeof anAtom === 'function') depsAtom(ctx, userDeps)
+        else update!(ctx, anAtom)
+      }
+    }
+
+    return [
+      subscribe ? useSyncExternalStore(sub, get, get) : get(),
+      update,
+      theAtom,
+      ctx,
+    ]
+  })
 }
 
 export const useAtomCreator = <T extends Atom>(
@@ -149,7 +174,6 @@ export const useUpdate = <T extends [any] | Array<any>>(
   cb: Fn<
     [
       Ctx,
-      // @ts-expect-error
       ...{
         [K in keyof T]: T[K] extends Atom ? AtomState<T[K]> : T[K]
       },
@@ -186,7 +210,6 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   deps: Array<any> = [],
   name?: string,
 ): T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : never => {
-  let isCallbackRef = deps.length === 0
   deps ??= []
   let ctx = useCtx()
   deps.push(ctx)
@@ -199,14 +222,21 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, deps, cb }
   })
-  if (isCallbackRef) {
-    React.useLayoutEffect(() => {
-      ref.current!.fn = fn
-    }, [])
-  }
+  React.useLayoutEffect(() => {
+    ref.current!.fn = fn
+  })
 
   // @ts-ignore
   return ref.current.cb
+}
+
+export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
+  const ctxRef = React.useRef(null as null | Ctx)
+  if (!ctxRef.current) {
+    ctxRef.current = createCtx()
+    extension?.(ctxRef.current)
+  }
+  return ctxRef.current
 }
 
 // export let unstable_reatomComponent =

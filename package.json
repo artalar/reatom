@@ -4,16 +4,15 @@
   "description": "Expressive and deterministic state manager",
   "scripts": {
     "release": "npx tsx ./tools/publish.ts",
-    "postinstall": "turbo run build --filter=core --filter=framework",
+    "postinstall": "turbo run build --filter=core --filter=framework --filter=testing",
     "build": "turbo run build",
     "reset": "./reset.sh",
-    "test": "turbo run test",
+    "test": "turbo run build --filter=testing && turbo run test",
     "prettify": "prettier --write **/*.{js,ts,md}",
     "prettify:watch": "onchange **/*.{js,ts,md} -- prettier --write {{changed}}",
     "package-generator": "tsx tools/new-package.ts",
     "update": "npx npm-check-updates -u",
-    "prepare": "husky install",
-    "publish-packages": "turbo run build test && changeset version && changeset publish"
+    "prepare": "husky install"
   },
   "workspaces": [
     "packages/*"
@@ -31,34 +30,32 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/tree/v2",
+  "homepage": "https://github.com/artalar/reatom/tree/v3",
   "devDependencies": {
-    "@changesets/cli": "^2.26.0",
-    "@commitlint/cli": "^17.1.2",
-    "@commitlint/config-conventional": "^17.1.0",
+    "@commitlint/cli": "^17.6.7",
+    "@commitlint/config-conventional": "^17.6.7",
     "@cookie-baker/core": "^0.2.1",
     "@types/node": "latest",
-    "@types/prettier": "^2.7.1",
-    "@types/react": "^18.0.25",
-    "@types/react-dom": "^18.0.9",
+    "@types/prettier": "^2.7.3",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
     "@types/use-sync-external-store": "^0.0.3",
-    "@vitejs/plugin-react": "^2.2.0",
-    "cross-fetch": "^3.1.5",
+    "@vitejs/plugin-react": "^4.0.3",
     "history": "^5.3.0",
-    "husky": "^8.0.0",
-    "lit": "^2.6.0",
+    "husky": "^8.0.3",
+    "lit": "^2.7.6",
     "microbundle": "^0.15.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "rimraf": "^3.0.2",
-    "svelte": "^3.55.0",
-    "tsx": "^3.9.0",
-    "turbo": "^1.7.4",
-    "typescript": "^4.9.4",
+    "rimraf": "^5.0.1",
+    "svelte": "^4.1.1",
+    "tsx": "^3.12.7",
+    "turbo": "^1.10.9",
+    "typescript": "^5.1.6",
     "use-sync-external-store": "^1.2.0",
     "uvu": "^0.5.6",
-    "vite": "^3.2.4",
-    "zx": "^7.0.8"
+    "vite": "^4.4.6",
+    "zx": "^7.2.3"
   },
   "peerDependencies": {
     "prettier": "*"

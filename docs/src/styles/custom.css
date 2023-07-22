@@ -1,0 +1,11 @@
+:root {
+  --sl-color-accent: hsl(247deg 50% 30%) !important;
+}
+
+html[data-theme="light"] img[data-theme="dark"] {
+  display: none;
+}
+
+html[data-theme="dark"] img[data-theme="light"] {
+  display: none;
+}

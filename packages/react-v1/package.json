@@ -1,24 +1,27 @@
 {
   "name": "@reatom/react-v1",
-  "version": "3.1.2",
+  "version": "3.1.5",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for react-v1",
   "source": "src/index.ts",
   "exports": {
+    "types": "./build/index.d.ts",
     "require": "./build/index.js",
     "default": "./build/index.module.js"
   },
   "main": "build/index.js",
   "module": "build/index.module.js",
-  "unpkg": "build/index.umd.js",
   "types": "build/index.d.ts",
   "browserslist": [
-    "last 4 chrome versions"
+    "last 1 year"
   ],
+  "minify": {
+    "mangle": false
+  },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "microbundle -f esm,cjs",
     "test": "echo 'ok'"
   },
   "dependencies": {
@@ -36,7 +39,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/packages/react-v1",
+  "homepage": "https://www.reatom.dev/adapter/react-v1",
   "files": [
     "/build",
     "/package.json"

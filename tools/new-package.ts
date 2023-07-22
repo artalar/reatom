@@ -3,7 +3,11 @@ import path from 'path'
 import fs from 'fs/promises'
 import { createInterface } from 'readline'
 
-const templateLocation = 'tools/new-package-template'
+const templateLocation = path.join(
+  process.cwd(),
+  'tools',
+  'new-package-template',
+)
 
 async function personalizeTemplate(dirPath: string, name: string) {
   const files = await fs.readdir(dirPath)
