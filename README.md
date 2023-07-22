@@ -100,7 +100,7 @@ Do you use React.js? Check out [npm-react](https://www.reatom.dev/adapter/npm-re
 
 ## Advanced example
 
-The core package is already profitable and you could use only it as a most simple and featured solution for your state and logic management. If you want to solve common system logic with advanced libraries to care more optimizations and UX tasks - continue and check this small guid out.
+The core package is already profitable and you could use only it as a most simple and featured solution for your state and logic management. If you want to solve common system logic with advanced libraries to care more optimizations and UX tasks - continue and check this small guide out.
 
 This example is close to real life and shows the complexity of interactive UI. It is a simple search input with debouncing and autocomplete. It uses [GitHub API](https://docs.github.com/en/rest/reference/search#search-issues-and-pull-requests) to fetch issues by query. The limitations of this API are described in [GitHub docs](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting). We need to reduce the number of requests and retry them if we hit the limit. Also, we need to cancel all previous requests if a new one is created, to prevent race conditions - when the previous request resolves after the new one.
 
@@ -186,8 +186,8 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.rea
 
 ## Roadmap
 
-- Finish [forms package](https://github.com/artalar/reatom/tree/v3/packages/form)
-- Finish [persist](https://github.com/artalar/reatom/tree/v3/packages/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
+- Finish [forms package](https://www.reatom.dev/package/form)
+- Finish [persist](https://www.reatom.dev/package/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
 - Add adapters for most popular ui frameworks: ~~[react](https://www.reatom.dev/adapter/npm-react)~~, angular, vue, ~~[svelte](https://www.reatom.dev/adapter/npm-svelte)~~, solid.
 - Port some components logic from reakit.io, to made it fast, light and portable.
 - Add ability to made async transaction and elaborate optimistic-ui patterns and helpers / package.
@@ -197,7 +197,7 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.rea
 
 ### Why not X?
 
-**Redux** is awesome and Reatom is heavy inspired by it. Immutability, separation of computations and effects are good architecture designs principles. But there are a lot of missing features, when you trying to build something huge, or want to describe something small. Some of them is just impossible to fix, like [batching](https://www.reatom.dev/core#ctxget-batch-api), [O(n) complexity](https://www.reatom.dev/guides/atomization#ref-pattern) or that selectors is not inspectable and breaks [the atomicy](https://www.reatom.dev/general/what-is-state-manager#state). Others is really [hard to improve](https://github.com/reduxjs/reselect/discussions/491). And boilerplate, yeah, [the difference is a huge](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6).
+**Redux** is awesome and Reatom is heavy inspired by it. Immutability, separation of computations and effects are good architecture designs principles. But there are a lot of missing features, when you trying to build something huge, or want to describe something small. Some of them is just impossible to fix, like [batching](https://www.reatom.dev/core#ctxget-batch-api), [O(n) complexity](https://www.reatom.dev/guides/atomization#reducing-computational-complexity) or that selectors is not inspectable and breaks [the atomicy](https://www.reatom.dev/general/what-is-state-manager#state). Others is really [hard to improve](https://github.com/reduxjs/reselect/discussions/491). And boilerplate, yeah, [the difference is a huge](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6).
 Reatom solves all this problems and bring much more features by the almost same size.
 
 **MobX** brings too big bundle to use it in a small widgets, Reatom is more universal in this case. Also, MobX has mutability and implicit reactivity, which is usefull for simple cases, but could be not obvious and hard to debug in complex cases. There is no separate thing like action / event / effect to describe some dependent effects sequences (FRP-way). [There is not atomicy too](https://github.com/artalar/state-management-specification/blob/master/src/index.test.js#L60).
@@ -212,9 +212,9 @@ Immutable data is much predictable and better for debug, than mutable states and
 
 ### What LTS policy is used and what about bus factor?
 
-Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guid](https://www.reatom.dev/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](https://www.reatom.dev/core-v1). We hope it shows and prove our responsibility.
+Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guide](https://www.reatom.dev/compat/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](https://www.reatom.dev/compat/core-v1). We hope it shows and prove our responsibility.
 
-To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LST version (v3) we bring to new feature of this lib and application development experience for a long time.
+To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LTS version (v3) we bring to new feature of this lib and application development experience for a long time.
 
 ### How performant Reatom is?
 
