@@ -57,4 +57,4 @@ Every log record includes a number in the start of the name to fix autosorting k
 
 Here is how it looks like ([from this example](/examples#search-component)):
 
-<img width="100%" alt="logger console output" src="/assets/logger_example.png">
+<img loading="lazy" width="100%" alt="logger console output" src="/assets/logger_example.png">

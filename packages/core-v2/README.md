@@ -1,7 +1,9 @@
 <div align="center">
 <br/>
 
-[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://github.com/artalar/reatom/tree/v2)
+<a href="https://github.com/artalar/reatom/tree/v2">
+  <img src="https://www.reatom.dev/assets/logo_text.png" alt="reatom logo" width="100%" loading="lazy" />
+</a>
 
 </div>
 

@@ -59,7 +59,7 @@ Here is a scheme of the execution order of the build-in queues.
 
 <!-- https://excalidraw.com/#json=NnnwgtZL8Euq_BpC4knMZ,ibz37ULiZzV0YmHPHpJsvQ -->
 
-<img data-theme="light" src="/assets/queues_light1.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks">
-<img data-theme="dark" src="/assets/queues_dark1.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks">
+<img data-theme="light" src="/assets/queues_light1.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks" loading="lazy" />
+<img data-theme="dark" src="/assets/queues_dark1.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks" loading="lazy" />
 
 <br>

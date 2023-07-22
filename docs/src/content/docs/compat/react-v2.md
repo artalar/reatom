@@ -6,7 +6,9 @@ description: React bindings for @reatom/core-v2
 <div align="center">
 <br/>
 
-[![reatom logo](https://reatom.js.org/logos/logo.svg)](https://reatom.js.org)
+<a href="/">
+  <img src="/assets/logo_text.png" alt="reatom logo" width="100%" loading="lazy" />
+</a>
 
 </div>
 
