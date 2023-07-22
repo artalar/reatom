@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.2](https://github.com/artalar/reatom/compare/async-v3.8.1...async-v3.8.2) (2023-07-22)
+
+
+### Bug Fixes
+
+* **async:** withStatusesAtom missing ctx ([9c12a7c](https://github.com/artalar/reatom/commit/9c12a7c74dcb2ac5394251e9e0a7fd3c3896d42a))
+
 ## [3.8.1](https://github.com/artalar/reatom/compare/async-v3.8.0...async-v3.8.1) (2023-07-12)
 
 
