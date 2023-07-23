@@ -12,7 +12,6 @@
     "update": "npx npm-check-updates -u"
   },
   "dependencies": {
-    "@astrojs/preact": "^2.2.1",
     "@astrojs/starlight": "^0.5.5",
     "@codemirror/lang-javascript": "^6.1.9",
     "@codemirror/state": "^6.2.1",
@@ -21,7 +20,6 @@
     "@vercel/kv": "^0.2.2",
     "astro": "^2.9.1",
     "codemirror": "^6.0.1",
-    "preact": "^10.16.0",
     "sharp": "^0.32.4",
     "sucrase": "^3.34.0",
     "tsx": "^3.12.7",
