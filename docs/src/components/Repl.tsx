@@ -1,7 +1,7 @@
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, StateField } from '@codemirror/state'
 import { javascript } from '@codemirror/lang-javascript'
-import { initialize, transform } from 'esbuild-wasm'
+import { transform } from 'sucrase'
 import { useState } from 'preact/hooks'
 // @ts-expect-error TODO write types
 import { Inspector } from '@observablehq/inspector'
@@ -106,20 +106,10 @@ export const Repl = () => {
         LOGS?.appendChild(br)
       }
 
-      await (esbuildInitializer ??= initialize({
-        // wasmURL: '/node_modules/esbuild-wasm/esbuild.wasm',
-        wasmURL: new URL(
-          '/node_modules/esbuild-wasm/esbuild.wasm',
-          import.meta.url,
-        ),
-      }))
-
       let { code } = await transform(
         `${editor!.state.doc}\n;/* reload trigger */${i++}`,
         {
-          loader: 'ts',
-          sourcemap: false,
-          minify: false,
+          transforms: ['typescript'],
         },
       )
 
