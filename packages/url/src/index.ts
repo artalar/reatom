@@ -18,6 +18,8 @@ export interface AtomUrlSettings {
 }
 
 export interface UrlAtom extends AtomMut<URL> {
+  go: Action<[path: `/${string}`], URL>
+  match: (path: `/${string}`) => Atom<boolean>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
 
@@ -119,6 +121,15 @@ export const urlAtom: UrlAtom = Object.assign(
   atom(null as any as URL, 'urlAtom'),
   {
     settingsAtom,
+    go: action(
+      (ctx, path) => urlAtom(ctx, (url) => new URL(path, url)),
+      'urlAtom.go',
+    ),
+    match: (path: `/${string}`) =>
+      atom(
+        (ctx) => ctx.get(urlAtom).pathname.startsWith(path),
+        `urlAtom.match#${path}`,
+      ),
   },
 ).pipe(withInit((ctx) => ctx.get(settingsAtom).init(ctx)))
 urlAtom.onChange((ctx, url) => ctx.get(settingsAtom).sync(ctx, url))
