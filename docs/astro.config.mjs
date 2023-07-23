@@ -37,10 +37,10 @@ export default defineConfig({
           label: 'Tutorial',
           link: 'tutorial',
         },
-        // {
-        //   label: 'REPL',
-        //   link: 'repl',
-        // },
+        {
+          label: 'REPL',
+          link: 'repl',
+        },
         {
           label: 'Guides',
           autogenerate: {
