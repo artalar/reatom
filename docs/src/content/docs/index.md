@@ -42,59 +42,61 @@ npm i @reatom/core
 
 [react codesandbox](https://codesandbox.io/s/reatom-react-hello-world-fgt6jn?file=/src/model.ts)
 
+### Simple example model
+
+The concept is _dumb_ - if you want to make a variable reactive, wrap the init state in `atom`, you will alow to change the state by calling it as a function. Need reactive computed? - wrap it to `atom`!
+
+`action`s needed to separate logic and batch atom updates.
+
+All data processing should be immutable, all side-effects should be wrapped to `ctx.schedule`.
+
+What is `ctx`? It is the most powerful feature of Reatom. It flows as the first argument across all Reatom functions, bringing you enterprise-grade features with only three extra symbols!
+
+One more thing. You could pass an optional name to atoms and actions for better debugging experience, it could be automated by our [eslint-plugin](/package/eslint-plugin/).
+
 ```ts
-// model.ts
 import { action, atom } from '@reatom/core'
 
 const initState = localStorage.getItem('name') ?? ''
-// mutable atom with primitive value (you could pass an object too)
 export const inputAtom = atom(initState, 'inputAtom')
 
-// computed readonly atom with reduce function
-// `spy` dynamically reads the atom and subscribes to it
 export const greetingAtom = atom((ctx) => {
+  // `spy` dynamically reads the atom and subscribes to it
   const input = ctx.spy(inputAtom)
   return input ? `Hello, ${input}!` : ''
 }, 'greetingAtom')
 
-// An action is a logic container
-// all side-effects (IO) should be scheduled
 export const onSubmit = action((ctx) => {
   const input = ctx.get(inputAtom)
   ctx.schedule(() => {
     localStorage.setItem('name', input)
   })
 }, 'onSubmit')
-
-// the second argument of computed is nullable state
-export const isSavedAtom = atom((ctx, state = false) => {
-  // You could react to changes separately by a callback
-  ctx.spy(onSubmit, () => (state = true))
-  ctx.spy(inputAtom, () => (state = false))
-
-  return state
-}, 'isSavedAtom')
 ```
 
+### Simple example context
+
+The context set up once for the whole app, or multiple times if you need isolation in SSR or tests.
+
 ```ts
-// view.ts
-import { inputAtom, greetingAtom, onSubmit, isSavedAtom } from './model'
 import { createCtx } from '@reatom/core'
 
-// global application context
 const ctx = createCtx()
+```
+
+### Simple example view
+
+```ts
+import { inputAtom, greetingAtom, onSubmit } from './model'
 
 ctx.subscribe(greetingAtom, (greeting) => {
   document.getElementById('greeting')!.innerText = greeting
 })
-ctx.subscribe(isSavedAtom, (isSaved) => {
-  document.getElementById('save')!.style.opacity = isSaved ? '0.4' : '1'
-})
 
-document.getElementById('name')!.addEventListener('input', (event) => {
+document.getElementById('name').addEventListener('input', (event) => {
   inputAtom(ctx, event.currentTarget.value)
 })
-document.getElementById('save')!.addEventListener('click', () => {
+document.getElementById('save').addEventListener('click', () => {
   onSubmit(ctx)
 })
 ```
@@ -117,6 +119,8 @@ npm i @reatom/framework @reatom/npm-react
 
 [codesandbox](https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx)
 
+### Advanced example description
+
 We will use [@reatom/core](/core), [@reatom/async](/package/async) and [@reatom/hooks](/package/hooks) packages in this example by importing it from the meta package [@reatom/framework](/package/framework) - it simplifies imports and dependencies management.
 
 `reatomAsync` is a simple decorator which wraps your async function and adds extra actions and atoms to track creating promise statuses.
@@ -127,10 +131,10 @@ Simple `sleep` helper (for debounce) gotten from [utils package](/package/utils)
 
 `onUpdate` is a [hook](/package/hooks) which link to the atom and calls passed callback on every update.
 
-```tsx
-// /#advanced-example
+### Advanced example model
+
+```ts
 import { atom, reatomAsync, withAbort, withDataAtom, withRetry, onUpdate, sleep, withCache } from "@reatom/framework"; // prettier-ignore
-import { useAtom } from '@reatom/npm-react'
 import * as api from './api'
 
 const searchAtom = atom('', 'searchAtom')
@@ -155,8 +159,14 @@ const fetchIssues = reatomAsync(async (ctx, query: string) => {
 
 // run fetchIssues on every searchAtom update
 onUpdate(searchAtom, fetchIssues)
+```
 
-export const App = () => {
+### Advanced example view
+
+```tsx
+import { useAtom } from '@reatom/npm-react'
+
+export const Search = () => {
   const [search, setSearch] = useAtom(searchAtom)
   const [issues] = useAtom(fetchIssues.dataAtom)
   // you could pass a callback to `useAtom` to create a computed atom
