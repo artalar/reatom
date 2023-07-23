@@ -465,6 +465,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"repl.mdx": {
+	id: "repl.mdx";
+  slug: "repl";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".mdx"] };
 "tutorial.md": {
 	id: "tutorial.md";
   slug: "tutorial";

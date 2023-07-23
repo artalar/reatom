@@ -1,7 +1,7 @@
 import { $ } from 'zx'
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
-
+import preact from '@astrojs/preact'
 if (!process.env.VERCEL) await $`tsx sync-readme-to-pages.ts`
 
 // https://astro.build/config
@@ -37,30 +37,50 @@ export default defineConfig({
           label: 'Tutorial',
           link: 'tutorial',
         },
+        // {
+        //   label: 'REPL',
+        //   link: 'repl',
+        // },
         {
           label: 'Guides',
-          autogenerate: { directory: 'guides' },
+          autogenerate: {
+            directory: 'guides',
+          },
         },
         {
           label: 'General',
-          autogenerate: { directory: 'general' },
+          autogenerate: {
+            directory: 'general',
+          },
         },
         {
           label: 'Packages',
-          autogenerate: { directory: 'package' },
+          autogenerate: {
+            directory: 'package',
+          },
         },
         {
           label: 'Adapters',
-          autogenerate: { directory: 'adapter', collapsed: true },
+          autogenerate: {
+            directory: 'adapter',
+            collapsed: true,
+          },
         },
         {
           label: 'Compat',
-          autogenerate: { directory: 'compat', collapsed: true },
+          autogenerate: {
+            directory: 'compat',
+            collapsed: true,
+          },
         },
       ],
     }),
+    preact(),
   ],
-
   // Process images with sharp: https://docs.astro.build/en/guides/assets/#using-sharp
-  image: { service: { entrypoint: 'astro/assets/services/sharp' } },
+  image: {
+    service: {
+      entrypoint: 'astro/assets/services/sharp',
+    },
+  },
 })
