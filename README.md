@@ -226,6 +226,12 @@ Reatom always developed for long time usage. Our first LTS (Long Time Support) v
 
 To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LTS version (v3) we bring to new feature of this lib and application development experience for a long time.
 
+### What build target and browser support?
+
+All packages are configured based on [Browserslist's "last 1 year" query](https://browsersl.ist/#q=last+1+year). If you need to support older environments, you should handle transpilation yourself.
+
+All builds have two types of output formats: CJS (`exports.require`, `main`) and ESM (`exports.default`, `module`). You can check `package.json` for more details.
+
 ### How performant Reatom is?
 
 [Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures, works in a separate context (DI-like) and keeps [atomicity](https://www.reatom.dev/general/what-is-state-manager#state), which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
