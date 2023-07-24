@@ -1,7 +1,6 @@
 <section>
   <button class="repl-btn"> ▶︎</button>
   <div class="editor"></div>
-  <div class="logs"></div>
 </section>
 
 <script>
@@ -29,7 +28,9 @@ ctx.subscribe(dubleAtom, console.log)
 numberAtom(ctx, (s) => s + 1)
 `.trim()
 
-  const logsEl = document.querySelector('.logs')!
+  const logsEl = document.querySelector('aside')!
+  logsEl.replaceChildren()
+  logsEl.style.display = 'block'
 
   const { log } = console
   console.log = (...logs) => {
@@ -71,7 +72,7 @@ numberAtom(ctx, (s) => s + 1)
   const doc = decodeURIComponent(location.hash.substring(1)) || DEFAULT_EXAMPLE
 
   const EDITOR = new EditorView({
-    parent: document.querySelector('.editor'),
+    parent: document.querySelector('.editor')!,
     state: EditorState.create({
       doc,
       extensions: [
@@ -141,7 +142,6 @@ numberAtom(ctx, (s) => s + 1)
 
   section :global(.cm-editor) {
     min-height: 5rem;
-    max-height: 30rem;
     z-index: -1;
   }
 
@@ -151,6 +151,21 @@ numberAtom(ctx, (s) => s + 1)
 
   section :global(.editor .cm-gutters .cm-activeLineGutter) {
     background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  :global(aside) {
+    display: none;
+    padding: 0.5rem;
+    max-height: calc(100vh - calc(var(--sl-nav-height) + var(--sl-mobile-toc-height)));
+    overflow-y: scroll;
+  }
+
+  :global(aside time) {
+    font-size: 0.75em;
+  }
+
+  :global(hr) {
+    margin: 0.5rem 0;
   }
 
   .repl-btn {
@@ -177,15 +192,15 @@ numberAtom(ctx, (s) => s + 1)
     overflow-y: auto;
   }
 
-  section .logs :global(time) {
-    font-size: 0.75em;
-  }
-
-  section :global(.observablehq) {
+  :global(.observablehq) {
     margin-left: 0.5rem;
   }
 
-  section :global(.observablehq svg) {
+  :global(.observablehq--inspect) {
+    padding: 0.5rem 0;
+  }
+
+  :global(.observablehq svg) {
     display: inline-block;
   }
 </style>
