@@ -1,0 +1,87 @@
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
+import { createTestCtx, mockFn } from '@reatom/testing'
+import { ReatomFetchConfig, createReatomFetch, reatomFetch } from './index'
+
+const transport = mockFn((url: string, init: RequestInit) => {
+  return new Response('{}', { headers: { 'content-type': 'application/json' } })
+})
+
+const API = 'https://api.acme.com'
+
+test('configuration', async () => {
+  const ctx = createTestCtx()
+
+  const reatomFetch = createReatomFetch({ transport })
+
+  async function configure(
+    input: ReatomFetchConfig<any> | (() => ReatomFetchConfig<any>),
+  ) {
+    const fetcher = reatomFetch(input)
+    await fetcher(ctx)
+    assert.is(transport.lastInput(0), `${API}/`)
+  }
+
+  await configure({ url: API })
+  await configure(API)
+  await configure(() => ({ url: API }))
+  await configure(() => API)
+})
+
+test('merges URLs', async () => {
+  const ctx = createTestCtx()
+
+  async function mergeUrls(urlBase: string, url: string, result: string) {
+    const fetcher = reatomFetch({
+      transport,
+      url,
+      urlBase,
+    })
+    await fetcher(ctx)
+    assert.is(transport.lastInput(0), result)
+  }
+
+  await mergeUrls(API, '', `${API}/`)
+  await mergeUrls(API, '/user', `${API}/user`)
+  await mergeUrls(`${API}/v2`, '/user', `${API}/v2/user`)
+})
+
+test('merges headers', async () => {
+  const ctx = createTestCtx()
+
+  async function mergeHeaders(
+    headersBase: HeadersInit,
+    headers: HeadersInit,
+    result: HeadersInit,
+  ) {
+    const fetcher = reatomFetch({
+      transport,
+      url: API,
+      headers,
+      headersBase,
+    })
+    await fetcher(ctx)
+    assert.equal(
+      Object.fromEntries([
+        ...(
+          (transport.lastInput(1) as RequestInit).headers as Headers
+        ).entries(),
+      ]),
+      result,
+    )
+  }
+
+  await mergeHeaders({ accept: 'text/plain' }, {}, { accept: 'text/plain' })
+  await mergeHeaders({}, { accept: 'text/plain' }, { accept: 'text/plain' })
+  await mergeHeaders(
+    { 'x-foo': '1', accept: 'text/plain' },
+    { 'x-bar': '2', accept: 'application/json' },
+    {
+      'x-foo': '1',
+      'x-bar': '2',
+      accept: 'application/json',
+    },
+  )
+})
+
+test.run()
