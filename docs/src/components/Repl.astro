@@ -89,8 +89,9 @@ numberAtom(ctx, (s) => s + 1)
     button.innerText = '⌛'
 
     try {
-      const lastLogRecord = logsEl.children[logsEl.children.length - 1]
-      if (lastLogRecord instanceof HTMLHRElement == false) {
+      const { length } = logsEl.children
+      const lastLogRecord = logsEl.children[length - 1]
+      if (length && lastLogRecord instanceof HTMLHRElement == false) {
         const br = document.createElement('hr')
         logsEl.appendChild(br)
       }
@@ -156,7 +157,9 @@ numberAtom(ctx, (s) => s + 1)
   :global(aside) {
     display: none;
     padding: 0.5rem;
-    max-height: calc(100vh - calc(var(--sl-nav-height) + var(--sl-mobile-toc-height)));
+    max-height: calc(
+      100vh - calc(var(--sl-nav-height) + var(--sl-mobile-toc-height))
+    );
     overflow-y: scroll;
   }
 
