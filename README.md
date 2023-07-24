@@ -47,26 +47,24 @@ All data processing should be immutable, all side-effects should be wrapped to `
 
 What is `ctx`? It is the most powerful feature of Reatom. It flows as the first argument across all Reatom functions, bringing you enterprise-grade features with only three extra symbols!
 
-One more thing. You could pass an optional name to atoms and actions for better debugging experience, it could be automated by our [eslint-plugin](https://www.reatom.dev/package/eslint-plugin/).
-
 ```ts
 import { action, atom } from '@reatom/core'
 
 const initState = localStorage.getItem('name') ?? ''
-export const inputAtom = atom(initState, 'inputAtom')
+export const inputAtom = atom(initState)
 
 export const greetingAtom = atom((ctx) => {
   // `spy` dynamically reads the atom and subscribes to it
   const input = ctx.spy(inputAtom)
   return input ? `Hello, ${input}!` : ''
-}, 'greetingAtom')
+})
 
 export const onSubmit = action((ctx) => {
   const input = ctx.get(inputAtom)
   ctx.schedule(() => {
     localStorage.setItem('name', input)
   })
-}, 'onSubmit')
+})
 ```
 
 ### Simple example context
@@ -225,6 +223,12 @@ Immutable data is much predictable and better for debug, than mutable states and
 Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guide](https://www.reatom.dev/compat/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](https://www.reatom.dev/compat/core-v1). We hope it shows and prove our responsibility.
 
 To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LTS version (v3) we bring to new feature of this lib and application development experience for a long time.
+
+### What build target and browser support?
+
+All packages are configured based on [Browserslist's "last 1 year" query](https://browsersl.ist/#q=last+1+year). If you need to support older environments, you should handle transpilation yourself.
+
+All builds have two types of output formats: CJS (`exports.require`, `main`) and ESM (`exports.default`, `module`). You can check `package.json` for more details.
 
 ### How performant Reatom is?
 

@@ -8,7 +8,7 @@ The raw API description is [below](#api).
 
 ## About
 
-Reatom allows you to describe both simple and complex logic using three main components: **atoms** for data reference, **actions** for logic processing, and **context** (`ctx`) for system isolation. This core is a perfect solution for building your own high-order library or framework.
+Reatom allows you to describe both simple and complex logic using three main components: **atoms** for data reference, **actions** for logic processing, and **context** (`ctx`) for system isolation. This core is a perfect solution for building your own high-order library or the whole framework, all the packages stay on top of that.
 
 Reatom is inspired by the React and Redux architectures. All processed data should be [immutable](https://developer.mozilla.org/en-US/docs/Glossary/Immutable), computations should be pure, and all side effects should be scheduled for a separate effects queue using `ctx.schedule(callback)`. Only consistent data transactions should be applied. All prerequisites can be checked in this article: [What is a state manager](https://www.reatom.dev/general/what-is-state-manager).
 
@@ -17,8 +17,6 @@ Reatom is inspired by the React and Redux architectures. All processed data shou
 ```sh
 npm i @reatom/core
 ```
-
-> The build target is `last 4 chrome versions`, if you need to support older environments, you should transpile it by yourself.
 
 ## Usage
 
@@ -36,9 +34,11 @@ export const ctx = createCtx()
 
 All atoms and actions accepts `ctx` by a first argument, it helps you a lot in many things: testing, debugging, SSR, effects chains management and logging. You could add `ctx.subscribe(logs => console.log(logs))` or connect separate [logger](https://www.reatom.dev/package/logger) to see all changes in your app.
 
+Now, let's describe a logic.
+
 ```ts
 // ~/features/search/model.ts
-import { createCtx, action, atom } from '@reatom/core'
+import { action, atom } from '@reatom/core'
 
 // define your base mutable data references
 // by passing a primitive initial values
