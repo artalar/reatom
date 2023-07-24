@@ -52,26 +52,24 @@ All data processing should be immutable, all side-effects should be wrapped to `
 
 What is `ctx`? It is the most powerful feature of Reatom. It flows as the first argument across all Reatom functions, bringing you enterprise-grade features with only three extra symbols!
 
-One more thing. You could pass an optional name to atoms and actions for better debugging experience, it could be automated by our [eslint-plugin](/package/eslint-plugin/).
-
 ```ts
 import { action, atom } from '@reatom/core'
 
 const initState = localStorage.getItem('name') ?? ''
-export const inputAtom = atom(initState, 'inputAtom')
+export const inputAtom = atom(initState)
 
 export const greetingAtom = atom((ctx) => {
   // `spy` dynamically reads the atom and subscribes to it
   const input = ctx.spy(inputAtom)
   return input ? `Hello, ${input}!` : ''
-}, 'greetingAtom')
+})
 
 export const onSubmit = action((ctx) => {
   const input = ctx.get(inputAtom)
   ctx.schedule(() => {
     localStorage.setItem('name', input)
   })
-}, 'onSubmit')
+})
 ```
 
 ### Simple example context
