@@ -84,4 +84,25 @@ test('merges headers', async () => {
   )
 })
 
+test('content parsing', async () => {
+  const ctx = createTestCtx()
+
+  const fetcher = reatomFetch({
+    transport: (url, init) => {
+      return new Response(
+        JSON.stringify({ got: JSON.parse(init.body as string) }),
+        {
+          headers: { 'content-type': 'application/json' },
+        },
+      )
+    },
+    url: API,
+    body: 'Hello world!',
+  })
+
+  const result = await fetcher(ctx)
+
+  assert.equal(result, { got: 'Hello world!' })
+})
+
 test.run()

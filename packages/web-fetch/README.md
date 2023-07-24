@@ -114,7 +114,7 @@ By default, ensures that the status code is 2XX and `content-type` is `applicati
 
 ### `serializeBody`
 
-By default, `JSON.stringify` arrays, primitives and objects that are not class instances, and pass everything else as-is.
+Defaults to `JSON.stringify`.
 
 ## NodeJS
 
