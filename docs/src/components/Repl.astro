@@ -13,6 +13,9 @@
 
   const IMPORT_PREFIX = 'https://esm.sh/'
 
+  const IMPORT_REGEXP =
+    /import.*?(`(?<path1>.*)`|'(?<path2>.*)'|"(?<path3>.*)")/gs
+
   const DEFAULT_EXAMPLE = `
 import { atom, createCtx } from '@reatom/core'
 
@@ -104,26 +107,26 @@ numberAtom(ctx, (s) => s + 1)
       )
 
       let shift = 0
-      // TODO match line brake in import statement!
-      for (const regexp of [/import.*('|")(?<path>.*)('|")/g]) {
-        for (const match of code.matchAll(regexp)) {
-          const { path } = match.groups ?? {}
+      for (const match of code.matchAll(IMPORT_REGEXP)) {
+        const { path1, path2, path3 } = match.groups ?? {}
+        const path = path1 || path2 || path3
 
-          if (!path || path.startsWith(IMPORT_PREFIX)) continue
+        if (!path || path.startsWith(IMPORT_PREFIX)) continue
 
-          const index = code.indexOf(path, match.index! + shift)
-          shift += IMPORT_PREFIX.length
+        const index = code.indexOf(path, match.index! + shift)
+        shift += IMPORT_PREFIX.length
 
-          code =
-            code.substring(0, index) +
-            `${IMPORT_PREFIX}${path}` +
-            code.substring(index + path.length)
-        }
+        code =
+          code.substring(0, index) +
+          `${IMPORT_PREFIX}${path}` +
+          code.substring(index + path.length)
       }
 
       await import(
         'data:text/javascript;charset=utf-8,' + encodeURIComponent(code)
       )
+    } catch (error) {
+      console.log(error)
     } finally {
       button.disabled = false
       button.innerText = '▶︎'
