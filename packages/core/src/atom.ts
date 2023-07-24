@@ -209,11 +209,12 @@ const isConnected = (cache: AtomCache): boolean => {
   return cache.subs.size + cache.listeners.size > 0
 }
 
-const assertFunction = (thing: any) =>
+function assertFunction (thing: any): asserts thing is Fn {
   throwReatomError(
     typeof thing !== 'function',
     `invalid "${typeof thing}", function expected`,
   )
+}
 
 //#endregion
 
@@ -573,8 +574,7 @@ export const createCtx = ({
         }
       })
     },
-    // @ts-ignore
-    subscribe(atom, cb = atom) {
+    subscribe(atom: Atom | Fn, cb: Atom | Fn = atom) {
       assertFunction(cb)
 
       if (atom === cb) {
