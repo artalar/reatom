@@ -1,0 +1,318 @@
+<section>
+  <button class="repl-btn"> ▶︎</button>
+  <div class="editor"></div>
+</section>
+
+<script>
+  import { EditorView, basicSetup } from 'codemirror'
+  import { EditorState, StateField } from '@codemirror/state'
+  import { javascript } from '@codemirror/lang-javascript'
+  import { transform } from 'sucrase'
+  // @ts-expect-error TODO write types
+  import { Inspector } from '@observablehq/inspector'
+
+  const IMPORT_PREFIX = 'https://esm.sh/'
+
+  const IMPORT_REGEXP =
+    /import.*?(`(?<path1>.*)`|'(?<path2>.*)'|"(?<path3>.*)")/gs
+
+  const DEFAULT_EXAMPLE = `
+import { atom, createCtx } from '@reatom/core'
+
+const ctx = createCtx()
+
+const numberAtom = atom(0, 'numberAtom')
+const dubleAtom = atom((ctx) => {
+console.log(ctx.cause)
+return ctx.spy(numberAtom) * 2
+}, 'dubleAtom')
+
+ctx.subscribe(dubleAtom, console.log)
+numberAtom(ctx, (s) => s + 1)
+`.trim()
+
+  const logsEl = document.querySelector('aside')!
+  logsEl.replaceChildren()
+  logsEl.style.display = 'block'
+
+  const { log } = console
+  console.log = (...logs) => {
+    log(...logs)
+
+    const timeEl = document.createElement('time')
+    timeEl.textContent = new Date().toISOString()
+    logsEl.appendChild(timeEl)
+
+    for (const log of logs) {
+      const logEl = document.createElement('div')
+      new Inspector(logEl).fulfilled(log)
+      logsEl.appendChild(logEl)
+    }
+
+    logsEl.scrollTop = logsEl.scrollHeight
+  }
+
+  let runs = 0
+
+  const handleChange = async (code: string) => {
+    await new Promise((r) => setTimeout(r, 100))
+    if (code !== EDITOR!.state.doc.toString()) return
+
+    location.hash = '#' + encodeURIComponent(code)
+  }
+
+  const listenChangesExtension = StateField.define({
+    // we won't use the actual StateField value, null or undefined is fine
+    create: () => null,
+    update: (_, transaction) => {
+      if (transaction.docChanged) {
+        handleChange(transaction.newDoc.toString())
+      }
+      return null
+    },
+  })
+
+  const doc = decodeURIComponent(location.hash.substring(1)) || DEFAULT_EXAMPLE
+
+  const EDITOR = new EditorView({
+    parent: document.querySelector('.editor')!,
+    state: EditorState.create({
+      doc,
+      extensions: [
+        basicSetup,
+        javascript({ typescript: true }),
+        listenChangesExtension,
+      ],
+    }),
+  })
+
+  const play = async (e: Event) => {
+    const button = e.currentTarget as HTMLButtonElement
+    button.disabled = true
+    button.innerText = '⌛'
+
+    try {
+      const { length } = logsEl.children
+      const lastLogRecord = logsEl.children[length - 1]
+      if (length && lastLogRecord instanceof HTMLHRElement == false) {
+        const br = document.createElement('hr')
+        logsEl.appendChild(br)
+      }
+
+      let { code } = await transform(
+        `${EDITOR!.state.doc}\n;/* reload trigger */${runs++}`,
+        {
+          transforms: ['typescript'],
+        },
+      )
+
+      let shift = 0
+      for (const match of code.matchAll(IMPORT_REGEXP)) {
+        const { path1, path2, path3 } = match.groups ?? {}
+        const path = path1 || path2 || path3
+
+        if (!path || path.startsWith(IMPORT_PREFIX)) continue
+
+        const index = code.indexOf(path, match.index! + shift)
+        shift += IMPORT_PREFIX.length
+
+        code =
+          code.substring(0, index) +
+          `${IMPORT_PREFIX}${path}` +
+          code.substring(index + path.length)
+      }
+
+      await import(
+        'data:text/javascript;charset=utf-8,' + encodeURIComponent(code)
+      )
+    } catch (error) {
+      console.log(error)
+    } finally {
+      button.disabled = false
+      button.innerText = '▶︎'
+    }
+  }
+  document.querySelector('.repl-btn')!.addEventListener('click', play)
+</script>
+<style>
+  :global(main h1) {
+    font-size: 1rem !important;
+    margin: 0 !important;
+  }
+
+  section {
+    position: relative;
+  }
+
+  section :global(.cm-editor) {
+    min-height: 5rem;
+    z-index: -1;
+  }
+
+  section :global(.editor .cm-gutters) {
+    background-color: transparent;
+  }
+
+  section :global(.editor .cm-gutters .cm-activeLineGutter) {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  :global(aside) {
+    display: none;
+    padding: 0.5rem;
+    max-height: calc(
+      100vh - calc(var(--sl-nav-height) + var(--sl-mobile-toc-height))
+    );
+    overflow-y: scroll;
+  }
+
+  :global(aside time) {
+    font-size: 0.75em;
+  }
+
+  :global(hr) {
+    margin: 0.5rem 0;
+  }
+
+  .repl-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.5rem;
+    border: none;
+    opacity: 0.5;
+    filter: grayscale(1);
+  }
+
+  .play {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .logs {
+    position: relative;
+    margin: 1rem 0;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  :global(.observablehq) {
+    margin-left: 0.5rem;
+  }
+
+  :global(.observablehq--inspect) {
+    padding: 0.5rem 0;
+  }
+
+  :global(.observablehq svg) {
+    display: inline-block;
+  }
+</style>
+<style is:global>
+  /* copied from "@observablehq/inspector/src/style.css" */
+
+  :root {
+    --syntax_normal: #1b1e23;
+    --syntax_comment: #a9b0bc;
+    --syntax_number: #20a5ba;
+    --syntax_keyword: #c30771;
+    --syntax_atom: #10a778;
+    --syntax_string: #008ec4;
+    --syntax_error: #ffbedc;
+    --syntax_unknown_variable: #838383;
+    --syntax_known_variable: #005f87;
+    --syntax_matchbracket: #20bbfc;
+    --syntax_key: #6636b4;
+    --mono_fonts: 82%/1.5 Menlo, Consolas, monospace;
+  }
+
+  .observablehq--expanded,
+  .observablehq--collapsed,
+  .observablehq--function,
+  .observablehq--import,
+  .observablehq--string:before,
+  .observablehq--string:after,
+  .observablehq--gray {
+    color: var(--syntax_normal);
+  }
+
+  .observablehq--collapsed,
+  .observablehq--inspect a {
+    cursor: pointer;
+  }
+
+  .observablehq--field {
+    text-indent: -1em;
+    margin-left: 1em;
+  }
+
+  .observablehq--empty {
+    color: var(--syntax_comment);
+  }
+
+  .observablehq--keyword,
+  .observablehq--blue {
+    color: #3182bd;
+  }
+
+  .observablehq--forbidden,
+  .observablehq--pink {
+    color: #e377c2;
+  }
+
+  .observablehq--orange {
+    color: #e6550d;
+  }
+
+  .observablehq--null,
+  .observablehq--undefined,
+  .observablehq--boolean {
+    color: var(--syntax_atom);
+  }
+
+  .observablehq--number,
+  .observablehq--bigint,
+  .observablehq--date,
+  .observablehq--regexp,
+  .observablehq--symbol,
+  .observablehq--green {
+    color: var(--syntax_number);
+  }
+
+  .observablehq--index,
+  .observablehq--key {
+    color: var(--syntax_key);
+  }
+
+  .observablehq--prototype-key {
+    color: #aaa;
+  }
+
+  .observablehq--empty {
+    font-style: oblique;
+  }
+
+  .observablehq--string,
+  .observablehq--purple {
+    color: var(--syntax_string);
+  }
+
+  .observablehq--error,
+  .observablehq--red {
+    color: #e7040f;
+  }
+
+  .observablehq--inspect {
+    font: var(--mono_fonts);
+    overflow-x: auto;
+    display: block;
+    white-space: pre;
+  }
+
+  .observablehq--error .observablehq--inspect {
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+</style>
