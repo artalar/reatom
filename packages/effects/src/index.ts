@@ -9,6 +9,15 @@ import {
 } from '@reatom/core'
 import { AbortError, noop, toAbortError } from '@reatom/utils'
 
+export class CauseContext<T> extends WeakMap<AtomCache, T> {
+  get(cause: AtomCache) {
+    while (!this.has(cause) && cause.cause) {
+      cause = cause.cause
+    }
+    return super.get(cause)
+  }
+}
+
 export const getTopController = (
   patch: AtomCache & { controller?: AbortController },
 ): null | AbortController =>
