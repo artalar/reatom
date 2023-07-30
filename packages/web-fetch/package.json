@@ -1,7 +1,7 @@
 {
   "name": "@reatom/web-fetch",
-  "version": "3.1.0",
-  "private": false,
+  "version": "0.0.1",
+  "private": true,
   "sideEffects": false,
   "description": "Simple HTTP client for Reatom",
   "source": "src/index.ts",
