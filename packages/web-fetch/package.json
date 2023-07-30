@@ -1,0 +1,54 @@
+{
+  "name": "@reatom/web-fetch",
+  "version": "0.0.1",
+  "private": true,
+  "sideEffects": false,
+  "description": "Simple HTTP client for Reatom",
+  "source": "src/index.ts",
+  "exports": {
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "unpkg": "build/index.umd.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "last 4 chrome versions"
+  ],
+  "scripts": {
+    "sandbox": "vite",
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "microbundle",
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
+  },
+  "dependencies": {
+    "@reatom/core": ">=3.1.0",
+    "@reatom/async": ">=3.1.0"
+  },
+  "author": "krulod",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    },
+    {
+      "name": "krulod",
+      "url": "https://github.com/krulod"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://github.com/artalar/reatom/packages/web-fetch",
+  "files": [
+    "/build",
+    "/package.json"
+  ]
+}
