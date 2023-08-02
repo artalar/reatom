@@ -15,6 +15,7 @@
     "@astrojs/starlight": "^0.5.5",
     "@codemirror/lang-javascript": "^6.1.9",
     "@codemirror/state": "^6.2.1",
+    "@discoveryjs/discovery": "^1.0.0-beta.77",
     "@observablehq/inspector": "^5.0.0",
     "@vercel/edge": "^0.3.4",
     "@vercel/kv": "^0.2.2",

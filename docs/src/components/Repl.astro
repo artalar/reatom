@@ -1,4 +1,5 @@
 <section>
+  <dialog id="discovery" aria-label="json inspector"></dialog>
   <button class="repl-btn"> ▶︎</button>
   <div class="editor"></div>
 </section>
@@ -45,8 +46,16 @@ numberAtom(ctx, (s) => s + 1)
 
     for (const log of logs) {
       const logEl = document.createElement('div')
+      logEl.ariaLabel = 'log from the console'
       new Inspector(logEl).fulfilled(log)
       logsEl.appendChild(logEl)
+
+      const inspectEl = document.createElement('button')
+      inspectEl.textContent = '🔭'
+      inspectEl.onclick = () =>
+        import('./discovery').then(({ show }) => show(log))
+      inspectEl.ariaLabel = 'open inspector modal'
+      logsEl.appendChild(inspectEl)
     }
 
     logsEl.scrollTop = logsEl.scrollHeight
@@ -166,12 +175,30 @@ numberAtom(ctx, (s) => s + 1)
     overflow-y: scroll;
   }
 
-  :global(aside time) {
+  :global(aside > button) {
+    background: none;
+    border: none;
+    position: relative;
+    top: -2rem;
+    width: 2rem;
+  }
+
+  :global(aside > time) {
     font-size: 0.75em;
   }
 
   :global(hr) {
     margin: 0.5rem 0;
+  }
+
+  #discovery {
+    margin: auto;
+    padding: 0;
+  }
+
+  :global(.discovery) {
+    position: static;
+    padding: 0;
   }
 
   .repl-btn {
@@ -199,7 +226,7 @@ numberAtom(ctx, (s) => s + 1)
   }
 
   :global(.observablehq) {
-    margin-left: 0.5rem;
+    margin-left: 2rem;
   }
 
   :global(.observablehq--inspect) {
