@@ -2,10 +2,22 @@
   --sl-color-accent: hsl(247deg 50% 30%) !important;
 }
 
-html[data-theme="light"] img[data-theme="dark"] {
+html[data-theme='light'] img[data-theme='dark'] {
   display: none;
 }
 
-html[data-theme="dark"] img[data-theme="light"] {
+html[data-theme='dark'] img[data-theme='light'] {
   display: none;
+}
+
+main::before {
+  content: '';
+  position: fixed;
+  width: 120%;
+  height: 100%;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url('/favicon.svg');
+  background-size: cover;
+  background-repeat: no-repeat;
 }
