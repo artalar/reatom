@@ -19,6 +19,7 @@ export interface AtomUrlSettings {
 
 export interface UrlAtom extends AtomMut<URL> {
   go: Action<[path: `/${string}`], URL>
+  // TODO not documented yet, need more symbol matches, like in nanostores/router
   match: (path: `/${string}`) => Atom<boolean>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
