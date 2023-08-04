@@ -35,6 +35,10 @@ export interface SearchParamsAtom extends Atom<Rec<string>> {
 
 const sync = (url: string) =>
   history.pushState(null, null as unknown as string, url)
+const popstate = action(
+  (ctx) => urlAtom(ctx, new URL(location.href)),
+  'urlAtom.popstate',
+)
 /**Browser settings allow handling of the "popstate" event and a link click. */
 const createBrowserUrlAtomSettings = (
   shouldCatchLinkClick = true,
@@ -70,31 +74,30 @@ const createBrowserUrlAtomSettings = (
           !event.shiftKey && // Not open in new window by user
           !event.defaultPrevented // Click was not cancelled
         ) {
-          const { href } = link
-          urlAtom(ctx, new URL(href))
+          event.preventDefault()
 
-          ctx.schedule(() => {
-            event.preventDefault()
-            sync(href)
-            if (location.hash !== href) {
-              location.hash = href
+          const { hash, href } = urlAtom(ctx, new URL(link.href))
+
+          if (location.hash !== hash) {
+            ctx.schedule(() => {
+              location.hash = hash
               if (href === '' || href === '#') {
                 window.dispatchEvent(new HashChangeEvent('hashchange'))
               }
-            }
-          })
+            })
+          }
         }
       })
 
-    globalThis.addEventListener('popstate', () => {
-      urlAtom(ctx, new URL(location.href))
-    })
+    globalThis.addEventListener('popstate', () => popstate(ctx))
     if (shouldCatchLinkClick) document.body.addEventListener('click', click)
 
     return new URL(location.href)
   },
   sync: (ctx, url) => {
-    ctx.schedule(() => sync(url.href))
+    if (ctx./* urlAtom.onChange */ cause.cause?.proto !== popstate.__reatom) {
+      ctx.schedule(() => sync(url.href))
+    }
   },
 })
 
