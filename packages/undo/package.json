@@ -28,7 +28,9 @@
   },
   "dependencies": {
     "@reatom/core": "^3.1.21",
-    "@reatom/hooks": "^3.1.2"
+    "@reatom/effects": "^3.4.0",
+    "@reatom/hooks": "^3.1.2",
+    "@reatom/utils": "^3.4.0"
   },
   "author": "artalar",
   "maintainers": [
