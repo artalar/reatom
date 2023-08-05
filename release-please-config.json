@@ -30,6 +30,7 @@
     "packages/testing": {},
     "packages/timer": {},
     "packages/undo": {},
+    "packages/url": {},
     "packages/utils": {}
   }
 }
