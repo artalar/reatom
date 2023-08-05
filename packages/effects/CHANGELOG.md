@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/effects-v3.3.1...effects-v3.4.0) (2023-08-05)
+
+
+### Features
+
+* **effects:** add CauseContext ([65baab5](https://github.com/artalar/reatom/commit/65baab5cdc1256619b1fa779376f3e7508fc0c8d))
+* **effects:** add isCausedBy ([02a6406](https://github.com/artalar/reatom/commit/02a64069e272387cb64b1573a765a3d70abac825))
+
+
+### Bug Fixes
+
+* **effects:** add has method to CauseContext ([0b442c1](https://github.com/artalar/reatom/commit/0b442c1fdbb119c2828951aff0b97d490efdb397))
+
 ## [3.3.1](https://github.com/artalar/reatom/compare/effects-v3.3.0...effects-v3.3.1) (2023-07-07)
 
 
