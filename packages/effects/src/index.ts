@@ -1,6 +1,7 @@
 import {
   Atom,
   AtomCache,
+  AtomProto,
   AtomReturn,
   Ctx,
   Fn,
@@ -10,8 +11,11 @@ import {
 import { AbortError, noop, toAbortError } from '@reatom/utils'
 
 export class CauseContext<T> extends WeakMap<AtomCache, T> {
+  has(cause: AtomCache): boolean {
+    return super.has(cause) || (cause.cause !== null && this.has(cause.cause))
+  }
   get(cause: AtomCache) {
-    while (!this.has(cause) && cause.cause) {
+    while (!super.has(cause) && cause.cause) {
       cause = cause.cause
     }
     return super.get(cause)
