@@ -198,3 +198,7 @@ export const takeNested = <I extends any[]>(
 
     return result
   })
+
+export const isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
+  cause.cause !== null &&
+  (cause.cause.proto === proto || isCausedBy(cause.cause, proto))
