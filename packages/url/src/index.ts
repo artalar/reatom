@@ -9,6 +9,7 @@ import {
   action,
   atom,
 } from '@reatom/core'
+import { isCausedBy } from '@reatom/effects'
 import { getRootCause, withInit } from '@reatom/hooks'
 import { noop } from '@reatom/utils'
 
@@ -34,12 +35,13 @@ export interface SearchParamsAtom extends Atom<Rec<string>> {
   ) => AtomMut<T>
 }
 
-const sync = (url: string) =>
-  history.pushState(null, null as unknown as string, url)
-const popstate = action(
-  (ctx) => urlAtom(ctx, new URL(location.href)),
-  'urlAtom.popstate',
-)
+const sync = (url: URL) => {
+  history.pushState(null, null as unknown as string, url.href)
+}
+
+const popstate = action((ctx, event: PopStateEvent) => {
+  urlAtom(ctx, new URL(location.href))
+}, 'urlAtom.popstate')
 /**Browser settings allow handling of the "popstate" event and a link click. */
 const createBrowserUrlAtomSettings = (
   shouldCatchLinkClick = true,
@@ -90,14 +92,14 @@ const createBrowserUrlAtomSettings = (
         }
       })
 
-    globalThis.addEventListener('popstate', () => popstate(ctx))
+    globalThis.addEventListener('popstate', (event) => popstate(ctx, event))
     if (shouldCatchLinkClick) document.body.addEventListener('click', click)
 
     return new URL(location.href)
   },
   sync: (ctx, url) => {
-    if (ctx./* urlAtom.onChange */ cause.cause?.proto !== popstate.__reatom) {
-      ctx.schedule(() => sync(url.href))
+    if (!isCausedBy(ctx.cause, popstate.__reatom)) {
+      ctx.schedule(() => sync(url))
     }
   },
 })

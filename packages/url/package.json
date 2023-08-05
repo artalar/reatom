@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@reatom/core": "^3.5.0",
+    "@reatom/effects": "^3.4.0",
     "@reatom/hooks": "^3.4.0",
     "@reatom/utils": "^3.4.0"
   },
