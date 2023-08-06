@@ -4,7 +4,7 @@
   "packages/core": "3.5.0",
   "packages/core-v1": "3.1.7",
   "packages/core-v2": "3.1.2",
-  "packages/effects": "3.3.1",
+  "packages/effects": "3.4.0",
   "packages/eslint-plugin": "3.4.0",
   "packages/form": "3.1.6",
   "packages/form-web": "3.1.4",
@@ -25,7 +25,7 @@
   "packages/react-v2": "3.1.0",
   "packages/testing": "3.4.2",
   "packages/timer": "3.5.5",
-  "packages/undo": "3.2.4",
-  "packages/url": "3.2.0",
+  "packages/undo": "3.3.0",
+  "packages/url": "3.3.0",
   "packages/utils": "3.4.0"
 }
