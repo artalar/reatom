@@ -55,6 +55,25 @@ test('withUndo', async () => {
   ;('👍') //?
 })
 
+test('limit', () => {
+  const a = atom(0).pipe(withUndo({ length: 5 }))
+  const ctx = createTestCtx()
+
+  ctx.subscribeTrack(a)
+
+  let i = 10
+  while (i--) a(ctx, (s) => s + 1)
+  assert.equal(ctx.get(a.historyAtom), [6, 7, 8, 9, 10])
+
+  a.undo(ctx)
+  a.undo(ctx)
+  assert.is(ctx.get(a), 8)
+
+  a(ctx, (s) => s + 1)
+  assert.equal(ctx.get(a.historyAtom), [6, 7, 8, 9])
+  ;('👍') //?
+})
+
 test('reatomUndo', () => {
   const a = atom(0, 'a')
   const b = atom(0, 'b')

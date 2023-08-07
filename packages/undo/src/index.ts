@@ -32,8 +32,14 @@ export interface WithUndo<T = any> {
 
 export interface WithUndoOptions<T = any> {
   length?: number
-  shouldUpdate?: Fn<[ctx: Ctx, state: T, history: Array<T>], boolean>
-  shouldReplace?: Fn<[ctx: Ctx, state: T, history: Array<T>], boolean>
+  shouldUpdate?: Fn<
+    [ctx: Ctx, state: T, history: Array<T>, currentPosition: number],
+    boolean
+  >
+  shouldReplace?: Fn<
+    [ctx: Ctx, state: T, history: Array<T>, currentPosition: number],
+    boolean
+  >
 }
 
 const update = (ctx: Ctx, anAtom: AtomMut | Atom, state: any) =>
@@ -93,20 +99,22 @@ export const withUndo =
       }, `${name}.Undo.clearHistory`)
 
       anAtom.onChange((ctx, state) => {
+        let position = ctx.get(positionAtom)
+
         if (
           !isCausedBy(ctx.cause, jump.__reatom) &&
-          shouldUpdate(ctx, state, ctx.get(historyAtom))
+          shouldUpdate(ctx, state, ctx.get(historyAtom), position)
         ) {
           historyAtom(ctx, (history) => {
-            let position = ctx.get(positionAtom)
             if (history[history.length - 1] !== state) {
-              history = history.slice(-length + 1)
-              if (history.length !== position - 1) {
-                history.length = position + 1
-              }
-              if (!shouldReplace(ctx, state, history)) {
+              history = history.slice(
+                Math.max(0, position - (length - 2)),
+                position + 1,
+              )
+              if (!shouldReplace(ctx, state, history, position)) {
                 position++
               }
+              position = Math.min(position, length - 1)
               history[position] = state
             }
             positionAtom(ctx, position)
