@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.3](https://github.com/artalar/reatom/compare/async-v3.8.2...async-v3.8.3) (2023-08-08)
+
+
+### Bug Fixes
+
+* **async:** add mapFulfill to dataAtom for correct cache init ([994c0ff](https://github.com/artalar/reatom/commit/994c0ff483c0c8aafea276bc4bc6006bc7b5a1b9))
+
 ## [3.8.2](https://github.com/artalar/reatom/compare/async-v3.8.1...async-v3.8.2) (2023-07-22)
 
 
