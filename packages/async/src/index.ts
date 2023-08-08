@@ -182,6 +182,7 @@ reatomAsync.from = <Params extends any[], Resp = any>(
 
 export interface AsyncDataAtom<State = any> extends AtomMut<State> {
   reset: Action<[], void>
+  mapFulfill?: Fn<[ctx: Ctx, payload: unknown, state: State], State>
 }
 
 // TODO
@@ -228,7 +229,7 @@ export const withDataAtom: {
     map?: Fn<[ctx: Ctx, payload: AsyncResp<T>, state: State], State>,
   ): Fn<[T], T & { dataAtom: AsyncDataAtom<State> }>
 } =
-  (initState: any, map?: Fn) =>
+  (initState: any, mapFulfill?: Fn) =>
   // @ts-ignore
   (anAsync: AsyncAction & { dataAtom?: AsyncDataAtom }) => {
     if (!anAsync.dataAtom) {
@@ -239,11 +240,12 @@ export const withDataAtom: {
             (ctx) => void dataAtom(ctx, initState),
             `${anAsync.__reatom.name}.dataAtom.reset`,
           ),
+          mapFulfill,
         },
       ) as AsyncDataAtom)
       anAsync.onFulfill.onCall((ctx, payload) =>
         dataAtom(ctx, (state: any) =>
-          map ? map(ctx, payload, state) : payload,
+          mapFulfill ? mapFulfill(ctx, payload, state) : payload,
         ),
       )
     }
