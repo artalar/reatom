@@ -46,7 +46,7 @@ export const sample: {
         : changed
         ? ctx.get(_cacheAtom)
         : prevState
-    })
+    }, name)
     theAtom.__reatom.isAction = isAction
     theAtom.deps = [anAtom, signal]
 

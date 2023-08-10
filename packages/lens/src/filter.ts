@@ -22,7 +22,6 @@ export const filter: {
 } =
   (predicate?: Fn, name?: string) =>
   (anAtom: Atom): any => {
-    name = mapName(anAtom, 'filter', name)
     const { isAction } = anAtom.__reatom
 
     predicate ??= isAction ? () => true : (ctx, a, b) => !isShallowEqual(a, b)
@@ -41,7 +40,7 @@ export const filter: {
         : isInit || predicate!(ctx, state, prevState)
         ? state
         : prevState
-    })
+    }, mapName(anAtom, 'filter', name))
     theAtom.deps = [anAtom]
     theAtom.__reatom.isAction = isAction
 
