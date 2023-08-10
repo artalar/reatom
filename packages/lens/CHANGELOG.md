@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/artalar/reatom/compare/lens-v3.6.0...lens-v3.6.1) (2023-08-10)
+
+
+### Bug Fixes
+
+* **lens:** mapName usage ([8865ce0](https://github.com/artalar/reatom/commit/8865ce0654bf468e560ef3f238611f5168db5925))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/lens-v3.5.1...lens-v3.6.0) (2023-06-12)
 
 
