@@ -182,13 +182,13 @@ export const connectLogger = (
         const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
         states.set(proto, state)
 
-        const isConnection =
-          !oldCache &&
-          cause!.proto.name === 'root' &&
-          (!isAction || state.length === 0)
+        const isStateChanged = Object.is(state, oldState)
+        const isFilteredAction = isAction && state.length === 0
+
+        if (!isStateChanged || isFilteredAction) continue
 
         let atomHistory = history.get(proto) ?? []
-        if (!Object.is(state, oldState) && historyLength) {
+        if (historyLength) {
           atomHistory = atomHistory.slice(0, historyLength - 1)
           atomHistory.unshift(
             isAction ? { ...patch, state: [...state] } : patch,
@@ -196,9 +196,12 @@ export const connectLogger = (
           history.set(proto, atomHistory)
         }
 
-        if (isConnection || Object.is(state, oldState)) {
-          continue
-        }
+        const isConnection =
+          !oldCache &&
+          cause!.proto.name === 'root' &&
+          (!isAction || state.length === 0)
+
+        if (isConnection) continue
 
         const changeMsg: unstable_ChangeMsg = (changes[`${i + 1}.${name}`] = {
           patch,
