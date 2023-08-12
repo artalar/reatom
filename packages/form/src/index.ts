@@ -1,4 +1,13 @@
-import { action, Action, Atom, atom, AtomMut, Ctx, Fn, __count } from '@reatom/core'
+import {
+  action,
+  Action,
+  Atom,
+  atom,
+  AtomMut,
+  Ctx,
+  Fn,
+  __count,
+} from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
 import { RecordAtom, reatomRecord } from '@reatom/primitives'
 import { isShallowEqual } from '@reatom/utils'
@@ -56,10 +65,9 @@ export const fieldInitValidation: FieldValidation = {
 }
 
 export const reatomField: {
-  <State, Value = State>(options: FieldOptions<State, Value>): FieldAtom<
-    State,
-    Value
-  >
+  <State, Value = State>(
+    options: FieldOptions<State, Value>,
+  ): FieldAtom<State, Value>
 } = ({
   filter = () => true,
   initState,
@@ -68,10 +76,10 @@ export const reatomField: {
   validationTrigger = 'blur',
 }) => {
   const dataAtom = atom(initState, `${name}.dataAtom`)
-  const focusAtom = reatomRecord(fieldInitFocus, name?.concat('.focusAtom'))
+  const focusAtom = reatomRecord(fieldInitFocus, `${name}.focusAtom`)
   const validationAtom = reatomRecord(
     fieldInitValidation,
-    name?.concat('.validationAtom'),
+    `${name}.validationAtom`,
   )
 
   // @ts-expect-error
@@ -120,7 +128,7 @@ export const reatomField: {
     }
 
     return validation
-  }, name?.concat('.validate'))
+  }, `${name}.validate`)
   validate.enforce = (ctx) => {
     validate(ctx)
     const validation = ctx.get(validationAtom)
@@ -132,12 +140,12 @@ export const reatomField: {
 
   const focus = action((ctx) => {
     focusAtom.merge(ctx, { active: true, touched: true })
-  }, name?.concat('.focus'))
+  }, `${name}.focus`)
 
   const blur = action((ctx) => {
     focusAtom.merge(ctx, { active: false })
     if (validationTrigger === 'blur') validate(ctx)
-  }, name?.concat('.blur'))
+  }, `${name}.blur`)
 
   const change = action((ctx, input) => {
     if (!filter(ctx, input)) return ctx.get(dataAtom)
@@ -148,13 +156,13 @@ export const reatomField: {
     if (validationTrigger === 'change') validate(ctx)
 
     return state
-  }, name?.concat('.change'))
+  }, `${name}.change`)
 
   const reset = action((ctx) => {
     dataAtom(ctx, initState)
     focusAtom(ctx, fieldInitFocus)
     validationAtom(ctx, fieldInitValidation)
-  }, name?.concat('.reset'))
+  }, `${name}.reset`)
 
   return Object.assign(dataAtom, {
     blur,
@@ -169,7 +177,7 @@ export const reatomField: {
 }
 
 export type FormOptions = {
-  name?: string
+  name: string
   onSubmit: Fn<[Ctx, Form]>
   onSubmitError?: Fn<[Ctx]>
 }
@@ -189,10 +197,7 @@ export const reatomForm = ({
   onSubmit,
   onSubmitError,
 }: FormOptions): Form => {
-  const fieldsListAtom = atom<Array<FieldAtom>>(
-    [],
-    name?.concat('.fieldsListAtom'),
-  )
+  const fieldsListAtom = atom<Array<FieldAtom>>([], `${name}.fieldsListAtom`)
   const validationAtom = atom((ctx) => {
     const formValid = { ...fieldInitValidation }
     for (const fieldAtom of ctx.spy(fieldsListAtom)) {
@@ -205,12 +210,12 @@ export const reatomForm = ({
     return isShallowEqual(formValid, fieldInitValidation)
       ? fieldInitValidation
       : formValid
-  }, name?.concat('.validationAtom'))
+  }, `${name}.validationAtom`)
 
   const reset = action(
     (ctx) =>
       ctx.get(fieldsListAtom).forEach((fieldAtom) => fieldAtom.reset(ctx)),
-    name?.concat('.reset'),
+    `${name}.reset`,
   )
 
   const handleSubmit = action((ctx) => {
@@ -221,7 +226,7 @@ export const reatomForm = ({
     const { valid, validating } = ctx.get(validationAtom)
     if (valid && !validating) onSubmit(ctx, form)
     else onSubmitError?.(ctx)
-  }, name?.concat('.onSubmit'))
+  }, `${name}.onSubmit`)
 
   const reatomFieldForm: typeof reatomField = (options) => {
     // TODO ?
