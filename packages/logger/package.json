@@ -1,6 +1,6 @@
 {
   "name": "@reatom/logger",
-  "version": "3.4.3",
+  "version": "3.4.5",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for logger",

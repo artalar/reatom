@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.4.5](https://github.com/artalar/reatom/compare/logger-v3.4.4...logger-v3.4.5) (2023-08-10)
+
+
+### Bug Fixes
+
+* **logger:** filtered action handler ([0fc5587](https://github.com/artalar/reatom/commit/0fc5587cc28df45f23aca0985ce822fbaf410812))
+
+## [3.4.4](https://github.com/artalar/reatom/compare/logger-v3.4.3...logger-v3.4.4) (2023-08-09)
+
+
+### Bug Fixes
+
+* **logger:** catch error in logs processing ([48f2884](https://github.com/artalar/reatom/commit/48f2884e9cfc65ba2d952d586125493474c19ec6))
+
 ## [3.4.3](https://github.com/artalar/reatom/compare/logger-v3.4.2...logger-v3.4.3) (2023-07-07)
 
 

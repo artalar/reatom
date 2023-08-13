@@ -6,24 +6,19 @@ We assumes that you already read [lifecycle guild](https://www.reatom.dev/guides
 
 A lot of cool examples you could find in [async package docs](https://www.reatom.dev/package/async).
 
-## `withInit`
+## onConnect
 
-Operator to set state creator callback to an atom, which is called by first atom subscription (during transaction).
+`onConnect` allows you to react to atom connection (first subscribtion). Optionally, you could return a cleanup callback.
+
+All connection (and disconnection) callbacks calling during effects queue - outside batching. The returned value is a dispose function used to deactivate the hook.
+
+"Connection" refers to the presence of any number of subscribers in the atom. The first subscriber activates the connection status, while the second subscriber does not interact with it. Unsubscribing the first subscriber has no effect since there is still one subscriber (the second one). However, after unsubscribing the second subscriber, the connection status will be deactivated, and if a cleanup callback is provided, it will be triggered. You can read more in the [lifecycle guide](https://www.reatom.dev/guides/lifecycle/).
 
 ```ts
 import { atom } from '@reatom/core'
-import { withInit } from '@reatom/hooks'
-
-const dateAtom = atom(0).pipe(withInit(() => Date.now()))
-```
-
-## `onConnect`
-
-Subscribe to atom subscription, optionally return cleanup callback. All connection (and disconnection) callbacks calling during effects queue - outside batching!
-
-```ts
 import { onConnect } from '@reatom/hooks'
 
+export const messagesAtom = atom([], 'messagesAtom')
 const dispose = onConnect(messagesAtom, (ctx) => {
   const cb = (message) => {
     messagesAtom(ctx, (messages) => [...messages, message])
@@ -35,20 +30,20 @@ const dispose = onConnect(messagesAtom, (ctx) => {
 })
 ```
 
-Passed `ctx` have `isConnected` method which checks the passed atom current status - [async example](https://www.reatom.dev/package/async#periodic-refresh-for-used-data). Also, `ctx` includes `controller` property which is AbortController - you could reuse it perfectly with `reatomAsync` - [another async example](https://www.reatom.dev/package/async#abortable-process)
+The passed `ctx` has an `isConnected` method to check the current status of the passed atom. You can refer to the [async example](https://www.reatom.dev/package/async#periodic-refresh-for-used-data) for more information. Additionally, the `ctx` includes a `controller` property, which is an AbortController. You can conveniently reuse it with `reatomAsync`. For further details, you can refer to [another async example](https://www.reatom.dev/package/async#abortable-process).
 
 ### Comparison with React
 
 For example, in React you should manage abort strategy by yourself by `useEffect`, if you want to cancel async process on unmount.
 
 ```tsx
-import { reatomAsync, withAbort } from '@reatom/async'
+import { reatomAsync, withAbort, withDataAtom } from '@reatom/async'
 import { useAtom, useAction } from '@reatom/npm-react'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
   'fetchList',
-).pipe(withAbort())
+).pipe(withAbort(), withDataAtom([]))
 
 export const List = () => {
   const [list] = useAtom(fetchList.dataAtom)
@@ -64,16 +59,16 @@ export const List = () => {
 }
 ```
 
-With Reatom you could simplify it and made more readable.
+With Reatom, you can simplify it and make it more readable.
 
 ```tsx
-import { reatomAsync, onConnect } from '@reatom/framework'
+import { reatomAsync, onConnect, withDataAtom } from '@reatom/framework'
 import { useAtom } from '@reatom/npm-react'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
   'fetchList',
-)
+).pipe(withDataAtom([]))
 onConnect(fetchList.dataAtom, fetchList)
 
 export const List = () => {
@@ -85,21 +80,24 @@ export const List = () => {
 
 Isn't it cool, how the size of the code is reduced and how the logic is simplified?
 
-## `onDisconnect`
+## onDisconnect
 
-Shortcut to `onConnect` return callback.
+Shortcut to `onConnect` returned callback.
 
-## `onUpdate`
+## onUpdate
 
-Derive atom or action update during transaction.
+The `onUpdate` hook allows you to react to state updates of the passed atom. However, this hook will be deprecated in the future. It is recommended and more convenient to use the atom's `onChange` method and the action's `onCall` method. You can find more information about these methods in the [core package documentation](https://www.reatom.dev/core/#atomonchange-api).
+
+For general computed atoms (via `ctx.spy`), it is only called when the atom is connected. You can read more in the [lifecycle guide](https://www.reatom.dev/guides/lifecycle/).
+
+One unique feature of `onUpdate` is that it could activate the entire chain of dependent atoms **if they are `LensAtom` or `LensAction`** from the [lens package](https://www.reatom.dev/package/lens/). It useful when you want to delay or sample the reaction.
 
 ```ts
 import { onUpdate } from '@reatom/hooks'
+import { debounce } from '@reatom/lens'
 
-const dispose = onUpdate(pagingAtom, (ctx, page) => fetchData(ctx, page))
+onUpdate(onChange.pipe(debounce(250)), (ctx) => fetchData(ctx))
 ```
-
-For computed atoms it is called only when the atom is connected.
 
 <!-- Very simplified example of lazy analytics connection.
 
@@ -119,28 +117,3 @@ for (const mod of [moduleA, moduleN]) {
   }
 }
 ``` -->
-
-## `spyChange`
-
-Spy an atom or an action change in the atom reducer. The difference with [onUpdate](#onupdate) is that `spyChange` is a warm link - works inside atom only when it have a connections.
-
-`spyChange(CtxSpy, anAtom, (value) => any): isChanged`
-
-```ts
-import { atom } from '@reatom/core'
-import { spyChange } from '@reatom/hooks'
-
-export const someAtom = atom((ctx, state = initState) => {
-  spyChange(ctx, someAction, (payload) => {
-    state = state + payload
-  })
-  // OR
-  if (spyChange(ctx, someAction)) {
-    state = state + payload
-  }
-})
-```
-
-<!-- ## `controlConnection` -->
-
-<!-- ## `isConnected` -->

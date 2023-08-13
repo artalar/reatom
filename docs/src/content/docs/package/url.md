@@ -13,7 +13,12 @@ npm i @reatom/url
 
 ## Usage
 
-Base primitive is `urlAtom` which contains `URL` and by default initiates with a browser `location.href`.
+Base primitive is `urlAtom`, it contains `URL` and by default initiates with a browser `location.href` (see [Behavior](#behavior) for details).
+
+You can call the `urlAtom.go` action with a root path to navigate programmatically.
+
+### Search parameters
+
 There is also `searchParamsAtom` which derives from `urlAtom` and allow you to handle search params reactively. You could pick needed parameter by `searchParamsAtom.lens` method just by passed key or specify the type of the parameter by providing optional `parse` and `serialize` functions.
 
 ```ts
@@ -42,6 +47,7 @@ Here are the types of the key features.
 ```ts
 // exported by `urlAtom`
 export interface UrlAtom extends AtomMut<URL> {
+  go: Action<[path: `/${string}`], URL>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
 

@@ -9,6 +9,7 @@ import {
   action,
   atom,
 } from '@reatom/core'
+import { isCausedBy } from '@reatom/effects'
 import { getRootCause, withInit } from '@reatom/hooks'
 import { noop } from '@reatom/utils'
 
@@ -19,6 +20,7 @@ export interface AtomUrlSettings {
 
 export interface UrlAtom extends AtomMut<URL> {
   go: Action<[path: `/${string}`], URL>
+  // TODO not documented yet, need more symbol matches, like in nanostores/router
   match: (path: `/${string}`) => Atom<boolean>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
@@ -33,8 +35,13 @@ export interface SearchParamsAtom extends Atom<Rec<string>> {
   ) => AtomMut<T>
 }
 
-const sync = (url: string) =>
-  history.pushState(null, null as unknown as string, url)
+const sync = (url: URL) => {
+  history.pushState(null, null as unknown as string, url.href)
+}
+
+const popstate = action((ctx, event: PopStateEvent) => {
+  urlAtom(ctx, new URL(location.href))
+}, 'urlAtom.popstate')
 /**Browser settings allow handling of the "popstate" event and a link click. */
 const createBrowserUrlAtomSettings = (
   shouldCatchLinkClick = true,
@@ -70,31 +77,30 @@ const createBrowserUrlAtomSettings = (
           !event.shiftKey && // Not open in new window by user
           !event.defaultPrevented // Click was not cancelled
         ) {
-          const { href } = link
-          urlAtom(ctx, new URL(href))
+          event.preventDefault()
 
-          ctx.schedule(() => {
-            event.preventDefault()
-            sync(href)
-            if (location.hash !== href) {
-              location.hash = href
+          const { hash, href } = urlAtom(ctx, new URL(link.href))
+
+          if (location.hash !== hash) {
+            ctx.schedule(() => {
+              location.hash = hash
               if (href === '' || href === '#') {
                 window.dispatchEvent(new HashChangeEvent('hashchange'))
               }
-            }
-          })
+            })
+          }
         }
       })
 
-    globalThis.addEventListener('popstate', () => {
-      urlAtom(ctx, new URL(location.href))
-    })
+    globalThis.addEventListener('popstate', (event) => popstate(ctx, event))
     if (shouldCatchLinkClick) document.body.addEventListener('click', click)
 
     return new URL(location.href)
   },
   sync: (ctx, url) => {
-    ctx.schedule(() => sync(url.href))
+    if (!isCausedBy(ctx.cause, popstate.__reatom)) {
+      ctx.schedule(() => sync(url))
+    }
   },
 })
 

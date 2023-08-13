@@ -1,6 +1,7 @@
 import {
   Atom,
   AtomCache,
+  AtomProto,
   AtomReturn,
   Ctx,
   Fn,
@@ -8,6 +9,18 @@ import {
   Unsubscribe,
 } from '@reatom/core'
 import { AbortError, noop, toAbortError } from '@reatom/utils'
+
+export class CauseContext<T> extends WeakMap<AtomCache, T> {
+  has(cause: AtomCache): boolean {
+    return super.has(cause) || (cause.cause !== null && this.has(cause.cause))
+  }
+  get(cause: AtomCache) {
+    while (!super.has(cause) && cause.cause) {
+      cause = cause.cause
+    }
+    return super.get(cause)
+  }
+}
 
 export const getTopController = (
   patch: AtomCache & { controller?: AbortController },
@@ -189,3 +202,7 @@ export const takeNested = <I extends any[]>(
 
     return result
   })
+
+export const isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
+  cause.cause !== null &&
+  (cause.cause.proto === proto || isCausedBy(cause.cause, proto))

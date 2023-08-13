@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.3.1](https://github.com/artalar/reatom/compare/undo-v3.3.0...undo-v3.3.1) (2023-08-07)
+
+
+### Bug Fixes
+
+* **undo:** history slice ([f86f9dd](https://github.com/artalar/reatom/commit/f86f9ddaeb727eaa7c7e15f9168b007c7b185fd5))
+
+## [3.3.0](https://github.com/artalar/reatom/compare/undo-v3.2.4...undo-v3.3.0) (2023-08-05)
+
+
+### Features
+
+* **undo:** add reatomDynamicUndo, more docs, refactoring ([cd21467](https://github.com/artalar/reatom/commit/cd21467eace6bb163d4bd80ff7869a5b78bc73d7))
+
 ## [3.2.4](https://github.com/artalar/reatom/compare/undo-v3.2.3...undo-v3.2.4) (2023-05-21)
 
 

@@ -160,63 +160,75 @@ export const connectLogger = (
   ctx.get((r) => (read = r))
 
   return ctx.subscribe((logs, error) => {
-    const states = new WeakMap<AtomProto, any>()
-    const changes = logs.reduce((acc, patch, i) => {
-      const { proto, state } = patch
-      const { isAction } = proto
-      let { name } = proto
+    let i = -1
+    try {
+      const states = new WeakMap<AtomProto, any>()
+      const changes: LogMsg['changes'] = {}
+      while (++i < logs.length) {
+        const patch = logs[i]!
 
-      if (skip(patch)) return acc
+        const { cause, proto, state } = patch
+        const { isAction } = proto
+        let { name } = proto
 
-      if (!name || name.startsWith('_') || /\._/.test(name)) {
-        if (skipUnnamed) return acc
-        name ??= 'unnamed'
+        if (skip(patch)) continue
+
+        if (!name || name.startsWith('_') || /\._/.test(name)) {
+          if (skipUnnamed) continue
+          name ??= 'unnamed'
+        }
+
+        const oldCache = read(proto)
+        const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
+        states.set(proto, state)
+
+        const isStateChanged = Object.is(state, oldState)
+        const isFilteredAction = isAction && state.length === 0
+
+        if (!isStateChanged || isFilteredAction) continue
+
+        let atomHistory = history.get(proto) ?? []
+        if (historyLength) {
+          atomHistory = atomHistory.slice(0, historyLength - 1)
+          atomHistory.unshift(
+            isAction ? { ...patch, state: [...state] } : patch,
+          )
+          history.set(proto, atomHistory)
+        }
+
+        const isConnection =
+          !oldCache &&
+          cause!.proto.name === 'root' &&
+          (!isAction || state.length === 0)
+
+        if (isConnection) continue
+
+        const changeMsg: unstable_ChangeMsg = (changes[`${i + 1}.${name}`] = {
+          patch,
+          history: atomHistory,
+        })
+
+        if (isAction) {
+          const call = state.at(-1) as { params: Array<any>; payload: any }
+          changeMsg.params = call.params
+          changeMsg.payload = call.payload
+        } else {
+          changeMsg.newState = state
+          changeMsg.oldState = oldState
+        }
+        changeMsg.patch = patch
+        if (showCause) changeMsg.cause = getCause(patch)
       }
 
-      const oldCache = read(proto)
-      const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
-      states.set(proto, state)
-
-      const isConnection =
-        !oldCache &&
-        patch.cause!.proto.name === 'root' &&
-        (!isAction || state.length === 0)
-
-      let atomHistory = history.get(proto) ?? []
-      if (!Object.is(state, oldState) && historyLength) {
-        atomHistory = atomHistory.slice(0, historyLength - 1)
-        atomHistory.unshift(isAction ? { ...patch, state: [...state] } : patch)
-        history.set(proto, atomHistory)
-      }
-
-      if (isConnection || Object.is(state, oldState)) {
-        return acc
-      }
-
-      const changeMsg: unstable_ChangeMsg = (acc[`${i + 1}.${name}`] = {
-        patch,
-        history: atomHistory,
+      log({
+        error,
+        changes,
+        logs,
+        ctx,
       })
-
-      if (isAction) {
-        const call = state.at(-1) as { params: Array<any>; payload: any }
-        changeMsg.params = call.params
-        changeMsg.payload = call.payload
-      } else {
-        changeMsg.newState = state
-        changeMsg.oldState = oldState
-      }
-      changeMsg.patch = patch
-      if (showCause) changeMsg.cause = getCause(patch)
-
-      return acc
-    }, {} as LogMsg['changes'])
-
-    log({
-      error,
-      changes,
-      logs,
-      ctx,
-    })
+    } catch (error) {
+      console.error('Reatom/logger error with', logs[i])
+      console.log(error)
+    }
   })
 }

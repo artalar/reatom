@@ -37,7 +37,9 @@ import { createCtx } from '@reatom/core'
 export const ctx = createCtx()
 ```
 
-All atoms and actions accepts `ctx` by a first argument, it helps you a lot in many things: testing, debugging, SSR, effects chains management and logging. You could add `ctx.subscribe(logs => console.log(logs))` or connect separate [logger](/package/logger) to see all changes in your app.
+All atoms and actions accept `ctx` as their first argument to match and process all data inside it. It helps you a lot in many things: testing, debugging, SSR, effects chains management and logging. It is the **most powerful** feature of Reatom, and your best friend in any complex case. And it only requires three extra letters for each function call - super tiny!
+
+As the entire data processing flows through the context, you can easily inspect it: `ctx.subscribe(logs => console.log(logs))` or connect a separate [logger](/package/logger) to view all changes in your app with proper formatting.
 
 Now, let's describe a logic.
 
@@ -55,8 +57,12 @@ const goodsAtom = atom(new Array<Goods>())
 // with smart and optimized caching
 const tipAtom = atom((ctx) => {
   // read and subscribe by `ctx.spy`
+  const isSearching = ctx.spy(isSearchingAtom)
   const goodsCount = ctx.spy(goodsAtom).length
 
+  if (isSearching) {
+    return 'Searching...'
+  }
   if (goodsCount === 0) {
     // read atom lazy without subscribing by `get`
     return ctx.get(searchAtom) ? 'Nothing found' : 'Try to search something'
@@ -68,39 +74,31 @@ const tipAtom = atom((ctx) => {
 })
 
 // define your actions to handle any effects and work with atoms
-
-const onSearch = action((ctx, event) => {
+const fetchGoods = action(async (ctx, search: string) => {
   // mutate base atoms by passing relative ctx and the new state
-  searchAtom(ctx, event.currentTarget.value)
-})
+  goodsAtom(ctx, [])
 
-const fetchGoods = action((ctx) => {
-  const search = ctx.get(searchAtom)
+  if (search === '') return
 
   // all sync updates inside action automatically batched
-  // and dependent computations will call after the action callback return
+  // (relative atoms will compute after the function sync part)
   isSearchingAtom(ctx, true)
 
   // schedule side-effects
   // which will be called after successful execution of all computations
-  const promise = ctx.schedule(async () => {
-    const response = await fetch(`/api/goods?search=${search}`)
-    if (!response.ok) throw new Error('Network response was not ok')
-    const goods = await response.json()
+  const goods = await ctx.schedule(() =>
+    fetch(`/api/goods?search=${search}`).then((r) => r.json()),
+  )
 
-    // pass a callback to `get` to batch a few updates inside async resolve
-    ctx.get(() => {
-      isSearchingAtom(ctx, false)
-      goodsAtom(ctx, goods)
-    })
+  // pass a callback to `get` to batch a few updates inside async resolve
+  ctx.get(() => {
+    isSearchingAtom(ctx, false)
+    goodsAtom(ctx, goods)
   })
-
-  // returned promise could be handled in place of the action call
-  return promise
 })
+// react to data changes
+searchAtom.onChange(fetchGoods)
 ```
-
-As you can see, most callbacks passed in Reatom units accept `ctx` as their first argument - this is the main convention, which allows you to not use imports and write more cleanly. Some advanced helper packages could extend or redefine the `ctx` for additional features and typesafety, so when you need it, there will be no code changes required for the feature.
 
 Here we just described the logic of a module which uses `ctx`, but does not import it. This is because we want to use the same module in different contexts, such as view components and tests. It is a good architectural practice in itself.
 
@@ -109,7 +107,7 @@ So, we should connect an IO and our module together somewhere.
 ```ts
 // ~/features/search/index.ts
 import { ctx } from '~/ctx'
-import { searchAtom, tipAtom, onSearch, fetchGoods } from './model'
+import { tipAtom, onSearch, fetchGoods } from './model'
 
 // subscribe to your atoms
 ctx.subscribe(tipAtom, (tip) => {
@@ -117,12 +115,12 @@ ctx.subscribe(tipAtom, (tip) => {
 })
 // handle user interactions by your actions
 document.getElementById('search-input').addEventListener('input', (event) => {
-  onSearch(ctx, event)
-  fetchGoods(ctx)
+  searchAtom(ctx, event.currentTarget.value)
 })
 ```
 
 > Do you want to see next [the docs for React adapter](/adapter/npm-react)?
+
 
 ### Action handling (advanced)
 

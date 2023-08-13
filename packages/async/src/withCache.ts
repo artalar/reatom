@@ -15,6 +15,7 @@ import {
   AsyncAction,
   AsyncCause,
   AsyncCtx,
+  AsyncDataAtom,
   AsyncResp,
   ControlledPromise,
   unstable_dropController,
@@ -138,7 +139,7 @@ const NOOP_TIMEOUT_ID = -1 as unknown as ReturnType<typeof setTimeout>
 export const withCache =
   <
     T extends AsyncAction & {
-      dataAtom?: AtomMut
+      dataAtom?: AsyncDataAtom
       cacheAtom?: CacheAtom<AsyncResp<T>, ActionParams<T>>
     },
   >({
@@ -420,12 +421,17 @@ export const withCache =
         const { initState } = anAsync.dataAtom!.__reatom
         anAsync.dataAtom!.__reatom.initState = (ctx) => {
           const cached = findLatestWithValue(ctx)
-          return cached ? cached.value : initState(ctx)
+          const iniState = initState(ctx)
+          return cached
+            ? anAsync.dataAtom!.mapFulfill
+              ? anAsync.dataAtom!.mapFulfill(ctx, cached.value, iniState)
+              : cached.value
+            : iniState
         }
       }
 
       // TODO handle it in dataAtom too to not couple to the order of operations
-      if ('dataAtom' in anAsync) {
+      if (withPersist && 'dataAtom' in anAsync) {
         onConnect(anAsync.dataAtom!, (ctx) =>
           ctx.subscribe(cacheAtom, () => {}),
         )
