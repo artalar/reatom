@@ -4,14 +4,14 @@ export type Plain<Intersection> = Intersection extends (
   ...a: infer I
 ) => infer O
   ? ((...a: I) => O) & {
-      [Key in keyof Intersection]: Intersection[Key]
-    }
+    [Key in keyof Intersection]: Intersection[Key]
+  }
   : Intersection extends new (...a: any[]) => any
   ? Intersection
   : Intersection extends object
   ? {
-      [Key in keyof Intersection]: Intersection[Key]
-    }
+    [Key in keyof Intersection]: Intersection[Key]
+  }
   : Intersection
 
 export type Values<T> = T[keyof T]
@@ -39,8 +39,8 @@ export const isObject = <T>(
   thing: T,
   // @ts-expect-error
 ): thing is T extends Record<string | number | symbol, unknown>
-  ? T
-  : Record<string | number | symbol, unknown> =>
+? T
+: Record<string | number | symbol, unknown> =>
   typeof thing === 'object' && thing !== null
 
 // TODO infer `b` too
@@ -111,10 +111,10 @@ export const isDeepEqual = (a: any, b: any) => {
 
 export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
   (T1 extends (...a: infer I) => infer O ? (...a: I) => O : {}) &
-    Omit<T1, keyof T2 | keyof T3 | keyof T4> &
-    Omit<T2, keyof T3 | keyof T4> &
-    Omit<T3, keyof T4> &
-    T4
+  Omit<T1, keyof T2 | keyof T3 | keyof T4> &
+  Omit<T2, keyof T3 | keyof T4> &
+  Omit<T3, keyof T4> &
+  T4
 >
 
 /** `Object.assign` with fixed types, equal properties replaced instead of changed to a union */
@@ -170,7 +170,7 @@ export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
   throw new TypeError(message || 'Value is null or undefined')
 }
 
-const { toString } = Object.prototype
+const {toString} = Object.prototype
 const visited = new WeakMap<{}, string>()
 /** Stringify any kind of data with some sort of stability.
  * Support: an object keys sorting, `Map`, `Set`, circular references, custom classes, functions and symbols.
@@ -222,7 +222,7 @@ export interface AbortError extends DOMException {
 export const toAbortError = (reason: any): AbortError => {
   if (reason instanceof Error === false || reason.name !== 'AbortError') {
     if (reason instanceof Error) {
-      var options: undefined | ErrorOptions = { cause: reason }
+      var options: undefined | ErrorOptions = {cause: reason}
       reason = reason.message
     } else {
       reason = isObject(reason) ? toString.call(reason) : String(reason)
