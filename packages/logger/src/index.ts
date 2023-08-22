@@ -182,7 +182,7 @@ export const connectLogger = (
         const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
         states.set(proto, state)
 
-        const isStateChanged = Object.is(state, oldState)
+        const isStateChanged = !Object.is(state, oldState)
         const isFilteredAction = isAction && state.length === 0
 
         if (!isStateChanged || isFilteredAction) continue
