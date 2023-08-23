@@ -1,6 +1,8 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 import { isShallowEqual } from '@reatom/utils'
 
+import { logGraph } from './graphView'
+
 export interface unstable_ChangeMsg {
   newState?: any
   oldState?: any
@@ -9,6 +11,7 @@ export interface unstable_ChangeMsg {
   cause?: string
   history: Array<AtomCache>
   params?: Array<any>
+  time: number
 }
 export interface LogMsg {
   error: undefined | Error
@@ -29,6 +32,8 @@ const getTimeStampDefault = () => {
   return `${new Date().toLocaleTimeString()} ${ms}ms`
 }
 
+let timesPrecision = 10 ** 15
+
 export const createLogBatched = ({
   debounce = 500,
   getTimeStamp = getTimeStampDefault,
@@ -36,6 +41,7 @@ export const createLogBatched = ({
   log = console.log,
   domain = '',
   shouldGroup = false,
+  shouldLogGraph = false,
 }: {
   debounce?: number
   getTimeStamp?: () => string
@@ -43,6 +49,7 @@ export const createLogBatched = ({
   log?: typeof console.log
   domain?: string
   shouldGroup?: boolean
+  shouldLogGraph?: boolean
 } = {}) => {
   if (domain) domain = `(${domain}) `
   let queue: Array<LogMsg & { time: string }> = []
@@ -68,6 +75,17 @@ export const createLogBatched = ({
         console.groupCollapsed(
           `Reatom ${domain}${length} transaction${length > 1 ? 's' : ''}`,
         )
+
+        if (shouldLogGraph) {
+          logGraph(
+            new Set(
+              queue
+                .flatMap(({ changes }) => Object.values(changes))
+                .sort((a, b) => a.time - b.time)
+                .map(({ patch }) => patch),
+            ),
+          )
+        }
 
         for (const { changes, time, error } of queue) {
           console.log(
@@ -206,6 +224,7 @@ export const connectLogger = (
         const changeMsg: unstable_ChangeMsg = (changes[`${i + 1}.${name}`] = {
           patch,
           history: atomHistory,
+          time: (globalThis.performance ?? Date).now() + 1 / timesPrecision--,
         })
 
         if (isAction) {
