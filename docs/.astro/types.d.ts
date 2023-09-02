@@ -278,13 +278,6 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"getting-started.md": {
-	id: "getting-started.md";
-  slug: "getting-started";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
 "guides/architecture.md": {
 	id: "guides/architecture.md";
   slug: "guides/architecture";
@@ -337,6 +330,13 @@ declare module 'astro:content' {
 "guides/typescript.md": {
 	id: "guides/typescript.md";
   slug: "guides/typescript";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"handbook.md": {
+	id: "handbook.md";
+  slug: "handbook";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

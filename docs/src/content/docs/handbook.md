@@ -1,6 +1,6 @@
 ---
-title: Getting started
-description: Short guide of how to use Reatom
+title: Handbook
+description: The full guide of how to use Reatom
 ---
 
 Welcome to the wonderful world of the Reatom library! 🤗
