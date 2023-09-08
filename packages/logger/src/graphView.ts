@@ -1,21 +1,32 @@
 import { AtomCache, __root } from '@reatom/core'
 
 export const logGraph = (logsSet: Set<AtomCache>) => {
+  const visited = new Set<AtomCache>()
+  const checkCause = (patch: AtomCache) => {
+    if (
+      patch.cause &&
+      patch.cause.proto !== __root &&
+      (!patch.cause.proto.name!.startsWith('_') ||
+        !patch.cause.proto.name!.includes('._')) &&
+      !logsSet.has(patch.cause) &&
+      !visited.has(patch.cause)
+    ) {
+      checkCause(patch.cause)
+      visited.add(patch.cause)
+    }
+  }
+  for (const patch of logsSet) checkCause(patch)
   const logs = [...logsSet]
   const r = 10
   const xGap = r * 2
   const yGap = r * 3
-  const shiftRatio = 10 * xGap
-  const maxShift = Math.floor(
-    ((logs.reduce(
-      (acc, patch, i) =>
-        Math.max(acc, i - ((patch.cause && logs.indexOf(patch.cause)) ?? i)),
-      0,
-    ) /
-      logs.length) *
-      shiftRatio) /
-      2,
+  const maxDistance = logs.reduce(
+    (acc, patch, i) =>
+      Math.max(acc, i - ((patch.cause && logs.indexOf(patch.cause)) ?? i)),
+    0,
   )
+  const shiftRatio = maxDistance * xGap
+  const maxShift = Math.floor((maxDistance / logs.length) * shiftRatio)
 
   const x = maxShift + xGap
   let y = yGap
@@ -24,13 +35,18 @@ export const logGraph = (logsSet: Set<AtomCache>) => {
 
   for (const patch of logs) {
     // if (!patch.cause) continue;
-    const color = patch.proto.isAction ? '#ffff80' : '#151134'
+    const { isAction, name } = patch.proto
+    const color = isAction
+      ? name!.endsWith('.onFulfill')
+        ? '#E6DC73'
+        : '#ffff80'
+      : '#151134'
     body += `<circle cx="${x}" cy="${y}" r="${r}" fill="${color}" />`
     body += `<text x="${x + r * 1.5}" y="${
       y + r / 2
-    }" font-size="${r}" fill="gray">${patch.proto.name}</text>`
+    }" font-size="${r}" fill="gray">${name}</text>`
     y += yGap
-    width = Math.max(width, x + (patch.proto.name!.length * r) / 2 + xGap)
+    width = Math.max(width, x + name!.length * r)
   }
 
   logs.forEach(({ cause }, idx) => {
@@ -57,9 +73,7 @@ export const logGraph = (logsSet: Set<AtomCache>) => {
   const dataUrl = `data:image/svg+xml,${encodeURIComponent(svg)}`
   const bgUrl = `url(${dataUrl})`
   console.log(
-    '%c ',
-    `font-size:${
-      y - 2 * yGap
-    }px; background: ${bgUrl} no-repeat; font-family: monospace;`,
+    '%c                         ',
+    `font-size:${y}px; background: ${bgUrl} no-repeat; font-family: monospace;`,
   )
 }
