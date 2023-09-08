@@ -1,6 +1,7 @@
 import React from 'react'
 import { useSyncExternalStore } from 'use-sync-external-store/shim'
 import {
+  __count,
   action,
   Action,
   atom,
@@ -18,10 +19,12 @@ import {
 import { bind, Binded } from '@reatom/lens'
 
 let getName = (type: string): string => {
-  let name =
+  let Component =
     // @ts-expect-error do we have another way?
     React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner
-      ?.current?.type?.name
+      ?.current?.type
+
+  let name = Component?.displayName ?? Component?.name
   return (name && name.concat('.', type)) || `_${type}`
 }
 
@@ -271,3 +274,69 @@ export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
 
 //     return element
 //   }
+
+type RenderState = [number, JSX.Element]
+
+type CtxRender = CtxSpy & { bind<T extends Fn>(fn: T): Binded<T> }
+
+export const reatomComponent = <T>(
+  Component: (props: T & { ctx: CtxRender }) => JSX.Element,
+  name = __count('сomponentAtom'),
+): ((props: T) => JSX.Element) => {
+  const propsAtom = atom<T>({} as T & { ctx: CtxRender }, `${name}._propsAtom`)
+  const renderAtom = atom(
+    (
+      ctx: CtxRender,
+      [version, element]: RenderState = [0, {} as JSX.Element],
+    ): RenderState => {
+      const props = ctx.spy(propsAtom)
+      ctx.bind = (fn) => bind(ctx, fn)
+      // @ts-expect-error props cloned in the render
+      props.ctx = ctx
+
+      if (rendering) {
+        return [version, Component(props as T & { ctx: CtxRender })]
+      }
+
+      // do not drop subscriptions from the render
+      for (
+        // skip `propsAtom`
+        let i = 1;
+        i < ctx.cause.pubs.length;
+        i++
+      ) {
+        // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
+        ctx.spy({ __reatom: ctx.cause.pubs[i]!.proto })
+      }
+
+      return [version + 1, element]
+    },
+    name,
+  ) as Atom as Atom<RenderState>
+
+  let rendering = false
+
+  return (props) => {
+    const ctx = useCtx()
+    const [version, setState] = React.useState(0)
+    let versionRef = React.useRef(0)
+    versionRef.current = version
+    React.useEffect(
+      () =>
+        ctx.subscribe(renderAtom, ([version]) => {
+          // FIXME for some reason equality check of `setState` breaks here
+          if (version !== versionRef.current) setState(version)
+        }),
+      [ctx, setState],
+    )
+    return ctx.get(() => {
+      propsAtom(ctx, { ...props })
+      try {
+        rendering = true
+        return ctx.get(renderAtom)[1]
+      } finally {
+        rendering = false
+      }
+    })
+  }
+}
