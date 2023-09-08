@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/logger-v3.4.5...logger-v3.5.0) (2023-09-08)
+
+
+### Features
+
+* **logger:** add shouldLogGraph ([39ea646](https://github.com/artalar/reatom/commit/39ea64680cdf0dea23045e7d13c6a45e927df541))
+
+
+### Bug Fixes
+
+* **logger:** filter changed state ([d9019a2](https://github.com/artalar/reatom/commit/d9019a2acb34bdd09d89aa0028754269d4024852))
+
 ## [3.4.5](https://github.com/artalar/reatom/compare/logger-v3.4.4...logger-v3.4.5) (2023-08-10)
 
 
