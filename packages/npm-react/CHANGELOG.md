@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/npm-react-v3.4.2...npm-react-v3.5.0) (2023-09-08)
+
+
+### Features
+
+* **npm-react:** add reatomComponent ([e170a88](https://github.com/artalar/reatom/commit/e170a88dc594b385dd2855974594c1dd87bdde66))
+
 ## [3.4.2](https://github.com/artalar/reatom/compare/npm-react-v3.4.1...npm-react-v3.4.2) (2023-07-13)
 
 
