@@ -72,7 +72,7 @@ export const atomRule: Rule.RuleModule = {
             source: node.arguments[1],
             changeType: 'replace',
             correctName: atomName,
-            highlightNode: node.callee,
+            highlightNode: node.arguments[1],
           })
         }
       },
