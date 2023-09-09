@@ -26,14 +26,12 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Getting Started',
-          link: 'getting-started',
           autogenerate: {
             directory: 'getting-started',
           },
         },
         {
           label: 'Recipes',
-          link: 'recipes',
           autogenerate: {
             directory: 'recipes',
           },
@@ -49,7 +47,7 @@ export default defineConfig({
         {
           label: 'Packages',
           autogenerate: {
-            directory: 'package',
+            directory: 'packages',
           },
         },
         {
