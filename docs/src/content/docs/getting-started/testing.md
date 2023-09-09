@@ -1,5 +1,6 @@
 ---
-title: testing
+title: Testing
 description: Explaining how to test reatom code
-order: 4
+sidebar: 
+  order: 4
 ---

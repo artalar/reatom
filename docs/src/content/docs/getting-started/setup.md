@@ -1,55 +1,73 @@
 ---
-title: setup
+title: Setup
 description: Explaining initial setup
-order: 1
+sidebar: 
+  order: 1
 ---
 
-## Installation
+## Create new project from template
+
+You can use [degit](https://github.com/Rich-Harris/degit) package for quick start project with reatom.  
+
+##### Reatom + React + TypeScript + Prettier + Vite
+
+```
+npx degit github:artalar/reatom-react-ts my-project
+cd my-project
+
+npm install
+npm run dev
+```
+
+
+## Add to existing project
 
 ```
 npm i @reatom/core
 ```
 
-## TypeScript
+### With TypeScript
 
-All interfaces in Reatom designed with focus in automatic type inference. You almost never need to define types by your hand in fabrics generics in a regular code, all you need is **correct types for passed data / options**.
+You don't need to do anything, type inference works as you'd expect
 
 ```ts
-const numAtom = atom(3)
-// numAtom: AtomMut<number>
+// AtomMut<number>
+const numAtom = atom(3) 
 
-const strAtom = atom('foo')
-// strAtom: AtomMut<string>
+// AtomMut<string>
+const strAtom = atom('foo') 
 
-const dynamicAtom = atom((ctx) => {
+// Atom<string | number>
+const dynamicAtom = atom((ctx) => { 
   const num = ctx.spy(numAtom)
   const str = ctx.spy(strAtom)
   return num > 0 ? num : str
 })
-// dynamicAtom: Atom<string | number>
 ```
 
-Also generic supported when needed
+Generics supported as well
 
 ```ts
-/* Don't forget enable strictNullChecks in tsconfig */
-const nullableAtom = atom<string | null>(null)
-// strAtom: AtomMut<string | null>
+/* tsconfig: strictNullChecks: true */
+// AtomMut<string | null>
+const nullableAtom = atom<string | null>(null) 
 ```
 
 You can play with this example on [typescript playground](https://www.typescriptlang.org/play?#code/JYWwDg9gTgLgBAbzgQwMY2BAdgGhTCEOAXzgDMpC4ByAASgFNkCQB6VaB6gKF46wDO8LAFcQAQRZwAvPkIAKAMwBKANx9sQuEKiSqs5gupkIEamo2D4GMHqIGW8+egAeymQD5E3OHH5bRez8YFwA6ATAAT3lAu2UfP014HRlgsIjonTiEhOAyOBixOC8ABncEBN9GGBEoLDhA9V9SBgAbAQZvXyqGGrrtGCgE4m5iC25-YRFW1uQAI1aGO1TDEAAeHWAsAHM4AB8G6daPQpm1IA)
 
-## ESlint
+### With ESlint
 
-We recommend using the eslint plugin `@reatom` as it helps you write code and greatly improves the debugging experience.
+We recommend using the `@reatom/eslint-plugin`.  
+This is optional, but greatly improves the development experience.
 
-### Installation
+#### Installation
 
 ```
 npm i -D @reatom/eslint-plugin
 ```
 
-### Usage
+
+#### Usage
 
 You should add @reatom to plugins and specify extends or rules into your config.
 
@@ -60,9 +78,9 @@ You should add @reatom to plugins and specify extends or rules into your config.
 }
 ```
 
-### Configuration
+#### Configuration
 
-Plugin have next rules:
+Example of customizing rules:
 
 ```json
 {
@@ -76,13 +94,11 @@ Plugin have next rules:
 }
 ```
 
-### Examples
+More examples you can found in [package documentation](https://www.npmjs.com/package/@reatom/eslint-plugin)
 
-- [React + TypeScript + Prettier + Vite config with Reatom](https://github.com/artalar/reatom-react-ts/blob/3632b01d6a58a35602d1c191e5d6b53a7717e747/package.json).
+### With React
 
-## React
-
-### Installation
+#### Installation
 
 ```
 npm i @reatom/npm-react
@@ -147,8 +163,7 @@ export const App = () => (
 
 ```
 
-### Usage
-
+#### Usage
 `useAtom` allow use atoms inside react components, and  
 `useAction` same but for actions.
 Here is how:
@@ -192,10 +207,12 @@ const Greeting = () => {
 }
 ```
 
-[//]: # (TODO: Add link to package documentation)
-This is very basic functionality of reatom-react bindings, see more in package documentation
+
+This is very basic functionality of reatom-react bindings, see more in [package documentation](https://www.npmjs.com/package/@reatom/npm-react)
 
 
-## Solid
+<!--
+### With Solid
 
-## Vue
+### With Vue
+-->

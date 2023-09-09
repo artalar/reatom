@@ -1,7 +1,8 @@
 ---
-title: learning
+title: Learning
 description: Explaining basic concepts, primitives and tools 
-order: 2
+sidebar: 
+  order: 2
 ---
 
 Atom

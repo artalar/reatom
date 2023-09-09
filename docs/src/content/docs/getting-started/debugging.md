@@ -1,5 +1,6 @@
 ---
-title: debugging
+title: Debugging
 description: Explaining how to install and use debug tools
-order: 3
+sidebar: 
+  order: 3
 ---
