@@ -59,6 +59,9 @@ tester.run('reatom/atom-rule', atomRule, {
       errors: [
         {
           message: `atom "countAtom" should be named as it's variable name, rename it to "countAtom"`,
+          line: 3,
+          column: 39,
+          endColumn: 46,
         },
       ],
       output: `
@@ -89,6 +92,9 @@ tester.run('reatom/atom-rule', atomRule, {
       errors: [
         {
           message: `atom "storeAtom" should be named as it's variable name, rename it to "storeAtom"`,
+          line: 3,
+          column: 49,
+          endColumn: 51,
         },
       ],
       output: `
@@ -125,6 +131,9 @@ tester.run('reatom/atom-rule', atomRule, {
       errors: [
         {
           message: `atom "someAtom" should be named as it's variable name, rename it to "someAtom"`,
+          line: 4,
+          column: 29,
+          endColumn: 31,
         },
       ],
       output: `
