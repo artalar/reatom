@@ -242,98 +242,62 @@ export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
   return ctxRef.current
 }
 
-// export let unstable_reatomComponent =
-//   <T = {}>(
-//     render: (
-//       ctx: CtxSpy,
-//       props: React.PropsWithChildren<T>,
-//     ) => React.ReactElement,
-//   ): React.FC<T> =>
-//   (props) => {
-//     let ctx = useCtx()
-//     return ctx.get(() => {
-//       let trackCtx: Ctx = {
-//         get: ctx.get,
-//         spy(anAtom) {},
-//         schedule: ctx.schedule,
-//         subscribe: ctx.subscribe,
-//         cause: ctx.cause,
-//       }
-//       let element = render(trackCtx, props)
-//     })
-
-//     let [propsAtom] = useState(() => atom(props))
-//     propsAtom(useCtx(), props)
-//     let [[element]] = useAtom((ctx, state?: any) => {
-//       let props = ctx.spy(propsAtom)
-
-//       return [
-//         props === ctx.cause!.parents[0]?.state ? state : render(ctx, props),
-//       ]
-//     })
-
-//     return element
-//   }
-
-type RenderState = [number, JSX.Element]
-
 type CtxRender = CtxSpy & { bind<T extends Fn>(fn: T): Binded<T> }
+type RenderState = JSX.Element & { REATOM_DEPS_CHANGE?: true }
 
 export const reatomComponent = <T>(
   Component: (props: T & { ctx: CtxRender }) => JSX.Element,
-  name = __count('сomponentAtom'),
+  name = __count('Component'),
 ): ((props: T) => JSX.Element) => {
   const propsAtom = atom<T>({} as T & { ctx: CtxRender }, `${name}._propsAtom`)
   const renderAtom = atom(
-    (
-      ctx: CtxRender,
-      [version, element]: RenderState = [0, {} as JSX.Element],
-    ): RenderState => {
-      const props = ctx.spy(propsAtom)
+    (ctx: CtxRender, state?: RenderState): RenderState => {
+      const { pubs } = ctx.cause
+      const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
+
       ctx.bind = (fn) => bind(ctx, fn)
-      // @ts-expect-error props cloned in the render
-      props.ctx = ctx
 
       if (rendering) {
-        return [version, Component(props as T & { ctx: CtxRender })]
+        if (state?.REATOM_DEPS_CHANGE) {
+          ctx.cause.cause = ctx.get((read) => read(renderAtom.__reatom)!.cause)
+        }
+        props.ctx = ctx
+        return Component(props)
       }
 
       // do not drop subscriptions from the render
       for (
         // skip `propsAtom`
         let i = 1;
-        i < ctx.cause.pubs.length;
+        i < pubs.length;
         i++
       ) {
         // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
-        ctx.spy({ __reatom: ctx.cause.pubs[i]!.proto })
+        ctx.spy({ __reatom: pubs[i]!.proto })
       }
 
-      return [version + 1, element]
+      return { ...state!, REATOM_DEPS_CHANGE: true }
     },
-    name,
+    `${name}._renderAtom`,
   ) as Atom as Atom<RenderState>
 
   let rendering = false
 
   return (props) => {
     const ctx = useCtx()
-    const [version, setState] = React.useState(0)
-    let versionRef = React.useRef(0)
-    versionRef.current = version
+    const [, forceUpdate] = React.useState({} as JSX.Element)
     React.useEffect(
       () =>
-        ctx.subscribe(renderAtom, ([version]) => {
-          // FIXME for some reason equality check of `setState` breaks here
-          if (version !== versionRef.current) setState(version)
+        ctx.subscribe(renderAtom, (element) => {
+          if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
         }),
-      [ctx, setState],
+      [ctx, forceUpdate],
     )
     return ctx.get(() => {
       propsAtom(ctx, { ...props })
       try {
         rendering = true
-        return ctx.get(renderAtom)[1]
+        return ctx.get(renderAtom)
       } finally {
         rendering = false
       }
