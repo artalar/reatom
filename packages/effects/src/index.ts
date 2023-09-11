@@ -78,6 +78,8 @@ export const __thenReatomed = <T>(
         ctx.get((read, actualize) =>
           chain!.catch.forEach((cb) => cb(error, read, actualize)),
         )
+        // prevent Uncaught DOMException for aborts
+        if (isAbort(error)) promise.catch(noop)
         throw error
       },
     )
