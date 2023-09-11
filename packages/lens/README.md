@@ -102,7 +102,7 @@ export const dataAtom = fetchList.pipe(
 
 ## `mapInput`
 
-Create action witch map input to passed action / atom.
+Create action which map input to passed action / atom.
 
 ```ts
 import { atom } from '@reatom/core'

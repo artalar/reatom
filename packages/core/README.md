@@ -280,7 +280,7 @@ const countAtom = withInit(() => localStorage.getItem('COUNT') ?? 0)(atom(0))
 
 > `withInit` allows you to configure the init state of the atom reading, which is more pridictable and safe for a testing sometimes. It is a part of [reatom/hooks](https://www.reatom.dev/package/hooks#withinit) package.
 
-Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](https://www.reatom.dev/package/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guild](https://www.reatom.dev/guides/naming#operator-prefix)
+Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](https://www.reatom.dev/package/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guide](https://www.reatom.dev/guides/naming#operator-prefix)
 
 Btw, actions has `pipe` too!
 
@@ -426,7 +426,7 @@ The unique feature of Reatom and the schedule specially is ability to define the
 - `1` - the **default** near effect queue, used to schedule regular effects. This effects calling could be redefined (delayed) in `callNearEffect` option of `createCtx`
 - `2` - lates effect queue, used to schedule subscribers. This effects calling could be redefined (delayed) in `callLateEffect` option of `createCtx`.
 
-> Read more in [lifecycle guild](https://www.reatom.dev/guides/lifecycle).
+> Read more in [lifecycle guide](https://www.reatom.dev/guides/lifecycle).
 
 #### `ctx.schedule` rollback API
 

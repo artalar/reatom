@@ -84,7 +84,7 @@ amountAtom.getState()
 <details>
  <summary>Explanation</summary>
 
-- Bundle size is important because witch it smaller thats more projects you may cover with chosen solution. Reusable tech stack increase your performance and reduce contexts switching.
+- Bundle size is important because which it smaller thats more projects you may cover with chosen solution. Reusable tech stack increase your performance and reduce contexts switching.
 - Granularity describe the type of dependencies tracking and lack of it may reduce performance.
 - TODO...
 
