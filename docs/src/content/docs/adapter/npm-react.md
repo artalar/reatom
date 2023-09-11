@@ -139,7 +139,7 @@ What, why? In the example bellow we creating "inline" atoms, which will live onl
 - You could depend your atoms by a props (deps changing will cause the callback rerun, the atom will the same).
 - Easy access to services, in case you use reatom as a DI.
 - Component inline atoms could be used for other computations, which could prevent rerenders ([see above](#prevent-rerenders)).
-- Created actions and atoms will be visible in logger / debugger with async `cause` tracking, witch is much better for debugging than `useEffect`.
+- Created actions and atoms will be visible in logger / debugger with async `cause` tracking, which is much better for debugging than `useEffect`.
 - Unify codestyle for any state (local and global) description.
 - Easy to refactor to global state.
 

@@ -241,11 +241,11 @@ All builds have two types of output formats: CJS (`exports.require`, `main`) and
 
 [Here is the benchmark](https://github.com/artalar/reactive-computed-bench) of complex computations for different state managers. Note that Reatom by default uses immutable data structures, works in a separate context (DI-like) and keeps [atomicity](/general/what-is-state-manager#state), which means the Reatom test checks more features, than other state manager tests. Anyway, for the middle numbers Reatom faster than MobX which is pretty impressive.
 
-Also, check out [atomization guild](/guides/atomization).
+Also, check out [atomization guide](/guides/atomization).
 
 ### Limitations
 
-Of course there are no software without limitations. Reatom is trying to be a silver bullet but we still have some cases witch you should know about.
+Of course there are no software without limitations. Reatom is trying to be a silver bullet but we still have some cases which you should know about.
 
 - Immutable data always have an additional performance impact and in critical cases you should think well about your structures and how you could handle it better. The good news is that you [don't have to use normalization](/guides/atomization).
 - Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of hot observables. Anyway, we have [hooks](/package/hooks) for hot linking.
