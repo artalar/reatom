@@ -81,6 +81,9 @@ export const effect: {
       }
     })
 
+    // @ts-expect-error we don't need `spy` anymore
+    ctx.spy = undefined
+
     return state ?? []
   }, mapName(anAtom, 'effect', name))
   theAtom.__reatom.isAction = true
