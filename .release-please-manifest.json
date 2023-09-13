@@ -1,6 +1,6 @@
 {
   "packages/all-settled": "3.1.2",
-  "packages/async": "3.9.0",
+  "packages/async": "3.9.1",
   "packages/core": "3.5.0",
   "packages/core-v1": "3.1.7",
   "packages/core-v2": "3.1.2",
@@ -28,5 +28,5 @@
   "packages/undo": "3.3.1",
   "packages/url": "3.3.0",
   "packages/utils": "3.5.0",
-  "packages/web": "3.5.0"
+  "packages/web": "3.5.1"
 }
