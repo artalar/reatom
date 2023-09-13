@@ -119,12 +119,12 @@ export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
 
 /** `Object.assign` with fixed types, equal properties replaced instead of changed to a union */
 export const assign: {
-  <T1, T2, T3 = {}, T4 = {}>(a1: T1, a2: T2, a3?: T3, a4?: T4): Assign<
-    T1,
-    T2,
-    T3,
-    T4
-  >
+  <T1, T2, T3 = {}, T4 = {}>(
+    a1: T1,
+    a2: T2,
+    a3?: T3,
+    a4?: T4,
+  ): Assign<T1, T2, T3, T4>
 } = Object.assign
 
 /** `Object.assign` which set an empty object to the first argument */
@@ -239,7 +239,7 @@ export const toAbortError = (reason: any): AbortError => {
   return reason as AbortError
 }
 
-export const throwIfAborted = (controller?: void | AbortController) => {
+export const throwIfAborted = (controller?: void | null | AbortController) => {
   if (controller?.signal.aborted) {
     throw toAbortError(controller.signal.reason)
   }
