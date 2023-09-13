@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/effects-v3.4.0...effects-v3.5.0) (2023-09-13)
+
+
+### Features
+
+* **effects:** add withAbortableSchedule ([9e219a7](https://github.com/artalar/reatom/commit/9e219a7d61c18cc15bcff28f310938166d10de2c))
+
+
+### Bug Fixes
+
+* **effects:** prevent Uncaught DOMException for aborts ([79f719b](https://github.com/artalar/reatom/commit/79f719bbdd6e97cb56c3399a841c33764822d598))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/effects-v3.3.1...effects-v3.4.0) (2023-08-05)
 
 

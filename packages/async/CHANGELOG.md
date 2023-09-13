@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/async-v3.8.3...async-v3.9.0) (2023-09-13)
+
+
+### Features
+
+* **async:** add reatomAsyncReaction ([e44e641](https://github.com/artalar/reatom/commit/e44e6417b5795c380e8c2e5dd1e576e7a6462bc0))
+
+
+### Bug Fixes
+
+* **async:** reatomAsyncReaction AsyncCtxSpy ([c0d014d](https://github.com/artalar/reatom/commit/c0d014d987cf1b3081133b45a146c30e107fb063))
+
 ## [3.8.3](https://github.com/artalar/reatom/compare/async-v3.8.2...async-v3.8.3) (2023-08-08)
 
 

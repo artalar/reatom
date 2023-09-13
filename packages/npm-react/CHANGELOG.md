@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/npm-react-v3.5.0...npm-react-v3.6.0) (2023-09-13)
+
+
+### Features
+
+* **npm-react:** add useAtomPromise ([f151d45](https://github.com/artalar/reatom/commit/f151d455b4e7e32134779da6a1f5bc22620b9cbf))
+
+
+### Bug Fixes
+
+* **npm-react:** reatomComponent improvements ([f2df032](https://github.com/artalar/reatom/commit/f2df032ab6c39c5e0981b7883296967c3526c457))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/npm-react-v3.4.2...npm-react-v3.5.0) (2023-09-08)
 
 

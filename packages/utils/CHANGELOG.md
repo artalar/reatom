@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/utils-v3.4.0...utils-v3.5.0) (2023-09-13)
+
+
+### Features
+
+* **utils:** improve throwIfAborted signature ([d57946d](https://github.com/artalar/reatom/commit/d57946d294285f5f51714a1ffc873928ae7cf079))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/utils-v3.3.0...utils-v3.4.0) (2023-07-07)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.0...eslint-plugin-v3.4.1) (2023-09-13)
+
+
+### Bug Fixes
+
+* **esling-plugin:** highlight atom name, not atom declaration in case of wrong name ([#624](https://github.com/artalar/reatom/issues/624)) ([39b0d01](https://github.com/artalar/reatom/commit/39b0d015b6de6a5cfa83da17871bbcb52e101994))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.3.0...eslint-plugin-v3.4.0) (2023-05-21)
 
 

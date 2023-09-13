@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.2](https://github.com/artalar/reatom/compare/lens-v3.6.1...lens-v3.6.2) (2023-09-13)
+
+
+### Bug Fixes
+
+* **lens:** remove spy from effect ([ece3c86](https://github.com/artalar/reatom/commit/ece3c8662a1fe69e8dc897b8ff252feb57cd5273))
+
 ## [3.6.1](https://github.com/artalar/reatom/compare/lens-v3.6.0...lens-v3.6.1) (2023-08-10)
 
 
