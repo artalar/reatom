@@ -1,15 +1,21 @@
-import { Atom, CtxSpy, Fn, __count, atom, throwReatomError } from '@reatom/core'
-import { CauseContext } from '@reatom/effects'
+import { Atom, Fn, __count, atom, throwReatomError } from '@reatom/core'
+import { CauseContext, onCtxAbort } from '@reatom/effects'
 import { merge, noop, toAbortError } from '@reatom/utils'
 
-import { reatomAsync, AsyncAction, ControlledPromise } from '.'
+import { reatomAsync, AsyncAction, ControlledPromise, AsyncCtx } from '.'
 
 export interface AsyncReaction<Resp> extends AsyncAction<[], Resp> {
   promiseAtom: Atom<ControlledPromise<Resp>>
 }
 
+export interface AsyncCtxSpy extends AsyncCtx {
+  spy: {
+    <T>(anAtom: Atom<T>): T
+  }
+}
+
 export const reatomAsyncReaction = <T>(
-  asyncComputed: (ctx: CtxSpy) => Promise<T>,
+  asyncComputed: (ctx: AsyncCtxSpy) => Promise<T>,
   name = __count('asyncAtom'),
 ): AsyncReaction<T> => {
   const promises = new CauseContext<Promise<any>>()
@@ -19,17 +25,18 @@ export const reatomAsyncReaction = <T>(
     throwReatomError(!promise, 'reaction manual call')
     return promise!
   }, name)
-  const promiseAtom = atom((ctx, state?: ControlledPromise<T>) => {
-    const { schedule, spy } = ctx
+  const promiseAtom = atom((_ctx, state?: ControlledPromise<T>) => {
+    const { schedule, spy } = _ctx
     const params: any[] = []
     let cached = false
 
-    ctx = merge(ctx, {
+    const ctx = merge(_ctx, {
       schedule(cb: Fn, step = 1) {
         return schedule.call(
           this,
           () => {
-            if (step > 0 && cached) return Promise.reject(toAbortError('cached'))
+            if (step > 0 && cached)
+              return Promise.reject(toAbortError('cached'))
             return cb(ctx)
           },
           step as any,
@@ -48,15 +55,22 @@ export const reatomAsyncReaction = <T>(
             })
           : value
       },
-    })
+    }) as AsyncCtx
 
-    promises.set(ctx.cause, asyncComputed(ctx))
+    onCtxAbort(ctx, (error) => ctx.controller.abort(error))
+    ctx.controller = ctx.cause.controller = new AbortController()
+
+    promises.set(ctx.cause, asyncComputed(ctx as AsyncCtxSpy))
 
     const pending = ctx.get(theAsync.pendingAtom)
     const promise = theAsync(
       ctx,
       // @ts-expect-error needed for cache handling
       ...params,
+    )
+
+    promise.controller.signal.addEventListener('abort', (error) =>
+      ctx.controller.abort(error),
     )
 
     if ((cached = pending === ctx.get(theAsync.pendingAtom))) {

@@ -74,4 +74,31 @@ test('withCache', async () => {
   ;`👍` //?
 })
 
+test('controller', async () => {
+  const controllerTrack = mockFn()
+  const paramsAtom = atom(0, 'paramsAtom')
+  const async1 = reatomAsyncReaction(async (ctx) => {
+    const argument = ctx.spy(paramsAtom)
+    ctx.controller.signal.addEventListener('abort', controllerTrack)
+    await ctx.schedule(() => sleep())
+    return argument
+  }, 'async1')
+  const ctx = createTestCtx()
+
+  ctx.subscribe(async1.promiseAtom, noop)
+  await sleep()
+  assert.is(controllerTrack.calls.length, 0)
+
+  paramsAtom(ctx, 1)
+  assert.is(controllerTrack.calls.length, 1)
+  await sleep()
+  assert.is(controllerTrack.calls.length, 1)
+  paramsAtom(ctx, 2)
+  paramsAtom(ctx, 3)
+  assert.is(controllerTrack.calls.length, 3)
+  await sleep()
+  assert.is(controllerTrack.calls.length, 3)
+  ;`👍` //?
+})
+
 test.run()
