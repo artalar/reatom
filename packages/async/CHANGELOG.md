@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.1](https://github.com/artalar/reatom/compare/async-v3.9.0...async-v3.9.1) (2023-09-13)
+
+
+### Bug Fixes
+
+* **async:** promiseAtomConnection ([cc3b707](https://github.com/artalar/reatom/commit/cc3b707312ba504e8853facf5dce3dbbfafd4bbe))
+
 ## [3.9.0](https://github.com/artalar/reatom/compare/async-v3.8.3...async-v3.9.0) (2023-09-13)
 
 
