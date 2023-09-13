@@ -209,7 +209,7 @@ const isConnected = (cache: AtomCache): boolean => {
   return cache.subs.size + cache.listeners.size > 0
 }
 
-function assertFunction (thing: any): asserts thing is Fn {
+function assertFunction(thing: any): asserts thing is Fn {
   throwReatomError(
     typeof thing !== 'function',
     `invalid "${typeof thing}", function expected`,
