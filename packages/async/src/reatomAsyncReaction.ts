@@ -3,6 +3,7 @@ import { CauseContext, onCtxAbort } from '@reatom/effects'
 import { merge, noop, toAbortError } from '@reatom/utils'
 
 import { reatomAsync, AsyncAction, ControlledPromise, AsyncCtx } from '.'
+import { onConnect } from '@reatom/hooks'
 
 export interface AsyncReaction<Resp> extends AsyncAction<[], Resp> {
   promiseAtom: Atom<ControlledPromise<Resp>>
@@ -81,6 +82,8 @@ export const reatomAsyncReaction = <T>(
 
     return promise
   }, `${name}._promiseAtom`)
+
+  onConnect(theAsync, (ctx) => ctx.subscribe(promiseAtom, noop))
 
   return Object.assign(theAsync, { promiseAtom }) as AsyncReaction<T>
 }

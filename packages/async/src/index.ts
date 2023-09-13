@@ -27,6 +27,7 @@ import {
 import { assign, isAbort, noop, sleep, toAbortError } from '@reatom/utils'
 
 import { handleEffect } from './handleEffect'
+import { onConnect } from '@reatom/hooks'
 export { withCache } from './withCache'
 export { withStatusesAtom } from './withStatusesAtom'
 export type {
@@ -254,6 +255,8 @@ export const withDataAtom: {
           mapFulfill ? mapFulfill(ctx, payload, state) : payload,
         ),
       )
+
+      onConnect(dataAtom, (ctx) => ctx.subscribe(anAsync, noop))
     }
 
     return anAsync
