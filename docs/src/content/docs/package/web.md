@@ -30,6 +30,7 @@ import { onEvent } from '@reatom/web'
 const socket = new WebSocket('wss://example.com')
 
 const reatomStock = (ticker) => {
+
   const stockAtom = atom(null, `${ticker}StockAtom`)
   onConnect(stockAtom, async (ctx) => {
     if (socket.readyState !== WebSocket.OPEN) {

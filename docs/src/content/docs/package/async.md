@@ -532,7 +532,7 @@ fetchList.retry(ctx)
 
 `withRetry` accept optional `onReject` parameter which is a hook which is called with context, payload error and retries count parameters. This hook could return a number which will be used as a timer for scheduling `retry` action. To skip the retry scheduling return nothing or negative number.
 
-Return `0` to retry immediately. With this pattern your loader will not blink, as `pendingAtom` will switch from `0` to `1` before subscribers notification.
+Return `0` to retry immediately. With this pattern your loader will not blink, as `pendingAtom` will swhich from `0` to `1` before subscribers notification.
 
 ```ts
 import { reatomAsync, withRetry } from '@reatom/async'
@@ -616,7 +616,7 @@ This is the most powerful feature for advanced async flow management. Allow to c
 
 Currently, automatic aborting is supported only for features from @reatom/effects package. `onConnect`, `take`, `takeNested` automatically provides AbortController or subscribes to it.
 
-`withAbort` operator adds `onAbort` action for handling abort from any cause, `abort` action for manual aborting, `abortControllerAtom` witch stores AbortController of the last effect call. Be noted that abort errors do not trigger `onReject` hook, but `onAbort` hook.
+`withAbort` operator adds `onAbort` action for handling abort from any cause, `abort` action for manual aborting, `abortControllerAtom` which stores AbortController of the last effect call. Be noted that abort errors do not trigger `onReject` hook, but `onAbort` hook.
 
 An example of a simple resource fabric with aborting request on a data usage disconnect.
 

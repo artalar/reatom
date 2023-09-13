@@ -7,7 +7,7 @@ description: Reatom for react-v1
 <!-- CHECK "packages/*/README.md" -->
 
 
-This is compatible package witch allow you to use `@reatom/core-v1` with react. All docs is [here](/adapter/npm-react/).
+This is compatible package which allow you to use `@reatom/core-v1` with react. All docs is [here](/adapter/npm-react/).
 
 ## Setup batching for old React
 

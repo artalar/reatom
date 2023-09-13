@@ -2,7 +2,7 @@
 
 All atoms and actions have a hooks to they lifecycle, this package exposes friendly helpers to use this hooks.
 
-We assumes that you already read [lifecycle guild](https://www.reatom.dev/guides/lifecycle).
+We assumes that you already read [lifecycle guide](https://www.reatom.dev/guides/lifecycle).
 
 A lot of cool examples you could find in [async package docs](https://www.reatom.dev/package/async).
 
