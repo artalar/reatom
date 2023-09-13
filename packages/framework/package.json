@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.4.14",
+  "version": "3.4.15",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -22,14 +22,14 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/async": "^3.8.3",
+    "@reatom/async": "^3.9.0",
     "@reatom/core": "^3.5.0",
-    "@reatom/effects": "^3.4.0",
+    "@reatom/effects": "^3.5.0",
     "@reatom/hooks": "^3.4.2",
-    "@reatom/lens": "^3.6.1",
+    "@reatom/lens": "^3.6.2",
     "@reatom/logger": "^3.5.0",
     "@reatom/primitives": "^3.2.1",
-    "@reatom/utils": "^3.4.0"
+    "@reatom/utils": "^3.5.0"
   },
   "author": "artalar",
   "license": "MIT",
