@@ -64,7 +64,7 @@ export const reatomAsyncReaction = <T>(
     promises.set(ctx.cause, asyncComputed(ctx as AsyncCtxSpy))
 
     const pending = ctx.get(theAsync.pendingAtom)
-    const promise = theAsync(
+    let promise = theAsync(
       ctx,
       // @ts-expect-error needed for cache handling
       ...params,
@@ -76,6 +76,11 @@ export const reatomAsyncReaction = <T>(
 
     if ((cached = pending === ctx.get(theAsync.pendingAtom))) {
       promises.get(ctx.cause)!.catch(noop)
+      const fulfillCalls = ctx.get(theAsync.onFulfill)
+      promise = Object.assign(
+        Promise.resolve(fulfillCalls[fulfillCalls.length - 1]!.payload),
+        { controller: ctx.controller },
+      )
     }
 
     state?.controller.abort('concurrent')

@@ -67,10 +67,9 @@ test('withCache', async () => {
 
   paramsAtom(ctx, 1)
   paramsAtom(ctx, 2)
-  paramsAtom(ctx, 3)
   await sleep()
-  assert.is(track.lastInput(), 3)
-  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput(), 2)
+  assert.is(track.calls.length, 3)
   assert.is(sleepTrack.calls.length, 4)
   ;`👍` //?
 })
