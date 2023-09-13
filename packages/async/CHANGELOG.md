@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.2](https://github.com/artalar/reatom/compare/async-v3.9.1...async-v3.9.2) (2023-09-13)
+
+
+### Bug Fixes
+
+* **async:** reatomAsyncReaction withCache ([3bfee9d](https://github.com/artalar/reatom/commit/3bfee9de70e5c645979e81abb6edacde3e8ecac7))
+
 ## [3.9.1](https://github.com/artalar/reatom/compare/async-v3.9.0...async-v3.9.1) (2023-09-13)
 
 
