@@ -7,7 +7,10 @@ export const reatomJsx = (ctx: Ctx) => {
   let h = (tag: any, props: Rec, ...children: any[]) => {
     if (tag === hf) return children
 
-    if (typeof tag === 'function') return tag(props ?? {}, children)
+    if (typeof tag === 'function') {
+      ;(props ??= {}).children = children
+      return tag(props)
+    }
 
     let element = document.createElement(tag)
 
@@ -17,7 +20,7 @@ export const reatomJsx = (ctx: Ctx) => {
         if (prop.__reatom.isAction) {
           element[k] = (...a: any[]) => prop(ctx, ...a)
         } else {
-          // TODO rewrite attribute even if state not changed
+          // TODO handle unsubscribe!
           var un: undefined | Unsubscribe = ctx.subscribe(prop, (v) =>
             !un || element.isConnected ? (element[k] = v) : un(),
           )

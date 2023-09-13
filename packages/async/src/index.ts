@@ -17,8 +17,13 @@ import {
   AtomCache,
   Unsubscribe,
   AtomState,
+  isAction,
 } from '@reatom/core'
-import { __thenReatomed, onCtxAbort } from '@reatom/effects'
+import {
+  __thenReatomed,
+  onCtxAbort,
+  withAbortableSchedule,
+} from '@reatom/effects'
 import { assign, isAbort, noop, sleep, toAbortError } from '@reatom/utils'
 
 import { handleEffect } from './handleEffect'
@@ -34,6 +39,7 @@ export type {
   AsyncStatuses,
   AsyncStatusesAtom,
 } from './withStatusesAtom'
+export { reatomAsyncReaction, AsyncReaction } from './reatomAsyncReaction'
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
@@ -121,7 +127,7 @@ export const reatomAsync = <
 
             onCtxAbort(params[0], (error) => ctx.controller.abort(error))
 
-            params[0] = ctx
+            params[0] = withAbortableSchedule(ctx)
 
             patch.state = [
               ...patch.state,

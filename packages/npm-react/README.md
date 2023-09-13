@@ -262,6 +262,46 @@ export const MyForm = () => {
 }
 ```
 
+## Use atom promise
+
+If you have an atom with a promise and want to use its value directly, you could use `useAtomPromise`. This function relies on [React Suspense](https://react.dev/reference/react/Suspense) and throws the promise until it resolves. It can be useful with [reatomAsyncReaction](https://www.reatom.dev/package/async/#reatomasyncreaction).
+
+```tsx
+import { atom, reatomAsyncReaction } from '@reatom/framework'
+import { useAtom, useAction, useAtomPromise } from '@reatom/npm-react'
+
+const pageAtom = atom(1, 'pageAtom')
+const listReaction = reatomAsyncReaction(async (ctx) => {
+  const page = ctx.spy(pageAtom)
+  const response = await ctx.schedule(() => fetch(`/api/list?page=${page}`))
+  if (!response.ok) throw new Error(response.statusText)
+  return response.json()
+})
+
+export const List = () => {
+  const [page] = useAtom(pageAtom)
+  const prev = useAction((ctx) =>
+    pageAtom(ctx, (state) => Math.max(1, state - 1)),
+  )
+  const next = useAction((ctx) => pageAtom(ctx, (state) => state + 1))
+  const list = useAtomPromise(listReaction.promiseAtom)
+
+  return (
+    <section>
+      <ul>
+        {list.map((el) => (
+          <li key={el.id}>...</li>
+        ))}
+      </ul>
+      <hr />
+      <button onClick={prev}>prev</button>
+      {page}
+      <button onClick={next}>next</button>
+    </section>
+  )
+}
+```
+
 ## Use context creator
 
 Sometimes, you can only create `ctx` inside a React component, for example, in SSR. For that case, we have the `useCreateCtx` hook.

@@ -19,6 +19,7 @@ import './index.story.test'
 import './withCache.test'
 import './withStatusesAtom.test'
 import './mapToAsync.test'
+import './reatomAsyncReaction.test'
 
 test(`base API`, async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => {

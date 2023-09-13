@@ -1,11 +1,12 @@
-import { action, atom, createCtx, Ctx, Fn } from '@reatom/core'
-import { sleep } from '@reatom/utils'
-import { createTestCtx } from '@reatom/testing'
+import { Action, action, atom, Ctx, Fn } from '@reatom/core'
+import { noop, sleep } from '@reatom/utils'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { mapPayloadAwaited } from '@reatom/lens'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { disposable, take, takeNested } from './'
+import { disposable, take, takeNested, withAbortableSchedule } from './'
+import { onConnect } from '@reatom/hooks'
 
 test('disposable async branch', async () => {
   const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
@@ -60,7 +61,7 @@ test('await transaction', async () => {
   const effect2 = action((ctx) => ctx.schedule(() => promise2))
   const effect3 = action((ctx) => ctx.schedule(() => promise3))
 
-  const ctx = createCtx()
+  const ctx = createTestCtx()
 
   let nestedResolved = false
   let effect3Resolved = false
@@ -87,35 +88,114 @@ test('await transaction', async () => {
   ;`👍` //?
 })
 
-// test('unstable_actionizeAllChanges', async () => {
-//   const act1 = action()
-//   const act2 = act1
-//     .pipe(mapPayload(() => Promise.resolve(0)))
-//     .pipe(mapPayloadAwaited())
-//   const a1 = atom(0)
-//   const sum = unstable_actionizeAllChanges({
-//     a1,
-//     act1,
-//     act2,
-//   })
-//   const ctx = createCtx()
-//   const cb = mockFn()
+test('withAbortableSchedule', async () => {
+  const asyncAction = <I extends any[], O>(
+    cb: Fn<[Ctx, ...I], O>,
+  ): Action<I, O> => action((ctx, ...a) => cb(withAbortableSchedule(ctx), ...a))
 
-//   sum.pipe(toPromise(ctx)).then(cb)
+  const track = mockFn()
+  const doSome = asyncAction((ctx, ms: number) =>
+    ctx
+      .schedule(() => sleep(ms))
+      .then(track)
+      .catch(noop),
+  )
+  const someAtom = atom(null)
+  const ctx = createTestCtx()
 
-//   a1(ctx, 2)
+  onConnect(someAtom, (ctx) => {
+    doSome(ctx, 1)
+  })
 
-//   assert.is(cb.calls.length, 0)
+  const un = ctx.subscribe(someAtom, () => {})
+  await sleep(10)
+  assert.is(track.calls.length, 1)
 
-//   act1(ctx)
+  un()
 
-//   assert.is(cb.calls.length, 0)
+  ctx.subscribe(someAtom, () => {})()
+  await sleep(10)
+  assert.is(track.calls.length, 1)
+  ;`👍` //?
+})
 
-//   await act2.pipe(toPromise(ctx))
+// test('concurrent', async () => {
+//   class CtxMap<T> {
+//     private map = new WeakMap<AtomProto, T>()
+//     get(ctx: Ctx) {
+//       return this.map.get(ctx.cause.proto)
+//     }
+//     set(ctx: Ctx, value: T) {
+//       this.map.set(ctx.cause.proto, value)
+//     }
+//   }
+//   const concurrent = <I extends [Ctx, ...any[]], O>(
+//     cb: Fn<I, O>,
+//     strategy:
+//       | 'last-in-win'
+//       | 'first-in-win' /* | 'first-out-win' */ = 'last-in-win',
+//   ): Fn<I, O> => {
+//     const ctxMap = new CtxMap<AbortController>()
+//     return (ctx, ...a) => {
+//       const prev = ctxMap.get(ctx)
+//       if (prev && strategy === 'last-in-win') {
+//         ctx.schedule(() => prev.abort()).catch(noop)
+//       }
+//       const next = new AbortController()
+//       if (strategy === 'first-in-win' && prev?.signal.aborted === false) {
+//         next.abort()
+//       } else {
+//         // FIXME: abort on the effect end
+//         ctxMap.set(ctx, next)
+//       }
+
+//       const { schedule } = ctx
+//       ctx = merge(ctx, {
+//         schedule(this: Ctx, cb: Fn, step: -1 | 0 | 1 | 2 = 1) {
+//           return step < 1
+//             ? schedule.call(this, cb, step)
+//             : schedule.call(
+//                 this,
+//                 async (ctx) => {
+//                   throwIfAborted(getTopController(this.cause))
+//                   const result = await cb(ctx)
+//                   throwIfAborted(getTopController(this.cause))
+//                   return result
+//                 },
+//                 step,
+//               )
+//         },
+//       })
+
+//       return cb(ctx, ...a)
+//     }
+//   }
+
+//   const doSome = action((ctx, value: number) => sleep().then(() => value))
+//   const results = [] as any[]
+//   doSome.onCall(
+//     concurrent(async (ctx, promise) => {
+//       results.push(
+//         await ctx
+//           .schedule(() => {
+//             1 //?
+//             return promise
+//           })
+//           .catch((e) => e),
+//       )
+//     }),
+//   )
+//   const ctx = createTestCtx()
+
+//   doSome(ctx, 1)
+//   doSome(ctx, 2)
+//   doSome(ctx, 3)
 
 //   await sleep()
-
-//   assert.equal(cb.lastInput(), { a1: 2, act1: undefined, act2: 0 })
+//   assert.is(results.length, 3)
+//   assert.is(results[0]?.name, 'AbortError')
+//   assert.is(results[1]?.name, 'AbortError')
+//   assert.is(results[2], 3)
 //   ;`👍` //?
 // })
 

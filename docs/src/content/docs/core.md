@@ -226,8 +226,7 @@ export const usCurrencyAtom = atom(0)
 export const euCurrencyAtom = atom(0)
 export const currencyValueAtom = atom((ctx) => {
   const currency = ctx.spy(currencyAtom)
-  // use `if` or `switch` if you want
-  const valueAtom = { us: usCurrencyAtom, eu: euCurrencyAtom }[currency]
+  const valueAtom = currency === 'us' ? usCurrencyAtom : euCurrencyAtom
   return ctx.spy(valueAtom)
 })
 ```

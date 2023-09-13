@@ -1,9 +1,9 @@
 {
-  "name": "@reatom/effects",
-  "version": "3.4.0",
-  "private": false,
+  "name": "@reatom/npm-solid-js",
+  "version": "3.5.0",
+  "private": true,
   "sideEffects": false,
-  "description": "Reatom for effects",
+  "description": "Reatom bindings for solid-js",
   "source": "src/index.ts",
   "exports": {
     "types": "./build/index.d.ts",
@@ -20,16 +20,23 @@
     "mangle": false
   },
   "scripts": {
+    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs",
+    "build": "microbundle",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.2.0",
-    "@reatom/utils": "^3.5.0"
+    "@reatom/core": ">=3.5.0",
+    "solid-js": ">=1.1.0"
   },
   "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -38,7 +45,14 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/package/effects",
+  "homepage": "https://www.reatom.dev/package/npm-solid-js",
+  "keywords": [
+    "npm-solid-js",
+    "reactive",
+    "reactivity",
+    "state-manager",
+    "reatom"
+  ],
   "files": [
     "/build",
     "/package.json"

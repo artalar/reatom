@@ -24,7 +24,7 @@ Before we start, you could find a lot of useful helpers to manage aborts in [rea
 - [Sagas `fork`](https://redux-saga.js.org/docs/api/#forkfn-args) is a regular function call with a context WITHOUT `await`.
 - [Sagas `spawn`](https://redux-saga.js.org/docs/api/#spawnfn-args) have no analogy in Reatom. It should create a context without parent context abort propagation. Work in progress.
 - [Sagas `join`](https://redux-saga.js.org/docs/api/#jointask) - is just `await` in Reatom.
-- [Sagas `cancel`](https://redux-saga.js.org/docs/api/#canceltask) have no analogy in Reatom. It probably should looks like `getTopController(ctx).abort()`.
+- [Sagas `cancel`](https://redux-saga.js.org/docs/api/#canceltask) have no analogy in Reatom. It probably should looks like `getTopController(ctx.cause).abort()`.
 - [Sagas `cancelled`](https://redux-saga.js.org/docs/api/#cancelled) - is like `onCtxAbort`.
 
 Two important notes.

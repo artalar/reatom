@@ -8,7 +8,7 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { AbortError, noop, toAbortError } from '@reatom/utils'
+import { AbortError, isAbort, merge, noop, toAbortError } from '@reatom/utils'
 
 export class CauseContext<T> extends WeakMap<AtomCache, T> {
   has(cause: AtomCache): boolean {
@@ -28,12 +28,18 @@ export const getTopController = (
   patch.controller ?? (patch.cause && getTopController(patch.cause))
 
 /** Handle abort signal from a cause */
-export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+export const onCtxAbort = (
+  ctx: Ctx,
+  cb: Fn<[AbortError]>,
+): undefined | Unsubscribe => {
   const controller = getTopController(ctx.cause)
 
   if (controller) {
     const handler = () => cb(toAbortError(controller.signal.reason))
+    const cleanup = () =>
+      controller.signal.removeEventListener('abort', handler)
 
+    // TODO schedule
     if (controller.signal.aborted) handler()
     else {
       controller.signal.addEventListener('abort', handler)
@@ -41,6 +47,7 @@ export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
         () => controller.signal.removeEventListener('abort', handler),
         -1,
       )
+      return cleanup
     }
   }
 }
@@ -78,6 +85,8 @@ export const __thenReatomed = <T>(
         ctx.get((read, actualize) =>
           chain!.catch.forEach((cb) => cb(error, read, actualize)),
         )
+        // prevent Uncaught DOMException for aborts
+        if (isAbort(error)) promise.catch(noop)
         throw error
       },
     )
@@ -206,3 +215,26 @@ export const takeNested = <I extends any[]>(
 export const isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
   cause.cause !== null &&
   (cause.cause.proto === proto || isCausedBy(cause.cause, proto))
+
+export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
+  const { schedule } = ctx
+
+  return merge(ctx, {
+    schedule(...a: Parameters<typeof schedule>) {
+      const p = new Promise((resolve, reject) => {
+        schedule
+          .apply(this, a)
+          .then(resolve, reject)
+          .finally(
+            onCtxAbort(ctx, (error) => {
+              // prevent unhandled error for abort
+              p.catch(noop)
+              reject(error)
+            }),
+          )
+      })
+
+      return p
+    },
+  })
+}

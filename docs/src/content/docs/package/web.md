@@ -30,14 +30,15 @@ import { onEvent } from '@reatom/web'
 const socket = new WebSocket('wss://example.com')
 
 const reatomStock = (ticker) => {
-  const message = atom(null, `${ticker}StockAtom`)
-  onConnect(message, async (ctx) => {
+
+  const stockAtom = atom(null, `${ticker}StockAtom`)
+  onConnect(stockAtom, async (ctx) => {
     if (socket.readyState !== WebSocket.OPEN) {
       await onEvent(ctx, socket, 'open')
     }
     socket.send(JSON.stringify({ ticker, type: 'sub' }))
     onEvent(ctx, socket, 'message', (event) => {
-      if (event.data.ticker === ticker) message(ctx, JSON.parse(event.data))
+      if (event.data.ticker === ticker) stockAtom(ctx, JSON.parse(event.data))
     })
     onEvent(ctx, socket, 'close', () => ctx.controller.abort())
     onEvent(ctx, socket, 'error', () => ctx.controller.abort())
@@ -46,7 +47,7 @@ const reatomStock = (ticker) => {
     )
   })
 
-  return message
+  return stockAtom
 }
 
 const googStockAtom = reatomStock('GOOG')

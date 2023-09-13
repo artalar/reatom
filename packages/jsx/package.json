@@ -1,7 +1,7 @@
 {
   "name": "@reatom/jsx",
   "version": "3.1.0",
-  "private": false,
+  "private": true,
   "sideEffects": false,
   "description": "Reatom for jsx",
   "source": "src/index.ts",

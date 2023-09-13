@@ -304,3 +304,25 @@ export const reatomComponent = <T>(
     })
   }
 }
+
+const promisesValues = new WeakMap<Promise<any>, any>()
+export const useAtomPromise = <T>(theAtom: Atom<Promise<T>>): T => {
+  const forceUpdate = React.useReducer((s) => s + 1, 0)[1]
+  const promise = useAtom(theAtom)[0]
+
+  if (!promisesValues.has(promise)) {
+    promisesValues.set(
+      promise,
+      promise.then((v) => {
+        promisesValues.set(promise, v)
+        forceUpdate()
+      }),
+    )
+  }
+
+  const value = promisesValues.get(promise)
+
+  if (value instanceof Promise) throw value
+
+  return value
+}

@@ -1,0 +1,89 @@
+import {
+  Atom,
+  AtomMut,
+  AtomState,
+  Ctx,
+  CtxSpy,
+  Fn,
+  __count,
+  atom,
+  isAtom,
+  throwReatomError,
+} from '@reatom/core'
+import { Binded, bind } from '@reatom/lens'
+import {
+  Accessor,
+  createContext,
+  from,
+  getOwner,
+  useContext,
+  untrack,
+  Signal,
+  createSignal,
+  onCleanup,
+} from 'solid-js'
+
+export const reatomContext = createContext<Ctx>()
+
+export const useCtx = (): Ctx & {
+  signal<T>(atom: Atom<T>): Accessor<T>
+} => {
+  let ctx = useContext(reatomContext)
+
+  throwReatomError(
+    !ctx,
+    'ctx is not set, you probably forgot to specify the ctx provider',
+  )
+
+  return Object.assign(ctx!, {
+    signal(anAtom) {
+      const [s, set] = createSignal(ctx!.get(anAtom))
+      onCleanup(ctx!.subscribe(anAtom, set))
+      return s
+    },
+  })
+}
+
+let bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
+export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
+  bind(useCtx(), bindBind)
+
+// @ts-ignore
+export const useAtom: {
+  <T extends Atom>(
+    atom: T,
+  ): [
+    get: Accessor<AtomState<T>>,
+    updater: T extends Fn<[Ctx, ...infer Args], infer Res>
+      ? Fn<Args, Res>
+      : undefined,
+    atom: T,
+  ]
+  <T>(
+    computed: (ctx: CtxSpy) => T,
+    name?: string,
+  ): [get: Accessor<T>, updater: undefined, atom: Atom<T>]
+  <T>(
+    init: T,
+    name?: string,
+  ): [get: Accessor<T>, updater: Fn<[T | Fn<[T, Ctx], T>], T>, atom: AtomMut<T>]
+} = (init, name): [any, any, Atom] => {
+  const theAtom: Atom = isAtom(init)
+    ? init
+    : atom(
+        init,
+        name ??
+          __count(
+            `${
+              getOwner()?.owner?.name?.replace('[solid-refresh]', '') ?? 'use'
+            }Atom`,
+          ),
+      )
+  const ctx = useCtx()
+
+  return [
+    from((set) => ctx.subscribe(theAtom, set)),
+    typeof theAtom === 'function' ? bind(ctx, theAtom) : undefined,
+    theAtom,
+  ]
+}
