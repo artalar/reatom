@@ -74,11 +74,8 @@ export interface TestCtx extends Ctx {
   }
 }
 
-const callSafelySilent = (fn: Fn, ...a: any[]) => {
-  try {
-    return fn(...a)
-  } catch {}
-}
+// override default `setTimeout(() => throw...)`
+const callSafelySilent = (fn: Fn, ...a: any[]) => fn(...a)
 
 export const createTestCtx = (options?: CtxOptions): TestCtx => {
   const ctx = createCtx({
