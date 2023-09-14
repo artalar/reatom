@@ -221,20 +221,25 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
 
   return merge(ctx, {
     schedule(...a: Parameters<typeof schedule>) {
-      const p = new Promise((resolve, reject) => {
-        schedule
-          .apply(this, a)
-          .then(resolve, reject)
-          .finally(
-            onCtxAbort(ctx, (error) => {
-              // prevent unhandled error for abort
-              p.catch(noop)
-              reject(error)
-            }),
-          )
+      let resolve: Fn
+      let reject: Fn
+      const promise = new Promise((res, rej) => {
+        resolve = res
+        reject = rej
       })
+      schedule
+        .apply(this, a)
+        .then(resolve!, reject!)
+        .finally(
+          // unsubscribe from the abort if the promise is resolved
+          onCtxAbort(ctx, (error) => {
+            // prevent unhandled error for abort
+            promise.catch(noop)
+            reject(error)
+          }),
+        )
 
-      return p
+      return promise
     },
   })
 }
