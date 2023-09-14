@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.1](https://github.com/artalar/reatom/compare/effects-v3.5.0...effects-v3.5.1) (2023-09-14)
+
+
+### Bug Fixes
+
+* **effects:** withAbortableSchedule sync abort ([ebede8d](https://github.com/artalar/reatom/commit/ebede8d8f652da58bf2e29d6b5ec58966199059b))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/effects-v3.4.0...effects-v3.5.0) (2023-09-13)
 
 
