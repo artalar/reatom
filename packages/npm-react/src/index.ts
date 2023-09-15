@@ -1,5 +1,4 @@
-import React, { useMemo } from 'react'
-import { useSyncExternalStore } from 'use-sync-external-store/shim'
+import React from 'react'
 import {
   __count,
   action,
@@ -70,25 +69,6 @@ let bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
 export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
   bind(useCtx(), bindBind)
 
-// use it instead of `setState` to handle HMR
-const useRefSetup = <T extends Fn<[], { deps: Array<any> }>>(
-  deps: Array<any>,
-  setup: T,
-): React.MutableRefObject<ReturnType<T>> => {
-  let ref = React.useRef<ReturnType<typeof setup>>()
-  if (
-    ref.current === undefined ||
-    ref.current.deps.length !== deps.length ||
-    ref.current!.deps.some((v, i) => !Object.is(v, deps[i]!))
-  ) {
-    // @ts-expect-error
-    ref.current = setup()
-  }
-
-  // @ts-expect-error
-  return ref
-}
-
 // @ts-ignore
 export const useAtom: {
   <T extends Atom>(
@@ -117,7 +97,7 @@ export const useAtom: {
   let deps: any[] = [ctx]
   if (isAtom(anAtom)) deps.push(anAtom)
 
-  let { theAtom, depsAtom, update, sub, get } = useRefSetup(deps, () => {
+  let { theAtom, depsAtom, update, sub, get } = React.useMemo(() => {
     let atomName = getName(name ?? `useAtom#${typeof anAtom}`)
     let depsAtom = atom<any[]>([], `${atomName}._depsAtom`)
     let theAtom = anAtom
@@ -140,8 +120,8 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, depsAtom, update, deps, sub, get, subscribe }
-  }).current
+    return { theAtom, depsAtom, update, sub, get, subscribe }
+  }, deps)
 
   return ctx.get(() => {
     if (!isAtom(anAtom)) {
@@ -156,7 +136,7 @@ export const useAtom: {
     }
 
     return [
-      subscribe ? useSyncExternalStore(sub, get, get) : get(),
+      subscribe ? React.useSyncExternalStore(sub, get, get) : get(),
       update,
       theAtom,
       ctx,
@@ -169,8 +149,7 @@ export const useAtomCreator = <T extends Atom>(
   deps: Array<any> = [],
   options?: { subscribe?: boolean },
 ) => {
-  const ref = useRefSetup(deps, () => ({ deps, theAtom: creator() }))
-  return useAtom(ref.current.theAtom, [], options)
+  return useAtom(React.useMemo(creator, deps), [], options)
 }
 
 export const useUpdate = <T extends [any] | Array<any>>(
@@ -218,19 +197,19 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   deps.push(ctx)
   if (isAction(fn)) deps.push(fn)
 
-  let ref = useRefSetup(deps, () => {
+  let ref = React.useMemo(() => {
     let theAction: Action = isAction(fn)
       ? fn
-      : action((...a) => ref.current!.fn(...a), name ?? getName(`useAction`))
+      : action((...a) => ref!.fn(...a), name ?? getName(`useAction`))
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
-    return { fn, deps, cb }
-  })
+    return { fn, cb }
+  }, deps)
   React.useLayoutEffect(() => {
-    ref.current!.fn = fn
+    ref!.fn = fn
   })
 
   // @ts-ignore
-  return ref.current.cb
+  return ref.cb
 }
 
 export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
@@ -252,7 +231,7 @@ export const reatomComponent = <T>(
   let rendering = false
 
   return (props) => {
-    const { propsAtom, renderAtom } = useMemo(() => {
+    const { propsAtom, renderAtom } = React.useMemo(() => {
       const propsAtom = atom<T>(
         {} as T & { ctx: CtxRender },
         `${name}._propsAtom`,
