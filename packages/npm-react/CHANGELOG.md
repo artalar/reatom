@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.6.1](https://github.com/artalar/reatom/compare/npm-react-v3.6.0...npm-react-v3.6.1) (2023-09-15)
+
+
+### Bug Fixes
+
+* **npm-react:** a few reatomComponent instances ([3d9d080](https://github.com/artalar/reatom/commit/3d9d080723eb207edc77e5ccd6ea1cba81a1d123))
+* **npm-react:** remove useRefSetup ([8d769fa](https://github.com/artalar/reatom/commit/8d769fa367866e53341ccab9a6201301c9d2b583))
+* **npm-react:** stale deps ([3ea9251](https://github.com/artalar/reatom/commit/3ea92518b5bb5382f0407fb4a87ae3c9c9c36ae2))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/npm-react-v3.5.0...npm-react-v3.6.0) (2023-09-13)
 
 
