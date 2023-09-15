@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { useSyncExternalStore } from 'use-sync-external-store/shim'
 import {
   __count,
@@ -249,41 +249,49 @@ export const reatomComponent = <T>(
   Component: (props: T & { ctx: CtxRender }) => JSX.Element,
   name = __count('Component'),
 ): ((props: T) => JSX.Element) => {
-  const propsAtom = atom<T>({} as T & { ctx: CtxRender }, `${name}._propsAtom`)
-  const renderAtom = atom(
-    (ctx: CtxRender, state?: RenderState): RenderState => {
-      const { pubs } = ctx.cause
-      const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
-
-      ctx.bind = (fn) => bind(ctx, fn)
-
-      if (rendering) {
-        if (state?.REATOM_DEPS_CHANGE) {
-          ctx.cause.cause = ctx.get((read) => read(renderAtom.__reatom)!.cause)
-        }
-        props.ctx = ctx
-        return Component(props)
-      }
-
-      // do not drop subscriptions from the render
-      for (
-        // skip `propsAtom`
-        let i = 1;
-        i < pubs.length;
-        i++
-      ) {
-        // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
-        ctx.spy({ __reatom: pubs[i]!.proto })
-      }
-
-      return { ...state!, REATOM_DEPS_CHANGE: true }
-    },
-    `${name}._renderAtom`,
-  ) as Atom as Atom<RenderState>
-
   let rendering = false
 
   return (props) => {
+    const { propsAtom, renderAtom } = useMemo(() => {
+      const propsAtom = atom<T>(
+        {} as T & { ctx: CtxRender },
+        `${name}._propsAtom`,
+      )
+      const renderAtom = atom(
+        (ctx: CtxRender, state?: RenderState): RenderState => {
+          const { pubs } = ctx.cause
+          const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
+
+          ctx.bind = (fn) => bind(ctx, fn)
+
+          if (rendering) {
+            if (state?.REATOM_DEPS_CHANGE) {
+              ctx.cause.cause = ctx.get(
+                (read) => read(renderAtom.__reatom)!.cause,
+              )
+            }
+            props.ctx = ctx
+            return Component(props)
+          }
+
+          // do not drop subscriptions from the render
+          for (
+            // skip `propsAtom`
+            let i = 1;
+            i < pubs.length;
+            i++
+          ) {
+            // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
+            ctx.spy({ __reatom: pubs[i]!.proto })
+          }
+
+          return { ...state!, REATOM_DEPS_CHANGE: true }
+        },
+        `${name}._renderAtom`,
+      ) as Atom as Atom<RenderState>
+
+      return { propsAtom, renderAtom }
+    }, [])
     const ctx = useCtx()
     const [, forceUpdate] = React.useState({} as JSX.Element)
     React.useEffect(
