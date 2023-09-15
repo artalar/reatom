@@ -97,7 +97,7 @@ export const useAtom: {
   let deps: any[] = [ctx]
   if (isAtom(anAtom)) deps.push(anAtom)
 
-  let { theAtom, depsAtom, update, sub, get } = React.useMemo(() => {
+  let ref = React.useMemo(() => {
     let atomName = getName(name ?? `useAtom#${typeof anAtom}`)
     let depsAtom = atom<any[]>([], `${atomName}._depsAtom`)
     let theAtom = anAtom
@@ -106,7 +106,7 @@ export const useAtom: {
         typeof anAtom === 'function'
           ? (ctx: CtxSpy, state?: any) => {
               ctx.spy(depsAtom)
-              return anAtom(ctx, state)
+              return ref.anAtom(ctx, state)
             }
           : anAtom,
         atomName,
@@ -120,8 +120,10 @@ export const useAtom: {
     let sub = (cb: Fn) => ctx.subscribe(theAtom, cb)
     let get = () => ctx.get(theAtom)
 
-    return { theAtom, depsAtom, update, sub, get, subscribe }
+    return { theAtom, depsAtom, update, sub, get, subscribe, anAtom }
   }, deps)
+  ref.anAtom = anAtom
+  let { theAtom, depsAtom, update, sub, get } = ref
 
   return ctx.get(() => {
     if (!isAtom(anAtom)) {
