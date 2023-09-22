@@ -7,3 +7,8 @@
 
 * **jsx:** add mount method to handle unsubscribe ([15c4681](https://github.com/artalar/reatom/commit/15c46813eb96e6254bc769afda2e442d47ad8ad4))
 * **jsx:** fix types, add docs ([612b43f](https://github.com/artalar/reatom/commit/612b43fa4114f66c96fb618ad4b01c67b6143408))
+
+
+### Bug Fixes
+
+* **jsx:** dts files ([3c4cc36](https://github.com/artalar/reatom/commit/3c4cc36b64ddc32936521faf7491ab063b905f32))
