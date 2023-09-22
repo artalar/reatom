@@ -228,7 +228,7 @@ Immutable data is much predictable and better for debug, than mutable states and
 
 Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guide](/compat/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](/compat/core-v1). We hope it shows and prove our responsibility.
 
-Currently, there are four people in the development team: [@artalar](https://github.com/artalar) and [krulod](https://github.com/krulod) are managing the core features, while [BANOnotIT](https://github.com/BANOnotIT) and [Akiyamka](https://github.com/Akiyamka) help with documentation and issue management. [A lot of people](https://github.com/artalar/reatom/graphs/contributors) contributes to different packages.
+Currently, there are four people in the development team: [@artalar](https://github.com/artalar) and [@krulod](https://github.com/krulod) are managing the core features, while [@BANOnotIT](https://github.com/BANOnotIT) and [@Akiyamka](https://github.com/Akiyamka) help with documentation and issue management. [A lot of people](https://github.com/artalar/reatom/graphs/contributors) contributes to different packages.
 
 ### What build target and browser support?
 
