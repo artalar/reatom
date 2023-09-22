@@ -50,7 +50,9 @@ import { connectLogger } from '@reatom/framework'
 import { ctx, mount } from '@reatom/jsx'
 import { App } from './App'
 
-connectLogger(ctx)
+if (import.meta.env.DEV) {
+  connectLogger(ctx)
+}
 
 mount(document.getElementById('app')!, <App />)
 ```
@@ -63,4 +65,4 @@ mount(document.getElementById('app')!, <App />)
 
 About the last one: When you create an element (`<Element />`), it renders once, binds all passed atoms and actions, and will not render anymore. All changes will be propagated exactly to the element's properties. However, if you need to describe conditional logic, you can put an element in the atom and achieve rerenders through this. There is no "virtual DOM," so the elements will be recreated with each render, but this could be acceptable for some cases.
 
-Here is an example: [https://github.com/artalar/reatom-jsx/blob/main/src/index.tsx](https://github.com/artalar/reatom-jsx/blob/main/src/index.tsx)
+Here is an example: [https://github.com/artalar/reatom-jsx/blob/main/src/App.tsx](https://github.com/artalar/reatom-jsx/blob/main/src/App.tsx)

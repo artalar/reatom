@@ -14,6 +14,8 @@ You can pass a callback as the last argument. In this case, the method will retu
 
 Please note that this API handles the abort context from the [onConnect](https://www.reatom.dev/package/hooks/#onconnect) effect and other Reatom APIs. It enables you to describe complex logic in a concise and clear manner with memory safety underneath.
 
+### onEvent WebSocket example 
+
 Here is a usage example, which was revrited from [this observable example](https://github.com/domfarolino/observable/blob/c232b2e585b71a61034fd23ba4337570b537ef27/README.md?plain=1#L86):
 
 ```ts
