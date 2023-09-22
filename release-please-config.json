@@ -16,7 +16,6 @@
     "packages/hooks": {},
     "packages/lens": {},
     "packages/logger": {},
-    "packages/navigation": {},
     "packages/npm-cookie-baker": {},
     "packages/npm-history": {},
     "packages/npm-lit": {},
