@@ -10,6 +10,7 @@
   "packages/form-web": "3.1.4",
   "packages/framework": "3.4.0",
   "packages/hooks": "3.4.2",
+  "packages/jsx": "3.2.0",
   "packages/lens": "3.6.2",
   "packages/logger": "3.5.0",
   "packages/npm-cookie-baker": "3.1.3",
