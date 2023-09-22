@@ -195,11 +195,10 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](https://www.rea
 ## Roadmap
 
 - Finish [forms package](https://www.reatom.dev/package/form)
-- Finish [persist](https://www.reatom.dev/package/persist) and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation) packages
+- Finish ~~[persist](https://www.reatom.dev/package/persist)~~ and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation)~~ (improve [url](https://www.reatom.dev/package/url/)) packages
 - Add adapters for most popular ui frameworks: ~~[react](https://www.reatom.dev/adapter/npm-react)~~, angular, vue, ~~[svelte](https://www.reatom.dev/adapter/npm-svelte)~~, solid.
 - Port some components logic from reakit.io, to made it fast, light and portable.
 - Add ability to made async transaction and elaborate optimistic-ui patterns and helpers / package.
-- Try to write own jsx renderer.
 
 ## FAQ
 
@@ -222,7 +221,7 @@ Immutable data is much predictable and better for debug, than mutable states and
 
 Reatom always developed for long time usage. Our first LTS (Long Time Support) version (v1) [was released in December 2019](https://github.com/artalar/reatom/releases/tag/v1.0) and in 2022 we provided breaking changes less [Migration guide](https://www.reatom.dev/compat/core-v1#migration-guide) to the new LTS (v3) version. 3 years of successful maintains is not ended, but continued in [adapter package](https://www.reatom.dev/compat/core-v1). We hope it shows and prove our responsibility.
 
-To be honest, right now bus factor is one, [@artalar](https://github.com/artalar/) - the creator and product owner of this, but it wasn't always like this [as you can see](https://github.com/artalar/reatom/graphs/contributors). Reatom PR wasn't great in a past couple of years and a lot of APIs was experimental during development, but now with the new LTS version (v3) we bring to new feature of this lib and application development experience for a long time.
+Currently, there are four people in the development team: [@artalar](https://github.com/artalar) and [krulod](https://github.com/krulod) are managing the core features, while [BANOnotIT](https://github.com/BANOnotIT) and [Akiyamka](https://github.com/Akiyamka) help with documentation and issue management.
 
 ### What build target and browser support?
 
