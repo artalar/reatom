@@ -1,6 +1,6 @@
 import { createCtx, Ctx, isAtom, Rec, Unsubscribe } from '@reatom/core'
 import type { JSX } from './jsx'
-declare type JSXElement = JSX.Element
+declare type JSXElement = JSX.ElementType
 export type { JSXElement, JSX }
 
 export const reatomJsx = (ctx: Ctx) => {
@@ -69,4 +69,5 @@ export const reatomJsx = (ctx: Ctx) => {
   return { h, hf }
 }
 
-export const { h, hf } = reatomJsx(createCtx())
+export const ctx = createCtx()
+export const { h, hf } = reatomJsx(ctx)

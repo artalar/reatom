@@ -9,15 +9,17 @@ type DOMElement = Element
 
 export namespace JSX {
   type AtomMaybe<T = unknown> = Atom<T> | T
-  interface ArrayElement extends Array<Element> {}
-  interface FunctionElement {
-    (): DOMElement
-  }
-  export type Element =
-    | AtomMaybe
+  type Element = DOMElement
+  // interface FunctionElement {
+  //   (): DOMElement
+  // }
+  interface ArrayElement extends Array<ElementType> {}
+  type ElementType =
     | Node
+    | AtomMaybe
+    | Element
+    // | FunctionElement
     | ArrayElement
-    | FunctionElement
     | (string & {})
     | number
     | boolean
@@ -58,14 +60,14 @@ export namespace JSX {
   type Accessor<T> = () => T
   interface Directives {}
   interface DirectiveFunctions {
-    [x: string]: (el: Element, accessor: Accessor<any>) => void
+    [x: string]: (el: ElementType, accessor: Accessor<any>) => void
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
   interface CustomCaptureEvents {}
   interface DOMAttributes<T> extends CustomEventHandlersLowerCase<T> {
-    children?: Element
+    children?: ElementType
     innerHTML?: string
     innerText?: string | number
     textContent?: string | number
