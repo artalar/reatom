@@ -1,9 +1,22 @@
-import { createCtx, Ctx, isAtom, Rec, Unsubscribe } from '@reatom/core'
+import { createCtx, Ctx, Fn, isAtom, Rec, Unsubscribe } from '@reatom/core'
 import type { JSX } from './jsx'
 declare type JSXElement = JSX.ElementType
 export type { JSXElement, JSX }
 
 export const reatomJsx = (ctx: Ctx) => {
+  let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
+
+  let unlink = (parent: any, un: Unsubscribe) => {
+    Promise.resolve().then(() => {
+      if (!parent.isConnected) un()
+      else {
+        while (parent.parentElement && !unsubscribesMap.get(parent)?.push(un)) {
+          parent = parent.parentElement
+        }
+      }
+    })
+  }
+
   let h = (tag: any, props: Rec, ...children: any[]) => {
     if (tag === hf) return children
 
@@ -24,6 +37,8 @@ export const reatomJsx = (ctx: Ctx) => {
           var un: undefined | Unsubscribe = ctx.subscribe(prop, (v) =>
             !un || element.isConnected ? (element[k] = v) : un(),
           )
+
+          unlink(element, un)
         }
       } else {
         element[k] = prop
@@ -34,22 +49,23 @@ export const reatomJsx = (ctx: Ctx) => {
       if (Array.isArray(child)) child.forEach(walk)
       else {
         if (isAtom(child)) {
-          let textNode = document.createTextNode('') as ChildNode
+          let innerChild = document.createTextNode('') as ChildNode
           var un: undefined | Unsubscribe = ctx.subscribe(child, (v) => {
-            if (un && !textNode.isConnected) un()
+            if (un && !innerChild.isConnected) un()
             else {
-              if (v instanceof Element) {
-                if (un) {
-                  element.insertBefore(v, textNode)
-                  textNode.remove()
-                }
-                textNode = v
+              if (v instanceof HTMLElement) {
+                let list = unsubscribesMap.get(v)
+                if (!list) unsubscribesMap.set(v, (list = []))
+
+                if (un) element.replaceChild(v, innerChild)
+                innerChild = v
               } else {
-                textNode.textContent = v
+                innerChild.textContent = v
               }
             }
           })
-          element.appendChild(textNode)
+          unlink(element, un)
+          element.appendChild(innerChild)
         } else {
           element.appendChild(
             child?.nodeType ? child : document.createTextNode(String(child)),
@@ -66,8 +82,27 @@ export const reatomJsx = (ctx: Ctx) => {
   /** Fragment */
   let hf = () => {}
 
-  return { h, hf }
+  let mount = (target: Element, child: Element) => {
+    target.appendChild(child)
+
+    new MutationObserver((mutationsList) => {
+      for (const mutation of mutationsList) {
+        for (const removedNode of mutation.removedNodes) {
+          let list = unsubscribesMap.get(removedNode as any)
+          if (list) {
+            list.forEach((fn) => fn())
+            unsubscribesMap.delete(removedNode as any)
+          }
+        }
+      }
+    }).observe(target, {
+      childList: true,
+      subtree: true,
+    })
+  }
+
+  return { h, hf, mount }
 }
 
 export const ctx = createCtx()
-export const { h, hf } = reatomJsx(ctx)
+export const { h, hf, mount } = reatomJsx(ctx)

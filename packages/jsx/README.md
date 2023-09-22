@@ -43,6 +43,18 @@ const onInput = action((ctx, event) =>
 export const Input = () => <input value={inputAtom} oninput={onInput} />
 ```
 
+In the app root.
+
+```tsx
+import { connectLogger } from '@reatom/framework'
+import { ctx, mount } from '@reatom/jsx'
+import { App } from './App'
+
+connectLogger(ctx)
+
+mount(document.getElementById('app')!, <App />)
+```
+
 ## Limitations
 
 - No SSR support
