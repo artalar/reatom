@@ -83,6 +83,8 @@ export const reatomAsyncReaction = <T>(
       )
     }
 
+    promise.catch(noop)
+
     state?.controller.abort('concurrent')
 
     return promise

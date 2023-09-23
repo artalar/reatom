@@ -4,7 +4,7 @@ import { createTestCtx, mockFn } from '@reatom/testing'
 import { atom } from '@reatom/core'
 import { reatomAsyncReaction } from './reatomAsyncReaction'
 import { noop, sleep } from '@reatom/utils'
-import { withCache, withDataAtom } from '.'
+import { withCache, withDataAtom, withErrorAtom, withRetry } from '.'
 import { isConnected } from '@reatom/hooks'
 
 export const test = suite('reatomAsyncReaction')
@@ -107,12 +107,40 @@ test('withDataAtom', async () => {
     const params = ctx.spy(paramsAtom)
     await ctx.schedule(() => sleep())
     return params
-  }).pipe(withDataAtom(0))
+  }, 'someReaction').pipe(withDataAtom(0))
   const ctx = createTestCtx()
 
   assert.not.ok(isConnected(ctx, paramsAtom))
   ctx.subscribeTrack(someReaction.dataAtom)
   assert.ok(isConnected(ctx, paramsAtom))
+  ;`👍` //?
+})
+
+test('withErrorAtom withRetry', async () => {
+  const paramsAtom = atom(0, 'paramsAtom')
+  const someReaction = reatomAsyncReaction(async (ctx) => {
+    const params = ctx.spy(paramsAtom)
+    if (params === 0) throw new Error('test error')
+    await ctx.schedule(() => sleep())
+    return params
+  }, 'someReaction').pipe(
+    withDataAtom(0),
+    withErrorAtom(),
+    withRetry({
+      onReject(ctx, error, retries) {
+        if (retries === 0) return 1
+      },
+    }),
+  )
+  const ctx = createTestCtx()
+
+  ctx.subscribeTrack(someReaction.dataAtom)
+  await sleep()
+  assert.is(ctx.get(someReaction.errorAtom)?.message, 'test error')
+
+  paramsAtom(ctx, 1)
+  await sleep()
+  assert.is(ctx.get(someReaction.errorAtom), undefined)
   ;`👍` //?
 })
 
