@@ -38,10 +38,12 @@ export function mockFn<I extends any[], O>(
       inputs(): Array<I[number]> {
         return _fn.calls.map(({ i }) => i[0])
       },
-      lastInput(index = 0): I[number] {
+      lastInput<Index extends Extract<keyof I, number> | null = null>(
+        ...args: [index: Index] | []
+      ): I[Index extends null ? 0 : Index] {
         const { length } = _fn.calls
         if (length === 0) throw new TypeError(`Array is empty`)
-        return _fn.calls[length - 1]!.i[index]
+        return _fn.calls[length - 1]!.i[args[0] ?? 0]
       },
     },
   )

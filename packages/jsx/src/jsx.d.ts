@@ -14,17 +14,16 @@ export namespace JSX {
   //   (): DOMElement
   // }
   interface ArrayElement extends Array<ElementType> {}
-  type ElementType =
+  type ElementType = AtomMaybe<
     | Node
-    | AtomMaybe
     | Element
-    // | FunctionElement
     | ArrayElement
     | (string & {})
     | number
     | boolean
     | null
     | undefined
+  >
   interface ElementClass {
     // empty, libs can define requirements downstream
   }
