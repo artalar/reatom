@@ -203,7 +203,7 @@ To get maximum of Reatom and the ecosystem just go to [tutorial](/tutorial). If 
 
 - Finish [forms package](/package/form)
 - Finish ~~[persist](/package/persist)~~ and [navigation](https://github.com/artalar/reatom/tree/v3/packages/navigation)~~ (improve [url](/package/url/)) packages
-- Add adapters for most popular ui frameworks: ~~[react](/adapter/npm-react)~~, angular, vue, ~~[svelte](/adapter/npm-svelte)~~, solid.
+- Add adapters for most popular ui frameworks: ~~[react](/adapter/npm-react)~~, angular, vue, ~~[svelte](/adapter/npm-svelte)~~, ~~[solid](/adapter/npm-solid-js/)~~.
 - Port some components logic from reakit.io, to made it fast, light and portable.
 - Add ability to made async transaction and elaborate optimistic-ui patterns and helpers / package.
 
