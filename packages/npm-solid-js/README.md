@@ -12,6 +12,8 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `solid-
 
 ## Usage
 
+Try it now: https://stackblitz.com/edit/reatomnpm-solid-js?file=src%2FApp.tsx
+
 ### Setup reatomContext
 
 The first time, you need to add the Reatom provider to the root of your application.
@@ -41,7 +43,9 @@ Now you will be able to use Reatom hooks.
 import { atom } from '@reatom/framework'
 import { useAtom } from '@reatom/npm-solid-js'
 
-const CountingComponent = () => {
+const countAtom = atom(0, 'countAtom')
+
+const App: Component = () => {
   const [count, setCount] = useAtom(countAtom)
 
   return (
@@ -77,3 +81,11 @@ const CountingComponent = () => {
 ### useCtx hook
 
 If you need to get the `ctx` from the context, you could use the shortcut hook `useCtx`. With `ctx` in the component body, you can manipulate subscriptions more flexibly with Solid's `onMount`, `onCleanup`, and so on.
+
+## Examples
+
+### Dynamic atom creation
+
+This example shoes how to use [atomization](https://www.reatom.dev/guides/atomization) to improve editable fields performance, persists it to localStorage.
+
+https://stackblitz.com/edit/reatomnpm-solid-js-mssqxj?file=src/model.ts,src/App.tsx
