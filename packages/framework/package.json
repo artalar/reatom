@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.4.18",
+  "version": "3.4.19",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -22,7 +22,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/async": "^3.9.2",
+    "@reatom/async": "^3.9.3",
     "@reatom/core": "^3.5.0",
     "@reatom/effects": "^3.5.1",
     "@reatom/hooks": "^3.4.2",
