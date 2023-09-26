@@ -14,10 +14,9 @@ export namespace JSX {
   //   (): DOMElement
   // }
   interface ArrayElement extends Array<ElementType> {}
-  type ElementType = AtomMaybe<
-    | Node
+  type ElementType = ArrayElement | AtomMaybe<
+    // | Node
     | Element
-    | ArrayElement
     | (string & {})
     | number
     | boolean
