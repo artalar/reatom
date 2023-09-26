@@ -21,6 +21,7 @@
     "packages/npm-history": {},
     "packages/npm-lit": {},
     "packages/npm-react": {},
+    "packages/npm-solid-js": {},
     "packages/npm-svelte": {},
     "packages/persist": {},
     "packages/persist-web-storage": {},

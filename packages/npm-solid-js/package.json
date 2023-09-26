@@ -1,7 +1,7 @@
 {
   "name": "@reatom/npm-solid-js",
   "version": "3.5.0",
-  "private": true,
+  "private": false,
   "sideEffects": false,
   "description": "Reatom bindings for solid-js",
   "source": "src/index.ts",

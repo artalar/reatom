@@ -12,6 +12,8 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `solid-
 
 ## Usage
 
+### Setup reatomContext
+
 The first time, you need to add the Reatom provider to the root of your application.
 
 ```tsx
@@ -31,6 +33,8 @@ render(
 )
 ```
 
+### useAtom hook
+
 Now you will be able to use Reatom hooks.
 
 ```tsx
@@ -49,7 +53,7 @@ const CountingComponent = () => {
 }
 ```
 
-## Inline atoms
+<!-- ## Inline atoms
 
 Of course, you could create atoms inside a component's body to scope your state. Alternatively, you could pass the initial state to `useAtom` to create a new atom and subscribe to it. It is useful to use atoms instead of native Solid signals if you want better logging or if you want your logic to be coupled with Reatom.
 
@@ -68,6 +72,8 @@ const CountingComponent = () => {
     </div>
   )
 }
-```
+``` -->
 
-## ctx
+### useCtx hook
+
+If you need to get the `ctx` from the context, you could use the shortcut hook `useCtx`. With `ctx` in the component body, you can manipulate subscriptions more flexibly with Solid's `onMount`, `onCleanup`, and so on.

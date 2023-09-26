@@ -10,24 +10,12 @@ import {
   isAtom,
   throwReatomError,
 } from '@reatom/core'
-import { Binded, bind } from '@reatom/lens'
-import {
-  Accessor,
-  createContext,
-  from,
-  getOwner,
-  useContext,
-  untrack,
-  Signal,
-  createSignal,
-  onCleanup,
-} from 'solid-js'
+import { bind } from '@reatom/lens'
+import { Accessor, createContext, from, getOwner, useContext } from 'solid-js'
 
 export const reatomContext = createContext<Ctx>()
 
-export const useCtx = (): Ctx & {
-  signal<T>(atom: Atom<T>): Accessor<T>
-} => {
+export const useCtx = (): Ctx => {
   let ctx = useContext(reatomContext)
 
   throwReatomError(
@@ -35,18 +23,8 @@ export const useCtx = (): Ctx & {
     'ctx is not set, you probably forgot to specify the ctx provider',
   )
 
-  return Object.assign(ctx!, {
-    signal(anAtom) {
-      const [s, set] = createSignal(ctx!.get(anAtom))
-      onCleanup(ctx!.subscribe(anAtom, set))
-      return s
-    },
-  })
+  return ctx!
 }
-
-let bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
-export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
-  bind(useCtx(), bindBind)
 
 // @ts-ignore
 export const useAtom: {
