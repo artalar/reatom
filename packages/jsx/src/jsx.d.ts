@@ -56,6 +56,13 @@ export namespace JSX {
   interface IntrinsicAttributes {
     ref?: unknown | ((e: unknown) => void)
   }
+  // interface CustomAttributes<T> {
+  //   ref?: T | ((el: T) => void)
+  //   classList?: {
+  //     [k: string]: boolean | undefined
+  //   }
+  //   $ServerOnly?: boolean
+  // }
   type Accessor<T> = () => T
   interface Directives {}
   interface DirectiveFunctions {
@@ -65,12 +72,56 @@ export namespace JSX {
   interface ExplicitAttributes {}
   interface CustomEvents {}
   interface CustomCaptureEvents {}
-  interface DOMAttributes<T> extends CustomEventHandlersLowerCase<T> {
+  // type DirectiveAttributes = {
+  //   [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
+  // }
+  // type DirectiveFunctionAttributes<T> = {
+  //   [K in keyof DirectiveFunctions as string extends K
+  //     ? never
+  //     : `use:${K}`]?: DirectiveFunctions[K] extends (
+  //     el: infer E, // will be unknown if not provided
+  //     ...rest: infer R // use rest so that we can check whether it's provided or not
+  //   ) => void
+  //     ? T extends E // everything extends unknown if E is unknown
+  //       ? R extends [infer A] // check if has accessor provided
+  //         ? A extends Accessor<infer V>
+  //           ? V // it's an accessor
+  //           : never // it isn't, type error
+  //         : true // no accessor provided
+  //       : never // T is the wrong element
+  //     : never // it isn't a function
+  // }
+  // type PropAttributes = {
+  //   [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key]
+  // }
+  // type AttrAttributes = {
+  //   [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key]
+  // }
+  // type OnAttributes<T> = {
+  //   [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<
+  //     T,
+  //     CustomEvents[Key]
+  //   >
+  // }
+  // type OnCaptureAttributes<T> = {
+  //   [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
+  //     T,
+  //     CustomCaptureEvents[Key]
+  //   >
+  // }
+  interface DOMAttributes<T>
+  /* CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T>, */
+    extends CustomEventHandlers<T> {
     children?: ElementType
     innerHTML?: string
     innerText?: string | number
     textContent?: string | number
-    // lower case events
     oncopy?: EventHandlerUnion<T, ClipboardEvent>
     oncut?: EventHandlerUnion<T, ClipboardEvent>
     onpaste?: EventHandlerUnion<T, ClipboardEvent>
@@ -85,7 +136,7 @@ export namespace JSX {
   /**
    * @type {GlobalEventHandlers}
    */
-  interface CustomEventHandlersLowerCase<T> {
+  interface CustomEventHandlers<T> {
     onabort?: EventHandlerUnion<T, Event>
     onanimationend?: EventHandlerUnion<T, AnimationEvent>
     onanimationiteration?: EventHandlerUnion<T, AnimationEvent>
@@ -956,6 +1007,846 @@ export namespace JSX {
     poster?: AtomMaybe<string>
     width?: AtomMaybe<number | string>
   }
+  type SVGPreserveAspectRatio =
+    | 'none'
+    | 'xMinYMin'
+    | 'xMidYMin'
+    | 'xMaxYMin'
+    | 'xMinYMid'
+    | 'xMidYMid'
+    | 'xMaxYMid'
+    | 'xMinYMax'
+    | 'xMidYMax'
+    | 'xMaxYMax'
+    | 'xMinYMin meet'
+    | 'xMidYMin meet'
+    | 'xMaxYMin meet'
+    | 'xMinYMid meet'
+    | 'xMidYMid meet'
+    | 'xMaxYMid meet'
+    | 'xMinYMax meet'
+    | 'xMidYMax meet'
+    | 'xMaxYMax meet'
+    | 'xMinYMin slice'
+    | 'xMidYMin slice'
+    | 'xMaxYMin slice'
+    | 'xMinYMid slice'
+    | 'xMidYMid slice'
+    | 'xMaxYMid slice'
+    | 'xMinYMax slice'
+    | 'xMidYMax slice'
+    | 'xMaxYMax slice'
+  type ImagePreserveAspectRatio =
+    | SVGPreserveAspectRatio
+    | 'defer none'
+    | 'defer xMinYMin'
+    | 'defer xMidYMin'
+    | 'defer xMaxYMin'
+    | 'defer xMinYMid'
+    | 'defer xMidYMid'
+    | 'defer xMaxYMid'
+    | 'defer xMinYMax'
+    | 'defer xMidYMax'
+    | 'defer xMaxYMax'
+    | 'defer xMinYMin meet'
+    | 'defer xMidYMin meet'
+    | 'defer xMaxYMin meet'
+    | 'defer xMinYMid meet'
+    | 'defer xMidYMid meet'
+    | 'defer xMaxYMid meet'
+    | 'defer xMinYMax meet'
+    | 'defer xMidYMax meet'
+    | 'defer xMaxYMax meet'
+    | 'defer xMinYMin slice'
+    | 'defer xMidYMin slice'
+    | 'defer xMaxYMin slice'
+    | 'defer xMinYMid slice'
+    | 'defer xMidYMid slice'
+    | 'defer xMaxYMid slice'
+    | 'defer xMinYMax slice'
+    | 'defer xMidYMax slice'
+    | 'defer xMaxYMax slice'
+  type SVGUnits = 'userSpaceOnUse' | 'objectBoundingBox'
+  interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    id?: AtomMaybe<string>
+    lang?: AtomMaybe<string>
+    tabIndex?: AtomMaybe<number | string>
+    tabindex?: AtomMaybe<number | string>
+  }
+  interface StylableSVGAttributes {
+    class?: AtomMaybe<string> | undefined
+    style?: AtomMaybe<CSSProperties | string>
+  }
+  interface TransformableSVGAttributes {
+    transform?: AtomMaybe<string>
+  }
+  interface ConditionalProcessingSVGAttributes {
+    requiredExtensions?: AtomMaybe<string>
+    requiredFeatures?: AtomMaybe<string>
+    systemLanguage?: AtomMaybe<string>
+  }
+  interface ExternalResourceSVGAttributes {
+    externalResourcesRequired?: AtomMaybe<'true' | 'false'>
+  }
+  interface AnimationTimingSVGAttributes {
+    begin?: AtomMaybe<string>
+    dur?: AtomMaybe<string>
+    end?: AtomMaybe<string>
+    min?: AtomMaybe<string>
+    max?: AtomMaybe<string>
+    restart?: AtomMaybe<'always' | 'whenNotActive' | 'never'>
+    repeatCount?: AtomMaybe<number | 'indefinite'>
+    repeatDur?: AtomMaybe<string>
+    fill?: AtomMaybe<'freeze' | 'remove'>
+  }
+  interface AnimationValueSVGAttributes {
+    calcMode?: AtomMaybe<'discrete' | 'linear' | 'paced' | 'spline'>
+    values?: AtomMaybe<string>
+    keyTimes?: AtomMaybe<string>
+    keySplines?: AtomMaybe<string>
+    from?: AtomMaybe<number | string>
+    to?: AtomMaybe<number | string>
+    by?: AtomMaybe<number | string>
+  }
+  interface AnimationAdditionSVGAttributes {
+    attributeName?: AtomMaybe<string>
+    additive?: AtomMaybe<'replace' | 'sum'>
+    accumulate?: AtomMaybe<'none' | 'sum'>
+  }
+  interface AnimationAttributeTargetSVGAttributes {
+    attributeName?: AtomMaybe<string>
+    attributeType?: AtomMaybe<'CSS' | 'XML' | 'auto'>
+  }
+  interface PresentationSVGAttributes {
+    'alignment-baseline'?:
+      | 'auto'
+      | 'baseline'
+      | 'before-edge'
+      | 'text-before-edge'
+      | 'middle'
+      | 'central'
+      | 'after-edge'
+      | 'text-after-edge'
+      | 'ideographic'
+      | 'alphabetic'
+      | 'hanging'
+      | 'mathematical'
+      | 'inherit'
+    'baseline-shift'?: AtomMaybe<number | string>
+    clip?: AtomMaybe<string>
+    'clip-path'?: AtomMaybe<string>
+    'clip-rule'?: 'nonzero' | 'evenodd' | 'inherit'
+    color?: AtomMaybe<string>
+    'color-interpolation'?: 'auto' | 'sRGB' | 'linearRGB' | 'inherit'
+    'color-interpolation-filters'?: 'auto' | 'sRGB' | 'linearRGB' | 'inherit'
+    'color-profile'?: AtomMaybe<string>
+    'color-rendering'?: 'auto' | 'optimizeSpeed' | 'optimizeQuality' | 'inherit'
+    cursor?: AtomMaybe<string>
+    direction?: 'ltr' | 'rtl' | 'inherit'
+    display?: AtomMaybe<string>
+    'dominant-baseline'?:
+      | 'auto'
+      | 'text-bottom'
+      | 'alphabetic'
+      | 'ideographic'
+      | 'middle'
+      | 'central'
+      | 'mathematical'
+      | 'hanging'
+      | 'text-top'
+      | 'inherit'
+    'enable-background'?: AtomMaybe<string>
+    fill?: AtomMaybe<string>
+    'fill-opacity'?: AtomMaybe<number | string | 'inherit'>
+    'fill-rule'?: AtomMaybe<'nonzero' | 'evenodd' | 'inherit'>
+    filter?: AtomMaybe<string>
+    'flood-color'?: AtomMaybe<string>
+    'flood-opacity'?: AtomMaybe<number | string | 'inherit'>
+    'font-family'?: AtomMaybe<string>
+    'font-size'?: AtomMaybe<string>
+    'font-size-adjust'?: AtomMaybe<number | string>
+    'font-stretch'?: AtomMaybe<string>
+    'font-style'?: AtomMaybe<'normal' | 'italic' | 'oblique' | 'inherit'>
+    'font-variant'?: AtomMaybe<string>
+    'font-weight'?: AtomMaybe<number | string>
+    'glyph-orientation-horizontal'?: AtomMaybe<string>
+    'glyph-orientation-vertical'?: AtomMaybe<string>
+    'image-rendering'?: AtomMaybe<
+      'auto' | 'optimizeQuality' | 'optimizeSpeed' | 'inherit'
+    >
+    kerning?: AtomMaybe<string>
+    'letter-spacing'?: AtomMaybe<number | string>
+    'lighting-color'?: AtomMaybe<string>
+    'marker-end'?: AtomMaybe<string>
+    'marker-mid'?: AtomMaybe<string>
+    'marker-start'?: AtomMaybe<string>
+    mask?: AtomMaybe<string>
+    opacity?: AtomMaybe<number | string | 'inherit'>
+    overflow?: AtomMaybe<'visible' | 'hidden' | 'scroll' | 'auto' | 'inherit'>
+    'pointer-events'?: AtomMaybe<
+      | 'bounding-box'
+      | 'visiblePainted'
+      | 'visibleFill'
+      | 'visibleStroke'
+      | 'visible'
+      | 'painted'
+      | 'color'
+      | 'fill'
+      | 'stroke'
+      | 'all'
+      | 'none'
+      | 'inherit'
+    >
+    'shape-rendering'?: AtomMaybe<
+      'auto' | 'optimizeSpeed' | 'crispEdges' | 'geometricPrecision' | 'inherit'
+    >
+    'stop-color'?: AtomMaybe<string>
+    'stop-opacity'?: AtomMaybe<number | string | 'inherit'>
+    stroke?: AtomMaybe<string>
+    'stroke-dasharray'?: AtomMaybe<string>
+    'stroke-dashoffset'?: AtomMaybe<number | string>
+    'stroke-linecap'?: AtomMaybe<'butt' | 'round' | 'square' | 'inherit'>
+    'stroke-linejoin'?: AtomMaybe<
+      'arcs' | 'bevel' | 'miter' | 'miter-clip' | 'round' | 'inherit'
+    >
+    'stroke-miterlimit'?: AtomMaybe<number | string | 'inherit'>
+    'stroke-opacity'?: AtomMaybe<number | string | 'inherit'>
+    'stroke-width'?: AtomMaybe<number | string>
+    'text-anchor'?: AtomMaybe<'start' | 'middle' | 'end' | 'inherit'>
+    'text-decoration'?: AtomMaybe<
+      'none' | 'underline' | 'overline' | 'line-through' | 'blink' | 'inherit'
+    >
+    'text-rendering'?: AtomMaybe<
+      | 'auto'
+      | 'optimizeSpeed'
+      | 'optimizeLegibility'
+      | 'geometricPrecision'
+      | 'inherit'
+    >
+    'unicode-bidi'?: AtomMaybe<string>
+    visibility?: AtomMaybe<'visible' | 'hidden' | 'collapse' | 'inherit'>
+    'word-spacing'?: AtomMaybe<number | string>
+    'writing-mode'?: AtomMaybe<
+      'lr-tb' | 'rl-tb' | 'tb-rl' | 'lr' | 'rl' | 'tb' | 'inherit'
+    >
+  }
+  interface AnimationElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      ConditionalProcessingSVGAttributes {}
+  interface ContainerElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'clip-path'
+        | 'mask'
+        | 'cursor'
+        | 'opacity'
+        | 'filter'
+        | 'enable-background'
+        | 'color-interpolation'
+        | 'color-rendering'
+      > {}
+  interface FilterPrimitiveElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<PresentationSVGAttributes, 'color-interpolation-filters'> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    result?: AtomMaybe<string>
+  }
+  interface SingleInputFilterSVGAttributes {
+    in?: AtomMaybe<string>
+  }
+  interface DoubleInputFilterSVGAttributes {
+    in?: AtomMaybe<string>
+    in2?: AtomMaybe<string>
+  }
+  interface FitToViewBoxSVGAttributes {
+    viewBox?: AtomMaybe<string>
+    preserveAspectRatio?: AtomMaybe<SVGPreserveAspectRatio>
+  }
+  interface GradientElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    gradientUnits?: AtomMaybe<SVGUnits>
+    gradientTransform?: AtomMaybe<string>
+    spreadMethod?: AtomMaybe<'pad' | 'reflect' | 'repeat'>
+  }
+  interface GraphicsElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'clip-rule'
+        | 'mask'
+        | 'pointer-events'
+        | 'cursor'
+        | 'opacity'
+        | 'filter'
+        | 'display'
+        | 'visibility'
+        | 'color-interpolation'
+        | 'color-rendering'
+      > {}
+  interface LightSourceElementSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface NewViewportSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
+    viewBox?: AtomMaybe<string>
+  }
+  interface ShapeElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'color'
+        | 'fill'
+        | 'fill-rule'
+        | 'fill-opacity'
+        | 'stroke'
+        | 'stroke-width'
+        | 'stroke-linecap'
+        | 'stroke-linejoin'
+        | 'stroke-miterlimit'
+        | 'stroke-dasharray'
+        | 'stroke-dashoffset'
+        | 'stroke-opacity'
+        | 'shape-rendering'
+      > {}
+  interface TextContentElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'font-family'
+        | 'font-style'
+        | 'font-variant'
+        | 'font-weight'
+        | 'font-stretch'
+        | 'font-size'
+        | 'font-size-adjust'
+        | 'kerning'
+        | 'letter-spacing'
+        | 'word-spacing'
+        | 'text-decoration'
+        | 'glyph-orientation-horizontal'
+        | 'glyph-orientation-vertical'
+        | 'direction'
+        | 'unicode-bidi'
+        | 'text-anchor'
+        | 'dominant-baseline'
+        | 'color'
+        | 'fill'
+        | 'fill-rule'
+        | 'fill-opacity'
+        | 'stroke'
+        | 'stroke-width'
+        | 'stroke-linecap'
+        | 'stroke-linejoin'
+        | 'stroke-miterlimit'
+        | 'stroke-dasharray'
+        | 'stroke-dashoffset'
+        | 'stroke-opacity'
+      > {}
+  interface ZoomAndPanSVGAttributes {
+    zoomAndPan?: AtomMaybe<'disable' | 'magnify'>
+  }
+  interface AnimateSVGAttributes<T>
+    extends AnimationElementSVGAttributes<T>,
+      AnimationAttributeTargetSVGAttributes,
+      AnimationTimingSVGAttributes,
+      AnimationValueSVGAttributes,
+      AnimationAdditionSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'color-interpolation' | 'color-rendering'
+      > {}
+  interface AnimateMotionSVGAttributes<T>
+    extends AnimationElementSVGAttributes<T>,
+      AnimationTimingSVGAttributes,
+      AnimationValueSVGAttributes,
+      AnimationAdditionSVGAttributes {
+    path?: AtomMaybe<string>
+    keyPoints?: AtomMaybe<string>
+    rotate?: AtomMaybe<number | string | 'auto' | 'auto-reverse'>
+    origin?: AtomMaybe<'default'>
+  }
+  interface AnimateTransformSVGAttributes<T>
+    extends AnimationElementSVGAttributes<T>,
+      AnimationAttributeTargetSVGAttributes,
+      AnimationTimingSVGAttributes,
+      AnimationValueSVGAttributes,
+      AnimationAdditionSVGAttributes {
+    type?: AtomMaybe<'translate' | 'scale' | 'rotate' | 'skewX' | 'skewY'>
+  }
+  interface CircleSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    cx?: AtomMaybe<number | string>
+    cy?: AtomMaybe<number | string>
+    r?: AtomMaybe<number | string>
+  }
+  interface ClipPathSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'clip-path'> {
+    clipPathUnits?: AtomMaybe<SVGUnits>
+  }
+  interface DefsSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {}
+  interface DescSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      StylableSVGAttributes {}
+  interface EllipseSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    cx?: AtomMaybe<number | string>
+    cy?: AtomMaybe<number | string>
+    rx?: AtomMaybe<number | string>
+    ry?: AtomMaybe<number | string>
+  }
+  interface FeBlendSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      DoubleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    mode?: AtomMaybe<'normal' | 'multiply' | 'screen' | 'darken' | 'lighten'>
+  }
+  interface FeColorMatrixSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    type?: AtomMaybe<'matrix' | 'saturate' | 'hueRotate' | 'luminanceToAlpha'>
+    values?: AtomMaybe<string>
+  }
+  interface FeComponentTransferSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {}
+  interface FeCompositeSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      DoubleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    operator?: AtomMaybe<'over' | 'in' | 'out' | 'atop' | 'xor' | 'arithmetic'>
+    k1?: AtomMaybe<number | string>
+    k2?: AtomMaybe<number | string>
+    k3?: AtomMaybe<number | string>
+    k4?: AtomMaybe<number | string>
+  }
+  interface FeConvolveMatrixSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    order?: AtomMaybe<number | string>
+    kernelMatrix?: AtomMaybe<string>
+    divisor?: AtomMaybe<number | string>
+    bias?: AtomMaybe<number | string>
+    targetX?: AtomMaybe<number | string>
+    targetY?: AtomMaybe<number | string>
+    edgeMode?: AtomMaybe<'duplicate' | 'wrap' | 'none'>
+    kernelUnitLength?: AtomMaybe<number | string>
+    preserveAlpha?: AtomMaybe<'true' | 'false'>
+  }
+  interface FeDiffuseLightingSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color' | 'lighting-color'> {
+    surfaceScale?: AtomMaybe<number | string>
+    diffuseConstant?: AtomMaybe<number | string>
+    kernelUnitLength?: AtomMaybe<number | string>
+  }
+  interface FeDisplacementMapSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      DoubleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    scale?: AtomMaybe<number | string>
+    xChannelSelector?: AtomMaybe<'R' | 'G' | 'B' | 'A'>
+    yChannelSelector?: AtomMaybe<'R' | 'G' | 'B' | 'A'>
+  }
+  interface FeDistantLightSVGAttributes<T>
+    extends LightSourceElementSVGAttributes<T> {
+    azimuth?: AtomMaybe<number | string>
+    elevation?: AtomMaybe<number | string>
+  }
+  interface FeFloodSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'color' | 'flood-color' | 'flood-opacity'
+      > {}
+  interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
+    type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma'
+    tableValues?: AtomMaybe<string>
+    slope?: AtomMaybe<number | string>
+    intercept?: AtomMaybe<number | string>
+    amplitude?: AtomMaybe<number | string>
+    exponent?: AtomMaybe<number | string>
+    offset?: AtomMaybe<number | string>
+  }
+  interface FeGaussianBlurSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    stdDeviation?: AtomMaybe<number | string>
+  }
+  interface FeImageSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    preserveAspectRatio?: AtomMaybe<SVGPreserveAspectRatio>
+    href?: AtomMaybe<string>
+  }
+  interface FeMergeSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes {}
+  interface FeMergeNodeSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      SingleInputFilterSVGAttributes {}
+  interface FeMorphologySVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    operator?: AtomMaybe<'erode' | 'dilate'>
+    radius?: AtomMaybe<number | string>
+  }
+  interface FeOffsetSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    dx?: AtomMaybe<number | string>
+    dy?: AtomMaybe<number | string>
+  }
+  interface FePointLightSVGAttributes<T>
+    extends LightSourceElementSVGAttributes<T> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    z?: AtomMaybe<number | string>
+  }
+  interface FeSpecularLightingSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color' | 'lighting-color'> {
+    surfaceScale?: AtomMaybe<string>
+    specularConstant?: AtomMaybe<string>
+    specularExponent?: AtomMaybe<string>
+    kernelUnitLength?: AtomMaybe<number | string>
+  }
+  interface FeSpotLightSVGAttributes<T>
+    extends LightSourceElementSVGAttributes<T> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    z?: AtomMaybe<number | string>
+    pointsAtX?: AtomMaybe<number | string>
+    pointsAtY?: AtomMaybe<number | string>
+    pointsAtZ?: AtomMaybe<number | string>
+    specularExponent?: AtomMaybe<number | string>
+    limitingConeAngle?: AtomMaybe<number | string>
+  }
+  interface FeTileSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {}
+  interface FeTurbulanceSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes {
+    baseFrequency?: AtomMaybe<number | string>
+    numOctaves?: AtomMaybe<number | string>
+    seed?: AtomMaybe<number | string>
+    stitchTiles?: AtomMaybe<'stitch' | 'noStitch'>
+    type?: AtomMaybe<'fractalNoise' | 'turbulence'>
+  }
+  interface FilterSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    filterUnits?: AtomMaybe<SVGUnits>
+    primitiveUnits?: AtomMaybe<SVGUnits>
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    filterRes?: AtomMaybe<number | string>
+  }
+  interface ForeignObjectSVGAttributes<T>
+    extends NewViewportSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'display' | 'visibility'> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+  }
+  interface GSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'display' | 'visibility'> {}
+  interface ImageSVGAttributes<T>
+    extends NewViewportSVGAttributes<T>,
+      GraphicsElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color-profile' | 'image-rendering'> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    preserveAspectRatio?: AtomMaybe<ImagePreserveAspectRatio>
+    href?: AtomMaybe<string>
+  }
+  interface LineSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    x1?: AtomMaybe<number | string>
+    y1?: AtomMaybe<number | string>
+    x2?: AtomMaybe<number | string>
+    y2?: AtomMaybe<number | string>
+  }
+  interface LinearGradientSVGAttributes<T>
+    extends GradientElementSVGAttributes<T> {
+    x1?: AtomMaybe<number | string>
+    x2?: AtomMaybe<number | string>
+    y1?: AtomMaybe<number | string>
+    y2?: AtomMaybe<number | string>
+  }
+  interface MarkerSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
+    markerUnits?: AtomMaybe<'strokeWidth' | 'userSpaceOnUse'>
+    refX?: AtomMaybe<number | string>
+    refY?: AtomMaybe<number | string>
+    markerWidth?: AtomMaybe<number | string>
+    markerHeight?: AtomMaybe<number | string>
+    orient?: AtomMaybe<string>
+  }
+  interface MaskSVGAttributes<T>
+    extends Omit<ContainerElementSVGAttributes<T>, 'opacity' | 'filter'>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    maskUnits?: AtomMaybe<SVGUnits>
+    maskContentUnits?: AtomMaybe<SVGUnits>
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+  }
+  interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface PathSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    d?: AtomMaybe<string>
+    pathLength?: AtomMaybe<number | string>
+  }
+  interface PatternSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    patternUnits?: AtomMaybe<SVGUnits>
+    patternContentUnits?: AtomMaybe<SVGUnits>
+    patternTransform?: AtomMaybe<string>
+  }
+  interface PolygonSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    points?: AtomMaybe<string>
+  }
+  interface PolylineSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    points?: AtomMaybe<string>
+  }
+  interface RadialGradientSVGAttributes<T>
+    extends GradientElementSVGAttributes<T> {
+    cx?: AtomMaybe<number | string>
+    cy?: AtomMaybe<number | string>
+    r?: AtomMaybe<number | string>
+    fx?: AtomMaybe<number | string>
+    fy?: AtomMaybe<number | string>
+  }
+  interface RectSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    rx?: AtomMaybe<number | string>
+    ry?: AtomMaybe<number | string>
+  }
+  interface StopSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color' | 'stop-color' | 'stop-opacity'> {
+    offset?: AtomMaybe<number | string>
+  }
+  interface SvgSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      NewViewportSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      ZoomAndPanSVGAttributes,
+      PresentationSVGAttributes {
+    version?: AtomMaybe<string>
+    baseProfile?: AtomMaybe<string>
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    contentScriptType?: AtomMaybe<string>
+    contentStyleType?: AtomMaybe<string>
+    xmlns?: AtomMaybe<string>
+  }
+  interface SwitchSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'display' | 'visibility'> {}
+  interface SymbolSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      NewViewportSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes {}
+  interface TextSVGAttributes<T>
+    extends TextContentElementSVGAttributes<T>,
+      GraphicsElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'writing-mode' | 'text-rendering'> {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    dx?: AtomMaybe<number | string>
+    dy?: AtomMaybe<number | string>
+    rotate?: AtomMaybe<number | string>
+    textLength?: AtomMaybe<number | string>
+    lengthAdjust?: AtomMaybe<'spacing' | 'spacingAndGlyphs'>
+  }
+  interface TextPathSVGAttributes<T>
+    extends TextContentElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
+      > {
+    startOffset?: AtomMaybe<number | string>
+    method?: AtomMaybe<'align' | 'stretch'>
+    spacing?: AtomMaybe<'auto' | 'exact'>
+    href?: AtomMaybe<string>
+  }
+  interface TSpanSVGAttributes<T>
+    extends TextContentElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
+      > {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    dx?: AtomMaybe<number | string>
+    dy?: AtomMaybe<number | string>
+    rotate?: AtomMaybe<number | string>
+    textLength?: AtomMaybe<number | string>
+    lengthAdjust?: AtomMaybe<'spacing' | 'spacingAndGlyphs'>
+  }
+  interface UseSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    x?: AtomMaybe<number | string>
+    y?: AtomMaybe<number | string>
+    width?: AtomMaybe<number | string>
+    height?: AtomMaybe<number | string>
+    href?: AtomMaybe<string>
+  }
+  interface ViewSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      ZoomAndPanSVGAttributes {
+    viewTarget?: AtomMaybe<string>
+  }
   /**
    * @type {HTMLElementTagNameMap}
    */
@@ -1082,7 +1973,72 @@ export namespace JSX {
     noindex: HTMLAttributes<HTMLElement>
     param: ParamHTMLAttributes<HTMLParamElement>
   }
+  /**
+   * @type {SVGElementTagNameMap}
+   */
+  interface SVGElementTags {
+    animate: AnimateSVGAttributes<SVGAnimateElement>
+    animateMotion: AnimateMotionSVGAttributes<SVGAnimateMotionElement>
+    animateTransform: AnimateTransformSVGAttributes<SVGAnimateTransformElement>
+    circle: CircleSVGAttributes<SVGCircleElement>
+    clipPath: ClipPathSVGAttributes<SVGClipPathElement>
+    defs: DefsSVGAttributes<SVGDefsElement>
+    desc: DescSVGAttributes<SVGDescElement>
+    ellipse: EllipseSVGAttributes<SVGEllipseElement>
+    feBlend: FeBlendSVGAttributes<SVGFEBlendElement>
+    feColorMatrix: FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>
+    feComponentTransfer: FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>
+    feComposite: FeCompositeSVGAttributes<SVGFECompositeElement>
+    feConvolveMatrix: FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>
+    feDiffuseLighting: FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>
+    feDisplacementMap: FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>
+    feDistantLight: FeDistantLightSVGAttributes<SVGFEDistantLightElement>
+    feDropShadow: Partial<SVGFEDropShadowElement>
+    feFlood: FeFloodSVGAttributes<SVGFEFloodElement>
+    feFuncA: FeFuncSVGAttributes<SVGFEFuncAElement>
+    feFuncB: FeFuncSVGAttributes<SVGFEFuncBElement>
+    feFuncG: FeFuncSVGAttributes<SVGFEFuncGElement>
+    feFuncR: FeFuncSVGAttributes<SVGFEFuncRElement>
+    feGaussianBlur: FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>
+    feImage: FeImageSVGAttributes<SVGFEImageElement>
+    feMerge: FeMergeSVGAttributes<SVGFEMergeElement>
+    feMergeNode: FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>
+    feMorphology: FeMorphologySVGAttributes<SVGFEMorphologyElement>
+    feOffset: FeOffsetSVGAttributes<SVGFEOffsetElement>
+    fePointLight: FePointLightSVGAttributes<SVGFEPointLightElement>
+    feSpecularLighting: FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>
+    feSpotLight: FeSpotLightSVGAttributes<SVGFESpotLightElement>
+    feTile: FeTileSVGAttributes<SVGFETileElement>
+    feTurbulence: FeTurbulanceSVGAttributes<SVGFETurbulenceElement>
+    filter: FilterSVGAttributes<SVGFilterElement>
+    foreignObject: ForeignObjectSVGAttributes<SVGForeignObjectElement>
+    g: GSVGAttributes<SVGGElement>
+    image: ImageSVGAttributes<SVGImageElement>
+    line: LineSVGAttributes<SVGLineElement>
+    linearGradient: LinearGradientSVGAttributes<SVGLinearGradientElement>
+    marker: MarkerSVGAttributes<SVGMarkerElement>
+    mask: MaskSVGAttributes<SVGMaskElement>
+    metadata: MetadataSVGAttributes<SVGMetadataElement>
+    mpath: Partial<SVGMPathElement>
+    path: PathSVGAttributes<SVGPathElement>
+    pattern: PatternSVGAttributes<SVGPatternElement>
+    polygon: PolygonSVGAttributes<SVGPolygonElement>
+    polyline: PolylineSVGAttributes<SVGPolylineElement>
+    radialGradient: RadialGradientSVGAttributes<SVGRadialGradientElement>
+    rect: RectSVGAttributes<SVGRectElement>
+    set: Partial<SVGSetElement>
+    stop: StopSVGAttributes<SVGStopElement>
+    svg: SvgSVGAttributes<SVGSVGElement>
+    switch: SwitchSVGAttributes<SVGSwitchElement>
+    symbol: SymbolSVGAttributes<SVGSymbolElement>
+    text: TextSVGAttributes<SVGTextElement>
+    textPath: TextPathSVGAttributes<SVGTextPathElement>
+    tspan: TSpanSVGAttributes<SVGTSpanElement>
+    use: UseSVGAttributes<SVGUseElement>
+    view: ViewSVGAttributes<SVGViewElement>
+  }
   interface IntrinsicElements
     extends HTMLElementTags,
-      HTMLElementDeprecatedTags {}
+      HTMLElementDeprecatedTags,
+      SVGElementTags {}
 }
