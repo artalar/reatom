@@ -44,15 +44,15 @@ test('withCache', async () => {
     const argument = ctx.spy(paramsAtom)
     await ctx.schedule(() => sleepTrack())
     return argument
-  }, 'aAtom').pipe(withCache()).promiseAtom
+  }, 'aAtom').pipe(withCache())
   const bAtom = reatomAsyncReaction(async (ctx) => {
-    const n = await ctx.spy(aAtom)
+    const n = await ctx.spy(aAtom.promiseAtom)
     return n
-  }, 'bAtom').promiseAtom
+  }, 'bAtom')
   const track = mockFn()
   const ctx = createTestCtx()
 
-  ctx.subscribe(bAtom, (p) => p.then(track, noop))
+  ctx.subscribe(bAtom.promiseAtom, (p) => p.then(track, noop))
   await sleep()
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), 0)
@@ -111,36 +111,60 @@ test('withDataAtom', async () => {
   const ctx = createTestCtx()
 
   assert.not.ok(isConnected(ctx, paramsAtom))
-  ctx.subscribeTrack(someReaction.dataAtom)
+  const un = ctx.subscribe(someReaction.dataAtom, noop)
   assert.ok(isConnected(ctx, paramsAtom))
+  un()
+  assert.not.ok(isConnected(ctx, paramsAtom))
   ;`👍` //?
 })
 
 test('withErrorAtom withRetry', async () => {
-  const paramsAtom = atom(0, 'paramsAtom')
+  let shouldThrow = true
+  const paramsAtom = atom(123, 'paramsAtom')
   const someReaction = reatomAsyncReaction(async (ctx) => {
     const params = ctx.spy(paramsAtom)
-    if (params === 0) throw new Error('test error')
+    if (shouldThrow) throw new Error('test error')
     await ctx.schedule(() => sleep())
     return params
   }, 'someReaction').pipe(
     withDataAtom(0),
-    withErrorAtom(),
+    withErrorAtom((ctx, e) => (e instanceof Error ? e : new Error(String(e))), {
+      resetTrigger: 'onFulfill',
+    }),
     withRetry({
       onReject(ctx, error, retries) {
-        if (retries === 0) return 1
+        if (retries === 0) return 0
       },
     }),
   )
   const ctx = createTestCtx()
 
   ctx.subscribeTrack(someReaction.dataAtom)
+  shouldThrow = false
   await sleep()
+  assert.is(ctx.get(someReaction.dataAtom), 0)
   assert.is(ctx.get(someReaction.errorAtom)?.message, 'test error')
 
-  paramsAtom(ctx, 1)
   await sleep()
+  assert.is(ctx.get(someReaction.dataAtom), 123)
   assert.is(ctx.get(someReaction.errorAtom), undefined)
+  ;`👍` //?
+})
+
+test('abort should not stale', async () => {
+  const paramsAtom = atom(123, 'paramsAtom')
+  const someReaction = reatomAsyncReaction(async (ctx) => {
+    const params = ctx.spy(paramsAtom)
+    await ctx.schedule(() => sleep())
+    return params
+  }, 'someReaction').pipe(withDataAtom(0))
+  const ctx = createTestCtx()
+
+  ctx.subscribe(someReaction.dataAtom, noop)()
+  ctx.subscribe(someReaction.dataAtom, noop)
+
+  await sleep()
+  assert.is(ctx.get(someReaction.dataAtom), 123)
   ;`👍` //?
 })
 

@@ -1,9 +1,18 @@
-import { Atom, Fn, __count, atom, throwReatomError } from '@reatom/core'
-import { CauseContext, onCtxAbort } from '@reatom/effects'
-import { merge, noop, toAbortError } from '@reatom/utils'
+import {
+  Action,
+  Atom,
+  AtomCache,
+  Ctx,
+  Fn,
+  __count,
+  atom,
+  throwReatomError,
+} from '@reatom/core'
+import { CauseContext, __thenReatomed, onCtxAbort } from '@reatom/effects'
+import { merge, noop, throwIfAborted, toAbortError } from '@reatom/utils'
 
 import { reatomAsync, AsyncAction, ControlledPromise, AsyncCtx } from '.'
-import { onConnect } from '@reatom/hooks'
+import { isConnected, onConnect } from '@reatom/hooks'
 
 export interface AsyncReaction<Resp> extends AsyncAction<[], Resp> {
   promiseAtom: Atom<ControlledPromise<Resp>>
@@ -15,11 +24,24 @@ export interface AsyncCtxSpy extends AsyncCtx {
   }
 }
 
+const resolved = new Set<Promise<any>>()
+
 export const reatomAsyncReaction = <T>(
   asyncComputed: (ctx: AsyncCtxSpy) => Promise<T>,
   name = __count('asyncAtom'),
 ): AsyncReaction<T> => {
   const promises = new CauseContext<Promise<any>>()
+
+  const dropCache = (ctx: Ctx) =>
+    ctx.get((read, actualize) => {
+      actualize!(
+        ctx,
+        promiseAtom.__reatom,
+        (patchCtx: Ctx, patch: AtomCache) => {
+          patch.pubs = []
+        },
+      )
+    })
 
   const theAsync = reatomAsync((ctx) => {
     const promise = promises.get(ctx.cause)
@@ -36,8 +58,17 @@ export const reatomAsyncReaction = <T>(
         return schedule.call(
           this,
           () => {
-            if (step > 0 && cached)
-              return Promise.reject(toAbortError('cached'))
+            if (step > 0) {
+              // TODO
+              // if (ctx.controller.signal.aborted) {
+              //   return Promise.reject(
+              //     toAbortError(ctx.controller.signal.reason),
+              //   )
+              // }
+              if (cached) {
+                return Promise.reject(toAbortError('cached'))
+              }
+            }
             return cb(ctx)
           },
           step as any,
@@ -71,7 +102,7 @@ export const reatomAsyncReaction = <T>(
     )
 
     promise.controller.signal.addEventListener('abort', (error) =>
-      ctx.controller.abort(error),
+      ctx.controller.abort(promise.controller.signal.reason),
     )
 
     if ((cached = pending === ctx.get(theAsync.pendingAtom))) {
@@ -83,14 +114,63 @@ export const reatomAsyncReaction = <T>(
       )
     }
 
-    promise.catch(noop)
+    __thenReatomed(ctx, promise, () => resolved.add(promise)).catch(noop)
 
-    state?.controller.abort('concurrent')
+    state?.controller.abort(toAbortError('concurrent'))
 
     return promise
   }, `${name}._promiseAtom`)
 
   onConnect(theAsync, (ctx) => ctx.subscribe(promiseAtom, noop))
+  onConnect(promiseAtom, (ctx) => {
+    ctx.controller.signal.addEventListener('abort', () => {
+      const state = ctx.get(promiseAtom)
 
-  return Object.assign(theAsync, { promiseAtom }) as AsyncReaction<T>
+      if (resolved.has(state)) return
+
+      if (!isConnected(ctx, promiseAtom) && state.controller.signal.aborted) {
+        dropCache(ctx)
+      }
+
+      state.controller.abort(ctx.controller.signal.reason)
+    })
+  })
+
+  const theReaction = Object.assign(
+    (...a: Parameters<typeof theAsync>) => {
+      const [ctx] = a
+      if (
+        (theReaction as AsyncAction & { retry?: Action }).retry?.__reatom ===
+        ctx.cause.proto
+      ) {
+        dropCache(ctx)
+        // force update (needed if the atom is connected)
+        ctx.get((read, actualize) => {
+          actualize!(
+            ctx,
+            promiseAtom.__reatom,
+            (patchCtx: Ctx, patch: AtomCache) => {
+              patch.state
+            },
+          )
+        })
+        const state = ctx.get(theAsync)
+        const payload = state[state.length - 1]?.payload
+        throwReatomError(!payload, 'failed invalidation')
+        return payload!
+      }
+
+      return theAsync(...a)
+    },
+    theAsync,
+    { promiseAtom },
+  ) as AsyncReaction<T>
+
+  Object.defineProperty(theAsync, '_handleCache', {
+    get() {
+      return theReaction._handleCache
+    },
+  })
+
+  return theReaction
 }
