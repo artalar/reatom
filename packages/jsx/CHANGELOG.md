@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/jsx-v3.3.1...jsx-v3.4.0) (2023-09-26)
+
+
+### Features
+
+* **jsx:** [#637](https://github.com/artalar/reatom/issues/637) add SVG types ([2ecb8c0](https://github.com/artalar/reatom/commit/2ecb8c0b3605032741ce7fe57f3f657452622bc0))
+
+
+### Bug Fixes
+
+* **jsx:** uses createElementNS for svg ([d57bd7c](https://github.com/artalar/reatom/commit/d57bd7c42e00ff5bdeb3d810061de0fb3b66ade8))
+
 ## [3.3.1](https://github.com/artalar/reatom/compare/jsx-v3.3.0...jsx-v3.3.1) (2023-09-26)
 
 
