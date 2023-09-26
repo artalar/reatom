@@ -418,6 +418,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"package/npm-solid-js.md": {
+	id: "package/npm-solid-js.md";
+  slug: "package/npm-solid-js";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "package/persist-web-storage.md": {
 	id: "package/persist-web-storage.md";
   slug: "package/persist-web-storage";
