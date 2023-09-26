@@ -25,7 +25,10 @@ export const reatomJsx = (ctx: Ctx) => {
       return tag(props)
     }
 
-    let element = document.createElement(tag)
+    let element =
+      tag === 'svg'
+        ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+        : document.createElement(tag)
 
     for (let k in props) {
       let prop = props[k]
