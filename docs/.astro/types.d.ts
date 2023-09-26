@@ -222,6 +222,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"adapter/npm-solid-js.md": {
+	id: "adapter/npm-solid-js.md";
+  slug: "adapter/npm-solid-js";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "adapter/npm-svelte.md": {
 	id: "adapter/npm-svelte.md";
   slug: "adapter/npm-svelte";
