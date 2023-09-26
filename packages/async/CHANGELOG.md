@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.9.3](https://github.com/artalar/reatom/compare/async-v3.9.2...async-v3.9.3) (2023-09-26)
+
+
+### Bug Fixes
+
+* **async:** abort should not stale for reatomAsyncReaction ([2a7e272](https://github.com/artalar/reatom/commit/2a7e2720bb5e8a681128eac161535e350fc04c59))
+* **async:** prevent unhandled exception for reatomAsyncReaction ([4b940ae](https://github.com/artalar/reatom/commit/4b940aee188ccfcb66a137834f5b877b24321e00))
+
 ## [3.9.2](https://github.com/artalar/reatom/compare/async-v3.9.1...async-v3.9.2) (2023-09-13)
 
 

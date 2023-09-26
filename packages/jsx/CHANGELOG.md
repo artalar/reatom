@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/artalar/reatom/compare/jsx-v3.3.0...jsx-v3.3.1) (2023-09-26)
+
+
+### Bug Fixes
+
+* **testing,jsx:** type improvements ([#639](https://github.com/artalar/reatom/issues/639)) ([d343ac4](https://github.com/artalar/reatom/commit/d343ac4f9549258851235a60e6ef01c24bc2084e))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/jsx-v3.2.0...jsx-v3.3.0) (2023-09-22)
 
 
