@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.4](https://github.com/artalar/reatom/compare/testing-v3.4.3...testing-v3.4.4) (2023-09-26)
+
+
+### Bug Fixes
+
+* **testing,jsx:** type improvements ([#639](https://github.com/artalar/reatom/issues/639)) ([d343ac4](https://github.com/artalar/reatom/commit/d343ac4f9549258851235a60e6ef01c24bc2084e))
+
 ## [3.4.3](https://github.com/artalar/reatom/compare/testing-v3.4.2...testing-v3.4.3) (2023-09-14)
 
 
