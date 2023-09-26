@@ -1,3 +1,5 @@
+/** @jsxImportSource react */
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { createCtx } from '@reatom/framework'

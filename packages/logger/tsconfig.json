@@ -3,6 +3,6 @@
   "compilerOptions": {
     "declarationMap": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsxImportSource": "@reatom/jsx"
   }
 }
