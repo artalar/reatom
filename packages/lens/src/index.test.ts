@@ -22,7 +22,40 @@ import {
   withOnUpdate,
   throttle,
   toLens,
+  match,
 } from './'
+
+test(`match`, () => {
+  const ctx = createTestCtx()
+
+  {
+    const truthy = mockFn(() => 'truthy')
+    const falsy = mockFn(() => 'falsy')
+
+    var res = match(false, truthy, falsy)
+    assert.is(ctx.get(res), 'falsy')
+    assert.is(truthy.calls.length, 0)
+    assert.is(falsy.calls.length, 1)
+
+    var res = match(true, truthy, falsy)
+    assert.is(ctx.get(res), 'truthy')
+    assert.is(truthy.calls.length, 1)
+    assert.is(falsy.calls.length, 1)
+  }
+
+  {
+    const target = atom(true)
+    const truthy = atom('truthy')
+    const falsy = atom('falsy')
+    const res = match(target, truthy, falsy)
+
+    target(ctx, true)
+    assert.is(ctx.get(res), 'truthy')
+
+    target(ctx, false)
+    assert.is(ctx.get(res), 'falsy')
+  }
+})
 
 test(`map and mapInput`, async () => {
   const a = reatomNumber(0)

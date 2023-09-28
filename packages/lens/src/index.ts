@@ -20,6 +20,7 @@ import { onUpdate } from '@reatom/hooks'
 import { Plain } from '@reatom/utils'
 import { mapName } from './utils'
 
+export * from './match'
 export * from './bind'
 export * from './delay'
 export * from './effect'

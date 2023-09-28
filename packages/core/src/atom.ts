@@ -56,6 +56,8 @@ export const callSafely = <I extends any[], O>(
 
 //#region DOMAIN TYPES
 
+export type AtomMaybe<T = unknown> = Atom<T> | T
+
 /** Main context of data storing and effects processing */
 export interface Ctx {
   get<T>(atom: Atom<T>): T
