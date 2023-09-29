@@ -16,98 +16,123 @@ export interface Frame<T = any> {
   context: null | Map<Variable, unknown>
   pubs: Array<Frame>
   // `subs.length === 0 && pubs.length !== 0` mean that the atom is dirty
-  subs: Array<Atom>
+  subs: Array<null | Atom>
 }
-export interface RootFrame extends Frame {
+export interface VariableFrame<T = any> extends Frame<T> {
   context: Map<Variable, unknown>
 }
 
 let noop: Fn = () => {}
 
-let TOP: null | Frame = null
+let STACK: Array<Frame> = []
 
 export let top = () => {
-  if (!TOP) throw new Error('Reatom error: missing async context')
-  return TOP
+  if (STACK.length === 0) {
+    throw new Error('Reatom error: missing async context')
+  }
+  return STACK[STACK.length - 1]!
 }
 
 export interface Atom<State = any> {
-  (newState?: State): State
-  reatom: string
-}
-export interface ComputedAtom<State = any> extends Atom<State> {
   (): State
+  __kind: string
+}
+export interface ValueAtom<State = any> extends Atom<State> {
+  (newState?: State): State
+}
+export interface Action<Params extends any[] = any[], Payload = any>
+  extends Atom<Array<{ params: Params; payload: Payload }>> {
+  (...a: Params): Payload
 }
 
+// https://github.com/tc39/proposal-async-context#proposed-solution
 interface AsyncVariableOptions<T = any> {
-  name: string
-  defaultValue: T
+  name?: string
+  defaultValue?: T
 }
 
 class Variable<T = any> {
   name: string
-  defaultValue: T
-  // TODO use action
-  private transport: Fn
-  private atom: Atom
+  private defaultValue: T
+  private runner: Action<[T, Fn]>
 
   constructor(options: AsyncVariableOptions<T>) {
-    this.name = options.name
-    this.defaultValue = options.defaultValue
-    this.transport = noop
-    this.atom = reatom(() => void this.transport(), this.name)
+    this.name = options.name ?? named`variable`
+    this.defaultValue = options.defaultValue as T
+    this.runner = action((value: T, cb) => {
+      ;(top().context ??= new Map()).set(this, value)
+      return cb()
+    }, this.name)
   }
 
-  closest(frame: Frame): RootFrame {
+  closest(frame: Frame): VariableFrame {
     while (!frame.context?.has(this) && frame.cause !== frame) {
       frame = frame.cause
     }
-    return frame as RootFrame
+    return frame as VariableFrame
   }
 
   run<I extends any[], O>(value: T, fn: Fn<I, O>, ...args: I): O {
-    let result: O
-    this.transport = () => {
-      this.transport = noop
-      ;(TOP!.context ??= new Map()).set(this, value)
-      result = fn(...args)
-    }
-    this.atom()
-    return result!
+    return this.runner(value, () => fn(...args))
   }
 
   get(): T {
-    let { context } = this.closest(top())
-    let value = context.get(this)
-    if (value === undefined) {
-      context.set(this, (value = this.defaultValue))
+    let { context, atom } = this.closest(top())
+    atom.name //?
+
+    if (!context.has(this)) {
+      context.set(this, this.defaultValue)
     }
 
-    return value as T
+    return context.get(this) as T
   }
 }
 
+let root = (() => {
+  let frame = top()
+  // TODO package duplication
+  while (frame.atom !== root) frame = frame.cause
+  return frame
+}) as Atom<Frame<Array<Fn>>>
+root.__kind = 'atom'
 class Snapshot {
+  static createRoot() {
+    let frame: VariableFrame<Array<Fn>> = {
+      error: null,
+      state: [],
+      atom: root,
+      cause: undefined as unknown as Frame,
+      context: new Map(),
+      pubs: [],
+      subs: [],
+    }
+
+    frame.context!.set(
+      storeAsyncVariable,
+      new WeakMap().set(root, (frame.cause = frame)),
+    )
+
+    return new this(frame)
+  }
+
   constructor(public frame = top()) {}
 
   run<I extends any[], O>(fn: Fn<I, O>, ...args: I): O {
-    let _top = TOP
-    TOP = this.frame
+    STACK.push(this.frame)
     try {
       return fn(...args)
     } finally {
-      TOP = _top
+      STACK.pop()
     }
   }
 }
 
-// https://github.com/tc39/proposal-async-context#chrome-async-stack-tagging-api
 export let AsyncContext = {
   Variable,
   Snapshot,
 }
 
-let copy = (store: WeakMap<Atom, Frame>, frame: Frame, cause: Frame) => {
+let copy = (store: StoreWeakMap, frame: Frame, cause: Frame) => {
   frame = {
     error: frame.error,
     state: frame.state,
@@ -121,20 +146,20 @@ let copy = (store: WeakMap<Atom, Frame>, frame: Frame, cause: Frame) => {
   return frame
 }
 
-let enqueue = (frame: Frame, store: WeakMap<Atom, Frame>, queue: Array<Fn>) => {
+let enqueue = (frame: Frame, store: StoreWeakMap, queue: Array<Fn>) => {
   for (let i = 0; i < frame.subs.length; i++) {
-    let subFrame = store.get(frame.subs[i]!)!
+    let sub = frame.subs[i]
+    if (!sub) throw new Error('Unexpected empty sub')
+    let subFrame = store.get(sub)!
 
     if (subFrame.subs.length) {
       enqueue(copy(store, subFrame, frame), store, queue)
-    } else if (
-      // TODO not reliable
-      subFrame.atom.name.endsWith(EFFECT_KEY)
-    ) {
-      queue.push(subFrame.atom)
+    } else if (sub.__kind === 'effect') {
+      copy(store, subFrame, frame)
+      queue.push(sub)
     }
   }
-  frame.subs = []
+  frame.subs.length = 0
 }
 
 // TODO configurable
@@ -145,130 +170,126 @@ export let notify = () => {
 let i = 0
 export let named = (name: string | TemplateStringsArray) => `${name}#${++i}`
 
-export let reatom: {
-  <T>(computed: (() => T) | ((state?: T) => T), name?: string): ComputedAtom<T>
-  <T>(init: T extends Fn ? never : T, name?: string): Atom<T>
-} = <T>(
-  init: T | (() => T) | ((state?: T) => T),
-  name = named`reatom`,
-): Atom<T> => {
+export let atom: {
+  <T>(computed: (() => T) | ((state?: T) => T), name?: string): Atom<T>
+  <T>(init: T extends Fn ? never : T, name?: string): ValueAtom<T>
+} = <T>(init: {} | ((state?: T) => T), name = named`atom`): Atom<T> => {
   let atom = {
     [name]() {
-      {
-        let cause = top()
-        let store = storeAsyncVariable.get()
-        let frame = store.get(atom)
+      let rootFrame = root()
+      let topFrame = top()
+      let cause = arguments.length ? topFrame : rootFrame
+      let store = storeAsyncVariable.get()
+      let frame = store.get(atom)
+      let linking = topFrame.atom !== root && !arguments.length
 
-        if (!frame) {
-          frame = {
-            error: null,
-            state: typeof init === 'function' ? undefined : init,
-            atom,
-            cause,
-            context: null,
-            pubs: [],
-            subs: [],
-          }
-          store.set(atom, frame)
-        } else if (arguments.length) {
-          frame = copy(store, frame, cause)
+      if (!frame) {
+        frame = {
+          error: null,
+          state: typeof init === 'function' ? undefined : init,
+          atom,
+          cause: topFrame,
+          context: null,
+          pubs: [],
+          subs: [],
         }
-
-        if (cause.atom !== root && !arguments.length) cause.pubs.push(frame)
-
-        try {
-          if (frame.error !== null) throw frame.error
-
-          if (!frame.subs.length || arguments.length) {
-            let { error, state } = frame
-            if (typeof init === 'function') {
-              TOP = root()
-              if (
-                frame.pubs.length === 0 ||
-                frame.pubs.some(({ atom, state }) => !Object.is(state, atom()))
-              ) {
-                TOP = frame
-                frame.pubs = []
-                // TODO unlinking!
-                frame.state = (init as Fn)(state, arguments[0])
-              }
-            }
-
-            if (arguments.length !== 0) {
-              frame.state = arguments[0]
-            }
-
-            if (
-              (!Object.is(state, frame.state) || error != null) &&
-              frame.subs.length
-            ) {
-              let queue = root().state
-              if (queue.length === 0) {
-                Promise.resolve().then(bind(notify, root()))
-              }
-              enqueue(frame, store, queue)
-            }
-          }
-        } catch (error) {
-          throw (frame.error = error ?? new Error('Unknown error'))
-        } finally {
-          if (cause.atom !== root && !arguments.length) {
-            frame.subs.push(cause.atom)
-          }
-          TOP = cause
-        }
-
-        return frame.state
+        store.set(atom, frame)
+      } else if (
+        arguments.length ||
+        (typeof init === 'function' && frame.pubs.length === 0)
+      ) {
+        frame = copy(store, frame, cause)
       }
+
+      try {
+        STACK.push(rootFrame)
+        if (frame.error !== null) throw frame.error
+
+        if (!frame.subs.length || arguments.length) {
+          let { error, state, pubs } = frame
+          if (typeof init === 'function') {
+            if (
+              frame.pubs.length === 0 ||
+              frame.pubs.some(({ atom, state }) => !Object.is(state, atom()))
+            ) {
+              STACK[STACK.length - 1] = frame
+              frame.pubs = []
+              // FIXME
+              frame.state = init(state)
+              for (let i = 0; i < pubs.length; i++) {
+                const pub = pubs[i]!
+              }
+            }
+          }
+
+          if (arguments.length !== 0) {
+            frame.state = arguments[0]
+          }
+
+          if (
+            (!Object.is(state, frame.state) || error != null) &&
+            frame.subs.length
+          ) {
+            let queue = rootFrame.state
+            if (queue.length === 0) {
+              Promise.resolve().then(bind(notify, rootFrame))
+            }
+            enqueue(frame, store, queue)
+          }
+        }
+      } catch (error) {
+        throw (frame.error = error ?? new Error('Unknown error'))
+      } finally {
+        if (linking) {
+          frame.subs.push(topFrame.atom)
+          topFrame.pubs.push(frame)
+        }
+        STACK.pop()
+      }
+
+      return frame.state
     },
   }[name] as Atom<T>
 
-  atom.reatom = 'atom'
+  atom.__kind = 'atom'
 
   return atom
 }
 
-let EFFECT_KEY = '(REATOM_EFFECT)'
-export let effect = (fn: Fn, name?: string): Unsubscribe => {
-  reatom(() => {
+export let action = <Params extends any[] = any[], Payload = any>(
+  cb: Fn<Params, Payload>,
+  name = named`action`,
+): Action<Params, Payload> => {
+  let params: undefined | Params
+  const action = atom(() => {
+    try {
+      return cb(...params!)
+    } finally {
+      params = undefined
+      top().pubs.length = 0
+    }
+  }, name)
+  // @ts-expect-error
+  return (...a: Params) => action((params = a))
+}
+
+export let effect = (fn: Fn, name = named`effect`): Unsubscribe => {
+  let effect = atom(() => {
     fn()
-  }, name + EFFECT_KEY)()
-  // TODO
-  return () => {}
-}
-
-let storeAsyncVariable = new AsyncContext.Variable({
-  name: 'store',
-  defaultValue: new WeakMap<Atom, Frame>(),
-})
-
-let root = (() => {
-  let frame = top()
-  // TODO package duplication
-  while (frame.atom !== root) frame = frame.cause
-  return frame
-}) as Atom<Frame<Array<Fn>>>
-root.reatom = 'atom'
-export let createRootSnapshot = () => {
-  let frame: Frame = {
-    error: null,
-    state: [],
-    atom: root,
-    cause: undefined as unknown as Frame,
-    context: new Map(),
-    pubs: [],
-    subs: [],
+  }, name)
+  effect.__kind = 'effect'
+  effect()
+  return () => {
+    // FIXME
+    effect
   }
-  frame.cause = frame
-
-  let snapshot = new AsyncContext.Snapshot(frame)
-
-  let store = new WeakMap()
-  frame.context!.set(storeAsyncVariable, store)
-  store.set(root, frame)
-
-  return snapshot
 }
+
+interface StoreWeakMap extends WeakMap<Atom, Frame> {}
+
+let storeAsyncVariable = new AsyncContext.Variable<StoreWeakMap>({
+  name: 'store',
+})
 
 export let read = <T>(cb: Fn<[], T>): T =>
   new AsyncContext.Snapshot(root()).run(cb)
@@ -284,47 +305,106 @@ export let bind = <T extends Promise<any> | Fn>(
   }
 
   return new Promise(async (resolve, reject) => {
-    let _top: typeof TOP
-    let start = () => {
-      _top = TOP
-      TOP = snapshot.frame
-    }
-    let end = () => {
-      snapshot.run(noop)
-      TOP = _top
-    }
+    let seal
     try {
       let value = await target
-      var sealed = () => resolve(value)
+      seal = () => resolve(value)
     } catch (error) {
-      sealed = () => reject(error)
+      seal = () => reject(error)
     }
-    Promise.resolve().then(start)
-    sealed()
-    Promise.resolve().then(end)
+    Promise.resolve().then(() => {
+      STACK.push(snapshot.frame)
+    })
+    seal()
+    Promise.resolve().then(() => {
+      // TODO next microtick
+      snapshot.run(noop)
+      STACK.pop()
+    })
   }) as T
 }
 
-TOP = createRootSnapshot().frame
+// DEFAULT
+STACK.push(AsyncContext.Snapshot.createRoot().frame)
 
-let a0 = reatom(0, 'a0')
-let a1 = reatom(() => a0(), 'a1')
-let a2 = reatom(() => a1() + 1, 'a2')
-let a3 = reatom(() => a1() + 1, 'a3')
-let a4 = reatom(() => a2() + a3(), 'a4')
-let a5 = reatom(() => a4() + 1, 'a5')
-let a6 = reatom(() => a4() + a5(), 'a6')
-let a7 = reatom(() => a4() + a5(), 'a7')
-let a8 = reatom(() => a6() + a7(), 'a8')
+/* --- TESTS --- */
+
+const sleep = (ms = 0) => new Promise((res) => setTimeout(res, ms))
+
+let getStackTrace = (acc = '', frame = top()): string => {
+  return frame.atom === root
+    ? acc
+    : getStackTrace(`${acc} <-- ${frame.atom.name}`, frame.cause)
+}
+
+class ProxyStoreWeakMap extends WeakMap implements StoreWeakMap {
+  constructor(private store: StoreWeakMap) {
+    super()
+  }
+  get(key: any) {
+    console.log('HAS')
+    return super.has(key) ? super.get(key) : this.store.get(key)
+  }
+  set(key: any, value: any) {
+    if (this.store.has(key)) {
+      this.store.set(key, value)
+    } else {
+      console.log('SET')
+      super.set(key, value)
+    }
+    return this
+  }
+  has(key: any) {
+    return super.has(key) || this.store.has(key)
+  }
+}
+
+export let nest = <T>(fn: Fn<any[], T>): T => {
+  return atom(
+    () => {
+      top().context = new Map([
+        [storeAsyncVariable, new ProxyStoreWeakMap(storeAsyncVariable.get())],
+      ])
+      return fn()
+    },
+    named`nest`,
+  )()
+}
+
+let a0 = atom(0, 'a0')
+let a1 = atom(() => a0(), 'a1')
+let a2 = atom(() => a1() + 1, 'a2')
+let a3 = atom(() => a1() + 1, 'a3')
+let a4 = atom(() => a2() + a3(), 'a4')
+let a5 = atom(() => a4() + 1, 'a5')
+let a6 = atom(() => a4() + a5(), 'a6')
+let a7 = atom(() => a4() + a5(), 'a7')
+let a8 = atom(() => a6() + a7(), 'a8')
 
 effect(async () => {
-  const v = a8() //?
+  const v = a8()
+  await bind(sleep())
+  if (v < 100) a0(v)
+})
+effect(() => {
+  console.log(a0(), getStackTrace())
+})
 
-  await bind(new Promise<void>((res, rej) => setTimeout(res)))
+let global = atom(0, 'global')
+let local = atom(0, 'local')
+let data = atom(async () => {
+  await bind(sleep())
+  return `${global()}.${local()}`
+}, 'data')
 
-  if (v > 100) {
-    throw new Error('TEST')
-  }
-
-  a0(v)
+global(1)
+nest(() => {
+  global(10)
+  local(1)
+  data() //?
+})
+nest(() => {
+  global(20)
+  local(2)
+  data() //?
 })
