@@ -342,14 +342,12 @@ class ProxyStoreWeakMap extends WeakMap implements StoreWeakMap {
     super()
   }
   get(key: any) {
-    console.log('HAS')
     return super.has(key) ? super.get(key) : this.store.get(key)
   }
   set(key: any, value: any) {
     if (this.store.has(key)) {
       this.store.set(key, value)
     } else {
-      console.log('SET')
       super.set(key, value)
     }
     return this
