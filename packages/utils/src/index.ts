@@ -1,6 +1,10 @@
 export type UndefinedToOptional<T extends object> = Partial<T> &
   PickValues<T, {} | null>
 
+// We don't have type literal for NaN but other values are presented here
+// https://stackoverflow.com/a/51390763
+export type Falsy = false | 0 | '' | null | undefined
+
 // TODO infer `Atom` and `AtomMut` signature
 /** Remove named generics, show plain type. */
 export type Plain<Intersection> = Intersection extends (
