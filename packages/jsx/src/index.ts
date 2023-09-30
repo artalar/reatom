@@ -1,7 +1,23 @@
 import { createCtx, Ctx, Fn, isAtom, Rec, Unsubscribe } from '@reatom/core'
 import type { JSX } from './jsx'
+import { noop } from '@reatom/utils'
 declare type JSXElement = JSX.ElementType
 export type { JSXElement, JSX }
+
+type ElementTag = keyof JSX.HTMLElementTags | keyof JSX.SVGElementTags
+
+export type Component<Props = unknown> = (props: Props) => JSXElement
+
+export type ComponentLike = ElementTag | Component
+
+export type InferProps<T extends ComponentLike> =
+  T extends keyof JSX.HTMLElementTags
+    ? JSX.HTMLElementTags[T]
+    : T extends keyof JSX.SVGElementTags
+    ? JSX.SVGElementTags[T]
+    : T extends Component<infer Props>
+    ? Props
+    : never
 
 export const reatomJsx = (ctx: Ctx) => {
   let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
@@ -17,7 +33,7 @@ export const reatomJsx = (ctx: Ctx) => {
     })
   }
 
-  let h = (tag: any, props: Rec, ...children: any[]) => {
+  let h = ((tag: any, props: Rec, ...children: any[]) => {
     if (tag === hf) return children
 
     if (typeof tag === 'function') {
@@ -80,10 +96,14 @@ export const reatomJsx = (ctx: Ctx) => {
     children.forEach(walk)
 
     return element
-  }
+  }) as <T extends ComponentLike>(
+    tag: T,
+    props: InferProps<T>,
+    ...children: JSXElement[]
+  ) => Element
 
   /** Fragment */
-  let hf = () => {}
+  let hf = noop
 
   let mount = (target: Element, child: Element) => {
     target.appendChild(child)
