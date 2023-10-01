@@ -1,4 +1,4 @@
-import { atom, Atom } from '@reatom/core'
+import { atom, Atom, Ctx } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 
 import { AsyncAction } from '.'
@@ -100,8 +100,9 @@ export const withStatusesAtom =
   <
     T extends AsyncAction & {
       statusesAtom?: AsyncStatusesAtom
+      retriesAtom?: Atom<number>
     },
-  >() =>
+  >({ pendingWhileRetrying }: { pendingWhileRetrying?: boolean } = {}) =>
   (anAsync: T): T & { statusesAtom: AsyncStatusesAtom } => {
     if (!anAsync.statusesAtom) {
       const statusesAtom = (anAsync.statusesAtom = atom<AsyncStatuses>(
@@ -140,6 +141,15 @@ export const withStatusesAtom =
           }),
         )
 
+        function checkIfTheAsyncIsPending(ctx: Ctx) {
+          if (ctx.get(anAsync.pendingAtom) > 0) return true
+
+          if (pendingWhileRetrying && anAsync.retriesAtom)
+            return ctx.get(anAsync.retriesAtom) > 0
+
+          return false
+        }
+
         __thenReatomed(
           ctx,
           payload,
@@ -147,7 +157,7 @@ export const withStatusesAtom =
             statusesAtom(
               ctx,
               memo(() => {
-                const isPending = ctx.get(anAsync.pendingAtom) > 0
+                const isPending = checkIfTheAsyncIsPending(ctx)
                 return {
                   isPending,
                   isFulfilled: !isPending,
@@ -167,7 +177,7 @@ export const withStatusesAtom =
             statusesAtom(
               ctx,
               memo(() => {
-                const isPending = ctx.get(anAsync.pendingAtom) > 0
+                const isPending = checkIfTheAsyncIsPending(ctx)
                 return {
                   isPending,
                   isFulfilled: false,
