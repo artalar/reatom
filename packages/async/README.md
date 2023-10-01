@@ -603,6 +603,24 @@ onConnect(fetchList.dataAtom, async (ctx) => {
 
 Here we rely on the fact that `onConnect` will be called only when `fetchList.dataAtom` is connected (subscribed) to the consumer and will be aborted when `fetchList.dataAtom` is disconnected (unsubscribed).
 
+### Use with withStatusesAtom
+
+You might also want to not show errored state during retries. To achieve this you can use [`withStatusesAtom`](#withstatusesatom) with `pendingWhileRetrying: true` to combine behaviour of both atoms:
+
+```ts
+import { reatomAsync, withRetry, withStatusesAtom } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(
+  withStatusesAtom({ pendingWhileRetrying: true }),
+  withRetry({
+    onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
+  }),
+)
+```
+
 ## withAbort
 
 This is the most powerful feature for advanced async flow management. Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call. This operator allows you to use the full power of Reatom architecture by relies on a context causes and give the ability to handle concurrent requests like with [AsyncLocalStorage](https://nodejs.org/api/async_context.html) / AsyncContext ([Ecma TC39 proposal slides](https://docs.google.com/presentation/d/1LLcZxYyuQ1DhBH1htvEFp95PkeYM5nLSrlQoOmWpYEI/edit#slide=id.p)) from a mature backend frameworks. Like redux-saga or rxjs it allows you to cancel concurrent requests of any depth, but unlike them, it does not require you to use generators, observables, or any additional abstraction! All needed information already stored in the context.
