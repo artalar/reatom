@@ -14,9 +14,14 @@ import { merge, noop, throwIfAborted, toAbortError } from '@reatom/utils'
 import { reatomAsync, AsyncAction, ControlledPromise, AsyncCtx } from '.'
 import { isConnected, onConnect } from '@reatom/hooks'
 
-export interface AsyncReaction<Resp> extends AsyncAction<[], Resp> {
+export interface ReactiveAsync<Resp> extends AsyncAction<[], Resp> {
   promiseAtom: Atom<ControlledPromise<Resp>>
 }
+
+/**
+ * @deprecated use ReactiveAsync instead
+ */
+export interface AsyncReaction<Resp> extends ReactiveAsync<Resp> {}
 
 export interface AsyncCtxSpy extends AsyncCtx {
   spy: {
@@ -26,10 +31,10 @@ export interface AsyncCtxSpy extends AsyncCtx {
 
 const resolved = new Set<Promise<any>>()
 
-export const reatomAsyncReaction = <T>(
+export const reatomReactiveAsync = <T>(
   asyncComputed: (ctx: AsyncCtxSpy) => Promise<T>,
   name = __count('asyncAtom'),
-): AsyncReaction<T> => {
+): ReactiveAsync<T> => {
   const promises = new CauseContext<Promise<any>>()
 
   const dropCache = (ctx: Ctx) =>
@@ -164,7 +169,7 @@ export const reatomAsyncReaction = <T>(
     },
     theAsync,
     { promiseAtom },
-  ) as AsyncReaction<T>
+  ) as ReactiveAsync<T>
 
   Object.defineProperty(theAsync, '_handleCache', {
     get() {
@@ -174,3 +179,8 @@ export const reatomAsyncReaction = <T>(
 
   return theReaction
 }
+
+/**
+ * @deprecated use reatomReactiveAsync instead
+ */
+export const reatomAsyncReaction = reatomReactiveAsync

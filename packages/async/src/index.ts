@@ -40,7 +40,12 @@ export type {
   AsyncStatuses,
   AsyncStatusesAtom,
 } from './withStatusesAtom'
-export { reatomAsyncReaction, AsyncReaction } from './reatomAsyncReaction'
+export {
+  reatomAsyncReaction,
+  AsyncReaction,
+  ReactiveAsync,
+  reatomReactiveAsync,
+} from './reatomReactiveAsync'
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
