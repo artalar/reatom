@@ -263,7 +263,7 @@ export const updateList = reatomAsync(
     name: 'updateList',
     onEffect(ctx, params, promise) {
       const [newList] = params
-      const newList = fetchList.dataAtom(ctx, newList)
+      const newSavedList = fetchList.dataAtom(ctx, newList)
     },
   },
 )
@@ -530,7 +530,7 @@ Return `0` to retry immediately. With this pattern your loader will not blink, a
 ```ts
 import { reatomAsync, withRetry } from '@reatom/async'
 
-const fetchData = export const fetchList = reatomAsync(
+export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
   'fetchList',
 ).pipe(
