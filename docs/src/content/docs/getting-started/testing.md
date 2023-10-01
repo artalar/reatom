@@ -5,7 +5,6 @@ sidebar:
   order: 4
 ---
 
-Reatom is designed to be convenient for testing
 The first thing you need to do is install the test helpers
 
 ```
@@ -51,8 +50,7 @@ test('Test main module', () => {
 })
 ```
 
-Also you can mock actions if needed.  
-In next example we have an async api.
+Also you can mock actions if needed. In next example we have an async api.
 
 > Note: In real code, we recommend using the `@reatom/async` to work with asynchronous APIs
 
@@ -92,11 +90,12 @@ test('Test loadData atom', () => {
   const ctx = createTestCtx()
   const track = ctx.subscribeTrack(loadTodos)
 
-  ctx.mockAction(fetchTodos, (ctx) => Promise.resolve([{ id: 'foo' }])) // Mock actions 
+  // Mock action with call
+  ctx.mockAction(fetchTodos, (ctx) => Promise.resolve([{ id: 'foo' }]))
 
   await fetchTodos(ctx)
   expect(track.lastInput()).toStrictEqual([{ id: 'foo' }])
 })
 ```
 
-[Play in live at stackblitz](https://stackblitz.com/edit/vitest-dev-vitest-v4pvuq?file=test%2Fbasic.test.ts,package.json)
+[Play live at stackblitz](https://stackblitz.com/edit/vitest-dev-vitest-v4pvuq?file=test%2Fbasic.test.ts,package.json)
