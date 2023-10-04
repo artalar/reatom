@@ -2,27 +2,20 @@
  * stolen from https://github.dev/solidjs/solid/blob/49793e9452ecd034d4d2ef5f95108f5d2ff4134a/packages/solid/h/jsx-runtime/src/jsx.d.ts
  */
 
-import { Atom, Ctx } from '@reatom/core'
+import { Atom, AtomMaybe, Ctx } from '@reatom/core'
 import * as csstype from 'csstype'
 
-type DOMElement = Element
-
 export namespace JSX {
-  type AtomMaybe<T = unknown> = Atom<T> | T
-  type Element = DOMElement
-  // interface FunctionElement {
-  //   (): DOMElement
-  // }
-  interface ArrayElement extends Array<ElementType> {}
-  type ElementType = ArrayElement | AtomMaybe<
-    // | Node
-    | Element
-    | (string & {})
-    | number
-    | boolean
-    | null
+  type Element =
     | undefined
-  >
+    | null
+    | boolean
+    | number
+    | string
+    | globalThis.Element
+    | Array<Element>
+    | Atom<Element>
+
   interface ElementClass {
     // empty, libs can define requirements downstream
   }
@@ -36,7 +29,7 @@ export namespace JSX {
     (
       e: E & {
         currentTarget: T
-        target: DOMElement
+        target: globalThis.Element
       },
     ): void
   }
@@ -45,7 +38,7 @@ export namespace JSX {
       ctx: Ctx,
       e: E & {
         currentTarget: T
-        target: DOMElement
+        target: globalThis.Element
       },
     ): any
   }
@@ -65,7 +58,7 @@ export namespace JSX {
   type Accessor<T> = () => T
   interface Directives {}
   interface DirectiveFunctions {
-    [x: string]: (el: ElementType, accessor: Accessor<any>) => void
+    [x: string]: (el: Element, accessor: Accessor<any>) => void
   }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
@@ -117,7 +110,7 @@ export namespace JSX {
       OnAttributes<T>,
       OnCaptureAttributes<T>, */
     extends CustomEventHandlers<T> {
-    children?: ElementType
+    children?: Element
     innerHTML?: string
     innerText?: string | number
     textContent?: string | number

@@ -27,7 +27,6 @@ export const parseAtoms = <Value>(
     return res as any
   }
 
-  // TODO(krulod) figure out if we can unify handling of arrays and dictionaries with for..in without losing reliability and performance
   if (Array.isArray(value)) {
     const res = []
     for (const v of value) res.push(parseAtoms(ctx, v))
