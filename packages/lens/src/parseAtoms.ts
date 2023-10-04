@@ -16,29 +16,35 @@ export const parseAtoms = <Value>(
   ctx: Ctx,
   value: Value,
 ): ParseAtoms<Value> => {
-  const state = isAtom(value)
-    ? ctx.spy
-      ? ctx.spy(value)
-      : ctx.get(value)
-    : value
+  while (isAtom(value)) value = ctx.spy ? ctx.spy(value) : ctx.get(value)
 
-  if (typeof state !== 'object' || state === null) return state
+  if (typeof value !== 'object' || value === null) return value as any
 
-  if (state instanceof Map) {
-    const map = new Map()
-    for (const [k, value] of state) map.set(k, parseAtoms(ctx, value))
-    return map as ParseAtoms<Value>
+  const proto = Reflect.getPrototypeOf(value)
+  if (!proto || !Reflect.getPrototypeOf(proto)) {
+    const res = {} as Rec
+    for (const k in value) res[k] = value[k]
+    return res as any
   }
 
-  if (state instanceof Set) {
-    const set = new Set()
-    for (const value of state) set.add(parseAtoms(ctx, value))
-    return set as ParseAtoms<Value>
+  // TODO(krulod) figure out if we can unify handling of arrays and dictionaries with for..in without losing reliability and performance
+  if (Array.isArray(value)) {
+    const res = []
+    for (const v of value) res.push(parseAtoms(ctx, v))
+    return res as any
   }
 
-  const res: Rec = Array.isArray(state) ? [] : {}
+  if (value instanceof Map) {
+    const res = new Map()
+    for (const [k, v] of value) res.set(k, parseAtoms(ctx, v))
+    return res as any
+  }
 
-  for (const k in state) res[k] = parseAtoms(ctx, state[k])
+  if (value instanceof Set) {
+    const res = new Set()
+    for (const v of value) res.add(parseAtoms(ctx, v))
+    return res as any
+  }
 
-  return res as ParseAtoms<Value>
+  return value as any
 }
