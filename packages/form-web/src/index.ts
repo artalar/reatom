@@ -144,7 +144,7 @@ export const withHtmlRegistration: {
   (fieldAtom: FieldAtom) => {
     const type = Array.isArray(fieldAtom.initState)
       ? 'select'
-      : ((attributes as HTMLInputAttributes).type ??= getType(
+      : ((attributes as HTMLInputAttributes).type ?? getType(
           fieldAtom.initState,
         ))
     const name = fieldAtom.__reatom.name?.replace('.dataAtom', '')
