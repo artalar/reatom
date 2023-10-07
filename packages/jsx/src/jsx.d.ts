@@ -4,6 +4,7 @@
 
 import { Atom, AtomMaybe, Ctx } from '@reatom/core'
 import * as csstype from 'csstype'
+import { JSXElement } from '.'
 
 export namespace JSX {
   type Element =
@@ -56,51 +57,10 @@ export namespace JSX {
   //   $ServerOnly?: boolean
   // }
   type Accessor<T> = () => T
-  interface Directives {}
-  interface DirectiveFunctions {
-    [x: string]: (el: Element, accessor: Accessor<any>) => void
-  }
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
   interface CustomCaptureEvents {}
-  // type DirectiveAttributes = {
-  //   [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
-  // }
-  // type DirectiveFunctionAttributes<T> = {
-  //   [K in keyof DirectiveFunctions as string extends K
-  //     ? never
-  //     : `use:${K}`]?: DirectiveFunctions[K] extends (
-  //     el: infer E, // will be unknown if not provided
-  //     ...rest: infer R // use rest so that we can check whether it's provided or not
-  //   ) => void
-  //     ? T extends E // everything extends unknown if E is unknown
-  //       ? R extends [infer A] // check if has accessor provided
-  //         ? A extends Accessor<infer V>
-  //           ? V // it's an accessor
-  //           : never // it isn't, type error
-  //         : true // no accessor provided
-  //       : never // T is the wrong element
-  //     : never // it isn't a function
-  // }
-  // type PropAttributes = {
-  //   [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key]
-  // }
-  // type AttrAttributes = {
-  //   [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key]
-  // }
-  // type OnAttributes<T> = {
-  //   [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<
-  //     T,
-  //     CustomEvents[Key]
-  //   >
-  // }
-  // type OnCaptureAttributes<T> = {
-  //   [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
-  //     T,
-  //     CustomCaptureEvents[Key]
-  //   >
-  // }
   interface DOMAttributes<T>
   /* CustomAttributes<T>,
       DirectiveAttributes,
@@ -110,7 +70,7 @@ export namespace JSX {
       OnAttributes<T>,
       OnCaptureAttributes<T>, */
     extends CustomEventHandlers<T> {
-    children?: Element
+    children?: JSXElement[]
     innerHTML?: string
     innerText?: string | number
     textContent?: string | number
