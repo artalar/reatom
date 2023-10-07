@@ -16,11 +16,14 @@ import { MAX_SAFE_TIMEOUT, random } from '@reatom/utils'
 
 export interface PersistRecord<T = unknown> {
   data: T
-  /** @deprecated not need anymore */
+  /** @deprecated not needed anymore */
   fromState: boolean
   id: number
   timestamp: number
   version: number
+  /**
+   * Time stamp after which the record is cleared.
+   */
   to: number
 }
 
@@ -33,27 +36,42 @@ export interface PersistStorage {
 }
 
 export interface WithPersistOptions<T> {
-  /** parse data on init or subscription update @optional */
-  fromSnapshot?: Fn<[ctx: Ctx, snapshot: unknown, state?: T], T>
-  /** the key! */
+  /**
+   * Key of the storage record.
+   */
   key: string
-  /** migration callback which will be called if the version changed  @optional */
-  migration?: Fn<[ctx: Ctx, persistRecord: PersistRecord], T>
-  /** turn on/off subscription  @default true */
-  subscribe?: boolean
-  /** time to live in milliseconds @default MAX_SAFE_TIMEOUT */
-  time?: number
-  /** transform data before persisting  @optional */
+  /**
+   * Custom snapshot serializer.
+   */
   toSnapshot?: Fn<[ctx: Ctx, state: T], unknown>
-  /** version of the data which change used to trigger the migration @default 0 */
+  /**
+   * Custom snapshot deserializer.
+   */
+  fromSnapshot?: Fn<[ctx: Ctx, snapshot: unknown, state?: T], T>
+  /**
+   * A callback to call if the version of a stored snapshot is older than `version` option.
+   */
+  migration?: Fn<[ctx: Ctx, persistRecord: PersistRecord], T>
+  /**
+   * Determines whether the atom is updated on storage updates.
+   * @defaultValue true
+   */
+  subscribe?: boolean
+  /**
+   * Number of milliseconds from the snapshot creation time after which it will be deleted.
+   * @defaultValue MAX_SAFE_TIMEOUT
+   */
+  time?: number
+  /**
+   * Version of the stored snapshot. Triggers `migration`.
+   * @defaultValue 0
+   */
   version?: number
 }
 
 export interface WithPersist {
   <T extends Atom>(
-    options:
-      | WithPersistOptions<AtomState<T>>['key']
-      | WithPersistOptions<AtomState<T>>,
+    ...args: [key: string] | [options: WithPersistOptions<AtomState<T>>]
   ): (anAtom: T) => T
 }
 
@@ -65,11 +83,7 @@ export const reatomPersist = (
   const storageAtom = atom(storage, `storageAtom#${storage.name}`)
 
   const withPersist: WithPersist =
-    <T extends Atom>(
-      options:
-        | WithPersistOptions<AtomState<T>>['key']
-        | WithPersistOptions<AtomState<T>>,
-    ) =>
+    <T extends Atom>(options: string | WithPersistOptions<AtomState<T>>) =>
     (anAtom: T): T => {
       const {
         key,
@@ -139,11 +153,13 @@ export const reatomPersist = (
           return computer ? computer(ctx, state) : state
         }
 
-        onConnect(anAtom, (ctx) =>
-          ctx.get(storageAtom).subscribe?.(ctx, key, () => {
-            // this will rerun the computed
-            persistRecordAtom(ctx, (state) => state)
-          }),
+        onConnect(
+          anAtom,
+          (ctx) =>
+            ctx.get(storageAtom).subscribe?.(ctx, key, () => {
+              // this will rerun the computed
+              persistRecordAtom(ctx, (state) => state)
+            }),
         )
       } else {
         anAtom.__reatom.initState = fromPersistRecord
@@ -237,11 +253,12 @@ export const createMemStorage = ({
         snapshotAtom(ctx, (snapshot) => ({ ...snapshot, [key]: rec }))
       }
 
-      ctx.schedule(() =>
-        ctx
-          .get(listenersAtom)
-          .get(key)
-          ?.forEach((cb) => cb(rec)),
+      ctx.schedule(
+        () =>
+          ctx
+            .get(listenersAtom)
+            .get(key)
+            ?.forEach((cb) => cb(rec)),
       )
     },
     subscribe: subscribe

@@ -186,52 +186,47 @@ export const countAtom = _countAtom.pipe(readonly)
 
 ## `parseAtoms`
 
-Jsonify [atomized](https://www.reatom.dev/guides/atomization) structure. Needed for parse values of deep structures with nested atoms.
-Useful for snapshots. Will be reactive if the passed `ctx` is `CtxSpy`.
+Recursively unwrap all atoms in an [atomized](https://www.reatom.dev/guides/atomization) structure. Useful for making snapshots of reactive state. Uses `ctx.spy` if it's available.
 
-### parseAtoms snapshot example
+### `parseAtoms`: persistence example
 
 https://codesandbox.io/s/reatom-react-atomization-k39vrs?file=/src/model.ts
 
 ```ts
 import { action, atom, Action, AtomMut } from '@reatom/core'
-import { onUpdate, withInit } from '@reatom/hooks'
+import { withLocalStorage } from '@reatom/persist-web-storage'
 import { parseAtoms, ParseAtoms } from '@reatom/lens'
 
 export type Field = {
-  id: number;
-  name: string;
-  value: AtomMut<string>;
-  remove: Action;
-};
-
-const KEY = "FIELDS";
-const fromLS = () => {
-  const snap = localStorage.getItem(KEY);
-  if (!snap) return [];
-  const json: ParseAtoms<Array<Field>> = JSON.parse(snap);
-  return json.map(({ id, name, value }) => getField(id, name, value));
-};
-const toLS = action((ctx) => {
-  const list = parseAtoms(ctx, listAtom);
-  localStorage.setItem(KEY, JSON.stringify(list));
-}, "toLS");
+  id: number
+  name: string
+  value: AtomMut<string>
+  remove: Action
+}
 
 const getField = (id: number, name: string, value: string): Field => {
-  // ...
-};
+  return {
+    id,
+    name,
+    value: atom(value),
+    remove: action((ctx) => {
+      // ...
+    }),
+  }
+}
 
-export const listAtom = atom(new Array<Field>(), "listAtom").pipe(
-  withInit(fromLS)
-);
-onUpdate(listAtom, toLS);
+export const listAtom = atom<Array<Field>>([], 'listAtom').pipe(
+  withLocalStorage({
+    toSnapshot: (state) => parseAtoms(state),
+    fromSnapshot: (snapshot: any) =>
+      getField(snapshot.id, snapshot.name, snapshot.value),
+  }),
+)
 ```
 
-### parseAtoms shortcut example
+### `parseAtoms`: shortcut example
 
-It could be handy to use `parseAtoms` to reduce the amount of "read atom" code.
-
-For example, we have a few-fields structure.
+You can use `parseAtoms` to reduce the amount of . Let's suppose you have the following structure:
 
 ```ts
 interface User {
@@ -242,7 +237,7 @@ interface User {
 }
 ```
 
-How could you display it without `parseAtoms`?
+And use it like this:
 
 ```tsx
 import { useAtom } from '@reatom/npm-react'
@@ -257,18 +252,59 @@ export const User = ({ user }: { user: User }) => {
 }
 ```
 
-How could `parseAtoms` helps you?
+With `parseAtoms` you can refactor usage to look like this:
 
 ```tsx
 import { parseAtoms } from '@reatom/lens'
 import { useAtom, useAction } from '@reatom/npm-react'
 
 export const User = ({ user }: { user: User }) => {
-  const [{ name, bio, website, address }] = useAtom((ctx) =>
-    parseAtoms(ctx, user),
-  )
+  const [
+    {
+      name, //
+      bio,
+      website,
+      address,
+    },
+  ] = useAtom((ctx) => parseAtoms(ctx, user))
 
   return <form>...</form>
+}
+```
+
+## `match`
+
+Creates an atom that depending on some condition, which can be an atom too. Useful for describing UIs with [`@reatom/jsx`](https://www.reatom.dev/package/jsx).
+
+```ts
+const num = atom(0, 'num')
+const by3 = atom((ctx) => ctx.spy(num) % 3 === 0, 'by3')
+const by5 = atom((ctx) => ctx.spy(num) % 5 === 0, 'by5')
+
+const failMessage = atom(
+  (ctx) => `${ctx.spy(num)} is not divisible by 3 nor by 5`,
+)
+
+const message = match(
+  by3,
+  'Divisible by 3',
+  match(
+    by5, //
+    'Not divisible by 3 but divisible by 5',
+    failMessage,
+  ),
+)
+```
+
+### `match` JSX example
+
+```tsx
+export function Dashboard({ user }: { user: Atom<User | null> }) {
+  return match(
+    user,
+    atom((ctx) => <div>Dashboard content</div>),
+    atom((ctx) => <AuthRedirect />),
+  )
 }
 ```
 
