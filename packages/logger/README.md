@@ -9,14 +9,12 @@ All atoms and actions with names or without underscore logs automatically
 ```ts
 import { connectLogger, createLogBatched } from '@reatom/logger'
 
-connectLogger(ctx)
-
-// OR
-
-connectLogger(
+const disconnectLogger = connectLogger(
   ctx,
   // optional configuration
   {
+    // whether to connect devtools
+    devtools: false,
     // the length of the atom history (patches) to store
     history: 10,
     // `false` by default to made your logs short
@@ -46,6 +44,11 @@ connectLogger(
     domain: '',
   },
 )
+
+// if using HMR
+if (import.meta.hot) {
+  import.meta.hot.accept(disconnectLogger)
+}
 ```
 
 Every log record includes a number in the start of the name to fix autosorting keys in a console.

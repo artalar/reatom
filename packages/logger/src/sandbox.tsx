@@ -68,6 +68,9 @@ const ctx = createCtx()
 // https://www.reatom.dev/packages/logger
 // change things and check the devtools console!
 const disconnect = connectLogger(ctx, { devtools: true })
+if (import.meta.hot) {
+  import.meta.hot.accept(disconnect)
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root')!)
 root.render(

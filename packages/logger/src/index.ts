@@ -1,7 +1,6 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 import { isShallowEqual, noop } from '@reatom/utils'
-import { logGraph } from './graphView'
-// import { devtoolsCreate } from './devtools'
+import { devtoolsCreate } from './devtools'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -75,17 +74,6 @@ export const createLogBatched = ({
         console.groupCollapsed(
           `Reatom ${domain}${length} transaction${length > 1 ? 's' : ''}`,
         )
-
-        if (shouldLogGraph) {
-          logGraph(
-            new Set(
-              queue
-                .flatMap(({ changes }) => Object.values(changes))
-                .sort((a, b) => a.time - b.time)
-                .map(({ patch }) => patch),
-            ),
-          )
-        }
 
         for (const { changes, time, error } of queue) {
           console.log(
@@ -179,7 +167,7 @@ export const connectLogger = (
   let read: Fn<[AtomProto], undefined | AtomCache>
   ctx.get((r) => (read = r))
 
-  const devtoolsDispose = /* devtools ? devtoolsCreate(ctx) : */ noop
+  const devtoolsDispose = devtools ? devtoolsCreate(ctx) : noop
 
   const ctxUnsubscribe = ctx.subscribe((logs, error) => {
     let i = -1

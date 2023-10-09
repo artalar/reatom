@@ -26,8 +26,13 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
+    "@observablehq/inspector": "^5.0.0",
     "@reatom/core": "^3.1.0",
     "@reatom/jsx": "^3.4.0",
+    "@reatom/lens": "^3.6.2",
+    "@reatom/persist": "^3.3.0",
+    "@reatom/persist-web-storage": "^3.2.3",
+    "@reatom/primitives": "^3.2.1",
     "stylerun": "^1.0.0"
   },
   "author": "artalar",

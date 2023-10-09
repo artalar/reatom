@@ -1,6 +1,7 @@
 import { Ctx } from '@reatom/core'
 import { noop } from '@reatom/utils'
-import { mount } from '@reatom/jsx'
+import { h, hf, mount } from '@reatom/jsx'
+import { Rld } from './rld'
 
 export function devtoolsCreate(app: Ctx) {
   if (typeof window === 'undefined') {
@@ -11,10 +12,10 @@ export function devtoolsCreate(app: Ctx) {
   root.id = 'reatom-logger-devtools'
   document.body.appendChild(root)
 
-  mount(root, <Rld app={app} />)
+  mount(root, h(Rld, { app }))
 
   return () => {
-    // mount(root, <></>)
+    mount(root, h(hf, {}))
     root.remove()
   }
 }
