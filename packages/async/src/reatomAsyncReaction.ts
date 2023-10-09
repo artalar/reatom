@@ -1,5 +1,4 @@
 import {
-  Action,
   Atom,
   AtomCache,
   Ctx,
@@ -9,7 +8,7 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { CauseContext, __thenReatomed, onCtxAbort } from '@reatom/effects'
-import { merge, noop, throwIfAborted, toAbortError } from '@reatom/utils'
+import { merge, noop, toAbortError } from '@reatom/utils'
 
 import { reatomAsync, AsyncAction, ControlledPromise, AsyncCtx } from '.'
 import { isConnected, onConnect } from '@reatom/hooks'
@@ -139,28 +138,21 @@ export const reatomAsyncReaction = <T>(
   const theReaction = Object.assign(
     (...a: Parameters<typeof theAsync>) => {
       const [ctx] = a
-      if (
-        (theReaction as AsyncAction & { retry?: Action }).retry?.__reatom ===
-        ctx.cause.proto
-      ) {
+      return ctx.get((read, actualize) => {
         dropCache(ctx)
         // force update (needed if the atom is connected)
-        ctx.get((read, actualize) => {
-          actualize!(
-            ctx,
-            promiseAtom.__reatom,
-            (patchCtx: Ctx, patch: AtomCache) => {
-              patch.state
-            },
-          )
-        })
+        actualize!(
+          ctx,
+          promiseAtom.__reatom,
+          (patchCtx: Ctx, patch: AtomCache) => {
+            patch.state
+          },
+        )
         const state = ctx.get(theAsync)
         const payload = state[state.length - 1]?.payload
         throwReatomError(!payload, 'failed invalidation')
         return payload!
-      }
-
-      return theAsync(...a)
+      })
     },
     theAsync,
     { promiseAtom },
