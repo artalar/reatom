@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/core-v3.5.0...core-v3.6.0) (2023-10-09)
+
+
+### Features
+
+* **lens:** add match ([#646](https://github.com/artalar/reatom/issues/646)) ([0f2a768](https://github.com/artalar/reatom/commit/0f2a7685dd797cac4c9fc882a8e24bc31f9503a6))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/core-v3.4.0...core-v3.5.0) (2023-07-07)
 
 

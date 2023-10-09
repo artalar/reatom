@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/logger-v3.5.0...logger-v3.6.0) (2023-10-09)
+
+
+### Features
+
+* **jsx:** nested atoms, better types ([#652](https://github.com/artalar/reatom/issues/652)) ([3ceae78](https://github.com/artalar/reatom/commit/3ceae788da52ff40a561ce5b2fc5371475fb7d7c))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/logger-v3.4.5...logger-v3.5.0) (2023-09-08)
 
 
