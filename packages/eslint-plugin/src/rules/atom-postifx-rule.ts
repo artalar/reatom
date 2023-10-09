@@ -27,7 +27,7 @@ export const atomPostfixRule: Rule.RuleModule = {
   },
   create: function (context: Rule.RuleContext): Rule.RuleListener {
     const importedFromReatom = new Map<string, string>()
-    const postfix = context.settings.atomPostfix || "Atom";
+    const postfix = context.settings.atomPostfix ?? "Atom";
     const badPostfix = (atomName: string) => !atomName.endsWith(postfix);
 
     return {
