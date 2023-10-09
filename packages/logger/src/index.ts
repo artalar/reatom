@@ -1,7 +1,7 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 import { isShallowEqual, noop } from '@reatom/utils'
 import { logGraph } from './graphView'
-import { devtoolsCreate } from './devtools'
+// import { devtoolsCreate } from './devtools'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -179,7 +179,7 @@ export const connectLogger = (
   let read: Fn<[AtomProto], undefined | AtomCache>
   ctx.get((r) => (read = r))
 
-  const devtoolsDispose = devtools ? devtoolsCreate(ctx) : noop
+  const devtoolsDispose = /* devtools ? devtoolsCreate(ctx) : */ noop
 
   const ctxUnsubscribe = ctx.subscribe((logs, error) => {
     let i = -1

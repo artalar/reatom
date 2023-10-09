@@ -2,7 +2,5 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declarationMap": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "@reatom/jsx"
   }
 }
