@@ -6,7 +6,7 @@ type TagFactory = {
 
 const factories = {} as TagFactory
 
-export const createTagFactory = (createFn?: typeof create) => {
+export const experimental_createTagFactory = (createFn?: typeof create) => {
   return new Proxy({} as Readonly<TagFactory>, {
     get: (_, tag) =>
       (factories[tag as ElementTag] ??= (props = {} as any) =>
@@ -16,5 +16,3 @@ export const createTagFactory = (createFn?: typeof create) => {
         )),
   })
 }
-
-export const t = createTagFactory()

@@ -61,26 +61,26 @@ mount(document.getElementById('app')!, <App />)
 
 All the dynamic stuff in your components should be wrapped with atoms:
 
-```ts
-export function Dashboard({ user }: { user: Atom<User | null> }) {
-  const authorized = atom((ctx) => <div>Dashboard content</div>)
-  const unauthorized = atom((ctx) => <AuthRedirect />)
-  return atom((ctx) =>
-    ctx.spy(user) ? ctx.spy(authorized) : ctx.spy(unathorized),
-  )
-}
+```tsx
+export const Dashboard = ({ user }: { user: Atom<User | null> }) => (
+  <section>
+    <h1>Dashboard</h1>
+    {atom((ctx) =>
+      ctx.spy(user) ? <div>Dashboard content...</div> : <AuthModal />,
+    )}
+  </section>
+)
 ```
 
 To make conditional rendering look cleaner, you can use the `match` helper provided by the [`@reatom/lens`](https://www.reatom.dev/package/lens) package.
 
-```ts
-export function Dashboard({ user }: { user: Atom<User | null> }) {
-  return match(
-    user,
-    atom((ctx) => <div>Dashboard content</div>),
-    atom((ctx) => <AuthRedirect />),
-  )
-}
+```tsx
+export const Dashboard = ({ user }: { user: Atom<User | null> }) => (
+  <section>
+    <h1>Dashboard</h1>
+    {match(user, <div>Dashboard content...</div>, <AuthModal />)}
+  </section>
+)
 ```
 
 ### Lifecycle
@@ -101,38 +101,6 @@ function App() {
   })
 
   return jsxAtom
-}
-```
-
-### Usage without JSX
-
-To use this module without JSX transpilation, call the components like plain JS functions and create DOM elements with `t.*` functions.
-
-```tsx
-import { t } from '@reatom/jsx'
-
-export const App = () =>
-  t.main([
-    t.button({ onclick: add, children: 'add' }),
-    t.br(),
-    t.span(['Sum:', sumAtom]),
-    t.br(),
-    t.button({ onclick: clear, children: 'clear' }),
-    t.br(),
-    atom((ctx) =>
-      t.ul([
-        ctx
-          .spy(listAtom)
-          .map((counterAtom) => t.li([Counter({ counterAtom })])),
-      ]),
-    ),
-  ])
-
-const Counter = ({ counterAtom }: { counterAtom: AtomMut<number> }) => {
-  return t.button({
-    onclick: action((ctx) => counterAtom(ctx, (s) => s + 1)),
-    children: [counterAtom],
-  })
 }
 ```
 
