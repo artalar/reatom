@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/jsx-v3.4.0...jsx-v3.5.0) (2023-10-09)
+
+
+### Features
+
+* **jsx:** nested atoms, better types ([#652](https://github.com/artalar/reatom/issues/652)) ([3ceae78](https://github.com/artalar/reatom/commit/3ceae788da52ff40a561ce5b2fc5371475fb7d7c))
+
+
+### Bug Fixes
+
+* **jsx:** do not allow an array in child atom ([cf178ce](https://github.com/artalar/reatom/commit/cf178ceb951fad577ef0aad86c54d4effcb28391))
+* **jsx:** typed props ([#643](https://github.com/artalar/reatom/issues/643)) ([1cd2932](https://github.com/artalar/reatom/commit/1cd29325cf686baa9fd2668f282b3020b2512ad6))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/jsx-v3.3.1...jsx-v3.4.0) (2023-09-26)
 
 

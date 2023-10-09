@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.9.4](https://github.com/artalar/reatom/compare/async-v3.9.3...async-v3.9.4) (2023-10-09)
+
+
+### Bug Fixes
+
+* **async:** reatomAsyncReaction direct call ([e88b96c](https://github.com/artalar/reatom/commit/e88b96cadfe40ff25432d6bb5d69cbbc20ce67f8))
+* **async:** retry abort ([7722626](https://github.com/artalar/reatom/commit/7722626effd408f81a6a1864ce12faa43a617581))
+
 ## [3.9.3](https://github.com/artalar/reatom/compare/async-v3.9.2...async-v3.9.3) (2023-09-26)
 
 

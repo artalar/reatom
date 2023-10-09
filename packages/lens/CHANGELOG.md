@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/lens-v3.6.2...lens-v3.7.0) (2023-10-09)
+
+
+### Features
+
+* **jsx:** nested atoms, better types ([#652](https://github.com/artalar/reatom/issues/652)) ([3ceae78](https://github.com/artalar/reatom/commit/3ceae788da52ff40a561ce5b2fc5371475fb7d7c))
+* **lens:** add match ([#646](https://github.com/artalar/reatom/issues/646)) ([0f2a768](https://github.com/artalar/reatom/commit/0f2a7685dd797cac4c9fc882a8e24bc31f9503a6))
+* **match:** api redesign (it isn't published yet) ([0e9554e](https://github.com/artalar/reatom/commit/0e9554e8e493b70912f6efd23c69731cfa60ebb8))
+* **match:** remove equal method ([c1d077c](https://github.com/artalar/reatom/commit/c1d077c99944116a301f0cc0c24aade6a27e7351))
+
 ## [3.6.2](https://github.com/artalar/reatom/compare/lens-v3.6.1...lens-v3.6.2) (2023-09-13)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.5](https://github.com/artalar/reatom/compare/form-web-v3.1.4...form-web-v3.1.5) (2023-10-09)
+
+
+### Bug Fixes
+
+* **form-web:** keep original element type ([#651](https://github.com/artalar/reatom/issues/651)) ([8b35c31](https://github.com/artalar/reatom/commit/8b35c31dfb8c2eef7b5a00d2dbf6218d69b374b6))
+
 ## [3.1.4](https://github.com/artalar/reatom/compare/form-web-v3.1.3...form-web-v3.1.4) (2023-05-21)
 
 
