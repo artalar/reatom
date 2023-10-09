@@ -17,10 +17,10 @@ import {
   AtomCache,
   Unsubscribe,
   AtomState,
-  isAction,
 } from '@reatom/core'
 import {
   __thenReatomed,
+  getTopController,
   onCtxAbort,
   withAbortableSchedule,
 } from '@reatom/effects'
@@ -83,8 +83,10 @@ const getCache = (ctx: Ctx, anAtom: Atom): AtomCache => {
   return anAtom.__reatom.patch ?? ctx.get((read) => read(anAtom.__reatom))!
 }
 
-export const unstable_dropController = (ctx: Ctx): AsyncCtx => {
-  const controller = new AbortController()
+export const unstable_dropController = (
+  ctx: Ctx,
+  controller = new AbortController(),
+): AsyncCtx => {
   return {
     ...ctx,
     cause: {
@@ -468,7 +470,26 @@ export const withRetry =
 
               if (timeout < 0) return
 
-              anAsync.retry!(unstable_dropController(ctx), timeout).catch(noop)
+              const controller = new AbortController()
+
+              anAsync.retry!(
+                unstable_dropController(ctx, controller),
+                timeout,
+              ).catch(noop)
+              const state = ctx.get(anAsync)
+
+              // react only on new aborts, ignore possible abort on effect concurrency from the retry
+              ctx.schedule(() => {
+                getTopController(ctx.cause)?.signal.addEventListener(
+                  'abort',
+                  (error) => {
+                    controller.abort(error)
+                    if (state === ctx.get(anAsync)) {
+                      retriesAtom(ctx, 0)
+                    }
+                  },
+                )
+              })
             },
           )
         })
