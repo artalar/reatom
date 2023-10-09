@@ -19,10 +19,6 @@ interface Match<Expression = any, State = never, Default = undefined>
       | ((ctx: Ctx, expression: Expression) => boolean),
     statement: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
   ): Match<Expression, State | T, Default>
-  equal<T>(
-    clause: {} | Atom | ((ctx: Ctx, expression: Expression) => boolean),
-    statement: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
-  ): Match<Expression, State | T, Default>
   truthy<T>(
     statement: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
   ): Match<Expression, State | T, Default>
@@ -75,17 +71,6 @@ export function match<T>(
           : typeof clause === 'function'
           ? clause
           : (ctx, value) => Object.is(value, clause),
-        statement,
-      })
-      return theAtom
-    },
-    equal(clause: any, statement: any) {
-      cases.push({
-        clause: isAtom(clause)
-          ? (ctx, value) => isDeepEqual(value, ctx.get(clause))
-          : typeof clause === 'function'
-          ? clause
-          : (ctx, value) => isDeepEqual(value, clause),
         statement,
       })
       return theAtom
