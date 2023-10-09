@@ -125,7 +125,7 @@ export const reatomPersist = (
         ctx: Ctx,
         state: AtomState<T>,
       ): PersistRecord => ({
-        data: toSnapshot(ctx, state),
+        data: toSnapshot({ ...ctx, spy: undefined }, state),
         fromState: true,
         id: random(),
         timestamp: Date.now(),
