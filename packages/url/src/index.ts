@@ -154,7 +154,7 @@ export const searchParamsAtom: SearchParamsAtom = Object.assign(
     }, 'searchParamsAtom._set'),
     lens: <T = string>(
       key: string,
-      parse: (value?: string) => T = (value) => value as T,
+      parse: (value?: string) => T = (value = '') => String(value) as T,
       serialize: (value: T) => string = (value) => value as string,
     ) => {
       const theAtom = atom(
@@ -181,7 +181,7 @@ export const searchParamsAtom: SearchParamsAtom = Object.assign(
 export const withSearchParamsPersist =
   <T = string>(
     key: string,
-    parse: (value?: string) => T = (value) => value as T,
+    parse: (value?: string) => T = (value = '') => String(value) as T,
     serialize: (value: T) => string = (value) => value as string,
   ) =>
   <A extends Atom<T>>(theAtom: A): A => {
