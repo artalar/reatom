@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.2](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.1...eslint-plugin-v3.4.2) (2023-10-10)
+
+
+### Bug Fixes
+
+* **eslint-plugin:** allow any template literal ([#661](https://github.com/artalar/reatom/issues/661)) ([5539cdd](https://github.com/artalar/reatom/commit/5539cddb5628de56f7e7f011c41ec4230d7a4ae5))
+* **eslint-plugin:** allow explicit empty atomPostfix ([7bac17f](https://github.com/artalar/reatom/commit/7bac17f83350349b8e428688a1aceb16cfefbe11))
+
 ## [3.4.1](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.0...eslint-plugin-v3.4.1) (2023-09-13)
 
 

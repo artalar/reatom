@@ -1,6 +1,6 @@
 {
   "name": "@reatom/eslint-plugin",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for eslint-plugin",
@@ -20,7 +20,8 @@
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
-    "test": "ts-node src/tests/index.ts"
+    "test": "ts-node src/**/*.test.ts",
+    "test:watch": "tsx watch src/**/*.test.ts"
   },
   "author": "pivaszbs",
   "maintainers": [
