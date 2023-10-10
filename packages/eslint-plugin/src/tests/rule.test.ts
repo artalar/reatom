@@ -13,6 +13,9 @@ const tester = new RuleTester({
 tester.run('reatom/atom-rule', atomRule, {
   valid: [
     {
+      code: "import { atom } from '@reatom/framework'; const count = 'count';const countAtom = atom(0, `${count}Atom`);",
+    },
+    {
       code: `
             import { atom } from '@reatom/framework'
             const countAtom = atom(0, "countAtom");

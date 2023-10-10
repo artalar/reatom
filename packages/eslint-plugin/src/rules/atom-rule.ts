@@ -1,9 +1,10 @@
 import type { Rule } from 'eslint'
-import type { CallExpression, Identifier, Literal, Node } from 'estree'
+import type { CallExpression, Identifier, Literal, Node, TemplateLiteral } from 'estree'
 import {
   extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
+  isTemplateLiteral,
   traverseBy,
 } from '../lib'
 
@@ -51,7 +52,6 @@ export const atomRule: Rule.RuleModule = {
         })
 
         const atomName = extractAssignedVariableName(atomVariable)
-
         if (!atomName) {
           return
         }
@@ -81,7 +81,23 @@ export const atomRule: Rule.RuleModule = {
 }
 
 function validAtomVariable(node: CallExpression, correctName: string) {
-  return isLiteral(node.arguments[1]) && node.arguments[1].value === correctName
+  if (isLiteral(node.arguments[1])) {
+    return validateLiteral(node.arguments[1], correctName);
+  }
+
+  if (isTemplateLiteral(node.arguments[1])) {
+    return validateTemplateLiteral(node.arguments[1], correctName);
+  }
+
+  return false;
+}
+
+function validateLiteral(node: Literal, correctName: string) {
+  return node.value === correctName;
+}
+
+function validateTemplateLiteral(node: TemplateLiteral, correctName: string) {
+  return true;
 }
 
 function reportUnCorrectName(config: {
