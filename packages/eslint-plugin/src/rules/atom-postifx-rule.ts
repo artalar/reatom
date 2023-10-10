@@ -9,10 +9,7 @@ import {
 } from '../lib'
 import { isAtomCallExpression } from './atom-rule'
 
-type AtomCallExpression = CallExpression & {
-  callee: Identifier
-  arguments: [Literal] | [Literal, Literal]
-}
+const match = new Set(['VariableDeclarator', 'PropertyDefinition', 'Property'])
 
 export const atomPostfixRule: Rule.RuleModule = {
   meta: {
@@ -27,8 +24,8 @@ export const atomPostfixRule: Rule.RuleModule = {
   },
   create: function (context: Rule.RuleContext): Rule.RuleListener {
     const importedFromReatom = new Map<string, string>()
-    const postfix = context.settings.atomPostfix ?? "Atom";
-    const badPostfix = (atomName: string) => !atomName.endsWith(postfix);
+    const postfix = context.settings.atomPostfix ?? 'Atom'
+    const badPostfix = (atomName: string) => !atomName.endsWith(postfix)
 
     return {
       ImportDeclaration(node) {
@@ -41,19 +38,13 @@ export const atomPostfixRule: Rule.RuleModule = {
       CallExpression: (node) => {
         if (!isAtomCallExpression(node, importedFromReatom)) return
 
-        const matchBy = new Set([
-          'VariableDeclarator',
-          'PropertyDefinition',
-          'Property',
-        ])
-
         const atomVariable = traverseBy('parent', {
-          match: matchBy,
+          match,
           node,
         })
 
         const atomName = extractAssignedVariableName(atomVariable)
-        const atomIdentifier = extractAssignedVariable(atomVariable);
+        const atomIdentifier = extractAssignedVariable(atomVariable)
 
         if (!atomName || !atomIdentifier) {
           return
@@ -67,7 +58,7 @@ export const atomPostfixRule: Rule.RuleModule = {
             incorrectName: atomName,
             correctName: `${atomName}${postfix}`,
             highlightNode: atomIdentifier,
-            postfix
+            postfix,
           })
         }
       },
@@ -84,14 +75,21 @@ function reportIncorrectVariableName(config: {
   source: Node
   postfix: string
 }) {
-  const { source, incorrectName, correctName, highlightNode, context, postfix } = config
+  const {
+    source,
+    incorrectName,
+    correctName,
+    highlightNode,
+    context,
+    postfix,
+  } = config
 
   context.report({
     messageId: config.messageId,
     node: highlightNode,
     data: { atomName: incorrectName, postfix },
     fix(fixer) {
-        return fixer.replaceText(source, correctName)
+      return fixer.replaceText(source, correctName)
     },
   })
 }
