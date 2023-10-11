@@ -49,4 +49,11 @@ test('is method', () => {
   ;`👍` //?
 })
 
+test('default should checks in the end', () => {
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(match(true).default(false).truthy(true)), true)
+  ;`👍` //?
+})
+
 test.run()

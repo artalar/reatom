@@ -13,7 +13,18 @@ const tester = new RuleTester({
 tester.run('reatom/atom-rule', atomRule, {
   valid: [
     {
-      code: "import { atom } from '@reatom/framework'; const count = 'count';const countAtom = atom(0, `${count}Atom`);",
+      code: `
+        import { atom } from '@reatom/framework';
+        const count = 'count';
+        const countAtom = atom(0, \`\${count}Atom\`);
+      `,
+    },
+    {
+      code: `
+        import { atom } from '@reatom/framework';
+        const domain = (name) => 'some.' + name;
+        const countAtom = atom(0, domain\`count\`);
+      `,
     },
     {
       code: `
@@ -153,15 +164,21 @@ tester.run('reatom/action-rule', actionRule, {
   valid: [
     {
       code: `
-            import { action } from '@reatom/framework'
-            const doSome = action("doSome");
-            `,
+        import { action } from '@reatom/framework'
+        const doSome = action("doSome");
+      `,
     },
     {
       code: `
-            import { action } from '@reatom/framework'
-            const doSome = action(() => {}, "doSome");
-            `,
+        import { action } from '@reatom/framework'
+        const doSome = action(() => {}, "doSome");
+      `,
+    },
+    {
+      code: `
+        import { action } from '@reatom/framework'
+        const doSome = action(() => {}, \`\${domain}.doSome\`);
+      `,
     },
     {
       code: `const doSome = action();`,
@@ -174,6 +191,9 @@ tester.run('reatom/action-rule', actionRule, {
     },
     {
       code: `const doSome = action(() => {}, "do");`,
+    },
+    {
+      code: `const doSome = action(() => {}, \`\${domain}.doSome\`);`,
     },
   ],
   invalid: [

@@ -85,19 +85,11 @@ function validAtomVariable(node: CallExpression, correctName: string) {
     return validateLiteral(node.arguments[1], correctName);
   }
 
-  if (isTemplateLiteral(node.arguments[1])) {
-    return validateTemplateLiteral(node.arguments[1], correctName);
-  }
-
-  return false;
+  return true;
 }
 
 function validateLiteral(node: Literal, correctName: string) {
   return node.value === correctName;
-}
-
-function validateTemplateLiteral(node: TemplateLiteral, correctName: string) {
-  return true;
 }
 
 function reportUnCorrectName(config: {

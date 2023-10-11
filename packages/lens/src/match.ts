@@ -28,21 +28,20 @@ interface Match<Expression = any, State = never, Default = undefined>
   default<T = never>(
     statement?: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
   ): Match<Expression, State, T>
-
-  cases: Array<{
-    clause: (ctx: Ctx, expression: Expression) => boolean
-    statement:
-      | {}
-      | Atom
-      | ((ctx: Ctx, expression: Expression) => State | Default)
-  }>
 }
 
 export function match<T>(
   expression: T | Atom<T> | ((ctx: CtxSpy) => T),
   name = __count('match'),
 ): Match<T> {
-  const cases: Match<T>['cases'] = []
+  const cases: Array<{
+    clause: (ctx: Ctx, expression: T) => boolean
+    statement: {} | Atom | ((ctx: Ctx, expression: T) => any)
+  }> = []
+  let _truthy: (typeof cases)[number]
+  let _falsy: (typeof cases)[number]
+  let _default: (typeof cases)[number]
+
   const theAtom = atom((ctxSpy) => {
     const value = isAtom(expression)
       ? ctxSpy.spy(expression)
@@ -50,8 +49,9 @@ export function match<T>(
       ? (expression as Fn)(ctxSpy)
       : expression
     const ctx = merge(ctxSpy, { spy: undefined })
+    const list = [...cases, _truthy, _falsy, _default].filter(Boolean)
 
-    for (const { clause, statement } of cases) {
+    for (const { clause, statement } of list) {
       if (clause(ctx, value)) {
         return isAtom(statement)
           ? ctxSpy.spy(statement)
@@ -76,18 +76,19 @@ export function match<T>(
       return theAtom
     },
     truthy(statement: any) {
-      cases.push({ clause: (ctx, value) => !!value, statement })
+      throwReatomError(_truthy, 'the case is already defined')
+      _truthy = { clause: (ctx, value) => !!value, statement }
       return theAtom
     },
     falsy(statement: any) {
-      cases.push({ clause: (ctx, value) => !value, statement })
+      throwReatomError(_falsy, 'the case is already defined')
+      _falsy = { clause: (ctx, value) => !value, statement }
       return theAtom
     },
     default(statement = () => throwReatomError(true, 'no match') as never) {
-      cases.push({ clause: (ctx, value) => true, statement })
+      throwReatomError(_default, 'the case is already defined')
+      _default = { clause: (ctx, value) => true, statement }
       return theAtom
     },
-
-    cases,
   }) as Match<T>
 }
