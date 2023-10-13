@@ -269,7 +269,7 @@ https://www.patreon.com/artalar_dev
 
 Software development in 202X is hard and we really appreciate all [contributors](https://github.com/artalar/reatom/graphs/contributors) and free software maintainers, who make our life easier. Special thanks to:
 
-- [React](https://reactjs.org), [Redux](https://redux.js.org) and [Effector](https://effector.dev/) for inspiration
+- [React](https://reactjs.org), [Redux](https://redux.js.org), [Effector](https://effector.dev/) and [$mol](https://github.com/hyoo-ru/mam_mol) for inspiration
 - [microbundle](https://github.com/developit/microbundle) for handling all bundling complexity
 - [Quokka](https://wallabyjs.com/oss/) and [uvu](https://github.com/lukeed/uvu) for incredible testing experience
 - [TURBO](https://turbo.build) for simple monorepo management
