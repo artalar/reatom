@@ -27,11 +27,12 @@ export interface UrlAtom extends AtomMut<URL> {
 
 export interface SearchParamsAtom extends Atom<Rec<string>> {
   set: Action<[key: string, value: string], void>
+  del: Action<[key: string], void>
   /** create AtomMut which will synced with the specified query parameter */
   lens: <T = string>(
     key: string,
     parse?: (value?: string) => T,
-    serialize?: (value: T) => string,
+    serialize?: (value: T) => undefined | string,
   ) => AtomMut<T>
 }
 
@@ -152,10 +153,17 @@ export const searchParamsAtom: SearchParamsAtom = Object.assign(
       newUrl.searchParams.set(key, value)
       urlAtom(ctx, newUrl)
     }, 'searchParamsAtom._set'),
+    del: action((ctx, key: string) => {
+      const url = ctx.get(urlAtom)
+      const newUrl = new URL(url.href)
+      newUrl.searchParams.delete(key)
+      urlAtom(ctx, newUrl)
+    }, 'searchParamsAtom._del'),
     lens: <T = string>(
       key: string,
       parse: (value?: string) => T = (value = '') => String(value) as T,
-      serialize: (value: T) => string = (value) => value as string,
+      serialize: (value: T) => undefined | string = (value) =>
+        value === '' ? undefined : String(value),
     ) => {
       const theAtom = atom(
         (ctx) => parse(ctx.spy(searchParamsAtom)[key]),
@@ -163,15 +171,13 @@ export const searchParamsAtom: SearchParamsAtom = Object.assign(
       )
 
       return Object.assign((ctx: Ctx, update: T | Fn<[T, Ctx], T>) => {
-        searchParamsAtom.set(
-          ctx,
-          key,
-          serialize(
-            typeof update === 'function'
-              ? (update as Fn<[T, Ctx], T>)(ctx.get(theAtom), ctx)
-              : update,
-          ),
+        const value = serialize(
+          typeof update === 'function'
+            ? (update as Fn<[T, Ctx], T>)(ctx.get(theAtom), ctx)
+            : update,
         )
+        if (value === undefined) searchParamsAtom.del(ctx, key)
+        else searchParamsAtom.set(ctx, key, value)
         return ctx.get(theAtom)
       }, theAtom) as AtomMut<T>
     },
@@ -182,24 +188,30 @@ export const withSearchParamsPersist =
   <T = string>(
     key: string,
     parse: (value?: string) => T = (value = '') => String(value) as T,
-    serialize: (value: T) => string = (value) => value as string,
+    serialize: (value: T) => undefined | string = (value) =>
+      value === '' ? undefined : String(value),
   ) =>
   <A extends Atom<T>>(theAtom: A): A => {
     const { computer } = theAtom.__reatom
     theAtom.pipe(
-      withInit((ctx) => parse(ctx.get(searchParamsAtom)[key]) as AtomState<A>),
+      withInit((ctx, init) => {
+        const sp = ctx.get(searchParamsAtom)
+        return (key in sp ? parse(sp[key]) : init(ctx)) as AtomState<A>
+      }),
     )
     theAtom.__reatom.computer = (ctx, state) => {
       ctx.spy(searchParamsAtom, (next, prev) => {
-        if (!prev || prev[key] !== next[key]) {
+        if (key in next && (!prev || prev[key] !== next[key])) {
           state = parse(next[key])
         }
       })
       return computer ? computer(ctx, state) : state
     }
-    theAtom.onChange((ctx, state) =>
-      searchParamsAtom.set(ctx, key, serialize(state)),
-    )
+    theAtom.onChange((ctx, state) => {
+      const value = serialize(state)
+      if (value === undefined) searchParamsAtom.del(ctx, key)
+      else searchParamsAtom.set(ctx, key, value)
+    })
 
     return theAtom
   }
