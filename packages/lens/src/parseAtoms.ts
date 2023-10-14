@@ -1,4 +1,5 @@
 import { Atom, Ctx, isAtom, Rec } from '@reatom/core'
+import { isRec } from '@reatom/utils'
 
 export type ParseAtoms<T> = T extends Atom<infer T>
   ? ParseAtoms<T>
@@ -20,10 +21,9 @@ export const parseAtoms = <Value>(
 
   if (typeof value !== 'object' || value === null) return value as any
 
-  const proto = Reflect.getPrototypeOf(value)
-  if (!proto || !Reflect.getPrototypeOf(proto)) {
+  if (isRec(value)) {
     const res = {} as Rec
-    for (const k in value) res[k] = value[k]
+    for (const k in value) res[k] = parseAtoms(ctx, value[k])
     return res as any
   }
 
