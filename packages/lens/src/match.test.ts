@@ -49,6 +49,37 @@ test('is method', () => {
   ;`👍` //?
 })
 
+test('with', () => {
+  const ctx = createTestCtx()
+
+  type Data = { type: 'text' } | { type: 'img' }
+
+  type Result =
+    | { type: 'ok'; data: Data }
+    | { type: 'error' }
+    | { type: 'unknown' }
+
+  const result = atom(null! as Result)
+
+  const matched = match(result)
+    .with({ type: 'error' }, 'error')
+    .with({ type: 'ok', data: { type: 'text' } }, 'ok/text')
+    .with({ type: 'ok', data: { type: 'img' } }, 'ok/img')
+    .default('default')
+
+  result(ctx, { type: 'unknown' })
+  assert.is(ctx.get(matched), 'default')
+
+  result(ctx, { type: 'error' })
+  assert.is(ctx.get(matched), 'error')
+
+  result(ctx, { type: 'ok', data: { type: 'img' } })
+  assert.is(ctx.get(matched), 'ok/img')
+
+  result(ctx, { type: 'ok', data: { type: 'text' } })
+  assert.is(ctx.get(matched), 'ok/text')
+})
+
 test('default should checks in the end', () => {
   const ctx = createTestCtx()
 
