@@ -23,7 +23,7 @@ export const parseAtoms = <Value>(
 
   if (isRec(value)) {
     const res = {} as Rec
-    for (const k in value) res[k] = parseAtoms(ctx, value[k])
+    for (const k in value) res[k] = value[k]
     return res as any
   }
 
