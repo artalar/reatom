@@ -8,7 +8,32 @@ import {
   isAtom,
   throwReatomError,
 } from '@reatom/core'
-import { isDeepEqual, merge } from '@reatom/utils'
+import { isDeepEqual, isRec, isShallowEqual, merge } from '@reatom/utils'
+
+type Primitive = null | undefined | string | number | boolean | symbol | bigint
+
+export type BuiltIns = Primitive | Date | RegExp
+
+export type PartialDeep<T> = T extends BuiltIns
+  ? T | undefined
+  : T extends Map<infer K, infer V>
+  ? {} & Map<PartialDeep<K>, PartialDeep<V>>
+  : T extends Set<infer Item>
+  ? {} & Set<PartialDeep<Item>>
+  : T extends ReadonlyMap<infer K, infer V>
+  ? {} & ReadonlyMap<PartialDeep<K>, PartialDeep<V>>
+  : T extends ReadonlySet<infer Item>
+  ? PartialDeepSetReadonly<Item>
+  : T extends (...arguments_: any[]) => unknown
+  ? T | undefined
+  : T extends object
+  ? T extends ReadonlyArray<any>
+    ? T
+    : {
+        [K in keyof T]?: PartialDeep<T[K]>
+      }
+  : unknown
+type PartialDeepSetReadonly<Item> = {} & ReadonlySet<PartialDeep<Item>>
 
 interface Match<Expression = any, State = never, Default = undefined>
   extends Atom<State | Default> {
@@ -19,6 +44,13 @@ interface Match<Expression = any, State = never, Default = undefined>
       | ((ctx: Ctx, expression: Expression) => boolean),
     statement: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
   ): Match<Expression, State | T, Default>
+  with<T, Part extends PartialDeep<Expression>>(
+    part: Part,
+    statement?:
+      | T
+      | Atom<T>
+      | ((ctx: CtxSpy, expression: Part & Expression) => T),
+  ): Match<Exclude<Expression, Part>, T>
   truthy<T>(
     statement: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
   ): Match<Expression, State | T, Default>
@@ -34,15 +66,16 @@ export function match<T>(
   expression: T | Atom<T> | ((ctx: CtxSpy) => T),
   name = __count('match'),
 ): Match<T> {
-  const cases: Array<{
+  type Case = {
     clause: (ctx: Ctx, expression: T) => boolean
     statement: {} | Atom | ((ctx: Ctx, expression: T) => any)
-  }> = []
-  let _truthy: (typeof cases)[number]
-  let _falsy: (typeof cases)[number]
-  let _default: (typeof cases)[number]
+  }
+  const cases: Array<Case> = []
+  let _truthy: Case
+  let _falsy: Case
+  let _default: Case
 
-  const theAtom = atom((ctxSpy) => {
+  const matchAtom = atom((ctxSpy) => {
     const value = isAtom(expression)
       ? ctxSpy.spy(expression)
       : typeof expression === 'function'
@@ -63,7 +96,7 @@ export function match<T>(
     return undefined
   }, name)
 
-  return Object.assign(theAtom, {
+  return Object.assign(matchAtom, {
     is(clause: any, statement: any) {
       cases.push({
         clause: isAtom(clause)
@@ -73,22 +106,41 @@ export function match<T>(
           : (ctx, value) => Object.is(value, clause),
         statement,
       })
-      return theAtom
+      return matchAtom
+    },
+    with(part: any, statement: any) {
+      cases.push({
+        clause: (ctx, expr) => {
+          const visit = (part: any, expr: any) => {
+            if (isRec(part)) {
+              for (const key in part) {
+                if (!visit(part[key], expr[key])) return false
+              }
+              return true
+            }
+            return Object.is(part, expr)
+          }
+
+          return visit(part, expr)
+        },
+        statement,
+      })
+      return matchAtom
     },
     truthy(statement: any) {
       throwReatomError(_truthy, 'the case is already defined')
       _truthy = { clause: (ctx, value) => !!value, statement }
-      return theAtom
+      return matchAtom
     },
     falsy(statement: any) {
       throwReatomError(_falsy, 'the case is already defined')
       _falsy = { clause: (ctx, value) => !value, statement }
-      return theAtom
+      return matchAtom
     },
     default(statement = () => throwReatomError(true, 'no match') as never) {
       throwReatomError(_default, 'the case is already defined')
       _default = { clause: (ctx, value) => true, statement }
-      return theAtom
+      return matchAtom
     },
   }) as Match<T>
 }
