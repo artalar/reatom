@@ -50,6 +50,12 @@ export const isObject = <T>(
   : Record<string | number | symbol, unknown> =>
   typeof thing === 'object' && thing !== null
 
+export const isRec = (thing: unknown): thing is Record<string, unknown> => {
+  if (!isObject(thing)) return false
+  const proto = Reflect.getPrototypeOf(thing)
+  return !proto || !Reflect.getPrototypeOf(proto)
+}
+
 // TODO infer `b` too
 // export const is: {
 //   <A, B>(a: A, b: B): a is B
