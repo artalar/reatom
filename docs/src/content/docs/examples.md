@@ -33,6 +33,6 @@ https://codesandbox.io/s/reatom-react-atomization-k39vrs?file=/src/App.tsx
 
 https://svelte.dev/repl/0613e23e6aa74246afad6d726d6c5a33?version=3.55.0
 
-### All codesandboxes
+### Tree-like dependent reactive structure
 
-You could find more interesting examples in our [sandbox folder](https://codesandbox.io/dashboard/sandboxes/reatom?workspace=e7923738-fe21-45f8-9cee-424de14adf18)
+Nested checkboxes with indeterminate states could be realy hard and unoptimal in reactive context. This example shows the complex optimized model for tree-like structure, check [the model file](https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts)https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts.
