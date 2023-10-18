@@ -8,7 +8,7 @@ import {
   isAtom,
   throwReatomError,
 } from '@reatom/core'
-import { isDeepEqual, isRec, isShallowEqual, merge } from '@reatom/utils'
+import { isRec, isShallowEqual, merge } from '@reatom/utils'
 
 type Primitive = null | undefined | string | number | boolean | symbol | bigint
 
@@ -16,24 +16,13 @@ export type BuiltIns = Primitive | Date | RegExp
 
 export type PartialDeep<T> = T extends BuiltIns
   ? T | undefined
-  : T extends Map<infer K, infer V>
-  ? {} & Map<PartialDeep<K>, PartialDeep<V>>
-  : T extends Set<infer Item>
-  ? {} & Set<PartialDeep<Item>>
-  : T extends ReadonlyMap<infer K, infer V>
-  ? {} & ReadonlyMap<PartialDeep<K>, PartialDeep<V>>
-  : T extends ReadonlySet<infer Item>
-  ? PartialDeepSetReadonly<Item>
-  : T extends (...arguments_: any[]) => unknown
-  ? T | undefined
   : T extends object
   ? T extends ReadonlyArray<any>
-    ? T
+    ? never
     : {
         [K in keyof T]?: PartialDeep<T[K]>
       }
   : unknown
-type PartialDeepSetReadonly<Item> = {} & ReadonlySet<PartialDeep<Item>>
 
 interface Match<Expression = any, State = never, Default = undefined>
   extends Atom<State | Default> {
