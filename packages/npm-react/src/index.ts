@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   __count,
+  __root,
   action,
   Action,
   atom,
@@ -16,6 +17,7 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
+import { merge } from '@reatom/utils'
 
 let getName = (type: string): string => {
   let Component =
@@ -243,14 +245,15 @@ export const reatomComponent = <T>(
           const { pubs } = ctx.cause
           const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
-          ctx.bind = (fn) => bind(ctx, fn)
-
           if (rendering) {
-            if (state?.REATOM_DEPS_CHANGE) {
-              ctx.cause.cause = ctx.get(
-                (read) => read(renderAtom.__reatom)!.cause,
-              )
+            ctx = {
+              ...ctx,
+              cause: {
+                ...ctx.cause,
+                cause: ctx.get((read) => read(__root)!.cause),
+              },
             }
+            ctx.bind = (fn) => bind(ctx, fn)
             props.ctx = ctx
             return Component(props)
           }
