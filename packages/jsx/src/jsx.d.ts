@@ -564,6 +564,7 @@ export namespace JSX {
     lang?: AtomMaybe<string>
     spellcheck?: AtomMaybe<boolean>
     style?: AtomMaybe<CSSProperties | string>
+    styles?: AtomMaybe<{ style: string; className: string }>
     tabindex?: AtomMaybe<number | string>
     title?: AtomMaybe<string>
     translate?: AtomMaybe<'yes' | 'no'>
