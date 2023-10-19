@@ -172,7 +172,7 @@ test('abort should not stale', async () => {
 
 test('direct retry', async () => {
   const paramsAtom = atom(123, 'paramsAtom')
-  const someReaction = reatomAsyncReaction(async (ctx) => {
+  const someReaction = reatomReactiveAsync(async (ctx) => {
     ctx.spy(paramsAtom)
     await ctx.schedule(() => calls++)
   }, 'someReaction')
