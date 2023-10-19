@@ -43,9 +43,9 @@ export type {
 export {
   reatomAsyncReaction,
   AsyncReaction,
-  ReactiveAsync,
-  reatomReactiveAsync,
-} from './reatomReactiveAsync'
+  ResourceAtom,
+  reatomResource,
+} from './reatomResource'
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
