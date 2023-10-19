@@ -1,4 +1,5 @@
 import {
+  Action,
   atom,
   createCtx,
   Ctx,
@@ -42,15 +43,6 @@ export const reatomJsx = (ctx: Ctx) => {
     })
   }
 
-  const renderProp = (element: any, key: any, val: any) => {
-    if (key === 'style') {
-      for (const style in val) element.style.setProperty(style, val[style])
-    } else if (key === 'styles') {
-      element.style = val.style
-      element.className = val.className
-    } else element[key] = val
-  }
-
   let create = (tag: string, props: Rec) => {
     let element =
       tag === 'svg'
@@ -59,24 +51,37 @@ export const reatomJsx = (ctx: Ctx) => {
 
     for (let k in props) {
       if (k === 'children') continue
-      let prop = props[k]
-      if (isAtom(prop)) {
-        if (prop.__reatom.isAction) {
-          ;(element as any)[k] = (...a: any[]) => prop(ctx, ...a)
-        } else {
-          // TODO handle unsubscribe!
-          var un: undefined | Unsubscribe = ctx.subscribe(prop, (v) =>
-            !un || element.isConnected ? renderProp(element, k, v) : un(),
-          )
-
-          unlink(element, un)
-        }
-      } else renderProp(element, k, prop)
+      bindAttr(element, k, props[k])
     }
 
     render(element, props.children ?? [])
 
     return element
+  }
+
+  const bindAttr = (element: any, key: any, val: any) => {
+    if (key === '$attrs') {
+      const recs = Array.isArray(val) ? val : [val]
+      for (const rec of recs) {
+        for (const k in rec) bindAttr(element, k, rec[k])
+      }
+    } else if (isAtom(val)) {
+      if (val.__reatom.isAction) {
+        element[key] = (...args: any) => (val as Action)(ctx, ...args)
+      } else {
+        // TODO handle unsubscribe!
+        var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
+          !un || element.isConnected ? renderAttr(element, key, val) : un(),
+        )
+        unlink(element, un)
+      }
+    } else renderAttr(element, key, val)
+  }
+
+  const renderAttr = (element: any, key: any, val: any) => {
+    if (key === 'style') {
+      for (const style in val) element.style.setProperty(style, val[style])
+    } else element[key] = val
   }
 
   let render = (parent: Element, children: JSXElement[]) => {
