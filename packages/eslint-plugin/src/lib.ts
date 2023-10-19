@@ -1,4 +1,4 @@
-import type { Identifier, Literal, Node, ImportDeclaration, VariableDeclarator } from 'estree'
+import type { Identifier, Literal, Node, ImportDeclaration, VariableDeclarator, TemplateLiteral } from 'estree'
 
 export function isIdentifier(node: Node): node is Identifier {
   return node?.type === 'Identifier'
@@ -6,6 +6,10 @@ export function isIdentifier(node: Node): node is Identifier {
 
 export function isLiteral(node: any): node is Literal {
   return node && 'type' in node && node.type === 'Literal'
+}
+
+export function isTemplateLiteral(node: any): node is TemplateLiteral {
+  return node && 'type' in node && node.type === 'TemplateLiteral'
 }
 
 export interface ExtractConfig {

@@ -1,7 +1,7 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
-import { isShallowEqual } from '@reatom/utils'
-
+import { isShallowEqual, noop } from '@reatom/utils'
 import { logGraph } from './graphView'
+// import { devtoolsCreate } from './devtools'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -158,6 +158,7 @@ export const createLogBatched = ({
 export const connectLogger = (
   ctx: Ctx,
   {
+    devtools = false,
     historyLength = 10,
     domain = '',
     log = createLogBatched({ domain }),
@@ -165,6 +166,7 @@ export const connectLogger = (
     skip = () => false,
     skipUnnamed = true,
   }: {
+    devtools?: boolean
     historyLength?: number
     log?: Fn<[LogMsg]>
     domain?: string
@@ -177,7 +179,9 @@ export const connectLogger = (
   let read: Fn<[AtomProto], undefined | AtomCache>
   ctx.get((r) => (read = r))
 
-  return ctx.subscribe((logs, error) => {
+  const devtoolsDispose = /* devtools ? devtoolsCreate(ctx) : */ noop
+
+  const ctxUnsubscribe = ctx.subscribe((logs, error) => {
     let i = -1
     try {
       const states = new WeakMap<AtomProto, any>()
@@ -250,4 +254,9 @@ export const connectLogger = (
       console.log(error)
     }
   })
+
+  return () => {
+    devtoolsDispose()
+    ctxUnsubscribe()
+  }
 }

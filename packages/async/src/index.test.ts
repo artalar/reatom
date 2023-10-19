@@ -364,4 +364,28 @@ test('handle error correctly', async () => {
   ;`👍` //?
 })
 
+test('withRetry abort', async () => {
+  const effect = reatomAsync(async () => {
+    if (1) throw new Error('test error')
+  }).pipe(
+    withRetry({
+      onReject: (ctx, error, retries) => {
+        return 1
+      },
+    }),
+  )
+  onConnect(effect, (ctx) => effect(ctx).catch(noop))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(effect)
+  assert.ok(ctx.get(effect.pendingAtom) + ctx.get(effect.retriesAtom) > 0)
+  await sleep(10)
+  assert.ok(ctx.get(effect.pendingAtom) + ctx.get(effect.retriesAtom) > 0)
+
+  track.unsubscribe()
+  await sleep(10)
+  assert.is(ctx.get(effect.pendingAtom) + ctx.get(effect.retriesAtom), 0)
+  ;`👍` //?
+})
+
 test.run()

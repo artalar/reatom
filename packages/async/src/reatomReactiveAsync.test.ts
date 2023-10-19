@@ -144,10 +144,12 @@ test('withErrorAtom withRetry', async () => {
   await sleep()
   assert.is(ctx.get(someReaction.dataAtom), 0)
   assert.is(ctx.get(someReaction.errorAtom)?.message, 'test error')
+  assert.is(ctx.get(someReaction.pendingAtom), 1)
 
   await sleep()
   assert.is(ctx.get(someReaction.dataAtom), 123)
   assert.is(ctx.get(someReaction.errorAtom), undefined)
+  assert.is(ctx.get(someReaction.pendingAtom), 0)
   ;`👍` //?
 })
 
@@ -165,6 +167,27 @@ test('abort should not stale', async () => {
 
   await sleep()
   assert.is(ctx.get(someReaction.dataAtom), 123)
+  ;`👍` //?
+})
+
+test('direct retry', async () => {
+  const paramsAtom = atom(123, 'paramsAtom')
+  const someReaction = reatomAsyncReaction(async (ctx) => {
+    ctx.spy(paramsAtom)
+    await ctx.schedule(() => calls++)
+  }, 'someReaction')
+  let calls = 0
+  const ctx = createTestCtx()
+
+  ctx.get(someReaction.promiseAtom)
+  ctx.get(someReaction.promiseAtom)
+  ctx.get(someReaction.promiseAtom)
+  assert.is(calls, 1)
+
+  someReaction(ctx)
+  assert.is(calls, 2)
+  ctx.get(someReaction.promiseAtom)
+  assert.is(calls, 2)
   ;`👍` //?
 })
 

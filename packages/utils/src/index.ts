@@ -1,3 +1,6 @@
+export type UndefinedToOptional<T extends object> = Partial<T> &
+  PickValues<T, {} | null>
+
 // We don't have type literal for NaN but other values are presented here
 // https://stackoverflow.com/a/51390763
 export type Falsy = false | 0 | '' | null | undefined
@@ -46,6 +49,12 @@ export const isObject = <T>(
   ? T
   : Record<string | number | symbol, unknown> =>
   typeof thing === 'object' && thing !== null
+
+export const isRec = (thing: unknown): thing is Record<string, unknown> => {
+  if (!isObject(thing)) return false
+  const proto = Reflect.getPrototypeOf(thing)
+  return !proto || !Reflect.getPrototypeOf(proto)
+}
 
 // TODO infer `b` too
 // export const is: {
@@ -167,11 +176,13 @@ export const random = (min = 0, max = Number.MAX_SAFE_INTEGER - 1) =>
   Math.floor(Math.random() * (max - min + 1)) + min
 
 /**
- * Returns non nullable type of value
+ * Asserts that the value is not `null` or `undefined`.
  */
 export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
-  if (value != null) return value as NonNullable<T>
-  throw new TypeError(message || 'Value is null or undefined')
+  if (value == null) {
+    throw new TypeError(message || 'Value is null or undefined')
+  }
+  return value
 }
 
 const { toString } = Object.prototype

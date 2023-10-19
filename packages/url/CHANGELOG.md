@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/artalar/reatom/compare/url-v3.3.0...url-v3.3.1) (2023-10-09)
+
+
+### Bug Fixes
+
+* **url:** parse empty QS as empty string ([3665807](https://github.com/artalar/reatom/commit/3665807cdbe131f87a414ac5907cd8a88cafe769))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/url-v3.2.0...url-v3.3.0) (2023-08-05)
 
 

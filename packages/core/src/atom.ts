@@ -455,9 +455,18 @@ export const createCtx = ({
         enqueueComputers(patch)
       }
 
-      proto.updateHooks?.forEach((hook) =>
-        trUpdates.push(() => hook(patchCtx, patch!)),
-      )
+      if (proto.updateHooks) {
+        let ctx = {
+          get: patchCtx.get,
+          spy: undefined,
+          schedule: patchCtx.schedule,
+          subscribe: patchCtx.subscribe,
+          cause: patchCtx.cause,
+        }
+        proto.updateHooks.forEach((hook) =>
+          trUpdates.push(() => hook(ctx, patch!)),
+        )
+      }
     }
 
     return patch
