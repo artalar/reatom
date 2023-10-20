@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/utils-v3.6.0...utils-v3.7.0) (2023-10-20)
+
+
+### Features
+
+* **lens:** add match().with ([f61dddc](https://github.com/artalar/reatom/commit/f61dddc858fda9921117acd472cc4e4e71cdd47e))
+* **utils:** add isRec ([444c4f6](https://github.com/artalar/reatom/commit/444c4f6c528092a59bdd332218b3d42c88351999))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/utils-v3.5.0...utils-v3.6.0) (2023-10-09)
 
 

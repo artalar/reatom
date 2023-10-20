@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/lens-v3.7.0...lens-v3.8.0) (2023-10-20)
+
+
+### Features
+
+* **lens:** add match().with ([f61dddc](https://github.com/artalar/reatom/commit/f61dddc858fda9921117acd472cc4e4e71cdd47e))
+* **utils:** add isRec ([444c4f6](https://github.com/artalar/reatom/commit/444c4f6c528092a59bdd332218b3d42c88351999))
+
+
+### Bug Fixes
+
+* **lens:** dont allow non-recs as match.with input ([#675](https://github.com/artalar/reatom/issues/675)) ([3c6e8bc](https://github.com/artalar/reatom/commit/3c6e8bc1425cb0c5a6fbde4d78f81c1ab15c7cf9))
+* **lens:** match default case ([27061af](https://github.com/artalar/reatom/commit/27061af1ac338f5223190d110cf6e090d884e203))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/lens-v3.6.2...lens-v3.7.0) (2023-10-09)
 
 
