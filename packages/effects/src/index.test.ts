@@ -119,6 +119,26 @@ test('withAbortableSchedule', async () => {
   ;`👍` //?
 })
 
+test('take filter', async () => {
+  const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
+  const track = mockFn()
+  const ctx = createTestCtx()
+
+  take(ctx, act, (ctx, v, skip) => {
+    return v < 4 ? skip : v.toString()
+  }).then(track)
+  act(ctx, 1)
+  await null
+  act(ctx, 2)
+  act(ctx, 3)
+  await null
+  act(ctx, 4)
+  await sleep()
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), '4')
+  ;`👍` //?
+})
+
 // test('concurrent', async () => {
 //   class CtxMap<T> {
 //     private map = new WeakMap<AtomProto, T>()

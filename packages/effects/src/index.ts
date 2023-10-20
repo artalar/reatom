@@ -155,27 +155,34 @@ export const disposable = (
   })
 }
 
+const skip: unique symbol = Symbol()
+type skip = typeof skip
 export const take = <T extends Atom, Res = AtomReturn<T>>(
   ctx: Ctx & { controller?: AbortController },
   anAtom: T,
-  mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
-): Promise<Awaited<Res>> =>
-  new Promise<Awaited<Res>>((res: Fn, rej) => {
-    onCtxAbort(ctx, rej)
+  mapper: Fn<[Ctx, Awaited<AtomReturn<T>>, skip], Res | skip> = (ctx, v: any) =>
+    v,
+): Promise<Awaited<Res>> => {
+  const cleanups: Array<Fn> = []
+  return new Promise<Awaited<Res>>((res: Fn, rej) => {
+    cleanups.push(
+      onCtxAbort(ctx, rej) ?? noop,
+      ctx.subscribe(anAtom, async (state) => {
+        // skip the first sync call
+        if (!cleanups.length) return
 
-    let skipFirst = true,
-      un = ctx.subscribe(anAtom, (state) => {
-        if (skipFirst) return (skipFirst = false)
-        un()
-        if (anAtom.__reatom.isAction) state = state[0].payload
-        if (state instanceof Promise) {
-          state.then((v) => res(mapper(ctx, v)), rej)
-        } else {
-          res(mapper(ctx, state))
+        try {
+          if (anAtom.__reatom.isAction) state = state[0].payload
+          const value = await state
+          const result = mapper(ctx, value, skip)
+          if (result !== skip) res(result)
+        } catch (error) {
+          rej(error)
         }
-      })
-    ctx.schedule(un, -1)
-  })
+      }),
+    )
+  }).finally(() => cleanups.forEach((cb) => cb()))
+}
 
 export const takeNested = <I extends any[]>(
   ctx: Ctx & { controller?: AbortController },
