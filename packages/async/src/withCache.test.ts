@@ -5,7 +5,7 @@ import { reatomPersist } from '@reatom/persist'
 import { onConnect } from '@reatom/hooks'
 
 import { reatomAsync, withAbort, withDataAtom, withCache, AsyncCtx } from './'
-import { sleep } from '@reatom/utils'
+import { noop, sleep, toAbortError } from '@reatom/utils'
 import { Ctx } from '@reatom/core'
 
 const test = suite('withCache')
@@ -248,6 +248,34 @@ test('withPersist', async () => {
   await fetchData2(ctx, 1, 2)
   assert.is(effect.calls.length, effectCalls)
   assert.is(data2Track.lastInput(), 3)
+  ;`👍` //?
+})
+
+test('do not cache aborted promise', async () => {
+  const effect = mockFn(async (ctx: AsyncCtx) => {
+    await null
+    ctx.controller.signal.throwIfAborted()
+    return 1
+  })
+  const fetchData = reatomAsync(effect).pipe(
+    withDataAtom(0),
+    withCache({ ignoreAbort: false }),
+  )
+  onConnect(fetchData.dataAtom, fetchData)
+  const ctx = createTestCtx()
+
+  ctx.subscribe(fetchData.dataAtom, noop)()
+  const un = ctx.subscribe(fetchData.dataAtom, noop)
+  await sleep()
+  assert.is(effect.calls.length, 2)
+  assert.is(ctx.get(fetchData.dataAtom), 1)
+
+  un()
+  ctx.subscribe(fetchData.dataAtom, noop)()
+  ctx.subscribe(fetchData.dataAtom, noop)
+  await sleep()
+  assert.is(effect.calls.length, 4)
+  assert.is(ctx.get(fetchData.dataAtom), 1)
   ;`👍` //?
 })
 

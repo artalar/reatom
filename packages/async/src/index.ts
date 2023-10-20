@@ -133,7 +133,9 @@ export const reatomAsync = <
             // userspace controller
             ctx.controller = ctx.cause.controller = new AbortController()
 
-            onCtxAbort(params[0], (error) => ctx.controller.abort(error))
+            onCtxAbort(params[0], (error) => {
+              ctx.controller.abort(error)
+            })
 
             params[0] = withAbortableSchedule(ctx)
 

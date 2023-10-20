@@ -8,7 +8,7 @@ import {
   Fn,
 } from '@reatom/core'
 import { MapAtom, reatomMap } from '@reatom/primitives'
-import { isDeepEqual, MAX_SAFE_TIMEOUT } from '@reatom/utils'
+import { isAbort, isDeepEqual, MAX_SAFE_TIMEOUT, sleep } from '@reatom/utils'
 import { type WithPersistOptions } from '@reatom/persist'
 
 import {
@@ -22,6 +22,7 @@ import {
 } from '.'
 import { handleEffect } from './handleEffect'
 import { onConnect } from '@reatom/hooks'
+import { __thenReatomed } from '@reatom/effects'
 
 export interface CacheRecord<T = any, Params extends any[] = unknown[]> {
   clearTimeoutId: ReturnType<typeof setTimeout>
@@ -32,6 +33,7 @@ export interface CacheRecord<T = any, Params extends any[] = unknown[]> {
   lastUpdate: number
   params: Params
   promise: undefined | Promise<T>
+  controller: AbortController
   value: undefined | T
   /** value version */
   version: number
@@ -43,6 +45,7 @@ export interface CacheAtom<T = any, Params extends any[] = unknown[]>
   invalidate: Action<[], null | ControlledPromise<T>>
   // setWithParams: Action<[params: Params, value: T]>
   // deleteWithParams: Action<[params: Params]>
+  options: WithCacheOptions
 }
 
 type CacheMapRecord<T extends AsyncAction = AsyncAction> =
@@ -241,6 +244,16 @@ export const withCache =
         return latest ? anAsync(ctx, ...latest.params) : null
       }, `${cacheAtom.__reatom.name}.invalidate`)
 
+      cacheAtom.options = {
+        ignoreAbort,
+        length,
+        paramsLength,
+        staleTime,
+        swr,
+        // @ts-expect-error
+        withPersist,
+      }
+
       if (withPersist) {
         // TODO the key could be provided by a decorator function
         // like `withPersist: options => withLocalStorage({ ...options, key: 'key' })`
@@ -373,22 +386,33 @@ export const withCache =
               promise: undefined,
               value: undefined,
               version: 0,
+              controller,
               lastUpdate: -1,
               params: [],
             },
             key,
           } = find(ctx, paramsKey)
 
+          const prevController = cached.controller
+
           cached = {
             ...cached,
             lastUpdate: Date.now(),
             params: paramsKey,
+            controller,
           }
+
+          // let lastUpdate = Date.now()
+          // if (cached.lastUpdate === lastUpdate) lastUpdate += 0.001
+          // cached.lastUpdate = lastUpdate
 
           const cache = cacheAtom.set(ctx, key, cached)
           if (cache.size > length) deleteOldest(cache)
 
-          if (cached.version === 0 && !cached.promise) {
+          if (
+            (cached.version === 0 && !cached.promise) ||
+            (cached.promise && prevController.signal.aborted)
+          ) {
             return handleEffect(anAsync, params, {
               effect: handlePromise(ctx, key, cached),
             })
