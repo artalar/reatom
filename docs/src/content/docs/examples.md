@@ -35,4 +35,17 @@ https://svelte.dev/repl/0613e23e6aa74246afad6d726d6c5a33?version=3.55.0
 
 ### Tree-like dependent reactive structure
 
-Nested checkboxes with indeterminate states could be realy hard and unoptimal in reactive context. This example shows the complex optimized model for tree-like structure, check [the model file](https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts)https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts.
+Nested checkboxes with indeterminate states could be realy hard and unoptimal in reactive context. This example shows the complex optimized model for tree-like structure, check [the model file](https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts) 
+
+https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts.
+
+### Managing notifications
+
+This example perfectly illustrates the benefits of [atomization](https://www.reatom.dev/guides/atomization/) and reusability within the Reatom ecosystem - [reatom/timer](https://www.reatom.dev/package/timer/).
+
+- **Domain-Oriented Code**: You don't need to normalize data, store states in separate lists, select and modify them by IDs. Instead, you can describe the entire logic in one factory, making it safer to create instances of your models. This significantly reduces and simplifies the code. While you can use classes, I prefer factories. 
+- **Isolated States**: Since states are highly isolated into atoms, they are also easy to use in the view layer. Take a look at App.tsx for an example.
+- **Versatile Use**: reatom/timer is not limited to [Pomodoro demos](https://codesandbox.io/s/reatom-react-pomodoro-f219zu?file=/src/App.tsx), it can be used to manage the progress of just about anything. It comes with settings for update frequency and pause control out of the box.
+- **A Nice Bonus**: The essence of atomization lies in state isolation, which is more performance-optimized compared to managing elements by recreating lists in Redux and Effector.
+
+https://codesandbox.io/p/sandbox/reatom-react-notifications-krs6sr?file=/src/model.ts
