@@ -1,4 +1,5 @@
 import {
+  Action,
   atom,
   createCtx,
   Ctx,
@@ -13,7 +14,7 @@ import { parseAtoms } from '@reatom/lens'
 declare type JSXElement = JSX.Element
 export type { JSXElement, JSX }
 
-type ElementTag = keyof JSX.HTMLElementTags | keyof JSX.SVGElementTags
+export type ElementTag = keyof JSX.HTMLElementTags | keyof JSX.SVGElementTags
 
 export type Component<Props> = (props: Props) => JSXElement
 
@@ -40,6 +41,47 @@ export const reatomJsx = (ctx: Ctx) => {
         }
       }
     })
+  }
+
+  let create = (tag: string, props: Rec) => {
+    let element =
+      tag === 'svg'
+        ? document.createElementNS('http://www.w3.org/2000/svg', tag)
+        : document.createElement(tag)
+
+    for (let k in props) {
+      if (k === 'children') continue
+      bindAttr(element, k, props[k])
+    }
+
+    render(element, props.children ?? [])
+
+    return element
+  }
+
+  const bindAttr = (element: any, key: any, val: any) => {
+    if (key === '$attrs') {
+      const recs = Array.isArray(val) ? val : [val]
+      for (const rec of recs) {
+        for (const k in rec) bindAttr(element, k, rec[k])
+      }
+    } else if (isAtom(val)) {
+      if (val.__reatom.isAction) {
+        element[key] = (...args: any) => (val as Action)(ctx, ...args)
+      } else {
+        // TODO handle unsubscribe!
+        var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
+          !un || element.isConnected ? renderAttr(element, key, val) : un(),
+        )
+        unlink(element, un)
+      }
+    } else renderAttr(element, key, val)
+  }
+
+  const renderAttr = (element: any, key: any, val: any) => {
+    if (key === 'style') {
+      for (const style in val) element.style.setProperty(style, val[style])
+    } else element[key] = val
   }
 
   let render = (parent: Element, children: JSXElement[]) => {
@@ -82,47 +124,22 @@ export const reatomJsx = (ctx: Ctx) => {
     children.forEach(walk)
   }
 
-  let h = ((tag: any, props: Rec, ...children: any[]) => {
+  let h = ((tag: any, props: Rec, ...children: JSXElement[]) => {
     if (tag === hf) return children
 
+    props.children = children
+
     if (typeof tag === 'function') {
-      ;(props ??= {}).children = children
       return tag(props)
     }
 
-    let element =
-      tag === 'svg'
-        ? document.createElementNS('http://www.w3.org/2000/svg', tag)
-        : document.createElement(tag)
-
-    for (let k in props) {
-      let prop = props[k]
-      if (isAtom(prop)) {
-        if (prop.__reatom.isAction) {
-          element[k] = (...a: any[]) => prop(ctx, ...a)
-        } else {
-          // TODO handle unsubscribe!
-          var un: undefined | Unsubscribe = ctx.subscribe(prop, (v) =>
-            !un || element.isConnected ? (element[k] = v) : un(),
-          )
-
-          unlink(element, un)
-        }
-      } else {
-        element[k] = prop
-      }
-    }
-
-    render(element, children)
-
-    return element
+    return create(tag, props)
   }) as <T extends ComponentLike>(
     tag: T,
     props: InferProps<T>,
     ...children: JSXElement[]
   ) => Element
 
-  /** Fragment */
   let hf = noop
 
   let mount = (target: Element, child: JSXElement) => {
@@ -144,8 +161,8 @@ export const reatomJsx = (ctx: Ctx) => {
     })
   }
 
-  return { h, hf, mount }
+  return { h, hf, mount, create }
 }
 
 export const ctx = createCtx()
-export const { h, hf, mount } = reatomJsx(ctx)
+export const { h, hf, mount, create } = reatomJsx(ctx)

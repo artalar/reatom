@@ -110,6 +110,7 @@ export namespace JSX {
       OnAttributes<T>,
       OnCaptureAttributes<T>, */
     extends CustomEventHandlers<T> {
+    $attrs?: Atom<this | this[]>
     children?: Element
     innerHTML?: string
     innerText?: string | number
