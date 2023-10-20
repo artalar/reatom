@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/jsx-v3.5.0...jsx-v3.6.0) (2023-10-20)
+
+
+### Features
+
+* **jsx:** support 'style' and 'styles' props ([#674](https://github.com/artalar/reatom/issues/674)) ([a3ad7d8](https://github.com/artalar/reatom/commit/a3ad7d8a5407635b876869ba5b9ab097a0f6835e))
+
+
+### Bug Fixes
+
+* **jsx:** fix $attrs ([#681](https://github.com/artalar/reatom/issues/681)) ([d21daa1](https://github.com/artalar/reatom/commit/d21daa1fed6f26d61afccb6d546773f866ffcf84))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/jsx-v3.4.0...jsx-v3.5.0) (2023-10-09)
 
 

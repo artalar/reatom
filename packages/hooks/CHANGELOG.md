@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.3](https://github.com/artalar/reatom/compare/hooks-v3.4.2...hooks-v3.4.3) (2023-10-20)
+
+
+### Bug Fixes
+
+* **hooks:** do not change onConnect promise caught behavior ([3754d73](https://github.com/artalar/reatom/commit/3754d73a8c312ef300b8569dc1d415fa7a462488))
+
 ## [3.4.2](https://github.com/artalar/reatom/compare/hooks-v3.4.1...hooks-v3.4.2) (2023-06-12)
 
 

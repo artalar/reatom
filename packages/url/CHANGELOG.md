@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/url-v3.3.1...url-v3.4.0) (2023-10-20)
+
+
+### Features
+
+* **url:** add SearchParamsAtom.del and persist refactor ([af86da3](https://github.com/artalar/reatom/commit/af86da339cf0ba864eec9d074aa9f8b14c403fd2))
+
 ## [3.3.1](https://github.com/artalar/reatom/compare/url-v3.3.0...url-v3.3.1) (2023-10-09)
 
 
