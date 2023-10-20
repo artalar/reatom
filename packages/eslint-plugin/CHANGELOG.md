@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.3](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.2...eslint-plugin-v3.4.3) (2023-10-20)
+
+
+### Bug Fixes
+
+* **lens:** match default case ([27061af](https://github.com/artalar/reatom/commit/27061af1ac338f5223190d110cf6e090d884e203))
+
 ## [3.4.2](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.1...eslint-plugin-v3.4.2) (2023-10-10)
 
 
