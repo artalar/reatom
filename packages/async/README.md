@@ -637,7 +637,7 @@ const reatomResource = (initState, url, concurrent = true) => {
 
 Check the real-world example in pooling example from [story tests below](https://www.reatom.dev/package/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
 
-## reatomAsyncReaction
+## reatomResource
 
 This method is the simplest solution to describe an asynchronous resource that is based on local states. Let's delve into the problem.
 
@@ -660,12 +660,12 @@ onConnect(fetchList.dataAtom, (ctx) => fetchList(ctx, ctx.get(pageAtom)))
 pageAtom.onChange(fetchSuggestion) // trigger
 ```
 
-`reatomAsyncReaction` allows us to use `ctx.spy` just like in the regular `atom`. It is much simpler, more obvious, and works automatically for both caching and previous request cancellation.
+`reatomResource` allows us to use `ctx.spy` just like in the regular `atom`. It is much simpler, more obvious, and works automatically for both caching and previous request cancellation.
 
 ```ts
-import { reatomAsyncReaction } from '@reatom/async'
+import { reatomResource } from '@reatom/async'
 
-const listReaction = reatomAsyncReaction(async (ctx) => {
+const listReaction = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   return request(`/api/list?page=${page}`, ctx.controller)
 }, 'listReaction')
@@ -675,19 +675,23 @@ Now, `listReaction` has a `promiseAtom` that you can use with [useAtomPromise](h
 
 If you need to set up a default value and have the ability to use the resulting data, simply use `withDataAtom` as you would with any other async action.
 
-But that's not all! The most powerful feature of `reatomAsyncReaction` is that you can use one `promiseAtom` in another, which greatly simplifies dependent request descriptions and prevents complex race conditions, as the stale promises are always automatically canceled.
+But that's not all! The most powerful feature of `reatomResource` is that you can use one `promiseAtom` in another, which greatly simplifies dependent request descriptions and prevents complex race conditions, as the stale promises are always automatically canceled.
 
 ```ts
-import { reatomAsyncReaction } from '@reatom/async'
+import { reatomResource } from '@reatom/async'
 
-const aReaction = reatomAsyncReaction(async (ctx) => {
+const aReaction = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   return request(`/api/a?page=${page}`, ctx.controller)
 }, 'aReaction')
-const bReaction = reatomAsyncReaction(async (ctx) => {
+const bReaction = reatomResource(async (ctx) => {
   const a = ctx.spy(aReaction.promiseAtom)
   return request(`/api/b?a=${a}`, ctx.controller)
 }, 'bReaction')
 ```
 
 In this example, `bReaction.pendingAtom` will be updated immediately as `aReaction` starts fetching!
+
+## reatomAsyncReaction
+
+> Deprecated: use [reatomResource](#reatomresource) instead
