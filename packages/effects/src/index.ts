@@ -8,7 +8,14 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { AbortError, isAbort, merge, noop, toAbortError } from '@reatom/utils'
+import {
+  AbortError,
+  isAbort,
+  merge,
+  noop,
+  throwIfAborted,
+  toAbortError,
+} from '@reatom/utils'
 
 export class CauseContext<T> extends WeakMap<AtomCache, T> {
   has(cause: AtomCache): boolean {
@@ -220,24 +227,39 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
   const { schedule } = ctx
 
   return merge(ctx, {
-    schedule(...a: Parameters<typeof schedule>) {
+    schedule(
+      this: Ctx,
+      cb: Parameters<typeof schedule>[0],
+      step?: Parameters<typeof schedule>[1],
+    ) {
       let resolve: Fn
       let reject: Fn
       const promise = new Promise((res, rej) => {
         resolve = res
         reject = rej
       })
-      schedule
-        .apply(this, a)
-        .then(resolve!, reject!)
-        .finally(
-          // unsubscribe from the abort if the promise is resolved
-          onCtxAbort(ctx, (error) => {
-            // prevent unhandled error for abort
-            promise.catch(noop)
+      // do not wait the effect if the abort occurs
+      const unabort = onCtxAbort(ctx, (error) => {
+        // prevent unhandled error for abort
+        promise.catch(noop)
+        reject(error)
+      })
+      schedule.call(
+        this,
+        async (_ctx) => {
+          const controller = getTopController(this.cause)
+          try {
+            throwIfAborted(controller)
+            const value = await cb(_ctx)
+            throwIfAborted(controller)
+            resolve(value)
+          } catch (error) {
             reject(error)
-          }),
-        )
+          }
+          unabort?.()
+        },
+        step,
+      )
 
       return promise
     },
