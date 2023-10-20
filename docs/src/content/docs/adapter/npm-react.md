@@ -271,14 +271,14 @@ export const MyForm = () => {
 
 ## Use atom promise
 
-If you have an atom with a promise and want to use its value directly, you could use `useAtomPromise`. This function relies on [React Suspense](https://react.dev/reference/react/Suspense) and throws the promise until it resolves. It can be useful with [reatomAsyncReaction](/package/async/#reatomasyncreaction).
+If you have an atom with a promise and want to use its value directly, you could use `useAtomPromise`. This function relies on [React Suspense](https://react.dev/reference/react/Suspense) and throws the promise until it resolves. It can be useful with [reatomResource](/package/async/#reatomresource).
 
 ```tsx
-import { atom, reatomAsyncReaction } from '@reatom/framework'
+import { atom, reatomResource } from '@reatom/framework'
 import { useAtom, useAction, useAtomPromise } from '@reatom/npm-react'
 
 const pageAtom = atom(1, 'pageAtom')
-const listReaction = reatomAsyncReaction(async (ctx) => {
+const listReaction = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   const response = await ctx.schedule(() => fetch(`/api/list?page=${page}`))
   if (!response.ok) throw new Error(response.statusText)

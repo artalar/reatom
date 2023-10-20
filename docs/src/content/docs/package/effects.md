@@ -40,19 +40,28 @@ Two important notes.
 
 ### take
 
-Allow you to wait an atom update.
+This is the simplest and most powerful API that allows you to wait for an atom update, which is useful for describing certain procedures. It is a shortcut for subscribing to the atom and unsubscribing after the first update. `take` respects the main Reatom abort context and will throw `AbortError` when the abort occurs. This allows you to describe redux-saga-like procedural logic in synchronous code style with native async/await.
 
 ```ts
+import { action } from '@reatom/core'
 import { take } from '@reatom/effects'
 
-const currentCount = ctx.get(countAtom)
-const nextCount = await take(ctx, countAtom)
+export const validateBeforeSubmit = action(async (ctx) => {
+  let errors = validate(ctx.get(formDataAtom))
+
+  while (Object.keys(errors).length) {
+    formDataAtom.errorsAtom(ctx, errors)
+    // wait any field change
+    await take(ctx, formDataAtom)
+    // recheck validation
+    errors = validate(ctx.get(formDataAtom))
+  }
+})
 ```
 
-You could await actions too!
+You can also await actions!
 
 ```ts
-// ~/features/someForm.ts
 import { take } from '@reatom/effects'
 import { onConnect } from '@reatom/hooks'
 import { historyAtom } from '@reatom/npm-history'
@@ -61,7 +70,7 @@ import { confirmModalAtom } from '~/features/modal'
 // some model logic, doesn't matter
 export const formAtom = reatomForm(/* ... */)
 
-onConnect(form, (ctx) => {
+onConnect(formAtom, (ctx) => {
   // "history" docs: https://github.com/remix-run/history/blob/main/docs/blocking-transitions.md
   const unblock = historyAtom.block(ctx, async ({ retry }) => {
     if (!ctx.get(formAtom).isSubmitted && !ctx.get(confirmModalAtom).opened) {
@@ -76,6 +85,36 @@ onConnect(form, (ctx) => {
     }
   })
 })
+```
+
+#### take filter
+
+You can pass the third argument to map the update to the required format.
+
+```ts
+const input = await take(ctx, onChange, (ctx, event) => event.target.value)
+```
+
+More than that, you can filter unneeded updates by returning the `skip` mark from the first argument of your callback.
+
+```ts
+const input = await take(ctx, onChange, (ctx, event, skip) => {
+  const { value } = event.target
+  return value.length < 6 ? skip : value
+})
+```
+
+The cool feature of this skip mark is that it helps TypeScript understand the correct type of the returned value, which is hard to achieve with the extra "filter" function. If you have a union type, you could receive the needed data with the correct type easily. It just works.
+
+```ts
+const someRequest = reatomRequest<{ data: Data } | { error: string }>()
+```
+
+```ts
+// type-safe destructuring
+const { data } = await take(ctx, someRequest, (ctx, payload, skip) =>
+  'error' in payload ? skip : payload,
+)
 ```
 
 ### takeNested
