@@ -43,39 +43,48 @@ export const reatomJsx = (ctx: Ctx) => {
     })
   }
 
-  let create = (tag: string, props: Rec) => {
+  let create = (tag: string, attrs: Rec) => {
     let element =
       tag === 'svg'
         ? document.createElementNS('http://www.w3.org/2000/svg', tag)
         : document.createElement(tag)
 
-    for (let k in props) {
-      if (k === 'children') continue
-      bindAttr(element, k, props[k])
-    }
+    bindAttrs(element, attrs)
 
-    render(element, props.children ?? [])
+    render(element, attrs.children ?? [])
 
     return element
   }
 
-  const bindAttr = (element: any, key: any, val: any) => {
-    if (key === '$attrs') {
-      const recs = Array.isArray(val) ? val : [val]
-      for (const rec of recs) {
-        for (const k in rec) bindAttr(element, k, rec[k])
-      }
-    } else if (isAtom(val)) {
-      if (val.__reatom.isAction) {
-        element[key] = (...args: any) => (val as Action)(ctx, ...args)
-      } else {
-        // TODO handle unsubscribe!
-        var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
-          !un || element.isConnected ? renderAttr(element, key, val) : un(),
-        )
-        unlink(element, un)
-      }
-    } else renderAttr(element, key, val)
+  const bindAttrs = (element: Element, attrs: Rec) => {
+    for (const key in attrs) {
+      if (key === 'children') continue
+      const val = attrs[key]
+
+      if (key === '$attrs') {
+        for (const attrs of Array.isArray(val) ? val : []) {
+          if (isAtom(attrs)) {
+            var u = ctx.subscribe(attrs, (attrs): void =>
+              !u || element.isConnected
+                ? bindAttrs(element, attrs as Rec)
+                : u(),
+            )
+            unlink(element, u)
+          } else bindAttrs(element, attrs)
+        }
+      } else if (isAtom(val)) {
+        if (val.__reatom.isAction) {
+          ;(element as any)[key] = (...args: any) =>
+            (val as Action)(ctx, ...args)
+        } else {
+          // TODO handle unsubscribe!
+          var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
+            !un || element.isConnected ? renderAttr(element, key, val) : un(),
+          )
+          unlink(element, un)
+        }
+      } else renderAttr(element, key, val)
+    }
   }
 
   const renderAttr = (element: any, key: any, val: any) => {
