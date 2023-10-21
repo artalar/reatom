@@ -274,43 +274,28 @@ export const User = ({ user }: { user: User }) => {
 
 ## `match`
 
-Creates an atom that depending on some condition, which can be an atom too. Useful for describing UIs with [`@reatom/jsx`](https://www.reatom.dev/package/jsx).
+Creates an atom that depending on some condition or data patterns, which can be an atom too. Useful for describing UIs with [`@reatom/jsx`](https://www.reatom.dev/package/jsx) or any other renderers. Here is the example of routing description from [the base template](https://github.com/artalar/reatom-react-ts) (Vite, TypeScript, React, Reatom).
 
 ```ts
-const num = atom(0, 'num')
-const by3 = atom((ctx) => ctx.spy(num) % 3 === 0, 'by3')
-const by5 = atom((ctx) => ctx.spy(num) % 5 === 0, 'by5')
-
-const failMessage = atom(
-  (ctx) => `${ctx.spy(num)} is not divisible by 3 nor by 5`,
-)
-
-const message = match(
-  by3,
-  'Divisible by 3',
-  match(
-    by5, //
-    'Not divisible by 3 but divisible by 5',
-    failMessage,
-  ),
-)
-```
-
-### `match` JSX example
-
-```tsx
-export function Dashboard({ user }: { user: Atom<User | null> }) {
-  return match(
-    user,
-    atom((ctx) => <div>Dashboard content</div>),
-    atom((ctx) => <AuthRedirect />),
+export const routes = match(isLoggedAtom)
+  .default(() => <Auth />)
+  .truthy(
+    match((ctx) => ctx.spy(urlAtom).pathname)
+      .is('/me', () => <Profile />)
+      .default(() => <Home />),
   )
-}
 ```
+
+You can call `match` with any primitive value, computed function, or existing atom. The returned atom depends on the initial expression and contains the `undefined` state by default. To add handlers and complete the state type, use chain methods. Each chain mutates the original atoms. It is a good practice to use it in the same place where atom was created.
+
+- `default` for replacing `undefined` fallback state
+- `is` for strict comparison
+- `truthy` ([MDN](https://developer.mozilla.org/en-US/docs/Glossary/Truthy)) and `falsy` ([MDN](https://developer.mozilla.org/en-US/docs/Glossary/Falsy)) for empty things handling
+- `with` structural handling
 
 ## `bind`
 
-Bind context to stable function.
+Bind action or atom update function with passed callback.
 
 ```ts
 import { action, createCtx } from '@reatom/core'
@@ -323,9 +308,6 @@ export handleSome = bind(ctx, doSome)
 
 handleSome(123)
 // 123
-
-bind(ctx, doSome) === bind(ctx, doSome)
-// true
 ```
 
 ## `withReset`
