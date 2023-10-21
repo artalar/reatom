@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/hooks-v3.4.3...hooks-v3.5.0) (2023-10-21)
+
+
+### Features
+
+* **hooks:** add isInit method ([5138685](https://github.com/artalar/reatom/commit/51386857231c036534596df0bd63b6240a30454a))
+
 ## [3.4.3](https://github.com/artalar/reatom/compare/hooks-v3.4.2...hooks-v3.4.3) (2023-10-20)
 
 
