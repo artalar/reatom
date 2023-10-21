@@ -250,7 +250,7 @@ export const reatomComponent = <T>(
               ...ctx,
               cause: {
                 ...ctx.cause,
-                cause: ctx.get((read) => read(__root)!.cause),
+                cause: ctx.get((read) => read(__root)!),
               },
             }
             ctx.bind = (fn) => bind(ctx, fn)
