@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.1](https://github.com/artalar/reatom/compare/npm-react-v3.7.0...npm-react-v3.7.1) (2023-10-21)
+
+
+### Bug Fixes
+
+* **npm-react:** reatomComponent wrong cause ([0f4a714](https://github.com/artalar/reatom/commit/0f4a71420645ff32efbbf223c685967ce1fe0654))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/npm-react-v3.6.1...npm-react-v3.7.0) (2023-10-20)
 
 
