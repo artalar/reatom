@@ -4,6 +4,7 @@ import {
   atom,
   Atom,
   AtomCache,
+  AtomProto,
   AtomState,
   Ctx,
   CtxSpy,
@@ -46,7 +47,10 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: Fn<[Ctx & { controller: AbortController; isConnected(): boolean }], (() => void) | unknown>,
+  cb: Fn<
+    [Ctx & { controller: AbortController; isConnected(): boolean }],
+    (() => void) | unknown
+  >,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
     const controller = new AbortController()
@@ -124,13 +128,16 @@ const _onUpdate: {
 }
 
 export const onUpdate: typeof _onUpdate = (anAtom: Atom, cb = noop) =>
-  ((anAtom as Atom & { deps?: Array<Atom> }).deps ?? []).reduce((acc, dep) => {
-    const un = onUpdate(dep, (ctx) => ctx.get(anAtom))
-    return () => {
-      un()
-      acc()
-    }
-  }, _onUpdate(anAtom, cb) as Unsubscribe)
+  ((anAtom as Atom & { deps?: Array<Atom> }).deps ?? []).reduce(
+    (acc, dep) => {
+      const un = onUpdate(dep, (ctx) => ctx.get(anAtom))
+      return () => {
+        un()
+        acc()
+      }
+    },
+    _onUpdate(anAtom, cb) as Unsubscribe,
+  )
 
 /** @deprecated use the second parameter of `ctx.spy` instead */
 // @ts-ignore
@@ -182,3 +189,12 @@ export const isConnected = (ctx: Ctx, { __reatom: proto }: Atom) =>
     const cache = proto.patch ?? read(proto)
     return !!cache && cache.subs.size + cache.listeners.size > 0
   })
+
+const initSetAtom = atom(
+  (ctx, state = new WeakSet<AtomProto>()) => state,
+  'initSetAtom',
+)
+export const isInit = (ctx: Ctx) => {
+  const set = ctx.get(initSetAtom)
+  return set.has(ctx.cause.proto) ? false : !!set.add(ctx.cause.proto)
+}
