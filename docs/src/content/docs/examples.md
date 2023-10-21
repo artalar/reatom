@@ -3,6 +3,12 @@ title: Examples
 description: Complex examples of Reatom state manager
 ---
 
+### Base template
+
+Vite, TypeScript, React and Reatom ecosystem, a good start point: https://github.com/artalar/reatom-react-ts/blob/main/src/features/model.ts
+
+Try it now: [codesandbox](https://codesandbox.io/p/sandbox/github/artalar/reatom-react-ts/tree/main), [stackblitz](https://githubblitz.com/artalar/reatom-react-ts), [gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
+
 ### Data fetching and React
 
 https://codesandbox.io/s/reatomasync-9t0x42?file=/src/model.ts
