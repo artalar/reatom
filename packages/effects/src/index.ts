@@ -1,5 +1,4 @@
 import {
-  atom,
   Atom,
   AtomCache,
   AtomProto,
@@ -272,13 +271,4 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
       return promise
     },
   })
-}
-
-const initSetAtom = atom(
-  (ctx, state = new WeakSet<AtomProto>()) => state,
-  'initSetAtom',
-)
-export const isInit = (ctx: Ctx) => {
-  const set = ctx.get(initSetAtom)
-  return set.has(ctx.cause.proto) ? false : !!set.add(ctx.cause.proto)
 }
