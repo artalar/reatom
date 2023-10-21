@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/npm-react-v3.6.1...npm-react-v3.7.0) (2023-10-20)
+
+
+### Features
+
+* **async:** deprecate reatomAsyncReaction in favor of reatomReactiveAsync ([678adf2](https://github.com/artalar/reatom/commit/678adf2b337b6a895f94e5997739274822332c4f))
+
+
+### Bug Fixes
+
+* **npm-react:** drop ctx.cause.cause for reatomComponent ([5227f3d](https://github.com/artalar/reatom/commit/5227f3ddd3eb70c777dbd3d8279300d5e1e61f1f))
+
 ## [3.6.1](https://github.com/artalar/reatom/compare/npm-react-v3.6.0...npm-react-v3.6.1) (2023-09-15)
 
 

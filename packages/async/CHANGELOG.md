@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.10.0](https://github.com/artalar/reatom/compare/async-v3.9.4...async-v3.10.0) (2023-10-20)
+
+
+### Features
+
+* **async:** deprecate reatomAsyncReaction in favor of reatomReactiveAsync ([678adf2](https://github.com/artalar/reatom/commit/678adf2b337b6a895f94e5997739274822332c4f))
+
+
+### Bug Fixes
+
+* **async:** do not cache aborted promise ([1b6fbe8](https://github.com/artalar/reatom/commit/1b6fbe83ae10a0b170996a16c272a1783d77cb39))
+
 ## [3.9.4](https://github.com/artalar/reatom/compare/async-v3.9.3...async-v3.9.4) (2023-10-09)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@reatom/url",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for url",
