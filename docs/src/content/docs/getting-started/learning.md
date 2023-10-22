@@ -55,7 +55,7 @@ const cQuadrupledAtom = atom((ctx) => 2 * ctx.spy(cDoubledAtom), 'cQuadrupledAto
 ```
 
 ### Some notes about atoms
-1. Atoms store things by reference. Just like props and useState in react **TODO example**.
+1. Atoms store things by reference. Just like props and useState in react.
 2. Computed atoms should be pure functions. You can't know how many times they will be called. But reatom will try to keep call count as small as possible.
 3. Computed atoms do not compute if no one depend on them or subscribed on them. There's no need to do work that no one will use!
 4. If you need previous state to update some atom use update callback:

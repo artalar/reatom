@@ -66,4 +66,4 @@ Reatom 1 transaction
  - cause - describe why this update happens, why trigger it
  - history - atom values that was before update
 
-More complex example you can find in [@reatom/logger] package documentation
+More complex example you can find in [@reatom/logger](/package/logger) package documentation

@@ -264,6 +264,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"contributing.md": {
+	id: "contributing.md";
+  slug: "contributing";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "core.md": {
 	id: "core.md";
   slug: "core";
@@ -491,6 +498,13 @@ declare module 'astro:content' {
 "package/web.md": {
 	id: "package/web.md";
   slug: "package/web";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/atomization.md": {
+	id: "recipes/atomization.md";
+  slug: "recipes/atomization";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

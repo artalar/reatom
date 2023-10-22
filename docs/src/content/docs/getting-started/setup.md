@@ -94,7 +94,7 @@ Example of customizing rules:
 }
 ```
 
-More examples you can found in [@reatom/eslint-plugin package documentation](https://www.reatom.dev/package/eslint-plugin/)
+More examples you can found in [@reatom/eslint-plugin](/package/eslint-plugin/) package documentation
 
 ### With React
 
@@ -208,7 +208,7 @@ const Greeting = () => {
 ```
 
 
-This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react package documentation](/package/npm-react/)
+This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react](/package/npm-react/) package documentation]
 
 
 <!--

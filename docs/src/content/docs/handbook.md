@@ -18,9 +18,9 @@ Need a fast start? Here is a list of key topics:
 - `@reatom/core` provides basic primitives to build anything. Just put your state in the `atom` and your logic in the `action`.
 - All data changes should be immutable, like in React or Redux.
 - `ctx` is needed for better debugging, simple tests, and SSR setup.
-- [@reatom/async](https://www.reatom.dev/package/async/) will help you manage network state.
+- [@reatom/async](/package/async/) will help you manage network state.
 - There are many other helpful packages, check the **Packages** section in the sidebar.
-- [@reatom/eslint-plugin](https://www.reatom.dev/package/eslint-plugin/) will automatically add debug names to your code, and [@reatom/logger](https://www.reatom.dev/package/logger/) will print useful logs to your console.
+- [@reatom/eslint-plugin](/package/eslint-plugin/) will automatically add debug names to your code, and [@reatom/logger](/package/logger/) will print useful logs to your console.
 
 ## Installation
 
@@ -38,7 +38,7 @@ The final non-general part of the installation script is a bindings package, dep
 npm i @reatom/framework @reatom/testing @reatom/eslint-plugin @reatom/npm-react
 ```
 
-A note about the ecosystem: all packages that start with "@reatom/" are built and maintained in [the monorepo](https://github.com/artalar/reatom). This approach allows us to have precise control over the compatibility and stability of all packages, even with minor releases. If you want to contribute a new package, feel free to follow [the contributing guide](https://www.reatom.dev/guides/contributing/). We have a `package-generator` script that will bootstrap a template for a new package, and all we require from your side are the sources, tests, and a piece of docs ;)
+A note about the ecosystem: all packages that start with "@reatom/" are built and maintained in [the monorepo](https://github.com/artalar/reatom). This approach allows us to have precise control over the compatibility and stability of all packages, even with minor releases. If you want to contribute a new package, feel free to follow [the contributing guide](/contributing/). We have a `package-generator` script that will bootstrap a template for a new package, and all we require from your side are the sources, tests, and a piece of docs ;)
 
 ## Reactivity
 

@@ -61,6 +61,10 @@ export default defineConfig({
             collapsed: true,
           },
         },
+        {
+          label: 'Contributing',
+          link: 'contributing',
+        },
       ],
     }),
   ],

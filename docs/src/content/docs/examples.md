@@ -31,7 +31,7 @@ https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx
 
 ### Dynamic atom creation
 
-This example shoes how to use [atomization](https://www.reatom.dev/guides/atomization) to improve editable fields performance, persists it to localStorage.
+This example shoes how to use [atomization](/recipes/atomization/) to improve editable fields performance, persists it to localStorage.
 
 https://codesandbox.io/s/reatom-react-atomization-k39vrs?file=/src/App.tsx
 
@@ -47,7 +47,7 @@ https://github.com/artalar/reatom-react-tree/blob/main/src/model.ts.
 
 ### Managing notifications
 
-This example perfectly illustrates the benefits of [atomization](https://www.reatom.dev/guides/atomization/) and reusability within the Reatom ecosystem - [reatom/timer](https://www.reatom.dev/package/timer/).
+This example perfectly illustrates the benefits of [atomization](/recipes/atomization/) and reusability within the Reatom ecosystem - [reatom/timer](/package/timer/).
 
 - **Domain-Oriented Code**: You don't need to normalize data, store states in separate lists, select and modify them by IDs. Instead, you can describe the entire logic in one factory, making it safer to create instances of your models. This significantly reduces and simplifies the code. While you can use classes, I prefer factories. 
 - **Isolated States**: Since states are highly isolated into atoms, they are also easy to use in the view layer. Take a look at App.tsx for an example.
