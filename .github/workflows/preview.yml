@@ -1,0 +1,49 @@
+name: preview
+
+on:
+  pull_request:
+    branches: [v3]
+    
+jobs:
+  # build:
+  # uses: ./.github/workflows/build.yml
+  # test:
+  #   uses: ./.github/workflows/test.yml
+  lint:
+    uses: ./.github/workflows/format-check.yml
+  # preview:
+  #   needs: [test, lint]
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       node-version: [18.13.0]
+  #   env:
+  #     VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  #     VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Use Node.js ${{ matrix.node-version }}
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: ${{ matrix.node-version }}
+  #     - name: Install pnpm
+  #       run: npm install -g pnpm
+  #     - name: Install Vercel CLI
+  #       run: npm install --global vercel@latest
+  #     - name: Pull Vercel Environment Information
+  #       run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+  #     - name: Build Project Artifacts
+  #       run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+  #     - name: Deploy Project Artifacts to Vercel
+  #       run: |
+  #         vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} >> preview-url.txt
+  #         echo PREVIEW_URL=$(cat preview-url.txt) >> $GITHUB_ENV
+  #     - uses: actions/github-script@v3
+  #       with:
+  #         script: |
+  #           github.issues.createComment({
+  #             issue_number: context.issue.number,
+  #             owner: context.repo.owner,
+  #             repo: context.repo.repo,
+  #             body: 'The preview URL is: ${{ env.PREVIEW_URL }}'
+  #           });

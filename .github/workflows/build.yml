@@ -1,0 +1,23 @@
+name: Build
+
+on: workflow_call
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    container:
+      image: node:18.15.0-alpine
+    steps:
+      - uses: actions/checkout@v2
+      # TODO: Move to turbo cache
+      # - name: Cache dependencies
+      #   uses: actions/cache@v2
+      #   env:
+      #     cache-name: npm-${{ hashFiles('package-lock.json') }}
+      #   with:
+      #     path: ~/.npm
+      #     key: ${{ env.cache-name }}
+      #     restore-keys: ${{ env.cache-name }}
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
