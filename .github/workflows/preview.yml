@@ -1,7 +1,7 @@
 name: preview
 
 on:
-  pull_request:
+  pull_request_target:
     branches: [v3]
 
 jobs:
