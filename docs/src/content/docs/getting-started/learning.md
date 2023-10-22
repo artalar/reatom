@@ -47,7 +47,7 @@ console.log(ctx.get(aAtom), ctx.get(bAtom), ctx.get(cAtom))
 
 In this example we defined 2 simple atoms (`aAtom` and `bAtom`) and one computed atom `cAtom` that spies on it's dependencies.
 The reactivity system enables us to compute values and also does not call subscribe callback when none of source atoms changed.
-Morover we can spy on any atom that enables us to make dependency trees like this:
+Moreover we can spy on any atom that enables us to make dependency trees like this:
 
 ```typescript
 const cDoubledAtom = atom((ctx) => 2 * ctx.spy(cAtom), 'cDoubledAtom')

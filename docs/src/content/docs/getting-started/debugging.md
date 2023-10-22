@@ -61,7 +61,37 @@ Reatom 1 transaction
 │  └─ time: 275.96
 └─ 48
  ```
- 
-Here we can see that the translation started with a direct update of the `counterAtom` atom.
-His state changed from 0 to 24. This update triggers doubledAtom update (cause: "<-- counterAtom").
-The `time` parameter show ???
+ Records comes in pairs: atom and new state value.
+ Under atom name record you can found few properties:
+ - cause - describe why this update happens, why trigger it
+ - history - atom values that was before update
+
+Let's look at more complex example ([live](https://stackblitz.com/edit/github-dagxch-1aynbc?file=src%2FApp.tsx))
+
+```tsx
+const productAtom = atom(null)
+
+const loadProduct = action(async (ctx) => {
+  const res = await fetch('https://dummyjson.com/products/3')
+  const product = await res.json()
+  productAtom(ctx, product)
+})
+
+export const App = () => {
+  const [product] = useAtom(productAtom)
+  const onClick = useAction(loadProduct)
+  return (
+    <main>
+     { product ? <ProductCard>{product}</ProductCard> : <button onClick={onClick}>Load product</button>  }
+    </main>
+  )
+}
+
+const ProductCard = ({ children: p }) => {
+  return <div>
+    <img src={p.thumbnail}></img>
+        <h2>{p.title}</h2>
+        <p>{p.description}</p>
+    </div>
+}
+```
