@@ -47,7 +47,7 @@ export default defineConfig({
         {
           label: 'Packages',
           autogenerate: {
-            directory: 'packages',
+            directory: 'package',
           },
         },
         {

@@ -201,7 +201,6 @@ declare module 'astro:content' {
 
 	type ContentEntryMap = {
 		"docs": {
-<<<<<<< HEAD
 "adapter/npm-cookie-baker.md": {
 	id: "adapter/npm-cookie-baker.md";
   slug: "adapter/npm-cookie-baker";
@@ -237,8 +236,6 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-=======
->>>>>>> 2505f77 (docs: fix build after re-arrange)
 "compat/core-v1.md": {
 	id: "compat/core-v1.md";
   slug: "compat/core-v1";
@@ -330,77 +327,97 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/async.md": {
-	id: "packages/async.md";
-  slug: "packages/async";
+"package/async.md": {
+	id: "package/async.md";
+  slug: "package/async";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/effects.md": {
-	id: "packages/effects.md";
-  slug: "packages/effects";
+"package/effects.md": {
+	id: "package/effects.md";
+  slug: "package/effects";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/eslint-plugin.md": {
-	id: "packages/eslint-plugin.md";
-  slug: "packages/eslint-plugin";
+"package/eslint-plugin.md": {
+	id: "package/eslint-plugin.md";
+  slug: "package/eslint-plugin";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/form-web.md": {
-	id: "packages/form-web.md";
-  slug: "packages/form-web";
+"package/form-web.md": {
+	id: "package/form-web.md";
+  slug: "package/form-web";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/form.md": {
-	id: "packages/form.md";
-  slug: "packages/form";
+"package/form.md": {
+	id: "package/form.md";
+  slug: "package/form";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/framework.md": {
-	id: "packages/framework.md";
-  slug: "packages/framework";
+"package/framework.md": {
+	id: "package/framework.md";
+  slug: "package/framework";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/hooks.md": {
-	id: "packages/hooks.md";
-  slug: "packages/hooks";
+"package/hooks.md": {
+	id: "package/hooks.md";
+  slug: "package/hooks";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/jsx.md": {
-	id: "packages/jsx.md";
-  slug: "packages/jsx";
+"package/jsx.md": {
+	id: "package/jsx.md";
+  slug: "package/jsx";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/lens.md": {
-	id: "packages/lens.md";
-  slug: "packages/lens";
+"package/lens.md": {
+	id: "package/lens.md";
+  slug: "package/lens";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/logger.md": {
-	id: "packages/logger.md";
-  slug: "packages/logger";
+"package/logger.md": {
+	id: "package/logger.md";
+  slug: "package/logger";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-<<<<<<< HEAD
+"package/npm-cookie-baker.md": {
+	id: "package/npm-cookie-baker.md";
+  slug: "package/npm-cookie-baker";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-history.md": {
+	id: "package/npm-history.md";
+  slug: "package/npm-history";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-react.md": {
+	id: "package/npm-react.md";
+  slug: "package/npm-react";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "package/npm-solid-js.md": {
 	id: "package/npm-solid-js.md";
   slug: "package/npm-solid-js";
@@ -408,98 +425,72 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"package/npm-svelte.md": {
+	id: "package/npm-svelte.md";
+  slug: "package/npm-svelte";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "package/persist-web-storage.md": {
 	id: "package/persist-web-storage.md";
   slug: "package/persist-web-storage";
-=======
-"packages/npm-cookie-baker.md": {
-	id: "packages/npm-cookie-baker.md";
-  slug: "packages/npm-cookie-baker";
->>>>>>> 2505f77 (docs: fix build after re-arrange)
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/npm-history.md": {
-	id: "packages/npm-history.md";
-  slug: "packages/npm-history";
+"package/persist.md": {
+	id: "package/persist.md";
+  slug: "package/persist";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/npm-react.md": {
-	id: "packages/npm-react.md";
-  slug: "packages/npm-react";
+"package/primitives.md": {
+	id: "package/primitives.md";
+  slug: "package/primitives";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/npm-svelte.md": {
-	id: "packages/npm-svelte.md";
-  slug: "packages/npm-svelte";
+"package/testing.md": {
+	id: "package/testing.md";
+  slug: "package/testing";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/persist-web-storage.md": {
-	id: "packages/persist-web-storage.md";
-  slug: "packages/persist-web-storage";
+"package/timer.md": {
+	id: "package/timer.md";
+  slug: "package/timer";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/persist.md": {
-	id: "packages/persist.md";
-  slug: "packages/persist";
+"package/undo.md": {
+	id: "package/undo.md";
+  slug: "package/undo";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/primitives.md": {
-	id: "packages/primitives.md";
-  slug: "packages/primitives";
+"package/url.md": {
+	id: "package/url.md";
+  slug: "package/url";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/testing.md": {
-	id: "packages/testing.md";
-  slug: "packages/testing";
+"package/utils.md": {
+	id: "package/utils.md";
+  slug: "package/utils";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"packages/timer.md": {
-	id: "packages/timer.md";
-  slug: "packages/timer";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"packages/undo.md": {
-	id: "packages/undo.md";
-  slug: "packages/undo";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"packages/url.md": {
-	id: "packages/url.md";
-  slug: "packages/url";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"packages/utils.md": {
-	id: "packages/utils.md";
-  slug: "packages/utils";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"packages/web.md": {
-	id: "packages/web.md";
-  slug: "packages/web";
+"package/web.md": {
+	id: "package/web.md";
+  slug: "package/web";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -535,13 +526,6 @@ declare module 'astro:content' {
 "recipes/undo-redo.md": {
 	id: "recipes/undo-redo.md";
   slug: "recipes/undo-redo";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/web.md": {
-	id: "package/web.md";
-  slug: "package/web";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

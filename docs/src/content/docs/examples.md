@@ -25,7 +25,7 @@ https://github.com/artalar/RTK-entities-basic-example/pull/1
 
 ### Search component
 
-This example is close to real life and shows the complexity of interactive UI. It uses [async package](https://www.reatom.dev/package/async) to handle classic search edge cases and made perfect UX.
+This example is close to real life and shows the complexity of interactive UI. It uses [async package](/package/async) to handle classic search edge cases and made perfect UX.
 
 https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx
 
