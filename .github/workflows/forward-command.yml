@@ -15,9 +15,6 @@ jobs:
     container:
       image: node:${{vars.NODE_VERSION}}-alpine
     steps:
-      - name: Get pull request branch
-        uses: xt0rted/pull-request-comment-branch@v2
-        id: comment-branch
       - name: Remove original comment
         uses: actions/github-script@v6
         with:
