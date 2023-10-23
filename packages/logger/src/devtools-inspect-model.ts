@@ -1,37 +1,34 @@
 import { AtomCache, action, atom } from '@reatom/core'
-import { caches } from './rld-model'
+import { logs } from './devtools-model'
 import {
-  FilterAction,
   FilterColor,
-  filterColor,
-  filterHide,
+  getNodeColor,
+  getNodeHidden,
   filters,
-} from './rld-filter-model'
+} from './devtools-filters-model'
 import { parseAtoms } from '@reatom/lens'
 
-export type Log = { cache: AtomCache; color?: FilterColor }
-export type LogGroup = Log | { hide: Log[] }
+export type InspectLog = { cache: AtomCache; color?: FilterColor }
+export type InspectLogGroup = InspectLog | { hide: InspectLog[] }
 
-export const logSelected = atom(null as Log | null, 'logSelected')
-export const logSelect = action((ctx, log: Log) => {
+export const logSelected = atom(null as InspectLog | null, 'logSelected')
+export const logSelect = action((ctx, log: InspectLog) => {
   if (ctx.get(logSelected) === log) {
     logSelected(ctx, null)
-    return
-  }
-  logSelected(ctx, log)
+  } else logSelected(ctx, log)
 }, 'logSelect')
 
 export const logGroups = atom((ctx) => {
-  const logs = ctx
-    .spy(caches)
-    .map((cache) => ({ cache, color: filterColor(ctx, cache) }))
-  const groups: LogGroup[] = []
+  const inspectLogs = ctx
+    .spy(logs)
+    .map((cache) => ({ cache, color: getNodeColor(ctx, cache) }))
+  const groups: InspectLogGroup[] = []
 
   // otherwise we lose reactivity because filters are used in actions
   parseAtoms(ctx, filters)
 
-  for (const log of logs) {
-    if (filterHide(ctx, log.cache)) {
+  for (const log of inspectLogs) {
+    if (getNodeHidden(ctx, log.cache)) {
       let group = groups.at(-1)
       if (!group || !('hide' in group)) {
         group = { hide: [] }
