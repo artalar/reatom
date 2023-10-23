@@ -1,4 +1,4 @@
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx } from '@reatom/testing'
 
@@ -12,6 +12,8 @@ import {
   withStatusesAtom,
 } from './withStatusesAtom'
 import { sleep } from '@reatom/utils'
+
+const test = suite('withStatusesAtom')
 
 const neverPending: AsyncStatusesNeverPending = {
   isPending: false,
