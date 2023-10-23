@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.1](https://github.com/artalar/reatom/compare/async-v3.10.0...async-v3.10.1) (2023-10-23)
+
+
+### Bug Fixes
+
+* **async:** allow empty deps for reatomResource ([47c9a2e](https://github.com/artalar/reatom/commit/47c9a2e4350522ca39af3c5c4cf848a1ad5f967a))
+
 ## [3.10.0](https://github.com/artalar/reatom/compare/async-v3.9.4...async-v3.10.0) (2023-10-20)
 
 
