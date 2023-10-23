@@ -2,16 +2,10 @@ import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { atom } from '@reatom/core'
-import { reatomResource } from './reatomResource'
 import { noop, sleep } from '@reatom/utils'
-import {
-  reatomAsync,
-  withCache,
-  withDataAtom,
-  withErrorAtom,
-  withRetry,
-} from '.'
-import { isConnected, onConnect } from '@reatom/hooks'
+import { isConnected } from '@reatom/hooks'
+import { withCache, withDataAtom, withErrorAtom, withRetry } from '.'
+import { reatomResource } from './reatomResource'
 
 export const test = suite('reatomResource')
 
@@ -205,7 +199,6 @@ test('direct retry', async () => {
 
 test('withCache stale abort', async () => {
   const someResource = reatomResource(async (ctx) => {
-    ctx.spy(atom(0))
     await ctx.schedule(() => sleep())
     return 1
   }, 'someResource').pipe(withDataAtom(0), withCache())
@@ -215,6 +208,21 @@ test('withCache stale abort', async () => {
   ctx.subscribe(someResource.dataAtom, noop)
   await sleep()
   assert.is(ctx.get(someResource.dataAtom), 1)
+  ;`👍` //?
+})
+
+test('do not rerun without deps', async () => {
+  let i = 0
+  const someResource = reatomResource(async (ctx) => {
+    await ctx.schedule(() => sleep())
+    return ++i
+  }, 'someResource')
+  const ctx = createTestCtx()
+
+  assert.is(
+    ctx.get(someResource.promiseAtom),
+    ctx.get(someResource.promiseAtom),
+  )
   ;`👍` //?
 })
 

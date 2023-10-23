@@ -51,6 +51,8 @@ export const reatomResource = <T>(
     return promise!
   }, name)
   const promiseAtom = atom((_ctx, state?: ControlledPromise<T>) => {
+    if (state && !_ctx.cause.pubs.length) return state
+
     const params: any[] = []
 
     const ctx = merge(_ctx, {
@@ -154,6 +156,7 @@ const dropCache = (ctx: Ctx, proto: AtomProto) =>
   ctx.get((read, actualize) => {
     actualize!(ctx, proto, (patchCtx: Ctx, patch: AtomCache) => {
       patch.pubs = []
+      patch.state = undefined
     })
   })
 
