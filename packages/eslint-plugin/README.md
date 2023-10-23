@@ -63,21 +63,21 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
 
 ## Motivation
 
-Many have asked why not make a Babel plugin for naming, why keep it in sources? Our opinion on this has long been formed, keep it:
+ Many have asked why not make a Babel plugin for naming, why keep it in source? Our opinion on this has long been formed, keep it:
 
-- Build tooling is different, in addition to the outdated Babel there is a bunch of other tools, and even written in different languages, it is difficult to support all this;
+- Build tools are different, besides the outdated Babel there are a lot of other tools, and even written in different languages, it is difficult to support all of them;
 - The result of the plugin's work is not visible and can lead to unpleasant debugging;
-- The plugins and transpilation tools themselves often catch some errors, including due to the complexity of JavaScript as a language and due to the fragmentation of the ecosystem;
-- It is difficult to cover all cases with one transpilation, factories cause the most problems;
+- The plugins and transpilation tools themselves often catch some bugs, partly due to the complexity of JavaScript as a language and partly due to the fragmentation of the ecosystem;
+- It is difficult to cover all cases with a single transpilation, factories cause the most problems;
 - The name contains a hash - redundant information when debugging;
-- The hash is tied to the file and line - it easily changes with the slightest refactoring, due to which the user cache is dropped, this must be taken into account in automatic migrations (talking about the client persist state).
+- The hash is tied to the file and line - it easily changes with the slightest refactoring, causing the user cache to drop, this must be taken into account in automatic migrations (talking about the client persist state).
 
-This list comes from the real practice, for the first Reatom version (2019) there was a plugin and it was already clear then that the game was not worth the candle, now the situation is even worse.
+This list comes from real practice, for the first Reatom version (2019) there was a plugin and it was already clear that the game was not worth the candle, now the situation is even worse.
 
-On the contrary, writing the name manually in the argument carries a lot of pluses:
+On the contrary, writing the name manually in the argument has a lot of advantages:
 
 - Maximum visibility;
 - Full control;
-- Zero setup, not difficult, really not difficult, in terms of the amount and complexity of the code required forces - nothing;
-- AI tools, like Copilot, helps with the names a lot;
-- This ESLint plugin perfectly takes care of most cases.
+- Zero setup, not difficult, really not difficult, in terms of the amount and complexity of code required forces - nothing;
+- AI tools, like Copilot, help a lot with the names;
+- This ESLint plugin handles most cases perfectly.
