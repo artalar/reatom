@@ -115,6 +115,8 @@ export namespace JSX {
     innerHTML?: string
     innerText?: string | number
     textContent?: string | number
+    [field: `field:${string}`]: any
+
     oncopy?: EventHandlerUnion<T, ClipboardEvent>
     oncut?: EventHandlerUnion<T, ClipboardEvent>
     onpaste?: EventHandlerUnion<T, ClipboardEvent>
@@ -556,6 +558,7 @@ export namespace JSX {
   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
     accessKey?: AtomMaybe<string>
     class?: AtomMaybe<string> | undefined
+    className?: AtomMaybe<string>
     contenteditable?: AtomMaybe<boolean | 'inherit'>
     contextmenu?: AtomMaybe<string>
     dir?: AtomMaybe<HTMLDir>

@@ -49,14 +49,14 @@ export const reatomJsx = (ctx: Ctx) => {
         ? document.createElementNS('http://www.w3.org/2000/svg', tag)
         : document.createElement(tag)
 
-    bindAttrs(element, attrs)
+    bindProps(element, attrs)
 
     render(element, attrs.children ?? [])
 
     return element
   }
 
-  const bindAttrs = (element: Element, attrs: Rec) => {
+  const bindProps = (element: Element, attrs: Rec) => {
     for (const key in attrs) {
       if (key === 'children') continue
       const val = attrs[key]
@@ -66,11 +66,11 @@ export const reatomJsx = (ctx: Ctx) => {
           if (isAtom(attrs)) {
             var u = ctx.subscribe(attrs, (attrs): void =>
               !u || element.isConnected
-                ? bindAttrs(element, attrs as Rec)
+                ? bindProps(element, attrs as Rec)
                 : u(),
             )
             unlink(element, u)
-          } else bindAttrs(element, attrs)
+          } else bindProps(element, attrs)
         }
       } else if (isAtom(val)) {
         if (val.__reatom.isAction) {
@@ -79,18 +79,21 @@ export const reatomJsx = (ctx: Ctx) => {
         } else {
           // TODO handle unsubscribe!
           var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
-            !un || element.isConnected ? renderAttr(element, key, val) : un(),
+            !un || element.isConnected ? setProp(element, key, val) : un(),
           )
           unlink(element, un)
         }
-      } else renderAttr(element, key, val)
+      } else setProp(element, key, val)
     }
   }
 
-  const renderAttr = (element: any, key: any, val: any) => {
-    if (key === 'style') {
-      for (const style in val) element.style.setProperty(style, val[style])
-    } else element[key] = val
+  const setProp = (element: Element, key: string, val: any) => {
+    if (key.startsWith('field:')) {
+      ;(element as any)[key.slice(6)] = val
+    } else if (key === 'style') {
+      for (const style in val)
+        (element as HTMLElement).style.setProperty(style, val[style])
+    } else element.setAttribute(key, val)
   }
 
   let render = (parent: Element, children: JSXElement[]) => {
