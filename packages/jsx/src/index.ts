@@ -88,6 +88,8 @@ export const reatomJsx = (ctx: Ctx) => {
   }
 
   const setProp = (element: Element, key: string, val: any) => {
+    if (key === 'className') key = 'class'
+
     if (key.startsWith('field:')) {
       ;(element as any)[key.slice(6)] = val
     } else if (key === 'style') {
