@@ -263,7 +263,7 @@ export const updateList = reatomAsync(
     name: 'updateList',
     onEffect(ctx, params, promise) {
       const [newList] = params
-      const newList = fetchList.dataAtom(ctx, newList)
+      const newSavedList = fetchList.dataAtom(ctx, newList)
     },
   },
 )
@@ -530,7 +530,7 @@ Return `0` to retry immediately. With this pattern your loader will not blink, a
 ```ts
 import { reatomAsync, withRetry } from '@reatom/async'
 
-const fetchData = export const fetchList = reatomAsync(
+export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
   'fetchList',
 ).pipe(
@@ -602,6 +602,24 @@ onConnect(fetchList.dataAtom, async (ctx) => {
 ```
 
 Here we rely on the fact that `onConnect` will be called only when `fetchList.dataAtom` is connected (subscribed) to the consumer and will be aborted when `fetchList.dataAtom` is disconnected (unsubscribed).
+
+### Use with withStatusesAtom
+
+You might also want to not show errored state during retries. To achieve this you can use [`withStatusesAtom`](#withstatusesatom) with `pendingWhileRetrying: true` to combine behaviour of both atoms:
+
+```ts
+import { reatomAsync, withRetry, withStatusesAtom } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(
+  withStatusesAtom({ pendingWhileRetrying: true }),
+  withRetry({
+    onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
+  }),
+)
+```
 
 ## withAbort
 
