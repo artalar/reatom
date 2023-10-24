@@ -2,7 +2,7 @@
  * stolen from https://github.dev/solidjs/solid/blob/49793e9452ecd034d4d2ef5f95108f5d2ff4134a/packages/solid/h/jsx-runtime/src/jsx.d.ts
  */
 
-import { Atom, AtomMaybe, Ctx } from '@reatom/core'
+import { Action, Atom, AtomMaybe } from '@reatom/core'
 import * as csstype from 'csstype'
 
 export namespace JSX {
@@ -25,26 +25,16 @@ export namespace JSX {
   interface ElementChildrenAttribute {
     children: {}
   }
-  interface EventHandler<T, E extends Event> {
-    (
-      e: E & {
+  type BoundEventHandler<T, E extends Event> = Action<
+    [
+      E & {
         currentTarget: T
         target: globalThis.Element
       },
-    ): void
-  }
-  interface BoundEventHandler<T, E extends Event> {
-    (
-      ctx: Ctx,
-      e: E & {
-        currentTarget: T
-        target: globalThis.Element
-      },
-    ): any
-  }
-  type EventHandlerUnion<T, E extends Event> =
-    | EventHandler<T, E>
-    | BoundEventHandler<T, E>
+    ],
+    void
+  >
+  type EventHandlerUnion<T, E extends Event> = BoundEventHandler<T, E>
   interface IntrinsicAttributes {
     ref?: unknown | ((e: unknown) => void)
   }
