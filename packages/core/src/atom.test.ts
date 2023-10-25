@@ -675,6 +675,38 @@ test('ctx collision', () => {
   ;`👍` //?
 })
 
+test('conditional deps duplication', () => {
+  const listAtom = atom([1, 2, 3])
+
+  const filterAtom = atom<'odd' | 'even'>('odd')
+
+  const filteredListAtom = atom((ctx) => {
+    if (ctx.spy(filterAtom) === 'odd') {
+      return ctx.spy(listAtom).filter((n) => n % 2 === 1)
+    } else if (ctx.spy(filterAtom) === 'even') {
+      return ctx.spy(listAtom).filter((n) => n % 2 === 0)
+    }
+    return ctx.spy(listAtom)
+  })
+
+  const ctx = createCtx()
+
+  const track = mockFn()
+
+  ctx.subscribe(filteredListAtom, track)
+  assert.equal(track.lastInput(), [1, 3])
+
+  filterAtom(ctx, 'even')
+  assert.equal(track.lastInput(), [2])
+
+  filterAtom(ctx, 'odd')
+  assert.equal(track.lastInput(), [1, 3])
+
+  filterAtom(ctx, 'even')
+  assert.equal(track.lastInput(), [2])
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

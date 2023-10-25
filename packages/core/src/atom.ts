@@ -337,8 +337,7 @@ export const createCtx = ({
 
   let actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
     let { proto, pubs } = patch
-    let toDisconnect = new Set<AtomProto>()
-    let toConnect = new Set<AtomProto>()
+    let isDepsChanged = false
 
     if (
       pubs.length === 0 ||
@@ -358,11 +357,7 @@ export const createCtx = ({
               ? pubs[newPubs.length - 1]
               : undefined
           let isDepChanged = prevDepPatch?.proto !== depPatch.proto
-
-          if (isDepChanged) {
-            if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
-            toConnect.add(depProto)
-          }
+          isDepsChanged ||= isDepChanged
 
           let state =
             depProto.isAction && !isDepChanged
@@ -370,7 +365,7 @@ export const createCtx = ({
               : depPatch.state
 
           if (cb && (isDepChanged || !Object.is(state, prevDepPatch!.state))) {
-            if (depProto.isAction) (state as any[]).forEach((call) => cb(call))
+            if (depProto.isAction) for (const call of state) cb(call)
             else cb(state, prevDepPatch?.state)
           } else {
             return state
@@ -383,18 +378,16 @@ export const createCtx = ({
       patch.state = patch.proto.computer!(patchCtx as CtxSpy, patch.state)
       patch.pubs = newPubs
 
-      for (let i = newPubs.length; i < pubs.length; i++) {
-        toDisconnect.add(pubs[i]!.proto)
-      }
-
-      if (toDisconnect.size + toConnect.size && isConnected(patch)) {
-        for (let depProto of toDisconnect) {
-          toConnect.has(depProto) ||
+      if ((isDepsChanged || pubs.length > newPubs.length) && isConnected(patch)) {
+        for (let { proto: depProto } of pubs) {
+          if (newPubs.every((dep) => dep.proto !== depProto)) {
             disconnect(proto, depProto.patch ?? read(depProto)!)
+          }
         }
-
-        for (let depProto of toConnect) {
-          connect(proto, depProto.patch ?? read(depProto)!)
+        for (let { proto: depProto } of newPubs) {
+          if (pubs.every((dep) => dep.proto !== depProto)) {
+            connect(proto, depProto.patch ?? read(depProto)!)
+          }
         }
       }
     }
