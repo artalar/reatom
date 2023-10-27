@@ -62,7 +62,7 @@ export const reatomJsx = (ctx: Ctx) => {
 
       const val = props[key]
 
-      if (key === '$attrs') {
+      if (key === '$props') {
         for (const attrs of Array.isArray(val) ? val : []) {
           if (isAtom(attrs)) {
             var u = ctx.subscribe(attrs, (attrs) => {
@@ -92,9 +92,14 @@ export const reatomJsx = (ctx: Ctx) => {
 
     if (key.startsWith('field:')) {
       ;(element as any)[key.slice(6)] = val
-    } else if (key === 'style') {
-      for (const style in val)
-        (element as HTMLElement).style.setProperty(style, val[style])
+    } else if (key === 'style' && typeof val === 'object') {
+      for (const property in val) {
+        if (val[property] != null) {
+          ;(element as HTMLElement).style.setProperty(property, val[property])
+        } else {
+          ;(element as HTMLElement).style.removeProperty(property)
+        }
+      }
     } else element.setAttribute(key, val)
   }
 
