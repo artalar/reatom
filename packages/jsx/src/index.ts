@@ -56,34 +56,34 @@ export const reatomJsx = (ctx: Ctx) => {
     return element
   }
 
-  const bindProps = (element: Element, attrs: Rec) => {
-    for (const key in attrs) {
+  const bindProps = (element: Element, props: Rec) => {
+    for (const key in props) {
       if (key === 'children') continue
-      const val = attrs[key]
+
+      const val = props[key]
 
       if (key === '$attrs') {
         for (const attrs of Array.isArray(val) ? val : []) {
           if (isAtom(attrs)) {
-            var u = ctx.subscribe(attrs, (attrs): void =>
-              !u || element.isConnected
-                ? bindProps(element, attrs as Rec)
-                : u(),
-            )
+            var u = ctx.subscribe(attrs, (attrs) => {
+              if (element.isConnected || !u) bindProps(element, attrs)
+              else u()
+            })
             unlink(element, u)
           } else bindProps(element, attrs)
         }
-      } else if (isAtom(val)) {
-        if (val.__reatom.isAction) {
-          ;(element as any)[key] = (...args: any) =>
-            (val as Action)(ctx, ...args)
-        } else {
-          // TODO handle unsubscribe!
-          var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
-            !un || element.isConnected ? setProp(element, key, val) : un(),
-          )
-          unlink(element, un)
-        }
-      } else setProp(element, key, val)
+      } else if (isAtom(val) && !val.__reatom.isAction) {
+        // TODO handle unsubscribe!
+        var u = ctx.subscribe(val, (val) => {
+          if (element.isConnected || !u) setProp(element, key, val)
+          else u()
+        })
+        unlink(element, u)
+      } else if (typeof val === 'function') {
+        ;(element as any)[key] = (event: any) => val(ctx, event)
+      } else {
+        setProp(element, key, val)
+      }
     }
   }
 
@@ -131,7 +131,7 @@ export const reatomJsx = (ctx: Ctx) => {
       }
 
       parent.appendChild(
-        child?.nodeType ? child : document.createTextNode(String(child)),
+        child instanceof Node ? child : document.createTextNode(String(child)),
       )
     }
 

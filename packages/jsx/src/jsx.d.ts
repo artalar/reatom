@@ -2,7 +2,7 @@
  * stolen from https://github.dev/solidjs/solid/blob/49793e9452ecd034d4d2ef5f95108f5d2ff4134a/packages/solid/h/jsx-runtime/src/jsx.d.ts
  */
 
-import { Action, Atom, AtomMaybe } from '@reatom/core'
+import { Action, Atom, AtomMaybe, AtomProto, Ctx } from '@reatom/core'
 import * as csstype from 'csstype'
 
 export namespace JSX {
@@ -25,18 +25,14 @@ export namespace JSX {
   interface ElementChildrenAttribute {
     children: {}
   }
-  type BoundEventHandler<T, E extends Event> = Action<
-    [
-      E & {
-        currentTarget: T
-        target: globalThis.Element
-      },
-    ],
-    void
-  >
-  type EventHandlerUnion<T, E extends Event> = BoundEventHandler<T, E>
+
+  type EventHandler<T, E extends Event> = (
+    ctx: Ctx,
+    event: E & { currentTarget: T; target: Element },
+  ) => void
+
   interface IntrinsicAttributes {
-    ref?: unknown | ((e: unknown) => void)
+    // ref?: unknown | ((e: unknown) => void)
   }
   // interface CustomAttributes<T> {
   //   ref?: T | ((el: T) => void)
@@ -100,106 +96,106 @@ export namespace JSX {
       OnAttributes<T>,
       OnCaptureAttributes<T>, */
     extends CustomEventHandlers<T> {
-    $attrs?: AtomMaybe<this | this[]>
+    $props?: this | Atom<this> | Array<this | Atom<this>>
     children?: Element
     innerHTML?: string
     innerText?: string | number
     textContent?: string | number
     [field: `field:${string}`]: any
 
-    oncopy?: EventHandlerUnion<T, ClipboardEvent>
-    oncut?: EventHandlerUnion<T, ClipboardEvent>
-    onpaste?: EventHandlerUnion<T, ClipboardEvent>
-    oncompositionend?: EventHandlerUnion<T, CompositionEvent>
-    oncompositionstart?: EventHandlerUnion<T, CompositionEvent>
-    oncompositionupdate?: EventHandlerUnion<T, CompositionEvent>
-    onfocusout?: EventHandlerUnion<T, FocusEvent>
-    onfocusin?: EventHandlerUnion<T, FocusEvent>
-    onencrypted?: EventHandlerUnion<T, Event>
-    ondragexit?: EventHandlerUnion<T, DragEvent>
+    oncopy?: EventHandler<T, ClipboardEvent>
+    oncut?: EventHandler<T, ClipboardEvent>
+    onpaste?: EventHandler<T, ClipboardEvent>
+    oncompositionend?: EventHandler<T, CompositionEvent>
+    oncompositionstart?: EventHandler<T, CompositionEvent>
+    oncompositionupdate?: EventHandler<T, CompositionEvent>
+    onfocusout?: EventHandler<T, FocusEvent>
+    onfocusin?: EventHandler<T, FocusEvent>
+    onencrypted?: EventHandler<T, Event>
+    ondragexit?: EventHandler<T, DragEvent>
   }
   /**
    * @type {GlobalEventHandlers}
    */
   interface CustomEventHandlers<T> {
-    onabort?: EventHandlerUnion<T, Event>
-    onanimationend?: EventHandlerUnion<T, AnimationEvent>
-    onanimationiteration?: EventHandlerUnion<T, AnimationEvent>
-    onanimationstart?: EventHandlerUnion<T, AnimationEvent>
-    onauxclick?: EventHandlerUnion<T, MouseEvent>
-    onbeforeinput?: EventHandlerUnion<T, InputEvent>
-    onblur?: EventHandlerUnion<T, FocusEvent>
-    oncanplay?: EventHandlerUnion<T, Event>
-    oncanplaythrough?: EventHandlerUnion<T, Event>
-    onchange?: EventHandlerUnion<T, Event>
-    onclick?: EventHandlerUnion<T, MouseEvent>
-    oncontextmenu?: EventHandlerUnion<T, MouseEvent>
-    ondblclick?: EventHandlerUnion<T, MouseEvent>
-    ondrag?: EventHandlerUnion<T, DragEvent>
-    ondragend?: EventHandlerUnion<T, DragEvent>
-    ondragenter?: EventHandlerUnion<T, DragEvent>
-    ondragleave?: EventHandlerUnion<T, DragEvent>
-    ondragover?: EventHandlerUnion<T, DragEvent>
-    ondragstart?: EventHandlerUnion<T, DragEvent>
-    ondrop?: EventHandlerUnion<T, DragEvent>
-    ondurationchange?: EventHandlerUnion<T, Event>
-    onemptied?: EventHandlerUnion<T, Event>
-    onended?: EventHandlerUnion<T, Event>
-    onerror?: EventHandlerUnion<T, Event>
-    onfocus?: EventHandlerUnion<T, FocusEvent>
-    ongotpointercapture?: EventHandlerUnion<T, PointerEvent>
-    oninput?: EventHandlerUnion<T, InputEvent>
-    oninvalid?: EventHandlerUnion<T, Event>
-    onkeydown?: EventHandlerUnion<T, KeyboardEvent>
-    onkeypress?: EventHandlerUnion<T, KeyboardEvent>
-    onkeyup?: EventHandlerUnion<T, KeyboardEvent>
-    onload?: EventHandlerUnion<T, Event>
-    onloadeddata?: EventHandlerUnion<T, Event>
-    onloadedmetadata?: EventHandlerUnion<T, Event>
-    onloadstart?: EventHandlerUnion<T, Event>
-    onlostpointercapture?: EventHandlerUnion<T, PointerEvent>
-    onmousedown?: EventHandlerUnion<T, MouseEvent>
-    onmouseenter?: EventHandlerUnion<T, MouseEvent>
-    onmouseleave?: EventHandlerUnion<T, MouseEvent>
-    onmousemove?: EventHandlerUnion<T, MouseEvent>
-    onmouseout?: EventHandlerUnion<T, MouseEvent>
-    onmouseover?: EventHandlerUnion<T, MouseEvent>
-    onmouseup?: EventHandlerUnion<T, MouseEvent>
-    onpause?: EventHandlerUnion<T, Event>
-    onplay?: EventHandlerUnion<T, Event>
-    onplaying?: EventHandlerUnion<T, Event>
-    onpointercancel?: EventHandlerUnion<T, PointerEvent>
-    onpointerdown?: EventHandlerUnion<T, PointerEvent>
-    onpointerenter?: EventHandlerUnion<T, PointerEvent>
-    onpointerleave?: EventHandlerUnion<T, PointerEvent>
-    onpointermove?: EventHandlerUnion<T, PointerEvent>
-    onpointerout?: EventHandlerUnion<T, PointerEvent>
-    onpointerover?: EventHandlerUnion<T, PointerEvent>
-    onpointerup?: EventHandlerUnion<T, PointerEvent>
-    onprogress?: EventHandlerUnion<T, Event>
-    onratechange?: EventHandlerUnion<T, Event>
-    onreset?: EventHandlerUnion<T, Event>
-    onscroll?: EventHandlerUnion<T, UIEvent>
-    onseeked?: EventHandlerUnion<T, Event>
-    onseeking?: EventHandlerUnion<T, Event>
-    onselect?: EventHandlerUnion<T, UIEvent>
-    onstalled?: EventHandlerUnion<T, Event>
-    onsubmit?: EventHandlerUnion<
+    onabort?: EventHandler<T, Event>
+    onanimationend?: EventHandler<T, AnimationEvent>
+    onanimationiteration?: EventHandler<T, AnimationEvent>
+    onanimationstart?: EventHandler<T, AnimationEvent>
+    onauxclick?: EventHandler<T, MouseEvent>
+    onbeforeinput?: EventHandler<T, InputEvent>
+    onblur?: EventHandler<T, FocusEvent>
+    oncanplay?: EventHandler<T, Event>
+    oncanplaythrough?: EventHandler<T, Event>
+    onchange?: EventHandler<T, Event>
+    onclick?: EventHandler<T, MouseEvent>
+    oncontextmenu?: EventHandler<T, MouseEvent>
+    ondblclick?: EventHandler<T, MouseEvent>
+    ondrag?: EventHandler<T, DragEvent>
+    ondragend?: EventHandler<T, DragEvent>
+    ondragenter?: EventHandler<T, DragEvent>
+    ondragleave?: EventHandler<T, DragEvent>
+    ondragover?: EventHandler<T, DragEvent>
+    ondragstart?: EventHandler<T, DragEvent>
+    ondrop?: EventHandler<T, DragEvent>
+    ondurationchange?: EventHandler<T, Event>
+    onemptied?: EventHandler<T, Event>
+    onended?: EventHandler<T, Event>
+    onerror?: EventHandler<T, Event>
+    onfocus?: EventHandler<T, FocusEvent>
+    ongotpointercapture?: EventHandler<T, PointerEvent>
+    oninput?: EventHandler<T, InputEvent>
+    oninvalid?: EventHandler<T, Event>
+    onkeydown?: EventHandler<T, KeyboardEvent>
+    onkeypress?: EventHandler<T, KeyboardEvent>
+    onkeyup?: EventHandler<T, KeyboardEvent>
+    onload?: EventHandler<T, Event>
+    onloadeddata?: EventHandler<T, Event>
+    onloadedmetadata?: EventHandler<T, Event>
+    onloadstart?: EventHandler<T, Event>
+    onlostpointercapture?: EventHandler<T, PointerEvent>
+    onmousedown?: EventHandler<T, MouseEvent>
+    onmouseenter?: EventHandler<T, MouseEvent>
+    onmouseleave?: EventHandler<T, MouseEvent>
+    onmousemove?: EventHandler<T, MouseEvent>
+    onmouseout?: EventHandler<T, MouseEvent>
+    onmouseover?: EventHandler<T, MouseEvent>
+    onmouseup?: EventHandler<T, MouseEvent>
+    onpause?: EventHandler<T, Event>
+    onplay?: EventHandler<T, Event>
+    onplaying?: EventHandler<T, Event>
+    onpointercancel?: EventHandler<T, PointerEvent>
+    onpointerdown?: EventHandler<T, PointerEvent>
+    onpointerenter?: EventHandler<T, PointerEvent>
+    onpointerleave?: EventHandler<T, PointerEvent>
+    onpointermove?: EventHandler<T, PointerEvent>
+    onpointerout?: EventHandler<T, PointerEvent>
+    onpointerover?: EventHandler<T, PointerEvent>
+    onpointerup?: EventHandler<T, PointerEvent>
+    onprogress?: EventHandler<T, Event>
+    onratechange?: EventHandler<T, Event>
+    onreset?: EventHandler<T, Event>
+    onscroll?: EventHandler<T, UIEvent>
+    onseeked?: EventHandler<T, Event>
+    onseeking?: EventHandler<T, Event>
+    onselect?: EventHandler<T, UIEvent>
+    onstalled?: EventHandler<T, Event>
+    onsubmit?: EventHandler<
       T,
       Event & {
         submitter: HTMLElement
       }
     >
-    onsuspend?: EventHandlerUnion<T, Event>
-    ontimeupdate?: EventHandlerUnion<T, Event>
-    ontouchcancel?: EventHandlerUnion<T, TouchEvent>
-    ontouchend?: EventHandlerUnion<T, TouchEvent>
-    ontouchmove?: EventHandlerUnion<T, TouchEvent>
-    ontouchstart?: EventHandlerUnion<T, TouchEvent>
-    ontransitionend?: EventHandlerUnion<T, TransitionEvent>
-    onvolumechange?: EventHandlerUnion<T, Event>
-    onwaiting?: EventHandlerUnion<T, Event>
-    onwheel?: EventHandlerUnion<T, WheelEvent>
+    onsuspend?: EventHandler<T, Event>
+    ontimeupdate?: EventHandler<T, Event>
+    ontouchcancel?: EventHandler<T, TouchEvent>
+    ontouchend?: EventHandler<T, TouchEvent>
+    ontouchmove?: EventHandler<T, TouchEvent>
+    ontouchstart?: EventHandler<T, TouchEvent>
+    ontransitionend?: EventHandler<T, TransitionEvent>
+    onvolumechange?: EventHandler<T, Event>
+    onwaiting?: EventHandler<T, Event>
+    onwheel?: EventHandler<T, WheelEvent>
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -677,8 +673,8 @@ export namespace JSX {
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: AtomMaybe<boolean>
-    onToggle?: EventHandlerUnion<T, Event>
-    ontoggle?: EventHandlerUnion<T, Event>
+    onToggle?: EventHandler<T, Event>
+    ontoggle?: EventHandler<T, Event>
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: AtomMaybe<boolean>
