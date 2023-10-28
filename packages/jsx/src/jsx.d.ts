@@ -673,7 +673,6 @@ export namespace JSX {
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
     open?: AtomMaybe<boolean>
-    onToggle?: EventHandler<T, Event>
     ontoggle?: EventHandler<T, Event>
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {

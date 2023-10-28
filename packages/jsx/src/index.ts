@@ -29,6 +29,8 @@ export type InferProps<T extends ComponentLike> =
     ? Props
     : never
 
+const FieldProps = ['innerHTML', 'innerText', 'textContent']
+
 export const reatomJsx = (ctx: Ctx) => {
   let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
 
@@ -87,20 +89,26 @@ export const reatomJsx = (ctx: Ctx) => {
     }
   }
 
-  const setProp = (element: Element, key: string, val: any) => {
-    if (key === 'className') key = 'class'
+  const setProp = (element: Element, name: string, val: any) => {
+    if (name === 'className') name = 'class'
 
-    if (key.startsWith('field:')) {
-      ;(element as any)[key.slice(6)] = val
-    } else if (key === 'style' && typeof val === 'object') {
-      for (const property in val) {
-        if (val[property] != null) {
-          ;(element as HTMLElement).style.setProperty(property, val[property])
+    if (name.startsWith('field:')) {
+      ;(element as any)[name.slice(6)] = val
+    } else if (FieldProps.includes(name)) {
+      ;(element as any)[name] = val
+    } else if (name === 'style' && typeof val === 'object') {
+      for (const styleKey in val) {
+        const styleVal = val[styleKey]
+        if (styleVal != null && styleVal !== false) {
+          ;(element as HTMLElement).style.setProperty(
+            styleKey,
+            String(styleVal),
+          )
         } else {
-          ;(element as HTMLElement).style.removeProperty(property)
+          ;(element as HTMLElement).style.removeProperty(styleKey)
         }
       }
-    } else element.setAttribute(key, val)
+    } else element.setAttribute(name, val)
   }
 
   let render = (parent: Element, children: JSXElement[]) => {
@@ -161,7 +169,7 @@ export const reatomJsx = (ctx: Ctx) => {
 
   let hf = noop
 
-  let mount = (target: Element, child: JSXElement) => {
+  let mount = (target: Element, child: Element) => {
     render(target, [child])
 
     new MutationObserver((mutationsList) => {
