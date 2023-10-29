@@ -253,8 +253,8 @@ export const reatomComponent = <T>(
                 cause: ctx.get((read) => read(__root)!),
               },
             }
-            ctx.bind = (fn) => bind(ctx, fn)
-            props.ctx = ctx
+
+            ctx.bind = bind(React.useRef(ctx).current, bindBind)
             return Component(props)
           }
 
