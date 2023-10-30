@@ -13,7 +13,7 @@ You can use [degit](https://github.com/Rich-Harris/degit) package for quick star
 
 ##### Reatom + React + TypeScript + Prettier + Vite
 
-```
+```sh
 npx degit github:artalar/reatom-react-ts my-project
 cd my-project
 
@@ -24,91 +24,21 @@ npm run dev
 
 ## Add to existing project
 
-```
+```sh
 npm i @reatom/core
 ```
-
-### With TypeScript
-
-You don't need to do anything, type inference works as you'd expect
-
-```ts
-// AtomMut<number>
-const numAtom = atom(3) 
-
-// AtomMut<string>
-const strAtom = atom('foo') 
-
-// Atom<string | number>
-const dynamicAtom = atom((ctx) => { 
-  const num = ctx.spy(numAtom)
-  const str = ctx.spy(strAtom)
-  return num > 0 ? num : str
-})
-```
-
-Generics supported as well
-
-```ts
-/* tsconfig: strictNullChecks: true */
-// AtomMut<string | null>
-const nullableAtom = atom<string | null>(null) 
-```
-
-You can play with this example on [typescript playground](https://www.typescriptlang.org/play?#code/JYWwDg9gTgLgBAbzgQwMY2BAdgGhTCEOAXzgDMpC4ByAASgFNkCQB6VaB6gKF46wDO8LAFcQAQRZwAvPkIAKAMwBKANx9sQuEKiSqs5gupkIEamo2D4GMHqIGW8+egAeymQD5E3OHH5bRez8YFwA6ATAAT3lAu2UfP014HRlgsIjonTiEhOAyOBixOC8ABncEBN9GGBEoLDhA9V9SBgAbAQZvXyqGGrrtGCgE4m5iC25-YRFW1uQAI1aGO1TDEAAeHWAsAHM4AB8G6daPQpm1IA)
-
-### With ESlint
-
-We recommend using the `@reatom/eslint-plugin`.  
-This is optional, but greatly improves the development experience.
-
-#### Installation
-
-```
-npm i -D @reatom/eslint-plugin
-```
-
-
-#### Usage
-
-You should add @reatom to plugins and specify extends or rules into your config.
-
-```json
-{
-  "plugins": ["@reatom"],
-  "extends": ["plugin:@reatom/recommended"]
-}
-```
-
-#### Configuration
-
-Example of customizing rules:
-
-```json
-{
-  "plugins": ["@reatom"],
-  "rules": {
-    "@reatom/atom-rule": "error",
-    "@reatom/action-rule": "error",
-    "@reatom/reatom-prefix-rule": "error",
-    "@reatom/atom-postfix-rule": "error"
-  }
-}
-```
-
-More examples you can found in [@reatom/eslint-plugin](/package/eslint-plugin/) package documentation
 
 ### With React
 
 #### Installation
 
-```
+```sh
 npm i @reatom/npm-react
 ```
 
 Then you need add add reatom wrapper
 
-React >=18:
+React 18 (in case you use 16 or 17 react version, follow guide [Reatom with legacy react versions](/recipes/react-legacy/)):
 ```jsx
 
 import { createCtx } from '@reatom/core'
@@ -125,49 +55,11 @@ export const App = () => (
 
 ```
 
-React 16 and 17:
-
-For `react-dom`:
-
-```js
-import { unstable_batchedUpdates } from 'react-dom'
-import { createCtx } from '@reatom/core'
-import { setupBatch, withBatching } from '@reatom/npm-react'
-import { Main } from './path/to/an/Main';
-
-setupBatch(unstable_batchedUpdates)
-const ctx = withBatching(createCtx())
-
-export const App = () => (
-  <reatomContext.Provider value={ctx}>
-    <Main />
-  </reatomContext.Provider>
-)
-
-```
-
-For `react-native`:
-
-```js
-import { unstable_batchedUpdates } from 'react-native'
-import { createCtx } from '@reatom/core'
-import { setupBatch } from '@reatom/npm-react'
-import { Main } from './path/to/an/Main';
-
-setupBatch(unstable_batchedUpdates)
-const ctx = withBatching(createCtx())
-
-export const App = () => (
-  <reatomContext.Provider value={ctx}>
-    <Main />
-  </reatomContext.Provider>
-)
-
-```
-
 #### Usage
+
 `useAtom` allow use atoms inside react components, and  
 `useAction` same but for actions.
+
 Here is how:
 
 ```jsx
@@ -210,8 +102,11 @@ const Greeting = () => {
 ```
 
 
-This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react](/package/npm-react/) package documentation]
+This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react](/package/npm-react/) package documentation
 
+### Additional configuration
+
+ Reatom also has eslint plugin which will help to avoid errors and add tools for code generation. You can skip [installing it](http://localhost:3000/recipes/eslint/) at this stage
 
 <!--
 ### With Solid

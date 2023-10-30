@@ -1,9 +1,10 @@
 ---
 title: Learning
-description: Explaining basic concepts, primitives and tools 
-sidebar: 
+description: Explaining basic concepts, primitives and tools
+sidebar:
   order: 2
 ---
+
 ## Installation
 
 First of all we will use @reatom/framework that incorparates many functions you may need in development.
@@ -17,30 +18,30 @@ npm install --save @reatom/framework
 Let's have trivial example that employs reatom's reactivity by implementing simple `a + b = c`:
 
 ```typescript
-import { createCtx, atom } from "@reatom/framework"
+import { createCtx, atom } from '@reatom/framework'
 
 const ctx = createCtx()
 
 const aAtom = atom(1, 'aAtom')
 const bAtom = atom(2, 'bAtom')
 
-const cAtom = atom((ctx) =>
-  ctx.spy(aAtom) + ctx.spy(bAtom),
-  'cAtom'
-)
+const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 ctx.subscribe(cAtom, (c) => {
-  const a = ctx.get(aAtom);
-  const b = ctx.get(bAtom);
+  const a = ctx.get(aAtom)
+  const b = ctx.get(bAtom)
   console.log(`${a} + ${b} = ${c}`)
 })
 
 aAtom(ctx, 3)
 // logs: 3 + 2 = 5
+
 bAtom(ctx, 4)
 // logs: 3 + 4 = 7
+
 bAtom(ctx, 4)
-// does not log anything
+// does not log anything, as the state is not changed
+
 console.log(ctx.get(aAtom), ctx.get(bAtom), ctx.get(cAtom))
 // logs: 3, 4, 7
 ```
@@ -51,14 +52,19 @@ Moreover we can spy on any atom that enables us to make dependency trees like th
 
 ```typescript
 const cDoubledAtom = atom((ctx) => 2 * ctx.spy(cAtom), 'cDoubledAtom')
-const cQuadrupledAtom = atom((ctx) => 2 * ctx.spy(cDoubledAtom), 'cQuadrupledAtom')
+const cQuadrupledAtom = atom(
+  (ctx) => 2 * ctx.spy(cDoubledAtom),
+  'cQuadrupledAtom',
+)
 ```
 
 ### Some notes about atoms
+
 1. Atoms store things by reference. Just like props and useState in react.
-2. Computed atoms should be pure functions. You can't know how many times they will be called. But reatom will try to keep call count as small as possible.
+2. Computed atoms should be pure functions to archive the correct order of all computations
 3. Computed atoms do not compute if no one depend on them or subscribed on them. There's no need to do work that no one will use!
 4. If you need previous state to update some atom use update callback:
+
 ```typescript
 const someAtom = atom('Hello', 'someAtom')
 someAtom(ctx, (prev) => prev + ', atom')
@@ -66,19 +72,26 @@ someAtom(ctx, (prev) => prev + ', atom')
 someAtom(ctx, (prev) => prev + ', atom')
 // someAtom -> 'Hello, atom, atom'
 ```
+
 5. You can use previous state in computed atoms but you have to define types manually:
+
 ```typescript
-const accAtom = atom<number>((ctx, prev = 0) => prev + 1, 'accAtom')
+import { atom, isDeepEqual } from '@reatom/framework'
+
+const listAtom = atom<List>([], 'listAtom')
+const filteredListAtom = atom((ctx, state = []) => {
+  const newState = ctx.spy(listAtom).filter(predicate)
+  return isDeepEqual(state, newState) ? state : newState
+}, 'filteredListAtom')
 ```
 
-
-
 ## Actions enable transactions
+
 Setting atoms manually is good thing but more often we want to do many changes at once.
 Let's edit example so that we are able to change `a` and `b` simultaniously.
 
 ```typescript
-import { createCtx, atom, action } from "@reatom/framework"
+import { createCtx, atom, action } from '@reatom/framework'
 
 const ctx = createCtx()
 
@@ -91,14 +104,11 @@ const setParams = action((ctx, a: number, b: number) => {
   bAtom(ctx, b)
 }, 'setParams')
 
-const cAtom = atom((ctx) =>
-  ctx.spy(aAtom) + ctx.spy(bAtom),
-  'cAtom'
-)
+const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 ctx.subscribe(cAtom, (c) => {
-  const a = ctx.get(aAtom);
-  const b = ctx.get(bAtom);
+  const a = ctx.get(aAtom)
+  const b = ctx.get(bAtom)
   console.log(`${a} + ${b} = ${c}`)
 })
 
@@ -130,7 +140,9 @@ You can take a deeper dive in queues here
 -->
 
 ## Contexts define different universes
+
 Contexts are used to glue up atoms and actions, track transactions and many more features. You can use same dependency trees in different contexts:
+
 ```typescript
 import { createCtx, atom } from "@reatom/framework"
 
