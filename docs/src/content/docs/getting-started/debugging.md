@@ -4,7 +4,7 @@ description: Explaining how to install and use debug tools
 sidebar:
   order: 3
 ---
-
+<!-- TODO add `anAtom.onChange(console.log)` docs above -->
 For debugging we recommend `@reatom/logger` package (included in `@reatom/framework`)
 
 ## Installation
