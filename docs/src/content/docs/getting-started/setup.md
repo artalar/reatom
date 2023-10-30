@@ -5,6 +5,8 @@ sidebar:
   order: 1
 ---
 
+Reatom is a framework-agnostic state manager, and you can use it with various adapters for different frameworks. This guide provides a common usage with React.js, as it is the most commonly used view library currently.
+
 ## Create new project from template
 
 You can use [degit](https://github.com/Rich-Harris/degit) package for quick start project with reatom.  
