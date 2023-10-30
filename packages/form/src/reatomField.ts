@@ -5,8 +5,11 @@ import { isDeepEqual, noop } from '@reatom/utils'
 import { toError } from './utils'
 
 export interface FieldFocus {
+  /** The field is focused. */
   active: boolean
+  /** The filed state is not equal to the initial state. */
   dirty: boolean
+  /** The field has ever gained and lost focus */
   touched: boolean
 }
 
@@ -166,11 +169,11 @@ export const reatomField = <State, Value>(
   }, `${name}.validate`)
 
   const focus: This['focus'] = action((ctx) => {
-    focusAtom.merge(ctx, { active: true, touched: true })
+    focusAtom.merge(ctx, { active: true })
   }, `${name}.focus`)
 
   const blur: This['blur'] = action((ctx) => {
-    focusAtom.merge(ctx, { active: false })
+    focusAtom.merge(ctx, { active: false, touched: true })
     if (validateOnBlur) validate(ctx)
   }, `${name}.blur`)
 
