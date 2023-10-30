@@ -174,4 +174,3 @@ someExternalVar = 100
 console.log(ctx1.get(someAtom), ctx2.get(someAtom))
 // logs: 1, 100
 // because ctx1 cached 1 and ctx2 was only read when value changed
-```
