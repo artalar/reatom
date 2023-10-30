@@ -64,19 +64,14 @@ Here is how:
 
 ```jsx
 const nameAtom = atom('Joe')
-const handleNameChange = action(
-  (ctx, event) => nameAtom(ctx, event.currentTarget.value),
-  'handleNameChange',
-)
 
 const Greeting = () => {
-  const [name] = useAtom(nameAtom)
-  const handleNameChange = useAction(onNameChange)
+  const [name, setName] = useAtom(nameAtom)
 
   return (
     <br>
       What is your name?:
-      <input value={name} onChange={handleNameChange} />
+      <input value={name} onChange={setName} />
       </br>
       <h1>Hello {greetAtom}!</h1>
     </>
@@ -101,12 +96,7 @@ const Greeting = () => {
 }
 ```
 
-
 This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react](/package/npm-react/) package documentation
-
-### Additional configuration
-
- Reatom also has eslint plugin which will help to avoid errors and add tools for code generation. You can skip [installing it](http://localhost:3000/recipes/eslint/) at this stage
 
 <!--
 ### With Solid
