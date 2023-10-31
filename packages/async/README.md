@@ -605,35 +605,35 @@ Here we rely on the fact that `onConnect` will be called only when `fetchList.da
 
 ## withAbort
 
-This is the most powerful feature for advanced async flow management. Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call. This operator allows you to use the full power of Reatom architecture by relies on a context causes and give the ability to handle concurrent requests like with [AsyncLocalStorage](https://nodejs.org/api/async_context.html) / AsyncContext ([Ecma TC39 proposal slides](https://docs.google.com/presentation/d/1LLcZxYyuQ1DhBH1htvEFp95PkeYM5nLSrlQoOmWpYEI/edit#slide=id.p)) from a mature backend frameworks. Like redux-saga or rxjs it allows you to cancel concurrent requests of any depth, but unlike them, it does not require you to use generators, observables, or any additional abstraction! All needed information already stored in the context.
+This is the most powerful feature for advanced async flow management. It allows you to configure concurrency strategy of your effect. This operator allows you to use the full power of Reatom architecture by relies on a context causes and give the ability to handle concurrent requests like with [AsyncLocalStorage](https://nodejs.org/api/async_context.html) / AsyncContext ([Ecma TC39 proposal slides](https://docs.google.com/presentation/d/1LLcZxYyuQ1DhBH1htvEFp95PkeYM5nLSrlQoOmWpYEI/edit#slide=id.p)) from a mature backend frameworks. Like redux-saga or rxjs it allows you to cancel concurrent requests of any depth, but unlike them, it does not require you to use generators, observables, or any additional abstraction! All needed information already stored in the context.
 
-Currently, automatic aborting is supported only for features from @reatom/effects package. `onConnect`, `take`, `takeNested` automatically provides AbortController or subscribes to it.
+So, how does it work? By default, each effect in `reatomAsync` has its own `AbortController` in `ctx.controller`, but it isn't managed and doesn't do anything. To achieve the basic concurrency strategy of "last-in-win," you need to call `ctx.controller.abort()` for the previous effect when the new one is called, and to do it, you need to store the previous controller somewhere. We have an example code demonstrating this logic at the beginning of this page, check `abortControllerAtom` usage. However, performing this manually is annoying, so we have moved this logic to a reusable operator called `withAbort` and added a few additional methods:
 
-`withAbort` operator adds `onAbort` action for handling abort from any cause, `abort` action for manual aborting, `abortControllerAtom` which stores AbortController of the last effect call. Be noted that abort errors do not trigger `onReject` hook, but `onAbort` hook.
+- `abort` action: You can manually call this action to manage the abort logic yourself.
+- `abortControllerAtom`: An atom that stores the `AbortController` of the last effect call.
+- `onAbort` action: Used for handling abort from any cause. Please do not call it manually. It is useful to hook this action (`onAbort.onCall(doSome)`) for additional logic.
 
-An example of a simple resource fabric with aborting request on a data usage disconnect.
+`withAbort` accepts an optional parameters object with a `strategy` property, which can be set to either `none`, `first-in-win`, or `last-in-win` (default).
+
+Note that the behavior of your effect is influenced not only by the strategy and additional actions but also by the top-level cause controllers. For instance, `onConnect` also produces an `AbortController`. It will cancel your request when the associated atom is disconnected. However, it is possible that your request was called after connection with some additional parameters, and you still want to cancel it if the `dataAtom` becomes disconnected. You should describe this logic additionally. Please check the example below.
 
 ```ts
 import { reatomAsync, withDataAtom, withAbort } from '@reatom/async'
-import { onDisconnect } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 
-const reatomResource = (initState, url, concurrent = true) => {
-  const resource = reatomAsync((ctx) =>
-    fetch(url, ctx.controller).then((response) => {
-      if (response.status !== 200) throw response
-      return response.json()
-    }),
-  ).pipe(
-    withDataAtom(initState),
-    withAbort({ strategy: concurrent ? 'last-in-win' : 'none' }),
-  )
+export const fetchList = reatomAsync(
+  (ctx, page = 1) => request(`api/list?page=${page}`, ctx.controller),
+  'fetchList',
+).pipe(withDataAtom([]), withAbort())
 
+onConnect(fetchList.dataAtom, (ctx) => {
+  fetchList(ctx)
   // abort unneeded request
-  onDisconnect(resource.dataAtom, resource.abort)
-
-  return resource
-}
+  return () => fetchList.abort(ctx)
+})
 ```
+
+In this case, the `fetchList` could be called with parameters, and each new request will cancel the previous one. Also, when the user leaves the page and the `dataAtom` becomes disconnected, the last request will be canceled too.
 
 Check the real-world example in pooling example from [story tests below](https://www.reatom.dev/package/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
 
