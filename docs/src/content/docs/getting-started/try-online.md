@@ -6,6 +6,9 @@ sidebar:
 ---
 
 Here is a list of templates in various sandboxes where you can try reatom online:
+Here is the base template project with Vite, TypeScript, React and Reatom ecosystem: https://github.com/artalar/reatom-react-ts
+
+Try it online: [codesandbox](https://codesandbox.io/p/sandbox/github/artalar/reatom-react-ts/tree/main), [stackblitz](https://githubblitz.com/artalar/reatom-react-ts), [gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
 
 - [Gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
 - [CodeSandbox](https://codesandbox.io/s/github/artalar/reatom-react-ts)
