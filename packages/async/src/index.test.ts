@@ -388,4 +388,26 @@ test('withRetry abort', async () => {
   ;`👍` //?
 })
 
+test('withAbort + withRetry', async () => {
+  const effect = reatomAsync(async () => {
+    if (1) throw new Error('test error')
+  }).pipe(
+    withAbort(),
+    withRetry({
+      onReject: (ctx, error, retries) => {
+        return 1
+      },
+    }),
+  )
+  onConnect(effect, (ctx) => effect(ctx).catch(noop))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(effect)
+  await sleep(10)
+
+  setTimeout(() => track.unsubscribe())
+  assert.ok(track.calls.length > 2)
+  ;`👍` //?
+})
+
 test.run()

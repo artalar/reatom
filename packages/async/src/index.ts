@@ -24,10 +24,10 @@ import {
   onCtxAbort,
   withAbortableSchedule,
 } from '@reatom/effects'
+import { onConnect } from '@reatom/hooks'
 import { assign, isAbort, noop, sleep, toAbortError } from '@reatom/utils'
 
 import { handleEffect } from './handleEffect'
-import { onConnect } from '@reatom/hooks'
 export { withCache } from './withCache'
 export { withStatusesAtom } from './withStatusesAtom'
 export type {
@@ -485,17 +485,12 @@ export const withRetry =
               ).catch(noop)
               const state = ctx.get(anAsync)
 
-              // react only on new aborts, ignore possible abort on effect concurrency from the retry
-              ctx.schedule(() => {
-                getTopController(ctx.cause)?.signal.addEventListener(
-                  'abort',
-                  (error) => {
-                    controller.abort(error)
-                    if (state === ctx.get(anAsync)) {
-                      retriesAtom(ctx, 0)
-                    }
-                  },
-                )
+              const causeController = getTopController(ctx.cause.cause!)
+              causeController?.signal.addEventListener('abort', () => {
+                controller.abort(causeController.signal.reason)
+                if (state === ctx.get(anAsync)) {
+                  retriesAtom(ctx, 0)
+                }
               })
             },
           )

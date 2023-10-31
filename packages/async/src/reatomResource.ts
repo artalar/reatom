@@ -82,7 +82,7 @@ export const reatomResource = <T>(
       ...params,
     )
 
-    promise.controller.signal.addEventListener('abort', (error) => {
+    promise.controller.signal.addEventListener('abort', () => {
       type ReactionWithCache = AsyncReaction & {
         cacheAtom?: CacheAtom
       }
