@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.2](https://github.com/artalar/reatom/compare/core-v3.6.1...core-v3.6.2) (2023-10-31)
+
+
+### Bug Fixes
+
+* **core:** conditional deps duplication ([c8968a9](https://github.com/artalar/reatom/commit/c8968a9a98f0554f1164b5857a78910cf61f1da4))
+
 ## [3.6.1](https://github.com/artalar/reatom/compare/core-v3.6.0...core-v3.6.1) (2023-10-10)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/artalar/reatom/compare/url-v3.4.0...url-v3.4.1) (2023-10-31)
+
+
+### Bug Fixes
+
+* **url:** compatibility with different routes [#671](https://github.com/artalar/reatom/issues/671) ([b4f5761](https://github.com/artalar/reatom/commit/b4f5761a8cde3697e4a9192e88ccc42ff8378bba))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/url-v3.3.1...url-v3.4.0) (2023-10-20)
 
 

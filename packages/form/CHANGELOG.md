@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.2.0](https://github.com/artalar/reatom/compare/form-v3.1.6...form-v3.2.0) (2023-10-31)
+
+
+### Features
+
+* **form:** improve form validation and field value handling ([cf0e297](https://github.com/artalar/reatom/commit/cf0e297e674e1e481fe877477a0f1bb3a4c1d6c8))
+* **form:** many docs, small refactoring ([2c2952b](https://github.com/artalar/reatom/commit/2c2952b583701cbaa56f9786b6548cde8b069d13))
+
+
+### Bug Fixes
+
+* **form:** touched behavior ([caaedd1](https://github.com/artalar/reatom/commit/caaedd11fa5b938731e298c2b6ee484408b91eb5))
+
 ## [3.1.6](https://github.com/artalar/reatom/compare/form-v3.1.5...form-v3.1.6) (2023-05-21)
 
 
