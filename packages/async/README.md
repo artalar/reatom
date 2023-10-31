@@ -641,56 +641,77 @@ Check the real-world example in pooling example from [story tests below](https:/
 
 This method is the simplest solution to describe an asynchronous resource that is based on local states. Let's delve into the problem.
 
-For example, we need to display a list of items, and we have paging.
+For example, we need to display a list of items, and we have paging and a search field.
 
 ```ts
 export const pageAtom = atom(1, 'pageAtom')
+export const searchAtom = atom('', 'searchAtom')
 ```
 
-We need to describe the fetching logic. How could we describe it with Reatom? The most naive solution forces us to declare types explicitly, and then the fetching definition triggers, which is not obvious. Also, don't forget about `onConnect` for initial loading! Oh, oh, and don't forget to use `withAbort` to prevent race conditions if a user clicks on the next page button too frequently.
+We need to describe the fetching logic. How can we describe it using Reatom? The naive solution requires us to explicitly declare types. We also need to declare fetching triggers, which may not be obvious to the reader since it follows at the end of the code block. The problem with separate triggers is that if the dependent atoms update together (for example, on a reset button), there would be extra calls to fetching. So, to prevent race conditions in this case and for frequently used events, we need to use `withAbort`. Oh, and don't forget to include `onConnect` for initial loading!
 
 ```ts
 import { reatomAsync, withDataAtom, withAbort } from '@reatom/async'
 import { onConnect } from '@reatom/hooks'
 
-const fetchList = reatomAsync(async (ctx, page: string) => {
-  return request(`/api/list?page=${page}`, ctx.controller)
+const fetchList = reatomAsync(async (ctx, page: string, search: string) => {
+  return await request(`/api/list?page=${page}&q=${search}`, ctx.controller)
 }, 'fetchList').pipe(withDataAtom([]), withAbort())
-onConnect(fetchList.dataAtom, (ctx) => fetchList(ctx, ctx.get(pageAtom)))
-pageAtom.onChange(fetchSuggestion) // trigger
+onConnect(fetchList.dataAtom, (ctx) => {
+  // init
+  fetchList(ctx, ctx.get(pageAtom), ctx.get(searchAtom))
+  // cleanup
+  return () => fetchList.abort(ctx)
+})
+// trigger
+pageAtom.onChange((ctx, page) =>
+  fetchSuggestion(ctx, page, ctx.get(searchAtom)),
+)
+searchAtom.onChange((ctx, search) =>
+  fetchSuggestion(ctx, ctx.get(pageAtom), search),
+)
 ```
 
-`reatomResource` allows us to use `ctx.spy` just like in the regular `atom`. It is much simpler, more obvious, and works automatically for both caching and previous request cancellation.
+There are a lot of boilerplates. `reatomResource` is a fabric method that encapsulates all this logic and allows you to use `ctx.spy` just like in the regular `atom`. It is much simpler, more intuitive, and works automatically for both caching and cancelling previous requests.
 
 ```ts
 import { reatomResource } from '@reatom/async'
 
 const listReaction = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
-  return request(`/api/list?page=${page}`, ctx.controller)
+  const search = ctx.spy(searchAtom)
+  return await ctx.schedule(() =>
+    request(`/api/list?page=${page}&q=${search}`, ctx.controller),
+  )
 }, 'listReaction')
 ```
 
-Now, `listReaction` has a `promiseAtom` that you can use with [useAtomPromise](https://www.reatom.dev/adapter/npm-react/#useatompromise) in a React application, for example.
+That's all. The code becomes much cleaner and simpler! The only additional change is the need for `ctx.schedule` for effects, as the callback in the `reatomResource` is called in the pure computations queue (to make `spy` work).
 
-If you need to set up a default value and have the ability to use the resulting data, simply use `withDataAtom` as you would with any other async action.
+Also, `listReaction` now has a `promiseAtom` that contains the last promise. You can use it with [useAtomPromise](https://www.reatom.dev/adapter/npm-react/#useatompromise) in a React application, for example.
 
-But that's not all! The most powerful feature of `reatomResource` is that you can use one `promiseAtom` in another, which greatly simplifies dependent request descriptions and prevents complex race conditions, as the stale promises are always automatically canceled.
+If you need to set up a default value and use it synchronously, simply use `withDataAtom` as you would with any other async action. All async operators work fine with `reatomResource`. You could use `withRetry` and even `withCache`!
+
+But that's not all! The most powerful feature of `reatomResource` is that you can use `promiseAtom` in another resources, which greatly simplifies dependent request descriptions and prevents complex race conditions, as the stale promises are always automatically canceled.
 
 ```ts
 import { reatomResource } from '@reatom/async'
 
 const aReaction = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
-  return request(`/api/a?page=${page}`, ctx.controller)
+  return await ctx.schedule(() =>
+    request(`/api/a?page=${page}`, ctx.controller),
+  )
 }, 'aReaction')
 const bReaction = reatomResource(async (ctx) => {
-  const a = ctx.spy(aReaction.promiseAtom)
-  return request(`/api/b?a=${a}`, ctx.controller)
+  const a = await ctx.spy(aReaction.promiseAtom)
+  return await ctx.schedule(() => request(`/api/b/${b}`, ctx.controller))
 }, 'bReaction')
 ```
 
-In this example, `bReaction.pendingAtom` will be updated immediately as `aReaction` starts fetching!
+In this example, when the `pageAtom` updates, the entire chain of previous requests aborts, and all computed effects are called immediately.
+
+Please note that `ctx.get` and `ctx.spy` of a `promiseAtom` return a promise, and you should `await` it to obtain the value.
 
 ## reatomAsyncReaction
 
