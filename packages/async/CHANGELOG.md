@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.11.0](https://github.com/artalar/reatom/compare/async-v3.10.1...async-v3.11.0) (2023-10-31)
+
+
+### Features
+
+* **async:** add reset action to statusesAtom ([7803168](https://github.com/artalar/reatom/commit/78031689792d7737641fc822324dbe482c4a8fec))
+
+
+### Bug Fixes
+
+* **async:** improve withStatusesAtom update order ([316bac5](https://github.com/artalar/reatom/commit/316bac55d18cdd24c743e3e6e6eb5645b2ebf5c6))
+* **async:** withAbort + withRetry ([d5190ab](https://github.com/artalar/reatom/commit/d5190ab87d57e3925652e07c0741c2938b80cd39))
+
 ## [3.10.1](https://github.com/artalar/reatom/compare/async-v3.10.0...async-v3.10.1) (2023-10-23)
 
 

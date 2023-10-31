@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.2](https://github.com/artalar/reatom/compare/npm-react-v3.7.1...npm-react-v3.7.2) (2023-10-31)
+
+
+### Bug Fixes
+
+* **npm-react:** reatomComponent bind stability ([2516c6c](https://github.com/artalar/reatom/commit/2516c6c4ea4e7ca0c04d24e1f943b975cdd9c87a))
+
 ## [3.7.1](https://github.com/artalar/reatom/compare/npm-react-v3.7.0...npm-react-v3.7.1) (2023-10-21)
 
 
