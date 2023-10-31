@@ -235,7 +235,7 @@ export const fetchFeed = reatomAsync(async (ctx, page: number) => {
 }, 'fetchFeed').pipe(
   withDataAtom([], (ctx, { data, page }, state) => {
     const newState = [...state]
-    state.splice((page - 1) * PAGE_SIZE, PAGE_SIZE, ...data)
+    newState.splice((page - 1) * PAGE_SIZE, PAGE_SIZE, ...data)
     return newState
   }),
 )
