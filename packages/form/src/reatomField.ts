@@ -7,32 +7,55 @@ import { toError } from './utils'
 export interface FieldFocus {
   /** The field is focused. */
   active: boolean
-  /** The filed state is not equal to the initial state. */
+
+  /** The field state is not equal to the initial state. */
   dirty: boolean
-  /** The field has ever gained and lost focus */
+
+  /** The field has ever gained and lost focus. */
   touched: boolean
 }
 
 export interface FieldValidation {
+  /** The field validation error text. */
   error: undefined | string
+
+  /** The field validation status. */
   valid: boolean
+
+  /** The field async validation status */
   validating: boolean
 }
 
 export interface FieldActions<Value = any> {
+  /** Action for handling field blur. */
   blur: Action<[], void>
+
+  /** Action for handling field changes, accepts the "value" parameter and applies it to `toState` option. */
   change: Action<[Value], Value>
+
+  /** Action for handling field focus. */
   focus: Action<[], void>
+
+  /** Action to reset the state, the value, the validation, and the focus. */
   reset: Action<[], void>
+
+  /** Action to trigger field validation. */
   validate: Action<[], FieldValidation>
 }
 
 export interface FieldAtom<State = any, Value = State>
   extends AtomMut<State>,
     FieldActions<Value> {
+  /** Atom of an object with all related focus statuses. */
   focusAtom: RecordAtom<FieldFocus>
+
+  /** The initial state of the atom, readonly. */
   initState: State
+
+  /** Atom of an object with all related validation statuses. */
   validationAtom: RecordAtom<FieldValidation>
+
+  /** Atom with the "value" data, computed by the `fromState` option */
   valueAtom: Atom<Value>
 }
 
@@ -49,16 +72,64 @@ export interface FieldValidateOption<State = any, Value = State> {
 }
 
 export interface FieldOptions<State = any, Value = State> {
+  /**
+   * The callback to filter "value" changes (from the 'change' action). It should return 'false' to skip the update.
+   * By default, it always returns `false`.
+   */
   filter?: (ctx: Ctx, newValue: Value, prevValue: Value) => boolean
+
+  /**
+   * The callback to compute the "value" data from the "state" data.
+   * By default, it returns the "state" data without any transformations.
+   */
   fromState?: (ctx: Ctx, state: State) => Value
+
+  /**
+   * The initial state of the atom, which is the only required option.
+   */
   initState: State
+
+  /**
+   * The callback used to determine whether the "value" has changed.
+   * By default, it utilizes `isDeepEqual` from reatom/utils.
+   */
   isDirty?: (ctx: Ctx, newValue: Value, prevValue: Value) => boolean
+
+  /**
+   * The name of the field and all related atoms and actions.
+   */
   name?: string
+
+  /**
+   * The callback to transform the "state" data from the "value" data from the `change` action.
+   * By default, it returns the "value" data without any transformations.
+   */
   toState?: (ctx: Ctx, value: Value) => State
+
+  /**
+   * The callback to validate the field.
+   */
   validate?: FieldValidateOption<State, Value>
-  /** @deprecated use boolean flags instead */
+
+  /**
+   * Defines the reset behavior of the validation state during async validation.
+   * It is `false` by default.
+   */
+  keepErrorDuringValidating?: boolean
+
+  /**
+   * @deprecated Use boolean flags instead. It is `blur` by default.
+   */
   validationTrigger?: 'change' | 'blur' | 'submit'
+
+  /**
+   * Defines if the validation should be triggered with every field change. By default computes from the `validationTrigger` option and `!validateOnBlur`.
+   */
   validateOnChange?: boolean
+
+  /**
+   * Defines if the validation should be triggered on the field blur. By default computes from the `validationTrigger` option.
+   */
   validateOnBlur?: boolean
 }
 
@@ -83,9 +154,10 @@ export const reatomField = <State, Value>(
     name: optionsName,
     toState = (ctx, value) => value as unknown as State,
     validate: validateFn,
+    keepErrorDuringValidating = false,
     validationTrigger = 'blur',
-    validateOnChange = validationTrigger === 'change',
     validateOnBlur = validationTrigger === 'blur',
+    validateOnChange = validationTrigger === 'change' && !validateOnBlur,
   }: FieldOptions<State, Value>,
   // this is out of the options for eslint compatibility
   name = optionsName ?? __count(`${typeof initState}Field`),
@@ -121,7 +193,7 @@ export const reatomField = <State, Value>(
           validation,
         })
       } catch (error) {
-        var message = toError(error)
+        var message: undefined | string = toError(error)
       }
 
       if (promise instanceof Promise) {
@@ -136,7 +208,16 @@ export const reatomField = <State, Value>(
               validationAtom.merge(ctx, validation),
           )
 
-        validation = validationAtom.merge(ctx, { validating: true })
+        validation = validationAtom.merge(
+          ctx,
+          keepErrorDuringValidating
+            ? { validating: true }
+            : {
+                error: undefined,
+                valid: true,
+                validating: true,
+              },
+        )
 
         __thenReatomed(
           ctx,
@@ -159,8 +240,8 @@ export const reatomField = <State, Value>(
       } else {
         validation = validationAtom.merge(ctx, {
           validating: false,
-          error: String(message!),
-          valid: !message!,
+          error: message,
+          valid: !message,
         })
       }
     }
@@ -174,7 +255,6 @@ export const reatomField = <State, Value>(
 
   const blur: This['blur'] = action((ctx) => {
     focusAtom.merge(ctx, { active: false, touched: true })
-    if (validateOnBlur) validate(ctx)
   }, `${name}.blur`)
 
   const change: This['change'] = action((ctx, newValue) => {
@@ -190,8 +270,6 @@ export const reatomField = <State, Value>(
       dirty: isDirty(ctx, newValue, prevValue),
     })
 
-    if (validateOnChange) validate(ctx)
-
     return newValue
   }, `${name}.change`)
 
@@ -200,6 +278,16 @@ export const reatomField = <State, Value>(
     focusAtom(ctx, fieldInitFocus)
     validationAtom(ctx, fieldInitValidation)
   }, `${name}.reset`)
+
+  if (validateOnChange) {
+    fieldAtom.onChange(validate)
+  }
+
+  if (validateOnBlur) {
+    blur.onCall((ctx) => {
+      validate(ctx)
+    })
+  }
 
   return Object.assign(fieldAtom, {
     blur,
