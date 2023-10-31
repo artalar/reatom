@@ -264,6 +264,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"contributing.md": {
+	id: "contributing.md";
+  slug: "contributing";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "core.md": {
 	id: "core.md";
   slug: "core";
@@ -278,65 +285,37 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"general/what-is-state-manager.md": {
-	id: "general/what-is-state-manager.md";
-  slug: "general/what-is-state-manager";
+"getting-started/debugging.md": {
+	id: "getting-started/debugging.md";
+  slug: "getting-started/debugging";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/architecture.md": {
-	id: "guides/architecture.md";
-  slug: "guides/architecture";
+"getting-started/learning.md": {
+	id: "getting-started/learning.md";
+  slug: "getting-started/learning";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/atomization.md": {
-	id: "guides/atomization.md";
-  slug: "guides/atomization";
+"getting-started/setup.md": {
+	id: "getting-started/setup.md";
+  slug: "getting-started/setup";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/contributing.md": {
-	id: "guides/contributing.md";
-  slug: "guides/contributing";
+"getting-started/testing.md": {
+	id: "getting-started/testing.md";
+  slug: "getting-started/testing";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/custom-operator.md": {
-	id: "guides/custom-operator.md";
-  slug: "guides/custom-operator";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/debug.md": {
-	id: "guides/debug.md";
-  slug: "guides/debug";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/lifecycle.md": {
-	id: "guides/lifecycle.md";
-  slug: "guides/lifecycle";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/naming.md": {
-	id: "guides/naming.md";
-  slug: "guides/naming";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/typescript.md": {
-	id: "guides/typescript.md";
-  slug: "guides/typescript";
+"getting-started/try-online.md": {
+	id: "getting-started/try-online.md";
+  slug: "getting-started/try-online";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -425,9 +404,37 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"package/npm-cookie-baker.md": {
+	id: "package/npm-cookie-baker.md";
+  slug: "package/npm-cookie-baker";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-history.md": {
+	id: "package/npm-history.md";
+  slug: "package/npm-history";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-react.md": {
+	id: "package/npm-react.md";
+  slug: "package/npm-react";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "package/npm-solid-js.md": {
 	id: "package/npm-solid-js.md";
   slug: "package/npm-solid-js";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-svelte.md": {
+	id: "package/npm-svelte.md";
+  slug: "package/npm-svelte";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -495,6 +502,48 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"recipes/atomization.md": {
+	id: "recipes/atomization.md";
+  slug: "recipes/atomization";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/data-fetching.md": {
+	id: "recipes/data-fetching.md";
+  slug: "recipes/data-fetching";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/data-persisting.md": {
+	id: "recipes/data-persisting.md";
+  slug: "recipes/data-persisting";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/forms.md": {
+	id: "recipes/forms.md";
+  slug: "recipes/forms";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/share-state.md": {
+	id: "recipes/share-state.md";
+  slug: "recipes/share-state";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/undo-redo.md": {
+	id: "recipes/undo-redo.md";
+  slug: "recipes/undo-redo";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "repl.mdx": {
 	id: "repl.mdx";
   slug: "repl";
@@ -502,13 +551,6 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".mdx"] };
-"tutorial.md": {
-	id: "tutorial.md";
-  slug: "tutorial";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
 };
 
 	};

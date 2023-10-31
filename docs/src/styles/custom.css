@@ -40,7 +40,7 @@ main::before {
   content: '';
   position: fixed;
   width: 120%;
-  height: 100%;
+  height: 100vh;
   opacity: 0.02;
   pointer-events: none;
   background-image: url('/favicon.svg');

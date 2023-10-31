@@ -25,32 +25,24 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       sidebar: [
         {
-          label: 'Core',
-          link: 'core',
+          label: 'Getting Started',
+          autogenerate: {
+            directory: 'getting-started',
+          },
+        },
+        {
+          label: 'Recipes',
+          autogenerate: {
+            directory: 'recipes',
+          },
         },
         {
           label: 'Examples',
           link: 'examples',
         },
         {
-          label: 'Tutorial',
-          link: 'tutorial',
-        },
-        {
-          label: 'REPL',
-          link: 'repl',
-        },
-        {
-          label: 'Guides',
-          autogenerate: {
-            directory: 'guides',
-          },
-        },
-        {
-          label: 'General',
-          autogenerate: {
-            directory: 'general',
-          },
+          label: 'Handbook',
+          link: 'handbook',
         },
         {
           label: 'Packages',
@@ -59,11 +51,8 @@ export default defineConfig({
           },
         },
         {
-          label: 'Adapters',
-          autogenerate: {
-            directory: 'adapter',
-            collapsed: true,
-          },
+          label: 'REPL',
+          link: 'repl',
         },
         {
           label: 'Compat',
@@ -71,6 +60,10 @@ export default defineConfig({
             directory: 'compat',
             collapsed: true,
           },
+        },
+        {
+          label: 'Contributing',
+          link: 'contributing',
         },
       ],
     }),

@@ -1,6 +1,7 @@
 ---
 title: Atomization
 description: How to doing fabrics right with Reatom
+order: 1
 ---
 
 You could store your data from the backend in atoms without any mappings, but it is a good practice to wrap some of your model slices to atoms for better control and to have access to more reactive features. The rule is simple: **mutable properties could be an atom, readonly properties shout stay a primitive**.
