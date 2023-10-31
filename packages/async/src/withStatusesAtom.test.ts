@@ -9,6 +9,7 @@ import {
   AsyncStatusesFulfilled,
   AsyncStatusesNeverPending,
   AsyncStatusesRejected,
+  asyncStatusesInitState,
   withStatusesAtom,
 } from './withStatusesAtom'
 import { sleep } from '@reatom/utils'
@@ -114,10 +115,7 @@ test('withStatusesAtom', async () => {
 test('withCache and withStatusesAtom', async () => {
   const fetchData = reatomAsync(async (ctx, shouldTrow = false) => {
     if (shouldTrow) throw new Error('withStatusesAtom test error')
-  }).pipe(
-    withStatusesAtom(),
-    withCache(),
-  )
+  }).pipe(withStatusesAtom(), withCache())
   const ctx = createTestCtx()
   const track = ctx.subscribeTrack(fetchData.statusesAtom)
 
@@ -168,6 +166,22 @@ test('withStatusesAtom parallel requests', async () => {
   await p2
 
   assert.equal(track.lastInput(), fulfilled)
+  ;`👍` //?
+})
+
+test('reset during pending', async () => {
+  const fetchData = reatomAsync(async () => {}).pipe(withStatusesAtom())
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(fetchData.statusesAtom), asyncStatusesInitState)
+
+  fetchData(ctx)
+  assert.is(ctx.get(fetchData.statusesAtom).isPending, true)
+  fetchData.statusesAtom.reset(ctx)
+  assert.is(ctx.get(fetchData.statusesAtom).isPending, false)
+  assert.is(ctx.get(fetchData.statusesAtom).isEverPending, false)
+  await sleep()
+  assert.is(ctx.get(fetchData.statusesAtom).isEverPending, false)
   ;`👍` //?
 })
 

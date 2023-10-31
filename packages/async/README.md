@@ -336,6 +336,8 @@ export const fetchList = reatomAsync(
   'fetchList',
 ).pipe(withStatusesAtom())
 
+// ...
+
 const initStatuses = ctx.get(fetchList.statusesAtom)
 
 initStatuses.isPending // false
@@ -349,6 +351,15 @@ initStatuses.isEverSettled // false
 ```
 
 > `!isEverPending` is like _init_ state, `isEverSettled` is like _loaded_ state, `isFirstPending` is perfect match for "stale while revalidate" pattern.
+
+`statusesAtom` has an additional `reset` action that you can use to clear all statuses. Any pending promises will be ignored in this case. For example:
+
+```ts
+onDisconnect(fetchList.dataAtom, (ctx) => {
+  fetchList.dataAtom.reset(ctx)
+  fetchList.statusesAtom.reset(ctx)
+})
+```
 
 You could import special types of statuses of each effect state and use it for typesafe conditional logic.
 
