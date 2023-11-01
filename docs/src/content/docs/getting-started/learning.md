@@ -14,7 +14,7 @@ You can install it with the command
 npm install --save @reatom/framework
 ```
 
-## Basic primitives
+### Basic primitives
 
 The reatom is based on three basic primitives: Atom, Action and Context
 Below you can see how they are used together, after which we will look at each line and what happens in it
