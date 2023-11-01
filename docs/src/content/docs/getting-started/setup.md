@@ -1,7 +1,7 @@
 ---
 title: Setup
 description: Explaining initial setup
-sidebar: 
+sidebar:
   order: 1
 ---
 
@@ -9,18 +9,19 @@ Reatom is a framework-agnostic state manager, and you can use it with various ad
 
 ## Create new project from template
 
-You can use [degit](https://github.com/Rich-Harris/degit) package for quick start project with reatom.  
+The base template project includes Vite, TypeScript, React and Reatom ecosystem: https://github.com/artalar/reatom-react-ts
 
-##### Reatom + React + TypeScript + Prettier + Vite
+You could try it online: [codesandbox](https://codesandbox.io/p/sandbox/github/artalar/reatom-react-ts/tree/main), [stackblitz](https://githubblitz.com/artalar/reatom-react-ts), [gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
+
+To setup it in your machine you can use [degit](https://github.com/Rich-Harris/degit) package.
 
 ```sh
-npx degit github:artalar/reatom-react-ts my-project
-cd my-project
+npx degit github:artalar/reatom-react-ts PROJECT-NAME
+cd PROJECT-NAME
 
 npm install
 npm run dev
 ```
-
 
 ## Add to existing project
 
@@ -36,14 +37,12 @@ npm i @reatom/core
 npm i @reatom/npm-react
 ```
 
-Then you need add add reatom wrapper
+You need to set up the main context and put it into the provider at the top of your application.
 
-React 18 (in case you use 16 or 17 react version, follow guide [Reatom with legacy react versions](/recipes/react-legacy/)):
 ```jsx
-
 import { createCtx } from '@reatom/core'
 import { reatomContext } from '@reatom/npm-react'
-import { Main } from './path/to/an/Main';
+import { Main } from './path/to/an/Main'
 
 const ctx = createCtx()
 
@@ -52,45 +51,47 @@ export const App = () => (
     <Main />
   </reatomContext.Provider>
 )
-
 ```
 
 #### Usage
 
-`useAtom` allow use atoms inside react components, and  
-`useAction` same but for actions.
+The `useAtom` function allows you to have an experience similar to `useState`, but with shared atom state.
 
-Here is how:
+```jsx
+const nameAtom = atom('Joe')
+const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(nameAtom)}!`)
+
+const Greeting = () => {
+  const [name, setName] = useAtom(nameAtom)
+  const [greeting] = useAtom(greetingAtom)
+
+  return (
+    <br>
+      What is your name?:
+      <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
+      </br>
+      <h1>Hello {greeting}!</h1>
+    </>
+  )
+}
+```
+
+Also, you can create computed atoms (kind of selectors) right inside `useAtom`.
 
 ```jsx
 const nameAtom = atom('Joe')
 
 const Greeting = () => {
+  const t = useTranslation()
   const [name, setName] = useAtom(nameAtom)
+  const [greeting] = useAtom((ctx) => `${t('common:GREETING')} ${ctx.spy(nameAtom)}!`, [t])
 
   return (
     <br>
       What is your name?:
-      <input value={name} onChange={setName} />
+      <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
       </br>
-      <h1>Hello {greetAtom}!</h1>
-    </>
-  )
-}
-```
-Also you can create computed atoms, by passing function in `useAtom`
-
-```jsx
-const Greeting = () => {
-  const [greet] = useAtom((ctx) => `Hello ${ctx.spy(nameAtom)}`)
-  const handleNameChange = useAction(onNameChange)
-
-  return (
-    <br>
-      What is your name?:
-      <input value={name} onChange={handleNameChange} />
-      </br>
-      <h1>{greet}!</h1>
+      <h1>{greeting}!</h1>
     </>
   )
 }

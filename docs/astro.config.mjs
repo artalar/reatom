@@ -31,18 +31,18 @@ export default defineConfig({
           },
         },
         {
-          label: 'Recipes',
-          autogenerate: {
-            directory: 'recipes',
-          },
-        },
-        {
           label: 'Examples',
           link: 'examples',
         },
         {
           label: 'Handbook',
           link: 'handbook',
+        },
+        {
+          label: 'Recipes',
+          autogenerate: {
+            directory: 'recipes',
+          },
         },
         {
           label: 'Packages',

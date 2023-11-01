@@ -69,7 +69,7 @@ export const fetchData = action(async (ctx) => {
 export const loadData = action(async (ctx) => {
   try {
     isLoadingAtom(ctx, true)
-    const data = await ctx.spy(fetchData);
+    const data = await ctx.spy(fetchData)
     dataAtom(ctx, data)
   } catch (e) {
     console.error(e)
