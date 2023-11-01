@@ -63,7 +63,7 @@ export const isLoadingAtom = atom(null)
 
 export const fetchData = action(async (ctx) => {
   const response = await fetch('https://jsonplaceholder.typicode.com/todos/1')
-  const data = await response.json()
+  return await response.json()
 })
 
 export const loadData = action(async (ctx) => {

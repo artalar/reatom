@@ -5,26 +5,114 @@ sidebar:
   order: 2
 ---
 
-## Installation
+## Before we start
 
-First of all we will use @reatom/framework that incorparates many functions you may need in development.
+In the examples we will use the [@reatom/framework](/package/framework/) package which is an umbrella package for the most common reatom packages.
+You can install it with the command
 
 ```bash
 npm install --save @reatom/framework
 ```
 
-## Atoms are storing data and dependencies
+## Basic primitives
 
-Let's have trivial example that employs reatom's reactivity by implementing simple `a + b = c`:
+The reatom is based on three basic primitives: Atom, Action and Context
+Below you can see how they are used together, after which we will look at each line and what happens in it
 
-```typescript
-import { createCtx, atom } from '@reatom/framework'
+### Context
+
+The first thing we did was create a _context_. It is required for read, modify and subscribe operations. Later we will see what tricks it allows us to do, but now we will focus on the fact that it is enough to create **one context for the whole application**
+
+```ts
+import { createCtx } from '@reatom/framework'
+const ctx = createCtx()
+```
+
+### Atom
+
+#### Create
+
+```ts
+import { atom } from '@reatom/framework'
+const aAtom = atom(1, 'aAtom')
+```
+
+An atom is like a variable, it has a type and a value. However, unlike a variable, we can track changes in its value and react to that changes in some way.
+To create an atom we use the `atom` factory function
+
+In line above we create atom with initial value `1` and name `aAtom`.  
+The name, though not required, will come in handy during the debug stage
+
+Atoms can also be computable, i.e. use the values of other atoms.
+This line of code can be read as - "To find out the value of `cAtom` you need to read the current value of `aAtom` and `bAtom` add summarize it".
+
+```ts
+const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
+```
+
+Computed atoms should be pure functions to archive the correct order of all computations
+
+#### Read
+
+To read the value of an atom you need a previously created context
+
+```ts
+import { atom, createCtx } from '@reatom/framework'
 
 const ctx = createCtx()
-
 const aAtom = atom(1, 'aAtom')
 const bAtom = atom(2, 'bAtom')
+const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
+ctx.get(aAtom) // 1
+ctx.get(cAtom) // 3
+```
+
+It is important to note that the retrieval of the value of an atom will happen only after its reading.
+In other words, it means that if a computed atom has not been read by anyone, the atom will not run the function passed to it
+
+#### Update
+
+To change the value in an atom you also need a context, but this time you need to pass it to the atom
+
+```ts
+import { atom, createCtx } from '@reatom/framework'
+
+const ctx = createCtx()
+const aAtom = atom(1, 'aAtom')
+aAtom(ctx, 3)
+```
+
+The current value of the atom can also be used in the update operation, by passing function
+
+```ts
+const greetAtom = atom('Hello', 'greetAtom')
+greetAtom(ctx, (greet) => greet + ', atom') // 'Hello, atom'
+greetAtom(ctx, (greet) => greet + ', atom') // 'Hello, atom, atom'
+```
+
+The previous state can also be used in computable atoms
+
+```ts
+import { atom, isDeepEqual } from '@reatom/framework'
+
+const listAtom = atom<List>([1, 2, 3, 4, 5], 'listAtom')
+const evenListAtom = atom((ctx, state = []) => {
+  const newState = ctx.spy(listAtom).filter((n) => n % 2 === 0)
+  return isDeepEqual(state, newState) ? state : newState
+}, 'evenListAtom')
+```
+
+#### Subscribe
+
+Finally you can subscribe to atom changes using context
+
+```ts
+import { atom, createCtx } from '@reatom/framework'
+
+const ctx = createCtx()
+const aAtom = atom(1, 'aAtom')
+const bAtom = atom(2, 'bAtom')
 const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 ctx.subscribe(cAtom, (c) => {
@@ -41,54 +129,14 @@ bAtom(ctx, 4)
 
 bAtom(ctx, 4)
 // does not log anything, as the state is not changed
-
-console.log(ctx.get(aAtom), ctx.get(bAtom), ctx.get(cAtom))
-// logs: 3, 4, 7
 ```
 
-In this example we defined 2 simple atoms (`aAtom` and `bAtom`) and one computed atom `cAtom` that spies on it's dependencies.
-The reactivity system enables us to compute values and also does not call subscribe callback when none of source atoms changed.
-Moreover we can spy on any atom that enables us to make dependency trees like this:
+## Actions
 
-```typescript
-const cDoubledAtom = atom((ctx) => 2 * ctx.spy(cAtom), 'cDoubledAtom')
-const cQuadrupledAtom = atom(
-  (ctx) => 2 * ctx.spy(cDoubledAtom),
-  'cQuadrupledAtom',
-)
-```
-
-### Some notes about atoms
-
-1. Atoms store things by reference. Just like props and useState in react.
-2. Computed atoms should be pure functions to archive the correct order of all computations
-3. Computed atoms do not compute if no one depend on them or subscribed on them. There's no need to do work that no one will use!
-4. If you need previous state to update some atom use update callback:
-
-```typescript
-const someAtom = atom('Hello', 'someAtom')
-someAtom(ctx, (prev) => prev + ', atom')
-// someAtom -> 'Hello, atom'
-someAtom(ctx, (prev) => prev + ', atom')
-// someAtom -> 'Hello, atom, atom'
-```
-
-5. You can use previous state in computed atoms but you have to define types manually:
-
-```typescript
-import { atom, isDeepEqual } from '@reatom/framework'
-
-const listAtom = atom<List>([], 'listAtom')
-const filteredListAtom = atom((ctx, state = []) => {
-  const newState = ctx.spy(listAtom).filter(predicate)
-  return isDeepEqual(state, newState) ? state : newState
-}, 'filteredListAtom')
-```
-
-## Actions enable transactions
+### Actions are transactions
 
 Setting atoms manually is good thing but more often we want to do many changes at once.
-Let's edit example so that we are able to change `a` and `b` simultaniously.
+Let's edit example so that we are able to change `a` and `b` simultaneously.
 
 ```typescript
 import { createCtx, atom, action } from '@reatom/framework'
@@ -97,14 +145,13 @@ const ctx = createCtx()
 
 const aAtom = atom(1, 'aAtom')
 const bAtom = atom(2, 'bAtom')
+const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 const setParams = action((ctx, a: number, b: number) => {
   console.log(`change a=${a}, b=${b}`)
   aAtom(ctx, a)
   bAtom(ctx, b)
 }, 'setParams')
-
-const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 ctx.subscribe(cAtom, (c) => {
   const a = ctx.get(aAtom)
@@ -113,33 +160,62 @@ ctx.subscribe(cAtom, (c) => {
 })
 
 setParams(ctx, 10, 12)
-// logs: change a=10, b=12
-// logs: 10 + 12 = 22
+// change a=10, b=12
+// 10 + 12 = 22
 
 setParams(ctx, 10, 12)
-// logs: change a=10, b=12
-// does not log the result since it did not change
-
-bAtom(ctx, 4)
-// logs: 10 + 4 = 14
+// change a=10, b=12
+// (does not log the result because it has not changed)
 ```
 
 As we see here the subscribe callback only called with both a and b values changed.
-This is called transactions and they enable us to control how frequent consumer of state is notified of some changes.
+This is called "transactions". They help to reduce the number of subscriber calls, and avoid the creation of unwanted intermediate states
 
-<!--
+### Async actions
 
-## Schedule to use asyncronous actions
-Sometimes you need to call something to be able to change something. Reatom does not support asyncronous transactions yet.
-Instead there's a special mechanism of queues that enble us to do something.
+Creating asynchronous actions is also possible, but keep in mind that async operations must be called inside `ctx.schedule` callback
 
-TODO example with ctx.schedule and ctx.schedule -1
+```ts
+import { createCtx, atom, action } from '@reatom/framework'
 
-You can take a deeper dive in queues here
+export const dataAtom = atom(null)
 
--->
+export const fetchData = action(async (ctx) => {
+  const data = await ctx.schedule(() => {
+    const response = fetch('https://jsonplaceholder.typicode.com/todos/1')
+    const payload = response.json()
+  })
+  dataAtom(ctx, data)
+})
+```
 
-## Contexts define different universes
+### Actions nesting
+You can call actions from other actions. And asynchronous actions will return the promise
+```ts
+import { action, atom } from '@reatom/core'
+
+export const dataAtom = atom(null)
+export const isLoadingAtom = atom(null)
+
+export const fetchData = action(async (ctx) => {
+  const response = await fetch('https://jsonplaceholder.typicode.com/todos/1')
+  return response.json()
+})
+
+export const loadData = action(async (ctx) => {
+  try {
+    isLoadingAtom(ctx, true)
+    const data = await ctx.spy(fetchData)
+    dataAtom(ctx, data)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isLoadingAtom(ctx, false)
+  }
+})
+```
+
+### Multiple contexts
 
 Contexts are used to glue up atoms and actions, track transactions and many more features. You can use same dependency trees in different contexts:
 
@@ -149,7 +225,7 @@ import { createCtx, atom } from "@reatom/framework"
 const ctx1 = createCtx()
 const ctx2 = createCtx()
 
-cons someAtom = atom(1, 'someAtom')
+const someAtom = atom(1, 'someAtom')
 
 console.log(ctx1.get(someAtom), ctx2.get(someAtom))
 // logs: 1, 1
@@ -174,7 +250,7 @@ const ctx2 = createCtx()
 
 // DON'T DO THIS
 let someExternalVar = 1
-cons someAtom = atom(() => someExternalVar, 'someAtom')
+const someAtom = atom(() => someExternalVar, 'someAtom')
 
 // check using ctx1
 console.log(ctx1.get(someAtom))
