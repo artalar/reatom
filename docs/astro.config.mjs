@@ -7,6 +7,9 @@ if (!process.env.VERCEL) await $`tsx sync-readme-to-pages.ts`
 export default defineConfig({
   site: 'https://www.reatom.dev',
   output: 'static',
+  redirects: {
+    '/core': '/package/core'
+  },
   integrations: [
     starlight({
       title: 'Reatom',
