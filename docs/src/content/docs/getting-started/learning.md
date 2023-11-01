@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-## Before we start
+### Before we start
 
 In the examples we will use the [@reatom/framework](/package/framework/) package which is an umbrella package for the most common reatom packages.
 You can install it with the command
@@ -19,7 +19,7 @@ npm install --save @reatom/framework
 The reatom is based on three basic primitives: Atom, Action and Context
 Below you can see how they are used together, after which we will look at each line and what happens in it
 
-### Context
+## Context
 
 The first thing we did was create a _context_. It is required for read, modify and subscribe operations. Later we will see what tricks it allows us to do, but now we will focus on the fact that it is enough to create **one context for the whole application**
 
@@ -28,9 +28,9 @@ import { createCtx } from '@reatom/framework'
 const ctx = createCtx()
 ```
 
-### Atom
+## Atom
 
-#### Create
+### Create
 
 ```ts
 import { atom } from '@reatom/framework'
@@ -52,7 +52,7 @@ const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 Computed atoms should be pure functions to archive the correct order of all computations
 
-#### Read
+### Read
 
 To read the value of an atom you need a previously created context
 
@@ -71,7 +71,7 @@ ctx.get(cAtom) // 3
 It is important to note that the retrieval of the value of an atom will happen only after its reading.
 In other words, it means that if a computed atom has not been read by anyone, the atom will not run the function passed to it
 
-#### Update
+### Update
 
 To change the value in an atom you also need a context, but this time you need to pass it to the atom
 
@@ -103,7 +103,7 @@ const evenListAtom = atom((ctx, state = []) => {
 }, 'evenListAtom')
 ```
 
-#### Subscribe
+### Subscribe
 
 Finally you can subscribe to atom changes using context
 
@@ -215,6 +215,7 @@ export const loadData = action(async (ctx) => {
 })
 ```
 
+## Advanced
 ### Multiple contexts
 
 Contexts are used to glue up atoms and actions, track transactions and many more features. You can use same dependency trees in different contexts:
