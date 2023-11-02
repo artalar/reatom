@@ -30,7 +30,7 @@ const ctx = createCtx()
 
 ## Atom
 
-### Create
+### Create Atom
 
 ```ts
 import { atom } from '@reatom/framework'
@@ -52,7 +52,7 @@ const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 Computed atoms should be pure functions to archive the correct order of all computations
 
-### Read
+### Read Atom
 
 To read the value of an atom you need a previously created context
 
@@ -71,7 +71,7 @@ ctx.get(cAtom) // 3
 It is important to note that the retrieval of the value of an atom will happen only after its reading.
 In other words, it means that if a computed atom has not been read by anyone, the atom will not run the function passed to it
 
-### Update
+### Update Atom
 
 To change the value in an atom you also need a context, but this time you need to pass it to the atom
 
@@ -103,7 +103,7 @@ const evenListAtom = atom((ctx, state = []) => {
 }, 'evenListAtom')
 ```
 
-### Subscribe
+### Subscribe to Atom
 
 Finally you can subscribe to atom changes using context
 
