@@ -118,9 +118,8 @@ export const reatomResource = <T>(
   })
 
   const theReaction = Object.assign(
-    (...a: Parameters<typeof theAsync>) => {
-      const [ctx] = a
-      return ctx.get((read, actualize) => {
+    (ctx: Ctx) =>
+      ctx.get((read, actualize) => {
         dropCache(ctx, promiseAtom.__reatom)
         // force update (needed if the atom is connected)
         actualize!(ctx, promiseAtom.__reatom, noop)
@@ -131,8 +130,7 @@ export const reatomResource = <T>(
           'unexpectedly failed invalidation. Please, report the issue',
         )
         return payload!
-      })
-    },
+      }),
     theAsync,
     {
       promiseAtom,
