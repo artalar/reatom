@@ -255,6 +255,7 @@ export const reatomComponent = <T>(
             }
 
             ctx.bind = bind(React.useRef(ctx).current, bindBind)
+            props.ctx = ctx
             return Component(props)
           }
 
