@@ -37,7 +37,7 @@ export interface AsyncCtxSpy extends AsyncCtx {
   }
 }
 
-const resolved = new Set<Promise<any>>()
+const resolved = new WeakSet<Promise<any>>()
 
 export const reatomResource = <T>(
   asyncComputed: (ctx: AsyncCtxSpy) => Promise<T>,
