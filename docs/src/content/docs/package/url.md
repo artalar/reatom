@@ -82,3 +82,45 @@ export const handler = async (req) => {
   // do your stuff...
 }
 ```
+
+### Integrations
+
+By default urlAtom uses `window.location` as the source of truth (SoT). But if you using any other router manager, you should setup reactive integrations by yourself, as the native `location` API is not reactive and can't be used as the SoT.
+
+To put the new URL from the the source of truth to `urlAtom` you should always use `updateFromSource` action, because only this updates will not be synced back and it will help you to prevent cyclic stack.
+
+Here is the example of integration with https://reactrouter.com. Put this component in the top of your application tree (as a child of RR provider and Reatom provider)!
+
+> You could play with it in [Tanstack VS Reatom example](https://github.com/artalar/reatom/blob/v3/examples/tanstack-vs-reatom)
+
+```tsx
+import React from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useCtx } from '@reatom/npm-react'
+import { updateFromSource, urlAtom } from '@reatom/url'
+
+export const RouterSync = () => {
+  const ctx = useCtx()
+  const setupRef = React.useRef(false)
+
+  // subscribe to location changes
+  useLocation()
+  if (setupRef.current && ctx.get(urlAtom).href !== location.href) {
+    // do not use `useEffect` to prevent race conditions (`urlAtom` reading during the render)
+    updateFromSource(ctx, new URL(location.href))
+  }
+
+  const navigate = useNavigate()
+  if (!setupRef.current) {
+    setupRef.current = true
+    urlAtom.settingsAtom(ctx, {
+      init: (ctx) => new URL(location.href),
+      sync: (_ctx, url) => navigate(url.pathname + url.search),
+    })
+  }
+
+  return null
+}
+```
+
+The warning `Cannot update a component while rendering a different component ("RouterSync")` is ok, there are no way to write it in another way and fix it, as the `Router.subscribe` method is deprecated.

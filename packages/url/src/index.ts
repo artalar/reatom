@@ -36,13 +36,15 @@ export interface SearchParamsAtom extends Atom<Rec<string>> {
   ) => AtomMut<T>
 }
 
-const sync = (url: URL) => {
-  history.pushState(null, null as unknown as string, url.href)
-}
+/** This is technical API for integrations usage. The update from this action will not be synced back to the source */
+export const updateFromSource = action(
+  (ctx, url: URL) => urlAtom(ctx, url),
+  'urlAtom.updateFromSource',
+)
 
-const popstate = action((ctx, event: PopStateEvent) => {
-  urlAtom(ctx, new URL(location.href))
-}, 'urlAtom.popstate')
+const browserSync = (url: URL) => {
+  history.pushState({}, '', url.href)
+}
 /**Browser settings allow handling of the "popstate" event and a link click. */
 const createBrowserUrlAtomSettings = (
   shouldCatchLinkClick = true,
@@ -79,7 +81,7 @@ const createBrowserUrlAtomSettings = (
         ) {
           event.preventDefault()
 
-          const { hash, href } = urlAtom(ctx, new URL(link.href))
+          const { hash, href } = updateFromSource(ctx, new URL(link.href))
 
           if (location.hash !== hash) {
             ctx.schedule(() => {
@@ -92,15 +94,15 @@ const createBrowserUrlAtomSettings = (
         }
       })
 
-    globalThis.addEventListener('popstate', (event) => popstate(ctx, event))
+    globalThis.addEventListener('popstate', (event) =>
+      updateFromSource(ctx, new URL(location.href)),
+    )
     if (shouldCatchLinkClick) document.body.addEventListener('click', click)
 
     return new URL(location.href)
   },
   sync: (ctx, url) => {
-    if (!isCausedBy(ctx.cause, popstate.__reatom)) {
-      ctx.schedule(() => sync(url))
-    }
+    ctx.schedule(() => browserSync(url))
   },
 })
 
@@ -138,7 +140,11 @@ export const urlAtom: UrlAtom = Object.assign(
       ),
   },
 ).pipe(withInit((ctx) => ctx.get(settingsAtom).init(ctx)))
-urlAtom.onChange((ctx, url) => ctx.get(settingsAtom).sync(ctx, url))
+urlAtom.onChange((ctx, url) => {
+  if (!isCausedBy(ctx.cause, updateFromSource.__reatom)) {
+    ctx.get(settingsAtom).sync(ctx, url)
+  }
+})
 
 export const searchParamsAtom: SearchParamsAtom = Object.assign(
   atom(
@@ -148,7 +154,7 @@ export const searchParamsAtom: SearchParamsAtom = Object.assign(
   {
     set: action((ctx, key: string, value: string) => {
       const url = ctx.get(urlAtom)
-      const newUrl = new URL(url.href)
+      const newUrl = new URL(url)
       newUrl.searchParams.set(key, value)
       urlAtom(ctx, newUrl)
     }, 'searchParamsAtom._set'),
