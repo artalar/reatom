@@ -44,7 +44,7 @@ test('withCache', async () => {
     const params = ctx.spy(paramsAtom)
     await ctx.schedule(() => sleepTrack())
     return params
-  }, 'aAtom').pipe(withCache())
+  }, 'aAtom').pipe(withCache({ swr: false }))
   const bAtom = reatomResource(async (ctx) => {
     const n = await ctx.spy(aAtom.promiseAtom)
     return n
@@ -60,6 +60,13 @@ test('withCache', async () => {
   paramsAtom(ctx, 1)
   paramsAtom(ctx, 2)
   paramsAtom(ctx, 3)
+  await sleep()
+  assert.is(track.lastInput(), 3)
+  assert.is(track.calls.length, 2)
+  assert.is(sleepTrack.calls.length, 4)
+
+  paramsAtom(ctx, 1)
+  paramsAtom(ctx, 2)
   await sleep()
   assert.is(track.lastInput(), 3)
   assert.is(track.calls.length, 2)
@@ -214,15 +221,17 @@ test('withCache stale abort', async () => {
 test('do not rerun without deps', async () => {
   let i = 0
   const someResource = reatomResource(async (ctx) => {
+    ++i
     await ctx.schedule(() => sleep())
-    return ++i
   }, 'someResource')
   const ctx = createTestCtx()
 
-  assert.is(
-    ctx.get(someResource.promiseAtom),
-    ctx.get(someResource.promiseAtom),
-  )
+  ctx.get(someResource.promiseAtom)
+  ctx.get(someResource.promiseAtom)
+  assert.is(i, 1)
+
+  someResource(ctx)
+  assert.is(i, 2)
   ;`👍` //?
 })
 
