@@ -17,7 +17,6 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
-import { merge } from '@reatom/utils'
 
 let getName = (type: string): string => {
   let Component =
