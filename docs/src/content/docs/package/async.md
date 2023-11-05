@@ -388,7 +388,9 @@ export type AsyncStatuses =
 
 This is the most famous feature of any resource management. You are not required to use `withDataAtom`, the cache worked for effect results, but if `dataAtom` exists - it will worked as well and you could react on data changes immediately.
 
-This operator adds `cacheAtom` property which is `MapAtom` from [@reatom/primitives](/package/primitives) and contains the cache of effect results. Do not change it manually! But you could use `reset` action for cache invalidation.
+This operator adds `cacheAtom` property which is `MapAtom` from [@reatom/primitives](/package/primitives#reatommap) and contains the cache of effect results. Do not change it manually! But you could use `reset` action to clear the cache. Also `cacheAtom` contains `invalidate` action which clears all existed cache and call new fetch with the last payload.
+
+`withCache` adds `swrPendingAtom` which is relative to `swr` option (see above).
 
 If the async action will called with the same params during existing fetching - the same promise will returned.
 
@@ -400,7 +402,8 @@ You could rule the cache behavior by set of optional parameters.
 - **isEqual** - check the equality of a cache record and passed params to find the cache. Default is `isDeepEqual` from [@reatom/utils](/package/utils).
 - **paramsToKey** - convert params to a string as a key of the cache map. Not used by default, equality check (`isEqual`) is used instead. This option is useful if you have a complex object as a params which equality check is too expensive, or you was set large `length` option and want to speed up the cache search.
   > You could import and use [toStringKey](/package/utils#tostringkey) function from the utils package for this purposes.
-- **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch.
+- **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to return the cached data immediately (if exist) and run extra fetch for the fresh data on the background. Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch. There also two additional options, which is `false` by default: `shouldReject` and `shouldPending`.
+  `withCache` adds `swrPendingAtom` to passed async
 - **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](/package/persist). It will used with predefined optimal parameters for internal Map (de)serialization and so on.
 - **ignoreAbort** - define if the effect should be prevented from abort. The outer abort strategy is not affected, which means that all hooks and returned promise will behave the same. But the effect execution could be continued even if abort appears, to save the result in the cache. Default is `true`.
 
@@ -697,18 +700,18 @@ There are a lot of boilerplates. `reatomResource` is a fabric method that encaps
 ```ts
 import { reatomResource } from '@reatom/async'
 
-const listReaction = reatomResource(async (ctx) => {
+const listResource = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   const search = ctx.spy(searchAtom)
   return await ctx.schedule(() =>
     request(`/api/list?page=${page}&q=${search}`, ctx.controller),
   )
-}, 'listReaction')
+}, 'listResource')
 ```
 
 That's all. The code becomes much cleaner and simpler! The only additional change is the need for `ctx.schedule` for effects, as the callback in the `reatomResource` is called in the pure computations queue (to make `spy` work).
 
-Also, `listReaction` now has a `promiseAtom` that contains the last promise. You can use it with [useAtomPromise](/adapter/npm-react/#useatompromise) in a React application, for example.
+Also, `listResource` now has a `promiseAtom` that contains the last promise. You can use it with [useAtomPromise](/adapter/npm-react/#useatompromise) in a React application, for example.
 
 If you need to set up a default value and use it synchronously, simply use `withDataAtom` as you would with any other async action. All async operators work fine with `reatomResource`. You could use `withRetry` and even `withCache`!
 
@@ -717,16 +720,16 @@ But that's not all! The most powerful feature of `reatomResource` is that you ca
 ```ts
 import { reatomResource } from '@reatom/async'
 
-const aReaction = reatomResource(async (ctx) => {
+const aResource = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   return await ctx.schedule(() =>
     request(`/api/a?page=${page}`, ctx.controller),
   )
-}, 'aReaction')
-const bReaction = reatomResource(async (ctx) => {
-  const a = await ctx.spy(aReaction.promiseAtom)
+}, 'aResource')
+const bResource = reatomResource(async (ctx) => {
+  const a = await ctx.spy(aResource.promiseAtom)
   return await ctx.schedule(() => request(`/api/b/${b}`, ctx.controller))
-}, 'bReaction')
+}, 'bResource')
 ```
 
 In this example, when the `pageAtom` updates, the entire chain of previous requests aborts, and all computed effects are called immediately.
