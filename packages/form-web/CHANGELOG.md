@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.2.0](https://github.com/artalar/reatom/compare/form-web-v3.1.5...form-web-v3.2.0) (2023-11-05)
+
+
+### Features
+
+* **form-web:** sync state changes with the element ([8e097f6](https://github.com/artalar/reatom/commit/8e097f6e26b24ba9b081cd9ca5819457d0f3038a))
+
 ## [3.1.5](https://github.com/artalar/reatom/compare/form-web-v3.1.4...form-web-v3.1.5) (2023-10-09)
 
 
