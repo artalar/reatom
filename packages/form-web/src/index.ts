@@ -534,6 +534,18 @@ export const reatomHTMLForm = ({
     name?.concat('.onHTMLSubmit'),
   )
 
+  const touched = new WeakSet()
+  form.fieldsListAtom.onChange((ctx, list) => {
+    for (const fieldAtom of list) {
+      if (touched.has(fieldAtom)) continue
+      touched.add(fieldAtom)
+      fieldAtom.onChange((ctx, value) => {
+        const el = ctx.get((fieldAtom as unknown as HTMLFieldAtom).elementAtom)
+        if (el) el.value = ctx.get(fieldAtom.valueAtom)
+      })
+    }
+  })
+
   return {
     ...form,
     elementAtom,
