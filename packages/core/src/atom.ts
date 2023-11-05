@@ -378,7 +378,10 @@ export const createCtx = ({
       patch.state = patch.proto.computer!(patchCtx as CtxSpy, patch.state)
       patch.pubs = newPubs
 
-      if ((isDepsChanged || pubs.length > newPubs.length) && isConnected(patch)) {
+      if (
+        (isDepsChanged || pubs.length > newPubs.length) &&
+        isConnected(patch)
+      ) {
         for (let { proto: depProto } of pubs) {
           if (newPubs.every((dep) => dep.proto !== depProto)) {
             disconnect(proto, depProto.patch ?? read(depProto)!)
@@ -665,18 +668,17 @@ export function atom<T>(
     )
   let computer = null
 
-  let initStateResult: typeof initState | undefined = initState
   if (typeof initState === 'function') {
     theAtom = {}
     computer = initState
-    initStateResult = undefined
+    initState = undefined as T
   }
 
   theAtom.__reatom = {
     name,
     isAction: false,
     patch: null,
-    initState: () => initStateResult,
+    initState: () => initState,
     computer,
     connectHooks: null,
     disconnectHooks: null,
