@@ -2,13 +2,14 @@ import {
   Action,
   action,
   ActionParams,
-  AtomMut,
+  atom,
+  Atom,
   AtomState,
   Ctx,
   Fn,
 } from '@reatom/core'
 import { MapAtom, reatomMap } from '@reatom/primitives'
-import { isAbort, isDeepEqual, MAX_SAFE_TIMEOUT, sleep } from '@reatom/utils'
+import { isDeepEqual, MAX_SAFE_TIMEOUT } from '@reatom/utils'
 import { type WithPersistOptions } from '@reatom/persist'
 
 import {
@@ -89,12 +90,21 @@ export type WithCacheOptions<T extends AsyncAction = AsyncAction> = {
   swr?:
     | boolean
     | {
-        /** success revalidation should trigger `onFulfill` to notify about the fresh data
+        /**
+         * success revalidation should trigger `onFulfill` to notify about the fresh data
          * @default true
          */
         shouldFulfill?: boolean
-        /** error revalidation trigger `onReject` to notify about the error
-         * @default true
+
+        /**
+         * pendingAtom should follow SWR promises too
+         * @default false
+         */
+        shouldPending?: boolean
+
+        /**
+         * error revalidation trigger `onReject` to notify about the error
+         * @default false
          */
         shouldReject?: boolean
       }
@@ -144,6 +154,7 @@ export const withCache =
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom
       cacheAtom?: CacheAtom<AsyncResp<T>, ActionParams<T>>
+      swrPendingAtom?: Atom<number>
     },
   >({
     ignoreAbort = true,
@@ -161,6 +172,7 @@ export const withCache =
     [T],
     T & {
       cacheAtom: CacheAtom<AsyncResp<T>, ActionParams<T>>
+      swrPendingAtom: Atom<number>
     }
   > =>
   // @ts-ignore
@@ -171,8 +183,14 @@ export const withCache =
       type ThisCacheRecord = CacheRecord<AsyncResp<T>, ThisParams>
 
       const swr = !!swrOptions
-      // @ts-expect-error valid and correct JS
-      const { shouldFulfill = swr, shouldReject = swr } = swrOptions
+      const {
+        // @ts-expect-error valid and correct JS
+        shouldPending = false,
+        // @ts-expect-error valid and correct JS
+        shouldFulfill = swr,
+        // @ts-expect-error valid and correct JS
+        shouldReject = false,
+      } = swrOptions
       if (staleTime !== Infinity)
         staleTime = Math.min(MAX_SAFE_TIMEOUT, staleTime)
 
@@ -317,10 +335,16 @@ export const withCache =
         )
       }
 
+      const swrPendingAtom = (anAsync.swrPendingAtom = atom(
+        0,
+        `${anAsync.__reatom.name}.swrPendingAtom`,
+      ))
+
       const handlePromise = (
         ctx: Ctx,
         key: unknown,
         cached: ThisCacheRecord,
+        swr: boolean,
       ) => {
         cached.clearTimeoutId = planCleanup(ctx, key)
         // the case: the whole cache was cleared and a new fetching was started
@@ -341,27 +365,33 @@ export const withCache =
             const value = await unstable_fn(...a)
             res(value)
 
-            if (isSame()) {
-              cacheAtom.set(ctx, key, {
-                ...cached,
-                promise: undefined,
-                value,
-                version: cached.version + 1,
-              })
-            }
-          } catch (error) {
-            rej(error)
-
-            if (isSame()) {
-              if (cached.version > 0) {
+            ctx.get(() => {
+              if (isSame()) {
                 cacheAtom.set(ctx, key, {
                   ...cached,
                   promise: undefined,
+                  value,
+                  version: cached.version + 1,
                 })
-              } else {
-                cacheAtom.delete(ctx, key)
               }
-            }
+              if (swr) swrPendingAtom(ctx, (s) => s - 1)
+            })
+          } catch (error) {
+            rej(error)
+
+            ctx.get(() => {
+              if (isSame()) {
+                if (cached.version > 0) {
+                  cacheAtom.set(ctx, key, {
+                    ...cached,
+                    promise: undefined,
+                  })
+                } else {
+                  cacheAtom.delete(ctx, key)
+                }
+              }
+              if (swr) swrPendingAtom(ctx, (s) => s - 1)
+            })
           }
           return cached.promise
         }
@@ -414,7 +444,7 @@ export const withCache =
             (cached.promise && prevController.signal.aborted)
           ) {
             return handleEffect(anAsync, params, {
-              effect: handlePromise(ctx, key, cached),
+              effect: handlePromise(ctx, key, cached, false),
             })
           }
 
@@ -430,9 +460,11 @@ export const withCache =
             })
           }
 
+          if (swr) swrPendingAtom(ctx, (s) => s + 1)
+
           return handleEffect(anAsync, params, {
-            effect: handlePromise(ctx, key, cached),
-            shouldPending: false,
+            effect: handlePromise(ctx, key, cached, swr),
+            shouldPending,
             shouldFulfill,
             shouldReject,
           })
