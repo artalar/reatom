@@ -197,7 +197,7 @@ export const withSearchParamsPersist =
       value === '' ? undefined : String(value),
   ) =>
   <A extends Atom<T>>(theAtom: A): A => {
-    const { computer } = theAtom.__reatom
+    const { computer, initState } = theAtom.__reatom
     theAtom.pipe(
       withInit((ctx, init) => {
         const sp = ctx.get(searchParamsAtom)
@@ -206,16 +206,25 @@ export const withSearchParamsPersist =
     )
     theAtom.__reatom.computer = (ctx, state) => {
       ctx.spy(searchParamsAtom, (next, prev) => {
-        if (key in next && (!prev || prev[key] !== next[key])) {
-          state = parse(next[key])
+        if (key in next) {
+          if (!prev || prev[key] !== next[key]) {
+            state = parse(next[key])
+          }
+        } else {
+          if (prev && key in prev) {
+            state = initState(ctx)
+          }
         }
       })
       return computer ? computer(ctx, state) : state
     }
     theAtom.onChange((ctx, state) => {
       const value = serialize(state)
-      if (value === undefined) searchParamsAtom.del(ctx, key)
-      else searchParamsAtom.set(ctx, key, value)
+      if (value === undefined) {
+        searchParamsAtom.del(ctx, key)
+      } else {
+        searchParamsAtom.set(ctx, key, value)
+      }
     })
 
     return theAtom
