@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.12.0](https://github.com/artalar/reatom/compare/async-v3.11.0...async-v3.12.0) (2023-11-05)
+
+
+### Features
+
+* **async:** add shouldPending and swrPendingAtom ([103e30c](https://github.com/artalar/reatom/commit/103e30c7aa8bd7879da347d2653389a39221d952))
+
+
+### Bug Fixes
+
+* **async:** reatomResource small mem leak ([408d916](https://github.com/artalar/reatom/commit/408d9167712cf53dc4381caee3c08f353752d990))
+
 ## [3.11.0](https://github.com/artalar/reatom/compare/async-v3.10.1...async-v3.11.0) (2023-10-31)
 
 

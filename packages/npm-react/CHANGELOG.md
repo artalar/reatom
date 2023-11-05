@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.3](https://github.com/artalar/reatom/compare/npm-react-v3.7.2...npm-react-v3.7.3) (2023-11-05)
+
+
+### Bug Fixes
+
+* **npm-react:** reatomComponent props.ctx ([6297def](https://github.com/artalar/reatom/commit/6297deffa3e2a18669f2162a84f42621c56d91ae))
+
 ## [3.7.2](https://github.com/artalar/reatom/compare/npm-react-v3.7.1...npm-react-v3.7.2) (2023-10-31)
 
 

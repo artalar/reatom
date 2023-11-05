@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/url-v3.4.1...url-v3.5.0) (2023-11-05)
+
+
+### Features
+
+* **url:** add updateFromSource ([209133f](https://github.com/artalar/reatom/commit/209133f1426583729aac394fdf5e2a484252c3eb))
+
+
+### Bug Fixes
+
+* **url:** reinit qs persist state when the param was removed ([59135f8](https://github.com/artalar/reatom/commit/59135f883681bed433fb5ab36111ca9d478e05fb))
+
 ## [3.4.1](https://github.com/artalar/reatom/compare/url-v3.4.0...url-v3.4.1) (2023-10-31)
 
 
