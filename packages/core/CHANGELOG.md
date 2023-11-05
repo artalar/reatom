@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.3](https://github.com/artalar/reatom/compare/core-v3.6.2...core-v3.6.3) (2023-11-05)
+
+
+### Bug Fixes
+
+* **core:** small mem improvement ([fd24970](https://github.com/artalar/reatom/commit/fd249701d4f527460443a8cf651d33b3bf153cb4))
+
 ## [3.6.2](https://github.com/artalar/reatom/compare/core-v3.6.1...core-v3.6.2) (2023-10-31)
 
 
