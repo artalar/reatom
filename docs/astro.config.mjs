@@ -8,7 +8,7 @@ export default defineConfig({
   site: 'https://www.reatom.dev',
   output: 'static',
   redirects: {
-    '/core': '/package/core'
+    '/core': '/package/core',
   },
   integrations: [
     starlight({
@@ -69,6 +69,9 @@ export default defineConfig({
           link: 'contributing',
         },
       ],
+      components: {
+        MarkdownContent: './src/components/MarkdownContent.astro',
+      },
     }),
   ],
   // Process images with sharp: https://docs.astro.build/en/guides/assets/#using-sharp
