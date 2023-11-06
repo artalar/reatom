@@ -1,6 +1,6 @@
 # Reatom comparison with TanStack Query
 
-[Open in StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/main/examples/tanstack-vs-reatom)
+[Open in StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/tanstack-vs-reatom)
 
 ## Api setup
 
