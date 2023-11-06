@@ -291,7 +291,7 @@ export const withErrorAtom =
     } = {
       resetTrigger: 'onEffect',
     },
-  ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
+  ): Fn<[T], T & { errorAtom: AtomMut<undefined | Err> & { reset: Action } }> =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
       const errorAtomName = `${anAsync.__reatom.name}.errorAtom`
