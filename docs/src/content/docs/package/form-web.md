@@ -15,8 +15,10 @@ npm i @reatom/form-web
 
 ## Usage
 
-```ts
-import {} from '@reatom/form-web'
+This package is under active development! There are still no docs, but here a few examples:
 
-// ...
-```
+Base HTML (React) example with types autoinfering: https://codesandbox.io/s/reatom-form-web-tefn82?file=/src/App.tsx
+
+The previous extended example with custom (not HTML input / select) field: https://codesandbox.io/s/reatom-form-web-custom-field-2iynrh
+
+Example with dynamic fields creation: https://codesandbox.io/s/reatom-form-web-dynamic-hp8c3d?file=/src/App.tsx

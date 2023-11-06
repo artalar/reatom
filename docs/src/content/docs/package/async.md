@@ -698,7 +698,7 @@ searchAtom.onChange((ctx, search) =>
 There are a lot of boilerplates. `reatomResource` is a fabric method that encapsulates all this logic and allows you to use `ctx.spy` just like in the regular `atom`. It is much simpler, more intuitive, and works automatically for both caching and cancelling previous requests.
 
 ```ts
-import { reatomResource } from '@reatom/async'
+import { reatomResource, withDataAtom } from '@reatom/async'
 
 const listResource = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
@@ -706,7 +706,7 @@ const listResource = reatomResource(async (ctx) => {
   return await ctx.schedule(() =>
     request(`/api/list?page=${page}&q=${search}`, ctx.controller),
   )
-}, 'listResource')
+}, 'listResource').pipe(withDataAtom([]))
 ```
 
 That's all. The code becomes much cleaner and simpler! The only additional change is the need for `ctx.schedule` for effects, as the callback in the `reatomResource` is called in the pure computations queue (to make `spy` work).
