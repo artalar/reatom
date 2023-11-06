@@ -30,7 +30,6 @@ const issuesReaction = reatomResource((ctx) => {
   })),
   withCache({ withPersist: withLocalStorage }),
 )
-// issuesReaction.onCall((ctx) => {if (!ctx.get(issuesReaction.swrPendingAtom)) { if (!ctx.get(issuesReaction.swrPendingAtom)) issuesReaction.dataAtom(ctx, ({ total }) => ({ data: [], total })) }})
 
 const Pagination = reatomComponent(
   ({ ctx }) => (

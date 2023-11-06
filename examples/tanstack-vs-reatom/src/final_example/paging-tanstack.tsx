@@ -35,6 +35,7 @@ const useIssuesQuery = (page: number) => {
         { signal: context.signal },
       ),
     placeholderData: (prev = getInitState()) => prev,
+    refetchOnMount: false,
   })
 }
 
