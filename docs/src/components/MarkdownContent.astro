@@ -17,7 +17,7 @@ import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownConten
 
   const codeBlocks = document.querySelectorAll('pre.astro-code')
   for (const codeBlock of codeBlocks) {
-    const codeText = codeBlock.querySelector('code')!.innerText
+    const codeText = (codeBlock as HTMLElement).innerText
     const copy = () => {
       navigator.clipboard.writeText(codeText).catch(console.error)
     }
