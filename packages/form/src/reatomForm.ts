@@ -99,7 +99,7 @@ export const reatomForm = (
 
   const handleSubmit = reatomAsync(async (ctx) => {
     for (const fieldAtom of ctx.get(fieldsListAtom)) {
-      if (ctx.get(fieldAtom.validationAtom) === fieldInitValidation) {
+      if (!ctx.get(fieldAtom.validationAtom).valid) {
         fieldAtom.validate(ctx)
       }
     }

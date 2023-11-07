@@ -1,7 +1,16 @@
-import { action, Action, Atom, atom, AtomMut, Ctx, __count } from '@reatom/core'
+import {
+  action,
+  Action,
+  Atom,
+  atom,
+  AtomMut,
+  Ctx,
+  __count,
+  AtomCache,
+} from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 import { RecordAtom, reatomRecord } from '@reatom/primitives'
-import { isDeepEqual, noop } from '@reatom/utils'
+import { isDeepEqual, noop, toAbortError } from '@reatom/utils'
 import { toError } from './utils'
 
 export interface FieldFocus {
@@ -133,6 +142,10 @@ export interface FieldOptions<State = any, Value = State> {
   validateOnBlur?: boolean
 }
 
+interface AbortableCause extends AtomCache {
+  controller: AbortController
+}
+
 export const fieldInitFocus: FieldFocus = {
   active: false,
   dirty: false,
@@ -140,6 +153,12 @@ export const fieldInitFocus: FieldFocus = {
 }
 
 export const fieldInitValidation: FieldValidation = {
+  error: undefined,
+  valid: false,
+  validating: false,
+}
+
+export const fieldInitValidationLess: FieldValidation = {
   error: undefined,
   valid: true,
   validating: false,
@@ -164,89 +183,101 @@ export const reatomField = <State, Value>(
 ): FieldAtom<State, Value> => {
   interface This extends FieldAtom<State, Value> {}
   const fieldAtom = atom(initState, `${name}.fieldAtom`) as This
+
   const valueAtom: This['valueAtom'] = atom(
     (ctx) => fromState(ctx, ctx.spy(fieldAtom)),
     `${name}.valueAtom`,
   )
+
   const focusAtom: This['focusAtom'] = reatomRecord(
     fieldInitFocus,
     `${name}.focusAtom`,
   )
+  // @ts-expect-error
+  focusAtom.__reatom.computer = (ctx, state: FieldFocus) => {
+    const dirty = isDirty(ctx, ctx.spy(valueAtom), fromState(ctx, initState))
+    return state.dirty === dirty ? state : { ...state, dirty }
+  }
+
   const validationAtom: This['validationAtom'] = reatomRecord(
-    fieldInitValidation,
+    validateFn ? fieldInitValidation : fieldInitValidationLess,
     `${name}.validationAtom`,
   )
+  if (validateFn) {
+    // @ts-expect-error
+    validationAtom.__reatom.computer = (ctx, state: FieldValidation) => {
+      ctx.spy(valueAtom)
+      return state.valid ? { ...state, valid: false } : state
+    }
+  }
 
+  const validateControllerAtom = atom(
+    new AbortController(),
+    `${name}.validateControllerAtom`,
+  )
+  // prevent collisions for different contexts
+  validateControllerAtom.__reatom.initState = () => new AbortController()
   const validate: This['validate'] = action((ctx) => {
-    let validation = ctx.get(validationAtom)
+    const validation = ctx.get(validationAtom)
 
-    if (validateFn !== undefined) {
-      const state = ctx.get(fieldAtom)
-      const value = ctx.get(valueAtom)
-      const focus = ctx.get(focusAtom)
+    if (validation.valid) return validation
+    if (!validateFn) return validationAtom.merge(ctx, { valid: true })
 
-      try {
-        var promise = validateFn(ctx, {
-          state,
-          value,
-          focus,
-          validation,
-        })
-      } catch (error) {
-        var message: undefined | string = toError(error)
-      }
+    ctx.get(validateControllerAtom).abort(toAbortError('concurrent'))
+    const controller = validateControllerAtom(
+      ctx,
+      ((ctx.cause as AbortableCause).controller = new AbortController()),
+    )
 
-      if (promise instanceof Promise) {
-        const actualizeValidation = (validation: FieldValidation) =>
-          ctx.get(
-            (read) =>
-              // this is the last validation call
-              ctx.cause === read(ctx.cause.proto) &&
-              state === ctx.get(fieldAtom) &&
-              // the validation isn't reset
-              validation === ctx.get(validationAtom) &&
-              validationAtom.merge(ctx, validation),
-          )
+    const state = ctx.get(fieldAtom)
+    const value = ctx.get(valueAtom)
+    const focus = ctx.get(focusAtom)
 
-        validation = validationAtom.merge(
-          ctx,
-          keepErrorDuringValidating
-            ? { validating: true }
-            : {
-                error: undefined,
-                valid: true,
-                validating: true,
-              },
-        )
-
-        __thenReatomed(
-          ctx,
-          promise,
-          () => {
-            actualizeValidation({
-              error: undefined,
-              valid: true,
-              validating: false,
-            })
-          },
-          (error) => {
-            actualizeValidation({
-              error: toError(error),
-              valid: false,
-              validating: false,
-            })
-          },
-        ).catch(noop)
-      } else {
-        validation = validationAtom.merge(ctx, {
-          validating: false,
-          error: message,
-          valid: !message,
-        })
-      }
+    try {
+      var promise = validateFn(ctx, {
+        state,
+        value,
+        focus,
+        validation,
+      })
+    } catch (error) {
+      var message: undefined | string = toError(error)
     }
 
-    return validation
+    if (promise instanceof Promise) {
+      __thenReatomed(
+        ctx,
+        promise,
+        () => {
+          if (controller.signal.aborted) return
+          validationAtom.merge(ctx, {
+            error: undefined,
+            valid: true,
+            validating: false,
+          })
+        },
+        (error) => {
+          if (controller.signal.aborted) return
+          validationAtom.merge(ctx, {
+            error: toError(error),
+            valid: true,
+            validating: false,
+          })
+        },
+      ).catch(noop)
+
+      return validationAtom.merge(ctx, {
+        error: keepErrorDuringValidating ? validation.error : undefined,
+        valid: true,
+        validating: true,
+      })
+    }
+
+    return validationAtom.merge(ctx, {
+      validating: false,
+      error: message,
+      valid: true,
+    })
   }, `${name}.validate`)
 
   const focus: This['focus'] = action((ctx) => {
@@ -263,30 +294,24 @@ export const reatomField = <State, Value>(
     if (!filter(ctx, newValue, prevValue)) return prevValue
 
     fieldAtom(ctx, toState(ctx, newValue))
-    newValue = ctx.get(valueAtom)
+    focusAtom.merge(ctx, { touched: true })
 
-    focusAtom.merge(ctx, {
-      touched: true,
-      dirty: isDirty(ctx, newValue, prevValue),
-    })
-
-    return newValue
+    return ctx.get(valueAtom)
   }, `${name}.change`)
 
   const reset: This['reset'] = action((ctx) => {
     fieldAtom(ctx, initState)
     focusAtom(ctx, fieldInitFocus)
     validationAtom(ctx, fieldInitValidation)
+    ctx.get(validateControllerAtom).abort(toAbortError('reset'))
   }, `${name}.reset`)
 
   if (validateOnChange) {
-    fieldAtom.onChange(validate)
+    fieldAtom.onChange((ctx) => validate(ctx))
   }
 
   if (validateOnBlur) {
-    blur.onCall((ctx) => {
-      validate(ctx)
-    })
+    blur.onCall((ctx) => validate(ctx))
   }
 
   return Object.assign(fieldAtom, {
