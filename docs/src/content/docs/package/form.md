@@ -89,7 +89,7 @@ Here is the list of all additional methods.
   - `touched`: The field has gained and lost focus at some point.
 - `validationAtom`: Atom of an object with all related validation statuses. This atom has additional `reset` action. State properties:
   - `error`: The field's validation error text, undefined if the field is valid.
-  - `valid`: The field's validation status.
+  - `valid`: The validation status of the field. Indicates that the validation is up to date. A `true` value does not mean that the state is correct, it means that validation has taken place. Any change to the state of the field will drop this status to `false` (it could synchronously return to `true` if validation is triggered).
   - `validating`: The field's async validation status.
 - `valueAtom`: Atom with the "value" data, computed by the [`fromState` option](#field-options).
 - `blur`: Action for handling field blur.
@@ -107,16 +107,20 @@ By combining this statuses you can know a different meta info too.
 
 You can set a validation function and manage validation triggers using [the options](#field-options). The flow looks like this.
 
-- _validation trigger_
-  - _has validation function_
-    - _call validation function_
-      - _an error throwed_
-        - _set_ `error: string, valid: false, validating: false`
-      - _a promise returned_
-        - _if [`keepErrorDuringValidating` option](#field-options) is false set_ `error: undefined, valid: true, validating: true`_, else set_ `validating: true`
-        - _if promise fulfilled set_ `error: undefined, valid: true, validating: false`_, else set_ `error: string, valid: false, validating: false`
-      - _nothing returned or throwed_
-        - _set_ `error: undefined, valid: true, validating: false`
+```mermaid
+graph TB
+    trigger[Validation trigger]
+    trigger --> hasfunction[has validation function]
+    hasfunction --> |valid==false| validate[call validation]
+    hasfunction ----> |No| valid[return `error: undefined, valid: true, validating: false`]
+    validate ----> |error throwed| notvalid[return `error: string, valid: true, validating: false`]
+    validate --> |promise returned| promise
+    validate ----> |any return| valid
+    promise --> |keepErrorDuringValidating==true| keepErrorDuringValidatingTrue["set `error: undefined | string, valid: true, validating: true`"]
+    promise --> |keepErrorDuringValidating==false| keepErrorDuringValidatingFalse[set `error: undefined, valid: true, validating: true`]
+    promise -----> |promise fulfilled| valid
+    promise -----> |promise rejected| notvalid
+```
 
 ### Field options
 
