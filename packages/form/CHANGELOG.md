@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/artalar/reatom/compare/form-v3.2.0...form-v3.3.0) (2023-11-07)
+
+
+### Features
+
+* **form:** correct "valid" behavior ([a47f1f2](https://github.com/artalar/reatom/commit/a47f1f2c99fb2f45ab900721ef3806dc47961916))
+
 ## [3.2.0](https://github.com/artalar/reatom/compare/form-v3.1.6...form-v3.2.0) (2023-10-31)
 
 
