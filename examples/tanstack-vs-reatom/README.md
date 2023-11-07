@@ -10,13 +10,15 @@ The TanStack Query advanced example shows that:
 
 - `placeholderData` brakes type-inference and produce wrong nullable-types
 - there is no way to persist the cache for a specific endpoint and only related queries, it is possible to persist only the last one
-- there is no way to store reliable computed data, you need to create additional state and sync it with `useEffect`, which could produce glitches and unexpected bugs
+- there is no way to store reliable computed data, you need to create additional state and sync it with `useEffect`, which add extra rerender and could produce glitches and unexpected bugs
 
 In other side, Reatom allows you:
 
 - do not write type at all or infer it automatically
 - persist related to the specific endpoint cache with correct lifetime and version control
 - compute any data anyware and don't thing about race conditions, as the all computations in Reatom has separate queue and appears before effects (subscriptions).
+
+Also, check the page persistance to the search parameters, Reatom allows you to do it much simpler.
 
 ## Api setup
 

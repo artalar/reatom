@@ -5,10 +5,10 @@ import { withSearchParamsPersist } from '@reatom/url'
 import { useDisclosure } from '@mantine/hooks'
 import { AppShell, Burger, Group, NavLink, Tabs, Title } from '@mantine/core'
 
-import { PagingTanstack as PagingTanstackStart } from './start_example/paging-tanstack'
-import { PagingTanstack as PagingTanstackFinal } from './final_example/paging-tanstack'
-import { PagingReatom as PagingReatomStart } from './start_example/paging-reatom'
-import { PagingReatom as PagingReatomFinal } from './final_example/paging-reatom'
+import { PagingTanstack as PagingTanstackBase } from './base/paging-tanstack'
+import { PagingTanstack as PagingTanstackAdvanced } from './advanced/paging-tanstack'
+import { PagingReatom as PagingReatomBase } from './base/paging-reatom'
+import { PagingReatom as PagingReatomAdvanced } from './advanced/paging-reatom'
 import { RouterSync } from './RouterSync'
 
 const frameworkTabAtom = reatomEnum(
@@ -44,16 +44,16 @@ export const FrameworkSwitcher = reatomComponent(
       </Tabs.List>
 
       <Tabs.Panel value={frameworkTabAtom.enum.TanstackBase}>
-        <PagingTanstackStart />
+        <PagingTanstackBase />
       </Tabs.Panel>
       <Tabs.Panel value={frameworkTabAtom.enum.ReatomBase}>
-        <PagingReatomStart />
+        <PagingReatomBase />
       </Tabs.Panel>
       <Tabs.Panel value={frameworkTabAtom.enum.TanstackAdvanced}>
-        <PagingTanstackFinal />
+        <PagingTanstackAdvanced />
       </Tabs.Panel>
       <Tabs.Panel value={frameworkTabAtom.enum.ReatomAdvanced}>
-        <PagingReatomFinal />
+        <PagingReatomAdvanced />
       </Tabs.Panel>
     </Tabs>
   ),
