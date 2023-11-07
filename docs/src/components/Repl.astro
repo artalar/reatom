@@ -23,12 +23,12 @@ import { atom, createCtx } from '@reatom/core'
 const ctx = createCtx()
 
 const numberAtom = atom(0, 'numberAtom')
-const dubleAtom = atom((ctx) => {
+const doubleAtom = atom((ctx) => {
 console.log(ctx.cause)
 return ctx.spy(numberAtom) * 2
-}, 'dubleAtom')
+}, 'doubleAtom')
 
-ctx.subscribe(dubleAtom, console.log)
+ctx.subscribe(doubleAtom, console.log)
 numberAtom(ctx, (s) => s + 1)
 `.trim()
 

@@ -1,0 +1,70 @@
+---
+import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownContent.astro'
+---
+
+<DefaultMarkdownContent {...Astro.props}><slot /></DefaultMarkdownContent>
+
+<script>
+  const SvgNs = 'http://www.w3.org/2000/svg'
+
+  const copyButtonTemplate = document.createElement('button')
+  copyButtonTemplate.className = 'code-block-copy'
+  const copyButtonSvg = document.createElementNS(SvgNs, 'svg')
+  copyButtonSvg.setAttribute('viewBox', '0 0 24 24')
+  copyButtonSvg.innerHTML =
+    '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path>'
+  copyButtonTemplate.appendChild(copyButtonSvg)
+
+  const codeBlocks = document.querySelectorAll('pre.astro-code')
+  for (const codeBlock of codeBlocks) {
+    const codeText = (codeBlock as HTMLElement).innerText
+    const copy = () => {
+      navigator.clipboard.writeText(codeText).catch(console.error)
+    }
+
+    const copyButton = copyButtonTemplate.cloneNode(true) as HTMLButtonElement
+    copyButton.onclick = copy
+    codeBlock.appendChild(copyButton)
+  }
+</script>
+
+<style is:global>
+  .astro-code {
+    position: relative;
+  }
+
+  .astro-code:hover .code-block-copy {
+    opacity: 0.5;
+  }
+
+  .code-block-copy {
+    position: absolute;
+    top: 1rem;
+    right: 0.75rem;
+
+    width: 28px;
+    height: 28px;
+    padding: 2px;
+
+    background: none;
+    border-radius: 4px;
+    border: 1px solid var(--sl-color-text);
+
+    opacity: 0.1;
+    transition: opacity 0.05s;
+  }
+
+  .code-block-copy > svg {
+    fill: currentColor;
+  }
+
+  .code-block-copy:hover {
+    opacity: 1;
+  }
+
+  @media (pointer: coarse) {
+    .code-block-copy {
+      opacity: 1;
+    }
+  }
+</style>
