@@ -56,6 +56,7 @@ for (const packageName of packages) {
 
   if (packageJSON.private) continue
   if (packageJSON.name === '@reatom/all-settled') continue
+  if (packageJSON.name === '@reatom/form-web') continue
 
   if (!content.trim()) {
     content = await fs.readFile(

@@ -6,10 +6,4 @@ npm i @reatom/form-web
 
 ## Usage
 
-This package is under active development! There are still no docs, but here a few examples:
-
-Base HTML (React) example with types autoinfering: https://codesandbox.io/s/reatom-form-web-tefn82?file=/src/App.tsx
-
-The previous extended example with custom (not HTML input / select) field: https://codesandbox.io/s/reatom-form-web-custom-field-2iynrh
-
-Example with dynamic fields creation: https://codesandbox.io/s/reatom-form-web-dynamic-hp8c3d?file=/src/App.tsx
+**The API is unstable and will be changed during minor updates!** Sorry for the semver mismatch, the first releases contained A LOT OF bugs and should have been released with an "experimental" tag. Until this note is present here, please don't consider the library stable.

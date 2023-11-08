@@ -304,13 +304,6 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"package/form-web.md": {
-	id: "package/form-web.md";
-  slug: "package/form-web";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
 "package/form.md": {
 	id: "package/form.md";
   slug: "package/form";
