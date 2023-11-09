@@ -262,21 +262,21 @@ export const MyForm = () => {
 }
 ```
 
-As we mention before use can use `useUpdate` as a safety replacement for `onChange` + `useEffect`.
+And it works well in the opposite direction, you could synchronise an atom's data with the local state, or do any other kind of effect. You can use `useUpdate` as a safety replacement for `onChange` + `useEffect`.
 
-For example, you could modify this code like so
+For example, you need a controlled input from the passed atom.
+
+Here is a naive implementation:
 
 ```tsx
 export const Item = ({ itemAtom }) => {
-  const [value, setValue] = useAtom(itemAtom)
+  const [value, setValue] = React.useState('')
 
   React.useEffect(() => {
-    const cleanup = itemAtom.onChange((ctx, value) => {
-      ctx.schedule(someEffect)
-    })
+    const cleanup = itemAtom.onChange((ctx, state) => setValue(state))
     // DO NOT FORGET TO RETURN THE CLEANUP
     return cleanup
-  }, [])
+  }, [itemAtom])
 
   return (
     <input value={value} onChange={(e) => setValue(e.currentTarget.value)} />
@@ -284,16 +284,13 @@ export const Item = ({ itemAtom }) => {
 }
 ```
 
+Here is a simpler and more reliable implementation:
+
 ```tsx
 export const Item = ({ itemAtom }) => {
-  const [value, setValue] = useAtom(itemAtom)
+  const [value, setValue] = React.useState(itemAtom)
 
-  useUpdate(
-    (ctx, value) => {
-      ctx.schedule(someEffect)
-    },
-    [itemAtom],
-  )
+  useUpdate((ctx, state) => setValue(state), [itemAtom])
 
   return (
     <input value={value} onChange={(e) => setValue(e.currentTarget.value)} />
