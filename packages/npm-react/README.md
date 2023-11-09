@@ -230,7 +230,7 @@ return (
 
 ## Use update
 
-`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [updates hook](https://www.reatom.dev/guides/lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching (as it 'on' already). Subscriptions to a values works like regular `useEffect` hook.
+`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [`onChange` hook](https://www.reatom.dev/guides/lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching. Subscriptions to a values works like regular `useEffect` hook.
 
 The most common use case for this hook is to synchronize some state from a props or context to an atom.
 
@@ -258,6 +258,45 @@ export const MyForm = () => {
       <Sync />
       .....
     </Form>
+  )
+}
+```
+
+As we mention before use can use `useUpdate` as a safety replacement for `onChange` + `useEffect`.
+
+For example, you could modify this code like so
+
+```tsx
+export const Item = ({ itemAtom }) => {
+  const [value, setValue] = useAtom(itemAtom)
+
+  React.useEffect(() => {
+    const cleanup = itemAtom.onChange((ctx, value) => {
+      ctx.schedule(someEffect)
+    })
+    // DO NOT FORGET TO RETURN THE CLEANUP
+    return cleanup
+  }, [])
+
+  return (
+    <input value={value} onChange={(e) => setValue(e.currentTarget.value)} />
+  )
+}
+```
+
+```tsx
+export const Item = ({ itemAtom }) => {
+  const [value, setValue] = useAtom(itemAtom)
+
+  useUpdate(
+    (ctx, value) => {
+      ctx.schedule(someEffect)
+    },
+    [itemAtom],
+  )
+
+  return (
+    <input value={value} onChange={(e) => setValue(e.currentTarget.value)} />
   )
 }
 ```
