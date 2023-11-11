@@ -252,18 +252,21 @@ export const withDataAtom: {
       const dataAtom: AsyncDataAtom = (anAsync.dataAtom = Object.assign(
         atom(initState, `${anAsync.__reatom.name}.dataAtom`),
         {
-          reset: action(
-            (ctx) => void dataAtom(ctx, initState),
-            `${anAsync.__reatom.name}.dataAtom.reset`,
-          ),
+          reset: action((ctx) => {
+            dataAtom(ctx, initState)
+          }, `${anAsync.__reatom.name}.dataAtom.reset`),
           mapFulfill,
         },
       ) as AsyncDataAtom)
-      anAsync.onFulfill.onCall((ctx, payload) =>
-        dataAtom(ctx, (state: any) =>
-          mapFulfill ? mapFulfill(ctx, payload, state) : payload,
-        ),
-      )
+      dataAtom.__reatom.computer = (ctx, state) => {
+        ctx.spy(anAsync.onFulfill, ({ payload }) => {
+          state = mapFulfill ? mapFulfill(ctx, payload, state) : payload
+        })
+        return state
+      }
+      anAsync.onFulfill.onCall((ctx) => {
+        ctx.get(dataAtom)
+      })
 
       onConnect(dataAtom, (ctx) => ctx.subscribe(anAsync, noop))
     }
