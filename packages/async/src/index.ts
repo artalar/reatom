@@ -274,15 +274,18 @@ export const withDataAtom: {
 export const withErrorAtom =
   <
     T extends AsyncAction & {
-      errorAtom?: AtomMut<undefined | Err> & { reset: Action }
+      errorAtom?: AtomMut<EmptyError | Err> & { reset: Action }
     },
     Err = Error,
+    EmptyError = undefined,
   >(
     parseError: Fn<[Ctx, unknown], Err> = (ctx, e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
     {
+      initState,
       resetTrigger,
     }: {
+      initState?: EmptyError
       resetTrigger:
         | null
         | 'onEffect'
@@ -291,35 +294,49 @@ export const withErrorAtom =
     } = {
       resetTrigger: 'onEffect',
     },
-  ): Fn<[T], T & { errorAtom: AtomMut<undefined | Err> & { reset: Action } }> =>
+  ): Fn<
+    [T],
+    T & { errorAtom: AtomMut<EmptyError | Err> & { reset: Action } }
+  > =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
       const errorAtomName = `${anAsync.__reatom.name}.errorAtom`
+      const resetTriggerAtom =
+        resetTrigger &&
+        ({ ...anAsync, onEffect: anAsync }[resetTrigger] as Atom)
       const errorAtom = (anAsync.errorAtom = assign(
-        atom<undefined | Err>(undefined, errorAtomName),
+        atom(initState as EmptyError | Err, errorAtomName),
         {
           reset: action((ctx) => {
-            errorAtom(ctx, undefined)
+            errorAtom(ctx, initState as EmptyError)
           }, `${errorAtomName}.reset`),
         },
       ))
-      anAsync.onReject.onCall((ctx, payload) =>
-        errorAtom(ctx, parseError(ctx, payload)),
-      )
-      if (resetTrigger) {
-        const resetTriggerAtom = { ...anAsync, onEffect: anAsync }[
-          resetTrigger
-        ] as Atom
+      errorAtom.__reatom.computer = (ctx, state) => {
+        if (resetTriggerAtom) {
+          ctx.spy(resetTriggerAtom, (ctx) => {
+            state = initState
+          })
+        }
 
-        resetTriggerAtom.onChange((ctx) => {
-          if (ctx.get(errorAtom) !== undefined) {
-            errorAtom.reset(ctx)
-          }
+        ctx.spy(anAsync.onReject, ({ payload }) => {
+          state = parseError(ctx, payload)
         })
+
+        return state
       }
+
+      // enforce the atom not be outdated, as the `spy` is lazy
+      const triggers: Array<Atom> = [anAsync.onReject]
+      if (resetTriggerAtom) triggers.push(resetTriggerAtom)
+      triggers.forEach((trigger) =>
+        trigger.onChange((ctx) => {
+          ctx.get(errorAtom)
+        }),
+      )
     }
 
-    return anAsync as T & { errorAtom: Atom<undefined | Err> }
+    return anAsync as T & { errorAtom: Atom<EmptyError | Err> }
   }
 
 export const withAbort =

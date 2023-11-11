@@ -272,7 +272,7 @@ test('onConnect', async () => {
   ;`👍` //?
 })
 
-test('resetTrigger', async () => {
+test('withErrorAtom resetTrigger', async () => {
   const effect = reatomAsync(async () => {
     if (1) throw 42
     return 42
@@ -288,6 +288,26 @@ test('resetTrigger', async () => {
 
   effect.dataAtom(ctx, 42)
   assert.is(ctx.get(effect.errorAtom), undefined)
+  ;`👍` //?
+})
+
+test('withErrorAtom should be computed first', async () => {
+  let error
+  const effect = reatomAsync(async () => {
+    if (1) throw 42
+    return 42
+  }).pipe(
+    withRetry({
+      onReject(ctx) {
+        error = ctx.get(effect.errorAtom)
+      },
+    }),
+    withErrorAtom((ctx, e) => e),
+  )
+  const ctx = createTestCtx()
+
+  await effect(ctx).catch(noop)
+  assert.is(error, 42)
   ;`👍` //?
 })
 
