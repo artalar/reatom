@@ -441,7 +441,9 @@ export const withRetry =
       anAsync.retry = action((ctx, after = 0): ActionPayload<T> => {
         throwReatomError(after < 0, 'wrong timeout')
 
-        const params = ctx.get(anAsync.paramsAtom!)
+        let params = ctx.get(anAsync.paramsAtom!)
+        // @ts-expect-error
+        if (anAsync.promiseAtom) params ??= []
         throwReatomError(!params, 'no cached params')
 
         const asyncSnapshot = getCache(ctx, anAsync)
@@ -449,15 +451,14 @@ export const withRetry =
 
         retriesAtom(ctx, (s) => s + 1)
 
-        return ctx.schedule(async () => {
-          if (after > 0) await sleep(after)
+        if (after > 0) {
+          return sleep(after).then(() => {
+            if (hasOtherCall()) throw toAbortError('outdated retry')
+            return anAsync(ctx, ...params!)
+          }) as ActionPayload<T>
+        }
 
-          if (hasOtherCall()) {
-            throw toAbortError('outdated retry')
-          }
-
-          return await anAsync(ctx, ...params!)
-        }) as ActionPayload<T>
+        return anAsync(ctx, ...params!) as ActionPayload<T>
       }, `${anAsync.__reatom.name}.retry`)
 
       const retriesAtom = (anAsync.retriesAtom = atom(

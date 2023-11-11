@@ -3,7 +3,7 @@ import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { atom } from '@reatom/core'
 import { noop, sleep } from '@reatom/utils'
-import { isConnected } from '@reatom/hooks'
+import { isConnected, onConnect } from '@reatom/hooks'
 import { withCache, withDataAtom, withErrorAtom, withRetry } from '.'
 import { reatomResource } from './reatomResource'
 
@@ -218,7 +218,7 @@ test('withCache stale abort', async () => {
   ;`👍` //?
 })
 
-test('do not rerun without deps', async () => {
+test('do not rerun without deps on read', async () => {
   let i = 0
   const someResource = reatomResource(async (ctx) => {
     ++i
@@ -232,6 +232,28 @@ test('do not rerun without deps', async () => {
 
   someResource(ctx)
   assert.is(i, 2)
+  ;`👍` //?
+})
+
+test('sync retry in onConnect', async () => {
+  const getEventsSoon = reatomResource(async () => 1).pipe(
+    withDataAtom(0, (ctx, payload, state) => payload + state),
+    withRetry(),
+  )
+  onConnect(getEventsSoon.dataAtom, async (ctx) => {
+    while (ctx.isConnected()) {
+      await getEventsSoon.retry(ctx)
+      await sleep()
+    }
+  })
+  const ctx = createTestCtx()
+  ctx.get(getEventsSoon.dataAtom)
+  const track = ctx.subscribeTrack(getEventsSoon.dataAtom)
+
+  await sleep()
+  await sleep()
+  track.unsubscribe()
+  assert.ok(ctx.get(getEventsSoon.dataAtom) > 1)
   ;`👍` //?
 })
 
