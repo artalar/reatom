@@ -9,7 +9,7 @@ import {
   extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
-  traverseBy,
+  nearestParent,
 } from '../lib'
 
 type ActionCallExpression = CallExpression & {
@@ -28,7 +28,7 @@ export const actionRule: Rule.RuleModule = {
       description: 'Add name for every action call',
     },
     messages: {
-      noname: `action "{{ actionName }}" should has a name inside action() call`,
+      nameMissing: `action "{{ actionName }}" should has a name inside action() call`,
       invalidName: `action "{{ actionName }}" should be named as it's variable name, rename it to "{{ actionName }}"`,
     },
     fixable: 'code',
@@ -39,24 +39,19 @@ export const actionRule: Rule.RuleModule = {
     return {
       ImportDeclaration(node) {
         extractImportDeclaration({
-          from: node,
-          importsAlias: importedFromReatom,
-          packageName: '@reatom',
+          node: node,
+          importAliasMap: importedFromReatom,
+          packagePrefix: '@reatom',
         })
       },
       CallExpression(node) {
         if (!isActionCallExpression(node, importedFromReatom)) return
 
-        const matchBy = new Set([
+        const actionVariable = nearestParent(node, [
           'VariableDeclarator',
           'PropertyDefinition',
           'Property',
         ])
-
-        const actionVariable = traverseBy('parent', {
-          match: matchBy,
-          node,
-        })
 
         const actionName = extractAssignedVariableName(actionVariable)
 
@@ -80,7 +75,7 @@ export const actionRule: Rule.RuleModule = {
 
           context.report({
             node,
-            messageId: 'noname',
+            messageId: 'nameMissing',
             data: { actionName },
             fix(fixer) {
               return fixer.insertTextAfter(
@@ -113,7 +108,7 @@ export const actionRule: Rule.RuleModule = {
 
             context.report({
               node,
-              messageId: 'noname',
+              messageId: 'nameMissing',
               data: { actionName },
               fix(fixer) {
                 return fixer.insertTextAfter(afterInsert, `, "${actionName}"`)

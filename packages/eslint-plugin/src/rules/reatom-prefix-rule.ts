@@ -9,7 +9,7 @@ import type {
 import {
   extractAssignedVariableName,
   extractImportDeclaration,
-  traverseBy,
+  nearestParent,
 } from '../lib'
 
 type ReatomPrefixCallExpression = CallExpression & {
@@ -27,7 +27,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
       description: 'Add name for every reatom* call',
     },
     messages: {
-      noname: `variable assigned to {{ methodName }} should has a name "{{ assignedVariable }}" inside {{ methodName }} call`,
+      nameMissing: `variable assigned to {{ methodName }} should has a name "{{ assignedVariable }}" inside {{ methodName }} call`,
       invalidName: `variable assigned to {{ methodName }} should be named as it's variable name, rename it to "{{ assignedVariable }}"`,
     },
     fixable: 'code',
@@ -38,9 +38,9 @@ export const reatomPrefixRule: Rule.RuleModule = {
     return {
       ImportDeclaration(node) {
         extractImportDeclaration({
-          from: node,
-          importsAlias: importedFromReatom,
-          packageName: '@reatom',
+          node,
+          importAliasMap: importedFromReatom,
+          packagePrefix: '@reatom',
           filter: (name) => name.startsWith('reatom'),
         })
       },
@@ -53,18 +53,14 @@ export const reatomPrefixRule: Rule.RuleModule = {
           return
         }
 
-        const matchBy = new Set([
+        const assignedVariable = nearestParent(node, [
           'VariableDeclarator',
           'PropertyDefinition',
           'Property',
         ])
 
-        const assignedVariable = traverseBy('parent', {
-          match: matchBy,
-          node,
-        })
-
-        const assignedVariableName = extractAssignedVariableName(assignedVariable)
+        const assignedVariableName =
+          extractAssignedVariableName(assignedVariable)
 
         if (!assignedVariableName) {
           return
@@ -80,7 +76,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
         if (initArguments.length === 1) {
           context.report({
             node,
-            messageId: 'noname',
+            messageId: 'nameMissing',
             data: reportMessageConfig,
             fix(fixer) {
               return fixer.insertTextAfter(
@@ -123,7 +119,7 @@ export const reatomPrefixRule: Rule.RuleModule = {
 
               context.report({
                 node,
-                messageId: 'noname',
+                messageId: 'nameMissing',
                 data: reportMessageConfig,
                 fix: (fixer) =>
                   fixer.insertTextBefore(

@@ -1,5 +1,5 @@
 import { RuleTester } from 'eslint'
-import { asyncRule } from '../rules/async-rule'
+import { asyncRule } from './async-rule'
 
 const tester = new RuleTester({
   parserOptions: {

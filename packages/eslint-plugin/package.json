@@ -3,7 +3,7 @@
   "version": "3.4.3",
   "private": false,
   "sideEffects": false,
-  "description": "Reatom for eslint-plugin",
+  "description": "Reatom-specific ESLint rules",
   "source": "src/index.ts",
   "exports": {
     "types": "./build/index.d.ts",
@@ -20,8 +20,8 @@
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
-    "test": "ts-node src/tests/index.ts",
-    "test:watch": "tsx watch src/**/*.test.ts"
+    "test": "ts-node src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
   },
   "author": "pivaszbs",
   "maintainers": [

@@ -5,9 +5,9 @@ import {
   extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
-  traverseBy,
+  traver../shared
 } from '../lib'
-import { isAtomCallExpression } from './atom-rule'
+import { isAtomCall } from './atom-rule'
 
 const match = new Set(['VariableDeclarator', 'PropertyDefinition', 'Property'])
 
@@ -36,7 +36,7 @@ export const atomPostfixRule: Rule.RuleModule = {
         })
       },
       CallExpression: (node) => {
-        if (!isAtomCallExpression(node, importedFromReatom)) return
+        if (!isAtomCall(node, importedFromReatom)) return
 
         const atomVariable = traverseBy('parent', {
           match,
@@ -55,7 +55,7 @@ export const atomPostfixRule: Rule.RuleModule = {
             context,
             messageId: 'incorrectVariableName',
             source: atomIdentifier,
-            incorrectName: atomName,
+            nameIncorrect: atomName,
             correctName: `${atomName}${postfix}`,
             highlightNode: atomIdentifier,
             postfix,
@@ -71,13 +71,13 @@ function reportIncorrectVariableName(config: {
   context: Rule.RuleContext
   highlightNode: Node
   correctName: string
-  incorrectName: string
+  nameIncorrect: string
   source: Node
   postfix: string
 }) {
   const {
     source,
-    incorrectName,
+    nameIncorrect,
     correctName,
     highlightNode,
     context,
@@ -87,7 +87,7 @@ function reportIncorrectVariableName(config: {
   context.report({
     messageId: config.messageId,
     node: highlightNode,
-    data: { atomName: incorrectName, postfix },
+    data: { atomName: nameIncorrect, postfix },
     fix(fixer) {
       return fixer.replaceText(source, correctName)
     },

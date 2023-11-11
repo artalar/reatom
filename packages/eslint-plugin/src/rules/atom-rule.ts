@@ -1,17 +1,11 @@
 import type { Rule } from 'eslint'
-import type { CallExpression, Identifier, Literal, Node, TemplateLiteral } from 'estree'
+import type * as estree from 'estree'
 import {
   extractAssignedVariableName,
   extractImportDeclaration,
   isLiteral,
-  isTemplateLiteral,
-  traverseBy,
+  nearestParent,
 } from '../lib'
-
-type AtomCallExpression = CallExpression & {
-  callee: Identifier
-  arguments: [Literal] | [Literal, Literal]
-}
 
 export const atomRule: Rule.RuleModule = {
   meta: {
@@ -21,58 +15,60 @@ export const atomRule: Rule.RuleModule = {
     },
     fixable: 'code',
     messages: {
-      missingName: `atom "{{ atomName }}" should has a name inside atom() call`,
-      unCorrectName: `atom "{{ atomName }}" should be named as it's variable name, rename it to "{{ atomName }}"`
+      nameMissing: `Atom "{{ atomName }}" is missing a name`,
+      nameIncorrect: `Atom "{{ atomName }}" has incorrect name`,
     },
   },
   create: function (context: Rule.RuleContext): Rule.RuleListener {
-    const importedFromReatom = new Map<string, string>()
-    const missedName = (amountOfArguments: number) => amountOfArguments === 1
+    const reatomImports = new Map<string, string>()
 
     return {
       ImportDeclaration(node) {
         extractImportDeclaration({
-          from: node,
-          importsAlias: importedFromReatom,
-          packageName: '@reatom',
+          node: node,
+          importAliasMap: reatomImports,
+          packagePrefix: '@reatom',
         })
       },
       CallExpression: (node) => {
-        if (!isAtomCallExpression(node, importedFromReatom)) return
+        if (
+          node.callee.type !== 'Identifier' ||
+          node.callee.name !== reatomImports.get('atom')
+        ) {
+          return
+        }
 
-        const matchBy = new Set([
+        const atomVariable = nearestParent(node, [
           'VariableDeclarator',
           'PropertyDefinition',
           'Property',
         ])
 
-        const atomVariable = traverseBy('parent', {
-          match: matchBy,
-          node,
-        })
-
         const atomName = extractAssignedVariableName(atomVariable)
-        if (!atomName) {
+        if (!atomName) return
+
+        if (node.arguments.length === 1) {
+          const source = node.arguments[0]!
+          context.report({
+            messageId: 'nameMissing',
+            node: node.callee,
+            data: { atomName },
+            fix: (fixer) => {
+              return fixer.insertTextAfter(source, `, "${atomName}"`)
+            },
+          })
           return
         }
 
-        if (missedName(node.arguments.length)) {
-          reportUnCorrectName({
-            context,
-            messageId: 'missingName',
-            source: node.arguments[0],
-            changeType: 'insertBefore',
-            correctName: atomName,
-            highlightNode: node.callee,
-          })
-        } else if (!validAtomVariable(node, atomName)) {
-          reportUnCorrectName({
-            context,
-            messageId: 'unCorrectName',
-            source: node.arguments[1],
-            changeType: 'replace',
-            correctName: atomName,
-            highlightNode: node.arguments[1],
+        if (!validAtomVariable(node, atomName)) {
+          const source = node.arguments[1]!
+          context.report({
+            messageId: 'nameIncorrect',
+            node: source,
+            data: { atomName },
+            fix: (fixer) => {
+              return fixer.replaceText(source, `"${atomName}"`)
+            },
           })
         }
       },
@@ -80,47 +76,10 @@ export const atomRule: Rule.RuleModule = {
   },
 }
 
-function validAtomVariable(node: CallExpression, correctName: string) {
+function validAtomVariable(node: estree.CallExpression, correctName: string) {
   if (isLiteral(node.arguments[1])) {
-    return validateLiteral(node.arguments[1], correctName);
+    return node.arguments[1].value === correctName
   }
 
-  return true;
-}
-
-function validateLiteral(node: Literal, correctName: string) {
-  return node.value === correctName;
-}
-
-function reportUnCorrectName(config: {
-  messageId: 'unCorrectName' | 'missingName'
-  context: Rule.RuleContext
-  changeType: 'replace' | 'insertBefore'
-  highlightNode: Node
-  correctName: string
-  source: Node
-}) {
-  const { source, correctName, highlightNode, changeType, context } = config
-
-  context.report({
-    messageId: config.messageId,
-    node: highlightNode,
-    data: { atomName: correctName },
-    fix(fixer) {
-      return changeType === 'replace'
-        ? fixer.replaceText(source, `"${correctName}"`)
-        : fixer.insertTextAfter(source, `, "${correctName}"`)
-    },
-  })
-}
-
-export function isAtomCallExpression(
-  node: CallExpression,
-  imported: Map<string, string>,
-): node is AtomCallExpression {
-  return (
-    node?.type === 'CallExpression' &&
-    node.callee?.type === 'Identifier' &&
-    imported.get('atom') === node.callee.name
-  )
+  return true
 }

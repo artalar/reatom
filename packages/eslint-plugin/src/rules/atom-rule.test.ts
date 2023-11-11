@@ -1,55 +1,29 @@
 import { RuleTester } from 'eslint'
-import { atomPostfixRule } from '../rules/atom-postifx-rule'
+import { atomRule } from './atom-rule'
 
 const tester = new RuleTester({
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
   },
-  settings: {
-    atomPostfix: 'Atom'
-  }
 })
 
-const tester2 = new RuleTester({
-  parserOptions: {
-    ecmaVersion: 2022,
-    sourceType: 'module',
-  },
-  settings: {
-    atomPostfix: '$'
-  }
-});
-
-tester2.run('reatom/atom-postfix-rule', atomPostfixRule, {
+tester.run('reatom/atom-rule', atomRule, {
   valid: [
     {
       code: `
-            import { atom } from '@reatom/framework'
-            const count$ = atom(0, "count$");
-            `,
-    },
-    {
-      code: `const count = atom(0);`,
-    },
-    {
-      code: `
-      import { atom } from "@reatom/framework"
-      const factory = ()=> {
-        const some$ = atom("", "some$")
-        const set = action(ctx => {}, "set")
-        return Object.assign(someAtom, {
-          set
-        })
-      }
+        import { atom } from '@reatom/framework';
+        const count = 'count';
+        const countAtom = atom(0, \`\${count}Atom\`);
       `,
     },
-  ],
-  invalid: []
-})
-
-tester.run('reatom/atom-postfix-rule', atomPostfixRule, {
-  valid: [
+    {
+      code: `
+        import { atom } from '@reatom/framework';
+        const domain = (name) => 'some.' + name;
+        const countAtom = atom(0, domain\`count\`);
+      `,
+    },
     {
       code: `
             import { atom } from '@reatom/framework'
@@ -57,7 +31,10 @@ tester.run('reatom/atom-postfix-rule', atomPostfixRule, {
             `,
     },
     {
-      code: `const count = atom(0);`,
+      code: `const countAtom = atom(0);`,
+    },
+    {
+      code: 'const countAtom = atom(0, "count");',
     },
     {
       code: `
@@ -76,81 +53,103 @@ tester.run('reatom/atom-postfix-rule', atomPostfixRule, {
     {
       code: `
             import { atom } from '@reatom/framework'
-            const count = atom(0);
+            const countAtom = atom(0);
+            `,
+      errors: [{ messageId: 'nameMissing' }],
+      output: `
+            import { atom } from '@reatom/framework'
+            const countAtom = atom(0, "countAtom");
+            `,
+    },
+    {
+      code: `
+            import { atom } from '@reatom/framework'
+            const countAtom = atom(0, "count");
             `,
       errors: [
-        { message: 'atom "count" should have postfix "Atom"' },
+        {
+          messageId: 'nameIncorrect',
+          line: 3,
+          column: 39,
+          endColumn: 46,
+        },
       ],
       output: `
             import { atom } from '@reatom/framework'
-            const countAtom = atom(0);
+            const countAtom = atom(0, "countAtom");
             `,
     },
     {
       code: `
       import { atom as createStore } from '@reatom/framework'
-      const store = createStore(0)
+      const storeAtom = createStore(0)
       `,
       errors: [
         {
-          message: `atom "store" should have postfix "Atom"`,
+          messageId: 'nameMissing',
         },
       ],
       output: `
       import { atom as createStore } from '@reatom/framework'
-      const storeAtom = createStore(0)
+      const storeAtom = createStore(0, "storeAtom")
       `,
     },
     {
       code: `
-      import { atom as createAtom } from '@reatom/framework'
-      const store = createAtom((ctx) => {}, '')
-      `,
-      errors: [
-        {
-          message: `atom "store" should have postfix "Atom"`,
-        },
-      ],
-      output: `
       import { atom as createAtom } from '@reatom/framework'
       const storeAtom = createAtom((ctx) => {}, '')
       `,
-    },
-    {
-      code: `
-      import { atom } from "@reatom/framework"
-      const handler = {
-        draggable: atom({})
-      } 
-      `,
       errors: [
         {
-          message: `atom "draggable" should have postfix "Atom"`,
+          messageId: 'nameIncorrect',
+          line: 3,
+          column: 49,
+          endColumn: 51,
         },
       ],
       output: `
+      import { atom as createAtom } from '@reatom/framework'
+      const storeAtom = createAtom((ctx) => {}, "storeAtom")
+      `,
+    },
+    {
+      code: `
       import { atom } from "@reatom/framework"
       const handler = {
         draggableAtom: atom({})
       } 
       `,
+      errors: [
+        {
+          messageId: 'nameMissing',
+        },
+      ],
+      output: `
+      import { atom } from "@reatom/framework"
+      const handler = {
+        draggableAtom: atom({}, "draggableAtom")
+      } 
+      `,
     },
     {
       code: `
       import { atom } from "@reatom/core"
       class SomeService {
-        some = atom({}, "")
+        someAtom = atom({}, "")
       }
       `,
       errors: [
         {
-          message: `atom "some" should have postfix "Atom"`,
+          messageId: 'nameIncorrect',
+          line: 4,
+          column: 29,
+          endColumn: 31,
         },
       ],
       output: `
       import { atom } from "@reatom/core"
       class SomeService {
-        someAtom = atom({}, "")
+        someAtom = atom({}, "someAtom")
       }
       `,
     },

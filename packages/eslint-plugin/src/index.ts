@@ -14,12 +14,10 @@ export const rules = {
 
 export const configs = {
   recommended: {
-    rules: {
-      '@reatom/atom-rule': 'error',
-      '@reatom/action-rule': 'error',
-      '@reatom/reatom-prefix-rule': 'error',
-      '@reatom/atom-postfix-rule': 'error',
-      '@reatom/async-rule': 'error',
-    },
+    rules: Object.fromEntries(
+      Object.keys(rules).map((ruleName) => {
+        return [`@reatom/${ruleName}`, 'error']
+      }),
+    ),
   },
 }
