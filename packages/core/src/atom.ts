@@ -649,6 +649,23 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
+function pipe(this: Atom, ...fns: Array<Fn>) {
+  return fns.reduce((acc, fn) => fn(acc), this)
+}
+function onChange(this: Atom, cb: Fn) {
+  const hook = (ctx: Ctx, patch: AtomCache) => cb(ctx, patch.state)
+
+  ;(this.__reatom.updateHooks ??= new Set()).add(hook)
+
+  return () => this.__reatom.updateHooks!.delete(hook)
+}
+function onCall(this: Action, cb: Fn): Unsubscribe {
+  return this.onChange((ctx, state) => {
+    const { params, payload } = state[state.length - 1]!
+    cb(ctx, payload, params)
+  })
+}
+
 export function atom<T>(initState: (ctx: CtxSpy) => T, name?: string): Atom<T>
 export function atom<T>(initState: T, name?: string): AtomMut<T>
 export function atom<T>(
@@ -686,16 +703,8 @@ export function atom<T>(
     actual: false,
   }
 
-  theAtom.pipe = function (this: Atom, ...fns: Array<Fn>) {
-    return fns.reduce((acc, fn) => fn(acc), this)
-  }
-  theAtom.onChange = function (this: Atom, cb: Fn) {
-    const hook = (ctx: Ctx, patch: AtomCache) => cb(ctx, patch.state)
-
-    ;(this.__reatom.updateHooks ??= new Set()).add(hook)
-
-    return () => this.__reatom.updateHooks!.delete(hook)
-  }
+  theAtom.pipe = pipe
+  theAtom.onChange = onChange
 
   return theAtom
 }
@@ -739,12 +748,7 @@ export const action: {
     },
     actionAtom,
     {
-      onCall(this: Action, cb: Fn): Unsubscribe {
-        return this.onChange((ctx, state) => {
-          const { params, payload } = state[state.length - 1]!
-          cb(ctx, payload, params)
-        })
-      },
+      onCall,
     },
   )
 }
