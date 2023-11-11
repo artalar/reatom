@@ -10,14 +10,21 @@ const tester = new RuleTester({
 
 tester.run('async-rule', asyncRule, {
   valid: [
-    'const reatomSomething = reatomAsync(async ctx => await ctx.schedule(() => doSomething()))',
+    'import {reatomAsync} from "@reatom/framework"; const reatomSomething = reatomAsync(async ctx => await ctx.schedule(() => doSomething()))',
+    'import {reatomAsync as createAsync} from "@reatom/framework"; const reatomSomething = createAsync(async ctx => await ctx.schedule(() => doSomething()))',
   ],
   invalid: [
     {
-      code: 'const reatomSomething = reatomAsync(async ctx => await doSomething())',
+      code: 'import {reatomAsync} from "@reatom/framework"; const reatomSomething = reatomAsync(async ctx => await doSomething())',
       errors: 1,
       output:
-        'const reatomSomething = reatomAsync(async ctx => await ctx.schedule(() => doSomething()))',
+        'import {reatomAsync} from "@reatom/framework"; const reatomSomething = reatomAsync(async ctx => await ctx.schedule(() => doSomething()))',
+    },
+    {
+      code: 'import {reatomAsync as createAsync} from "@reatom/framework"; const reatomSomething = createAsync(async ctx => await doSomething())',
+      errors: 1,
+      output:
+        'import {reatomAsync as createAsync} from "@reatom/framework"; const reatomSomething = createAsync(async ctx => await ctx.schedule(() => doSomething()))',
     },
   ],
 })

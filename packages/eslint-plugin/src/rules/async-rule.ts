@@ -1,5 +1,6 @@
 import type { Rule } from 'eslint'
 import type * as estree from 'estree'
+import { extractImportDeclaration } from '../lib'
 
 const ReatomFactoryNames = ['atom', 'action']
 const ReatomFactoryPrefix = 'reatom'
@@ -16,9 +17,18 @@ export const asyncRule: Rule.RuleModule = {
     fixable: 'code',
   },
   create(context: Rule.RuleContext): Rule.RuleListener {
+    const reatomImportMap = new Map<string, string>()
+
     return {
+      ImportDeclaration(node) {
+        extractImportDeclaration({
+          node,
+          packagePrefix: '@reatom',
+          importAliasMap: reatomImportMap,
+        })
+      },
       AwaitExpression(node) {
-        if (!isReatomFunction(node)) return
+        if (!isReatomFunction(reatomImportMap, node)) return
         if (isCtxSchedule(node.argument)) return
 
         context.report({
@@ -32,7 +42,10 @@ export const asyncRule: Rule.RuleModule = {
   },
 }
 
-const isReatomFunction = (node: estree.Node & Rule.NodeParentExtension) => {
+const isReatomFunction = (
+  reatomImportMap: ReadonlyMap<string, string>,
+  node: estree.Node & Rule.NodeParentExtension,
+) => {
   while (
     node &&
     !(
@@ -49,7 +62,11 @@ const isReatomFunction = (node: estree.Node & Rule.NodeParentExtension) => {
     node.parent.type === 'CallExpression' &&
     node.parent.callee.type === 'Identifier'
   ) {
-    const name = node.parent.callee.name
+    let name: string | null = null
+    for (const [key, value] of reatomImportMap) {
+      if (value === node.parent.callee.name) name = key
+    }
+    if (!name) return false
     if (ReatomFactoryNames.includes(name)) return true
     if (name.startsWith(ReatomFactoryPrefix)) return true
   }
