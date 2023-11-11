@@ -311,6 +311,44 @@ test('withErrorAtom should be computed first', async () => {
   ;`👍` //?
 })
 
+test('withErrorAtom initState', async () => {
+  let error
+  const effect = reatomAsync(async () => {
+    if (1) throw 42
+    return 42
+  }).pipe(withErrorAtom((ctx, e: any) => new Error(e), { initState: 'test' }))
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(effect.errorAtom), 'test')
+
+  await effect(ctx).catch(noop)
+  assert.instance(ctx.get(effect.errorAtom), Error)
+
+  effect.errorAtom.reset(ctx)
+  assert.is(ctx.get(effect.errorAtom), 'test')
+  ;`👍` //?
+})
+
+test('withErrorAtom should be computed first', async () => {
+  let error
+  const effect = reatomAsync(async () => {
+    if (1) throw 42
+    return 42
+  }).pipe(
+    withRetry({
+      onReject(ctx) {
+        error = ctx.get(effect.errorAtom)
+      },
+    }),
+    withErrorAtom((ctx, e) => e),
+  )
+  const ctx = createTestCtx()
+
+  await effect(ctx).catch(noop)
+  assert.is(error, 42)
+  ;`👍` //?
+})
+
 test('nested abort', async () => {
   let result = false
   let thrown = false

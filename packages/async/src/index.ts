@@ -286,7 +286,7 @@ export const withErrorAtom =
       resetTrigger,
     }: {
       initState?: EmptyError
-      resetTrigger:
+      resetTrigger?:
         | null
         | 'onEffect'
         | 'onFulfill'
