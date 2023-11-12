@@ -35,6 +35,7 @@ const ctx = createCtx()
 ```ts
 import { atom } from '@reatom/framework'
 const aAtom = atom(1, 'aAtom')
+const bAtom = atom(2, 'bAtom')
 ```
 
 An atom is like a variable, it has a type and a value. However, unlike a variable, we can track changes in its value and react to that changes in some way.
