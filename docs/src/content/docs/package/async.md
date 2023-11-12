@@ -314,7 +314,9 @@ fetchList.onFulfill.onCall((ctx, payload) =>
 
 ## withErrorAtom
 
-Adds `errorAtom`, similar to `dataAtom`, which updates by `onReject` and clears by `onFulfill`. You could add a mapper function and reset trigger: `null | 'onEffect' | 'onFulfill'` (`onEffect` by default).
+Adds `errorAtom`, similar to `dataAtom`, which updates by `onReject` and clears by `onFulfill` by default. You could add an optional mapper function by the first parameter to ensure your error type. By the second optional object parameter you could set `resetTrigger` (`null | 'onEffect' | 'onFulfill'`) or `initState`. The last one `undefined` by default and it also used in reset logic.
+
+You could update the error atom manually as a usual atom: `fetchList.errorAtom(ctx, someError)`. You could reset the state by yourself by additional `reset` action: `fetchList.errorAtom.reset(ctx)`
 
 ```ts
 import { reatomAsync, withErrorAtom } from '@reatom/async'
