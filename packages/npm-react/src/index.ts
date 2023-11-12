@@ -18,6 +18,11 @@ import {
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
 
+// useLayoutEffect will show warning if used during ssr, e.g. with Next.js
+// useIsomorphicEffect removes it by replacing useLayoutEffect with useEffect during ssr
+export const useIsomorphicEffect =
+  typeof document !== 'undefined' ? React.useLayoutEffect : React.useEffect
+
 let getName = (type: string): string => {
   let Component =
     // @ts-expect-error do we have another way?
@@ -207,7 +212,8 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, cb }
   }, deps)
-  React.useLayoutEffect(() => {
+
+  useIsomorphicEffect(() => {
     ref!.fn = fn
   })
 
