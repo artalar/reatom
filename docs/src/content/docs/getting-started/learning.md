@@ -16,7 +16,7 @@ npm install --save @reatom/framework
 
 ### Basic primitives
 
-The reatom is based on three basic primitives: Atom, Action and Context
+The reatom is based on three basic primitives: Atom, Action and Context.
 Below you can see how they are used together, after which we will look at each line and what happens in it
 
 ## Context
@@ -96,7 +96,7 @@ The previous state can also be used in computable atoms
 ```ts
 import { atom, isDeepEqual } from '@reatom/framework'
 
-const listAtom = atom<List>([1, 2, 3, 4, 5], 'listAtom')
+const listAtom = atom<number[]>([1, 2, 3, 4, 5], 'listAtom')
 const evenListAtom = atom((ctx, state = []) => {
   const newState = ctx.spy(listAtom).filter((n) => n % 2 === 0)
   return isDeepEqual(state, newState) ? state : newState
@@ -182,8 +182,9 @@ export const dataAtom = atom(null)
 
 export const fetchData = action(async (ctx) => {
   const data = await ctx.schedule(() => {
-    const response = fetch('https://jsonplaceholder.typicode.com/todos/1')
-    const payload = response.json()
+    const response = await fetch('https://jsonplaceholder.typicode.com/todos/1')
+    const payload = await response.json();
+    return payload;
   })
   dataAtom(ctx, data)
 })
@@ -205,7 +206,7 @@ export const fetchTodo = action(async (ctx) => {
 export const loadTodo = action(async (ctx) => {
   try {
     isLoadingAtom(ctx, true)
-    const data = await ctx.schedule(() => fetchTodo(ctx))
+    const data = await ctx.schedule((ctx) => fetchTodo(ctx))
     todoAtom(ctx, data);
   } catch (e) {
     console.error(e)

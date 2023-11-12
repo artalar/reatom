@@ -68,7 +68,7 @@ export const fetchTodo = action(async (ctx) => {
 export const loadTodo = action(async (ctx) => {
   try {
     isLoadingAtom(ctx, true)
-    const data = await ctx.schedule(() => fetchTodo(ctx))
+    const data = await ctx.schedule((ctx) => fetchTodo(ctx))
     todoAtom(ctx, data);
   } catch (e) {
     console.error(e)
