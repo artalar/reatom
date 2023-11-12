@@ -122,13 +122,13 @@ export const reatomAsync = <
   const pendingAtom = atom(0, `${name}.pendingAtom`)
 
   // @ts-expect-error the missed properties assigned later
-  const onEffect: AsyncAction = Object.assign(
+  const theAsync: AsyncAction = Object.assign(
     // do not put this function inside `action` to not broke effect mocking
     (...params: Params) =>
       params[0].get((read, actualize) => {
         const { state } = actualize!(
           params[0],
-          onEffect.__reatom,
+          theAsync.__reatom,
           (ctx: AsyncCtx, patch: AtomCache) => {
             // userspace controller
             ctx.controller = ctx.cause.controller = new AbortController()
@@ -143,10 +143,10 @@ export const reatomAsync = <
               ...patch.state,
               {
                 params: params.slice(1),
-                payload: onEffect._handleCache
+                payload: theAsync._handleCache
                   ? // @ts-expect-error
-                    onEffect._handleCache(...params)
-                  : handleEffect(onEffect, params),
+                    theAsync._handleCache(...params)
+                  : handleEffect(theAsync, params),
               },
             ]
           },
@@ -168,7 +168,7 @@ export const reatomAsync = <
   onReject.onCall((ctx) => onSettle(ctx))
 
   if (onEffectHook) {
-    onEffect.onCall((ctx, promise, params) =>
+    theAsync.onCall((ctx, promise, params) =>
       onEffectHook(ctx, params as any, promise),
     )
   }
@@ -176,7 +176,9 @@ export const reatomAsync = <
   if (onRejectHook) onReject.onCall(onRejectHook)
   if (onSettleHook) onSettle.onCall(onSettleHook)
 
-  return assign(onEffect, {
+  onConnect(pendingAtom, (ctx) => ctx.subscribe(theAsync, noop))
+
+  return assign(theAsync, {
     onFulfill,
     onReject,
     onSettle,

@@ -108,6 +108,8 @@ export const reatomResource = <T>(
     return promise
   }, `${name}._promiseAtom`)
 
+  // `dataAtom`, `promiseAtom`, `statusesAtom` subscribes to the async action when it gets a connection to itself.
+  // So we should activate the promise as long as there are any subscribers to the promise meta.
   onConnect(theAsync, (ctx) => ctx.subscribe(promiseAtom, noop))
   onConnect(promiseAtom, (ctx) => /* disconnect */ () => {
     const state = ctx.get(promiseAtom)
