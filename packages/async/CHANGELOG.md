@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.13.0](https://github.com/artalar/reatom/compare/async-v3.12.1...async-v3.13.0) (2023-11-12)
+
+
+### Features
+
+* **async:** add initState to errorAtom ([6852b72](https://github.com/artalar/reatom/commit/6852b7291ccc4fb6acfb9ecfb48d3c2326fa78ee))
+
+
+### Bug Fixes
+
+* **async:** activate resource on pending connection ([81f19b9](https://github.com/artalar/reatom/commit/81f19b996c0a2535b2c9056dd4197f447620604f))
+* **async:** dataAtom should be computed first ([8aab299](https://github.com/artalar/reatom/commit/8aab299916f35afc0cb89983c58eeb4ae5b237cb))
+* **async:** withErrorAtom should be computed first ([0c458da](https://github.com/artalar/reatom/commit/0c458da9f1eaf6a3226ca2e57f8ba5360dc7ce9e))
+* **async:** withRetry races ([0abe299](https://github.com/artalar/reatom/commit/0abe29976c319525544efd5fd659e004b76d6edf))
+
 ## [3.12.1](https://github.com/artalar/reatom/compare/async-v3.12.0...async-v3.12.1) (2023-11-07)
 
 
