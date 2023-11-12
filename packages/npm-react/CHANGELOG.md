@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.4](https://github.com/artalar/reatom/compare/npm-react-v3.7.3...npm-react-v3.7.4) (2023-11-12)
+
+
+### Bug Fixes
+
+* **npm-react:** useIsomorphicEffect ([a46b4a3](https://github.com/artalar/reatom/commit/a46b4a3b0635b08ccc0a2f2e75ba2669441a8371))
+
 ## [3.7.3](https://github.com/artalar/reatom/compare/npm-react-v3.7.2...npm-react-v3.7.3) (2023-11-05)
 
 

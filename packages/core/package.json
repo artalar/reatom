@@ -1,6 +1,6 @@
 {
   "name": "@reatom/core",
-  "version": "3.6.3",
+  "version": "3.6.4",
   "private": false,
   "description": "The ultimate state manager",
   "source": "src/index.ts",
