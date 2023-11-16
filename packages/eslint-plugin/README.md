@@ -23,10 +23,8 @@ Add `@reatom` to `plugins` and specify `extends` or `rules` in your config.
 {
   "plugins": ["@reatom"],
   "rules": {
-    "@reatom/atom-rule": "error",
-    "@reatom/action-rule": "error",
-    "@reatom/reatom-prefix-rule": "error",
-    "@reatom/atom-postfix-rule": "error"
+    "@reatom/async-rule": "error",
+    "@reatom/unit-naming-rule": "error"
   }
 }
 ```
@@ -64,6 +62,51 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
   }
 }
 ```
+
+## Rules
+
+### `unit-naming-rule`
+
+Ensures that all Reatom entities specify the name parameter used for debugging. We assume that Reatom entity factories are `atom`, `action` and all `reatom*` (like `reatomAsync`) functions imported from `@reatom/*` packages.
+
+The name must be equal to the name of a variable or a property an entity is assigned to, like this:
+
+```ts
+const count = atom(0, 'count')
+
+const someNamespace = {
+  count: atom(0, 'count'),
+}
+```
+
+When creating atoms dynamically with factories, you can also specify the "namespace" of the name before the `.` symbol:
+
+```ts
+const reatomUser = (_name: string) => {
+  const name = atom(_name, 'reatomUser.name')
+
+  return { name }
+}
+```
+
+For private atoms, `_` prefix can be used:
+
+```ts
+const secretState = atom(0, '_secretState')
+```
+
+You can also ensure that `atom` names have a prefix or a postfix through the configuration, for example:
+
+```ts
+{
+  atomPrefix: '',
+  atomPostfix: 'Atom',
+}
+```
+
+### `async-rule`
+
+Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`. Read [the docs](https://www.reatom.dev/package/core/#ctx-api) for more info.
 
 ## Motivation
 
