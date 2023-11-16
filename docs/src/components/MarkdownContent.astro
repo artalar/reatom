@@ -2,7 +2,9 @@
 import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownContent.astro'
 ---
 
-<DefaultMarkdownContent {...Astro.props}><slot /></DefaultMarkdownContent>
+<DefaultMarkdownContent {...Astro.props as any}>
+  <slot />
+</DefaultMarkdownContent>
 
 <script>
   const SvgNs = 'http://www.w3.org/2000/svg'
@@ -15,51 +17,83 @@ import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownConten
     '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path>'
   copyButtonTemplate.appendChild(copyButtonSvg)
 
-  const codeBlocks = document.querySelectorAll('pre.astro-code')
+  const codeBlocks = document.querySelectorAll(
+    'pre.astro-code',
+  ) as NodeListOf<HTMLElement>
   for (const codeBlock of codeBlocks) {
-    const codeText = (codeBlock as HTMLElement).innerText
-    const copy = () => {
-      navigator.clipboard.writeText(codeText).catch(console.error)
+    const codeText = codeBlock.innerText
+
+    const copy = async () => {
+      try {
+        await navigator.clipboard.writeText(codeText)
+      } catch (error) {
+        console.error(error)
+        return
+      }
+
+      copyButton.classList.add('highlight')
+      setTimeout(() => copyButton.classList.remove('highlight'), 500)
+    }
+
+    codeBlock.onscroll = () => {
+      const scroll = codeBlock.scrollLeft
+      requestAnimationFrame(() => {
+        codeBlock.style.setProperty('--scroll', scroll + 'px')
+      })
     }
 
     const copyButton = copyButtonTemplate.cloneNode(true) as HTMLButtonElement
     copyButton.onclick = copy
+    copyButton.title = 'Copy snippet'
     codeBlock.appendChild(copyButton)
   }
 </script>
 
 <style is:global>
   .astro-code {
+    box-sizing: border-box;
     position: relative;
-  }
-
-  .astro-code:hover .code-block-copy {
-    opacity: 0.5;
+    --scroll: 0px;
   }
 
   .code-block-copy {
     position: absolute;
     top: 1rem;
-    right: 0.75rem;
+    right: calc(var(--scroll) * -1 + 0.75rem);
 
     width: 28px;
     height: 28px;
     padding: 2px;
 
-    background: none;
+    background: var(--astro-code-color-background);
     border-radius: 4px;
     border: 1px solid var(--sl-color-text);
 
     opacity: 0.1;
-    transition: opacity 0.05s;
-  }
+    transition: all 0.07s;
 
+    cursor: pointer;
+  }
   .code-block-copy > svg {
+    transition: all 0.07s;
     fill: currentColor;
   }
 
+  .astro-code:hover .code-block-copy {
+    opacity: 0.7;
+  }
+
+  .code-block-copy.highlight {
+    border-color: green;
+  }
+
+  .code-block-copy.highlight > svg {
+    fill: green;
+  }
+
+  .code-block-copy.highlight,
   .code-block-copy:hover {
-    opacity: 1;
+    opacity: 1 !important;
   }
 
   @media (pointer: coarse) {
