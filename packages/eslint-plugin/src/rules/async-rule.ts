@@ -1,8 +1,7 @@
 import type { Rule } from 'eslint'
 import type * as estree from 'estree'
-import { extractImportDeclaration } from '../lib'
+import { ascend, createImportMap, isReatomFactoryName } from '../shared'
 
-const ReatomFactoryNames = ['atom', 'action']
 const ReatomFactoryPrefix = 'reatom'
 
 export const asyncRule: Rule.RuleModule = {
@@ -13,65 +12,35 @@ export const asyncRule: Rule.RuleModule = {
       description:
         'Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`.',
     },
-    messages: {},
+    messages: {
+      scheduleMissing:
+        'Asynchronous interactions within Reatom functions should be wrapped with `ctx.schedule`',
+    },
     fixable: 'code',
   },
   create(context: Rule.RuleContext): Rule.RuleListener {
-    const reatomImportMap = new Map<string, string>()
+    const imports = createImportMap('@reatom')
 
     return {
-      ImportDeclaration(node) {
-        extractImportDeclaration({
-          node,
-          packagePrefix: '@reatom',
-          importAliasMap: reatomImportMap,
-        })
-      },
+      ImportDeclaration: imports.onImportNode,
       AwaitExpression(node) {
-        if (!isReatomFunction(reatomImportMap, node)) return
+        const fn = ascend(node, 'ArrowFunctionExpression', 'FunctionExpression')
+        if (!fn) return
+
+        if (fn.parent.type !== 'CallExpression') return
+        if (fn.parent.callee.type !== 'Identifier') return
+        if (!isReatomFactoryName(fn.parent.callee.name)) return
+
         if (isCtxSchedule(node.argument)) return
 
         context.report({
           node,
-          message:
-            'Asynchronous interactions within Reatom functions should be wrapped with `ctx.schedule`',
+          messageId: 'scheduleMissing',
           fix: (fixer) => wrapScheduleFix(fixer, node),
         })
       },
     }
   },
-}
-
-const isReatomFunction = (
-  reatomImportMap: ReadonlyMap<string, string>,
-  node: estree.Node & Rule.NodeParentExtension,
-) => {
-  while (
-    node &&
-    !(
-      node.type === 'ArrowFunctionExpression' ||
-      node.type === 'FunctionExpression'
-    )
-  ) {
-    node = node.parent
-  }
-
-  if (!node) return false
-
-  if (
-    node.parent.type === 'CallExpression' &&
-    node.parent.callee.type === 'Identifier'
-  ) {
-    let name: string | null = null
-    for (const [key, value] of reatomImportMap) {
-      if (value === node.parent.callee.name) name = key
-    }
-    if (!name) return false
-    if (ReatomFactoryNames.includes(name)) return true
-    if (name.startsWith(ReatomFactoryPrefix)) return true
-  }
-
-  return false
 }
 
 const isCtxSchedule = (node: estree.Node) => {

@@ -8,23 +8,20 @@ const tester = new RuleTester({
   },
 })
 
+const ImportReatomAsync = 'import {reatomAsync} from "@reatom/framework"'
+const ImportReatomAsyncAlias =
+  'import {reatomAsync as createAsync} from "@reatom/framework"'
+
 tester.run('async-rule', asyncRule, {
   valid: [
-    'import {reatomAsync} from "@reatom/framework"; const reatomSomething = reatomAsync(async ctx => await ctx.schedule(() => doSomething()))',
-    'import {reatomAsync as createAsync} from "@reatom/framework"; const reatomSomething = createAsync(async ctx => await ctx.schedule(() => doSomething()))',
+    `${ImportReatomAsync}; const reatomSome = reatomAsync(async ctx => await ctx.schedule(() => someEffect()))`,
+    `${ImportReatomAsyncAlias}; const reatomSome = createAsync(async ctx => await ctx.schedule(() => someEffect()))`,
   ],
   invalid: [
     {
-      code: 'import {reatomAsync} from "@reatom/framework"; const reatomSomething = reatomAsync(async ctx => await doSomething())',
-      errors: 1,
-      output:
-        'import {reatomAsync} from "@reatom/framework"; const reatomSomething = reatomAsync(async ctx => await ctx.schedule(() => doSomething()))',
-    },
-    {
-      code: 'import {reatomAsync as createAsync} from "@reatom/framework"; const reatomSomething = createAsync(async ctx => await doSomething())',
-      errors: 1,
-      output:
-        'import {reatomAsync as createAsync} from "@reatom/framework"; const reatomSomething = createAsync(async ctx => await ctx.schedule(() => doSomething()))',
+      code: `${ImportReatomAsync}; const reatomSome = reatomAsync(async ctx => await someEffect())`,
+      errors: [{ messageId: 'scheduleMissing' }],
+      output: `${ImportReatomAsync}; const reatomSome = reatomAsync(async ctx => await ctx.schedule(() => someEffect()))`,
     },
   ],
 })
