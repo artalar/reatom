@@ -1,4 +1,6 @@
 import {
+  __count,
+  atom,
   Atom,
   AtomCache,
   AtomProto,
@@ -21,7 +23,7 @@ export class CauseContext<T> extends WeakMap<AtomCache, T> {
   has(cause: AtomCache): boolean {
     return super.has(cause) || (cause.cause !== null && this.has(cause.cause))
   }
-  get(cause: AtomCache) {
+  get(cause: AtomCache): T | undefined {
     while (!super.has(cause) && cause.cause) {
       cause = cause.cause
     }
@@ -29,10 +31,11 @@ export class CauseContext<T> extends WeakMap<AtomCache, T> {
   }
 }
 
+export const abortCauseContext = new CauseContext<AbortController>()
+
 export const getTopController = (
   patch: AtomCache & { controller?: AbortController },
-): null | AbortController =>
-  patch.controller ?? (patch.cause && getTopController(patch.cause))
+): null | AbortController => abortCauseContext.get(patch) ?? null
 
 /** Handle abort signal from a cause */
 export const onCtxAbort = (
@@ -158,7 +161,7 @@ export const disposable = (
 const skip: unique symbol = Symbol()
 type skip = typeof skip
 export const take = <T extends Atom, Res = AtomReturn<T>>(
-  ctx: Ctx & { controller?: AbortController },
+  ctx: Ctx,
   anAtom: T,
   mapper: Fn<[Ctx, Awaited<AtomReturn<T>>, skip], Res | skip> = (ctx, v: any) =>
     v,
@@ -185,19 +188,22 @@ export const take = <T extends Atom, Res = AtomReturn<T>>(
 }
 
 export const takeNested = <I extends any[]>(
-  ctx: Ctx & { controller?: AbortController },
+  ctx: Ctx,
   cb: Fn<[Ctx, ...I]>,
   ...params: I
 ): Promise<void> =>
   new Promise<void>((resolve, reject) => {
-    onCtxAbort(ctx, reject)
+    const unabort = onCtxAbort(ctx, reject)
 
     let i = 1 // one for extra check
     const { schedule } = ctx
     const check = () => {
-      if (i === 0) resolve()
+      if (i === 0) {
+        unabort?.()
+        resolve()
+      }
 
-      // add extra tick to make shure there is no microtask races
+      // add extra tick to make sure there is no microtask races
       if (--i === 0) Promise.resolve().then(check)
     }
 

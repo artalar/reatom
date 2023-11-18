@@ -5,7 +5,7 @@ import { mapPayloadAwaited } from '@reatom/lens'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { disposable, take, takeNested, withAbortableSchedule } from './'
+import { disposable, take, takeNested, withAbortableSchedule } from '../build'
 import { onConnect } from '@reatom/hooks'
 
 test('disposable async branch', async () => {
@@ -91,16 +91,21 @@ test('await transaction', async () => {
 test('withAbortableSchedule', async () => {
   const asyncAction = <I extends any[], O>(
     cb: Fn<[Ctx, ...I], O>,
-  ): Action<I, O> => action((ctx, ...a) => cb(withAbortableSchedule(ctx), ...a))
+    name: string,
+  ): Action<I, O> =>
+    action((ctx, ...a) => cb(withAbortableSchedule(ctx), ...a), name)
 
   const track = mockFn()
-  const doSome = asyncAction((ctx, ms: number) =>
+  const doSome = asyncAction((ctx, ms: number) => {
     ctx
       .schedule(() => sleep(ms))
-      .then(track)
-      .catch(noop),
-  )
-  const someAtom = atom(null)
+      .then((v) => {
+        v //?
+        track(v)
+      })
+      .catch(noop)
+  }, 'doSome')
+  const someAtom = atom(null, 'someAtom')
   const ctx = createTestCtx()
 
   onConnect(someAtom, (ctx) => {
