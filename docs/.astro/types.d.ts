@@ -185,13 +185,6 @@ declare module 'astro:content' {
 
 	type ContentEntryMap = {
 		"docs": {
-"blog/what-is-state-manager.md": {
-	id: "blog/what-is-state-manager.md";
-  slug: "blog/what-is-state-manager";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
 "compat/core-v1.md": {
 	id: "compat/core-v1.md";
   slug: "compat/core-v1";
@@ -230,6 +223,13 @@ declare module 'astro:content' {
 "examples.md": {
 	id: "examples.md";
   slug: "examples";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"fundamentals/what-is-a-state-manager.md": {
+	id: "fundamentals/what-is-a-state-manager.md";
+  slug: "fundamentals/what-is-a-state-manager";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">

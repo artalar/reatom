@@ -5,102 +5,35 @@ sidebar:
   order: 1
 ---
 
-Reatom is a framework-agnostic state manager, and you can use it with various adapters for different frameworks. This guide provides a common usage with React.js, as it is the most commonly used view library currently.
+## Start from React template 
 
-## Create new project from template
+Here is a minimal project template with TypeScript, Vite, React and Reatom: [`reatom-react-ts`](https://artalar/reatom-react-ts/).
 
-The base template project includes Vite, TypeScript, React and Reatom ecosystem: https://github.com/artalar/reatom-react-ts
-
-You could try it online: [codesandbox](https://codesandbox.io/p/sandbox/github/artalar/reatom-react-ts/tree/main), [stackblitz](https://githubblitz.com/artalar/reatom-react-ts), [gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
-
-To setup it in your machine you can use [degit](https://github.com/Rich-Harris/degit) package.
+You can use [`degit`](https://github.com/rich-harris/degit) to quickly download it:
 
 ```sh
-npx degit github:artalar/reatom-react-ts PROJECT-NAME
-cd PROJECT-NAME
-
+npx degit github:artalar/reatom-react-ts new-reatom-app
+cd new-reatom-app
 npm install
 npm run dev
 ```
 
-## Add to existing project
+## Add Reatom to an existing project
+
+Install [`@reatom/core`](https://www.reatom.dev/package/core/) if you are looking for a minimal and framework-agnostic state manager:
 
 ```sh
-npm i @reatom/core
+npm install @reatom/core
 ```
 
-### With React
+Or use [`@reatom/framework`](https://www.reatom.dev/package/framework/) which includes most of the Reatom ecosystem and is recommended for most applications.
 
-#### Installation
+For a guide on integration with a supported view framework, see the relevant adapter's docs:
 
-```sh
-npm i @reatom/npm-react
-```
+- [React](https://reatom.dev/package/npm-react)
+- [Svelte](https://reatom.dev/package/npm-svelte)
+- [SolidJS](https://reatom.dev/package/npm-solid-js)
 
-You need to set up the main context and put it into the provider at the top of your application.
+## ESLint
 
-```jsx
-import { createCtx } from '@reatom/core'
-import { reatomContext } from '@reatom/npm-react'
-import { Main } from './path/to/an/Main'
-
-const ctx = createCtx()
-
-export const App = () => (
-  <reatomContext.Provider value={ctx}>
-    <Main />
-  </reatomContext.Provider>
-)
-```
-
-#### Usage
-
-The `useAtom` function allows you to have an experience similar to `useState`, but with shared atom state.
-
-```jsx
-const nameAtom = atom('Joe')
-const greetingAtom = atom((ctx) => `Hello, ${ctx.spy(nameAtom)}!`)
-
-const Greeting = () => {
-  const [name, setName] = useAtom(nameAtom)
-  const [greeting] = useAtom(greetingAtom)
-
-  return (
-    <br>
-      What is your name?:
-      <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
-      </br>
-      <h1>Hello {greeting}!</h1>
-    </>
-  )
-}
-```
-
-Also, you can create computed atoms (kind of selectors) right inside `useAtom`.
-
-```jsx
-const nameAtom = atom('Joe')
-
-const Greeting = () => {
-  const t = useTranslation()
-  const [name, setName] = useAtom(nameAtom)
-  const [greeting] = useAtom((ctx) => `${t('common:GREETING')} ${ctx.spy(nameAtom)}!`, [t])
-
-  return (
-    <br>
-      What is your name?:
-      <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
-      </br>
-      <h1>{greeting}!</h1>
-    </>
-  )
-}
-```
-
-This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react](/package/npm-react/) package documentation
-
-<!--
-### With Solid
-
-### With Vue
--->
+If you are using ESLint, see [`@reatom/eslint-plugin`](https://www.reatom.dev/package/eslint-plugin/) for a set of Reatom-specific rules.
