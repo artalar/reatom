@@ -288,7 +288,7 @@ export const withErrorAtom =
       (e instanceof Error ? e : new Error(String(e))) as Err,
     {
       initState,
-      resetTrigger,
+      resetTrigger = 'onEffect',
     }: {
       initState?: EmptyError
       resetTrigger?:
@@ -296,9 +296,7 @@ export const withErrorAtom =
         | 'onEffect'
         | 'onFulfill'
         | ('dataAtom' extends keyof T ? 'dataAtom' : null)
-    } = {
-      resetTrigger: 'onEffect',
-    },
+    } = {},
   ): Fn<
     [T],
     T & { errorAtom: AtomMut<EmptyError | Err> & { reset: Action } }
