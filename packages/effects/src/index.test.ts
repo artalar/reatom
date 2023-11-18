@@ -5,7 +5,13 @@ import { mapPayloadAwaited } from '@reatom/lens'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { disposable, take, takeNested, withAbortableSchedule } from '../build'
+import {
+  concurrent,
+  disposable,
+  take,
+  takeNested,
+  withAbortableSchedule,
+} from '../build'
 import { onConnect } from '@reatom/hooks'
 
 test('disposable async branch', async () => {
@@ -144,84 +150,26 @@ test('take filter', async () => {
   ;`👍` //?
 })
 
-// test('concurrent', async () => {
-//   class CtxMap<T> {
-//     private map = new WeakMap<AtomProto, T>()
-//     get(ctx: Ctx) {
-//       return this.map.get(ctx.cause.proto)
-//     }
-//     set(ctx: Ctx, value: T) {
-//       this.map.set(ctx.cause.proto, value)
-//     }
-//   }
-//   const concurrent = <I extends [Ctx, ...any[]], O>(
-//     cb: Fn<I, O>,
-//     strategy:
-//       | 'last-in-win'
-//       | 'first-in-win' /* | 'first-out-win' */ = 'last-in-win',
-//   ): Fn<I, O> => {
-//     const ctxMap = new CtxMap<AbortController>()
-//     return (ctx, ...a) => {
-//       const prev = ctxMap.get(ctx)
-//       if (prev && strategy === 'last-in-win') {
-//         ctx.schedule(() => prev.abort()).catch(noop)
-//       }
-//       const next = new AbortController()
-//       if (strategy === 'first-in-win' && prev?.signal.aborted === false) {
-//         next.abort()
-//       } else {
-//         // FIXME: abort on the effect end
-//         ctxMap.set(ctx, next)
-//       }
+test('concurrent', async () => {
+  const doSome = action((ctx, value: number) => sleep().then(() => value))
+  const results = [] as any[]
+  doSome.onCall(
+    concurrent(async (ctx, promise) => {
+      results.push(await ctx.schedule(() => promise).catch((e) => e))
+    }),
+  )
+  const ctx = createTestCtx()
 
-//       const { schedule } = ctx
-//       ctx = merge(ctx, {
-//         schedule(this: Ctx, cb: Fn, step: -1 | 0 | 1 | 2 = 1) {
-//           return step < 1
-//             ? schedule.call(this, cb, step)
-//             : schedule.call(
-//                 this,
-//                 async (ctx) => {
-//                   throwIfAborted(getTopController(this.cause))
-//                   const result = await cb(ctx)
-//                   throwIfAborted(getTopController(this.cause))
-//                   return result
-//                 },
-//                 step,
-//               )
-//         },
-//       })
+  doSome(ctx, 1)
+  doSome(ctx, 2)
+  doSome(ctx, 3)
 
-//       return cb(ctx, ...a)
-//     }
-//   }
-
-//   const doSome = action((ctx, value: number) => sleep().then(() => value))
-//   const results = [] as any[]
-//   doSome.onCall(
-//     concurrent(async (ctx, promise) => {
-//       results.push(
-//         await ctx
-//           .schedule(() => {
-//             1 //?
-//             return promise
-//           })
-//           .catch((e) => e),
-//       )
-//     }),
-//   )
-//   const ctx = createTestCtx()
-
-//   doSome(ctx, 1)
-//   doSome(ctx, 2)
-//   doSome(ctx, 3)
-
-//   await sleep()
-//   assert.is(results.length, 3)
-//   assert.is(results[0]?.name, 'AbortError')
-//   assert.is(results[1]?.name, 'AbortError')
-//   assert.is(results[2], 3)
-//   ;`👍` //?
-// })
+  await sleep()
+  assert.is(results.length, 3)
+  assert.is(results[0]?.name, 'AbortError')
+  assert.is(results[1]?.name, 'AbortError')
+  assert.is(results[2], 3)
+  ;`👍` //?
+})
 
 test.run()

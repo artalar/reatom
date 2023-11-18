@@ -278,3 +278,38 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
     },
   })
 }
+
+export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
+  const abortControllerAtom = atom<null | AbortController>(null, __count(''))
+
+  return Object.assign(
+    (ctx: Ctx, ...a: any[]) => {
+      const prevController = ctx.get(abortControllerAtom)
+      // do it outside the schedule to save the call stack
+      const abort = toAbortError('concurrent')
+      // TODO it is better to do it sync?
+      if (prevController) ctx.schedule(() => prevController.abort(abort))
+
+      const controller = abortControllerAtom(ctx, new AbortController())!
+      ctx = { ...ctx, cause: { ...ctx.cause } }
+      abortCauseContext.set(ctx.cause, controller)
+      const unabort = onCtxAbort(ctx, (error) => controller.abort(error))
+
+      let res = fn(withAbortableSchedule(ctx), ...a)
+      if (res instanceof Promise) {
+        res = res.finally(() => {
+          unabort?.()
+          throwIfAborted(controller)
+        })
+        // TODO make it an option
+        // prevent uncaught rejection for `onCall(concurrent(fn))` and so on.
+        res.catch(noop)
+
+        return res
+      }
+      return res
+    },
+    // if the `fn` is an atom we need to assign all related properties
+    fn,
+  )
+}
