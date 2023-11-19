@@ -245,6 +245,8 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
       cb: Parameters<typeof schedule>[0],
       step?: Parameters<typeof schedule>[1],
     ) {
+      if (step === -1) return schedule.call(this, cb, step)
+
       let resolve: Fn
       let reject: Fn
       const promise = new Promise((res, rej) => {
@@ -252,7 +254,7 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
         reject = rej
       })
       // do not wait the effect if the abort occurs
-      const unabort = onCtxAbort(ctx, (error) => {
+      const unabort = onCtxAbort(this, (error) => {
         // prevent unhandled error for abort
         promise.catch(noop)
         reject(error)
@@ -285,7 +287,7 @@ export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
   return Object.assign(
     (ctx: Ctx, ...a: any[]) => {
       const prevController = ctx.get(abortControllerAtom)
-      // do it outside the schedule to save the call stack
+      // do it outside of the schedule to save the call stack
       const abort = toAbortError('concurrent')
       // TODO it is better to do it sync?
       if (prevController) ctx.schedule(() => prevController.abort(abort))
@@ -312,4 +314,15 @@ export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
     // if the `fn` is an atom we need to assign all related properties
     fn,
   )
+}
+
+export const spawn = <Args extends any[], Payload>(
+  ctx: Ctx,
+  fn: Fn<[Ctx, ...Args], Payload>,
+  args: Args = [] as any[] as Args,
+  controller = new AbortController(),
+): Payload => {
+  ctx = { ...ctx, cause: { ...ctx.cause } }
+  abortCauseContext.set(ctx.cause, controller)
+  return fn(ctx, ...args)
 }

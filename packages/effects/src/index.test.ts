@@ -8,6 +8,7 @@ import * as assert from 'uvu/assert'
 import {
   concurrent,
   disposable,
+  spawn,
   take,
   takeNested,
   withAbortableSchedule,
@@ -155,7 +156,8 @@ test('concurrent', async () => {
   const results = [] as any[]
   doSome.onCall(
     concurrent(async (ctx, promise) => {
-      results.push(await ctx.schedule(() => promise).catch((e) => e))
+      const result = await ctx.schedule(() => promise).catch((e) => e)
+      results.push(result)
     }),
   )
   const ctx = createTestCtx()
@@ -169,6 +171,28 @@ test('concurrent', async () => {
   assert.is(results[0]?.name, 'AbortError')
   assert.is(results[1]?.name, 'AbortError')
   assert.is(results[2], 3)
+  ;`👍` //?
+})
+
+test('spawn', async () => {
+  const doSome = action((ctx, value: number) => sleep().then(() => value))
+  const results = [] as any[]
+  doSome.onCall(
+    concurrent((ctx, promise) =>
+      spawn(ctx, async (ctx) => {
+        const result = await ctx.schedule(async () => promise)
+        results.push(result)
+      }),
+    ),
+  )
+  const ctx = createTestCtx()
+
+  doSome(ctx, 1)
+  doSome(ctx, 2)
+  doSome(ctx, 3)
+
+  await sleep()
+  assert.equal(results, [1, 2, 3])
   ;`👍` //?
 })
 
