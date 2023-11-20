@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/url-v3.5.0...url-v3.6.0) (2023-11-20)
+
+
+### Features
+
+* **url:** stop abortCauseContext propagation ([b8daac9](https://github.com/artalar/reatom/commit/b8daac98b2638fbe170aebed7816afec9e73928f))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/url-v3.4.1...url-v3.5.0) (2023-11-05)
 
 

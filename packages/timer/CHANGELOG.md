@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.6](https://github.com/artalar/reatom/compare/timer-v3.5.5...timer-v3.5.6) (2023-11-20)
+
+
+### Bug Fixes
+
+* **timer:** use ctx.schedule for each iteration ([302cf99](https://github.com/artalar/reatom/commit/302cf9919036267c45fff4c2c865eac89248944f))
+
 ## [3.5.5](https://github.com/artalar/reatom/compare/timer-v3.5.4...timer-v3.5.5) (2023-07-07)
 
 

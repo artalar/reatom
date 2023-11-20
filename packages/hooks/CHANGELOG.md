@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.1](https://github.com/artalar/reatom/compare/hooks-v3.5.0...hooks-v3.5.1) (2023-11-20)
+
+
+### Bug Fixes
+
+* **hooks:** use abortCauseContext ([dcb437c](https://github.com/artalar/reatom/commit/dcb437c44ef4346df73f4cc94c90d132fe09edc0))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/hooks-v3.4.3...hooks-v3.5.0) (2023-10-21)
 
 
