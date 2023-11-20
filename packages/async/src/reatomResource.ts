@@ -12,6 +12,7 @@ import {
 import {
   CauseContext,
   __thenReatomed,
+  abortCauseContext,
   onCtxAbort,
   withAbortableSchedule,
 } from '@reatom/effects'
@@ -66,7 +67,7 @@ export const reatomResource = <T>(
 
     const controller = new AbortController()
     onCtxAbort(ctx, (error) => controller.abort(error))
-    ctx.controller = ctx.cause.controller = controller
+    abortCauseContext.set(ctx.cause, (ctx.controller = controller))
 
     const computedPromise = asyncComputed(
       withAbortableSchedule(ctx) as AsyncCtxSpy,

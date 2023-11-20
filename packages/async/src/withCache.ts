@@ -14,16 +14,19 @@ import { type WithPersistOptions } from '@reatom/persist'
 
 import {
   AsyncAction,
-  AsyncCause,
   AsyncCtx,
   AsyncDataAtom,
   AsyncResp,
   ControlledPromise,
-  unstable_dropController,
 } from '.'
 import { handleEffect } from './handleEffect'
 import { onConnect } from '@reatom/hooks'
-import { __thenReatomed } from '@reatom/effects'
+import {
+  __thenReatomed,
+  abortCauseContext,
+  getTopController,
+  spawn,
+} from '@reatom/effects'
 
 export interface CacheRecord<T = any, Params extends any[] = unknown[]> {
   clearTimeoutId: ReturnType<typeof setTimeout>
@@ -357,12 +360,10 @@ export const withCache =
         cached.promise = new Promise<AsyncResp<T>>((...a) => ([res, rej] = a))
 
         return async (...a: Parameters<T>) => {
-          if (ignoreAbort) {
-            a[0] = unstable_dropController(a[0])
-          }
-
           try {
-            const value = await unstable_fn(...a)
+            const value = await (ignoreAbort
+              ? spawn(a[0], unstable_fn, a.slice(1))
+              : unstable_fn(...a))
             res(value)
 
             ctx.get(() => {
@@ -402,8 +403,8 @@ export const withCache =
         // @ts-expect-error can't type the context
         (...params: [AsyncCtx, ...ThisParams]): ControlledPromise => {
           const [ctx] = params
-          const { controller } = ctx.cause.cause as AsyncCause
-          ctx.controller = ctx.cause.controller = controller
+          const controller = getTopController(ctx.cause.cause!)!
+          abortCauseContext.set(ctx.cause, (ctx.controller = controller))
 
           const paramsKey = params.slice(
             1,

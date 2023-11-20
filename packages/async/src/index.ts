@@ -20,8 +20,10 @@ import {
 } from '@reatom/core'
 import {
   __thenReatomed,
+  abortCauseContext,
   getTopController,
   onCtxAbort,
+  spawn,
   withAbortableSchedule,
 } from '@reatom/effects'
 import { onConnect } from '@reatom/hooks'
@@ -66,7 +68,7 @@ export interface AsyncCause extends AtomCache {
 
 export interface AsyncCtx extends Ctx {
   controller: AbortController
-  cause: AsyncCause
+  cause: AtomCache
 }
 
 export interface AsyncOptions<Params extends any[] = any[], Resp = any> {
@@ -86,20 +88,6 @@ export const isAbortError = isAbort
 const getCache = (ctx: Ctx, anAtom: Atom): AtomCache => {
   ctx.get(anAtom)
   return anAtom.__reatom.patch ?? ctx.get((read) => read(anAtom.__reatom))!
-}
-
-export const unstable_dropController = (
-  ctx: Ctx,
-  controller = new AbortController(),
-): AsyncCtx => {
-  return {
-    ...ctx,
-    cause: {
-      ...ctx.cause,
-      controller,
-    },
-    controller,
-  }
 }
 
 export const reatomAsync = <
@@ -131,7 +119,10 @@ export const reatomAsync = <
           theAsync.__reatom,
           (ctx: AsyncCtx, patch: AtomCache) => {
             // userspace controller
-            ctx.controller = ctx.cause.controller = new AbortController()
+            abortCauseContext.set(
+              ctx.cause,
+              (ctx.controller = new AbortController()),
+            )
 
             onCtxAbort(params[0], (error) => {
               ctx.controller.abort(error)
@@ -500,15 +491,12 @@ export const withRetry =
 
               const controller = new AbortController()
 
-              anAsync.retry!(
-                unstable_dropController(ctx, controller),
-                timeout,
-              ).catch(noop)
+              spawn(ctx, anAsync.retry!, [timeout], controller).catch(noop)
               const state = ctx.get(anAsync)
 
-              const causeController = getTopController(ctx.cause.cause!)
-              causeController?.signal.addEventListener('abort', () => {
-                controller.abort(causeController.signal.reason)
+              const signal = getTopController(ctx.cause.cause!)?.signal
+              signal?.addEventListener('abort', () => {
+                controller.abort(signal.reason)
                 if (state === ctx.get(anAsync)) {
                   retriesAtom(ctx, 0)
                 }
