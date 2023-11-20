@@ -124,13 +124,14 @@ export const reatomTimer = (
           if (remains <= 0) break
 
           const interval = ctx.get(intervalAtom)
-
-          await sleep(
+          const tickDelay =
             remains < interval
               ? remains
               : // reduce perf overload shift (when the sleep resolves after expected time)
-                remains % interval || interval,
-          )
+                remains % interval || interval
+
+          await ctx.schedule(() => sleep(tickDelay))
+
           if (pauseFrom) {
             await new Promise((r) => (resolvePause = r))
             continue
@@ -149,10 +150,11 @@ export const reatomTimer = (
             )
           })
         }
-
-        endTimer(ctx)
       })
-      .finally(cleanupPause)
+      .finally(() => {
+        cleanupPause()
+        if (version === ctx.get(_versionAtom)) endTimer(ctx)
+      })
   }, `${name}.startTimer`)
 
   const stopTimer: TimerAtom['stopTimer'] = action((ctx) => {
