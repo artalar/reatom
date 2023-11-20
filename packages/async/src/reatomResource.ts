@@ -66,7 +66,8 @@ export const reatomResource = <T>(
     }) as AsyncCtx
 
     const controller = new AbortController()
-    onCtxAbort(ctx, (error) => controller.abort(error))
+    const unabort = onCtxAbort(ctx, (error) => controller.abort(error))
+    if (unabort) controller.signal.addEventListener('abort', unabort)
     abortCauseContext.set(ctx.cause, (ctx.controller = controller))
 
     const computedPromise = asyncComputed(

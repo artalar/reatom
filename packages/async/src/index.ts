@@ -124,9 +124,12 @@ export const reatomAsync = <
               (ctx.controller = new AbortController()),
             )
 
-            onCtxAbort(params[0], (error) => {
+            const unabort = onCtxAbort(params[0], (error) => {
               ctx.controller.abort(error)
             })
+            if (unabort) {
+              ctx.controller.signal.addEventListener('abort', unabort)
+            }
 
             params[0] = withAbortableSchedule(ctx)
 
