@@ -156,6 +156,7 @@ test('concurrent', async () => {
   const results = [] as any[]
   doSome.onCall(
     concurrent(async (ctx, promise) => {
+      promise //?
       const result = await ctx.schedule(() => promise).catch((e) => e)
       results.push(result)
     }),
@@ -165,12 +166,18 @@ test('concurrent', async () => {
   doSome(ctx, 1)
   doSome(ctx, 2)
   doSome(ctx, 3)
-
   await sleep()
   assert.is(results.length, 3)
   assert.is(results[0]?.name, 'AbortError')
   assert.is(results[1]?.name, 'AbortError')
   assert.is(results[2], 3)
+
+  const anAtom = atom(null)
+  onConnect(anAtom, (ctx) => doSome(ctx, 4))
+  ctx.subscribeTrack(anAtom).unsubscribe()
+  await sleep()
+  assert.is(results.length, 4)
+  assert.is(results.at(-1).name, 'AbortError')
   ;`👍` //?
 })
 

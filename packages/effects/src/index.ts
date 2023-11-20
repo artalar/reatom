@@ -31,7 +31,7 @@ export class CauseContext<T> extends WeakMap<AtomCache, T> {
   }
 }
 
-export const abortCauseContext = new CauseContext<AbortController>()
+export const abortCauseContext = new CauseContext<AbortController | undefined>()
 
 export const getTopController = (
   patch: AtomCache & { controller?: AbortController },
@@ -292,10 +292,10 @@ export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
       // TODO it is better to do it sync?
       if (prevController) ctx.schedule(() => prevController.abort(abort))
 
+      const unabort = onCtxAbort(ctx, (error) => controller.abort(error))
       const controller = abortControllerAtom(ctx, new AbortController())!
       ctx = { ...ctx, cause: { ...ctx.cause } }
       abortCauseContext.set(ctx.cause, controller)
-      const unabort = onCtxAbort(ctx, (error) => controller.abort(error))
 
       let res = fn(withAbortableSchedule(ctx), ...a)
       if (res instanceof Promise) {
