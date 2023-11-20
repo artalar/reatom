@@ -9,7 +9,7 @@ import {
   action,
   atom,
 } from '@reatom/core'
-import { isCausedBy } from '@reatom/effects'
+import { abortCauseContext, isCausedBy } from '@reatom/effects'
 import { getRootCause, withInit } from '@reatom/hooks'
 import { noop } from '@reatom/utils'
 
@@ -125,8 +125,14 @@ export const setupUrlAtomBrowserSettings = action(
   'urlAtom.setupUrlAtomBrowserSettings',
 )
 
+const _urlAtom = atom(null as any as URL, 'urlAtom')
 export const urlAtom: UrlAtom = Object.assign(
-  atom(null as any as URL, 'urlAtom'),
+  (ctx: Ctx, url: URL) =>
+    _urlAtom(ctx, () => {
+      abortCauseContext.set(ctx.cause, undefined)
+      return url
+    }),
+  _urlAtom,
   {
     settingsAtom,
     go: action(
