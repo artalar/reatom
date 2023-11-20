@@ -1,6 +1,20 @@
-This package is all you need to handle async requests / logic / flow effectively and predictable. You could wrap your async functions to the main primitive `reatomAsync` and get basic action hooks: `onFulfill`, `onReject`, `onSettle` and `pendingAtom` with count of pending requests. But you could grow as you need and add extra features by adding additional operators: [withDataAtom](#withdataatom) (resolve payload memoization), [withErrorAtom](#witherroratom) (reject payload memoization), [withStatusesAtom](#withstatusesatom) (`isPending`, `isEverSettled` and so on), [withCache](#withcache) (advanced cache policies), [withAbort](#withabort) (concurrent management), [withRetry](#withretry) (flexible retry management).
-
+This package is all you need to handle async requests / logic / flow effectively and predictable.
+You could wrap your async actions into the main primitive `reatomAsync` and get basic action hooks: `onFulfill`, `onReject`, `onSettle` and `pendingAtom` with count of pending requests.
+Or you can wrap your get requests into `reatomResource` and refetch data whenever some of parameters change.
 > included in [@reatom/framework](https://www.reatom.dev/package/framework)
+
+To chose the most appropriate async primitive refer to the table below:
+
+|Variant  |computed   |mutation|
+|--:      |:---:      |:---:|
+|sync     |atom       |action|
+|async    |[reatomResource](#reatomresource) | [reatomAsync](#reatomasync)|
+
+
+You could utilize extra features by piping additional operators: [withDataAtom](#withdataatom) (resolve payload memoization), [withErrorAtom](#witherroratom) (reject payload memoization), [withStatusesAtom](#withstatusesatom) (`isPending`, `isEverSettled` and so on), [withCache](#withcache) (advanced cache policies), [withAbort](#withabort) (concurrent management), [withRetry](#withretry) (flexible retry management).
+
+
+## reatomAsync
 
 `reatomAsync` accepts effect function which returns a promise (it could be just `async` function) and call it in effects queue. `ctx` already includes `controller` which is a native [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController). The most cool feature of this package and game changer for your DX and your code reliability is automatic linking of nested abort controllers. It means that if you have concurrent ([abortable](#withabort)) process, like on input search with a few serial requests, when a new search starts, previous search and all generated effects cancel automatically.
 
