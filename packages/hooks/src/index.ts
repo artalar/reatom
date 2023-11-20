@@ -12,7 +12,8 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { noop, toAbortError, isAbort, merge } from '@reatom/utils'
+import { noop, toAbortError, merge } from '@reatom/utils'
+import { abortCauseContext } from '@reatom/effects'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -53,14 +54,20 @@ export const onConnect = (
   >,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
+    const cause = merge(
+      ctx.get((read) => read(anAtom.__reatom)!),
+      {
+        // drop the previous history for connect hooks
+        cause: getRootCause(ctx.cause),
+      },
+    )
+
     const controller = new AbortController()
+    abortCauseContext.set(cause, controller)
+
     const cleanup = cb(
       merge(ctx, {
-        // TODO: how to do it more performant
-        cause: merge(
-          ctx.get((read) => read(anAtom.__reatom)!),
-          { controller },
-        ),
+        cause,
         controller,
         isConnected: () => isConnected(ctx, anAtom),
       }),
