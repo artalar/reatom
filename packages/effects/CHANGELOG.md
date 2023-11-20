@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/effects-v3.6.0...effects-v3.7.0) (2023-11-20)
+
+
+### Features
+
+* **effects:** add abortCauseContext ([af28718](https://github.com/artalar/reatom/commit/af28718598a852ba7926e54cd5f1b6a508441951))
+* **effects:** add concurrent ([21b824b](https://github.com/artalar/reatom/commit/21b824b939bd6bd57b3d33d8eaa91ea67d784c41))
+* **effects:** add spawn ([2eab5cb](https://github.com/artalar/reatom/commit/2eab5cbc6b26450b09ed43ad9cb815a997950c1d))
+
+
+### Bug Fixes
+
+* **effects:** concurrent nested aborts ([6cc5dc4](https://github.com/artalar/reatom/commit/6cc5dc45c8f6bb9e51c2fd76c7b6dda7352ce4c2))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/effects-v3.5.1...effects-v3.6.0) (2023-10-20)
 
 

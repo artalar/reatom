@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.13.1](https://github.com/artalar/reatom/compare/async-v3.13.0...async-v3.13.1) (2023-11-20)
+
+
+### Bug Fixes
+
+* **async:** allow optional resetTrigger for withErrorAtom ([185f99d](https://github.com/artalar/reatom/commit/185f99db81541ad72c18b5360517a89a08386807))
+* **async:** more mem safety for abortCauseContext ([aa5e29f](https://github.com/artalar/reatom/commit/aa5e29f17d250a20a10476cb2054897feda43628))
+* **async:** use abortCauseContext ([6133f27](https://github.com/artalar/reatom/commit/6133f275d4cb3529fd744558324e38a621cb66a4))
+
 ## [3.13.0](https://github.com/artalar/reatom/compare/async-v3.12.1...async-v3.13.0) (2023-11-12)
 
 

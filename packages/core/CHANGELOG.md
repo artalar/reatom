@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.5](https://github.com/artalar/reatom/compare/core-v3.6.4...core-v3.6.5) (2023-11-20)
+
+
+### Bug Fixes
+
+* **core:** nested schedule ([61b3822](https://github.com/artalar/reatom/commit/61b38225b8f7de8eefd7f8f7f6ec079d1ef6de84))
+
 ## [3.6.4](https://github.com/artalar/reatom/compare/core-v3.6.3...core-v3.6.4) (2023-11-12)
 
 
