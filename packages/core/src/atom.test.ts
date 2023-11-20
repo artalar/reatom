@@ -343,16 +343,16 @@ test('async cause track', () => {
   const act1 = action((ctx) => ctx.schedule(() => act2(ctx)), 'act1')
   const act2 = action((ctx) => a1(ctx, (s) => ++s), 'act2')
   const ctx = createCtx()
-  const logger = mockFn()
+  const track = mockFn()
 
-  ctx.subscribe(logger)
+  ctx.subscribe(track)
 
   ctx.subscribe(a1, (v) => {})
 
   act1(ctx)
 
   assert.is(
-    logger.lastInput().find((patch: AtomCache) => patch.proto.name === 'a1')
+    track.lastInput().find((patch: AtomCache) => patch.proto.name === 'a1')
       ?.cause.proto.name,
     'act2',
   )
@@ -704,6 +704,18 @@ test('conditional deps duplication', () => {
 
   filterAtom(ctx, 'even')
   assert.equal(track.lastInput(), [2])
+  ;`👍` //?
+})
+
+test('nested schedule', async () => {
+  const act = action((ctx) => {
+    return ctx.schedule(() => {
+      return ctx.schedule(async () => {})
+    })
+  })
+
+  const ctx = createCtx()
+  await act(ctx)
   ;`👍` //?
 })
 

@@ -251,6 +251,7 @@ export const createCtx = ({
   let trLogs: Array<AtomCache> = []
   let trNearEffectsStart: typeof nearEffects.length = 0
   let trLateEffectsStart: typeof lateEffects.length = 0
+  let effectsProcessing = false
 
   let walkNearEffects = () => {
     for (let effect of nearEffects) callNearEffect(effect, ctx)
@@ -258,7 +259,8 @@ export const createCtx = ({
     nearEffects = []
   }
   let walkLateEffects = () => {
-    if (trNearEffectsStart + trLateEffectsStart > 0) return
+    if (effectsProcessing) return
+    effectsProcessing = true
 
     walkNearEffects()
     for (let effect of lateEffects) {
@@ -268,7 +270,7 @@ export const createCtx = ({
 
     lateEffects = []
 
-    trNearEffectsStart = trLateEffectsStart = 0
+    effectsProcessing = false
   }
 
   let addPatch = (
@@ -550,6 +552,8 @@ export const createCtx = ({
         trUpdates = []
         trRollbacks = []
         trLogs = []
+        trNearEffectsStart = 0
+        trLateEffectsStart = 0
         if (start) CTX = undefined
       }
 
@@ -617,10 +621,6 @@ export const createCtx = ({
 
       return () => {
         if (cache!.listeners.delete(listener) && !isConnected(cache!)) {
-          if (!inTr) {
-            trNearEffectsStart = nearEffects.length
-            trLateEffectsStart = lateEffects.length
-          }
           proto.disconnectHooks && nearEffects.push(...proto.disconnectHooks)
 
           for (let pubCache of cache!.pubs) {
