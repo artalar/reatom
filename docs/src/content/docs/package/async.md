@@ -16,7 +16,7 @@ To chose the most appropriate async primitive refer to the table below:
 
 |Variant  |computed   |mutation|
 |--:      |:---:      |:---:|
-|sync     |atom       |action|
+|sync     |[atom](/getting-started/learning/#atom)       |[action](/getting-started/learning/#actions)|
 |async    |[reatomResource](#reatomresource) | [reatomAsync](#reatomasync)|
 
 
