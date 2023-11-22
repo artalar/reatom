@@ -257,4 +257,28 @@ test('sync retry in onConnect', async () => {
   ;`👍` //?
 })
 
+test('do not drop the cache of an error', async () => {
+  let calls = 0
+  const shouldThrowAtom = atom(true, 'shouldThrowAtom')
+  const someResource = reatomResource(async (ctx) => {
+    calls++
+    if (ctx.spy(shouldThrowAtom)) throw new Error('test error')
+    return null
+  }, 'someResource')
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(someResource.promiseAtom)
+  assert.is(calls, 1)
+
+  await sleep()
+  track.unsubscribe()
+  ctx.get(someResource.promiseAtom)
+  assert.is(calls, 1)
+
+  shouldThrowAtom(ctx, false)
+  ctx.get(someResource.promiseAtom)
+  assert.is(calls, 2)
+  ;`👍` //?
+})
+
 test.run()

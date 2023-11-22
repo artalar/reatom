@@ -103,7 +103,12 @@ export const reatomResource = <T>(
       )
     }
 
-    __thenReatomed(ctx, promise, () => resolved.add(promise)).catch(noop)
+    __thenReatomed(
+      ctx,
+      promise,
+      () => resolved.add(promise),
+      () => resolved.add(promise),
+    ).catch(noop)
 
     state?.controller.abort(toAbortError('concurrent'))
 
