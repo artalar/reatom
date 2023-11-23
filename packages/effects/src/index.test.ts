@@ -152,54 +152,58 @@ test('take filter', async () => {
 })
 
 test('concurrent', async () => {
-  const doSome = action((ctx, value: number) => sleep().then(() => value))
+  const countAtom = atom(0)
   const results = [] as any[]
-  doSome.onCall(
-    concurrent(async (ctx, promise) => {
-      promise //?
-      const result = await ctx.schedule(() => promise).catch((e) => e)
-      results.push(result)
+  countAtom.onChange(
+    concurrent(async (ctx, count) => {
+      try {
+        await ctx.schedule(noop)
+        results.push(count)
+      } catch (error) {
+        results.push(error)
+      }
     }),
   )
   const ctx = createTestCtx()
 
-  doSome(ctx, 1)
-  doSome(ctx, 2)
-  doSome(ctx, 3)
+  countAtom(ctx, 1)
+  countAtom(ctx, 2)
   await sleep()
-  assert.is(results.length, 3)
+  assert.is(results.length, 2)
   assert.is(results[0]?.name, 'AbortError')
-  assert.is(results[1]?.name, 'AbortError')
-  assert.is(results[2], 3)
+  assert.is(results[1], 2)
 
   const anAtom = atom(null)
-  onConnect(anAtom, (ctx) => doSome(ctx, 4))
+  onConnect(anAtom, (ctx) => countAtom(ctx, 3))
   ctx.subscribeTrack(anAtom).unsubscribe()
   await sleep()
-  assert.is(results.length, 4)
+  assert.is(results.length, 3)
   assert.is(results.at(-1).name, 'AbortError')
   ;`👍` //?
 })
 
 test('spawn', async () => {
-  const doSome = action((ctx, value: number) => sleep().then(() => value))
+  const countAtom = atom(0)
   const results = [] as any[]
-  doSome.onCall(
-    concurrent((ctx, promise) =>
+  countAtom.onChange(
+    concurrent((ctx, count) =>
       spawn(ctx, async (ctx) => {
-        const result = await ctx.schedule(async () => promise)
-        results.push(result)
+        try {
+          await ctx.schedule(noop)
+          results.push(count)
+        } catch (error) {
+          results.push(error)
+        }
       }),
     ),
   )
   const ctx = createTestCtx()
 
-  doSome(ctx, 1)
-  doSome(ctx, 2)
-  doSome(ctx, 3)
+  countAtom(ctx, 1)
+  countAtom(ctx, 2)
 
   await sleep()
-  assert.equal(results, [1, 2, 3])
+  assert.equal(results, [1, 2])
   ;`👍` //?
 })
 
