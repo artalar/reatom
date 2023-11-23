@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/lens-v3.8.0...lens-v3.9.0) (2023-11-23)
+
+
+### Features
+
+* **lens:** add select api ([f39f1dd](https://github.com/artalar/reatom/commit/f39f1dd5434462f8466c892342dd8b6c29d70162))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/lens-v3.7.0...lens-v3.8.0) (2023-10-20)
 
 

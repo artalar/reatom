@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.2](https://github.com/artalar/reatom/compare/async-v3.13.1...async-v3.13.2) (2023-11-23)
+
+
+### Bug Fixes
+
+* **async:** reatomResource: do not drop the cache of an error ([75f54e6](https://github.com/artalar/reatom/commit/75f54e6fe8ab5a46d20846656d908c0779551e81))
+
 ## [3.13.1](https://github.com/artalar/reatom/compare/async-v3.13.0...async-v3.13.1) (2023-11-20)
 
 

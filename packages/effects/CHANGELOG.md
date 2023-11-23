@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.1](https://github.com/artalar/reatom/compare/effects-v3.7.0...effects-v3.7.1) (2023-11-23)
+
+
+### Bug Fixes
+
+* **effects:** concurrent.abortControllerAtom name ([25bdc47](https://github.com/artalar/reatom/commit/25bdc479e62045f946aeee6b9e001a8cb3450a07))
+* **effects:** prevent uncaught rejection for the abort of the concurrent API ([028bf10](https://github.com/artalar/reatom/commit/028bf10baa38bcd85d6ae7445c8294160b50ca07))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/effects-v3.6.0...effects-v3.7.0) (2023-11-20)
 
 
