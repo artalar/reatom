@@ -5,7 +5,7 @@ Or you can wrap your get requests into `reatomResource` and refetch data wheneve
 
 To chose the most appropriate async primitive refer to the table below:
 
-|Variant  |computed   |mutation|
+|type  |computed   |mutation|
 |--:      |:---:      |:---:|
 |sync     |atom       |action|
 |async    |[reatomResource](#reatomresource) | [reatomAsync](#reatomasync)|
