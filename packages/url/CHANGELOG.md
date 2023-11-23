@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/artalar/reatom/compare/url-v3.6.0...url-v3.6.1) (2023-11-23)
+
+
+### Bug Fixes
+
+* **url:** use spy in match ([0a8320c](https://github.com/artalar/reatom/commit/0a8320c02ef8036816c3361fae852eaf159b359c))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/url-v3.5.0...url-v3.6.0) (2023-11-20)
 
 

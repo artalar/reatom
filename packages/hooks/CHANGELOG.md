@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.2](https://github.com/artalar/reatom/compare/hooks-v3.5.1...hooks-v3.5.2) (2023-11-23)
+
+
+### Bug Fixes
+
+* **hooks:** improve isInit perf ([be6a829](https://github.com/artalar/reatom/commit/be6a82984f798fd63786bace9a324bdf3d8ff3c6))
+
 ## [3.5.1](https://github.com/artalar/reatom/compare/hooks-v3.5.0...hooks-v3.5.1) (2023-11-20)
 
 
