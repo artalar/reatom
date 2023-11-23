@@ -141,7 +141,7 @@ export const urlAtom: UrlAtom = Object.assign(
     ),
     match: (path: `/${string}`) =>
       atom(
-        (ctx) => ctx.get(urlAtom).pathname.startsWith(path),
+        (ctx) => ctx.spy(urlAtom).pathname.startsWith(path),
         `urlAtom.match#${path}`,
       ),
   },
