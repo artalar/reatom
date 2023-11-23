@@ -282,7 +282,10 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
 }
 
 export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
-  const abortControllerAtom = atom<null | AbortController>(null, __count(''))
+  const abortControllerAtom = atom<null | AbortController>(
+    null,
+    `${__count('_concurrent')}.abortControllerAtom`,
+  )
 
   return Object.assign(
     (ctx: Ctx, ...a: any[]) => {
