@@ -306,9 +306,10 @@ export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
           unabort?.()
           throwIfAborted(controller)
         })
-        // TODO make it an option
-        // prevent uncaught rejection for `onCall(concurrent(fn))` and so on.
-        res.catch(noop)
+        // prevent uncaught rejection for the abort
+        controller.signal.addEventListener('abort', () => {
+          res.catch(noop)
+        })
 
         return res
       }
