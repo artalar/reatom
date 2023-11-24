@@ -74,6 +74,10 @@ Accepts an optional `AbortController` and throws an error if the signal is abort
 
 Do the check `value instanceof Error && value.name === 'AbortError'`
 
+### throwAbort
+
+Convert string message to abort error, abort a controller if passed, throw the error. Useful for correct type inference.
+
 ## Constants
 
 ### MAX_SAFE_TIMEOUT

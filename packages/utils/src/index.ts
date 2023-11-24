@@ -263,5 +263,14 @@ export const throwIfAborted = (controller?: void | null | AbortController) => {
 export const isAbort = (thing: any): thing is AbortError =>
   thing instanceof Error && thing.name === 'AbortError'
 
+export const throwAbort = (
+  message: string,
+  controller?: AbortController,
+): never => {
+  const error = toAbortError(message)
+  controller?.abort(error)
+  throw error
+}
+
 /** @link https://developer.mozilla.org/en-US/docs/Web/API/setTimeout#maximum_delay_value */
 export const MAX_SAFE_TIMEOUT = 2 ** 31 - 1
