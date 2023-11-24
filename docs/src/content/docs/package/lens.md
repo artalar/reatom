@@ -333,3 +333,25 @@ import { onDisconnect } from '@reatom/hooks'
 export const dataAtom = atom([], 'dataAtom').pipe(withReset())
 onDisconnect(dataAtom, dataAtom.reset)
 ```
+
+## `select`
+
+Sometimes you need to get computed value from an atom in another computer, but you don't want to trigger other recomputations if the computed value is not changed. It is the common case for `reatomComponent` from [reatom/npm-react](/package/npm-react/) package. The `select` allows you to perform and memorize some computation by a simple inline callback. It is specially useful when you can't create separate memorized function because your target atom is dynamically created.
+
+```tsx
+import { select } from '@reatom/framework'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const ListSize = reatomComponent(({ ctx }) => {
+  // wrong way, the component will rerender on each element update
+  const length = ctx.spy(listAtom).length
+  // correct optimal way, the component will rerender only on `length` change
+  const length = select(ctx, (ctx) => ctx.spy(listAtom).length)
+
+  return <div>{length}</div>
+}, 'ListSize')
+```
+
+Under the hood `select` creates additional atom, so you can perform all regular tasks in the callback of the `select`, just like in the regular computed atom.
+
+Important note is that you could use only one select in each atom, this is done for performance reasons and API simplicity. If, for some reason, you really need a few select, you could nest it and call one in another and so on.

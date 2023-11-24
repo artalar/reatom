@@ -93,9 +93,25 @@ Isn't it cool, how the size of the code is reduced and how the logic is simplifi
 
 Shortcut to `onConnect` returned callback.
 
+## isInit
+
+This utility allows you to check that the current atom or action is being called for the first time (in the current context). It is useful to perform some initialisation effects only once.
+
+```ts
+import { action } from '@reatom/core'
+import { isInit } from '@reatom/hooks'
+
+export const doSome = action((ctx, payload) => {
+  if (isInit(ctx)) {
+    // setup
+  }
+  return work()
+})
+```
+
 ## onUpdate
 
-The `onUpdate` hook allows you to react to state updates of the passed atom. However, this hook will be deprecated in the future. It is recommended and more convenient to use the atom's `onChange` method and the action's `onCall` method. You can find more information about these methods in the [core package documentation](/core/#atomonchange-api).
+The `onUpdate` hook allows you to react to state updates of the passed atom. However, **this hook will be deprecated in the future**. It is recommended and more convenient to use the atom's `onChange` method and the action's `onCall` method. You can find more information about these methods in the [core package documentation](/core/#atomonchange-api).
 
 For general computed atoms (via `ctx.spy`), it is only called when the atom is connected. You can read more in the [lifecycle guide](/guides/lifecycle/).
 
