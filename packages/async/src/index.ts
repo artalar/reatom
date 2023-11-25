@@ -125,6 +125,8 @@ export const reatomAsync = <
             )
 
             const unabort = onCtxAbort(params[0], (error) => {
+              // prevent unhandled error for abort
+              payload?.catch(noop)
               ctx.controller.abort(error)
             })
             if (unabort) {
@@ -133,16 +135,12 @@ export const reatomAsync = <
 
             params[0] = withAbortableSchedule(ctx)
 
-            patch.state = [
-              ...patch.state,
-              {
-                params: params.slice(1),
-                payload: theAsync._handleCache
-                  ? // @ts-expect-error
-                    theAsync._handleCache(...params)
-                  : handleEffect(theAsync, params),
-              },
-            ]
+            var payload = theAsync._handleCache
+              ? // @ts-expect-error
+                theAsync._handleCache(...params)
+              : handleEffect(theAsync, params)
+
+            patch.state = [...patch.state, { params: params.slice(1), payload }]
           },
         )
         return state[state.length - 1]!.payload
