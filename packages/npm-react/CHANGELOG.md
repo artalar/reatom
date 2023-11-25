@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/npm-react-v3.7.4...npm-react-v3.8.0) (2023-11-25)
+
+
+### Features
+
+* **npm-react:** reatomComponent ctx with unmount abort ([335621c](https://github.com/artalar/reatom/commit/335621c0f628b53d2a739dd1bc3e3b47a61ea71e))
+
 ## [3.7.4](https://github.com/artalar/reatom/compare/npm-react-v3.7.3...npm-react-v3.7.4) (2023-11-12)
 
 
