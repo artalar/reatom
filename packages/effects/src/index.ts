@@ -305,12 +305,16 @@ export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
       // TODO it is better to do it sync?
       if (prevController) ctx.schedule(() => prevController.abort(abort))
 
-      const unabort = onCtxAbort(ctx, (error) => controller.abort(error))
+      const unabort = onCtxAbort(ctx, (error) => {
+        // prevent unhandled error for abort
+        if (res instanceof Promise) res.catch(noop)
+        controller.abort(error)
+      })
       const controller = abortControllerAtom(ctx, new AbortController())!
       ctx = { ...ctx, cause: { ...ctx.cause } }
       abortCauseContext.set(ctx.cause, controller)
 
-      let res = fn(withAbortableSchedule(ctx), ...a)
+      var res = fn(withAbortableSchedule(ctx), ...a)
       if (res instanceof Promise) {
         res = res.finally(() => {
           unabort?.()
