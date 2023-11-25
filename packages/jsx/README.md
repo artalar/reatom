@@ -1,12 +1,12 @@
-This is an **EXPERIMENTAL** package that allows you to describe native DOM elements using JSX. The cool thing is that you can assign atoms and actions to the native properties, and they will be bound correctly.
+An **EXPERIMENTAL** JSX runtime for describing dynamic DOM UIs with Reatom.
 
 ## Installation
 
 ```sh
-npm i @reatom/jsx
+npm install @reatom/jsx
 ```
 
-`tsconfig.json`
+`tsconfig.json`:
 
 ```json
 {
@@ -17,7 +17,7 @@ npm i @reatom/jsx
 }
 ```
 
-`vite.config.js`
+`vite.config.js`:
 
 ```js
 import { defineConfig } from 'vite'
@@ -75,21 +75,69 @@ Atom-valued props create a reactive binding to an element's attribute/field. The
 
 - `false`/`null`/`undefined` to render nothing
 - a string, a number, or `true` to create a text node
-- a DOM node to insert it as-is
+- a native DOM node to insert it as-is
+
+### Handling events
+
+Use `on*` props to add event handlers. Passed functions are automatically bound to a relevant `Ctx` value: `oninput={(ctx, event) => setValue(ctx, event.currentTarget.value)}`.
+
+### Styles
 
 Object-valued `style` prop applies styles granularly: `style={{top: 0, display: equalsFalseForNow && 'none'}}` sets `top: 0;`.
 
-`false`, `null` and `undefined` style values remove the property. Non-string style values are stringified (we don't `px` for numeric values automatically).
+`false`, `null` and `undefined` style values remove the property. Non-string style values are stringified (we don't add `px` to numeric values automatically).
 
-Use `on*` props to add event handlers. They're automatically bound to a relevant `Ctx` value: `oninput={(ctx, event) => setValue(ctx, event.currentTarget.value)}`.
+### Dynamic props
 
-There's a special `$props` prop which you can use to spread props reactively: `<div someStaticProp $props={atom(ctx => getReactiveProps(ctx))}>`.
+There's a special `$props` prop which can be used to spread props reactively: `<div someStaticProp $props={atom(ctx => getReactiveProps(ctx))}>`. Passing an array of atoms is also possible. Note that `$props` can't be used to set event handlers.
+
+### SVG
+
+To create elements with names within the SVG namespace, you should prepend `svg:` to the tag name:
+
+```tsx
+const anSvgElement = (
+  <svg:svg>
+    <svg:path field:d="???" />
+  </svg:svg>
+)
+```
+
+### Lifecycle
+
+In Reatom, every atom has lifecycle events to which you can subscribe with `onConnect`/`onDisconnect` functions. `@reatom/jsx` lets you toBy default, components don't have an atom associated with them, but you may wrap the component code in an atom manually to achieve the same result:
+
+```tsx
+import { onConnect, onDisconnect } from '@reatom/hooks'
+
+const MyWidget = () => {
+  const lifecycle = atom((ctx) => <div>Something inside</div>)
+
+  onConnect(lifecycle, (ctx) => console.log('component connected'))
+  onDisconnect(lifecycle, (ctx) => console.log('component disconnected'))
+
+  return lifecycle
+}
+```
+
+Because the pattern used above is somewhat verbose and excessive atoms may cause performance overhead, `@reatom/jsx` lets you to subscribe to lifecycle hooks of an atom, created by the library internally:
+
+```tsx
+const MyWidget = () => {
+  return (
+    <div
+      onConnect={(ctx) => console.log('component connected')}
+      onDisconnect={(ctx) => console.log('component disconnected')}
+    >
+      Something inside
+    </div>
+  )
+}
+```
+
+Special `onConnect` and `onDisconnect` props pass their value to the relevant lifecycle hook, if provided.
 
 ## Limitations
 
-- No SSR support
+- No DOM-less SSR (requires a DOM API implementation like `linkedom` to be provided)
 - No keyed lists support
-
-About the last one: When you create an element (`<Element />`), it renders once, binds all passed atoms and actions, and will not render anymore. All changes will be propagated exactly to the element's properties. However, if you need to describe conditional logic, you can put an element in the atom and achieve rerenders through this. There is no "virtual DOM," so the elements will be recreated with each render, but this could be acceptable for some cases.
-
-Here is an example: [https://github.com/artalar/reatom-jsx/blob/main/src/App.tsx](https://github.com/artalar/reatom-jsx/blob/main/src/App.tsx)

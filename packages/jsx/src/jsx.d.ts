@@ -2,28 +2,16 @@
  * stolen from https://github.dev/solidjs/solid/blob/49793e9452ecd034d4d2ef5f95108f5d2ff4134a/packages/solid/h/jsx-runtime/src/jsx.d.ts
  */
 
-import { Action, Atom, AtomMaybe, AtomProto, Ctx } from '@reatom/core'
+import { Atom, AtomMaybe, Ctx } from '@reatom/core'
 import * as csstype from 'csstype'
+import { JsxNode } from './types'
 
 export namespace JSX {
-  type Element =
-    | undefined
-    | null
-    | boolean
-    | number
-    | string
-    | globalThis.Element
-    | Array<Element>
-    | Atom<Element>
-
   interface ElementClass {
     // empty, libs can define requirements downstream
   }
   interface ElementAttributesProperty {
     // empty, libs can define requirements downstream
-  }
-  interface ElementChildrenAttribute {
-    children: {}
   }
 
   type EventHandler<T, E extends Event> = (
@@ -31,76 +19,22 @@ export namespace JSX {
     event: E & { currentTarget: T; target: Element },
   ) => void
 
-  interface IntrinsicAttributes {
-    // ref?: unknown | ((e: unknown) => void)
-  }
-  // interface CustomAttributes<T> {
-  //   ref?: T | ((el: T) => void)
-  //   classList?: {
-  //     [k: string]: boolean | undefined
-  //   }
-  //   $ServerOnly?: boolean
-  // }
-  type Accessor<T> = () => T
-  interface Directives {}
-  interface DirectiveFunctions {
-    [x: string]: (el: Element, accessor: Accessor<any>) => void
-  }
-  interface ExplicitProperties {}
-  interface ExplicitAttributes {}
-  interface CustomEvents {}
-  interface CustomCaptureEvents {}
-  // type DirectiveAttributes = {
-  //   [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
-  // }
-  // type DirectiveFunctionAttributes<T> = {
-  //   [K in keyof DirectiveFunctions as string extends K
-  //     ? never
-  //     : `use:${K}`]?: DirectiveFunctions[K] extends (
-  //     el: infer E, // will be unknown if not provided
-  //     ...rest: infer R // use rest so that we can check whether it's provided or not
-  //   ) => void
-  //     ? T extends E // everything extends unknown if E is unknown
-  //       ? R extends [infer A] // check if has accessor provided
-  //         ? A extends Accessor<infer V>
-  //           ? V // it's an accessor
-  //           : never // it isn't, type error
-  //         : true // no accessor provided
-  //       : never // T is the wrong element
-  //     : never // it isn't a function
-  // }
-  // type PropAttributes = {
-  //   [Key in keyof ExplicitProperties as `prop:${Key}`]?: ExplicitProperties[Key]
-  // }
-  // type AttrAttributes = {
-  //   [Key in keyof ExplicitAttributes as `attr:${Key}`]?: ExplicitAttributes[Key]
-  // }
-  // type OnAttributes<T> = {
-  //   [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<
-  //     T,
-  //     CustomEvents[Key]
-  //   >
-  // }
-  // type OnCaptureAttributes<T> = {
-  //   [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
-  //     T,
-  //     CustomCaptureEvents[Key]
-  //   >
-  // }
-  interface DOMAttributes<T>
-  /* CustomAttributes<T>,
-      DirectiveAttributes,
-      DirectiveFunctionAttributes<T>,
-      PropAttributes,
-      AttrAttributes,
-      OnAttributes<T>,
-      OnCaptureAttributes<T>, */
-    extends CustomEventHandlers<T> {
-    $props?: this | Atom<this> | Array<this | Atom<this>>
-    children?: Element
+  interface IntrinsicAttributes {}
+
+  // do not allow dynamic event
+  type ElementPropsSpreadable<T> = Omit<T, `on${string}`>
+  type ElementPropsSpread<T> =
+    | ElementPropsSpreadable<T>
+    | Atom<ElementPropsSpreadable<T>>
+    | Array<ElementPropsSpreadable<T> | Atom<ElementPropsSpreadable<T>>>
+
+  interface ElementProps<T = Element> extends CustomEventHandlers<T> {
+    $props?: ElementPropsSpread<this>
+    children?: Array<JsxNode>
     innerHTML?: string
-    innerText?: string | number
-    textContent?: string | number
+    innerText?: string
+    onConnect?: (ctx: Ctx) => void
+    onDisconnect?: (ctx: Ctx) => void
     [field: `field:${string}`]: any
 
     oncopy?: EventHandler<T, ClipboardEvent>
@@ -114,6 +48,7 @@ export namespace JSX {
     onencrypted?: EventHandler<T, Event>
     ondragexit?: EventHandler<T, DragEvent>
   }
+
   /**
    * @type {GlobalEventHandlers}
    */
@@ -180,12 +115,7 @@ export namespace JSX {
     onseeking?: EventHandler<T, Event>
     onselect?: EventHandler<T, UIEvent>
     onstalled?: EventHandler<T, Event>
-    onsubmit?: EventHandler<
-      T,
-      Event & {
-        submitter: HTMLElement
-      }
-    >
+    onsubmit?: EventHandler<T, Event & { submitter: HTMLElement }>
     onsuspend?: EventHandler<T, Event>
     ontimeupdate?: EventHandler<T, Event>
     ontouchcancel?: EventHandler<T, TouchEvent>
@@ -256,7 +186,7 @@ export namespace JSX {
     | 'worker'
 
   // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
-  interface AriaAttributes {
+  interface AriaProps {
     /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
     'aria-activedescendant'?: string
     /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
@@ -541,7 +471,7 @@ export namespace JSX {
     >
   }
 
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+  interface HTMLAttributes<T> extends AriaProps, ElementProps<T> {
     accessKey?: AtomMaybe<string>
     class?: AtomMaybe<string> | undefined
     className?: AtomMaybe<string>
@@ -1048,7 +978,7 @@ export namespace JSX {
     | 'defer xMidYMax slice'
     | 'defer xMaxYMax slice'
   type SVGUnits = 'userSpaceOnUse' | 'objectBoundingBox'
-  interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+  interface CoreSVGAttributes<T> extends AriaProps, ElementProps<T> {
     id?: AtomMaybe<string>
     lang?: AtomMaybe<string>
     tabIndex?: AtomMaybe<number | string>
@@ -1944,82 +1874,71 @@ export namespace JSX {
     video: VideoHTMLAttributes<HTMLVideoElement>
     wbr: HTMLAttributes<HTMLElement>
   }
-  /**
-   * @type {HTMLElementDeprecatedTagNameMap}
-   */
-  interface HTMLElementDeprecatedTags {
-    big: HTMLAttributes<HTMLElement>
-    keygen: KeygenHTMLAttributes<HTMLElement>
-    menuitem: HTMLAttributes<HTMLElement>
-    noindex: HTMLAttributes<HTMLElement>
-    param: ParamHTMLAttributes<HTMLParamElement>
-  }
+
   /**
    * @type {SVGElementTagNameMap}
    */
   interface SVGElementTags {
-    animate: AnimateSVGAttributes<SVGAnimateElement>
-    animateMotion: AnimateMotionSVGAttributes<SVGAnimateMotionElement>
-    animateTransform: AnimateTransformSVGAttributes<SVGAnimateTransformElement>
-    circle: CircleSVGAttributes<SVGCircleElement>
-    clipPath: ClipPathSVGAttributes<SVGClipPathElement>
-    defs: DefsSVGAttributes<SVGDefsElement>
-    desc: DescSVGAttributes<SVGDescElement>
-    ellipse: EllipseSVGAttributes<SVGEllipseElement>
-    feBlend: FeBlendSVGAttributes<SVGFEBlendElement>
-    feColorMatrix: FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>
-    feComponentTransfer: FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>
-    feComposite: FeCompositeSVGAttributes<SVGFECompositeElement>
-    feConvolveMatrix: FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>
-    feDiffuseLighting: FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>
-    feDisplacementMap: FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>
-    feDistantLight: FeDistantLightSVGAttributes<SVGFEDistantLightElement>
-    feDropShadow: Partial<SVGFEDropShadowElement>
-    feFlood: FeFloodSVGAttributes<SVGFEFloodElement>
-    feFuncA: FeFuncSVGAttributes<SVGFEFuncAElement>
-    feFuncB: FeFuncSVGAttributes<SVGFEFuncBElement>
-    feFuncG: FeFuncSVGAttributes<SVGFEFuncGElement>
-    feFuncR: FeFuncSVGAttributes<SVGFEFuncRElement>
-    feGaussianBlur: FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>
-    feImage: FeImageSVGAttributes<SVGFEImageElement>
-    feMerge: FeMergeSVGAttributes<SVGFEMergeElement>
-    feMergeNode: FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>
-    feMorphology: FeMorphologySVGAttributes<SVGFEMorphologyElement>
-    feOffset: FeOffsetSVGAttributes<SVGFEOffsetElement>
-    fePointLight: FePointLightSVGAttributes<SVGFEPointLightElement>
-    feSpecularLighting: FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>
-    feSpotLight: FeSpotLightSVGAttributes<SVGFESpotLightElement>
-    feTile: FeTileSVGAttributes<SVGFETileElement>
-    feTurbulence: FeTurbulanceSVGAttributes<SVGFETurbulenceElement>
-    filter: FilterSVGAttributes<SVGFilterElement>
-    foreignObject: ForeignObjectSVGAttributes<SVGForeignObjectElement>
-    g: GSVGAttributes<SVGGElement>
-    image: ImageSVGAttributes<SVGImageElement>
-    line: LineSVGAttributes<SVGLineElement>
-    linearGradient: LinearGradientSVGAttributes<SVGLinearGradientElement>
-    marker: MarkerSVGAttributes<SVGMarkerElement>
-    mask: MaskSVGAttributes<SVGMaskElement>
-    metadata: MetadataSVGAttributes<SVGMetadataElement>
-    mpath: Partial<SVGMPathElement>
-    path: PathSVGAttributes<SVGPathElement>
-    pattern: PatternSVGAttributes<SVGPatternElement>
-    polygon: PolygonSVGAttributes<SVGPolygonElement>
-    polyline: PolylineSVGAttributes<SVGPolylineElement>
-    radialGradient: RadialGradientSVGAttributes<SVGRadialGradientElement>
-    rect: RectSVGAttributes<SVGRectElement>
-    set: Partial<SVGSetElement>
-    stop: StopSVGAttributes<SVGStopElement>
-    svg: SvgSVGAttributes<SVGSVGElement>
-    switch: SwitchSVGAttributes<SVGSwitchElement>
-    symbol: SymbolSVGAttributes<SVGSymbolElement>
-    text: TextSVGAttributes<SVGTextElement>
-    textPath: TextPathSVGAttributes<SVGTextPathElement>
-    tspan: TSpanSVGAttributes<SVGTSpanElement>
-    use: UseSVGAttributes<SVGUseElement>
-    view: ViewSVGAttributes<SVGViewElement>
+    'svg:animate': AnimateSVGAttributes<SVGAnimateElement>
+    'svg:animateMotion': AnimateMotionSVGAttributes<SVGAnimateMotionElement>
+    'svg:animateTransform': AnimateTransformSVGAttributes<SVGAnimateTransformElement>
+    'svg:circle': CircleSVGAttributes<SVGCircleElement>
+    'svg:clipPath': ClipPathSVGAttributes<SVGClipPathElement>
+    'svg:defs': DefsSVGAttributes<SVGDefsElement>
+    'svg:desc': DescSVGAttributes<SVGDescElement>
+    'svg:ellipse': EllipseSVGAttributes<SVGEllipseElement>
+    'svg:feBlend': FeBlendSVGAttributes<SVGFEBlendElement>
+    'svg:feColorMatrix': FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>
+    'svg:feComponentTransfer': FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>
+    'svg:feComposite': FeCompositeSVGAttributes<SVGFECompositeElement>
+    'svg:feConvolveMatrix': FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>
+    'svg:feDiffuseLighting': FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>
+    'svg:feDisplacementMap': FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>
+    'svg:feDistantLight': FeDistantLightSVGAttributes<SVGFEDistantLightElement>
+    'svg:feDropShadow': Partial<SVGFEDropShadowElement>
+    'svg:feFlood': FeFloodSVGAttributes<SVGFEFloodElement>
+    'svg:feFuncA': FeFuncSVGAttributes<SVGFEFuncAElement>
+    'svg:feFuncB': FeFuncSVGAttributes<SVGFEFuncBElement>
+    'svg:feFuncG': FeFuncSVGAttributes<SVGFEFuncGElement>
+    'svg:feFuncR': FeFuncSVGAttributes<SVGFEFuncRElement>
+    'svg:feGaussianBlur': FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>
+    'svg:feImage': FeImageSVGAttributes<SVGFEImageElement>
+    'svg:feMerge': FeMergeSVGAttributes<SVGFEMergeElement>
+    'svg:feMergeNode': FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>
+    'svg:feMorphology': FeMorphologySVGAttributes<SVGFEMorphologyElement>
+    'svg:feOffset': FeOffsetSVGAttributes<SVGFEOffsetElement>
+    'svg:fePointLight': FePointLightSVGAttributes<SVGFEPointLightElement>
+    'svg:feSpecularLighting': FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>
+    'svg:feSpotLight': FeSpotLightSVGAttributes<SVGFESpotLightElement>
+    'svg:feTile': FeTileSVGAttributes<SVGFETileElement>
+    'svg:feTurbulence': FeTurbulanceSVGAttributes<SVGFETurbulenceElement>
+    'svg:filter': FilterSVGAttributes<SVGFilterElement>
+    'svg:foreignObject': ForeignObjectSVGAttributes<SVGForeignObjectElement>
+    'svg:g': GSVGAttributes<SVGGElement>
+    'svg:image': ImageSVGAttributes<SVGImageElement>
+    'svg:line': LineSVGAttributes<SVGLineElement>
+    'svg:linearGradient': LinearGradientSVGAttributes<SVGLinearGradientElement>
+    'svg:marker': MarkerSVGAttributes<SVGMarkerElement>
+    'svg:mask': MaskSVGAttributes<SVGMaskElement>
+    'svg:metadata': MetadataSVGAttributes<SVGMetadataElement>
+    'svg:mpath': Partial<SVGMPathElement>
+    'svg:path': PathSVGAttributes<SVGPathElement>
+    'svg:pattern': PatternSVGAttributes<SVGPatternElement>
+    'svg:polygon': PolygonSVGAttributes<SVGPolygonElement>
+    'svg:polyline': PolylineSVGAttributes<SVGPolylineElement>
+    'svg:radialGradient': RadialGradientSVGAttributes<SVGRadialGradientElement>
+    'svg:rect': RectSVGAttributes<SVGRectElement>
+    'svg:set': Partial<SVGSetElement>
+    'svg:stop': StopSVGAttributes<SVGStopElement>
+    'svg:svg': SvgSVGAttributes<SVGSVGElement>
+    'svg:switch': SwitchSVGAttributes<SVGSwitchElement>
+    'svg:symbol': SymbolSVGAttributes<SVGSymbolElement>
+    'svg:text': TextSVGAttributes<SVGTextElement>
+    'svg:textPath': TextPathSVGAttributes<SVGTextPathElement>
+    'svg:tspan': TSpanSVGAttributes<SVGTSpanElement>
+    'svg:use': UseSVGAttributes<SVGUseElement>
+    'svg:view': ViewSVGAttributes<SVGViewElement>
   }
-  interface IntrinsicElements
-    extends HTMLElementTags,
-      HTMLElementDeprecatedTags,
-      SVGElementTags {}
+
+  interface IntrinsicElements extends HTMLElementTags, SVGElementTags {}
 }

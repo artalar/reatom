@@ -1,195 +1,194 @@
-import {
-  Action,
-  atom,
-  createCtx,
-  Ctx,
-  Fn,
-  isAtom,
-  Rec,
-  Unsubscribe,
-} from '@reatom/core'
-import type { JSX } from './jsx'
+import { Atom, Ctx, Rec, atom, createCtx, isAtom } from '@reatom/core'
 import { noop } from '@reatom/utils'
-import { parseAtoms } from '@reatom/lens'
-declare type JSXElement = JSX.Element
-export type { JSXElement, JSX }
+import {
+  ComponentLike,
+  InferProps,
+  JsxElementTag,
+  JsxNodeBase,
+  ReatomElement,
+} from './types'
+import { JsxNode } from './types'
+import { onConnect, onDisconnect } from '@reatom/hooks'
+import { reconcile } from './reconcile'
 
-export type ElementTag = keyof JSX.HTMLElementTags | keyof JSX.SVGElementTags
+const NsSvg = 'http://www.w3.org/2000/svg'
+const NsMathml = 'http://www.w3.org/1998/Math/MathML'
 
-export type Component<Props> = (props: Props) => JSXElement
+export const reatomJsx = (ctx: Ctx, window = globalThis.window) => {
+  const h = (tag: ComponentLike, props: Rec, children?: JsxNode[]): JsxNode => {
+    if (children) props.children = children
+    if (tag === hf) return props.children
+    if (typeof tag === 'function') return tag(props)
+    return reatomElement(tag, props)
+  }
 
-export type ComponentLike = ElementTag | Component<any>
+  const hf = noop
 
-export type InferProps<T extends ComponentLike> =
-  T extends keyof JSX.HTMLElementTags
-    ? JSX.HTMLElementTags[T]
-    : T extends keyof JSX.SVGElementTags
-    ? JSX.SVGElementTags[T]
-    : T extends Component<infer Props>
-    ? Props
-    : never
+  const reatomElement = <E extends Element>(
+    tag: string,
+    props: Rec,
+  ): ReatomElement<E> => {
+    let ns: string | undefined
+    if (tag.startsWith('svg:')) {
+      ns = NsSvg
+      tag = tag.slice(4) as any
+    }
+    if (tag.startsWith('mathml:')) {
+      ns = NsMathml
+      tag = tag.slice(7) as any
+    }
 
-const FieldProps = ['innerHTML', 'innerText', 'textContent']
+    const element = (ns
+      ? window.document.createElementNS(ns, tag)
+      : window.document.createElement(tag)) as any as E
 
-export const reatomJsx = (ctx: Ctx) => {
-  let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
+    let bindings: Array<string> | undefined
+    let spreadRecs: Array<any> | undefined
+    let spreadKeys: Set<string> | undefined
 
-  let unlink = (parent: any, un: Unsubscribe) => {
-    Promise.resolve().then(() => {
-      if (!parent.isConnected) un()
-      else {
-        while (parent.parentElement && !unsubscribesMap.get(parent)?.push(un)) {
-          parent = parent.parentElement
-        }
+    // here and below, `clock` is used to always return a different value from a rendering atom
+    const sync = atom((ctx, clock?: boolean) => {
+      if (spreadRecs) {
+        ctx.spy(
+          (syncSpreads ??= atom((ctx, clock?: boolean) => {
+            const prevSpreadKeys = spreadKeys
+            spreadKeys = new Set()
+            const result = {} as Rec
+
+            for (let rec of spreadRecs!) {
+              if (isAtom(rec)) rec = ctx.spy(rec)
+              for (const key in rec) {
+                const val = rec[key]
+                result[key] = isAtom(val) ? ctx.spy(val) : val
+                prevSpreadKeys?.delete(key)
+                if (!(key in props)) {
+                  spreadKeys.add(key)
+                }
+              }
+            }
+
+            if (prevSpreadKeys) {
+              for (const key of prevSpreadKeys) {
+                setProp(element, key, undefined)
+              }
+            }
+
+            for (const key in result) {
+              setProp(element, key, result[key])
+            }
+
+            return !clock
+          })),
+        )
       }
+
+      if (bindings) ctx.spy(syncBindings)
+
+      if (isAtom(props.children) || props.children?.length)
+        ctx.spy(syncChildren)
+
+      return !clock as any as void
     })
-  }
 
-  let create = (tag: string, attrs: Rec) => {
-    let element =
-      tag === 'svg'
-        ? document.createElementNS('http://www.w3.org/2000/svg', tag)
-        : document.createElement(tag)
+    let syncSpreads: Atom | undefined
 
-    bindProps(element, attrs)
+    const syncBindings = atom((ctx, clock?: boolean) => {
+      for (const key of bindings!) {
+        setProp(element, key, ctx.spy((props as any)[key]))
+      }
 
-    render(element, attrs.children ?? [])
+      return !clock
+    })
 
-    return element
-  }
+    const syncChildren = atom((ctx, clock?: boolean) => {
+      const children = new Set<JsxNodeBase>()
+      for (let child of isAtom(props.children)
+        ? ctx.spy(props.children)
+        : props.children!) {
+        children.add(isAtom(child) ? ctx.spy(child) : child)
+      }
 
-  const bindProps = (element: Element, props: Rec) => {
+      reconcile(element, children, window)
+
+      for (const child of children) {
+        if (isReatomElement(child)) ctx.spy(child.sync)
+      }
+
+      return !clock
+    })
+
     for (const key in props) {
-      if (key === 'children') continue
-
-      const val = props[key]
-
+      const val = (props as any)[key]
       if (key === '$props') {
-        for (const attrs of Array.isArray(val) ? val : []) {
-          if (isAtom(attrs)) {
-            var u = ctx.subscribe(attrs, (attrs) => {
-              if (element.isConnected || !u) bindProps(element, attrs)
-              else u()
-            })
-            unlink(element, u)
-          } else bindProps(element, attrs)
-        }
-      } else if (isAtom(val) && !val.__reatom.isAction) {
-        // TODO handle unsubscribe!
-        var u = ctx.subscribe(val, (val) => {
-          if (element.isConnected || !u) setProp(element, key, val)
-          else u()
-        })
-        unlink(element, u)
-      } else if (typeof val === 'function') {
-        ;(element as any)[key] = (event: any) => val(ctx, event)
+        spreadRecs = Array.isArray(val) ? val : [val]
+      } else if (key === 'onConnect') {
+        onConnect(sync, val)
+      } else if (key === 'onDisconnect') {
+        onDisconnect(sync, val)
+      } else if (key.startsWith('on')) {
+        element.addEventListener(key.slice(2), (event) => val(ctx, event))
+      } else if (isAtom(val)) {
+        ;(bindings ??= []).push(key)
       } else {
         setProp(element, key, val)
       }
     }
-  }
 
-  const setProp = (element: Element, name: string, val: any) => {
-    if (name === 'className') name = 'class'
-
-    if (name.startsWith('field:')) {
-      ;(element as any)[name.slice(6)] = val
-    } else if (FieldProps.includes(name)) {
-      ;(element as any)[name] = val
-    } else if (name === 'style' && typeof val === 'object') {
-      for (const styleKey in val) {
-        const styleVal = val[styleKey]
-        if (styleVal != null && styleVal !== false) {
-          ;(element as HTMLElement).style.setProperty(
-            styleKey,
-            String(styleVal),
-          )
-        } else {
-          ;(element as HTMLElement).style.removeProperty(styleKey)
-        }
-      }
-    } else element.setAttribute(name, val)
-  }
-
-  let render = (parent: Element, children: JSXElement[]) => {
-    // TODO support Atom<Array>
-    let walk = (child: any) => {
-      if (Array.isArray(child)) {
-        child.forEach(walk)
-        return
-      }
-
-      if (isAtom(child)) {
-        let innerChild: ChildNode = document.createTextNode('')
-        var un: Unsubscribe | undefined = ctx.subscribe(
-          atom((ctx) => parseAtoms(ctx, child)),
-          (v) => {
-            if (un && !innerChild.isConnected) un()
-            else {
-              if (v instanceof Element) {
-                let list = unsubscribesMap.get(v)
-                if (!list) unsubscribesMap.set(v, (list = []))
-
-                if (un) parent.replaceChild(v, innerChild)
-                innerChild = v
-              } else {
-                innerChild.textContent = v
-              }
-            }
-          },
-        )
-        unlink(parent, un)
-        parent.appendChild(innerChild)
-        return
-      }
-
-      parent.appendChild(
-        child instanceof Node ? child : document.createTextNode(String(child)),
-      )
+    return {
+      sync,
+      element,
     }
-
-    children.forEach(walk)
   }
 
-  let h = ((tag: any, props: Rec, ...children: JSXElement[]) => {
-    if (tag === hf) return children
-
-    props.children = children
-
-    if (typeof tag === 'function') {
-      return tag(props)
+  const setProp = (element: Element, key: string, val: any) => {
+    if (key === 'className') key = 'class'
+    if (key.startsWith('on')) {
+      element.addEventListener(key.slice(2), (event) => val(ctx, event))
+    } else if (key.startsWith('field:')) {
+      ;(element as any)[key.slice(6)] = val
+    } else if (key === 'style') {
+      throw new Error('style not supported yet')
+    } else {
+      if (val == null) element.removeAttribute(key)
+      else element.setAttribute(key, val)
     }
-
-    return create(tag, props)
-  }) as <T extends ComponentLike>(
-    tag: T,
-    props: InferProps<T>,
-    ...children: JSXElement[]
-  ) => Element
-
-  let hf = noop
-
-  let mount = (target: Element, child: Element) => {
-    render(target, [child])
-
-    new MutationObserver((mutationsList) => {
-      for (const mutation of mutationsList) {
-        for (const removedNode of mutation.removedNodes) {
-          let list = unsubscribesMap.get(removedNode as any)
-          if (list) {
-            list.forEach((fn) => fn())
-            unsubscribesMap.delete(removedNode as any)
-          }
-        }
-      }
-    }).observe(target, {
-      childList: true,
-      subtree: true,
-    })
   }
 
-  return { h, hf, mount, create }
+  const mount = (parent: Element | DocumentFragment, child: JsxNode) => {
+    if (!isReatomElement(child)) throw new Error('Can only mount elements')
+    parent.appendChild(child.element)
+    const unsub = ctx.subscribe(child.sync, noop)
+    return () => {
+      unsub()
+      parent.removeChild(child.element)
+    }
+  }
+
+  return { h, hf, reatomElement, mount }
+}
+
+const isReatomElement = (val: any): val is ReatomElement =>
+  isAtom((val as any)?.sync)
+
+const createT = (create: typeof reatomElement) => {
+  type TagFactory = {
+    [T in JsxElementTag]: (
+      props?: InferProps<T> | Array<JsxNode>,
+    ) => ReatomElement
+  }
+
+  const factories = {} as TagFactory
+
+  return new Proxy({} as Readonly<TagFactory>, {
+    get: (_, tag) =>
+      (factories[tag as JsxElementTag] ??= (props = {} as any) =>
+        create(
+          tag as JsxElementTag,
+          Array.isArray(props) ? { children: props } : (props as any),
+        )),
+  })
 }
 
 export const ctx = createCtx()
-export const { h, hf, mount, create } = reatomJsx(ctx)
+export const { h, hf, reatomElement } = reatomJsx(ctx)
+export const t = createT(reatomElement)
