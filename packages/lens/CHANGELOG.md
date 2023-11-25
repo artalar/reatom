@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.1](https://github.com/artalar/reatom/compare/lens-v3.9.0...lens-v3.9.1) (2023-11-25)
+
+
+### Bug Fixes
+
+* **lens:** select export ([fd776cf](https://github.com/artalar/reatom/commit/fd776cf6a5ca36beb9e3581315abb8afe7ca2050))
+
 ## [3.9.0](https://github.com/artalar/reatom/compare/lens-v3.8.0...lens-v3.9.0) (2023-11-23)
 
 

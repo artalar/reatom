@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.3](https://github.com/artalar/reatom/compare/async-v3.13.2...async-v3.13.3) (2023-11-25)
+
+
+### Bug Fixes
+
+* **async:** prevent unhandled error for abort ([8c64522](https://github.com/artalar/reatom/commit/8c64522bed4d13b35a9f7f354ef6b086b5fbda98))
+
 ## [3.13.2](https://github.com/artalar/reatom/compare/async-v3.13.1...async-v3.13.2) (2023-11-23)
 
 
