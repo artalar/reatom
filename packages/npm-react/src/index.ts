@@ -17,6 +17,8 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
+import { abortCauseContext } from '@reatom/effects'
+import { toAbortError } from '@reatom/utils'
 
 // useLayoutEffect will show warning if used during ssr, e.g. with Next.js
 // useIsomorphicEffect removes it by replacing useLayoutEffect with useEffect during ssr
@@ -240,27 +242,27 @@ export const reatomComponent = <T>(
   let rendering = false
 
   return (props) => {
-    const { propsAtom, renderAtom } = React.useMemo(() => {
+    const { controller, propsAtom, renderAtom } = React.useMemo(() => {
+      const controller = new AbortController()
+
       const propsAtom = atom<T>(
         {} as T & { ctx: CtxRender },
         `${name}._propsAtom`,
       )
+
       const renderAtom = atom(
         (ctx: CtxRender, state?: RenderState): RenderState => {
           const { pubs } = ctx.cause
           const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
           if (rendering) {
-            ctx = {
-              ...ctx,
-              cause: {
-                ...ctx.cause,
-                cause: ctx.get((read) => read(__root)!),
-              },
+            props.ctx = ctx = React.useRef(ctx).current
+
+            if (!abortCauseContext.has(ctx.cause)) {
+              abortCauseContext.set(ctx.cause, controller)
+              ctx.bind = bind(ctx, bindBind)
             }
 
-            ctx.bind = bind(React.useRef(ctx).current, bindBind)
-            props.ctx = ctx
             return Component(props)
           }
 
@@ -280,17 +282,24 @@ export const reatomComponent = <T>(
         `${name}._renderAtom`,
       ) as Atom as Atom<RenderState>
 
-      return { propsAtom, renderAtom }
+      return { controller, propsAtom, renderAtom }
     }, [])
+
     const ctx = useCtx()
+
     const [, forceUpdate] = React.useState({} as JSX.Element)
-    React.useEffect(
-      () =>
-        ctx.subscribe(renderAtom, (element) => {
-          if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
-        }),
-      [ctx, forceUpdate],
-    )
+
+    React.useEffect(() => {
+      const unsubscribe = ctx.subscribe(renderAtom, (element) => {
+        if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
+      })
+
+      return () => {
+        unsubscribe()
+        controller.abort(toAbortError(`${name} unmount`))
+      }
+    }, [ctx, renderAtom])
+
     return ctx.get(() => {
       propsAtom(ctx, { ...props })
       try {
