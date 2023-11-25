@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/utils-v3.7.0...utils-v3.8.0) (2023-11-25)
+
+
+### Features
+
+* **utils:** add throwAbort ([a991be1](https://github.com/artalar/reatom/commit/a991be1153c8b1c3c929a7eabcc9328e022b8eff))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/utils-v3.6.0...utils-v3.7.0) (2023-10-20)
 
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.2](https://github.com/artalar/reatom/compare/effects-v3.7.1...effects-v3.7.2) (2023-11-25)
+
+
+### Bug Fixes
+
+* **effects:** more friendly typings for isCausedBy ([5d60c1d](https://github.com/artalar/reatom/commit/5d60c1da8710c90df60b24e5d013e829455260d0))
+* **effects:** prevent unhandled error for abort ([fe884e2](https://github.com/artalar/reatom/commit/fe884e24ac574fc50c7ce4e825459d7059136b73))
+
 ## [3.7.1](https://github.com/artalar/reatom/compare/effects-v3.7.0...effects-v3.7.1) (2023-11-23)
 
 
