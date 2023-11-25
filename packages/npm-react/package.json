@@ -1,6 +1,6 @@
 {
   "name": "@reatom/npm-react",
-  "version": "3.7.4",
+  "version": "3.8.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for React",
@@ -27,9 +27,7 @@
   },
   "dependencies": {
     "@reatom/core": "^3.5.0",
-    "@reatom/effects": "^3.7.2",
     "@reatom/lens": "^3.1.0",
-    "@reatom/utils": "^3.8.0",
     "use-sync-external-store": "^1.2.0"
   },
   "peerDependencies": {
