@@ -6,6 +6,7 @@ import {
   AtomProto,
   AtomReturn,
   Ctx,
+  CtxSpy,
   Fn,
   throwReatomError,
   Unsubscribe,
@@ -232,9 +233,18 @@ export const takeNested = <I extends any[]>(
     return result
   })
 
-export const isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
+const _isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
   cause.cause !== null &&
   (cause.cause.proto === proto || isCausedBy(cause.cause, proto))
+
+export const isCausedBy = (
+  caused: Ctx | AtomCache,
+  by: Atom | AtomProto,
+): boolean =>
+  _isCausedBy(
+    'subscribe' in caused ? caused.cause : caused,
+    '__reatom' in by ? by.__reatom : by,
+  )
 
 export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
   const { schedule } = ctx
