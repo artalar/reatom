@@ -28,6 +28,7 @@ export * from './filter'
 export * from './onLensUpdate'
 export * from './parseAtoms'
 export * from './sample'
+export * from './select'
 export * from './withReset'
 
 export interface LensAtom<State = any> extends Atom<State> {

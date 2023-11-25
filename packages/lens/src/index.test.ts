@@ -7,6 +7,7 @@ import * as assert from 'uvu/assert'
 
 import './match.test'
 import './parseAtoms.test'
+import './select.test'
 
 import {
   combine,
