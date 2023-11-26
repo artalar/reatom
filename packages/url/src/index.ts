@@ -127,10 +127,10 @@ export const setupUrlAtomBrowserSettings = action(
 
 const _urlAtom = atom(null as any as URL, 'urlAtom')
 export const urlAtom: UrlAtom = Object.assign(
-  (ctx: Ctx, url: URL) =>
-    _urlAtom(ctx, () => {
-      abortCauseContext.set(ctx.cause, undefined)
-      return url
+  (ctx: Ctx, url: URL | Fn<[URL, Ctx], URL>) =>
+    _urlAtom(ctx, (state, urlCtx) => {
+      abortCauseContext.set(urlCtx.cause, undefined)
+      return typeof url === 'function' ? url(state, urlCtx) : url
     }),
   _urlAtom,
   {
