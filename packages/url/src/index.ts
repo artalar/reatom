@@ -19,9 +19,9 @@ export interface AtomUrlSettings {
 }
 
 export interface UrlAtom extends AtomMut<URL> {
-  go: Action<[path: `/${string}`], URL>
+  go: Action<[path: string], URL>
   // TODO not documented yet, need more symbol matches, like in nanostores/router
-  match: (path: `/${string}`) => Atom<boolean>
+  match: (path: string) => Atom<boolean>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
 
@@ -139,7 +139,7 @@ export const urlAtom: UrlAtom = Object.assign(
       (ctx, path) => urlAtom(ctx, (url) => new URL(path, url)),
       'urlAtom.go',
     ),
-    match: (path: `/${string}`) =>
+    match: (path: string) =>
       atom(
         (ctx) => ctx.spy(urlAtom).pathname.startsWith(path),
         `urlAtom.match#${path}`,
