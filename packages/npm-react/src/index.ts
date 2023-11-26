@@ -256,11 +256,17 @@ export const reatomComponent = <T>(
           const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
           if (rendering) {
-            props.ctx = ctx = React.useRef(ctx).current
+            const initCtx = React.useRef(ctx).current
 
-            if (!abortCauseContext.has(ctx.cause)) {
-              abortCauseContext.set(ctx.cause, controller)
-              ctx.bind = bind(ctx, bindBind)
+            if (!abortCauseContext.has(initCtx.cause)) {
+              abortCauseContext.set(initCtx.cause, controller)
+              initCtx.bind = bind(initCtx, bindBind)
+            }
+
+            props.ctx = {
+              ...ctx,
+              cause: initCtx.cause,
+              bind: initCtx.bind,
             }
 
             return Component(props)
