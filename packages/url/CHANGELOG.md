@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.6.2](https://github.com/artalar/reatom/compare/url-v3.6.1...url-v3.6.2) (2023-11-26)
+
+
+### Bug Fixes
+
+* **url:** accept a function in urlAtom update ([5affb85](https://github.com/artalar/reatom/commit/5affb8525fe5629621e0f7fe9b999f1e2306b28e))
+* **url:** simplify path types ([6c905b5](https://github.com/artalar/reatom/commit/6c905b5424a9d85c20059db04c3c03551cef9c5b))
+
 ## [3.6.1](https://github.com/artalar/reatom/compare/url-v3.6.0...url-v3.6.1) (2023-11-23)
 
 

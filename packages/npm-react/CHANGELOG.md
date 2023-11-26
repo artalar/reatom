@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.1](https://github.com/artalar/reatom/compare/npm-react-v3.8.0...npm-react-v3.8.1) (2023-11-26)
+
+
+### Bug Fixes
+
+* **npm-react:** wrong ctx ([05f6037](https://github.com/artalar/reatom/commit/05f6037ea237ac7bb69c40ef0d567ec06f2eb64b))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/npm-react-v3.7.4...npm-react-v3.8.0) (2023-11-25)
 
 
