@@ -1,177 +1,175 @@
 import {
-  Action,
-  atom,
-  createCtx,
+  Atom,
   Ctx,
+  CtxSpy,
   Fn,
-  isAtom,
   Rec,
-  Unsubscribe,
+  atom,
+  isAtom,
+  throwReatomError,
 } from '@reatom/core'
-import type { JSX } from './jsx'
 import { noop } from '@reatom/utils'
-import { parseAtoms } from '@reatom/lens'
-declare type JSXElement = JSX.Element
-export type { JSXElement, JSX }
+import { ReatomElement, JsxNode, DomElement, Computable } from './types'
 
-export type ElementTag = keyof JSX.HTMLElementTags | keyof JSX.SVGElementTags
+const StylesheetId = 'reatom-jsx-styles'
+let styles: Map<string, string> | undefined
+let stylesheet: HTMLStyleElement | undefined
 
-export type Component<Props> = (props: Props) => JSXElement
-
-export type ComponentLike = ElementTag | Component<any>
-
-export type InferProps<T extends ComponentLike> =
-  T extends keyof JSX.HTMLElementTags
-    ? JSX.HTMLElementTags[T]
-    : T extends keyof JSX.SVGElementTags
-    ? JSX.SVGElementTags[T]
-    : T extends Component<infer Props>
-    ? Props
-    : never
-
-export const reatomJsx = (ctx: Ctx) => {
-  let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
-
-  let unlink = (parent: any, un: Unsubscribe) => {
-    Promise.resolve().then(() => {
-      if (!parent.isConnected) un()
-      else {
-        while (parent.parentElement && !unsubscribesMap.get(parent)?.push(un)) {
-          parent = parent.parentElement
-        }
-      }
-    })
-  }
-
-  let create = (tag: string, attrs: Rec) => {
-    let element =
-      tag === 'svg'
-        ? document.createElementNS('http://www.w3.org/2000/svg', tag)
-        : document.createElement(tag)
-
-    bindAttrs(element, attrs)
-
-    render(element, attrs.children ?? [])
-
-    return element
-  }
-
-  const bindAttrs = (element: Element, attrs: Rec) => {
-    for (const key in attrs) {
-      if (key === 'children') continue
-      const val = attrs[key]
-
-      if (key === '$attrs') {
-        for (const attrs of Array.isArray(val) ? val : []) {
-          if (isAtom(attrs)) {
-            var u = ctx.subscribe(attrs, (attrs): void =>
-              !u || element.isConnected
-                ? bindAttrs(element, attrs as Rec)
-                : u(),
-            )
-            unlink(element, u)
-          } else bindAttrs(element, attrs)
-        }
-      } else if (isAtom(val)) {
-        if (val.__reatom.isAction) {
-          ;(element as any)[key] = (...args: any) =>
-            (val as Action)(ctx, ...args)
-        } else {
-          // TODO handle unsubscribe!
-          var un: undefined | Unsubscribe = ctx.subscribe(val, (val) =>
-            !un || element.isConnected ? renderAttr(element, key, val) : un(),
-          )
-          unlink(element, un)
-        }
-      } else renderAttr(element, key, val)
+export const reatomJsx = (ctx: Ctx, w = globalThis.window) => ({
+  mount(parent: Element, child: JsxNode) {
+    throwReatomError(!(child instanceof w.Element), 'Can only mount elements')
+    const unsub = ctx.subscribe(
+      atom((ctx) => sync(ctx, child as ReatomElement)),
+      noop,
+    )
+    parent.appendChild(child as Node)
+    return () => {
+      unsub()
+      parent.removeChild(child as Node)
     }
-  }
+  },
 
-  const renderAttr = (element: any, key: any, val: any) => {
-    if (key === 'style') {
-      for (const style in val) element.style.setProperty(style, val[style])
-    } else element[key] = val
-  }
+  h(component: any, props: Rec, children?: Array<any>) {
+    if (children) props.children = children
+    if (typeof component === 'function') return component(props)
+    return this.element(component, props)
+  },
 
-  let render = (parent: Element, children: JSXElement[]) => {
-    // TODO support Atom<Array>
-    let walk = (child: any) => {
-      if (Array.isArray(child)) {
-        child.forEach(walk)
-        return
-      }
-
-      if (isAtom(child)) {
-        let innerChild: ChildNode = document.createTextNode('')
-        var un: Unsubscribe | undefined = ctx.subscribe(
-          atom((ctx) => parseAtoms(ctx, child)),
-          (v) => {
-            if (un && !innerChild.isConnected) un()
-            else {
-              if (v instanceof Element) {
-                let list = unsubscribesMap.get(v)
-                if (!list) unsubscribesMap.set(v, (list = []))
-
-                if (un) parent.replaceChild(v, innerChild)
-                innerChild = v
+  element(tag: string, props: Rec) {
+    const element = (tag.startsWith('svg:')
+      ? w.document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4))
+      : w.document.createElement(tag)) as any as ReatomElement
+    element.$$reatom = true
+    for (const key in props) {
+      let val = props[key]
+      if (key === 'children') {
+        if (!val) continue
+        let childHandles = [] as Array<Fn>
+        const unsub = () => {
+          for (const fn of childHandles) fn()
+        }
+        element.syncChildren ??= atom((ctx, clock?: boolean) => {
+          let children = unwrap(ctx, val)
+          if (!Array.isArray(children)) children = [children]
+          const elements = [] as Array<ReatomElement>
+          unsub()
+          childHandles.length = 0
+          for (let child of children) {
+            if (child == null || child == false) continue
+            let node: Element | Text
+            if (!isAtom(child) && typeof child === 'function') {
+              child = atom(child)
+            }
+            if (isAtom(child)) {
+              node = w.document.createTextNode('')
+              childHandles.push(
+                ctx.subscribe(child, (child) => {
+                  if (child instanceof w.Node) {
+                    if ('$$reatom' in child) elements.push(child as any)
+                    node.replaceWith((node = child as any))
+                  } else {
+                    child = String(child)
+                    if (node instanceof w.Text) {
+                      node.textContent = child
+                    } else {
+                      node.replaceWith(
+                        (node = w.document.createTextNode(child)),
+                      )
+                    }
+                  }
+                }),
+              )
+            } else {
+              if (child instanceof w.Node) {
+                node = child as Element
+                if ('$$reatom' in child) elements.push(child as any)
               } else {
-                innerChild.textContent = v
+                node = w.document.createTextNode(String(child))
               }
             }
-          },
-        )
-        unlink(parent, un)
-        parent.appendChild(innerChild)
-        return
-      }
-
-      parent.appendChild(
-        child?.nodeType ? child : document.createTextNode(String(child)),
-      )
-    }
-
-    children.forEach(walk)
-  }
-
-  let h = ((tag: any, props: Rec, ...children: JSXElement[]) => {
-    if (tag === hf) return children
-
-    props.children = children
-
-    if (typeof tag === 'function') {
-      return tag(props)
-    }
-
-    return create(tag, props)
-  }) as <T extends ComponentLike>(
-    tag: T,
-    props: InferProps<T>,
-    ...children: JSXElement[]
-  ) => Element
-
-  let hf = noop
-
-  let mount = (target: Element, child: JSXElement) => {
-    render(target, [child])
-
-    new MutationObserver((mutationsList) => {
-      for (const mutation of mutationsList) {
-        for (const removedNode of mutation.removedNodes) {
-          let list = unsubscribesMap.get(removedNode as any)
-          if (list) {
-            list.forEach((fn) => fn())
-            unsubscribesMap.delete(removedNode as any)
+            element.appendChild(node)
           }
-        }
+          for (const element of elements) sync(ctx, element)
+          return !clock
+        })
+        const disco = new Set<Fn>()
+        disco.add(unsub)
+        element.syncChildren.__reatom.disconnectHooks = disco
+      } else if (key === '$props') {
+        if (!val) continue
+        if (!Array.isArray(val)) val = [val]
+        element.syncSpreads = atom((ctx, clock?: boolean) => {
+          return !clock
+        })
+      } else if (key.startsWith('on')) {
+        ;(element as any)[key.slice(3)] = (event: Event) => val(ctx, event)
+      } else if (isAtom(val) || typeof val == 'function') {
+        element.syncProps ??= atom((ctx, clock?: boolean) => {
+          for (const key in props) {
+            if (key === '$props' || key.startsWith('on')) continue
+            let val = props[key]
+            if (isAtom(val)) val = ctx.spy(val)
+            else if (typeof val === 'function') val = val(ctx)
+            else continue
+            set(w, element, key, val)
+          }
+          return !clock
+        })
+      } else {
+        set(w, element, key, val)
       }
-    }).observe(target, {
-      childList: true,
-      subtree: true,
-    })
-  }
+    }
+    return element
+  },
+})
 
-  return { h, hf, mount, create }
+const sync = (ctx: CtxSpy, e: ReatomElement) => {
+  if (e.syncSpreads) ctx.spy(e.syncSpreads)
+  if (e.syncProps) ctx.spy(e.syncProps)
+  if (e.syncChildren) ctx.spy(e.syncChildren)
 }
 
-export const ctx = createCtx()
-export const { h, hf, mount, create } = reatomJsx(ctx)
+const unwrap = <T>(ctx: CtxSpy, val: Computable<T>): T => {
+  if (isAtom(val)) return ctx.spy(val)
+  if (typeof val === 'function') return (val as any)(ctx)
+  return val
+}
+
+const set = (w: typeof window, e: DomElement, key: string, val: any) => {
+  if (key.startsWith('field:')) {
+    ;(e as any)[key.slice(6)] = val
+  } else if (key === 'style' && typeof val === 'object') {
+    for (const key in val) {
+      if (val[key] == null) e.style.removeProperty(key)
+      else e.style.setProperty(key, val[key])
+    }
+  } else if (key === 'css') {
+    stylesheet ??= w.document.getElementById(StylesheetId) as any
+    if (!stylesheet) {
+      stylesheet = w.document.createElement('style')
+      stylesheet.id = StylesheetId
+      w.document.head.appendChild(stylesheet)
+    }
+    let className = (styles ??= new Map()).get(val)
+    if (!className) {
+      styles.set(
+        val,
+        (className =
+          'reatom-' +
+          Math.random()
+            .toString(36)
+            .slice(2, length + 2)),
+      )
+      stylesheet.innerText += '.' + className + '{' + val + '}\n'
+    }
+    e.classList.add(className)
+  } else if (key.startsWith('css:')) {
+    key = '--' + key.slice(4)
+    if (val == null) e.style.removeProperty(key)
+    else e.style.setProperty(key, String(val))
+  } else if (val == null) {
+    e.removeAttribute(key)
+  } else {
+    e.setAttribute(key, String(val))
+  }
+}
