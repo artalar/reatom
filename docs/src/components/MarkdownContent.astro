@@ -7,22 +7,6 @@ import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownConten
 </DefaultMarkdownContent>
 
 <script>
-  let _mermaidApi: import('mermaid').Mermaid
-  const mermaidApi = async () => {
-    if (!_mermaidApi) {
-      const { default: mermaid } = await import('mermaid')
-      mermaid.initialize({
-        theme:
-          document.documentElement.dataset.theme === 'dark' ? 'dark' : 'pastel',
-      })
-      _mermaidApi = mermaid
-    }
-
-    console.log(document.documentElement.dataset)
-
-    return _mermaidApi
-  }
-
   // prettier-ignore
   const MermaidTypes = 'sequenceDiagram,flowchart,classDiagram,stateDiagram,erDiagram,gantt,journey,gitGraph,pie,mindmap,quadrantChart,xyChart'.split(',')
 
@@ -33,11 +17,10 @@ import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownConten
       if (!MermaidTypes.some((type) => content.startsWith(type))) {
         return
       }
-      const mermaid = await mermaidApi()
+      const { mermaid } = await import('./mermaid')
       const id = 'mermaid-' + Math.random().toString(36).slice(2, 8)
       const result = await mermaid.render(id, content)
       block.outerHTML = result.svg
-      // document.getElementById(id)!.classList.add('mermaid')
     }),
   )
 </script>
