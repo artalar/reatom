@@ -7,98 +7,37 @@ import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownConten
 </DefaultMarkdownContent>
 
 <script>
-  const SvgNs = 'http://www.w3.org/2000/svg'
+  let _mermaidApi: import('mermaid').Mermaid
+  const mermaidApi = async () => {
+    if (!_mermaidApi) {
+      const { default: mermaid } = await import('mermaid')
+      mermaid.initialize({
+        theme:
+          document.documentElement.dataset.theme === 'dark' ? 'dark' : 'pastel',
+      })
+      _mermaidApi = mermaid
+    }
 
-  const copyButtonTemplate = document.createElement('button')
-  copyButtonTemplate.className = 'code-block-copy'
-  const copyButtonSvg = document.createElementNS(SvgNs, 'svg')
-  copyButtonSvg.setAttribute('viewBox', '0 0 24 24')
-  copyButtonSvg.innerHTML =
-    '<path d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z"></path>'
-  copyButtonTemplate.appendChild(copyButtonSvg)
+    console.log(document.documentElement.dataset)
 
-  const codeBlocks = document.querySelectorAll(
-    'pre.astro-code',
-  ) as NodeListOf<HTMLElement>
-  for (const codeBlock of codeBlocks) {
-    const codeText = codeBlock.innerText
+    return _mermaidApi
+  }
 
-    const copy = async () => {
-      try {
-        await navigator.clipboard.writeText(codeText)
-      } catch (error) {
-        console.error(error)
+  // prettier-ignore
+  const MermaidTypes = 'sequenceDiagram,flowchart,classDiagram,stateDiagram,erDiagram,gantt,journey,gitGraph,pie,mindmap,quadrantChart,xyChart'.split(',')
+
+  const codeBlocks = document.querySelectorAll('.expressive-code')
+  await Promise.all(
+    [...(codeBlocks as NodeListOf<HTMLElement>)].map(async (block) => {
+      const content = block.innerText
+      if (!MermaidTypes.some((type) => content.startsWith(type))) {
         return
       }
-
-      copyButton.classList.add('highlight')
-      setTimeout(() => copyButton.classList.remove('highlight'), 500)
-    }
-
-    codeBlock.onscroll = () => {
-      const scroll = codeBlock.scrollLeft
-      requestAnimationFrame(() => {
-        codeBlock.style.setProperty('--scroll', scroll + 'px')
-      })
-    }
-
-    const copyButton = copyButtonTemplate.cloneNode(true) as HTMLButtonElement
-    copyButton.onclick = copy
-    copyButton.title = 'Copy snippet'
-    codeBlock.appendChild(copyButton)
-  }
+      const mermaid = await mermaidApi()
+      const id = 'mermaid-' + Math.random().toString(36).slice(2, 8)
+      const result = await mermaid.render(id, content)
+      block.outerHTML = result.svg
+      // document.getElementById(id)!.classList.add('mermaid')
+    }),
+  )
 </script>
-
-<style is:global>
-  .astro-code {
-    box-sizing: border-box;
-    position: relative;
-    --scroll: 0px;
-  }
-
-  .code-block-copy {
-    position: absolute;
-    top: 1rem;
-    right: calc(var(--scroll) * -1 + 0.75rem);
-
-    width: 28px;
-    height: 28px;
-    padding: 2px;
-
-    background: var(--astro-code-color-background);
-    border-radius: 4px;
-    border: 1px solid var(--sl-color-text);
-
-    opacity: 0.1;
-    transition: all 0.07s;
-
-    cursor: pointer;
-  }
-  .code-block-copy > svg {
-    transition: all 0.07s;
-    fill: currentColor;
-  }
-
-  .astro-code:hover .code-block-copy {
-    opacity: 0.7;
-  }
-
-  .code-block-copy.highlight {
-    border-color: green;
-  }
-
-  .code-block-copy.highlight > svg {
-    fill: green;
-  }
-
-  .code-block-copy.highlight,
-  .code-block-copy:hover {
-    opacity: 1 !important;
-  }
-
-  @media (pointer: coarse) {
-    .code-block-copy {
-      opacity: 1;
-    }
-  }
-</style>
