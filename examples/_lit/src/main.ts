@@ -1,21 +1,3 @@
-# What is Lit?
-
-Lit is a library for building web components. It eliminates the boilerplate of native WebComponent APIs and implements a minimal declarative template engine.
-
-Lit is a simple library for building fast, lightweight web components.
-
-At Lit's core is a boilerplate-killing component base class that provides reactive state, scoped styles, and a declarative template system that's tiny, fast and expressive
-
-## About
-
-Package provide 2 functions:
-
-- `setupCtx(ctx)`: a function to provide integration with a `ctx` object
-- `withReatom(el: LitElement)`: a mixin to make your components listen to Reatom state updates
-
-## Example
-
-```js
 import { setupCtx, withReatom } from '@reatom/npm-lit'
 import { atom, action, createCtx } from '@reatom/core'
 import { onConnect } from '@reatom/hooks'
@@ -48,4 +30,3 @@ export class AppElement extends withReatom(LitElement) {
 }
 
 customElements.define('app-element', AppElement)
-```
