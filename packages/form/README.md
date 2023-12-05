@@ -101,18 +101,19 @@ By combining this statuses you can know a different meta info too.
 You can set a validation function and manage validation triggers using [the options](#field-options). The flow looks like this.
 
 ```mermaid
-graph TB
-    trigger[Validation trigger]
-    trigger --> hasfunction[has validation function]
-    hasfunction --> |valid==false| validate[call validation]
-    hasfunction ----> |No| valid[return `error: undefined, valid: true, validating: false`]
-    validate ----> |error throwed| notvalid[return `error: string, valid: true, validating: false`]
-    validate --> |promise returned| promise
-    validate ----> |any return| valid
-    promise --> |keepErrorDuringValidating==true| keepErrorDuringValidatingTrue["set `error: undefined | string, valid: true, validating: true`"]
-    promise --> |keepErrorDuringValidating==false| keepErrorDuringValidatingFalse[set `error: undefined, valid: true, validating: true`]
-    promise -----> |promise fulfilled| valid
-    promise -----> |promise rejected| notvalid
+flowchart TB
+    trigger([Validation triggered])
+    trigger --> hasfunction{Has validation function?}
+    hasfunction --> |Yes| validate{Validate}
+    hasfunction --> |No| valid[error: undefined, valid: true, validating: false]
+    validate --> |Validator threw| invalid["return {error: string, valid: true, validating: false}"]
+    validate --> |Validator returned a promise| promise[Promise]
+    validate --> |Validator returned any other value| valid
+    promise --> |Pending| keepErrorDuringValidating{keepErrorDuringValidating}
+    keepErrorDuringValidating --> |true| keepErrorDuringValidatingTrue["set {error: previousError, valid: true, validating: true}"]
+    keepErrorDuringValidating --> |false| keepErrorDuringValidatingFalse["set {error: undefined, valid: true, validating: true}"]
+    promise --> |Fulfilled| valid
+    promise --> |Rejected| invalid
 ```
 
 ### Field options
