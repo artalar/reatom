@@ -54,7 +54,7 @@
     "typescript": "^5.1.6",
     "use-sync-external-store": "^1.2.0",
     "uvu": "^0.5.6",
-    "vite": "^4.4.6",
+    "vite": "^4.4.12",
     "zx": "^7.2.3"
   },
   "peerDependencies": {
