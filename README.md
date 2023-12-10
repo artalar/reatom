@@ -4,15 +4,21 @@ The ultimate state manager for any kinds of applications.
 
 ## Key features
 
-- efficient and reliable reactive runtime
+- framework-agnostic, supports multiple UI frameworks
 - minimal but powerful primitives
-- advanced primitives to abstract away the complexity of asynchronous interactions
-- rich official ecosystem with lots of high-quality helpers and integrations 
-- tiny bundle size starting from 2KB
+- efficient and reliable reactive runtime
+- tiny bundle size
+  - the core package adds only 2KB to your bundle
+  - the whole ecosystem weighs ~15KB
+- rich official ecosystem with lots of high-quality helpers and integrations
+  - advanced primitives to abstract away the complexity of asynchronous interactions
+  - has integrations with [React](https://www.reatom.dev/package/npm-react/), [Svelte](https://www.reatom.dev/package/npm-svelte/), [SolidJS](https://www.reatom.dev/package/npm-solid-js/)
 - full TypeScript support
-- [nice debugging experience](https://reatom.dev/package/logger)
-- builtin DI for straightforward testing and SSR  
-- lifecycle hooks for describing focused and self-sufficient models 
+  - APIs are designed to fully enable type inference
+- efficient at any scale
+  - [includes tools to simplify debugging](https://reatom.dev/package/logger)
+  - builtin DI for straightforward testing and SSR
+  - lifecycle hooks for describing focused and self-sufficient models
 
 ## Getting started
 
@@ -36,7 +42,7 @@ Reatom is always developed for continous usage. LTS versions are released once a
 
 Our team currently consists of 4 people: [@artalar](https://github.com/artalar) and [@krulod](https://github.com/krulod) develop and maintain the core features, while [@BANOnotIT](https://github.com/BANOnotIT) and [@Akiyamka](https://github.com/Akiyamka) help with documentation and issue management. [Many other people also took part in the development of the library](https://github.com/artalar/reatom/graphs/contributors).
 
-### What about build targets and browser support? 
+### What about build targets and browser support?
 
 All packages are configured based on [Browserslist's "last 1 year" query](https://browsersl.ist/#q=last+1+year). If you need to support older environments, you should handle transpilation by yourself.
 
@@ -56,6 +62,12 @@ No software is free from limitations, and Reatom is no exception.
 - Currently, there is no asynchronous transactions support, but we are working on it.
 - We already have lots of utils and the ecosystem is growing all the time, but at the moment we don't have a strict architectural framework like `mobx-state-tree` that makes the development exceptionally straightforward.
 
+## Zen
+
+- Good primitive is better than framework
+- Composition beats configuration
+- JavaScript features should be reused, not reinvented
+
 ## Media
 
 - [X (EN)](https://twitter.com/ReatomJS)
@@ -73,7 +85,7 @@ We really appreciate all [contributors](https://github.com/artalar/reatom/graphs
 
 - [React](https://reactjs.org), [Redux](https://redux.js.org), [Effector](https://effector.dev/) and [$mol](https://mol.hyoo.ru) — for inspiration
 - [microbundle](https://github.com/developit/microbundle)
-- [Quokka](https://wallabyjs.com/oss/) 
+- [Quokka](https://wallabyjs.com/oss/)
 - [uvu](https://github.com/lukeed/uvu)
 - [Turborepo](https://turbo.build/repo)
 - [Astro](https://astro.build)
