@@ -68,13 +68,14 @@ By default, props passed to the JSX factory are set as attributes. Add `field:` 
 - `innerHTML`
 - `innerText`
 
-Atom-valued props create a reactive binding to an element's attribute/field. The binding is automatically disposed when the element is disconnected from the DOM.
+Atom- or function-valued props can be used to create reactive bindings to an element's attributes/fields. The binding is automatically disposed when the element is disconnected from the DOM.
 
 `children` prop specifies the inner content of an element, which can be one of the following:
 
 - `false`/`null`/`undefined` to render nothing
 - a string, a number, or `true` to create a text node
 - a native DOM node to insert it as-is
+- an atom or a function returning any option listed above
 
 ### Handling events
 
@@ -86,9 +87,14 @@ Object-valued `style` prop applies styles granularly: `style={{top: 0, display: 
 
 `false`, `null` and `undefined` style values remove the property. Non-string style values are stringified (we don't add `px` to numeric values automatically).
 
-### Dynamic props
+### Spreads
 
-There's a special `$props` prop which can be used to spread props reactively: `<div someStaticProp $props={atom(ctx => getReactiveProps(ctx))}>`. Passing an array of atoms is also possible. Note that `$props` can't be used to set event handlers.
+There's a special `$props` prop which can be used to spread props reactively: `<div someStaticProp $props={ctx => getDynamicProps(ctx)}>`. Valid `$props` values are the following:
+
+- a plain props record
+- a function returning a record
+- an atom storing a record
+- an array of options listed above
 
 ### SVG
 
@@ -102,7 +108,6 @@ const anSvgElement = (
 )
 ```
 
-<!--
 ### Lifecycle
 
 In Reatom, every atom has lifecycle events to which you can subscribe with `onConnect`/`onDisconnect` functions. By default, components don't have an atom associated with them, but you may wrap the component code in an atom manually to achieve the same result:
@@ -118,19 +123,21 @@ const MyWidget = () => {
 
   return lifecycle
 }
-``` -->
+```
 
-Because the pattern used above is somewhat verbose, `@reatom/jsx` allows you to subscribe to lifecycle events of elements using special `onConnect` and `onDisconnect` props:
+Because the pattern used above is somewhat verbose, `@reatom/jsx` has a built-in convenience component called `Lifecycle` that creates an atom for you:
 
 ```tsx
+import { Lifecycle } from '@reatom/jsx'
+
 const MyWidget = () => {
   return (
-    <div
+    <Lifecycle
       onConnect={(ctx) => console.log('component connected')}
       onDisconnect={(ctx) => console.log('component disconnected')}
     >
       Something inside
-    </div>
+    </Lifecycle>
   )
 }
 ```
@@ -149,7 +156,7 @@ const Box = () => {
     <div
       css:color-default="some-default-value"
       css:color-hovered={colorHovered}
-      css={css`
+      css={`
         width: 64px;
         height: 64px;
         background-color: var(--color-default);
@@ -163,6 +170,10 @@ const Box = () => {
 ```
 
 The example above is correctly formatted by Prettier and has syntax highlighting provided by `vscode-styled-components` extension.
+
+### Components
+
+Components in `@reatom/jsx` are just functions returning JSX elements. They neither have state nor any lifecycle associated with them. Because component instantiation boils down into function calls, features like `$props` are not supported in them.
 
 ## Limitations
 

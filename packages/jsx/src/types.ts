@@ -12,6 +12,9 @@ export type JsxNodeBase =
   | Node
   | globalThis.Node
 
+/**
+ * Static or computed value
+ */
 export type Computable<T> = T | ((ctx: CtxSpy) => T) | Atom<T>
 
 export type DomElement = HTMLElement | SVGElement
@@ -21,6 +24,7 @@ export type ReatomElement<E extends DomElement = DomElement> = E & {
   syncSpreads?: Atom
   syncProps?: Atom
   syncChildren?: Atom
+  spreaded?: Set<string>
 }
 
 export type Component<Props> = (props: Props) => JsxNode

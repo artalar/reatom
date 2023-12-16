@@ -1,21 +1,14 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { parseHTML } from 'linkedom'
-import { createTestCtx, mockFn } from '@reatom/testing'
-import { reatomJsx } from '.'
-import { CtxSpy, atom } from '@reatom/core'
-import { match } from '@reatom/lens'
-import { ReatomElement } from './types'
+import { createTestCtx } from '@reatom/testing'
+import { reatomJsx, sync } from '.'
+import { CtxSpy, Rec, atom } from '@reatom/core'
+import { JsxNode } from './types'
+import { createWindow } from './create-window'
 
 const setup = () => {
   const ctx = createTestCtx()
-  const { window } = parseHTML(`
-    <!doctype html>
-    <html>
-      <head></head>
-      <body></body>
-    </html>
-  `)
+  const window = createWindow()
   const parent = window.document.createElement('div')
   window.document.body.appendChild(parent)
   const jsx = reatomJsx(ctx, window)
@@ -62,7 +55,7 @@ test('dynamic props', () => {
   assert.is(element.getAttribute('dunno'), 'bar')
 })
 
-test('dynamic children', () => {
+test('children updates', () => {
   const [ctx, jsx, parent, { document }] = setup()
 
   const val = atom('foo', 'val')
@@ -82,14 +75,93 @@ test('dynamic children', () => {
   jsx.mount(parent, element)
 
   assert.is(element.childNodes.length, 3)
-  assert.is(element.childNodes[1].constructor, 'foo')
+  assert.is(element.childNodes[1].textContent, 'foo')
   assert.is(element.childNodes[2], a)
 
   val(ctx, 'bar')
-  assert.is(element.childNodes[1].innerText, 'bar')
+  assert.is(element.childNodes[1].textContent, 'bar')
 
+  assert.is(element.childNodes[2], a)
   route(ctx, 'b')
   assert.is(element.childNodes[2], b)
+})
+
+test('dynamic children', () => {
+  let [ctx, jsx] = setup()
+  ctx.spy = ctx.get.bind(ctx)
+
+  const children = atom<JsxNode | Array<JsxNode>>([])
+
+  const element = jsx.h('div', {}, children)
+
+  assert.is(element.childNodes.length, 0)
+
+  children(ctx, 'Hello, world!')
+  sync(ctx as any, element)
+  assert.is(element.childNodes[0].textContent, 'Hello, world!')
+
+  children(ctx, 'Bye, world!')
+  sync(ctx as any, element)
+  assert.is(element.childNodes[0].textContent, 'Bye, world!')
+
+  const inner = jsx.h('span', {}, 'inner')
+  children(ctx, inner)
+  sync(ctx as any, element)
+  assert.is(element.childNodes[0], inner)
+
+  const before = atom('before', 'before')
+  const after = atom('after', 'after')
+  children(ctx, [before, inner, after])
+  sync(ctx as any, element)
+  assert.is(element.innerText, 'beforeinnerafter')
+
+  before(ctx, 'before...')
+  sync(ctx as any, element)
+  assert.is(element.innerText, 'before...innerafter')
+})
+
+test('spreads', () => {
+  const [ctx, jsx] = setup()
+  ctx.spy = ctx.get.bind(ctx)
+
+  const val = atom('Foo', 'val')
+
+  const e1 = jsx.h('div', {
+    $props: {
+      static: true,
+      val,
+    },
+  })
+
+  sync(ctx as any, e1)
+  assert.is(e1.getAttribute('static'), 'true')
+  assert.is(e1.getAttribute('val'), 'Foo')
+
+  val(ctx, 'Bar')
+  sync(ctx as any, e1)
+  assert.is(e1.getAttribute('val'), 'Bar')
+
+  const $props = atom<Rec>({}, '$props')
+  const e2 = jsx.h('div', {
+    $props,
+  })
+
+  $props(ctx, { val: 'Foo' })
+  sync(ctx as any, e2)
+  assert.is(e2.getAttribute('val'), 'Foo')
+
+  $props(ctx, { val: 'Bar' })
+  sync(ctx as any, e2)
+  assert.is(e2.getAttribute('val'), 'Bar')
+
+  $props(ctx, { val: 'Bar', another: true })
+  sync(ctx as any, e2)
+  assert.is(e2.getAttribute('another'), 'true')
+
+  $props(ctx, {})
+  sync(ctx as any, e2)
+  assert.is(e2.getAttribute('val'), null)
+  assert.is(e2.getAttribute('another'), null)
 })
 
 test.run()
