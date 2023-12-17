@@ -123,7 +123,7 @@ export const reatomJsx = (ctx: Ctx, w: DomApis = globalThis.window) => ({
             for (const key in rec) {
               set(w, e, key, unwrap(ctx, rec[key]))
               unused?.delete(key)
-              e.spreaded.add(key)
+              if (!(key in props)) e.spreaded.add(key)
             }
 
             if (unused) {
@@ -152,6 +152,7 @@ export const reatomJsx = (ctx: Ctx, w: DomApis = globalThis.window) => ({
         set(w, e, key, val)
       }
     }
+
     return e
   },
 })
