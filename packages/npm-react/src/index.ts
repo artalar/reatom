@@ -202,6 +202,8 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   deps: Array<any> = [],
   name?: string,
 ): T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : never => {
+  throwReatomError(typeof fn !== 'function', 'invalid "fn"')
+
   deps ??= []
   let ctx = useCtx()
   deps.push(ctx)
