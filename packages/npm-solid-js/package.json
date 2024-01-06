@@ -20,7 +20,6 @@
     "mangle": false
   },
   "scripts": {
-    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
     "test": "ts-node src/index.test.ts",

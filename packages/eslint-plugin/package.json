@@ -17,7 +17,6 @@
     "node 16"
   ],
   "scripts": {
-    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs",
     "test": "ts-node src/tests/index.ts",
