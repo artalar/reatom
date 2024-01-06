@@ -86,6 +86,6 @@ If you need to get the `ctx` from the context, you could use the shortcut hook `
 
 ### Dynamic atom creation
 
-This example shoes how to use [atomization](https://www.reatom.dev/guides/atomization) to improve editable fields performance, persists it to localStorage.
+This example shoes how to use [atomization](https://www.reatom.dev/recipes/atomization) to improve editable fields performance, persists it to localStorage.
 
 https://stackblitz.com/edit/reatomnpm-solid-js-mssqxj?file=src/model.ts,src/App.tsx

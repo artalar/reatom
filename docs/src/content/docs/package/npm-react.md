@@ -239,7 +239,7 @@ return (
 
 ## Use update
 
-`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [`onChange` hook](/guides/lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching. Subscriptions to a values works like regular `useEffect` hook.
+`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [`onChange` hook](/handbook#lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching. Subscriptions to a values works like regular `useEffect` hook.
 
 The most common use case for this hook is to synchronize some state from a props or context to an atom.
 

@@ -195,7 +195,7 @@ export const countAtom = _countAtom.pipe(readonly)
 
 ## `parseAtoms`
 
-Recursively unwrap all atoms in an [atomized](/guides/atomization) structure. Useful for making snapshots of reactive state. Uses `ctx.spy` if it's available.
+Recursively unwrap all atoms in an [atomized](/recipes/atomization) structure. Useful for making snapshots of reactive state. Uses `ctx.spy` if it's available.
 
 ### `parseAtoms`: persistence example
 
