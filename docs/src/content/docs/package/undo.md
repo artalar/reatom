@@ -87,7 +87,7 @@ const formUndoAtom = reatomUndo([emailAtom, passwordAtom], { length: 50 })
 
 ### reatomDynamicUndo
 
-`reatomDynamicUndo` accepts a callback to spy a dynamic list of atoms and manage their changes in a single history line. It is useful when you want to use [atomization pattern](/guides/atomization/). It is a more powerful version of `reatomUndo`, but it requires proper subscription to function correctly. Also, the state of this atom is not useful, do not read it.
+`reatomDynamicUndo` accepts a callback to spy a dynamic list of atoms and manage their changes in a single history line. It is useful when you want to use [atomization pattern](/recipes/atomization/). It is a more powerful version of `reatomUndo`, but it requires proper subscription to function correctly. Also, the state of this atom is not useful, do not read it.
 
 The second argument accepts all `withUndo` options.
 

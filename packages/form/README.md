@@ -4,7 +4,7 @@ This is a general form library with a simple focus and validation management.
 
 The form API is designed for the best type-safety and flexibility. Instead of setting up the form state with a single object, each field is created separately, giving you the ability to fine-tune each field perfectly. As the field and its meta statuses are stored in atoms, you can easily combine them, define hooks, and effects to describe any logic you need.
 
-The cherry on the cake is dynamic field management. You don't need to use weird string APIs like `form.${index}.property`. Instead, you can simply have a list of atom fields using [atomization](https://www.reatom.dev/guides/atomization/).
+The cherry on the cake is dynamic field management. You don't need to use weird string APIs like `form.${index}.property`. Instead, you can simply have a list of atom fields using [atomization](https://www.reatom.dev/recipes/atomization/).
 
 ## Installation
 

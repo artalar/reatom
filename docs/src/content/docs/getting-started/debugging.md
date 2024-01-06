@@ -26,7 +26,7 @@ const ctx = createCtx()
 connectLogger(ctx)
 ```
 
-More settings you can found in [@reatom/logger](@reatom/logger) documentation
+More settings you can found in [@reatom/logger](https://www.reatom.dev/package/logger) documentation
 
 ## Usage
 

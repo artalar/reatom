@@ -123,7 +123,7 @@ document.getElementById('search-input').addEventListener('input', (event) => {
 })
 ```
 
-> Do you want to see [the docs for React adapter](/adapter/npm-react) next?
+> Do you want to see [the docs for React adapter](/package/npm-react) next?
 
 
 ### Action handling (advanced)
@@ -288,7 +288,7 @@ const countAtom = withInit(() => localStorage.getItem('COUNT') ?? 0)(atom(0))
 
 > `withInit` allows you to configure the initial state of the atom reading, which is sometimes more predictable and safer for testing.
 
-Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](/package/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guide](/guides/naming#operator-prefix)
+Operator `with` prefix mean that the target atom will be changed somehow and the returned reference will the same. [reatom/async](/package/async) uses operators a lot to configure the behavior of the effect by composition, which is good for tree-shaking. Check naming conventions and more examples in [this guide](/recipes/custom-operator/)
 
 Btw, actions has `pipe` too!
 
@@ -434,7 +434,7 @@ A unique feature of Reatom, especially in scheduling, is ability to define the t
 - `1` - the **default** near effect queue, used to schedule regular effects. The calling of these effects can be redefined (or delayed) using the `callNearEffect` option of `createCtx`.
 - `2` - lates effect queue, used to schedule subscribers. The calling of these effects can be redefined (or delayed) using the `callLateEffect` option of `createCtx`.
 
-> Read more in the [lifecycle guild](/guides/lifecycle).
+> Read more in the [lifecycle guild](/handbook#lifecycle).
 
 #### `ctx.schedule` rollback API
 

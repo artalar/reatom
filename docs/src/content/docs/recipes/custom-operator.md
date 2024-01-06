@@ -5,7 +5,7 @@ description: How to create custom operators to improve your code and modularize 
 
 All atoms and actions by default includes [pipe operator](/core#atompipe-api) for simple extending and composing. You can create your own operators to improve your code and modularize it.
 
-We assume that you already read [core](/core) docs and [naming conventions](/guides/naming).
+We assume that you already read [core](/core) docs.
 
 ## Prefix and types
 

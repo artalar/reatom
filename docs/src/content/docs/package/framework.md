@@ -9,7 +9,7 @@ description: Reatom for framework
 
 This is a meta package which aggregates general Reatom packages for better handling async logic and models coupling. This package helps to reduce imports boilerplate and simplify dependencies management.
 
-Docs around this package and it combination usage you could find in the [tutorial](/tutorial).
+Docs around this package and it combination usage you could find in the [tutorial](/getting-started/setup/).
 
 Included packages:
 

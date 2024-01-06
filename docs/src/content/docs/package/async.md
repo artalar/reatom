@@ -231,7 +231,7 @@ export const fetchList = reatomAsync(
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
-What this code do? When you connect to `fetchList.dataAtom` it will automatically call `fetchList` action. Connection could appear in any place of your application, by `ctx.subscribe(fetchList.dataAtom, cb)` or by using `useAtom(fetchList.dataAtom)` hook from [@reatom/npm-react](/adapter/npm-react). Even by a different atom.
+What this code do? When you connect to `fetchList.dataAtom` it will automatically call `fetchList` action. Connection could appear in any place of your application, by `ctx.subscribe(fetchList.dataAtom, cb)` or by using `useAtom(fetchList.dataAtom)` hook from [@reatom/npm-react](/package/npm-react). Even by a different atom.
 
 ```ts
 export const filteredListAtom = atom(
@@ -727,7 +727,7 @@ const listResource = reatomResource(async (ctx) => {
 
 That's all. The code becomes much cleaner and simpler! The only additional change is the need for `ctx.schedule` for effects, as the callback in the `reatomResource` is called in the pure computations queue (to make `spy` work).
 
-Also, `listResource` now has a `promiseAtom` that contains the last promise. You can use it with [useAtomPromise](/adapter/npm-react/#useatompromise) in a React application, for example.
+Also, `listResource` now has a `promiseAtom` that contains the last promise. You can use it with [useAtomPromise](/package/npm-react/#useatompromise) in a React application, for example.
 
 If you need to set up a default value and use it synchronously, simply use `withDataAtom` as you would with any other async action. All async operators work fine with `reatomResource`. You could use `withRetry` and even `withCache`!
 

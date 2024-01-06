@@ -2,7 +2,7 @@
 
 All atoms and actions have a hooks to they lifecycle, this package exposes friendly helpers to use this hooks.
 
-We assumes that you already read [lifecycle guide](https://www.reatom.dev/guides/lifecycle).
+We assumes that you already read [lifecycle guide](https://www.reatom.dev/handbook#lifecycle).
 
 A lot of cool examples you could find in [async package docs](https://www.reatom.dev/package/async).
 
@@ -12,7 +12,7 @@ A lot of cool examples you could find in [async package docs](https://www.reatom
 
 All connection (and disconnection) callbacks calling during effects queue - outside batching. The returned value is a dispose function used to deactivate the hook.
 
-"Connection" refers to the presence of any number of subscribers in the atom. The first subscriber activates the connection status, while the second subscriber does not interact with it. Unsubscribing the first subscriber has no effect since there is still one subscriber (the second one). However, after unsubscribing the second subscriber, the connection status will be deactivated, and if a cleanup callback is provided, it will be triggered. You can read more in the [lifecycle guide](https://www.reatom.dev/guides/lifecycle/).
+"Connection" refers to the presence of any number of subscribers in the atom. The first subscriber activates the connection status, while the second subscriber does not interact with it. Unsubscribing the first subscriber has no effect since there is still one subscriber (the second one). However, after unsubscribing the second subscriber, the connection status will be deactivated, and if a cleanup callback is provided, it will be triggered. You can read more in the [lifecycle guide](https://www.reatom.dev/handbook#lifecycle).
 
 ```ts
 import { atom } from '@reatom/core'
@@ -104,7 +104,7 @@ export const doSome = action((ctx, payload) => {
 
 The `onUpdate` hook allows you to react to state updates of the passed atom. However, **this hook will be deprecated in the future**. It is recommended and more convenient to use the atom's `onChange` method and the action's `onCall` method. You can find more information about these methods in the [core package documentation](https://www.reatom.dev/core/#atomonchange-api).
 
-For general computed atoms (via `ctx.spy`), it is only called when the atom is connected. You can read more in the [lifecycle guide](https://www.reatom.dev/guides/lifecycle/).
+For general computed atoms (via `ctx.spy`), it is only called when the atom is connected. You can read more in the [lifecycle guide](https://www.reatom.dev/handbook#lifecycle).
 
 One unique feature of `onUpdate` is that it could activate the entire chain of dependent atoms **if they are `LensAtom` or `LensAction`** from the [lens package](https://www.reatom.dev/package/lens/). It useful when you want to delay or sample the reaction.
 
