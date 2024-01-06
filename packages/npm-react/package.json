@@ -42,7 +42,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/adapter/npm-react",
+  "homepage": "https://www.reatom.dev/package/npm-react",
   "files": [
     "/build",
     "/package.json"
