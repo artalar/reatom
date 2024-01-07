@@ -20,14 +20,14 @@
     "mangle": false
   },
   "scripts": {
-    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.5.0"
+    "@reatom/core": ">=3.5.0",
+    "vue": "^3.3.13"
   },
   "author": "artalar",
   "maintainers": [
@@ -56,7 +56,7 @@
     "/build",
     "/package.json"
   ],
-  "peerDependencies": {
-    "@vue/composition-api": "^1.7.2"
+  "devDependencies": {
+    "@reatom/hooks": "^3.5.2"
   }
 }

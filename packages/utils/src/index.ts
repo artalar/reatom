@@ -5,67 +5,6 @@ export type UndefinedToOptional<T extends object> = Partial<T> &
 // https://stackoverflow.com/a/51390763
 export type Falsy = false | 0 | '' | null | undefined
 
-export type ReadonlyDeep<T> = T extends BuiltIns
-  ? T
-  : T extends new (...args: any[]) => unknown
-  ? T // Skip class constructors
-  : T extends (...arguments_: any[]) => unknown
-  ? {} extends ReadonlyObjectDeep<T>
-    ? T
-    : HasMultipleCallSignatures<T> extends true
-    ? T
-    : ((...arguments_: Parameters<T>) => ReturnType<T>) & ReadonlyObjectDeep<T>
-  : T extends Readonly<ReadonlyMap<infer KeyType, infer ValueType>>
-  ? ReadonlyMapDeep<KeyType, ValueType>
-  : T extends Readonly<ReadonlySet<infer ItemType>>
-  ? ReadonlySetDeep<ItemType>
-  : // Identify tuples to avoid converting them to arrays inadvertently; special case `readonly [...never[]]`, as it emerges undesirably from recursive invocations of ReadonlyDeep below.
-  T extends readonly [] | readonly [...never[]]
-  ? readonly []
-  : T extends readonly [infer U, ...infer V]
-  ? readonly [ReadonlyDeep<U>, ...ReadonlyDeep<V>]
-  : T extends readonly [...infer U, infer V]
-  ? readonly [...ReadonlyDeep<U>, ReadonlyDeep<V>]
-  : T extends ReadonlyArray<infer ItemType>
-  ? ReadonlyArray<ReadonlyDeep<ItemType>>
-  : T extends object
-  ? ReadonlyObjectDeep<T>
-  : unknown
-
-type BuiltIns =
-  | null
-  | undefined
-  | string
-  | number
-  | boolean
-  | symbol
-  | bigint
-  | void
-  | Date
-  | RegExp
-
-type HasMultipleCallSignatures<T extends (...arguments_: any[]) => unknown> =
-  T extends {
-    (...arguments_: infer A): unknown
-    (...arguments_: any[]): unknown
-  }
-    ? unknown[] extends A
-      ? false
-      : true
-    : false
-
-type ReadonlyMapDeep<KeyType, ValueType> = {} & Readonly<
-  ReadonlyMap<ReadonlyDeep<KeyType>, ReadonlyDeep<ValueType>>
->
-
-type ReadonlySetDeep<ItemType> = {} & Readonly<
-  ReadonlySet<ReadonlyDeep<ItemType>>
->
-
-type ReadonlyObjectDeep<ObjectType extends object> = {
-  readonly [KeyType in keyof ObjectType]: ReadonlyDeep<ObjectType[KeyType]>
-}
-
 // TODO infer `Atom` and `AtomMut` signature
 /** Remove named generics, show plain type. */
 export type Plain<Intersection> = Intersection extends (
