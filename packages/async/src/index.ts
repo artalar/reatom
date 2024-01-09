@@ -140,6 +140,14 @@ export const reatomAsync = <
                 theAsync._handleCache(...params)
               : handleEffect(theAsync, params)
 
+            // prevent ERR_UNHANDLED_REJECTION if the onReject has any handlers
+            __thenReatomed(ctx, payload, undefined, () => {
+              // One hook is for "onSettle"
+              if (onReject.__reatom.updateHooks!.size > 1) {
+                payload.catch(noop)
+              }
+            })
+
             patch.state = [...patch.state, { params: params.slice(1), payload }]
           },
         )
