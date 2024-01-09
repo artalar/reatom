@@ -1,0 +1,26 @@
+{
+  "name": "reatom-vue-search",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@quasar/quasar-ui-qmarkdown": "^1.4.4",
+    "@quasar/vite-plugin": "^1.6.0",
+    "@reatom/framework": "^3.4.24",
+    "@reatom/npm-vue": "^3.0.0",
+    "quasar": "^2.14.2",
+    "sass": "^1.69.7",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11",
+    "vue-tsc": "^1.8.27"
+  }
+}

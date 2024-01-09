@@ -11,26 +11,6 @@ import {
 import { useAtom } from '@reatom/npm-react'
 import * as api from './api'
 
-const searchAtom = atom('', 'searchAtom')
-
-const fetchIssues = reatomAsync(async (ctx, query: string) => {
-  await sleep(350) // debounce
-  const { items } = await api.fetchIssues(query, ctx.controller)
-  return items
-}, 'fetchIssues').pipe(
-  withAbort({ strategy: 'last-in-win' }),
-  withDataAtom([]),
-  withCache({ length: 50, swr: false, paramsLength: 1 }),
-  withRetry({
-    onReject(ctx, error: any, retries) {
-      // return delay in ms or -1 to prevent retries
-      return error?.message.includes('rate limit')
-        ? 100 * Math.min(500, retries ** 2)
-        : -1
-    },
-  }),
-)
-onUpdate(searchAtom, fetchIssues)
 
 export const App = () => {
   const [search, setSearch] = useAtom(searchAtom)

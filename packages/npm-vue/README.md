@@ -26,7 +26,7 @@ Because all Reatom APIs require `ctx` to be available, you must either provide i
 
 ## Example
 
-See the [source code](https://github.com/artalar/reatom/tree/v3/examples/vue) or open in [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/vue)
+See the [source code](https://github.com/artalar/reatom/tree/v3/examples/vue-search) or open in [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/vue-search)
 
 ## Usage
 

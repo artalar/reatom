@@ -25,7 +25,7 @@
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@reatom/core": ">=3.5.0",
     "vue": "^3.3.13"
   },
