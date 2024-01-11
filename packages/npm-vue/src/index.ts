@@ -6,17 +6,17 @@ import {
   createCtx,
   throwReatomError,
 } from '@reatom/core'
-import { App, ref, Ref, onScopeDispose, inject, InjectionKey } from 'vue'
+import { App, ref, Ref, onScopeDispose, inject } from 'vue'
 
-const reatomCtxKey = Symbol('reatomCtxKey') as InjectionKey<Ctx>
+const ReatomCtxKey = 'ReatomCtxKey'
 
 export const createReatomVue =
   (ctx = createCtx()) =>
   (app: App) => {
-    app.provide(reatomCtxKey, ctx)
+    app.provide(ReatomCtxKey, ctx)
   }
 
-export const reatomRef = ((target: any, ctx = inject(reatomCtxKey)!) => {
+export const reatomRef = ((target: any, ctx = inject(ReatomCtxKey)!) => {
   throwReatomError(
     !ctx,
     'ctx is not passed explicitly nor provided with "createReatomVue"',
