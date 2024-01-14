@@ -26,7 +26,8 @@
   },
   "dependencies": {
     "@reatom/core": "^3.3.0",
-    "@reatom/persist": "^3.1.0"
+    "@reatom/persist": "^3.1.0",
+    "dexie": "^3.2.4"
   },
   "author": "artalar",
   "license": "MIT",

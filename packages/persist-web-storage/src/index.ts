@@ -1,5 +1,6 @@
-import { atom } from '@reatom/core'
+import { type Ctx, atom } from '@reatom/core'
 import { PersistRecord, reatomPersist } from '@reatom/persist'
+import Dexie, { liveQuery } from 'dexie'
 
 const reatomPersistWebStorage = (name: string, storage: Storage) => {
   const memCacheAtom = atom(
@@ -77,11 +78,113 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
   })
 }
 
+type TableRow = { key: string } & PersistRecord
+
+class ReatomDexie extends Dexie {
+  atoms!: Dexie.Table<TableRow>
+  constructor(dbName: string) {
+    super(dbName)
+    this.version(1).stores({
+      atoms: 'key,rec',
+    })
+  }
+}
+
+type LiveQuery = Awaited<ReturnType<typeof liveQuery<TableRow | undefined>>>
+
+const reatomPersistIndexedDB = (dbName: string) => {
+  const memCacheAtom = atom(
+    new Map<string, PersistRecord>(),
+    `${dbName}._memCacheAtom`,
+  )
+
+  const db = new ReatomDexie(dbName)
+
+  const liveQueries = new Map<string, LiveQuery>()
+
+  const updateMemCache = (ctx: Ctx, key: string, rec: PersistRecord) => {
+    const memCache = ctx.get(memCacheAtom)
+    if (memCache.has(key)) {
+      const prev = memCache.get(key)
+      ctx.schedule(() => memCache.set(key, prev!), -1)
+    }
+    memCache.set(key, rec)
+  }
+
+  const updateIndexedDB = async (ctx: Ctx, key: string, rec: PersistRecord) => {
+    ctx.schedule(() => {
+      db.atoms.put({ key, ...rec })
+    })
+  }
+
+  return reatomPersist({
+    name: dbName,
+    get(ctx, key) {
+      const memCache = ctx.get(memCacheAtom)
+
+      const rec = memCache.get(key)
+
+      if (!rec) {
+        return null
+      }
+
+      return rec
+    },
+    set(ctx, key, rec) {
+      updateMemCache(ctx, key, rec)
+      updateIndexedDB(ctx, key, rec)
+    },
+    clear(ctx, key) {
+      const memCache = ctx.get(memCacheAtom)
+      if (memCache.has(key)) {
+        const prev = memCache.get(key)
+        ctx.schedule(() => memCache.set(key, prev!), -1)
+      }
+      memCache.delete(key)
+
+      ctx.schedule(() => {
+        db.atoms.delete(key)
+      })
+    },
+    subscribe(ctx, key, cb) {
+      const memCache = ctx.get(memCacheAtom)
+
+      if (!liveQueries.has(key)) {
+        const query = liveQuery(() => db.atoms.get(key))
+        liveQueries.set(key, query)
+      }
+
+      const query = liveQueries.get(key)!
+
+      const handler = (row: TableRow | undefined) => {
+        if (!row) {
+          // Dexie gives undefined if row is deleted
+          memCache.delete(key)
+        } else {
+          const { key: _key, ...rec } = row
+
+          if (rec.id !== memCache.get(key)?.id) {
+            memCache.set(key, rec)
+            cb()
+          }
+        }
+      }
+
+      const subcription = query.subscribe(handler)
+      return () => subcription.unsubscribe()
+    },
+  })
+}
+
 export const withLocalStorage = reatomPersistWebStorage(
   'withLocalStorage',
   globalThis.localStorage,
 )
+
 export const withSessionStorage = reatomPersistWebStorage(
   'withSessionStorage',
   globalThis.sessionStorage,
 )
+
+export const withIndexedDb = (dbName: string = 'reatom') =>
+  reatomPersistIndexedDB(dbName)
