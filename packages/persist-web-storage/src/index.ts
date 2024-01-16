@@ -77,11 +77,79 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
   })
 }
 
+type BroadcastMessage = {
+  key: string
+  rec: PersistRecord | null
+}
+
+const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
+  const memCacheAtom = atom(
+    new Map<string, PersistRecord>(),
+    `withBroadcastChannel._memCacheAtom`,
+  )
+
+  return reatomPersist({
+    name: 'withBroadcastChannel',
+    get(ctx, key) {
+      const memCache = ctx.get(memCacheAtom)
+
+      return memCache.get(key) ?? null
+    },
+    set(ctx, key, rec) {
+      const memCache = ctx.get(memCacheAtom)
+      if (memCache.has(key)) {
+        const prev = memCache.get(key)
+        ctx.schedule(() => memCache.set(key, prev!), -1)
+      }
+      memCache.set(key, rec)
+      ctx.schedule(() =>
+        channel.postMessage({ key, rec } satisfies BroadcastMessage),
+      )
+    },
+    clear(ctx, key) {
+      const memCache = ctx.get(memCacheAtom)
+      if (memCache.has(key)) {
+        const prev = memCache.get(key)
+        ctx.schedule(() => memCache.set(key, prev!), -1)
+      }
+      memCache.delete(key)
+      ctx.schedule(() =>
+        channel.postMessage({ key, rec: null } satisfies BroadcastMessage),
+      )
+    },
+    subscribe(ctx, key, cb) {
+      const memCache = ctx.get(memCacheAtom)
+      const handler = (event: MessageEvent<BroadcastMessage>) => {
+        const { key: messageKey, rec } = event.data
+        if (messageKey === key) {
+          if (rec === null) {
+            memCache.delete(key)
+          } else {
+            if (rec.id !== memCache.get(key)?.id) {
+              memCache.set(key, rec)
+              cb()
+            }
+          }
+        }
+      }
+      channel.addEventListener('message', handler, false)
+      return () => channel.removeEventListener('message', handler, false)
+    },
+  })
+}
+
 export const withLocalStorage = reatomPersistWebStorage(
   'withLocalStorage',
   globalThis.localStorage,
 )
+
 export const withSessionStorage = reatomPersistWebStorage(
   'withSessionStorage',
   globalThis.sessionStorage,
 )
+
+export const withBroadcastChannel = (
+  channel: BroadcastChannel = new BroadcastChannel(
+    'reatom.withBroadcastChannel',
+  ),
+) => reatomPersistBroadcastChannel(channel)
