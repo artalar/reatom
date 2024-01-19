@@ -719,6 +719,25 @@ test('nested schedule', async () => {
   ;`👍` //?
 })
 
+test('dynamic spy callback prevValue', () => {
+  let testPrev: any
+  const a = atom(0)
+  const b = atom((ctx) => {
+    ctx.spy(a)
+    const anAtom = atom(0)
+    ctx.spy(anAtom, (next, prev) => {
+      testPrev = prev
+    })
+  })
+  const ctx = createCtx()
+  ctx.subscribe(b, () => {})
+  assert.is(testPrev, undefined)
+
+  a(ctx, 1)
+  assert.is(testPrev, undefined)
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0

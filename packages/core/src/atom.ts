@@ -368,7 +368,7 @@ export const createCtx = ({
 
           if (cb && (isDepChanged || !Object.is(state, prevDepPatch!.state))) {
             if (depProto.isAction) for (const call of state) cb(call)
-            else cb(state, prevDepPatch?.state)
+            else cb(state, isDepChanged ? undefined : prevDepPatch?.state)
           } else {
             return state
           }
