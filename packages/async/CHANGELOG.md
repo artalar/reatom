@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.4](https://github.com/artalar/reatom/compare/async-v3.13.3...async-v3.13.4) (2024-01-21)
+
+
+### Bug Fixes
+
+* **async:** prevent ERR_UNHANDLED_REJECTION if the onReject has any handlers ([c66ad56](https://github.com/artalar/reatom/commit/c66ad56e9b4cd536fda93e9cf0cc4a4b862abf91))
+
 ## [3.13.3](https://github.com/artalar/reatom/compare/async-v3.13.2...async-v3.13.3) (2023-11-25)
 
 

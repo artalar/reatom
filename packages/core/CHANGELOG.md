@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.6](https://github.com/artalar/reatom/compare/core-v3.6.5...core-v3.6.6) (2024-01-21)
+
+
+### Bug Fixes
+
+* **core:** prev value of spy callback ([0abdec0](https://github.com/artalar/reatom/commit/0abdec08c50de9c6622e71b67a4f063aaa9f9343))
+
 ## [3.6.5](https://github.com/artalar/reatom/compare/core-v3.6.4...core-v3.6.5) (2023-11-20)
 
 
