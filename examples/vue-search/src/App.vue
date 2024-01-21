@@ -21,7 +21,7 @@ effect(() => {
 })
 
 const issueCreatedAt = (issue: model.Issue) => {
-  return new Date((issue as any).created_at).toLocaleDateString()
+  return new Date(issue.created_at).toLocaleDateString()
 }
 </script>
 

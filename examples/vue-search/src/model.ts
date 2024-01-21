@@ -44,7 +44,6 @@ export const issues = reatomResource(async (ctx) => {
   })
   return items
 }, 'issues').pipe(
-  withAbort({ strategy: 'last-in-win' }),
   withDataAtom([]),
   withErrorAtom(),
   withCache({ length: 50, swr: false, paramsLength: 1 }),
