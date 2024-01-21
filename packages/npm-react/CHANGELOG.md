@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.2](https://github.com/artalar/reatom/compare/npm-react-v3.8.1...npm-react-v3.8.2) (2024-01-21)
+
+
+### Bug Fixes
+
+* **npm-react:** check useAction argument ([01ad380](https://github.com/artalar/reatom/commit/01ad3807dc86b3bc34793ab9dcc8556cc8d67d96))
+
 ## [3.8.1](https://github.com/artalar/reatom/compare/npm-react-v3.8.0...npm-react-v3.8.1) (2023-11-26)
 
 
