@@ -1,7 +1,6 @@
 import { atom } from '@reatom/core'
 import {
   PersistRecord,
-  WithPersist,
   WithPersistOptions,
   reatomPersist,
 } from '@reatom/persist'
@@ -9,7 +8,7 @@ import { get, set, del, createStore } from 'idb-keyval'
 
 const reatomPersistWebStorage = (name: string, storage: Storage) => {
   const memCacheAtom = atom(
-    new Map<string, PersistRecord>(),
+    (ctx, state = new Map<string, PersistRecord>()) => state,
     `${name}._memCacheAtom`,
   )
 
@@ -44,19 +43,11 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
     },
     set(ctx, key, rec) {
       const memCache = ctx.get(memCacheAtom)
-      if (memCache.has(key)) {
-        const prev = memCache.get(key)
-        ctx.schedule(() => memCache.set(key, prev!), -1)
-      }
       memCache.set(key, rec)
       ctx.schedule(() => storage.setItem(key, JSON.stringify(rec)))
     },
     clear(ctx, key) {
       const memCache = ctx.get(memCacheAtom)
-      if (memCache.has(key)) {
-        const prev = memCache.get(key)
-        ctx.schedule(() => memCache.set(key, prev!), -1)
-      }
       memCache.delete(key)
       ctx.schedule(() => storage.removeItem(key))
     },
@@ -96,7 +87,7 @@ type BroadcastMessage =
 
 const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
   const memCacheAtom = atom(
-    new Map<string, PersistRecord>(),
+    (ctx, state = new Map<string, PersistRecord>()) => state,
     `withBroadcastChannel._memCacheAtom`,
   )
 
@@ -109,10 +100,6 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
     },
     set(ctx, key, rec) {
       const memCache = ctx.get(memCacheAtom)
-      if (memCache.has(key)) {
-        const prev = memCache.get(key)
-        ctx.schedule(() => memCache.set(key, prev!), -1)
-      }
       memCache.set(key, rec)
       ctx.schedule(() =>
         channel.postMessage({
@@ -124,10 +111,6 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
     },
     clear(ctx, key) {
       const memCache = ctx.get(memCacheAtom)
-      if (memCache.has(key)) {
-        const prev = memCache.get(key)
-        ctx.schedule(() => memCache.set(key, prev!), -1)
-      }
       memCache.delete(key)
       ctx.schedule(() =>
         channel.postMessage({
@@ -174,7 +157,7 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
 
 const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
   const memCacheAtom = atom(
-    new Map<string, PersistRecord>(),
+    (ctx, state = new Map<string, PersistRecord>()) => state,
     `withIndexedDb._memCacheAtom`,
   )
 
