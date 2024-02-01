@@ -29,11 +29,14 @@
     "@reatom/core": ">=3.5.0",
     "vue": "^3.3.13"
   },
-  "author": "artalar",
+  "author": {
+    "name": "krulod",
+    "url": "https://github.com/krulod"
+  },
   "maintainers": [
     {
-      "name": "artalar",
-      "url": "https://github.com/artalar"
+      "name": "krulod",
+      "url": "https://github.com/krulod"
     }
   ],
   "license": "MIT",
