@@ -15,10 +15,10 @@
     "@mantine/hooks": "^7.1.7",
     "@mantine/modals": "^7.1.7",
     "@mantine/notifications": "^7.1.7",
-    "@reatom/framework": "^3.4.31",
-    "@reatom/npm-react": "^3.8.2",
-    "@reatom/persist-web-storage": "^3.2.3",
-    "@reatom/url": "^3.6.2",
+    "@reatom/framework": "^3.*.*",
+    "@reatom/npm-react": "^3.*.*",
+    "@reatom/persist-web-storage": "^3.*.*",
+    "@reatom/url": "^3.*.*",
     "@tanstack/react-query": "^5.4.3",
     "@tanstack/react-query-devtools": "^5.4.3",
     "dayjs": "^1.11.10",
@@ -28,7 +28,7 @@
     "react-router-dom": "^6.18.0"
   },
   "devDependencies": {
-    "@reatom/eslint-plugin": "^3.4.2",
+    "@reatom/eslint-plugin": "^3.*.*",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@typescript-eslint/eslint-plugin": "^6.7.5",

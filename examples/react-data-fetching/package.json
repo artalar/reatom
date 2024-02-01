@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@reatom/framework": "^3.4.24",
-    "@reatom/npm-react": "^3.7.2",
-    "@reatom/persist-web-storage": "^3.2.3",
-    "@reatom/url": "^3.4.1",
+    "@reatom/framework": "^3.*.*",
+    "@reatom/npm-react": "^3.*.*",
+    "@reatom/persist-web-storage": "^3.*.*",
+    "@reatom/url": "^3.*.*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "stylerun": "0.0.1-rc1"
