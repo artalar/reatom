@@ -37,7 +37,7 @@ export const searchAtom = atom('', 'searchAtom')
 export const issues = reatomResource(async (ctx) => {
   const query = ctx.spy(searchAtom)
   if (!query) return []
-  await sleep(350)
+  await ctx.schedule(() => sleep(350))
   const { items } = await searchIssues({
     query,
     controller: ctx.controller,
@@ -46,7 +46,7 @@ export const issues = reatomResource(async (ctx) => {
 }, 'issues').pipe(
   withDataAtom([]),
   withErrorAtom(),
-  withCache({ length: 50, swr: false, paramsLength: 1 }),
+  withCache({ length: 50, swr: false }),
   withRetry({
     onReject(ctx, error: any, retries) {
       // return delay in ms or -1 to prevent retries
@@ -63,7 +63,7 @@ const searchIssues = async (config: {
 }) => {
   const response = await fetch(
     `https://api.github.com/search/issues?q=${config.query}&page=1&per_page=10`,
-    config.controller,
+    {signal: config.controller.signal},
   )
   if (response.status !== 200) {
     const error = new Error()
