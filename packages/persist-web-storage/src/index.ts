@@ -83,10 +83,16 @@ const reatomPersistWebStorage = (name: string, storage: Storage) => {
   })
 }
 
-type BroadcastMessage = {
-  key: string
-  rec: PersistRecord | null
-}
+type BroadcastMessage =
+  | {
+      _type: 'push'
+      key: string
+      rec: PersistRecord | null
+    }
+  | {
+      _type: 'pull'
+      key: string
+    }
 
 const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
   const memCacheAtom = atom(
@@ -109,7 +115,11 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
       }
       memCache.set(key, rec)
       ctx.schedule(() =>
-        channel.postMessage({ key, rec } satisfies BroadcastMessage),
+        channel.postMessage({
+          key,
+          rec,
+          _type: 'push',
+        } satisfies BroadcastMessage),
       )
     },
     clear(ctx, key) {
@@ -120,12 +130,29 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
       }
       memCache.delete(key)
       ctx.schedule(() =>
-        channel.postMessage({ key, rec: null } satisfies BroadcastMessage),
+        channel.postMessage({
+          key,
+          rec: null,
+          _type: 'push',
+        } satisfies BroadcastMessage),
       )
     },
     subscribe(ctx, key, cb) {
       const memCache = ctx.get(memCacheAtom)
       const handler = (event: MessageEvent<BroadcastMessage>) => {
+        if (event.data._type === 'pull') {
+          if (event.data.key === key) {
+            ctx.schedule(() =>
+              channel.postMessage({
+                _type: 'push',
+                key,
+                rec: this.get(ctx, key),
+              }),
+            )
+          }
+          return
+        }
+
         const { key: messageKey, rec } = event.data
         if (messageKey === key) {
           if (rec === null) {
@@ -139,6 +166,7 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
         }
       }
       channel.addEventListener('message', handler, false)
+      channel.postMessage({ _type: 'pull', key } satisfies BroadcastMessage)
       return () => channel.removeEventListener('message', handler, false)
     },
   })
@@ -164,7 +192,11 @@ const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
       memCache.set(key, rec)
       ctx.schedule(async () => {
         await set(key, rec, store)
-        channel.postMessage({ key, rec } satisfies BroadcastMessage)
+        channel.postMessage({
+          key,
+          rec,
+          _type: 'push',
+        } satisfies BroadcastMessage)
       })
     },
     clear(ctx, key) {
@@ -172,7 +204,11 @@ const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
       memCache.delete(key)
       ctx.schedule(async () => {
         await del(key, store)
-        channel.postMessage({ key, rec: null } satisfies BroadcastMessage)
+        channel.postMessage({
+          key,
+          rec: null,
+          _type: 'push',
+        } satisfies BroadcastMessage)
       })
     },
     subscribe(ctx, key, cb) {
@@ -186,6 +222,18 @@ const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
       })
 
       const handler = (event: MessageEvent<BroadcastMessage>) => {
+        if (event.data._type === 'pull') {
+          if (event.data.key === key) {
+            ctx.schedule(() =>
+              channel.postMessage({
+                _type: 'push',
+                key,
+                rec: this.get(ctx, key),
+              }),
+            )
+          }
+          return
+        }
         const { key: messageKey, rec } = event.data
         if (messageKey === key) {
           const memCache = ctx.get(memCacheAtom)
@@ -201,6 +249,7 @@ const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
       }
 
       channel.addEventListener('message', handler)
+      channel.postMessage({ _type: 'pull', key } satisfies BroadcastMessage)
       return () => channel.removeEventListener('message', handler)
     },
   })
