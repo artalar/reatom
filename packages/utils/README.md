@@ -32,6 +32,14 @@ Recursive comparison of two values, supports primitives, objects, dates, arrays,
 
 [assign](#assign) which set an empty object to the first argument.
 
+### keys
+
+`Object.keys` with fixed types.
+
+### entries
+
+`Object.entries` with fixed types.
+
 ### pick
 
 Get a new object only with the properties of the passed keys.

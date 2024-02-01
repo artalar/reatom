@@ -143,6 +143,14 @@ export const assign: {
 /** `Object.assign` which set an empty object to the first argument */
 export const merge: typeof assign = (...a) => Object.assign({}, ...a)
 
+export const keys: {
+  <T extends object>(thing: T): Array<keyof T>
+} = Object.keys
+
+export const entries: {
+  <T extends object>(thing: T): Array<[keyof T, T[keyof T]]>
+} = Object.entries
+
 /** Get a new object only with the passed keys*/
 export const pick = <T, K extends keyof T>(
   target: T,
