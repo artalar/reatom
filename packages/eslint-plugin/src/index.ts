@@ -1,22 +1,21 @@
-import { actionRule } from './rules/action-rule'
-import { atomPostfixRule } from './rules/atom-postifx-rule'
-import { atomRule } from './rules/atom-rule'
-import { reatomPrefixRule } from './rules/reatom-prefix-rule'
+import { ESLint } from 'eslint'
+import { asyncRule } from './rules/async-rule'
+import { unitNamingRule } from './rules/unit-naming-rule'
 
-export const rules = {
-  'atom-rule': atomRule,
-  'action-rule': actionRule,
-  'reatom-prefix-rule': reatomPrefixRule,
-  'atom-postfix-rule': atomPostfixRule,
+const rules = {
+  'unit-naming-rule': unitNamingRule,
+  'async-rule': asyncRule,
 }
 
-export const configs = {
-  recommended: {
-    rules: {
-      '@reatom/atom-rule': 'error',
-      '@reatom/action-rule': 'error',
-      '@reatom/reatom-prefix-rule': 'error',
-      '@reatom/atom-postfix-rule': 'error',
+export default {
+  rules,
+  configs: {
+    recommended: {
+      rules: Object.fromEntries(
+        Object.keys(rules).map((ruleName) => {
+          return [`@reatom/${ruleName}`, 'error']
+        }),
+      ),
     },
   },
-}
+} satisfies ESLint.Plugin

@@ -1,3 +1,7 @@
+# `@reatom/eslint-plugin`
+
+Reatom-specific ESLint rules.
+
 ## Installation
 
 ```sh
@@ -6,7 +10,7 @@ npm i -D @reatom/eslint-plugin
 
 ## Usage
 
-You should add `@reatom` to `plugins` and specify `extends` or `rules` into your config.
+Add `@reatom` to `plugins` and specify `extends` or `rules` in your config.
 
 ```json
 {
@@ -19,17 +23,15 @@ You should add `@reatom` to `plugins` and specify `extends` or `rules` into your
 {
   "plugins": ["@reatom"],
   "rules": {
-    "@reatom/atom-rule": "error",
-    "@reatom/action-rule": "error",
-    "@reatom/reatom-prefix-rule": "error",
-    "@reatom/atom-postfix-rule": "error"
+    "@reatom/async-rule": "error",
+    "@reatom/unit-naming-rule": "error"
   }
 }
 ```
 
 Here is an example of React + TypeScript + Prettier config with Reatom.
 
-> [Eslint setup commit](https://github.com/artalar/reatom-react-ts/commit/3632b01d6a58a35602d1c191e5d6b53a7717e747)
+> [ESLint setup commit](https://github.com/artalar/reatom-react-ts/commit/3632b01d6a58a35602d1c191e5d6b53a7717e747)
 
 ```json
 {
@@ -61,23 +63,63 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
 }
 ```
 
+## Rules
+
+### `unit-naming-rule`
+
+Ensures that all Reatom entities specify the name parameter used for debugging. We assume that Reatom entity factories are `atom`, `action` and all `reatom*` (like `reatomAsync`) functions imported from `@reatom/*` packages.
+
+The name must be equal to the name of a variable or a property an entity is assigned to, like this:
+
+```ts
+const count = atom(0, 'count')
+
+const someNamespace = {
+  count: atom(0, 'count'),
+}
+```
+
+When creating atoms dynamically with factories, you can also specify the "namespace" of the name before the `.` symbol:
+
+```ts
+const reatomUser = (_name: string) => {
+  const name = atom(_name, 'reatomUser.name')
+
+  return { name }
+}
+```
+
+For private atoms, `_` prefix can be used:
+
+```ts
+const secretState = atom(0, '_secretState')
+```
+
+You can also ensure that `atom` names have a prefix or a postfix through the configuration, for example:
+
+```ts
+{
+  atomPrefix: '',
+  atomPostfix: 'Atom',
+}
+```
+
+### `async-rule`
+
+Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`. Read [the docs](https://www.reatom.dev/package/core/#ctx-api) for more info.
+
 ## Motivation
 
- Many have asked why not make a Babel plugin for naming, why keep it in source? Our opinion on this has long been formed, keep it:
+The primary purpose of this plugin is to automate generation of atom and action names using ESLint autofixes. Many have asked why not make a Babel plugin for naming, why keep it in source, here is our opinion:
 
-- Build tools are different, besides the outdated Babel there are a lot of other tools, and even written in different languages, it is difficult to support all of them;
-- The result of the plugin's work is not visible and can lead to unpleasant debugging;
-- The plugins and transpilation tools themselves often catch some bugs, partly due to the complexity of JavaScript as a language and partly due to the fragmentation of the ecosystem;
-- It is difficult to cover all cases with a single transpilation, factories cause the most problems;
-- The name contains a hash - redundant information when debugging;
-- The hash is tied to the file and line - it easily changes with the slightest refactoring, causing the user cache to drop, this must be taken into account in automatic migrations (talking about the client persist state).
+- Build infrastructure is diverse and divergent - it's hard to support a plenty of tools used today;
+- Plugin's output may be unexpected;
+- Such plugin is hard to implement because of variety of naming strategies, especially in factories;
 
-This list comes from real practice, for the first Reatom version (2019) there was a plugin and it was already clear that the game was not worth the candle, now the situation is even worse.
+These are the problems we faced back in 2019 when the first version of Reatom was released. They made it clear for us that the game is not worth the candle.
 
-On the contrary, writing the name manually in the argument has a lot of advantages:
+On the contrary, explicit unit names have multiple advantages:
 
-- Maximum visibility;
-- Full control;
-- Zero setup, not difficult, really not difficult, in terms of the amount and complexity of code required forces - nothing;
-- AI tools, like Copilot, help a lot with the names;
-- This ESLint plugin handles most cases perfectly.
+- No risk of unexpected plugin behaviour, full control over unit names;
+- Requires no build infrastructure and is not that hard to do;
+- Writing names is simplified even further by AI coding helpers (i.e. Copilot) and this set of ESLint rules.
