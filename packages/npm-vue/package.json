@@ -37,6 +37,10 @@
     {
       "name": "krulod",
       "url": "https://github.com/krulod"
+    },
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
     }
   ],
   "license": "MIT",
