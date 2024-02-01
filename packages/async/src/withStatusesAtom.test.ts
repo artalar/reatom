@@ -2,7 +2,7 @@ import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx } from '@reatom/testing'
 
-import { reatomAsync, withCache } from './'
+import { reatomAsync, withAbort, withCache } from './'
 import {
   AsyncStatusesAnotherPending,
   AsyncStatusesFirstPending,
@@ -182,6 +182,21 @@ test('reset during pending', async () => {
   assert.is(ctx.get(fetchData.statusesAtom).isEverPending, false)
   await sleep()
   assert.is(ctx.get(fetchData.statusesAtom).isEverPending, false)
+  ;`👍` //?
+})
+
+test('do not reject on abort', async () => {
+  const fetchData = reatomAsync(async () => {}).pipe(
+    withAbort(),
+    withStatusesAtom(),
+  )
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(fetchData.statusesAtom), asyncStatusesInitState)
+
+  fetchData(ctx)
+  fetchData.abort(ctx)
+  assert.is(ctx.get(fetchData.statusesAtom).isRejected, false)
   ;`👍` //?
 })
 
