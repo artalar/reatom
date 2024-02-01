@@ -151,22 +151,34 @@ import { css } from '@reatom/jsx'
 
 const colorHovered = atom('red', 'colorHovered')
 
-const Box = () => {
+export const Box = ({ size = 0 }) => {
   return (
     <div
-      css:color-default="some-default-value"
-      css:color-hovered={colorHovered}
+      css:padding={`${size}rem`}
       css={`
-        width: 64px;
-        height: 64px;
-        background-color: var(--color-default);
-        &:hover {
-          background-color: var(--color-hovered);
-        }
+        padding: var(--size);
       `}
     />
-  )
-}
+  );
+};
+
+export const HeaderInput = () => {
+  const sizeAtom = atom(`1em`);
+  const handleChange = action((ctx, e) =>
+    sizeAtom(ctx, `${1 + e.target.value.length * 0.1}em`)
+  );
+
+  return (
+    <input
+      oninput={handleChange}
+      css:size={sizeAtom}
+      css={`
+        font-size: var(--size);
+      `}
+    />
+  );
+};
+
 ```
 
 The example above is correctly formatted by Prettier and has syntax highlighting provided by `vscode-styled-components` extension.
