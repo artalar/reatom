@@ -1,5 +1,10 @@
 import { atom } from '@reatom/core'
-import { PersistRecord, reatomPersist } from '@reatom/persist'
+import {
+  PersistRecord,
+  WithPersist,
+  WithPersistOptions,
+  reatomPersist,
+} from '@reatom/persist'
 import { get, set, del, createStore } from 'idb-keyval'
 
 const reatomPersistWebStorage = (name: string, storage: Storage) => {
@@ -211,20 +216,50 @@ export const withSessionStorage = reatomPersistWebStorage(
   globalThis.sessionStorage,
 )
 
-export const withBroadcastChannel = (
-  channel: BroadcastChannel = new BroadcastChannel(
-    'reatom.withBroadcastChannel',
-  ),
-) => reatomPersistBroadcastChannel(channel)
+interface WithBroadcastPersistOptionsObject<T> extends WithPersistOptions<T> {
+  channel?: BroadcastChannel
+}
 
-type WithIndexedDbOptions = {
+type WithBroadcastPersistOptions =
+  | [key: string]
+  | [options: WithBroadcastPersistOptionsObject<any>]
+
+export const withBroadcastChannel = (
+  ...options: WithBroadcastPersistOptions
+) => {
+  const opts = options[0]
+  if (typeof opts === 'string') {
+    const channel = new BroadcastChannel('reatom.withBroadcastChannel')
+    return reatomPersistBroadcastChannel(channel)(opts)
+  }
+
+  let { channel, ...rest } = opts
+
+  channel = channel ?? new BroadcastChannel('reatom.withBroadcastChannel')
+  return reatomPersistBroadcastChannel(channel)(rest)
+}
+
+interface WithIndexedDbPersistOptionsObject<T> extends WithPersistOptions<T> {
   dbName?: string
   channel?: BroadcastChannel
 }
 
-export const withIndexedDb = (options: WithIndexedDbOptions = {}) => {
-  const dbName = options?.dbName ?? 'reatom'
-  const channel =
-    options?.channel ?? new BroadcastChannel('reatom.withIndexedDb')
-  return reatomPersistIndexedDb(dbName, channel)
+type WithIndexedDbOptions =
+  | [key: string]
+  | [options: WithIndexedDbPersistOptionsObject<any>]
+
+export const withIndexedDb = (...options: WithIndexedDbOptions) => {
+  const opts = options[0]
+
+  if (typeof opts === 'string') {
+    const dbName = 'reatom'
+    const channel = new BroadcastChannel('reatom.withIndexedDb')
+    return reatomPersistIndexedDb(dbName, channel)(opts)
+  }
+
+  let { dbName, channel, ...rest } = opts
+
+  dbName = dbName ?? 'reatom'
+  channel = channel ?? new BroadcastChannel('reatom.withIndexedDb')
+  return reatomPersistIndexedDb(dbName, channel)(rest)
 }

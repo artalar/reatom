@@ -19,10 +19,10 @@ const inputWithSessionStorageAtom = atom(
 const inputWithBroadcastChannelAtom = atom(
   '',
   'inputWithBroadcastChannelAtom',
-).pipe(withBroadcastChannel()('inputWithBroadcastChannelAtom'))
+).pipe(withBroadcastChannel('inputWithBroadcastChannelAtom'))
 
 const inputIndexedDbAtom = atom('', 'inputIndexedDbAtom').pipe(
-  withIndexedDb()('inputIndexedDbAtom'),
+  withIndexedDb('inputIndexedDbAtom'),
 )
 
 export const App = () => {

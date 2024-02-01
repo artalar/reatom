@@ -58,7 +58,7 @@ channel.onmessage((event) => {
 })
 
 export const isAuthedAtom = atom('', 'isAuthedAtom').pipe(
-  withBroadcastChannel(channel)('isAuthedAtom'),
+  withBroadcastChannel({ key: 'isAuthedAtom', channel }),
 )
 ```
 
@@ -73,7 +73,7 @@ import { atom } from '@reatom/framework'
 import { withIndexedDb } from '@reatom/persist-web-storage'
 
 export const hugeListAtom = atom('', 'hugeListAtom').pipe(
-  withIndexedDb()('hugeListAtom'),
+  withIndexedDb('hugeListAtom'),
 )
 ```
 
@@ -86,7 +86,7 @@ import { withIndexedDb } from '@reatom/persist-web-storage'
 const channel = new BroadcastChannel('myCystomBroadcastChannel')
 
 export const hugeListAtom = atom([], 'hugeListAtom').pipe(
-  withIndexedDb({ dbName: 'myCustomDb', channel })('hugeListAtom'),
+  withIndexedDb({ key: 'hugeListAtom', dbName: 'myCustomDb', channel }),
 )
 ```
 
