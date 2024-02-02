@@ -21,7 +21,67 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`
 
 ## Use atom
 
-`useAtom` is your main hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
+### reatomComponent
+
+The main API to bind atoms and actions to a component lifetime is `reatomComponent`. It wraps your regular react component and put `ctx` into the props. There is no additional rules or behavior, you can use any other hooks, accept props, return any valid `ReactNode`. But if you using `ctx.spy`, just like in any computed atom, it will subscribe to the passed atom and rerender from by changes.
+
+```tsx
+import { atom } from '@reatom/core'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const countAtom = atom(0)
+export const Counter = reatomComponent(
+  ({ ctx }) => (
+    <input
+      type="number"
+      value={ctx.spy(count)}
+      onChange={(e) => countAtom(ctx, e.target.valueAsNumber)}
+    />
+  ),
+  'Counter',
+)
+```
+
+You can describe props types in the generic, it can be any kind of values, regular string, JSON, and atoms too. For example, here is a controlled component with atom state.
+
+```tsx
+import { atom, Atom } from '@reatom/core'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const Counter = reatomComponent<{
+  atom: Atom<number>
+  onChange: Action
+}>(
+  ({ ctx, atom, onChange }) => (
+    <input type="number" value={ctx.spy(atom)} onChange={ctx.bind(onChange)} />
+  ),
+  'Counter',
+)
+```
+
+One of the most powerful features of `reatomComponent` is that you are not bound by react hooks rules, you could use `ctx.spy` in any order, right in your template.
+
+```tsx
+export const SomeList = reatomComponent(
+  ({ ctx }) =>
+    ctx.spy(isLoadingAtom) ? (
+      <span>Loading...</span>
+    ) : (
+      <ul>
+        {ctx.spy(listAtom).map((el) => (
+          <li>{el.text}</li>
+        ))}
+      </ul>
+    ),
+  'SomeList',
+)
+```
+
+Do not forget to put the component name to the second argument, it will increase your feature debug experience a lot!
+
+### useAtom
+
+`useAtom` is your main hook, when you need to describe reusable logic in hight order hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
 
 In a component:
 
@@ -76,7 +136,7 @@ We recommend to setup [logger](/package/logger) here.
 
 ## Use atom selector
 
-It is possible to paste a reducer function to `useState`, which will create a new computed atom (`setState` will be `undefined` in this case).
+Another use case for the hook is describing additional computations inside a component (create temporal computed atom). It is possible to put a reducer function to `useState`, which will create a new computed atom (`setState` will be `undefined` in this case).
 
 ```ts
 import { useAtom } from '@reatom/npm-react'
@@ -108,6 +168,8 @@ export const GoodsItem = ({ idx }: { idx: number }) => {
 ```
 
 ### Advanced usage
+
+Check this out!
 
 ```js
 export const Greeting = ({ initialGreeting = '' }) => {
