@@ -1,12 +1,22 @@
-import { atom } from '@reatom/core'
+import { AtomMut, atom } from '@reatom/core'
 import {
   PersistRecord,
-  WithPersistOptions,
+  PersistStorage,
+  WithPersist,
   reatomPersist,
 } from '@reatom/persist'
 import { get, set, del, createStore } from 'idb-keyval'
 
-const reatomPersistWebStorage = (name: string, storage: Storage) => {
+interface WithPersistWebStorage extends WithPersist {
+  storageAtom: AtomMut<PersistStorage>
+}
+
+const idb = { get, set, del, createStore }
+
+const reatomPersistWebStorage = (
+  name: string,
+  storage: Storage,
+): WithPersistWebStorage => {
   const memCacheAtom = atom(
     (ctx, state = new Map<string, PersistRecord>()) => state,
     `${name}._memCacheAtom`,
@@ -85,7 +95,11 @@ type BroadcastMessage =
       key: string
     }
 
-const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
+const reatomPersistBroadcastChannel = (
+  channel: BroadcastChannel,
+): WithPersistWebStorage => {
+  const postMessage = (msg: BroadcastMessage) => channel.postMessage(msg)
+
   const memCacheAtom = atom(
     (ctx, state = new Map<string, PersistRecord>()) => state,
     `withBroadcastChannel._memCacheAtom`,
@@ -94,132 +108,116 @@ const reatomPersistBroadcastChannel = (channel: BroadcastChannel) => {
   return reatomPersist({
     name: 'withBroadcastChannel',
     get(ctx, key) {
-      const memCache = ctx.get(memCacheAtom)
-
-      return memCache.get(key) ?? null
+      return ctx.get(memCacheAtom).get(key) ?? null
     },
     set(ctx, key, rec) {
       const memCache = ctx.get(memCacheAtom)
       memCache.set(key, rec)
       ctx.schedule(() =>
-        channel.postMessage({
+        postMessage({
           key,
           rec,
           _type: 'push',
-        } satisfies BroadcastMessage),
+        }),
       )
     },
     clear(ctx, key) {
       const memCache = ctx.get(memCacheAtom)
       memCache.delete(key)
       ctx.schedule(() =>
-        channel.postMessage({
+        postMessage({
           key,
           rec: null,
           _type: 'push',
-        } satisfies BroadcastMessage),
+        }),
       )
     },
     subscribe(ctx, key, cb) {
       const memCache = ctx.get(memCacheAtom)
       const handler = (event: MessageEvent<BroadcastMessage>) => {
-        if (event.data._type === 'pull') {
-          if (event.data.key === key) {
-            ctx.schedule(() =>
-              channel.postMessage({
-                _type: 'push',
-                key,
-                rec: this.get(ctx, key),
-              }),
-            )
-          }
-          return
-        }
+        if (event.data?.key !== key) return
 
-        const { key: messageKey, rec } = event.data
-        if (messageKey === key) {
+        if (event.data._type === 'pull') {
+          const rec = memCache.get(key)
+          if (rec) {
+            ctx.schedule(() => postMessage({ _type: 'push', key, rec }))
+          }
+        } else if (event.data._type === 'push') {
+          const { rec } = event.data
           if (rec === null) {
             memCache.delete(key)
-          } else {
-            if (rec.id !== memCache.get(key)?.id) {
-              memCache.set(key, rec)
-              cb()
-            }
+          } else if (rec.id !== memCache.get(key)?.id) {
+            memCache.set(key, rec)
+            cb()
           }
         }
       }
       channel.addEventListener('message', handler, false)
-      channel.postMessage({ _type: 'pull', key } satisfies BroadcastMessage)
+      if (!memCache.has(key)) {
+        postMessage({ _type: 'pull', key })
+      }
       return () => channel.removeEventListener('message', handler, false)
     },
   })
 }
 
-const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
+const reatomPersistIndexedDb = (
+  dbName: string,
+  channel: BroadcastChannel,
+): WithPersistWebStorage => {
+  const postMessage = (msg: BroadcastMessage) => channel.postMessage(msg)
+
   const memCacheAtom = atom(
     (ctx, state = new Map<string, PersistRecord>()) => state,
     `withIndexedDb._memCacheAtom`,
   )
 
-  const store = createStore(dbName, 'atoms')
+  const store = idb.createStore(dbName, 'atoms')
 
   return reatomPersist({
     name: 'withIndexedDb',
     get(ctx, key) {
-      const memCache = ctx.get(memCacheAtom)
-      get(key, store).then((data) => memCache.set(key, data))
-      return memCache.get(key) ?? null
+      return ctx.get(memCacheAtom).get(key) ?? null
     },
     set(ctx, key, rec) {
       const memCache = ctx.get(memCacheAtom)
       memCache.set(key, rec)
       ctx.schedule(async () => {
-        await set(key, rec, store)
-        channel.postMessage({
+        await idb.set(key, rec, store)
+        postMessage({
           key,
           rec,
           _type: 'push',
-        } satisfies BroadcastMessage)
+        })
       })
     },
     clear(ctx, key) {
       const memCache = ctx.get(memCacheAtom)
       memCache.delete(key)
       ctx.schedule(async () => {
-        await del(key, store)
-        channel.postMessage({
+        await idb.del(key, store)
+        postMessage({
           key,
           rec: null,
           _type: 'push',
-        } satisfies BroadcastMessage)
+        })
       })
     },
     subscribe(ctx, key, cb) {
-      ctx.schedule(async (ctx) => {
-        const rec = await get(key, store)
-        const memCache = ctx.get(memCacheAtom)
-        if (rec.id !== memCache.get(key)?.id) {
-          memCache.set(key, rec)
-          cb()
-        }
-      })
-
+      const memCache = ctx.get(memCacheAtom)
       const handler = (event: MessageEvent<BroadcastMessage>) => {
-        if (event.data._type === 'pull') {
-          if (event.data.key === key) {
-            ctx.schedule(() =>
-              channel.postMessage({
-                _type: 'push',
-                key,
-                rec: this.get(ctx, key),
-              }),
-            )
-          }
-          return
-        }
-        const { key: messageKey, rec } = event.data
-        if (messageKey === key) {
-          const memCache = ctx.get(memCacheAtom)
+        if (event.data.key !== key) return
+
+        if (event.data._type === 'pull' && memCache.has(key)) {
+          ctx.schedule(() =>
+            postMessage({
+              _type: 'push',
+              key,
+              rec: memCache.get(key)!,
+            }),
+          )
+        } else if (event.data._type === 'push') {
+          const { rec } = event.data
           if (rec === null) {
             memCache.delete(key)
           } else {
@@ -232,7 +230,16 @@ const reatomPersistIndexedDb = (dbName: string, channel: BroadcastChannel) => {
       }
 
       channel.addEventListener('message', handler)
-      channel.postMessage({ _type: 'pull', key } satisfies BroadcastMessage)
+      if (!memCache.has(key)) {
+        ctx.schedule(async (ctx) => {
+          const rec = await idb.get(key, store)
+          const memCache = ctx.get(memCacheAtom)
+          if (rec.id !== memCache.get(key)?.id) {
+            memCache.set(key, rec)
+            cb()
+          }
+        })
+      }
       return () => channel.removeEventListener('message', handler)
     },
   })
@@ -248,50 +255,11 @@ export const withSessionStorage = reatomPersistWebStorage(
   globalThis.sessionStorage,
 )
 
-interface WithBroadcastPersistOptionsObject<T> extends WithPersistOptions<T> {
-  channel?: BroadcastChannel
-}
+export const withBroadcastChannel = reatomPersistBroadcastChannel(
+  new BroadcastChannel('reatom_withBroadcastChannel_default'),
+)
 
-type WithBroadcastPersistOptions =
-  | [key: string]
-  | [options: WithBroadcastPersistOptionsObject<any>]
-
-export const withBroadcastChannel = (
-  ...options: WithBroadcastPersistOptions
-) => {
-  const opts = options[0]
-  if (typeof opts === 'string') {
-    const channel = new BroadcastChannel('reatom.withBroadcastChannel')
-    return reatomPersistBroadcastChannel(channel)(opts)
-  }
-
-  let { channel, ...rest } = opts
-
-  channel = channel ?? new BroadcastChannel('reatom.withBroadcastChannel')
-  return reatomPersistBroadcastChannel(channel)(rest)
-}
-
-interface WithIndexedDbPersistOptionsObject<T> extends WithPersistOptions<T> {
-  dbName?: string
-  channel?: BroadcastChannel
-}
-
-type WithIndexedDbOptions =
-  | [key: string]
-  | [options: WithIndexedDbPersistOptionsObject<any>]
-
-export const withIndexedDb = (...options: WithIndexedDbOptions) => {
-  const opts = options[0]
-
-  if (typeof opts === 'string') {
-    const dbName = 'reatom'
-    const channel = new BroadcastChannel('reatom.withIndexedDb')
-    return reatomPersistIndexedDb(dbName, channel)(opts)
-  }
-
-  let { dbName, channel, ...rest } = opts
-
-  dbName = dbName ?? 'reatom'
-  channel = channel ?? new BroadcastChannel('reatom.withIndexedDb')
-  return reatomPersistIndexedDb(dbName, channel)(rest)
-}
+export const withIndexedDb = reatomPersistIndexedDb(
+  'reatom_default',
+  new BroadcastChannel('reatom_withIndexedDb_default'),
+)

@@ -34,7 +34,7 @@ export const App = () => {
   return (
     <main>
       <h1>Check 'Application' tab in DevTools and open multiple tabs</h1>
-      <div>
+      <p>
         <label>
           I'm synced using localStorage
           <input
@@ -42,8 +42,8 @@ export const App = () => {
             onChange={(e) => setSearchLS(e.currentTarget.value)}
           />
         </label>
-      </div>
-      <div>
+      </p>
+      <p>
         <label>
           I'm not synced because I use sessionStorage
           <input
@@ -51,8 +51,8 @@ export const App = () => {
             onChange={(e) => setSearchSS(e.currentTarget.value)}
           />
         </label>
-      </div>
-      <div>
+      </p>
+      <p>
         <label>
           I'm synced using BroadcastChannel
           <input
@@ -60,8 +60,8 @@ export const App = () => {
             onChange={(e) => setSearchBC(e.currentTarget.value)}
           />
         </label>
-      </div>
-      <div>
+      </p>
+      <p>
         <label>
           I'm synced using IndexedDB
           <input
@@ -69,7 +69,7 @@ export const App = () => {
             onChange={(e) => setSearchIDB(e.currentTarget.value)}
           />
         </label>
-      </div>
+      </p>
     </main>
   )
 }
