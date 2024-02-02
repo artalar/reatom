@@ -238,7 +238,7 @@ type CtxRender = CtxSpy & { bind<T extends Fn>(fn: T): Binded<T> }
 type RenderState = JSX.Element & { REATOM_DEPS_CHANGE?: true }
 
 export const reatomComponent = <T>(
-  Component: (props: T & { ctx: CtxRender }) => JSX.Element,
+  Component: (props: T & { ctx: CtxRender }) => React.ReactNode,
   name = __count('Component'),
 ): ((props: T) => JSX.Element) => {
   let rendering = false
@@ -271,7 +271,12 @@ export const reatomComponent = <T>(
               bind: initCtx.bind,
             }
 
-            return Component(props)
+            const result = Component(props)
+            return typeof result === 'object' &&
+              result !== null &&
+              !(Symbol.iterator in result)
+              ? result
+              : React.createElement(React.Fragment, null, result)
           }
 
           // do not drop subscriptions from the render
