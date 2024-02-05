@@ -1,54 +1,25 @@
 import {
-  reatomAsync,
-  withAbort,
   withCache,
   withDataAtom,
   withRetry,
   sleep,
-  noop,
   withErrorAtom,
+  reatomResource,
 } from '@reatom/framework'
-import { useAtom } from '@reatom/npm-react'
+import { reatomComponent } from '@reatom/npm-react'
 import { searchParamsAtom } from '@reatom/url'
 import { withSsr } from '~/ssrPersist'
-
-async function fetchIssuesApi(
-  query: string,
-  { signal }: { signal: AbortSignal },
-) {
-  const response = await fetch(
-    `https://api.github.com/search/issues?q=${query}&page=${1}&per_page=10`,
-    { signal },
-  )
-
-  if (!response.ok) throw new Error(await response.text())
-
-  const data: { items: Array<Record<string, string>> } = await response.json()
-
-  return data.items.map(({ title, html_url, id }) => ({
-    title,
-    url: html_url,
-    id,
-  }))
-}
-
-const isRateLimitError = (thing: unknown) =>
-  thing instanceof Error && thing.message.includes('rate limit')
-const getErrorMessage = (thing: unknown) =>
-  isRateLimitError(thing)
-    ? undefined
-    : thing instanceof Error
-    ? thing.message
-    : String(thing)
+import { fetchIssuesApi, getErrorMessage, isRateLimitError } from './api'
 
 export const searchAtom = searchParamsAtom.lens('search')
 
-export const fetchIssues = reatomAsync(async (ctx, query: string) => {
+export const fetchIssues = reatomResource(async (ctx) => {
+  const query = ctx.spy(searchAtom)
+  if (!query) return []
   await sleep(350)
   const items = await fetchIssuesApi(query, ctx.controller)
   return items
 }, 'fetchIssues').pipe(
-  withAbort(),
   withDataAtom([]),
   withErrorAtom(getErrorMessage),
   withCache({
@@ -66,44 +37,31 @@ export const fetchIssues = reatomAsync(async (ctx, query: string) => {
     },
   }),
 )
-searchAtom.onChange((ctx, search) => {
-  fetchIssues(ctx, search).catch(noop)
-})
 
-export const Search = () => {
-  const [search, setSearch] = useAtom(searchAtom)
-  const [issues] = useAtom(fetchIssues.dataAtom)
-  const [error] = useAtom(fetchIssues.errorAtom)
-  // you could create computed atoms directly in `useAtom`
-  const [isLoading] = useAtom(
-    (ctx) =>
-      ctx.spy(fetchIssues.pendingAtom) + ctx.spy(fetchIssues.retriesAtom) > 0,
-  )
-
-  return (
+export const Search = reatomComponent(
+  ({ ctx }) => (
     <section>
       <input
-        value={search}
-        onChange={(e) => setSearch(e.currentTarget.value)}
+        value={ctx.spy(searchAtom)}
+        onChange={(e) => searchAtom(ctx, e.currentTarget.value)}
         placeholder="Search"
       />
-      {isLoading && 'Loading...'}
-      <p>{error}</p>
-      {issues.length === 0 ? (
-        <span>No issues</span>
-      ) : (
-        <ul>
-          {issues.map(({ title, url, id }) => (
-            <li key={id}>
-              {title} [
-              <a href={url} target="_blank" rel="noreferrer">
-                link
-              </a>
-              ]
-            </li>
-          ))}
-        </ul>
-      )}
+      {ctx.spy(fetchIssues.pendingAtom) || ctx.spy(fetchIssues.retriesAtom)
+        ? 'Loading...'
+        : null}
+      <p>{ctx.spy(fetchIssues.errorAtom)}</p>
+      <ul>
+        {ctx.spy(fetchIssues.dataAtom).map(({ title, url, id }) => (
+          <li key={id}>
+            {title} [
+            <a href={url} target="_blank" rel="noreferrer">
+              link
+            </a>
+            ]
+          </li>
+        ))}
+      </ul>
     </section>
-  )
-}
+  ),
+  'Search',
+)

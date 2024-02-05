@@ -8,17 +8,20 @@ import { snapshotAtom } from '~/ssrPersist'
 import { PersistRecord } from '@reatom/persist'
 
 type Props = {
-  url: string
   snapshot: Rec<PersistRecord>
 }
 
 export type AppGetServerSideProps = GetServerSideProps<Props>
 
-export default function App({ Component, pageProps }: AppProps<Props>) {
+export default function App({ Component, pageProps, router }: AppProps<Props>) {
   const ctx = useCreateCtx((ctx) => {
     snapshotAtom(ctx, pageProps.snapshot)
     if (typeof window === 'undefined') {
-      const url = new URL(pageProps.url ?? /* next.js fix */ 'http://localhost')
+      const url = new URL(
+        router.route,
+        //  TODO replace with real origin
+        'http://localhost',
+      )
       // override default `location` read for SSR
       setupUrlAtomSettings(ctx, () => url)
     } else {
