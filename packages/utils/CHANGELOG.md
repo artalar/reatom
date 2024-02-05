@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/utils-v3.8.0...utils-v3.9.0) (2024-02-05)
+
+
+### Features
+
+* **utils:** add typed keys and entries ([ed3c205](https://github.com/artalar/reatom/commit/ed3c205259d39cea018938c2b14794dbfd994c00))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/utils-v3.7.0...utils-v3.8.0) (2023-11-25)
 
 

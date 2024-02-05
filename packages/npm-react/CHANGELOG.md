@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.3](https://github.com/artalar/reatom/compare/npm-react-v3.8.2...npm-react-v3.8.3) (2024-02-05)
+
+
+### Bug Fixes
+
+* **npm-react:** allow ReactNode return in reatomComponent ([7c479cd](https://github.com/artalar/reatom/commit/7c479cd98c316ce3295451e74beffea7d862f8f9))
+
 ## [3.8.2](https://github.com/artalar/reatom/compare/npm-react-v3.8.1...npm-react-v3.8.2) (2024-01-21)
 
 
