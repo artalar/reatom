@@ -18,7 +18,7 @@ export default function App({ Component, pageProps }: AppProps<Props>) {
   const ctx = useCreateCtx((ctx) => {
     snapshotAtom(ctx, pageProps.snapshot)
     if (typeof window === 'undefined') {
-      const url = new URL(pageProps.url)
+      const url = new URL(pageProps.url ?? /* next.js fix */ 'http://localhost')
       // override default `location` read for SSR
       setupUrlAtomSettings(ctx, () => url)
     } else {
