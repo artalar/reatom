@@ -1,6 +1,9 @@
 {
   "name": "@reatom/eslint-plugin",
   "version": "3.5.0",
+  "publishConfig": {
+    "tag": "experimental"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom-specific ESLint rules",
