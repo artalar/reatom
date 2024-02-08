@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.3...eslint-plugin-v3.5.0) (2024-02-05)
+
+
+### Features
+
+* **eslint-plugin:** add async-rule & unit-naming-rule ([#709](https://github.com/artalar/reatom/issues/709)) ([04de10c](https://github.com/artalar/reatom/commit/04de10cb9bd3d39d2deec3ed1a5e0aface9de3c9))
+
 ## [3.4.3](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.2...eslint-plugin-v3.4.3) (2023-10-20)
 
 
