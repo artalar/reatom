@@ -66,10 +66,11 @@ const Greeting = () => {
   const [greeting] = useAtom(greetingAtom)
 
   return (
-    <br>
-      What is your name?:
-      <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
-      </br>
+    <>
+      <label>
+        What is your name?:
+        <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
+      </label>
       <h1>Hello {greeting}!</h1>
     </>
   )
@@ -84,13 +85,17 @@ const nameAtom = atom('Joe')
 const Greeting = () => {
   const t = useTranslation()
   const [name, setName] = useAtom(nameAtom)
-  const [greeting] = useAtom((ctx) => `${t('common:GREETING')} ${ctx.spy(nameAtom)}!`, [t])
+  const [greeting] = useAtom(
+    (ctx) => `${t('common:GREETING')} ${ctx.spy(nameAtom)}!`,
+    [t],
+  )
 
   return (
-    <br>
-      What is your name?:
-      <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
-      </br>
+    <>
+      <label>
+        What is your name?:
+        <input value={name} onChange={(e) => setName(e.currentTarget.value)} />
+      </label>
       <h1>{greeting}!</h1>
     </>
   )
