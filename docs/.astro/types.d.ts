@@ -381,6 +381,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"package/npm-vue.md": {
+	id: "package/npm-vue.md";
+  slug: "package/npm-vue";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "package/persist-web-storage.md": {
 	id: "package/persist-web-storage.md";
   slug: "package/persist-web-storage";
