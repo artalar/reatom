@@ -1,6 +1,9 @@
 {
   "name": "@reatom/npm-vue",
   "version": "3.5.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for Vue",
