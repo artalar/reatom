@@ -1,4 +1,4 @@
-import { atom } from '@reatom/framework'
+import { atom, onConnect } from '@reatom/framework'
 import {
   withLocalStorage,
   withBroadcastChannel,
@@ -24,12 +24,19 @@ const inputWithBroadcastChannelAtom = atom(
 const inputIndexedDbAtom = atom('', 'inputIndexedDbAtom').pipe(
   withIndexedDb('inputIndexedDbAtom'),
 )
+const inputIndexedDbReadyAtom = atom(false, 'inputIndexedDbReadyAtom')
+onConnect(inputIndexedDbAtom, async (ctx) => {
+  await ctx.schedule(() => new Promise((r) => requestIdleCallback(r)))
+  inputIndexedDbReadyAtom(ctx, true)
+  return () => inputIndexedDbReadyAtom(ctx, false)
+})
 
 export const App = () => {
   const [searchLS, setSearchLS] = useAtom(inputWithLocalStorageAtom)
   const [searchSS, setSearchSS] = useAtom(inputWithSessionStorageAtom)
   const [searchBC, setSearchBC] = useAtom(inputWithBroadcastChannelAtom)
   const [searchIDB, setSearchIDB] = useAtom(inputIndexedDbAtom)
+  const [inputIndexedDbReady] = useAtom(inputIndexedDbReadyAtom)
 
   return (
     <main>
@@ -62,13 +69,17 @@ export const App = () => {
         </label>
       </p>
       <p>
-        <label>
-          I'm synced using IndexedDB
-          <input
-            value={searchIDB}
-            onChange={(e) => setSearchIDB(e.currentTarget.value)}
-          />
-        </label>
+        {inputIndexedDbReady ? (
+          <label>
+            I'm synced using IndexedDB
+            <input
+              value={searchIDB}
+              onChange={(e) => setSearchIDB(e.currentTarget.value)}
+            />
+          </label>
+        ) : (
+          'IndexedDB initialization...'
+        )}
       </p>
     </main>
   )
