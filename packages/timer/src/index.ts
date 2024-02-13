@@ -12,7 +12,7 @@ import { MAX_SAFE_TIMEOUT, noop, sleep } from '@reatom/utils'
 import { getRootCause, onUpdate } from '@reatom/hooks'
 
 /** contains the ms remaining to the end of the timer. */
-export interface TimerAtom extends AtomMut<number> {
+export interface TimerAtom extends Atom<number> {
   /** from 0 to 1, `(delay - remains) / delay` */
   progressAtom: Atom<number>
   /** interval in ms */
@@ -180,7 +180,7 @@ export const reatomTimer = (
     `${name}.pause`,
   )
 
-  return Object.assign(timerAtom, {
+  return Object.assign({}, timerAtom, {
     progressAtom,
     endTimer,
     intervalAtom,
