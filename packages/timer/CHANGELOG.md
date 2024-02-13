@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/timer-v3.5.6...timer-v3.6.0) (2024-02-13)
+
+
+### Features
+
+* **timer:** add passed option to startTimer ([2ba31a4](https://github.com/artalar/reatom/commit/2ba31a45041ed1009d59a7628fc530dd8faa7027))
+
+
+### Bug Fixes
+
+* **timer:** do not allow the timer mutations ([05643d8](https://github.com/artalar/reatom/commit/05643d87eb0d8e8000581adfcb20deb2d2bb4169))
+
 ## [3.5.6](https://github.com/artalar/reatom/compare/timer-v3.5.5...timer-v3.5.6) (2023-11-20)
 
 
