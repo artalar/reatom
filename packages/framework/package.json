@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.4.31",
+  "version": "3.4.32",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -29,7 +29,7 @@
     "@reatom/lens": "^3.9.1",
     "@reatom/logger": "^3.6.0",
     "@reatom/primitives": "^3.2.1",
-    "@reatom/utils": "^3.8.0"
+    "@reatom/utils": "^3.9.0"
   },
   "author": "artalar",
   "license": "MIT",
