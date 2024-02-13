@@ -3,7 +3,9 @@ import {
   AtomMut,
   Ctx,
   CtxSpy,
+  atom,
   createCtx,
+  isAtom,
   throwReatomError,
 } from '@reatom/core'
 import { App, ref, Ref, onScopeDispose, inject } from 'vue'
@@ -21,6 +23,8 @@ export const reatomRef = ((target: any, ctx = inject(ReatomCtxKey)!) => {
     !ctx,
     'ctx is not passed explicitly nor provided with "createReatomVue"',
   )
+
+  if (!isAtom(target) && typeof target === 'function') target = atom(target)
 
   const vueState = ref()
   const readonly = typeof target !== 'function'
