@@ -11,8 +11,9 @@ import { withReducers } from '@reatom/primitives'
 import { MAX_SAFE_TIMEOUT, noop, sleep } from '@reatom/utils'
 import { getRootCause, onUpdate } from '@reatom/hooks'
 
+/** contains the ms remaining to the end of the timer. */
 export interface TimerAtom extends AtomMut<number> {
-  /** (delay - remains) / delay */
+  /** from 0 to 1, `(delay - remains) / delay` */
   progressAtom: Atom<number>
   /** interval in ms */
   intervalAtom: AtomMut<number> & {
@@ -20,7 +21,7 @@ export interface TimerAtom extends AtomMut<number> {
     setSeconds: Action<[seconds: number], number>
   }
   /** start timer by passed interval. Seconds expected with default `delayMultiplier` */
-  startTimer: Action<[delay: number], Promise<void>>
+  startTimer: Action<[delay: number, passed?: number], Promise<void>>
   /** stop timer manually */
   stopTimer: Action<[], void>
   /** allow to pause timer */
@@ -81,81 +82,88 @@ export const reatomTimer = (
 
   const _versionAtom = atom(0, `${name}._versionAtom`)
 
-  const startTimer: TimerAtom['startTimer'] = action((ctx, delay: number) => {
-    delay *= delayMultiplier
+  const startTimer: TimerAtom['startTimer'] = action(
+    (ctx, delay: number, passed = 0) => {
+      delay *= delayMultiplier
 
-    delay = Math.min(MAX_SAFE_TIMEOUT, delay)
+      delay = Math.min(MAX_SAFE_TIMEOUT, delay)
 
-    throwReatomError(delay < ctx.get(intervalAtom), 'delay less than interval')
+      throwReatomError(
+        delay < ctx.get(intervalAtom),
+        'delay less than interval',
+      )
+      throwReatomError(delay < passed, 'passed more than delay')
 
-    const version = _versionAtom(ctx, (s) => s + 1)
-    const start = Date.now()
-    let target = delay + start
-    let remains = delay
-    let resolvePause = noop
-    let pauseFrom = 0
+      const version = _versionAtom(ctx, (s) => s + 1)
+      const start = Date.now()
+      let target = delay + start - passed
+      let remains = delay - passed
+      let resolvePause = noop
+      let pauseFrom = 0
 
-    timerAtom(ctx, remains)
+      timerAtom(ctx, remains)
 
-    progressAtom(ctx, 0)
+      progressAtom(ctx, passed / delay)
 
-    pauseAtom(ctx, false)
+      pauseAtom(ctx, false)
 
-    const cleanupPause = onUpdate(pauseAtom, (pauseCtx, pause) => {
-      if (getRootCause(ctx.cause) === getRootCause(pauseCtx.cause)) {
-        const now = Date.now()
-        ctx.schedule(() => {
-          if (pause) {
-            pauseFrom = now
-          } else {
-            target += now - pauseFrom
-            resolvePause()
-            resolvePause = noop
-            pauseFrom = 0
-          }
-        })
-      }
-    })
-
-    return ctx
-      .schedule(async () => {
-        while (1) {
-          remains = target - Date.now()
-          if (remains <= 0) break
-
-          const interval = ctx.get(intervalAtom)
-          const tickDelay =
-            remains < interval
-              ? remains
-              : // reduce perf overload shift (when the sleep resolves after expected time)
-                remains % interval || interval
-
-          await ctx.schedule(() => sleep(tickDelay))
-
-          if (pauseFrom) {
-            await new Promise((r) => (resolvePause = r))
-            continue
-          }
-
-          if (version !== ctx.get(_versionAtom)) return
-
-          ctx.get(() => {
-            remains = timerAtom(ctx, Math.max(0, target - Date.now()))
-            const interval = ctx.get(intervalAtom)
-            const steps = Math.ceil(delay / interval)
-            const stepsRemains = Math.ceil(remains / interval)
-            progressAtom(
-              ctx,
-              +(1 - stepsRemains / steps).toFixed(progressPrecision),
-            )
+      const cleanupPause = onUpdate(pauseAtom, (pauseCtx, pause) => {
+        if (getRootCause(ctx.cause) === getRootCause(pauseCtx.cause)) {
+          const now = Date.now()
+          ctx.schedule(() => {
+            if (pause) {
+              pauseFrom = now
+            } else {
+              target += now - pauseFrom
+              resolvePause()
+              resolvePause = noop
+              pauseFrom = 0
+            }
           })
         }
       })
-      .finally(() => {
-        cleanupPause()
-        if (version === ctx.get(_versionAtom)) endTimer(ctx)
-      })
-  }, `${name}.startTimer`)
+
+      return ctx
+        .schedule(async () => {
+          while (1) {
+            remains = target - Date.now()
+            if (remains <= 0) break
+
+            const interval = ctx.get(intervalAtom)
+            const tickDelay =
+              remains < interval
+                ? remains
+                : // reduce perf overload shift (when the sleep resolves after expected time)
+                  remains % interval || interval
+
+            await ctx.schedule(() => sleep(tickDelay))
+
+            if (pauseFrom) {
+              await new Promise((r) => (resolvePause = r))
+              continue
+            }
+
+            if (version !== ctx.get(_versionAtom)) return
+
+            ctx.get(() => {
+              remains = timerAtom(ctx, Math.max(0, target - Date.now()))
+              const interval = ctx.get(intervalAtom)
+              const steps = Math.ceil(delay / interval)
+              const stepsRemains = Math.ceil(remains / interval)
+              progressAtom(
+                ctx,
+                +(1 - stepsRemains / steps).toFixed(progressPrecision),
+              )
+            })
+          }
+        })
+        .finally(() => {
+          cleanupPause()
+          if (version === ctx.get(_versionAtom)) endTimer(ctx)
+        })
+    },
+    `${name}.startTimer`,
+  )
 
   const stopTimer: TimerAtom['stopTimer'] = action((ctx) => {
     _versionAtom(ctx, (s) => s + 1)
