@@ -9,7 +9,7 @@ import {
   action,
   atom,
 } from '@reatom/core'
-import { abortCauseContext, isCausedBy } from '@reatom/effects'
+import { abortCauseContext } from '@reatom/effects'
 import { getRootCause, withInit } from '@reatom/hooks'
 import { noop } from '@reatom/utils'
 
@@ -129,7 +129,7 @@ const _urlAtom = atom(null as any as URL, 'urlAtom')
 export const urlAtom: UrlAtom = Object.assign(
   (ctx: Ctx, url: URL | Fn<[URL, Ctx], URL>) =>
     _urlAtom(ctx, (state, urlCtx) => {
-      abortCauseContext.set(urlCtx.cause, undefined)
+      abortCauseContext.set(urlCtx.cause, new AbortController())
       return typeof url === 'function' ? url(state, urlCtx) : url
     }),
   _urlAtom,
@@ -147,7 +147,7 @@ export const urlAtom: UrlAtom = Object.assign(
   },
 ).pipe(withInit((ctx) => ctx.get(settingsAtom).init(ctx)))
 urlAtom.onChange((ctx, url) => {
-  if (!isCausedBy(ctx.cause, updateFromSource.__reatom)) {
+  if (ctx.cause.cause?.proto !== updateFromSource.__reatom) {
     ctx.get(settingsAtom).sync(ctx, url)
   }
 })
