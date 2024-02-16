@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/core-v3.6.6...core-v3.7.0) (2024-02-16)
+
+
+### Features
+
+* **core:** add experimental_PLUGINS ([334759c](https://github.com/artalar/reatom/commit/334759c1e20487545a1276f18c14812a1a080fbe))
+
+
+### Bug Fixes
+
+* **core:** actualization of unsusbscribed atom ([e388afb](https://github.com/artalar/reatom/commit/e388afbbd120aa8fd9aeb3943cb55691e2930f24))
+
 ## [3.6.6](https://github.com/artalar/reatom/compare/core-v3.6.5...core-v3.6.6) (2024-01-21)
 
 
