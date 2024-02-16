@@ -47,3 +47,8 @@ main::before {
   background-size: cover;
   background-repeat: no-repeat;
 }
+
+.external-link-icon {
+  text-decoration: none;
+  display: inline-block;
+}

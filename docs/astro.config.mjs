@@ -1,6 +1,7 @@
 import { $ } from 'zx'
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
+import rehypeExternalLinks from 'rehype-external-links'
 if (!process.env.VERCEL) await $`tsx sync-readme-to-pages.ts`
 
 // https://astro.build/config
@@ -79,5 +80,26 @@ export default defineConfig({
     service: {
       entrypoint: 'astro/assets/services/sharp',
     },
+  },
+  markdown: {
+    rehypePlugins: [
+      [
+        rehypeExternalLinks,
+        {
+          contentProperties: { className: ['external-link-icon'] },
+          content: (node) => {
+            const imgChild = node.children.find((c) => c.tagName === 'img')
+
+            return imgChild
+              ? undefined
+              : {
+                  type: 'text',
+                  value: '↗',
+                }
+          },
+          target: '_blank',
+        },
+      ],
+    ],
   },
 })
