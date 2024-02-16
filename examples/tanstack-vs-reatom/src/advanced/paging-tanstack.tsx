@@ -15,7 +15,12 @@ const usePaging = () => {
   const [searchParams, setSearchParams] = useSearchParams({ page: '1' })
   const page = Number(searchParams.get('page') || '1')
   const setPage = React.useCallback(
-    (newPage: number) => setSearchParams({ page: String(newPage) }),
+    (newPage: number) =>
+      setSearchParams((params) => {
+        params = new URLSearchParams(params)
+        params.set('page', String(newPage))
+        return params
+      }),
     [],
   )
   return [page, setPage] as const
