@@ -29,32 +29,61 @@ import { reatomNumber } from '@reatom/primitives'
 import { withSearchParamsPersist } from '@reatom/url'
 
 export const pageAtom = reatomNumber(0, 'pageAtom').pipe(
-  withSearchParamsPersist('page', Number),
+  withSearchParamsPersist('page', (page = '1') => Number(page)),
 )
 ```
 
 Now you have handy `increment` and `decrement` actions in `pageAtom` and synchronization with "page" search parameter.
+
+Also, both `searchParamsAtom.lens` and `withSearchParamsPersist` accepts options object by the second argument, which you can use to specify `replace` strategy (`false` by default).
+
+```ts
+import qs from 'qs'
+import { atom } from '@reatom/core'
+import { withSearchParamsPersist } from '@reatom/url'
+
+export const filtersAtom = atom<Filters>({}, 'filtersAtom').pipe(
+  withSearchParamsPersist('filter', {
+    replace: true,
+    parse: (v = '') => qs.parse(v, { arrayFormat: 'bracket' }),
+    serialize: (v) => qs.stringify(v, { arrayFormat: 'bracket' }),
+  }),
+)
+```
 
 ### Types
 
 Here are the types of the key features.
 
 ```ts
-// exported by `urlAtom`
-export interface UrlAtom extends AtomMut<URL> {
-  go: Action<[path: `/${string}`], URL>
+// used by `urlAtom`
+export interface UrlAtom extends Atom<URL> {
+  (ctx: Ctx, url: URL, replace?: boolean): URL
+  (ctx: Ctx, update: (url: URL, ctx: Ctx) => URL, replace?: boolean): URL
+
+  go: Action<[path: string, replace?: boolean], URL>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
 
-// exported by `searchParamsAtom`
+// used by `searchParamsAtom`
 export interface SearchParamsAtom extends Atom<Rec<string>> {
-  set: Action<[key: string, value: string], void>
-  /** create AtomMut which will synced with the specified search parameter */
-  lens: <T = string>(
+  set: Action<[key: string, value: string, replace?: boolean], void>
+  del: Action<[key: string, replace?: boolean], void>
+  /** create AtomMut which will synced with the specified query parameter */
+  lens<T = string>(
     key: string,
     parse?: (value?: string) => T,
-    serialize?: (value: T) => string,
-  ) => AtomMut<T>
+    serialize?: (value: T) => undefined | string,
+  ): AtomMut<T>
+  /** create AtomMut which will synced with the specified query parameter */
+  lens<T = string>(
+    key: string,
+    options: {
+      parse?: (value?: string) => T
+      serialize?: (value: T) => undefined | string
+      replace?: boolean
+    },
+  ): AtomMut<T>
 }
 ```
 
