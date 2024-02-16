@@ -40,13 +40,63 @@ export const createImportMap = (packagePrefix: string) => {
   }
 }
 
-export const ascend = <Type extends Rule.Node['type']>(
-  node: Rule.Node,
-  ...types: ReadonlyArray<Type>
+export const ascend = <Type extends estree.Node['type']>(
+  node: estree.Node,
+  ...types: Array<Type>
 ) => {
   while (node && !types.includes(node.type as any)) {
-    node = node.parent
+    node = (node as any).parent
   }
 
   return node as Extract<Rule.Node, { type: Type }> | undefined
+}
+
+export const getFunctionNameDeclarations = (
+  fn:
+    | estree.FunctionExpression
+    | estree.ArrowFunctionExpression
+    | estree.FunctionDeclaration,
+  names: string[],
+) => {
+  const stack = [...fn.params] as estree.Node[]
+
+  if (fn.body.type === 'BlockStatement') {
+    for (const statement of fn.body.body) {
+      if (statement.type !== 'VariableDeclaration') continue
+      for (const declaration of statement.declarations) {
+        stack.push(declaration.id)
+      }
+    }
+  }
+
+  const result = [] as string[]
+
+  let top: estree.Node | undefined
+  while ((top = stack.pop())) {
+    if (top.type === 'AssignmentPattern') {
+      top = top.left
+    }
+
+    if (top.type === 'RestElement') {
+      top = top.argument
+    }
+
+    if (top.type === 'ObjectPattern') {
+      for (const property of top.properties) {
+        stack.push(property.value)
+      }
+    }
+
+    if (top.type === 'ArrayPattern') {
+      for (const element of top.elements) {
+        stack.push(element)
+      }
+    }
+
+    if (top.type === 'Identifier' && names.includes(top.name)) {
+      result.push(top.name)
+    }
+  }
+
+  return result
 }
