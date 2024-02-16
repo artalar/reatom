@@ -406,7 +406,12 @@ export const createCtx = ({
     let { patch, actual } = proto
     let updating = updater !== undefined
 
-    if (actual && !updating) return patch!
+    if (
+      !updating &&
+      actual &&
+      (patch!.pubs.length === 0 || isConnected(patch!))
+    )
+      return patch!
 
     let cache = patch ?? read(proto)
     let isInt = !cache

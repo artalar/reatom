@@ -738,6 +738,18 @@ test('dynamic spy callback prevValue', () => {
   ;`👍` //?
 })
 
+test('should drop actualization of stale atom during few updates in one transaction', () => {
+  const a = atom(0)
+  const b = atom((ctx) => ctx.spy(a))
+  const ctx = createCtx()
+
+  ctx.get(() => {
+    assert.is(ctx.get(b), 0)
+    a(ctx, 1)
+    assert.is(ctx.get(b), 1)
+  })
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
