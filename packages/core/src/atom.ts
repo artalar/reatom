@@ -706,7 +706,9 @@ export function atom<T>(
   theAtom.pipe = pipe
   theAtom.onChange = onChange
 
-  return theAtom
+  return experimental_PLUGINS.length === 0
+    ? theAtom
+    : theAtom.pipe(...experimental_PLUGINS)
 }
 
 export const action: {
@@ -752,6 +754,8 @@ export const action: {
     },
   )
 }
+
+export const experimental_PLUGINS: Array<(anAtom: Atom) => Atom> = []
 
 /**
  * @internal
