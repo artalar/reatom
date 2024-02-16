@@ -84,12 +84,23 @@ const someNamespace = {
 When creating atoms dynamically with factories, you can also specify the "namespace" of the name before the `.` symbol:
 
 ```ts
-const reatomUser = (_name: string) => {
-  const name = atom(_name, 'reatomUser.name')
-
-  return { name }
+const reatomFood = (config: {
+  name: string
+  calories: number
+  fat: number
+  carbs: number
+  protein: number
+}) => {
+  const { name } = config.name
+  const calories = atom(config.calories, `${name}.calories`)
+  const fat = atom(config.fat, `${name}.fat`)
+  const carbs = atom(config.carbs, `${name}.carbs`)
+  const protein = atom(config.protein, `${name}.protein`)
+  return { calories, fat, carbs, protein }
 }
 ```
+
+If there is an identifier `name` defined in the function scope, unit names must use it as namespace. Otherwise, namespace must be equal to the name of the factory function.
 
 For private atoms, `_` prefix can be used:
 

@@ -40,15 +40,29 @@ tester.run('unit-naming-rule', unitNamingRule, {
       output: `${ImportAtom}; const someAtom = atom(0, 'someAtom')`,
     },
     {
-      code: `${ImportAtom}; const some = atom(0, 'SomeDomain._some')`,
-      options: [{ atomPostfix: 'Atom' }],
-      errors: [{ messageId: 'postfixMissing' }],
-      output: `${ImportAtom}; const someAtom = atom(0, 'SomeDomain._someAtom')`,
+      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome._unrelated'); }`,
+      errors: [{ messageId: 'nameIncorrect' }],
+      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome._field'); }`,
     },
     {
-      code: `${ImportAtom}; const some = atom(0, 'SomeDomain._unrelated')`,
+      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'field') }`,
       errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; const some = atom(0, 'SomeDomain._some')`,
+      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
+    },
+    {
+      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'Some.field') }`,
+      errors: [{ messageId: 'nameIncorrect' }],
+      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
+    },
+    {
+      code: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, 'field'); }`,
+      errors: [{ messageId: 'nameIncorrect' }],
+      output: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
+    },
+    {
+      code: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, 'Some.field'); }`,
+      errors: [{ messageId: 'nameIncorrect' }],
+      output: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
     },
   ],
 })
