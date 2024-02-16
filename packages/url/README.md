@@ -96,7 +96,7 @@ export const RouterSync = () => {
 
   // subscribe to location changes
   useLocation()
-  if (setupRef.current && ctx.get(urlAtom).href !== location.href) {
+  if (ctx.get(urlAtom).href !== location.href && setupRef.current) {
     // do not use `useEffect` to prevent race conditions (`urlAtom` reading during the render)
     updateFromSource(ctx, new URL(location.href))
   }
@@ -108,6 +108,8 @@ export const RouterSync = () => {
       init: (ctx) => new URL(location.href),
       sync: (_ctx, url) => navigate(url.pathname + url.search),
     })
+    // trigger `onChange` hooks.
+    urlAtom(ctx, new URL(location.href))
   }
 
   return null
