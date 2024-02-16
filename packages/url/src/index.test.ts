@@ -37,4 +37,22 @@ test('direct updateFromSource call should be ignored', async () => {
   assert.is(ctx.get(urlAtom).href, 'http://example.com/?test=3')
 })
 
+test('SearchParamsAtom.lens', () => {
+  const ctx = createTestCtx()
+
+  setupUrlAtomSettings(ctx, () => new URL('http://example.com'))
+  const testAtom = searchParamsAtom.lens('test', (value = '1') => Number(value))
+
+  testAtom(ctx, 2)
+  assert.is(ctx.get(testAtom), 2)
+  assert.is(ctx.get(urlAtom).href, 'http://example.com/?test=2')
+
+  testAtom(ctx, 3)
+  assert.is(ctx.get(urlAtom).href, 'http://example.com/?test=3')
+
+  urlAtom.go(ctx, '/path')
+  assert.is(ctx.get(testAtom), 1)
+  assert.is(ctx.get(urlAtom).href, 'http://example.com/path')
+})
+
 test.run()

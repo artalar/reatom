@@ -105,8 +105,9 @@ export const RouterSync = () => {
   if (!setupRef.current) {
     setupRef.current = true
     urlAtom.settingsAtom(ctx, {
-      init: (ctx) => new URL(location.href),
-      sync: (_ctx, url) => navigate(url.pathname + url.search),
+      init: () => new URL(location.href),
+      sync: (_ctx, url, replace) =>
+        navigate(url.pathname + url.search, { replace }),
     })
     // trigger `onChange` hooks.
     urlAtom(ctx, new URL(location.href))
