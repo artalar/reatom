@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/url-v3.6.2...url-v3.7.0) (2024-02-16)
+
+
+### Features
+
+* **url:** add replace option ([c6ae085](https://github.com/artalar/reatom/commit/c6ae0859fd246135e17379623e91a67ffeedbb59))
+
+
+### Bug Fixes
+
+* **url:** updateFromSource indirect check ([05b55ec](https://github.com/artalar/reatom/commit/05b55ecf973dbb43e91226390bdf102c17455f88))
+
 ## [3.6.2](https://github.com/artalar/reatom/compare/url-v3.6.1...url-v3.6.2) (2023-11-26)
 
 
