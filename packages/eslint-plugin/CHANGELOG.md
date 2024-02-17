@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.5.0...eslint-plugin-v3.6.0) (2024-02-16)
+
+
+### Features
+
+* **eslint-plugin:** enforce domain in names ([#764](https://github.com/artalar/reatom/issues/764)) ([0b4ccff](https://github.com/artalar/reatom/commit/0b4ccffa80fa738233f2160fc9b3a70269c6d4d5))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.3...eslint-plugin-v3.5.0) (2024-02-05)
 
 
