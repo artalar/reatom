@@ -243,86 +243,92 @@ export const reatomComponent = <T>(
 ): ((props: T) => JSX.Element) => {
   let rendering = false
 
-  return (props) => {
-    const { controller, propsAtom, renderAtom } = React.useMemo(() => {
-      const controller = new AbortController()
+  return Object.defineProperty(
+    (props: T) => {
+      const { controller, propsAtom, renderAtom } = React.useMemo(() => {
+        const controller = new AbortController()
 
-      const propsAtom = atom<T>(
-        {} as T & { ctx: CtxRender },
-        `${name}._propsAtom`,
-      )
+        const propsAtom = atom<T>(
+          {} as T & { ctx: CtxRender },
+          `${name}._propsAtom`,
+        )
 
-      const renderAtom = atom(
-        (ctx: CtxRender, state?: RenderState): RenderState => {
-          const { pubs } = ctx.cause
-          const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
+        const renderAtom = atom(
+          (ctx: CtxRender, state?: RenderState): RenderState => {
+            const { pubs } = ctx.cause
+            const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
-          if (rendering) {
-            const initCtx = React.useRef(ctx).current
+            if (rendering) {
+              const initCtx = React.useRef(ctx).current
 
-            if (!abortCauseContext.has(initCtx.cause)) {
-              abortCauseContext.set(initCtx.cause, controller)
-              initCtx.bind = bind(initCtx, bindBind)
+              if (!abortCauseContext.has(initCtx.cause)) {
+                abortCauseContext.set(initCtx.cause, controller)
+                initCtx.bind = bind(initCtx, bindBind)
+              }
+
+              props.ctx = {
+                ...ctx,
+                cause: initCtx.cause,
+                bind: initCtx.bind,
+              }
+
+              const result = Component(props)
+              return typeof result === 'object' &&
+                result !== null &&
+                !(Symbol.iterator in result)
+                ? result
+                : React.createElement(React.Fragment, null, result)
             }
 
-            props.ctx = {
-              ...ctx,
-              cause: initCtx.cause,
-              bind: initCtx.bind,
+            // do not drop subscriptions from the render
+            for (
+              // skip `propsAtom`
+              let i = 1;
+              i < pubs.length;
+              i++
+            ) {
+              // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
+              ctx.spy({ __reatom: pubs[i]!.proto })
             }
 
-            const result = Component(props)
-            return typeof result === 'object' &&
-              result !== null &&
-              !(Symbol.iterator in result)
-              ? result
-              : React.createElement(React.Fragment, null, result)
-          }
+            return { ...state!, REATOM_DEPS_CHANGE: true }
+          },
+          `${name}._renderAtom`,
+        ) as Atom as Atom<RenderState>
 
-          // do not drop subscriptions from the render
-          for (
-            // skip `propsAtom`
-            let i = 1;
-            i < pubs.length;
-            i++
-          ) {
-            // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
-            ctx.spy({ __reatom: pubs[i]!.proto })
-          }
+        return { controller, propsAtom, renderAtom }
+      }, [])
 
-          return { ...state!, REATOM_DEPS_CHANGE: true }
-        },
-        `${name}._renderAtom`,
-      ) as Atom as Atom<RenderState>
+      const ctx = useCtx()
 
-      return { controller, propsAtom, renderAtom }
-    }, [])
+      const [, forceUpdate] = React.useState({} as JSX.Element)
 
-    const ctx = useCtx()
+      React.useEffect(() => {
+        const unsubscribe = ctx.subscribe(renderAtom, (element) => {
+          if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
+        })
 
-    const [, forceUpdate] = React.useState({} as JSX.Element)
+        return () => {
+          unsubscribe()
+          controller.abort(toAbortError(`${name} unmount`))
+        }
+      }, [ctx, renderAtom])
 
-    React.useEffect(() => {
-      const unsubscribe = ctx.subscribe(renderAtom, (element) => {
-        if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
+      return ctx.get(() => {
+        propsAtom(ctx, { ...props })
+        try {
+          rendering = true
+          return ctx.get(renderAtom)
+        } finally {
+          rendering = false
+        }
       })
-
-      return () => {
-        unsubscribe()
-        controller.abort(toAbortError(`${name} unmount`))
-      }
-    }, [ctx, renderAtom])
-
-    return ctx.get(() => {
-      propsAtom(ctx, { ...props })
-      try {
-        rendering = true
-        return ctx.get(renderAtom)
-      } finally {
-        rendering = false
-      }
-    })
-  }
+    },
+    'name',
+    {
+      value: name,
+    },
+  )
 }
 
 const promisesValues = new WeakMap<Promise<any>, any>()
