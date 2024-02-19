@@ -10,7 +10,9 @@ description: Complex examples of Reatom state manager
 <!-- - React data fetching example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-data-fetching), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-data-fetching) -->
 - React search (async, debounce, error handling) example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-search), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-search)
 - React pomodoro example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-pomodoro), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-pomodoro)
-- React atomization example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-atomization), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-atomization)
+- React table atomization example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-table-atomization), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-table-atomization)
+- React atomization with persistance example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-atomization-persistance), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-atomization-persistance)
 - React notifications example:[source](https://github.com/artalar/reatom/tree/v3/examples/react-notifications), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-notifications)
+- Comparison with Tanstack Query:[source](https://github.com/artalar/reatom/tree/v3/examples/tanstack-vs-reatom), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/tanstack-vs-reatom)
 - React tree example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-tree), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-tree)
 - Vue search (async, debounce, error handling) example: [source](https://github.com/artalar/reatom/tree/v3/examples/vue-search), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/vue-search)
