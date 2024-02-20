@@ -43,6 +43,7 @@
     "@vitejs/plugin-react": "^4.0.3",
     "history": "^5.3.0",
     "husky": "^8.0.3",
+    "linkedom": "^0.16.8",
     "lit": "^2.7.6",
     "microbundle": "^0.15.1",
     "react": "^18.2.0",
