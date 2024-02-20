@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.4](https://github.com/artalar/reatom/compare/npm-react-v3.8.3...npm-react-v3.8.4) (2024-02-20)
+
+
+### Bug Fixes
+
+* **npm-react:** reatomComponent displayName ([bb85630](https://github.com/artalar/reatom/commit/bb85630d50f4ea73154c9136b29086a20046f4d1))
+
 ## [3.8.3](https://github.com/artalar/reatom/compare/npm-react-v3.8.2...npm-react-v3.8.3) (2024-02-05)
 
 

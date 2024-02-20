@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/jsx-v3.6.0...jsx-v3.7.0) (2024-02-20)
+
+
+### Features
+
+* **jsx:** complete jsx renderer ([#733](https://github.com/artalar/reatom/issues/733)) ([f251172](https://github.com/artalar/reatom/commit/f251172ead5a386ec95e145ccc12845b428d93da))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/jsx-v3.5.0...jsx-v3.6.0) (2023-10-20)
 
 
