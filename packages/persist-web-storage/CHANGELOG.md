@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.0...persist-web-storage-v3.3.1) (2024-02-20)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** types ([ab0e826](https://github.com/artalar/reatom/commit/ab0e8261f39d81998bccc6425f3dee577143da7c))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.3...persist-web-storage-v3.3.0) (2024-02-05)
 
 
