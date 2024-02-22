@@ -22,6 +22,7 @@
     "astro": "^3.4.3",
     "codemirror": "^6.0.1",
     "mermaid": "^10.6.1",
+    "rehype-external-links": "^3.0.0",
     "sharp": "^0.32.4",
     "sucrase": "^3.34.0",
     "tsx": "^3.12.7",
