@@ -1,7 +1,6 @@
 import React from 'react'
-import { atom, onConnect } from '@reatom/framework'
+import { atom, onConnect, mapState } from '@reatom/framework'
 import { reatomComponent } from '@reatom/npm-react'
-import { mapState } from '@reatom/lens'
 import { reatomTimer } from '@reatom/timer'
 import { Box, Button, Flex, Label, Stack, VFlex } from '~/basic'
 import { cx } from '~/utils'
