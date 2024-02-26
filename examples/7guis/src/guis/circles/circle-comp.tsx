@@ -1,15 +1,18 @@
 import React from 'react'
 import { reatomComponent } from '@reatom/npm-react'
-import type { Circle } from '~/guis/circles/model'
 import { Box } from '~/basic'
 import { cx } from '~/utils'
+import type { Atom } from '@reatom/framework'
 
 interface CircleCompProps {
-  circle: Circle
+  xAtom: Atom<number>
+  yAtom: Atom<number>
+  diameterAtom: Atom<number>
+  activeAtom: Atom<boolean>
 }
 
 export const CircleComp = React.memo<CircleCompProps>(
-  reatomComponent(({ ctx, circle }) => {
+  reatomComponent(({ ctx, activeAtom, yAtom, xAtom, diameterAtom }) => {
     return (
       <Box
         className={cx(
@@ -20,13 +23,13 @@ export const CircleComp = React.memo<CircleCompProps>(
           'rounded-[100px]',
           '-translate-x-1/2',
           '-translate-y-1/2',
-          ctx.spy(circle.activeAtom) ? 'bg-[#eee]' : undefined,
+          ctx.spy(activeAtom) ? 'bg-[#eee]' : undefined,
         )}
         style={{
-          top: ctx.spy(circle.yAtom),
-          left: ctx.spy(circle.xAtom),
-          width: ctx.spy(circle.diameterAtom),
-          height: ctx.spy(circle.diameterAtom),
+          top: ctx.spy(yAtom),
+          left: ctx.spy(xAtom),
+          width: ctx.spy(diameterAtom),
+          height: ctx.spy(diameterAtom),
         }}
       />
     )

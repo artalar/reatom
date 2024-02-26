@@ -1,20 +1,24 @@
 import React from 'react'
 import { reatomComponent } from '@reatom/npm-react'
-import { atom, type AtomMut } from '@reatom/framework'
+import { atom } from '@reatom/framework'
 import { Box, BoxClickable, Button, Flex, VFlex } from '~/basic'
 import { cx } from '~/utils'
 import { CircleComp } from './circle-comp'
-import { type Circle, circlesAtom, getInitialDiameterAction } from './model'
+import {
+  type Circle,
+  circlesAtom,
+  getInitialDiameterAction,
+  selectedAtom,
+} from './model'
 
 interface CircleDrawerPureProps {
-  inContextMode: AtomMut<boolean>
   onMouseMove: (x: number, y: number) => void
   onMouseLeave: () => void
   onCanvasClick: (x: number, y: number) => void
   onCircleClick: (c: Circle) => void
   onAdjustClick: () => void
   onDiameterChange: (d: number) => void
-  onDiameterRelease: (initial: number, d: number) => void
+  onDiameterRelease: (d: number) => void
   getClosest: (x: number, y: number) => Circle | null
   onUndo: () => void
   onRedo: () => void
@@ -31,12 +35,19 @@ const diameterDialogXAtom = atom(0, 'diameterDialogXAtom')
 const diameterDialogYAtom = atom(0, 'diameterDialogYAtom')
 const diameterAtom = atom(0, 'diameterAtom')
 
+const inContextModeAtom = atom((ctx) => {
+  return ctx.spy(contextMenuVisibleAtom) || ctx.spy(diameterDialogVisibleAtom)
+}, 'inContextModeAtom')
+
+inContextModeAtom.onChange((ctx, prev) => {
+  if (!prev) selectedAtom(ctx, null)
+})
+
 export const CircleDrawerPure = reatomComponent<CircleDrawerPureProps>(
   ({ ctx, ...props }) => {
     const canvasRef = React.useRef<HTMLDivElement>(null)
     const contextMenuRef = React.useRef<HTMLDivElement>(null)
     const diameterDialogRef = React.useRef<HTMLDivElement>(null)
-    const initialDiameter = React.useRef<number | null>(null)
 
     const contextMenuVisible = ctx.spy(contextMenuVisibleAtom)
     const contextMenuX = ctx.spy(contextMenuXAtom)
@@ -46,10 +57,6 @@ export const CircleDrawerPure = reatomComponent<CircleDrawerPureProps>(
     const diameterDialogX = ctx.spy(diameterDialogXAtom)
     const diameterDialogY = ctx.spy(diameterDialogYAtom)
     const diameter = ctx.spy(diameterAtom)
-
-    React.useEffect(() => {
-      props.inContextMode(ctx, contextMenuVisible || diameterDialogVisible)
-    }, [contextMenuVisible, diameterDialogVisible])
 
     React.useEffect(() => {
       document.addEventListener('click', handleDocumentContextMenuClick, {
@@ -136,24 +143,15 @@ export const CircleDrawerPure = reatomComponent<CircleDrawerPureProps>(
       diameterDialogYAtom(ctx, contextMenuY)
       const d = getInitialDiameterAction(ctx)
       diameterAtom(ctx, d)
-      initialDiameter.current = d
     }
 
     const handleChangeDiameter = (e: React.FormEvent<HTMLInputElement>) => {
       const d = parseInt(e.currentTarget.value)
       diameterAtom(ctx, d)
-      if (initialDiameter.current == null) {
-        initialDiameter.current = d
-      }
-      props.onDiameterChange(d)
     }
 
     const handleStopChangeDiameter = (e: React.FormEvent<HTMLInputElement>) => {
-      props.onDiameterRelease(
-        initialDiameter.current!,
-        parseInt(e.currentTarget.value),
-      )
-      initialDiameter.current = null
+      props.onDiameterRelease(parseInt(e.currentTarget.value))
     }
 
     return (
@@ -182,9 +180,19 @@ export const CircleDrawerPure = reatomComponent<CircleDrawerPureProps>(
             'overflow-hidden',
           )}
         >
-          {ctx.spy(circlesAtom).map((c) => (
-            <CircleComp key={c.name} circle={c} />
-          ))}
+          {ctx.spy(circlesAtom).map((c) => {
+            const isSelected = ctx.spy(c.selectedAtom) && diameterDialogVisible
+            const d = isSelected ? diameterAtom : c.diameterAtom
+            return (
+              <CircleComp
+                key={c.name}
+                xAtom={c.xAtom}
+                yAtom={c.yAtom}
+                activeAtom={c.activeAtom}
+                diameterAtom={d}
+              />
+            )
+          })}
         </div>
 
         {contextMenuVisible && (
@@ -207,6 +215,7 @@ export const CircleDrawerPure = reatomComponent<CircleDrawerPureProps>(
             Adjust Diameter
           </BoxClickable>
         )}
+
         {diameterDialogVisible && (
           <VFlex
             ref={diameterDialogRef}

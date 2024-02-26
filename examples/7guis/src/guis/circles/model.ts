@@ -2,10 +2,10 @@ import {
   action,
   atom,
   reatomArray,
-  reatomBoolean,
   random,
+  parseAtoms,
 } from '@reatom/framework'
-import { withUndo } from '@reatom/undo'
+import { reatomDynamicUndo } from '@reatom/undo'
 import type { Atom, AtomMut } from '@reatom/framework'
 
 export interface Circle {
@@ -18,16 +18,22 @@ export interface Circle {
   activeAtom: Atom<boolean>
 }
 
-export const circlesAtom = reatomArray<Circle>([], 'circlesAtom').pipe(
-  withUndo(),
+export const circlesAtom = reatomArray<Circle>([], 'circlesAtom')
+
+export const undoAtom = reatomDynamicUndo(
+  (ctx) => {
+    parseAtoms(ctx, circlesAtom)
+  },
+  {
+    name: 'undoAtom',
+    shouldUpdate: (_ctx, state) => {
+      return typeof state.cause?.state !== 'boolean'
+    },
+  },
 )
-export const inContextModeAtom = reatomBoolean(false, 'inContextModeAtom')
+
 export const selectedAtom = atom<Circle | null>(null, 'selectedAtom')
 export const hoveredAtom = atom<Circle | null>(null, 'hoveredAtom')
-
-inContextModeAtom.onChange((ctx, prev) => {
-  if (!prev) selectedAtom(ctx, null)
-})
 
 export const reatomCircle = (
   x: number,
@@ -79,7 +85,9 @@ export const addCircleAction = action((ctx, x: number, y: number) => {
   const circle = reatomCircle(x, y, 30)
   const length = ctx.get(circlesAtom).length
   circlesAtom.toSpliced(ctx, length, 0, circle)
-  hoveredAtom(ctx, circle)
+  void ctx.schedule(() => {
+    hoveredAtom(ctx, circle)
+  })
 }, 'addCircleAction')
 
 export const contextMenuAction = action((ctx) => {
@@ -104,19 +112,23 @@ export const changeDiameterAction = action((ctx, d: number) => {
   selected.diameterAtom(ctx, d)
 }, 'changeDiameterAction')
 
-export const stopChangeDiameterAction = action(
-  (ctx, initial: number, d: number) => {
-    const circle = ctx.get(selectedAtom)!
-    const circles = ctx.get(circlesAtom)
-    const index = circles.indexOf(circle)
-    circle.diameterAtom(ctx, initial)
-    const next = reatomCircle(ctx.get(circle.xAtom), ctx.get(circle.yAtom), d)
-    circlesAtom.with(ctx, index, next)
-    selectedAtom(ctx, next)
-    hoveredAtom(ctx, next)
-  },
-  'stopChangeDiameterAction',
-)
+export const stopChangeDiameterAction = action((ctx, d: number) => {
+  const circle = ctx.get(selectedAtom)!
+  const hovered = ctx.get(hoveredAtom)
+  const selected = ctx.get(selectedAtom)
+
+  hoveredAtom(ctx, null)
+  selectedAtom(ctx, null)
+
+  ctx
+    .schedule(() => {
+      circle.diameterAtom(ctx, d)
+    })
+    .then(() => {
+      hoveredAtom(ctx, hovered)
+      hoveredAtom(ctx, selected)
+    })
+}, 'stopChangeDiameterAction')
 
 export const getInitialDiameterAction = action(
   (ctx) => ctx.get(ctx.get(selectedAtom)!.diameterAtom),

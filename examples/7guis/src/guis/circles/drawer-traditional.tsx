@@ -9,14 +9,12 @@ import {
   stopChangeDiameterAction,
   adjustAction,
   getClosestAction,
-  circlesAtom,
-  inContextModeAtom,
+  undoAtom,
 } from './model'
 
 export const CircleDrawerTraditional = reatomComponent(({ ctx }) => {
   return (
     <CircleDrawerPure
-      inContextMode={inContextModeAtom}
       onMouseMove={ctx.bind(mouseMoveAction)}
       onMouseLeave={ctx.bind(mouseLeaveAction)}
       onCanvasClick={ctx.bind(addCircleAction)}
@@ -25,10 +23,10 @@ export const CircleDrawerTraditional = reatomComponent(({ ctx }) => {
       getClosest={ctx.bind(getClosestAction)}
       onDiameterChange={ctx.bind(changeDiameterAction)}
       onDiameterRelease={ctx.bind(stopChangeDiameterAction)}
-      onUndo={ctx.bind(circlesAtom.undo)}
-      onRedo={ctx.bind(circlesAtom.redo)}
-      canUndo={ctx.spy(circlesAtom.isUndoAtom)}
-      canRedo={ctx.spy(circlesAtom.isRedoAtom)}
+      onUndo={ctx.bind(undoAtom.undo)}
+      onRedo={ctx.bind(undoAtom.redo)}
+      canUndo={ctx.spy(undoAtom.isUndoAtom)}
+      canRedo={ctx.spy(undoAtom.isRedoAtom)}
     />
   )
 }, 'CircleDrawerTraditional')
