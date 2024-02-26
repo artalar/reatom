@@ -1,6 +1,6 @@
 import { atom } from '@reatom/core'
 import { PersistRecord, reatomPersist } from '@reatom/persist'
-import { get, set, del, createStore } from 'idb-keyval'
+import { get, set, del, createStore, UseStore } from 'idb-keyval'
 import { BroadcastMessage, WithPersistWebStorage } from './types'
 
 const idb = { get, set, del, createStore }
@@ -16,7 +16,8 @@ const reatomPersistIndexedDb = (
     `withIndexedDb._memCacheAtom`,
   )
 
-  const store = idb.createStore(dbName, 'atoms')
+  let store: UseStore
+  const getStore = () => (store ??= idb.createStore(dbName, 'atoms'))
 
   return reatomPersist({
     name: 'withIndexedDb',
@@ -27,7 +28,7 @@ const reatomPersistIndexedDb = (
       const memCache = ctx.get(memCacheAtom)
       memCache.set(key, rec)
       ctx.schedule(async () => {
-        await idb.set(key, rec, store)
+        await idb.set(key, rec, getStore())
         postMessage({
           key,
           rec,
@@ -39,7 +40,7 @@ const reatomPersistIndexedDb = (
       const memCache = ctx.get(memCacheAtom)
       memCache.delete(key)
       ctx.schedule(async () => {
-        await idb.del(key, store)
+        await idb.del(key, getStore())
         postMessage({
           key,
           rec: null,
@@ -76,7 +77,7 @@ const reatomPersistIndexedDb = (
       channel.addEventListener('message', handler)
       if (!memCache.has(key)) {
         ctx.schedule(async (ctx) => {
-          const rec = await idb.get(key, store)
+          const rec = await idb.get(key, getStore())
           const memCache = ctx.get(memCacheAtom)
           if (rec.id !== memCache.get(key)?.id) {
             memCache.set(key, rec)
