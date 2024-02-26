@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.1...persist-web-storage-v3.3.2) (2024-02-26)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** indexedDB is not defined ([e5a527b](https://github.com/artalar/reatom/commit/e5a527b12c60dbea3383a32154a5cd2352849ce1))
+
 ## [3.3.1](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.0...persist-web-storage-v3.3.1) (2024-02-20)
 
 
