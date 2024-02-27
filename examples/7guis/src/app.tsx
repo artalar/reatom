@@ -5,7 +5,7 @@ import { TempConvAuto, TempConvManual } from './guis/tempconv'
 import { FlightBooker } from './guis/flight'
 import { Timer } from './guis/timer'
 import { Crud } from './guis/crud'
-import { CircleDrawerTraditional } from './guis/circles/drawer-traditional'
+import { CircleDrawer } from './guis/circles/circle-drawer'
 import { Cells } from './guis/cells/cells'
 import { cx } from './utils'
 
@@ -106,7 +106,7 @@ export const App = () => {
       <Gui
         title="Circle Drawer Traditional"
         filename="circles/drawer-traditional.tsx"
-        comp={<CircleDrawerTraditional />}
+        comp={<CircleDrawer />}
       />
       <Gui title="Cells" filename="cells/cells.tsx" comp={<Cells />} />
     </div>

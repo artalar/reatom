@@ -105,13 +105,6 @@ export const mouseLeaveAction = action((ctx) => {
   hoveredAtom(ctx, null)
 }, 'mouseLeaveAction')
 
-export const adjustAction = action(() => {}, 'adjustAction')
-
-export const changeDiameterAction = action((ctx, d: number) => {
-  const selected = ctx.get(selectedAtom)!
-  selected.diameterAtom(ctx, d)
-}, 'changeDiameterAction')
-
 export const stopChangeDiameterAction = action((ctx, d: number) => {
   const circle = ctx.get(selectedAtom)!
   const hovered = ctx.get(hoveredAtom)
