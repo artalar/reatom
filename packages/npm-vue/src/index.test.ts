@@ -1,10 +1,11 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-import { createTestCtx } from '@reatom/testing'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { effectScope } from 'vue'
-import { reatomRef } from './'
-import { atom } from '@reatom/core'
+import { reatomRef, useAction } from './'
+import { action, atom } from '@reatom/core'
 import { onConnect, onDisconnect } from '@reatom/hooks'
+import { noop } from '@reatom/utils'
 
 test('reatomRef', async () => {
   const ctx = createTestCtx()
@@ -32,6 +33,22 @@ test('reatomRef', async () => {
   assert.is(connected, true)
   scope.stop()
   assert.is(connected, false)
+})
+
+test('useAction', async () => {
+  const ctx = createTestCtx()
+
+  const globalActionFn = mockFn()
+  const globalAction = action(globalActionFn, 'globalAction')
+
+  const globalActionBound = useAction(globalAction, {
+    name: 'globalAction',
+    ctx,
+  })
+  globalActionBound()
+
+  assert.equal(globalActionFn.calls.length, 1)
+  assert.equal(globalActionFn.calls[0]!.i.length, 1)
 })
 
 test.run()
