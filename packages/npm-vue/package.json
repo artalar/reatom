@@ -68,5 +68,8 @@
   ],
   "devDependencies": {
     "@reatom/hooks": "^3.5.2"
+  },
+  "dependencies": {
+    "@reatom/lens": "^3.9.1"
   }
 }
