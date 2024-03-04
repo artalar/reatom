@@ -182,7 +182,7 @@ import { createCtx, atom, action } from '@reatom/framework'
 export const dataAtom = atom(null)
 
 export const fetchData = action(async (ctx) => {
-  const data = await ctx.schedule(() => {
+  const data = await ctx.schedule(async () => {
     const response = await fetch('https://jsonplaceholder.typicode.com/todos/1')
     const payload = await response.json()
     return payload
