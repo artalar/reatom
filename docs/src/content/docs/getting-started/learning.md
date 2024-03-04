@@ -45,7 +45,7 @@ In line above we create atom with initial value `1` and name `aAtom`.
 The name, though not required, will come in handy during the debug stage
 
 Atoms can also be computable, i.e. use the values of other atoms.
-This line of code can be read as - "To find out the value of `cAtom` you need to read the current value of `aAtom` and `bAtom` add summarize it".
+This line of code can be read as - "To find out the value of `cAtom` you need to read the current values of `aAtom` and `bAtom` and summarize them".
 
 ```ts
 const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
@@ -184,31 +184,35 @@ export const dataAtom = atom(null)
 export const fetchData = action(async (ctx) => {
   const data = await ctx.schedule(() => {
     const response = await fetch('https://jsonplaceholder.typicode.com/todos/1')
-    const payload = await response.json();
-    return payload;
+    const payload = await response.json()
+    return payload
   })
   dataAtom(ctx, data)
 })
 ```
 
 ### Actions nesting
+
 You can call actions from other actions. And asynchronous actions will return the promise
+
 ```ts
 import { action, atom } from '@reatom/core'
 
 export const todoAtom = atom(null)
-export const isLoadingAtom = atom(false);
+export const isLoadingAtom = atom(false)
 
 export const fetchTodo = action(async (ctx) => {
-  const response = await ctx.schedule(() => fetch('https://jsonplaceholder.typicode.com/todos/1'))
-  return await response.json();
+  const response = await ctx.schedule(() =>
+    fetch('https://jsonplaceholder.typicode.com/todos/1'),
+  )
+  return await response.json()
 })
 
 export const loadTodo = action(async (ctx) => {
   try {
     isLoadingAtom(ctx, true)
     const data = await ctx.schedule((ctx) => fetchTodo(ctx))
-    todoAtom(ctx, data);
+    todoAtom(ctx, data)
   } catch (e) {
     console.error(e)
   } finally {
@@ -216,15 +220,17 @@ export const loadTodo = action(async (ctx) => {
   }
 })
 ```
+
 [Stakblitz](https://stackblitz.com/edit/vitest-dev-vitest-v4pvuq?file=test%2Fmain.ts,test%2Fbasic.test.ts)
 
 ## Advanced
+
 ### Multiple contexts
 
 Contexts are used to glue up atoms and actions, track transactions and many more features. You can use same dependency trees in different contexts:
 
 ```typescript
-import { createCtx, atom } from "@reatom/framework"
+import { createCtx, atom } from '@reatom/framework'
 
 const ctx1 = createCtx()
 const ctx2 = createCtx()
@@ -247,7 +253,7 @@ Context will initiate new item state referring to that atom.
 This enables us to easily test things. But beware of function closures because they are not context dependent!
 
 ```typescript
-import { createCtx, atom } from "@reatom/framework"
+import { createCtx, atom } from '@reatom/framework'
 
 const ctx1 = createCtx()
 const ctx2 = createCtx()
