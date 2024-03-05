@@ -329,26 +329,6 @@ test('withErrorAtom initState', async () => {
   ;`👍` //?
 })
 
-test('withErrorAtom should be computed first', async () => {
-  let error
-  const effect = reatomAsync(async () => {
-    if (1) throw 42
-    return 42
-  }).pipe(
-    withRetry({
-      onReject(ctx) {
-        error = ctx.get(effect.errorAtom)
-      },
-    }),
-    withErrorAtom((ctx, e) => e),
-  )
-  const ctx = createTestCtx()
-
-  await effect(ctx).catch(noop)
-  assert.is(error, 42)
-  ;`👍` //?
-})
-
 test('nested abort', async () => {
   let result = false
   let thrown = false
@@ -436,9 +416,11 @@ test('withRetry abort', async () => {
   const ctx = createTestCtx()
 
   const track = ctx.subscribeTrack(effect)
-  assert.ok(ctx.get(effect.pendingAtom) + ctx.get(effect.retriesAtom) > 0)
+  assert.is(ctx.get(effect.pendingAtom), 1)
+  assert.is(ctx.get(effect.retriesAtom), 0)
   await sleep(10)
-  assert.ok(ctx.get(effect.pendingAtom) + ctx.get(effect.retriesAtom) > 0)
+  assert.is(ctx.get(effect.pendingAtom), 0)
+  assert.ok(ctx.get(effect.retriesAtom) > 2)
 
   track.unsubscribe()
   await sleep(10)

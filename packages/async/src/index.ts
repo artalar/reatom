@@ -360,6 +360,10 @@ export const withAbort =
     }
   > =>
   (anAsync) => {
+    throwReatomError(
+      'promiseAtom' in anAsync,
+      'Can\'t apply "withAbort" to "reatomResource", it already has its own abort strategy',
+    )
     if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom = atom(
         (
@@ -493,7 +497,9 @@ export const withRetry =
             payload,
             () => retriesAtom(ctx, 0),
             (error) => {
+              // do not `retriesAtom(ctx, 0)`, as it handles with `signal?.addEventListener` below
               if (isAbort(error)) return
+
               const timeout = onReject(ctx, error, ctx.get(retriesAtom)) ?? -1
 
               if (timeout < 0) return
@@ -504,6 +510,7 @@ export const withRetry =
               const state = ctx.get(anAsync)
 
               const signal = getTopController(ctx.cause.cause!)?.signal
+              // it is important to add the listener only after the `spawn`
               signal?.addEventListener('abort', () => {
                 controller.abort(signal.reason)
                 if (state === ctx.get(anAsync)) {

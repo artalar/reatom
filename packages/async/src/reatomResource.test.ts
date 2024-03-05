@@ -132,12 +132,16 @@ test('withDataAtom', async () => {
 })
 
 test('withErrorAtom withRetry', async () => {
-  let shouldThrow = true
+  let throwOnce = true
   const paramsAtom = atom(123, 'paramsAtom')
   const someResource = reatomResource(async (ctx) => {
     const params = ctx.spy(paramsAtom)
-    if (shouldThrow) throw new Error('test error')
+    if (throwOnce) {
+      throwOnce = false
+      throw new Error('test error')
+    }
     await ctx.schedule(() => sleep())
+    console.log('ctx.controller.signal.aborted', ctx.controller.signal.aborted);
     return params
   }, 'someResource').pipe(
     withDataAtom(0),
@@ -153,7 +157,6 @@ test('withErrorAtom withRetry', async () => {
   const ctx = createTestCtx()
 
   ctx.subscribeTrack(someResource.dataAtom)
-  shouldThrow = false
   await sleep()
   assert.is(ctx.get(someResource.dataAtom), 0)
   assert.is(ctx.get(someResource.errorAtom)?.message, 'test error')
