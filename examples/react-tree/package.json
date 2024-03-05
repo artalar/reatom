@@ -1,5 +1,5 @@
 {
-  "name": "reatom-react-tree",
+  "name": "reatom-example-react-tree",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,15 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@reatom/framework": "^3.*.*",
-    "@reatom/npm-react": "^3.*.*",
+    "@reatom/framework": "^3.4.30",
+    "@reatom/npm-react": "^3.8.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
-    "@vitejs/plugin-react": "^4.0.3",
+    "@vitejs/plugin-react-swc": "^3.3.2",
     "typescript": "^5.0.2",
     "vite": "^4.4.5"
   }
