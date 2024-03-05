@@ -10,18 +10,17 @@ description: Reatom for async
 This package is all you need to handle async requests / logic / flow effectively and predictable.
 You could wrap your async actions into the main primitive `reatomAsync` and get basic action hooks: `onFulfill`, `onReject`, `onSettle` and `pendingAtom` with count of pending requests.
 Or you can wrap your get requests into `reatomResource` and refetch data whenever some of parameters change.
+
 > included in [@reatom/framework](/package/framework)
 
 To chose the most appropriate async primitive refer to the table below:
 
-|type  |computed   |mutation|
-|--:      |:---:      |:---:|
-|sync     |atom       |action|
-|async    |[reatomResource](#reatomresource) | [reatomAsync](#reatomasync)|
-
+|  type |             computed              |          mutation           |
+| ----: | :-------------------------------: | :-------------------------: |
+|  sync |               atom                |           action            |
+| async | [reatomResource](#reatomresource) | [reatomAsync](#reatomasync) |
 
 You could utilize extra features by piping additional operators: [withDataAtom](#withdataatom) (resolve payload memoization), [withErrorAtom](#witherroratom) (reject payload memoization), [withStatusesAtom](#withstatusesatom) (`isPending`, `isEverSettled` and so on), [withCache](#withcache) (advanced cache policies), [withAbort](#withabort) (concurrent management), [withRetry](#withretry) (flexible retry management).
-
 
 ## reatomAsync
 
@@ -600,7 +599,7 @@ export const fetchList = reatomAsync(
 
 ### Periodic refresh for used data
 
-Lets use `onConnect` from [@reatom/hooks](/package/hooks) to control the data neediness.
+Do you need to implement a **pooling** pattern to stay your data fresh? Lets use `onConnect` from [@reatom/hooks](/package/hooks) to control the neediness of this.
 
 ```ts
 import {
@@ -612,35 +611,52 @@ import {
 } from '@reatom/framework'
 
 export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
+  (ctx, search: string) => request(`/api/list?q=${search}`, ctx.controller),
   'fetchList',
 ).pipe(withDataAtom([]), withRetry())
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (ctx.isConnected()) {
     await fetchList.retry(ctx).catch(() => {})
-    await sleep(5000)
+    await ctx.schedule(() => sleep(5000))
   }
 })
 ```
 
-You could use `onConnect` automatic abort strategy to manage the neediness of the periodic refresh automatically!
+You could use `onConnect` automatic abort strategy to manage the neediness of the periodic refresh automatically! In other words, if you using `ctx.schedule` (which is highly recommended) you don't need `ctx.isConnected()`, as the schedule will throw abort automatically on disconnect.
 
 ```ts
 import { reatomAsync, withAbort, withDataAtom, withRetry, sleep } from '@reatom/framework' /* prettier-ignore */
 
 export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
+  (ctx, search: string) => request(`/api/list?q=${search}`, ctx.controller),
   'fetchList',
 ).pipe(withAbort(), withDataAtom([]), withRetry())
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (true) {
     await fetchList.retry(ctx).catch(() => {})
-    await sleep(5000)
+    await ctx.schedule(() => sleep(5000))
   }
 })
 ```
 
 Here we rely on the fact that `onConnect` will be called only when `fetchList.dataAtom` is connected (subscribed) to the consumer and will be aborted when `fetchList.dataAtom` is disconnected (unsubscribed).
+
+To be clear, you don't need to use `retry`, if you have no need to manage parameters.
+
+```ts
+import { reatomAsync, withAbort, withDataAtom, sleep } from '@reatom/framework'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('/api/list', ctx.controller),
+  'fetchList',
+).pipe(withAbort(), withDataAtom([]), withRetry())
+onConnect(fetchList.dataAtom, async (ctx) => {
+  while (true) {
+    await fetchList(ctx).catch(() => {})
+    await ctx.schedule(() => sleep(5000))
+  }
+})
+```
 
 ## withAbort
 
