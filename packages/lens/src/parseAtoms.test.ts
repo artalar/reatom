@@ -151,4 +151,22 @@ test('should parse deep structures', () => {
   ;`👍` //?
 })
 
+test.only('cached references', () => {
+  const a = atom([1])
+  const aRec = { a }
+  const b = atom([2])
+  const bRec = { b }
+  const c = atom({ a: aRec.a, b: bRec.b })
+  const ctx = createTestCtx()
+
+  const snapshot = parseAtoms(ctx, c)
+  console.log({ snapshot })
+  assert.is(snapshot, parseAtoms(ctx, c))
+
+  a(ctx, [10])
+  assert.is.not(snapshot, parseAtoms(ctx, c))
+  assert.is.not(snapshot.a, parseAtoms(ctx, c).a)
+  assert.is(snapshot.b, parseAtoms(ctx, c).b)
+})
+
 test.run()
