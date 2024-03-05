@@ -1,5 +1,5 @@
 {
-  "name": "reatom-example-react-notifications",
+  "name": "reatom-example-react",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,10 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@carbon/react": "^1.48.1",
+    "@octokit/core": "^5.0.2",
+    "@octokit/plugin-rest-endpoint-methods": "^10.2.0",
+    "@octokit/plugin-throttling": "^8.1.3",
     "@reatom/framework": "^3.4.30",
     "@reatom/npm-react": "^3.8.1",
+    "prop-types": "^15.8.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sass": "^1.70.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

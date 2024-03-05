@@ -1,0 +1,14 @@
+@use '@carbon/react';
+@use '@carbon/styles/scss/themes';
+@use '@carbon/styles/scss/theme';
+
+body {
+  margin: 2rem;
+  @include theme.theme(themes.$g100);
+}
+
+@media (prefers-color-scheme: light) {
+  body {
+    @include theme.theme(themes.$white)
+  }
+}
