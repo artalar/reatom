@@ -1,6 +1,6 @@
 {
   "packages/all-settled": "3.1.2",
-  "packages/async": "3.13.4",
+  "packages/async": "3.13.5",
   "packages/core": "3.7.0",
   "packages/core-v1": "3.1.7",
   "packages/core-v2": "3.1.2",
@@ -9,7 +9,7 @@
   "packages/form": "3.3.0",
   "packages/form-web": "3.2.0",
   "packages/framework": "3.4.0",
-  "packages/hooks": "3.5.2",
+  "packages/hooks": "3.5.3",
   "packages/jsx": "3.7.0",
   "packages/lens": "3.9.1",
   "packages/logger": "3.6.0",
