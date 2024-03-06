@@ -87,24 +87,18 @@ test('onConnect ctx.controller', async () => {
 test('isInit', () => {
   const ctx = createTestCtx()
 
-  const trigger = atom(0, 'trigger')
+  const logs = new Array<boolean>()
   const computation = atom((ctx) => {
-    ctx.spy(trigger)
-    // call isInit twice to ensure that returned value is always the same within an call
-    isInit(ctx)
-    return isInit(ctx)
+    logs.push(isInit(ctx))
+    logs.push(isInit(ctx))
   }, 'computation')
+  const work = action((ctx) => isInit(ctx))
 
-  assert.is(ctx.get(computation), true)
-  assert.is(ctx.get(computation), true)
-  trigger(ctx, 1)
-  assert.is(ctx.get(computation), false)
-  assert.is(ctx.get(computation), false)
-
-  const work = action((ctx) => {
-    isInit(ctx)
-    return isInit(ctx)
-  })
+  ctx.get(computation)
+  assert.equal(logs, [true, true])
+  ctx.get(computation)
+  console.log(logs)
+  assert.equal(logs, [true, true, false, false])
 
   assert.is(work(ctx), true)
   assert.is(work(ctx), false)
