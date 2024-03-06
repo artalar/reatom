@@ -197,12 +197,16 @@ export const isConnected = (ctx: Ctx, { __reatom: proto }: Atom) =>
     return !!cache && cache.subs.size + cache.listeners.size > 0
   })
 
-const initiatedAtom = atom(
-  null as any as WeakSet<AtomProto>,
-  'isInit._initiatedAtom',
+const initializations = atom(
+  null! as WeakMap<AtomProto, AtomCache>,
+  'initializations',
 )
-initiatedAtom.__reatom.initState = () => new WeakSet<AtomProto>()
+initializations.__reatom.initState = () => new WeakMap()
 export const isInit = (ctx: Ctx) => {
-  const initiated = ctx.get(initiatedAtom)
-  return initiated.has(ctx.cause.proto) || !initiated.add(ctx.cause.proto)
+  const inits = ctx.get(initializations)
+  if (!inits.has(ctx.cause.proto)) {
+    inits.set(ctx.cause.proto, ctx.cause)
+    return true
+  }
+  return inits.get(ctx.cause.proto) === ctx.cause
 }
