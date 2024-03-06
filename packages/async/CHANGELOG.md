@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.5](https://github.com/artalar/reatom/compare/async-v3.13.4...async-v3.13.5) (2024-03-06)
+
+
+### Bug Fixes
+
+* **async:** withAbort + reatomResource ([47d81f7](https://github.com/artalar/reatom/commit/47d81f7aed563720692c4ecbf627d701e4cafe29))
+
 ## [3.13.4](https://github.com/artalar/reatom/compare/async-v3.13.3...async-v3.13.4) (2024-01-21)
 
 

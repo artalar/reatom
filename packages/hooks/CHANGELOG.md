@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.3](https://github.com/artalar/reatom/compare/hooks-v3.5.2...hooks-v3.5.3) (2024-03-06)
+
+
+### Bug Fixes
+
+* **hooks:** correct isInit behaviour ([#775](https://github.com/artalar/reatom/issues/775)) ([f61d4ac](https://github.com/artalar/reatom/commit/f61d4acbe5603628f18c84f1ef6b3d869ec83b71))
+
 ## [3.5.2](https://github.com/artalar/reatom/compare/hooks-v3.5.1...hooks-v3.5.2) (2023-11-23)
 
 
