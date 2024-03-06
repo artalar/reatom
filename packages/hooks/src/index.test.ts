@@ -1,10 +1,10 @@
-import { atom, CtxSpy } from '@reatom/core'
+import { action, atom, CtxSpy } from '@reatom/core'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { sleep } from '@reatom/utils'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { withInit, controlConnection, isConnected, onConnect } from './'
+import { withInit, controlConnection, isConnected, onConnect, isInit } from './'
 
 test('withInit', () => {
   const a = atom(0).pipe(withInit(() => 123))
@@ -82,6 +82,32 @@ test('onConnect ctx.controller', async () => {
   assert.is(aborted!, true)
   assert.is(connected!, true)
   ;`👍` //?
+})
+
+test('isInit', () => {
+  const ctx = createTestCtx()
+
+  const trigger = atom(0, 'trigger')
+  const computation = atom((ctx) => {
+    ctx.spy(trigger)
+    // call isInit twice to ensure that returned value is always the same within an call
+    isInit(ctx)
+    return isInit(ctx)
+  }, 'computation')
+
+  assert.is(ctx.get(computation), true)
+  assert.is(ctx.get(computation), true)
+  trigger(ctx, 1)
+  assert.is(ctx.get(computation), false)
+  assert.is(ctx.get(computation), false)
+
+  const work = action((ctx) => {
+    isInit(ctx)
+    return isInit(ctx)
+  })
+
+  assert.is(work(ctx), true)
+  assert.is(work(ctx), false)
 })
 
 test.run()
