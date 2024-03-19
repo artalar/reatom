@@ -554,7 +554,7 @@ fetchList.retry(ctx)
 
 `withRetry` accept optional `onReject` parameter which is a hook which is called with context, payload error and retries count parameters. This hook could return a number which will be used as a timer for scheduling `retry` action. To skip the retry scheduling return nothing or negative number.
 
-Return `0` to retry immediately. With this pattern your loader will not blink, as `pendingAtom` will swhich from `0` to `1` before subscribers notification.
+Return `0` to retry immediately. With this pattern your loader will not blink, as `pendingAtom` will switch from `0` to `1` before subscribers notification.
 
 ```ts
 import { reatomAsync, withRetry } from '@reatom/async'
@@ -573,10 +573,10 @@ const fetchData = export const fetchList = reatomAsync(
 
 ### Retry request with exponential backoff
 
-Progressive retry: `100 * Math.min(200, retries ** 3)`. Will retry after 100ms, 800ms, 2700ms, 6400ms, 1250ms, 20s, 20s and so on.
+Progressive retry: `100 * Math.min(200, retries ** 3)`. Will retry after 100ms, 800ms, 2700ms, 6400ms, 1250ms, 20s, 20s and so on. To show a loader during retrying you can rely on `retriesAtom` with the number of retries.
 
 ```ts
-import { reatomAsync, withRetry } from '@reatom/async'
+import { atom, reatomAsync, withRetry } from '@reatom/async'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
@@ -585,6 +585,39 @@ export const fetchList = reatomAsync(
   withRetry({
     onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
   }),
+)
+export const isFetchListLoading = atom(
+  (ctx) =>
+    ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
+  'isFetchListLoading',
+)
+```
+
+Note that `retriesAtom` will drop to `0` when any promise resolves successfully or when you return `undefined` or a negative number. So, it is good practice to avoid calling multiple async actions in parallel. If you are using `withRetry`, it is recommended to always use it with [withAbort](#withabort) (with the default 'last-in-win' strategy).
+
+```ts
+import { atom, reatomAsync, withAbort, withErrorAtom, withRetry } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(
+  withAbort(),
+  withRetry({
+    onReject: (ctx, error, retries) => {
+      // try to retry the request only 7 times
+      if (retries < 7) {
+        return 100 * Math.min(200, retries ** 3)
+      }
+      // otherwise do nothing - prevent retrying and show the error
+    },
+  }),
+  withErrorAtom(),
+)
+export const isFetchListLoading = atom(
+  (ctx) =>
+    ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
+  'isFetchListLoading',
 )
 ```
 

@@ -86,12 +86,14 @@ test('withRetry fallbackParams', async () => {
 })
 
 test('withRetry delay', async () => {
+  const onRejectTrack = mockFn()
   const fetchData = reatomAsync(async (ctx) => {
     await sleep(5)
     if (1) throw new Error('TEST')
   }).pipe(
     withRetry({
       onReject(ctx, error: any, retries) {
+        onRejectTrack()
         if (error?.message === 'TEST' && retries < 1) return 6
       },
     }),
@@ -99,18 +101,17 @@ test('withRetry delay', async () => {
 
   const ctx = createTestCtx()
 
-  const track = ctx.subscribeTrack(fetchData)
-
-  assert.is(track.calls.length, 1)
+  const effectTrack = ctx.subscribeTrack(fetchData)
+  effectTrack.calls.length = 0
 
   fetchData(ctx).catch(noop)
-  fetchData(ctx).catch(noop)
-
-  assert.is(track.calls.length, 3)
+  assert.is(effectTrack.calls.length, 1)
 
   await sleep(30)
 
-  assert.is(track.calls.length, 4)
+  assert.is(onRejectTrack.calls.length, 2)
+  assert.is(effectTrack.calls.length, 2)
+  assert.is(ctx.get(fetchData.retriesAtom), 0)
   ;`👍` //?
 })
 

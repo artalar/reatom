@@ -502,7 +502,10 @@ export const withRetry =
 
               const timeout = onReject(ctx, error, ctx.get(retriesAtom)) ?? -1
 
-              if (timeout < 0) return
+              if (timeout < 0) {
+                retriesAtom(ctx, 0)
+                return
+              }
 
               const controller = new AbortController()
 
