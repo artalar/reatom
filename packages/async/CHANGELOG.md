@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.6](https://github.com/artalar/reatom/compare/async-v3.13.5...async-v3.13.6) (2024-03-19)
+
+
+### Bug Fixes
+
+* **async:** drop retriesAtom if onReject returns undefined ([77e71b3](https://github.com/artalar/reatom/commit/77e71b3cafe79732a5611d4983778ed90d95f69e))
+
 ## [3.13.5](https://github.com/artalar/reatom/compare/async-v3.13.4...async-v3.13.5) (2024-03-06)
 
 
