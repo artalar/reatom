@@ -95,6 +95,7 @@ const createBrowserUrlAtomSettings = (
           event.preventDefault()
 
           const { hash, href } = updateFromSource(ctx, new URL(link.href))
+          history.pushState({}, '', href)
 
           if (location.hash !== hash) {
             ctx.schedule(() => {
