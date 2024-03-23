@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.1](https://github.com/artalar/reatom/compare/url-v3.7.0...url-v3.7.1) (2024-03-23)
+
+
+### Bug Fixes
+
+* **url:** sync links with location ([17e8b54](https://github.com/artalar/reatom/commit/17e8b54d3990745dc2498ac60eef0e0d95dd5fb2))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/url-v3.6.2...url-v3.7.0) (2024-02-16)
 
 
