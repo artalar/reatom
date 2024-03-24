@@ -12,23 +12,20 @@
     "update": "npx npm-check-updates -u"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.14.0",
-    "@codemirror/lang-javascript": "^6.1.9",
-    "@codemirror/state": "^6.2.1",
-    "@discoveryjs/discovery": "^1.0.0-beta.77",
+    "@codemirror/lang-javascript": "^6.2.2",
+    "@codemirror/state": "^6.4.1",
+    "@discoveryjs/discovery": "^1.0.0-beta.82",
     "@observablehq/inspector": "^5.0.0",
-    "@vercel/edge": "^0.3.4",
-    "@vercel/kv": "^0.2.2",
-    "astro": "^3.4.3",
     "codemirror": "^6.0.1",
-    "mermaid": "^10.6.1",
-    "rehype-external-links": "^3.0.0",
-    "sharp": "^0.32.4",
-    "sucrase": "^3.34.0",
-    "tsx": "^3.12.7",
-    "typescript": "^5.1.6"
+    "mermaid": "^10.9.0",
+    "sucrase": "^3.35.0"
   },
   "devDependencies": {
-    "zx": "^7.2.3"
+    "@astrojs/starlight": "^0.21.2",
+    "zx": "^7.2.3",
+    "tsx": "^4.7.1",
+    "typescript": "^5.4.3",
+    "rehype-external-links": "^3.0.0",
+    "sharp": "^0.33.3"
   }
 }

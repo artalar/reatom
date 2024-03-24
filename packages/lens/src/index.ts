@@ -302,6 +302,7 @@ export const withOnUpdate =
       : Fn<[Ctx, AtomState<T>, AtomCache<AtomState<T>>]>,
   ) =>
   (anAtom: T): T => {
+    // @ts-expect-error
     onUpdate(anAtom, cb)
     return anAtom
   }
