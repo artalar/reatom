@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.3](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.2...persist-web-storage-v3.3.3) (2024-03-24)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** isWebStorageAvailable check ([3e21b28](https://github.com/artalar/reatom/commit/3e21b28e061bea255235498e803239183eea4243))
+
 ## [3.3.2](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.1...persist-web-storage-v3.3.2) (2024-02-26)
 
 
