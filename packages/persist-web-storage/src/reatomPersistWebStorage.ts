@@ -1,5 +1,5 @@
 import { atom } from '@reatom/core'
-import { PersistRecord, reatomPersist } from '@reatom/persist'
+import { PersistRecord, createMemStorage, reatomPersist } from '@reatom/persist'
 import { WithPersistWebStorage } from './types'
 
 export const reatomPersistWebStorage = (
@@ -73,12 +73,22 @@ export const reatomPersistWebStorage = (
   })
 }
 
-export const withLocalStorage = /*#__PURE__*/ reatomPersistWebStorage(
-  'withLocalStorage',
-  globalThis.localStorage,
-)
+try {
+  var isWebStorageAvailable = !!globalThis.localStorage
+} catch (error) {
+  isWebStorageAvailable = false
+}
 
-export const withSessionStorage = /*#__PURE__*/ reatomPersistWebStorage(
-  'withSessionStorage',
-  globalThis.sessionStorage,
-)
+export const withLocalStorage: WithPersistWebStorage = isWebStorageAvailable
+  ? /*#__PURE__*/ reatomPersistWebStorage(
+      'withLocalStorage',
+      globalThis.localStorage,
+    )
+  : /*#__PURE__*/ reatomPersist(createMemStorage({ name: 'withLocalStorage' }))
+
+export const withSessionStorage: WithPersistWebStorage = isWebStorageAvailable
+  ? /*#__PURE__*/ reatomPersistWebStorage(
+      'withSessionStorage',
+      globalThis.sessionStorage,
+    )
+  : /*#__PURE__*/ reatomPersist(createMemStorage({ name: 'withSessionStorage' }))

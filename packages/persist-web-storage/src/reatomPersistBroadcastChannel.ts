@@ -61,7 +61,7 @@ export const reatomPersistBroadcastChannel = (
       }
       channel.addEventListener('message', handler, false)
       if (!memCache.has(key)) {
-        postMessage({ _type: 'pull', key })
+        ctx.schedule(() => postMessage({ _type: 'pull', key }))
       }
       return () => channel.removeEventListener('message', handler, false)
     },
