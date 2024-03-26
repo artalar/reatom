@@ -2,7 +2,7 @@ Tiny, efficient, featured, and extensible core to handle reactivity right. The u
 
 > included in [@reatom/framework](https://www.reatom.dev/package/framework)
 
-[Main introduction](https://www.reatom.dev).
+[Main introduction](https://www.reatom.dev/).
 
 The raw API description is [below](#api).
 
