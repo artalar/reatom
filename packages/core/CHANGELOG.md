@@ -1,5 +1,66 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/core-v3.6.6...core-v3.7.0) (2024-02-16)
+
+
+### Features
+
+* **core:** add experimental_PLUGINS ([334759c](https://github.com/artalar/reatom/commit/334759c1e20487545a1276f18c14812a1a080fbe))
+
+
+### Bug Fixes
+
+* **core:** actualization of unsusbscribed atom ([e388afb](https://github.com/artalar/reatom/commit/e388afbbd120aa8fd9aeb3943cb55691e2930f24))
+
+## [3.6.6](https://github.com/artalar/reatom/compare/core-v3.6.5...core-v3.6.6) (2024-01-21)
+
+
+### Bug Fixes
+
+* **core:** prev value of spy callback ([0abdec0](https://github.com/artalar/reatom/commit/0abdec08c50de9c6622e71b67a4f063aaa9f9343))
+
+## [3.6.5](https://github.com/artalar/reatom/compare/core-v3.6.4...core-v3.6.5) (2023-11-20)
+
+
+### Bug Fixes
+
+* **core:** nested schedule ([61b3822](https://github.com/artalar/reatom/commit/61b38225b8f7de8eefd7f8f7f6ec079d1ef6de84))
+
+## [3.6.4](https://github.com/artalar/reatom/compare/core-v3.6.3...core-v3.6.4) (2023-11-12)
+
+
+### Bug Fixes
+
+* **core:** reduce mem usage a little bit ([53c101d](https://github.com/artalar/reatom/commit/53c101de190137a078c18900711dd159373635b5))
+
+## [3.6.3](https://github.com/artalar/reatom/compare/core-v3.6.2...core-v3.6.3) (2023-11-05)
+
+
+### Bug Fixes
+
+* **core:** small mem improvement ([fd24970](https://github.com/artalar/reatom/commit/fd249701d4f527460443a8cf651d33b3bf153cb4))
+
+## [3.6.2](https://github.com/artalar/reatom/compare/core-v3.6.1...core-v3.6.2) (2023-10-31)
+
+
+### Bug Fixes
+
+* **core:** conditional deps duplication ([c8968a9](https://github.com/artalar/reatom/commit/c8968a9a98f0554f1164b5857a78910cf61f1da4))
+
+## [3.6.1](https://github.com/artalar/reatom/compare/core-v3.6.0...core-v3.6.1) (2023-10-10)
+
+
+### Bug Fixes
+
+* **core:** hide spy for updateHooks ([344d2ce](https://github.com/artalar/reatom/commit/344d2ce10676f49999c8c3fb973109e1ac42c57c))
+
+## [3.6.0](https://github.com/artalar/reatom/compare/core-v3.5.0...core-v3.6.0) (2023-10-09)
+
+
+### Features
+
+* **lens:** add match ([#646](https://github.com/artalar/reatom/issues/646)) ([0f2a768](https://github.com/artalar/reatom/commit/0f2a7685dd797cac4c9fc882a8e24bc31f9503a6))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/core-v3.4.0...core-v3.5.0) (2023-07-07)
 
 

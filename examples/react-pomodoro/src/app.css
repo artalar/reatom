@@ -1,0 +1,22 @@
+main {
+  display: flex;
+  flex-direction: column;
+  max-width: 20rem;
+  margin: auto;
+  font-family: monospace;
+}
+
+.pomodoro {
+  width: 100%;
+  margin: auto;
+  border: 1px solid tomato;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  border-radius: 0.5rem;
+}
+
+input[type="range"] {
+  accent-color: tomato;
+  display: flex;
+  align-items: center;
+}

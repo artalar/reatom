@@ -1,6 +1,6 @@
 {
   "name": "@reatom/hooks",
-  "version": "3.4.2",
+  "version": "3.5.3",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for hooks",
@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@reatom/core": "^3.2.0",
+    "@reatom/effects": "^3.7.0",
     "@reatom/utils": "^3.3.0"
   },
   "author": "artalar",

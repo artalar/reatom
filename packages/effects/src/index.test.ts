@@ -1,11 +1,19 @@
-import { action, atom, createCtx, Ctx, Fn } from '@reatom/core'
-import { sleep } from '@reatom/utils'
-import { createTestCtx } from '@reatom/testing'
+import { Action, action, atom, Ctx, Fn } from '@reatom/core'
+import { noop, sleep } from '@reatom/utils'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { mapPayloadAwaited } from '@reatom/lens'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { disposable, take, takeNested } from './'
+import {
+  concurrent,
+  disposable,
+  spawn,
+  take,
+  takeNested,
+  withAbortableSchedule,
+} from '../build'
+import { onConnect } from '@reatom/hooks'
 
 test('disposable async branch', async () => {
   const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
@@ -60,7 +68,7 @@ test('await transaction', async () => {
   const effect2 = action((ctx) => ctx.schedule(() => promise2))
   const effect3 = action((ctx) => ctx.schedule(() => promise3))
 
-  const ctx = createCtx()
+  const ctx = createTestCtx()
 
   let nestedResolved = false
   let effect3Resolved = false
@@ -87,36 +95,116 @@ test('await transaction', async () => {
   ;`👍` //?
 })
 
-// test('unstable_actionizeAllChanges', async () => {
-//   const act1 = action()
-//   const act2 = act1
-//     .pipe(mapPayload(() => Promise.resolve(0)))
-//     .pipe(mapPayloadAwaited())
-//   const a1 = atom(0)
-//   const sum = unstable_actionizeAllChanges({
-//     a1,
-//     act1,
-//     act2,
-//   })
-//   const ctx = createCtx()
-//   const cb = mockFn()
+test('withAbortableSchedule', async () => {
+  const asyncAction = <I extends any[], O>(
+    cb: Fn<[Ctx, ...I], O>,
+    name: string,
+  ): Action<I, O> =>
+    action((ctx, ...a) => cb(withAbortableSchedule(ctx), ...a), name)
 
-//   sum.pipe(toPromise(ctx)).then(cb)
+  const track = mockFn()
+  const doSome = asyncAction((ctx, ms: number) => {
+    ctx
+      .schedule(() => sleep(ms))
+      .then((v) => {
+        v //?
+        track(v)
+      })
+      .catch(noop)
+  }, 'doSome')
+  const someAtom = atom(null, 'someAtom')
+  const ctx = createTestCtx()
 
-//   a1(ctx, 2)
+  onConnect(someAtom, (ctx) => {
+    doSome(ctx, 1)
+  })
 
-//   assert.is(cb.calls.length, 0)
+  const un = ctx.subscribe(someAtom, () => {})
+  await sleep(10)
+  assert.is(track.calls.length, 1)
 
-//   act1(ctx)
+  un()
 
-//   assert.is(cb.calls.length, 0)
+  ctx.subscribe(someAtom, () => {})()
+  await sleep(10)
+  assert.is(track.calls.length, 1)
+  ;`👍` //?
+})
 
-//   await act2.pipe(toPromise(ctx))
+test('take filter', async () => {
+  const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
+  const track = mockFn()
+  const ctx = createTestCtx()
 
-//   await sleep()
+  take(ctx, act, (ctx, v, skip) => {
+    return v < 4 ? skip : v.toString()
+  }).then(track)
+  act(ctx, 1)
+  await null
+  act(ctx, 2)
+  act(ctx, 3)
+  await null
+  act(ctx, 4)
+  await sleep()
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), '4')
+  ;`👍` //?
+})
 
-//   assert.equal(cb.lastInput(), { a1: 2, act1: undefined, act2: 0 })
-//   ;`👍` //?
-// })
+test('concurrent', async () => {
+  const countAtom = atom(0)
+  const results = [] as any[]
+  countAtom.onChange(
+    concurrent(async (ctx, count) => {
+      try {
+        await ctx.schedule(noop)
+        results.push(count)
+      } catch (error) {
+        results.push(error)
+      }
+    }),
+  )
+  const ctx = createTestCtx()
+
+  countAtom(ctx, 1)
+  countAtom(ctx, 2)
+  await sleep()
+  assert.is(results.length, 2)
+  assert.is(results[0]?.name, 'AbortError')
+  assert.is(results[1], 2)
+
+  const anAtom = atom(null)
+  onConnect(anAtom, (ctx) => countAtom(ctx, 3))
+  ctx.subscribeTrack(anAtom).unsubscribe()
+  await sleep()
+  assert.is(results.length, 3)
+  assert.is(results.at(-1).name, 'AbortError')
+  ;`👍` //?
+})
+
+test('spawn', async () => {
+  const countAtom = atom(0)
+  const results = [] as any[]
+  countAtom.onChange(
+    concurrent((ctx, count) =>
+      spawn(ctx, async (ctx) => {
+        try {
+          await ctx.schedule(noop)
+          results.push(count)
+        } catch (error) {
+          results.push(error)
+        }
+      }),
+    ),
+  )
+  const ctx = createTestCtx()
+
+  countAtom(ctx, 1)
+  countAtom(ctx, 2)
+
+  await sleep()
+  assert.equal(results, [1, 2])
+  ;`👍` //?
+})
 
 test.run()

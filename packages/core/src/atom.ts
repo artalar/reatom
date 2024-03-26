@@ -56,6 +56,8 @@ export const callSafely = <I extends any[], O>(
 
 //#region DOMAIN TYPES
 
+export type AtomMaybe<T = unknown> = Atom<T> | T
+
 /** Main context of data storing and effects processing */
 export interface Ctx {
   get<T>(atom: Atom<T>): T
@@ -209,7 +211,7 @@ const isConnected = (cache: AtomCache): boolean => {
   return cache.subs.size + cache.listeners.size > 0
 }
 
-function assertFunction (thing: any): asserts thing is Fn {
+function assertFunction(thing: any): asserts thing is Fn {
   throwReatomError(
     typeof thing !== 'function',
     `invalid "${typeof thing}", function expected`,
@@ -249,6 +251,7 @@ export const createCtx = ({
   let trLogs: Array<AtomCache> = []
   let trNearEffectsStart: typeof nearEffects.length = 0
   let trLateEffectsStart: typeof lateEffects.length = 0
+  let effectsProcessing = false
 
   let walkNearEffects = () => {
     for (let effect of nearEffects) callNearEffect(effect, ctx)
@@ -256,7 +259,8 @@ export const createCtx = ({
     nearEffects = []
   }
   let walkLateEffects = () => {
-    if (trNearEffectsStart + trLateEffectsStart > 0) return
+    if (effectsProcessing) return
+    effectsProcessing = true
 
     walkNearEffects()
     for (let effect of lateEffects) {
@@ -266,7 +270,7 @@ export const createCtx = ({
 
     lateEffects = []
 
-    trNearEffectsStart = trLateEffectsStart = 0
+    effectsProcessing = false
   }
 
   let addPatch = (
@@ -335,8 +339,7 @@ export const createCtx = ({
 
   let actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
     let { proto, pubs } = patch
-    let toDisconnect = new Set<AtomProto>()
-    let toConnect = new Set<AtomProto>()
+    let isDepsChanged = false
 
     if (
       pubs.length === 0 ||
@@ -356,11 +359,7 @@ export const createCtx = ({
               ? pubs[newPubs.length - 1]
               : undefined
           let isDepChanged = prevDepPatch?.proto !== depPatch.proto
-
-          if (isDepChanged) {
-            if (prevDepPatch) toDisconnect.add(prevDepPatch.proto)
-            toConnect.add(depProto)
-          }
+          isDepsChanged ||= isDepChanged
 
           let state =
             depProto.isAction && !isDepChanged
@@ -368,8 +367,8 @@ export const createCtx = ({
               : depPatch.state
 
           if (cb && (isDepChanged || !Object.is(state, prevDepPatch!.state))) {
-            if (depProto.isAction) (state as any[]).forEach((call) => cb(call))
-            else cb(state, prevDepPatch?.state)
+            if (depProto.isAction) for (const call of state) cb(call)
+            else cb(state, isDepChanged ? undefined : prevDepPatch?.state)
           } else {
             return state
           }
@@ -381,18 +380,19 @@ export const createCtx = ({
       patch.state = patch.proto.computer!(patchCtx as CtxSpy, patch.state)
       patch.pubs = newPubs
 
-      for (let i = newPubs.length; i < pubs.length; i++) {
-        toDisconnect.add(pubs[i]!.proto)
-      }
-
-      if (toDisconnect.size + toConnect.size && isConnected(patch)) {
-        for (let depProto of toDisconnect) {
-          toConnect.has(depProto) ||
+      if (
+        (isDepsChanged || pubs.length > newPubs.length) &&
+        isConnected(patch)
+      ) {
+        for (let { proto: depProto } of pubs) {
+          if (newPubs.every((dep) => dep.proto !== depProto)) {
             disconnect(proto, depProto.patch ?? read(depProto)!)
+          }
         }
-
-        for (let depProto of toConnect) {
-          connect(proto, depProto.patch ?? read(depProto)!)
+        for (let { proto: depProto } of newPubs) {
+          if (pubs.every((dep) => dep.proto !== depProto)) {
+            connect(proto, depProto.patch ?? read(depProto)!)
+          }
         }
       }
     }
@@ -406,7 +406,12 @@ export const createCtx = ({
     let { patch, actual } = proto
     let updating = updater !== undefined
 
-    if (actual && !updating) return patch!
+    if (
+      !updating &&
+      actual &&
+      (patch!.pubs.length === 0 || isConnected(patch!))
+    )
+      return patch!
 
     let cache = patch ?? read(proto)
     let isInt = !cache
@@ -453,9 +458,18 @@ export const createCtx = ({
         enqueueComputers(patch)
       }
 
-      proto.updateHooks?.forEach((hook) =>
-        trUpdates.push(() => hook(patchCtx, patch!)),
-      )
+      if (proto.updateHooks) {
+        let ctx = {
+          get: patchCtx.get,
+          spy: undefined,
+          schedule: patchCtx.schedule,
+          subscribe: patchCtx.subscribe,
+          cause: patchCtx.cause,
+        }
+        proto.updateHooks.forEach((hook) =>
+          trUpdates.push(() => hook(ctx, patch!)),
+        )
+      }
     }
 
     return patch
@@ -543,6 +557,8 @@ export const createCtx = ({
         trUpdates = []
         trRollbacks = []
         trLogs = []
+        trNearEffectsStart = 0
+        trLateEffectsStart = 0
         if (start) CTX = undefined
       }
 
@@ -610,10 +626,6 @@ export const createCtx = ({
 
       return () => {
         if (cache!.listeners.delete(listener) && !isConnected(cache!)) {
-          if (!inTr) {
-            trNearEffectsStart = nearEffects.length
-            trLateEffectsStart = lateEffects.length
-          }
           proto.disconnectHooks && nearEffects.push(...proto.disconnectHooks)
 
           for (let pubCache of cache!.pubs) {
@@ -642,6 +654,23 @@ let i = 0
  */
 export let __count = (name: string) => `${name}#${++i}`
 
+function pipe(this: Atom, ...fns: Array<Fn>) {
+  return fns.reduce((acc, fn) => fn(acc), this)
+}
+function onChange(this: Atom, cb: Fn) {
+  const hook = (ctx: Ctx, patch: AtomCache) => cb(ctx, patch.state)
+
+  ;(this.__reatom.updateHooks ??= new Set()).add(hook)
+
+  return () => this.__reatom.updateHooks!.delete(hook)
+}
+function onCall(this: Action, cb: Fn): Unsubscribe {
+  return this.onChange((ctx, state) => {
+    const { params, payload } = state[state.length - 1]!
+    cb(ctx, payload, params)
+  })
+}
+
 export function atom<T>(initState: (ctx: CtxSpy) => T, name?: string): Atom<T>
 export function atom<T>(initState: T, name?: string): AtomMut<T>
 export function atom<T>(
@@ -661,18 +690,17 @@ export function atom<T>(
     )
   let computer = null
 
-  let initStateResult: typeof initState | undefined = initState
   if (typeof initState === 'function') {
     theAtom = {}
     computer = initState
-    initStateResult = undefined
+    initState = undefined as T
   }
 
   theAtom.__reatom = {
     name,
     isAction: false,
     patch: null,
-    initState: () => initStateResult,
+    initState: () => initState,
     computer,
     connectHooks: null,
     disconnectHooks: null,
@@ -680,18 +708,12 @@ export function atom<T>(
     actual: false,
   }
 
-  theAtom.pipe = function (this: Atom, ...fns: Array<Fn>) {
-    return fns.reduce((acc, fn) => fn(acc), this)
-  }
-  theAtom.onChange = function (this: Atom, cb: Fn) {
-    const hook = (ctx: Ctx, patch: AtomCache) => cb(ctx, patch.state)
+  theAtom.pipe = pipe
+  theAtom.onChange = onChange
 
-    ;(this.__reatom.updateHooks ??= new Set()).add(hook)
-
-    return () => this.__reatom.updateHooks!.delete(hook)
-  }
-
-  return theAtom
+  return experimental_PLUGINS.length === 0
+    ? theAtom
+    : theAtom.pipe(...experimental_PLUGINS)
 }
 
 export const action: {
@@ -733,15 +755,12 @@ export const action: {
     },
     actionAtom,
     {
-      onCall(this: Action, cb: Fn): Unsubscribe {
-        return this.onChange((ctx, state) => {
-          const { params, payload } = state[state.length - 1]!
-          cb(ctx, payload, params)
-        })
-      },
+      onCall,
     },
   )
 }
+
+export const experimental_PLUGINS: Array<(anAtom: Atom) => Atom> = []
 
 /**
  * @internal

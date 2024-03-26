@@ -1,4 +1,5 @@
 import {
+  __count,
   action,
   Action,
   ActionPayload,
@@ -19,6 +20,7 @@ import { onUpdate } from '@reatom/hooks'
 import { Plain } from '@reatom/utils'
 import { mapName } from './utils'
 
+export * from './match'
 export * from './bind'
 export * from './delay'
 export * from './effect'
@@ -26,6 +28,7 @@ export * from './filter'
 export * from './onLensUpdate'
 export * from './parseAtoms'
 export * from './sample'
+export * from './select'
 export * from './withReset'
 
 export interface LensAtom<State = any> extends Atom<State> {
@@ -42,13 +45,14 @@ type Combined<Shape extends Rec<Atom>> = Plain<{
 
 export const combine = <Shape extends Rec<Atom>>(
   shape: Shape,
+  name = __count('_combine'),
 ): LensAtom<Combined<Shape>> => {
   // @ts-expect-error
   const theAtom: LensAtom = atom((ctx) => {
     const newState = {} as Combined<Shape>
     for (const key in shape) newState[key] = ctx.spy(shape[key]!)
     return newState
-  }, '_combine')
+  }, name)
   theAtom.deps = Object.values(shape)
 
   return theAtom
@@ -96,7 +100,6 @@ export const plain = <T extends Atom>(
       : {}
   theAtom.__reatom = anAtom.__reatom
   theAtom.pipe = anAtom.pipe
-  theAtom.pipe = anAtom.pipe
   theAtom.onChange = anAtom.onChange
   if ('onCall' in anAtom) theAtom.onCall = anAtom.onCall
 
@@ -126,14 +129,14 @@ export const mapPayload: {
     map: Fn<[Ctx, Payload, Params], T>,
     name?: string,
   ): Fn<[Action<Params, Payload>], LensAction<[], T>>
-  <T extends Action>(fallback: ActionPayload<T>, name?: string): Fn<
-    [T],
-    LensAtom<ActionPayload<T>>
-  >
-  <T, State>(fallback: State, name?: string): Fn<
-    [Action<any[], T>],
-    LensAtom<State | T>
-  >
+  <T extends Action>(
+    fallback: ActionPayload<T>,
+    name?: string,
+  ): Fn<[T], LensAtom<ActionPayload<T>>>
+  <T, State>(
+    fallback: State,
+    name?: string,
+  ): Fn<[Action<any[], T>], LensAtom<State | T>>
   <Payload, State, Params extends any[] = any[]>(
     fallback: State,
     map: Fn<[Ctx, Payload, Params, State], State>,
@@ -158,21 +161,24 @@ export const mapPayload: {
     const theAtom = Object.assign(
       () => throwReatomError(1, 'derived action call'),
       anAction.pipe(
-        mapState((ctx, depState, prevDepState, prevState = fallback) => {
-          return isAction
-            ? // @ts-expect-error
-              ((ctx.spy = undefined),
-              depState.reduce((acc: any, v) => {
-                const payload = map(ctx, v.payload, v.params)
-                return payload === SKIP
-                  ? acc
-                  : [...acc, { params: [v], payload }]
-              }, prevState))
-            : depState.reduce((acc, { payload, params }) => {
-                const state = map(ctx, payload, params, acc)
-                return state === SKIP ? acc : state
-              }, prevState)
-        }, name || (anAction.__reatom.name && 'mapPayload')),
+        mapState(
+          (ctx, depState, prevDepState, prevState = fallback) => {
+            return isAction
+              ? // @ts-expect-error
+                ((ctx.spy = undefined),
+                depState.reduce((acc: any, v) => {
+                  const payload = map(ctx, v.payload, v.params)
+                  return payload === SKIP
+                    ? acc
+                    : [...acc, { params: [v], payload }]
+                }, prevState))
+              : depState.reduce((acc, { payload, params }) => {
+                  const state = map(ctx, payload, params, acc)
+                  return state === SKIP ? acc : state
+                }, prevState)
+          },
+          mapName(anAction, 'mapPayload', name),
+        ),
       ),
     )
     theAtom.__reatom.isAction = isAction
@@ -186,14 +192,14 @@ export const mapPayloadAwaited: {
     mapper?: Fn<[Ctx, Awaited<T>], Payload>,
     name?: string,
   ): Fn<[Action<any[], T>], LensAction<[], Payload>>
-  <T extends Action>(fallback: Awaited<ActionPayload<T>>, name?: string): Fn<
-    [T],
-    LensAtom<Awaited<ActionPayload<T>>>
-  >
-  <T, State>(fallback: State, name?: string): Fn<
-    [Action<any[], T>],
-    LensAtom<State | Awaited<T>>
-  >
+  <T extends Action>(
+    fallback: Awaited<ActionPayload<T>>,
+    name?: string,
+  ): Fn<[T], LensAtom<Awaited<ActionPayload<T>>>>
+  <T, State>(
+    fallback: State,
+    name?: string,
+  ): Fn<[Action<any[], T>], LensAtom<State | Awaited<T>>>
   <T, State>(
     fallback: State,
     map: Fn<[Ctx, Awaited<T>], State>,
@@ -207,27 +213,30 @@ export const mapPayloadAwaited: {
       ? [[], a[0], a[1]]
       : a
     const params = isAction ? [] : [fallback]
-    params.push((ctx: Ctx, promise: any) => {
-      if (promise instanceof Promise) {
-        __thenReatomed(ctx, promise, (v, read, actualize) =>
-          actualize!(
-            ctx,
-            ctx.cause!.proto,
-            (patchCtx: Ctx, patch: AtomCache) => {
-              patch.cause = ctx.cause.cause
-              const payload = map(ctx, v)
-              patch.state = isAction
-                ? [...patch.state, { params: [v], payload }]
-                : payload
-            },
-          ),
-        )
+    params.push(
+      (ctx: Ctx, promise: any) => {
+        if (promise instanceof Promise) {
+          __thenReatomed(ctx, promise, (v, read, actualize) =>
+            actualize!(
+              ctx,
+              ctx.cause!.proto,
+              (patchCtx: Ctx, patch: AtomCache) => {
+                patch.cause = ctx.cause.cause
+                const payload = map(ctx, v)
+                patch.state = isAction
+                  ? [...patch.state, { params: [v], payload }]
+                  : payload
+              },
+            ),
+          )
 
-        return SKIP
-      } else {
-        return map(ctx, promise)
-      }
-    }, name || (anAction.__reatom.name && 'mapPayloadAwaited'))
+          return SKIP
+        } else {
+          return map(ctx, promise)
+        }
+      },
+      mapName(anAction, 'mapPayloadAwaited', name),
+    )
 
     // @ts-expect-error reatomAsync
     return (anAction.onFulfill ?? anAction).pipe(
@@ -258,18 +267,18 @@ export const mapInput =
 /** Convert action to atom with optional fallback state */
 // @ts-expect-error
 export const toAtom: {
-  <T extends Action>(fallback: ReturnType<T>, name?: string): Fn<
-    [T],
-    LensAtom<ReturnType<T>>
-  >
-  <T extends Action>(fallback?: undefined, name?: string): Fn<
-    [T],
-    LensAtom<undefined | ReturnType<T>>
-  >
-  <T extends Action, State>(fallback: State, name?: string): Fn<
-    [T],
-    LensAtom<State | ReturnType<T>>
-  >
+  <T extends Action>(
+    fallback: ReturnType<T>,
+    name?: string,
+  ): Fn<[T], LensAtom<ReturnType<T>>>
+  <T extends Action>(
+    fallback?: undefined,
+    name?: string,
+  ): Fn<[T], LensAtom<undefined | ReturnType<T>>>
+  <T extends Action, State>(
+    fallback: State,
+    name?: string,
+  ): Fn<[T], LensAtom<State | ReturnType<T>>>
 } =
   (fallback?: any, name?: string): Fn<[Action], Atom> =>
   (anAction) =>
@@ -293,16 +302,17 @@ export const withOnUpdate =
       : Fn<[Ctx, AtomState<T>, AtomCache<AtomState<T>>]>,
   ) =>
   (anAtom: T): T => {
+    // @ts-expect-error
     onUpdate(anAtom, cb)
     return anAtom
   }
 
 /** Convert an atom to action */
 export const toAction: {
-  <State, T>(map: Fn<[ctx: Ctx, state: State], T>, name?: string): Fn<
-    [Atom<State>],
-    LensAction<[State], T>
-  >
+  <State, T>(
+    map: Fn<[ctx: Ctx, state: State], T>,
+    name?: string,
+  ): Fn<[Atom<State>], LensAction<[State], T>>
   <T>(name?: string): Fn<[Atom<T>], LensAction<[T], T>>
 } = (map?: string | Fn, name?: string) => (anAtom: Atom) => {
   throwReatomError(anAtom.__reatom.isAction, 'atom expected')
@@ -314,12 +324,17 @@ export const toAction: {
   map ??= (ctx: Ctx, v: any) => v
 
   // @ts-expect-error
-  const theAction: LensAction<[T], T> = atom((ctx) => {
-    // TODO handle atom mutation in the same transaction
-    const isInit = ctx.cause.pubs.length === 0
-    const state = ctx.spy(anAtom)
-    return isInit ? [] : [{ params: [state], payload: (map as Fn)(ctx, state) }]
-  }, mapName(anAtom, 'toAction', name))
+  const theAction: LensAction<[T], T> = atom(
+    (ctx) => {
+      // TODO handle atom mutation in the same transaction
+      const isInit = ctx.cause.pubs.length === 0
+      const state = ctx.spy(anAtom)
+      return isInit
+        ? []
+        : [{ params: [state], payload: (map as Fn)(ctx, state) }]
+    },
+    mapName(anAtom, 'toAction', name),
+  )
   theAction.__reatom.isAction = true
   theAction.deps = [anAtom]
 

@@ -1,5 +1,42 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/utils-v3.8.0...utils-v3.9.0) (2024-02-05)
+
+
+### Features
+
+* **utils:** add typed keys and entries ([ed3c205](https://github.com/artalar/reatom/commit/ed3c205259d39cea018938c2b14794dbfd994c00))
+
+## [3.8.0](https://github.com/artalar/reatom/compare/utils-v3.7.0...utils-v3.8.0) (2023-11-25)
+
+
+### Features
+
+* **utils:** add throwAbort ([a991be1](https://github.com/artalar/reatom/commit/a991be1153c8b1c3c929a7eabcc9328e022b8eff))
+
+## [3.7.0](https://github.com/artalar/reatom/compare/utils-v3.6.0...utils-v3.7.0) (2023-10-20)
+
+
+### Features
+
+* **lens:** add match().with ([f61dddc](https://github.com/artalar/reatom/commit/f61dddc858fda9921117acd472cc4e4e71cdd47e))
+* **utils:** add isRec ([444c4f6](https://github.com/artalar/reatom/commit/444c4f6c528092a59bdd332218b3d42c88351999))
+
+## [3.6.0](https://github.com/artalar/reatom/compare/utils-v3.5.0...utils-v3.6.0) (2023-10-09)
+
+
+### Features
+
+* **jsx:** nested atoms, better types ([#652](https://github.com/artalar/reatom/issues/652)) ([3ceae78](https://github.com/artalar/reatom/commit/3ceae788da52ff40a561ce5b2fc5371475fb7d7c))
+* **lens:** add match ([#646](https://github.com/artalar/reatom/issues/646)) ([0f2a768](https://github.com/artalar/reatom/commit/0f2a7685dd797cac4c9fc882a8e24bc31f9503a6))
+
+## [3.5.0](https://github.com/artalar/reatom/compare/utils-v3.4.0...utils-v3.5.0) (2023-09-13)
+
+
+### Features
+
+* **utils:** improve throwIfAborted signature ([d57946d](https://github.com/artalar/reatom/commit/d57946d294285f5f51714a1ffc873928ae7cf079))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/utils-v3.3.0...utils-v3.4.0) (2023-07-07)
 
 

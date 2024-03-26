@@ -77,16 +77,33 @@ test('do not allow overprogress', async () => {
   const timerAtom = reatomTimer({ delayMultiplier: 1, interval: 1 })
   const ctx = createTestCtx()
 
-  const target = 10
+  const delay = 10
   const start = Date.now()
-  const promise = timerAtom.startTimer(ctx, target)
+  const promise = timerAtom.startTimer(ctx, delay)
 
-  await sleep(target / 2)
-  while (Date.now() - start < target) {}
+  await sleep(delay / 2)
+  while (Date.now() - start < delay) {}
 
   await promise
 
   assert.is(ctx.get(timerAtom.progressAtom), 1)
+  ;`👍` //?
+})
+
+test('allow start from passed time', async () => {
+  const timerAtom = reatomTimer({ delayMultiplier: 1, interval: 1 })
+  const ctx = createTestCtx()
+
+  const delay = 20
+  const passed = 10
+  const start = Date.now()
+  const promise = timerAtom.startTimer(ctx, delay, passed)
+  assert.is(ctx.get(timerAtom.progressAtom), passed / delay)
+  
+  await promise
+
+  const duration = Date.now() - start
+  assert.ok(Math.abs(delay - passed - duration) <= 2)
   ;`👍` //?
 })
 

@@ -1,5 +1,67 @@
 # Changelog
 
+## [3.7.2](https://github.com/artalar/reatom/compare/effects-v3.7.1...effects-v3.7.2) (2023-11-25)
+
+
+### Bug Fixes
+
+* **effects:** more friendly typings for isCausedBy ([5d60c1d](https://github.com/artalar/reatom/commit/5d60c1da8710c90df60b24e5d013e829455260d0))
+* **effects:** prevent unhandled error for abort ([fe884e2](https://github.com/artalar/reatom/commit/fe884e24ac574fc50c7ce4e825459d7059136b73))
+
+## [3.7.1](https://github.com/artalar/reatom/compare/effects-v3.7.0...effects-v3.7.1) (2023-11-23)
+
+
+### Bug Fixes
+
+* **effects:** concurrent.abortControllerAtom name ([25bdc47](https://github.com/artalar/reatom/commit/25bdc479e62045f946aeee6b9e001a8cb3450a07))
+* **effects:** prevent uncaught rejection for the abort of the concurrent API ([028bf10](https://github.com/artalar/reatom/commit/028bf10baa38bcd85d6ae7445c8294160b50ca07))
+
+## [3.7.0](https://github.com/artalar/reatom/compare/effects-v3.6.0...effects-v3.7.0) (2023-11-20)
+
+
+### Features
+
+* **effects:** add abortCauseContext ([af28718](https://github.com/artalar/reatom/commit/af28718598a852ba7926e54cd5f1b6a508441951))
+* **effects:** add concurrent ([21b824b](https://github.com/artalar/reatom/commit/21b824b939bd6bd57b3d33d8eaa91ea67d784c41))
+* **effects:** add spawn ([2eab5cb](https://github.com/artalar/reatom/commit/2eab5cbc6b26450b09ed43ad9cb815a997950c1d))
+
+
+### Bug Fixes
+
+* **effects:** concurrent nested aborts ([6cc5dc4](https://github.com/artalar/reatom/commit/6cc5dc45c8f6bb9e51c2fd76c7b6dda7352ce4c2))
+
+## [3.6.0](https://github.com/artalar/reatom/compare/effects-v3.5.1...effects-v3.6.0) (2023-10-20)
+
+
+### Features
+
+* **effects:** add isInit method ([4a8aeb1](https://github.com/artalar/reatom/commit/4a8aeb14d0cdf54a545dda498c026e8f9b7c29d2))
+* **effects:** skip mark for take filter ([c136bd8](https://github.com/artalar/reatom/commit/c136bd884df59715ea8a4028e29eaa3e1dc6b076))
+
+
+### Bug Fixes
+
+* **effects:** withAbortableSchedule ([399d36f](https://github.com/artalar/reatom/commit/399d36ffb00d3597fa9c234358b8c50a6aeb8a7a))
+
+## [3.5.1](https://github.com/artalar/reatom/compare/effects-v3.5.0...effects-v3.5.1) (2023-09-14)
+
+
+### Bug Fixes
+
+* **effects:** withAbortableSchedule sync abort ([ebede8d](https://github.com/artalar/reatom/commit/ebede8d8f652da58bf2e29d6b5ec58966199059b))
+
+## [3.5.0](https://github.com/artalar/reatom/compare/effects-v3.4.0...effects-v3.5.0) (2023-09-13)
+
+
+### Features
+
+* **effects:** add withAbortableSchedule ([9e219a7](https://github.com/artalar/reatom/commit/9e219a7d61c18cc15bcff28f310938166d10de2c))
+
+
+### Bug Fixes
+
+* **effects:** prevent Uncaught DOMException for aborts ([79f719b](https://github.com/artalar/reatom/commit/79f719bbdd6e97cb56c3399a841c33764822d598))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/effects-v3.3.1...effects-v3.4.0) (2023-08-05)
 
 

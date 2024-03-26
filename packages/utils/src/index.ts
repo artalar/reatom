@@ -1,3 +1,10 @@
+export type UndefinedToOptional<T extends object> = Partial<T> &
+  PickValues<T, {} | null>
+
+// We don't have type literal for NaN but other values are presented here
+// https://stackoverflow.com/a/51390763
+export type Falsy = false | 0 | '' | null | undefined
+
 // TODO infer `Atom` and `AtomMut` signature
 /** Remove named generics, show plain type. */
 export type Plain<Intersection> = Intersection extends (
@@ -42,6 +49,12 @@ export const isObject = <T>(
   ? T
   : Record<string | number | symbol, unknown> =>
   typeof thing === 'object' && thing !== null
+
+export const isRec = (thing: unknown): thing is Record<string, unknown> => {
+  if (!isObject(thing)) return false
+  const proto = Reflect.getPrototypeOf(thing)
+  return !proto || !Reflect.getPrototypeOf(proto)
+}
 
 // TODO infer `b` too
 // export const is: {
@@ -119,16 +132,24 @@ export type Assign<T1, T2, T3 = {}, T4 = {}> = Plain<
 
 /** `Object.assign` with fixed types, equal properties replaced instead of changed to a union */
 export const assign: {
-  <T1, T2, T3 = {}, T4 = {}>(a1: T1, a2: T2, a3?: T3, a4?: T4): Assign<
-    T1,
-    T2,
-    T3,
-    T4
-  >
+  <T1, T2, T3 = {}, T4 = {}>(
+    a1: T1,
+    a2: T2,
+    a3?: T3,
+    a4?: T4,
+  ): Assign<T1, T2, T3, T4>
 } = Object.assign
 
 /** `Object.assign` which set an empty object to the first argument */
 export const merge: typeof assign = (...a) => Object.assign({}, ...a)
+
+export const keys: {
+  <T extends object>(thing: T): Array<keyof T>
+} = Object.keys
+
+export const entries: {
+  <T extends object>(thing: T): Array<[keyof T, T[keyof T]]>
+} = Object.entries
 
 /** Get a new object only with the passed keys*/
 export const pick = <T, K extends keyof T>(
@@ -163,11 +184,13 @@ export const random = (min = 0, max = Number.MAX_SAFE_INTEGER - 1) =>
   Math.floor(Math.random() * (max - min + 1)) + min
 
 /**
- * Returns non nullable type of value
+ * Asserts that the value is not `null` or `undefined`.
  */
 export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
-  if (value != null) return value as NonNullable<T>
-  throw new TypeError(message || 'Value is null or undefined')
+  if (value == null) {
+    throw new TypeError(message || 'Value is null or undefined')
+  }
+  return value
 }
 
 const { toString } = Object.prototype
@@ -239,7 +262,7 @@ export const toAbortError = (reason: any): AbortError => {
   return reason as AbortError
 }
 
-export const throwIfAborted = (controller?: void | AbortController) => {
+export const throwIfAborted = (controller?: void | null | AbortController) => {
   if (controller?.signal.aborted) {
     throw toAbortError(controller.signal.reason)
   }
@@ -247,6 +270,15 @@ export const throwIfAborted = (controller?: void | AbortController) => {
 
 export const isAbort = (thing: any): thing is AbortError =>
   thing instanceof Error && thing.name === 'AbortError'
+
+export const throwAbort = (
+  message: string,
+  controller?: AbortController,
+): never => {
+  const error = toAbortError(message)
+  controller?.abort(error)
+  throw error
+}
 
 /** @link https://developer.mozilla.org/en-US/docs/Web/API/setTimeout#maximum_delay_value */
 export const MAX_SAFE_TIMEOUT = 2 ** 31 - 1

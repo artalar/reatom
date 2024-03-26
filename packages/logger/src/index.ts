@@ -1,5 +1,7 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
-import { isShallowEqual } from '@reatom/utils'
+import { isShallowEqual, noop } from '@reatom/utils'
+import { logGraph } from './graphView'
+// import { devtoolsCreate } from './devtools'
 
 export interface unstable_ChangeMsg {
   newState?: any
@@ -9,6 +11,7 @@ export interface unstable_ChangeMsg {
   cause?: string
   history: Array<AtomCache>
   params?: Array<any>
+  time: number
 }
 export interface LogMsg {
   error: undefined | Error
@@ -29,6 +32,8 @@ const getTimeStampDefault = () => {
   return `${new Date().toLocaleTimeString()} ${ms}ms`
 }
 
+let timesPrecision = 10 ** 15
+
 export const createLogBatched = ({
   debounce = 500,
   getTimeStamp = getTimeStampDefault,
@@ -36,6 +41,7 @@ export const createLogBatched = ({
   log = console.log,
   domain = '',
   shouldGroup = false,
+  shouldLogGraph = false,
 }: {
   debounce?: number
   getTimeStamp?: () => string
@@ -43,6 +49,7 @@ export const createLogBatched = ({
   log?: typeof console.log
   domain?: string
   shouldGroup?: boolean
+  shouldLogGraph?: boolean
 } = {}) => {
   if (domain) domain = `(${domain}) `
   let queue: Array<LogMsg & { time: string }> = []
@@ -68,6 +75,17 @@ export const createLogBatched = ({
         console.groupCollapsed(
           `Reatom ${domain}${length} transaction${length > 1 ? 's' : ''}`,
         )
+
+        if (shouldLogGraph) {
+          logGraph(
+            new Set(
+              queue
+                .flatMap(({ changes }) => Object.values(changes))
+                .sort((a, b) => a.time - b.time)
+                .map(({ patch }) => patch),
+            ),
+          )
+        }
 
         for (const { changes, time, error } of queue) {
           console.log(
@@ -140,6 +158,7 @@ export const createLogBatched = ({
 export const connectLogger = (
   ctx: Ctx,
   {
+    devtools = false,
     historyLength = 10,
     domain = '',
     log = createLogBatched({ domain }),
@@ -147,6 +166,7 @@ export const connectLogger = (
     skip = () => false,
     skipUnnamed = true,
   }: {
+    devtools?: boolean
     historyLength?: number
     log?: Fn<[LogMsg]>
     domain?: string
@@ -159,64 +179,84 @@ export const connectLogger = (
   let read: Fn<[AtomProto], undefined | AtomCache>
   ctx.get((r) => (read = r))
 
-  return ctx.subscribe((logs, error) => {
-    const states = new WeakMap<AtomProto, any>()
-    const changes = logs.reduce((acc, patch, i) => {
-      const { proto, state } = patch
-      const { isAction } = proto
-      let { name } = proto
+  const devtoolsDispose = /* devtools ? devtoolsCreate(ctx) : */ noop
 
-      if (skip(patch)) return acc
+  const ctxUnsubscribe = ctx.subscribe((logs, error) => {
+    let i = -1
+    try {
+      const states = new WeakMap<AtomProto, any>()
+      const changes: LogMsg['changes'] = {}
+      while (++i < logs.length) {
+        const patch = logs[i]!
 
-      if (!name || name.startsWith('_') || /\._/.test(name)) {
-        if (skipUnnamed) return acc
-        name ??= 'unnamed'
+        const { cause, proto, state } = patch
+        const { isAction } = proto
+        let { name } = proto
+
+        if (skip(patch)) continue
+
+        if (!name || name.startsWith('_') || /\._/.test(name)) {
+          if (skipUnnamed) continue
+          name ??= 'unnamed'
+        }
+
+        const oldCache = read(proto)
+        const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
+        states.set(proto, state)
+
+        const isStateChanged = !Object.is(state, oldState)
+        const isFilteredAction = isAction && state.length === 0
+
+        if (!isStateChanged || isFilteredAction) continue
+
+        let atomHistory = history.get(proto) ?? []
+        if (historyLength) {
+          atomHistory = atomHistory.slice(0, historyLength - 1)
+          atomHistory.unshift(
+            isAction ? { ...patch, state: [...state] } : patch,
+          )
+          history.set(proto, atomHistory)
+        }
+
+        const isConnection =
+          !oldCache &&
+          cause!.proto.name === 'root' &&
+          (!isAction || state.length === 0)
+
+        if (isConnection) continue
+
+        const changeMsg: unstable_ChangeMsg = (changes[`${i + 1}.${name}`] = {
+          patch,
+          history: atomHistory,
+          time: (globalThis.performance ?? Date).now() + 1 / timesPrecision--,
+        })
+
+        if (isAction) {
+          const call = state.at(-1) as { params: Array<any>; payload: any }
+          changeMsg.params = call.params
+          changeMsg.payload = call.payload
+        } else {
+          changeMsg.newState = state
+          changeMsg.oldState = oldState
+        }
+        changeMsg.patch = patch
+        if (showCause) changeMsg.cause = getCause(patch)
       }
 
-      const oldCache = read(proto)
-      const oldState = states.has(proto) ? states.get(proto) : oldCache?.state
-      states.set(proto, state)
-
-      const isConnection =
-        !oldCache &&
-        patch.cause!.proto.name === 'root' &&
-        (!isAction || state.length === 0)
-
-      let atomHistory = history.get(proto) ?? []
-      if (!Object.is(state, oldState) && historyLength) {
-        atomHistory = atomHistory.slice(0, historyLength - 1)
-        atomHistory.unshift(isAction ? { ...patch, state: [...state] } : patch)
-        history.set(proto, atomHistory)
-      }
-
-      if (isConnection || Object.is(state, oldState)) {
-        return acc
-      }
-
-      const changeMsg: unstable_ChangeMsg = (acc[`${i + 1}.${name}`] = {
-        patch,
-        history: atomHistory,
+      log({
+        error,
+        changes,
+        logs,
+        ctx,
       })
-
-      if (isAction) {
-        const call = state.at(-1) as { params: Array<any>; payload: any }
-        changeMsg.params = call.params
-        changeMsg.payload = call.payload
-      } else {
-        changeMsg.newState = state
-        changeMsg.oldState = oldState
-      }
-      changeMsg.patch = patch
-      if (showCause) changeMsg.cause = getCause(patch)
-
-      return acc
-    }, {} as LogMsg['changes'])
-
-    log({
-      error,
-      changes,
-      logs,
-      ctx,
-    })
+    } catch (error) {
+      console.error('Reatom/logger error with', logs[i])
+      console.log(error)
+    }
   })
+
+  return () => {
+    devtoolsDispose()
+    ctxUnsubscribe()
+  }
 }

@@ -19,6 +19,7 @@ import './index.story.test'
 import './withCache.test'
 import './withStatusesAtom.test'
 import './mapToAsync.test'
+import './reatomResource.test'
 
 test(`base API`, async () => {
   const fetchData = reatomAsync(async (ctx, v: number) => {
@@ -85,12 +86,14 @@ test('withRetry fallbackParams', async () => {
 })
 
 test('withRetry delay', async () => {
+  const onRejectTrack = mockFn()
   const fetchData = reatomAsync(async (ctx) => {
     await sleep(5)
     if (1) throw new Error('TEST')
   }).pipe(
     withRetry({
       onReject(ctx, error: any, retries) {
+        onRejectTrack()
         if (error?.message === 'TEST' && retries < 1) return 6
       },
     }),
@@ -98,18 +101,17 @@ test('withRetry delay', async () => {
 
   const ctx = createTestCtx()
 
-  const track = ctx.subscribeTrack(fetchData)
-
-  assert.is(track.calls.length, 1)
+  const effectTrack = ctx.subscribeTrack(fetchData)
+  effectTrack.calls.length = 0
 
   fetchData(ctx).catch(noop)
-  fetchData(ctx).catch(noop)
-
-  assert.is(track.calls.length, 3)
+  assert.is(effectTrack.calls.length, 1)
 
   await sleep(30)
 
-  assert.is(track.calls.length, 4)
+  assert.is(onRejectTrack.calls.length, 2)
+  assert.is(effectTrack.calls.length, 2)
+  assert.is(ctx.get(fetchData.retriesAtom), 0)
   ;`👍` //?
 })
 
@@ -271,7 +273,7 @@ test('onConnect', async () => {
   ;`👍` //?
 })
 
-test('resetTrigger', async () => {
+test('withErrorAtom resetTrigger', async () => {
   const effect = reatomAsync(async () => {
     if (1) throw 42
     return 42
@@ -287,6 +289,44 @@ test('resetTrigger', async () => {
 
   effect.dataAtom(ctx, 42)
   assert.is(ctx.get(effect.errorAtom), undefined)
+  ;`👍` //?
+})
+
+test('withErrorAtom should be computed first', async () => {
+  let error
+  const effect = reatomAsync(async () => {
+    if (1) throw 42
+    return 42
+  }).pipe(
+    withRetry({
+      onReject(ctx) {
+        error = ctx.get(effect.errorAtom)
+      },
+    }),
+    withErrorAtom((ctx, e) => e),
+  )
+  const ctx = createTestCtx()
+
+  await effect(ctx).catch(noop)
+  assert.is(error, 42)
+  ;`👍` //?
+})
+
+test('withErrorAtom initState', async () => {
+  let error
+  const effect = reatomAsync(async () => {
+    if (1) throw 42
+    return 42
+  }).pipe(withErrorAtom((ctx, e: any) => new Error(e), { initState: 'test' }))
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(effect.errorAtom), 'test')
+
+  await effect(ctx).catch(noop)
+  assert.instance(ctx.get(effect.errorAtom), Error)
+
+  effect.errorAtom.reset(ctx)
+  assert.is(ctx.get(effect.errorAtom), 'test')
   ;`👍` //?
 })
 
@@ -360,6 +400,54 @@ test('handle error correctly', async () => {
 
   assert.is(await doSome(ctx).catch((e: Error) => e.message), 'test error')
   assert.is(await doSomeAsync(ctx).catch((e: Error) => e.message), 'test error')
+  ;`👍` //?
+})
+
+test('withRetry abort', async () => {
+  const effect = reatomAsync(async () => {
+    if (1) throw new Error('test error')
+  }).pipe(
+    withRetry({
+      onReject: (ctx, error, retries) => {
+        return 1
+      },
+    }),
+  )
+  onConnect(effect, (ctx) => effect(ctx).catch(noop))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(effect)
+  assert.is(ctx.get(effect.pendingAtom), 1)
+  assert.is(ctx.get(effect.retriesAtom), 0)
+  await sleep(10)
+  assert.is(ctx.get(effect.pendingAtom), 0)
+  assert.ok(ctx.get(effect.retriesAtom) > 2)
+
+  track.unsubscribe()
+  await sleep(10)
+  assert.is(ctx.get(effect.pendingAtom) + ctx.get(effect.retriesAtom), 0)
+  ;`👍` //?
+})
+
+test('withAbort + withRetry', async () => {
+  const effect = reatomAsync(async () => {
+    if (1) throw new Error('test error')
+  }).pipe(
+    withAbort(),
+    withRetry({
+      onReject: (ctx, error, retries) => {
+        return 1
+      },
+    }),
+  )
+  onConnect(effect, (ctx) => effect(ctx).catch(noop))
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(effect)
+  await sleep(10)
+
+  setTimeout(() => track.unsubscribe())
+  assert.ok(track.calls.length > 2)
   ;`👍` //?
 })
 

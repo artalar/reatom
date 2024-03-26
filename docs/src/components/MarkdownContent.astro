@@ -1,0 +1,26 @@
+---
+import DefaultMarkdownContent from '@astrojs/starlight/components/MarkdownContent.astro'
+---
+
+<DefaultMarkdownContent {...Astro.props as any}>
+  <slot />
+</DefaultMarkdownContent>
+
+<script>
+  // prettier-ignore
+  const MermaidTypes = 'sequenceDiagram,flowchart,classDiagram,stateDiagram,erDiagram,gantt,journey,gitGraph,pie,mindmap,quadrantChart,xyChart'.split(',')
+
+  const codeBlocks = document.querySelectorAll('.expressive-code')
+  await Promise.all(
+    [...(codeBlocks as NodeListOf<HTMLElement>)].map(async (block) => {
+      const content = block.innerText
+      if (!MermaidTypes.some((type) => content.startsWith(type))) {
+        return
+      }
+      const { mermaid } = await import('./mermaid')
+      const id = 'mermaid-' + Math.random().toString(36).slice(2, 8)
+      const result = await mermaid.render(id, content)
+      block.outerHTML = result.svg
+    }),
+  )
+</script>

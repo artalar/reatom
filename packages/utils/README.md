@@ -32,6 +32,14 @@ Recursive comparison of two values, supports primitives, objects, dates, arrays,
 
 [assign](#assign) which set an empty object to the first argument.
 
+### keys
+
+`Object.keys` with fixed types.
+
+### entries
+
+`Object.entries` with fixed types.
+
 ### pick
 
 Get a new object only with the properties of the passed keys.
@@ -73,6 +81,10 @@ Accepts an optional `AbortController` and throws an error if the signal is abort
 ### isAbort
 
 Do the check `value instanceof Error && value.name === 'AbortError'`
+
+### throwAbort
+
+Convert string message to abort error, abort a controller if passed, throw the error. Useful for correct type inference.
 
 ## Constants
 

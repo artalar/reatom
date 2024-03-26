@@ -1,0 +1,32 @@
+{
+  "name": "reatom-nextjs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@reatom/framework": "^3.*.*",
+    "@reatom/npm-react": "^3.*.*",
+    "@reatom/persist": "^3.*.*",
+    "@reatom/url": "^3.*.*",
+    "@types/node": "20.11.30",
+    "@types/react": "18.2.70",
+    "@types/react-dom": "18.2.22",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.1.4",
+    "next": "^14.1.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "typescript": "5.4.3"
+  },
+  "devDependencies": {
+    "@reatom/eslint-plugin": "^3.*.*",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5"
+  }
+}

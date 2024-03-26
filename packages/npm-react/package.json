@@ -1,6 +1,6 @@
 {
   "name": "@reatom/npm-react",
-  "version": "3.4.2",
+  "version": "3.8.4",
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for React",
@@ -26,7 +26,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.1.0",
+    "@reatom/core": "^3.5.0",
     "@reatom/lens": "^3.1.0",
     "use-sync-external-store": "^1.2.0"
   },
@@ -42,7 +42,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/adapter/npm-react",
+  "homepage": "https://www.reatom.dev/package/npm-react",
   "files": [
     "/build",
     "/package.json"

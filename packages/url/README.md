@@ -29,32 +29,61 @@ import { reatomNumber } from '@reatom/primitives'
 import { withSearchParamsPersist } from '@reatom/url'
 
 export const pageAtom = reatomNumber(0, 'pageAtom').pipe(
-  withSearchParamsPersist('page', Number),
+  withSearchParamsPersist('page', (page = '1') => Number(page)),
 )
 ```
 
 Now you have handy `increment` and `decrement` actions in `pageAtom` and synchronization with "page" search parameter.
+
+Also, both `searchParamsAtom.lens` and `withSearchParamsPersist` accepts options object by the second argument, which you can use to specify `replace` strategy (`false` by default).
+
+```ts
+import qs from 'qs'
+import { atom } from '@reatom/core'
+import { withSearchParamsPersist } from '@reatom/url'
+
+export const filtersAtom = atom<Filters>({}, 'filtersAtom').pipe(
+  withSearchParamsPersist('filter', {
+    replace: true,
+    parse: (v = '') => qs.parse(v, { arrayFormat: 'bracket' }),
+    serialize: (v) => qs.stringify(v, { arrayFormat: 'bracket' }),
+  }),
+)
+```
 
 ### Types
 
 Here are the types of the key features.
 
 ```ts
-// exported by `urlAtom`
-export interface UrlAtom extends AtomMut<URL> {
-  go: Action<[path: `/${string}`], URL>
+// used by `urlAtom`
+export interface UrlAtom extends Atom<URL> {
+  (ctx: Ctx, url: URL, replace?: boolean): URL
+  (ctx: Ctx, update: (url: URL, ctx: Ctx) => URL, replace?: boolean): URL
+
+  go: Action<[path: string, replace?: boolean], URL>
   settingsAtom: AtomMut<AtomUrlSettings>
 }
 
-// exported by `searchParamsAtom`
+// used by `searchParamsAtom`
 export interface SearchParamsAtom extends Atom<Rec<string>> {
-  set: Action<[key: string, value: string], void>
-  /** create AtomMut which will synced with the specified search parameter */
-  lens: <T = string>(
+  set: Action<[key: string, value: string, replace?: boolean], void>
+  del: Action<[key: string, replace?: boolean], void>
+  /** create AtomMut which will synced with the specified query parameter */
+  lens<T = string>(
     key: string,
     parse?: (value?: string) => T,
-    serialize?: (value: T) => string,
-  ) => AtomMut<T>
+    serialize?: (value: T) => undefined | string,
+  ): AtomMut<T>
+  /** create AtomMut which will synced with the specified query parameter */
+  lens<T = string>(
+    key: string,
+    options: {
+      parse?: (value?: string) => T
+      serialize?: (value: T) => undefined | string
+      replace?: boolean
+    },
+  ): AtomMut<T>
 }
 ```
 
@@ -73,3 +102,48 @@ export const handler = async (req) => {
   // do your stuff...
 }
 ```
+
+### Integrations
+
+By default urlAtom uses `window.location` as the source of truth (SoT). But if you using any other router manager, you should setup reactive integrations by yourself, as the native `location` API is not reactive and can't be used as the SoT.
+
+To put the new URL from the the source of truth to `urlAtom` you should always use `updateFromSource` action, because only this updates will not be synced back and it will help you to prevent cyclic stack.
+
+Here is the example of integration with https://reactrouter.com. Put this component in the top of your application tree (as a child of RR provider and Reatom provider)!
+
+> You could play with it in [Tanstack VS Reatom example](https://github.com/artalar/reatom/blob/v3/examples/tanstack-vs-reatom)
+
+```tsx
+import React from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useCtx } from '@reatom/npm-react'
+import { updateFromSource, urlAtom } from '@reatom/url'
+
+export const RouterSync = () => {
+  const ctx = useCtx()
+  const setupRef = React.useRef(false)
+
+  // subscribe to location changes
+  useLocation()
+  if (ctx.get(urlAtom).href !== location.href && setupRef.current) {
+    // do not use `useEffect` to prevent race conditions (`urlAtom` reading during the render)
+    updateFromSource(ctx, new URL(location.href))
+  }
+
+  const navigate = useNavigate()
+  if (!setupRef.current) {
+    setupRef.current = true
+    urlAtom.settingsAtom(ctx, {
+      init: () => new URL(location.href),
+      sync: (_ctx, url, replace) =>
+        navigate(url.pathname + url.search, { replace }),
+    })
+    // trigger `onChange` hooks.
+    urlAtom(ctx, new URL(location.href))
+  }
+
+  return null
+}
+```
+
+The warning `Cannot update a component while rendering a different component ("RouterSync")` is ok, there are no way to write it in another way and fix it, as the `Router.subscribe` method is deprecated.

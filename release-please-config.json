@@ -14,13 +14,14 @@
     "packages/form": {},
     "packages/form-web": {},
     "packages/hooks": {},
+    "packages/jsx": {},
     "packages/lens": {},
     "packages/logger": {},
-    "packages/navigation": {},
     "packages/npm-cookie-baker": {},
     "packages/npm-history": {},
     "packages/npm-lit": {},
     "packages/npm-react": {},
+    "packages/npm-solid-js": {},
     "packages/npm-svelte": {},
     "packages/persist": {},
     "packages/persist-web-storage": {},
@@ -31,6 +32,7 @@
     "packages/timer": {},
     "packages/undo": {},
     "packages/url": {},
-    "packages/utils": {}
+    "packages/utils": {},
+    "packages/web": {}
   }
 }

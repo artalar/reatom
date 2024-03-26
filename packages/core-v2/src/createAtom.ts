@@ -96,6 +96,7 @@ export function createAtom<
       } else {
         type = `${name}_${id}`
 
+        // @ts-expect-error
         const actionCreator: ActionCreatorBinded = (...a: any[]) => ({
           payload: dep(...a),
           type,

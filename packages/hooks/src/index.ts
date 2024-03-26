@@ -4,6 +4,7 @@ import {
   atom,
   Atom,
   AtomCache,
+  AtomProto,
   AtomState,
   Ctx,
   CtxSpy,
@@ -11,7 +12,8 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { noop, toAbortError, isAbort, merge } from '@reatom/utils'
+import { noop, toAbortError, merge } from '@reatom/utils'
+import { abortCauseContext } from '@reatom/effects'
 
 export const getRootCause = (cause: AtomCache): AtomCache =>
   cause.cause === null ? cause : getRootCause(cause.cause)
@@ -46,27 +48,32 @@ export const withInit =
 
 export const onConnect = (
   anAtom: Atom,
-  cb: Fn<[Ctx & { controller: AbortController; isConnected(): boolean }], (() => void) | unknown>,
+  cb: Fn<
+    [Ctx & { controller: AbortController; isConnected(): boolean }],
+    (() => void) | unknown
+  >,
 ): Unsubscribe => {
   const connectHook = (ctx: Ctx) => {
+    const cause = merge(
+      ctx.get((read) => read(anAtom.__reatom)!),
+      {
+        // drop the previous history for connect hooks
+        cause: getRootCause(ctx.cause),
+      },
+    )
+
     const controller = new AbortController()
+    abortCauseContext.set(cause, controller)
+
     const cleanup = cb(
       merge(ctx, {
-        // TODO: how to do it more performant
-        cause: merge(
-          ctx.get((read) => read(anAtom.__reatom)!),
-          { controller },
-        ),
+        cause,
         controller,
         isConnected: () => isConnected(ctx, anAtom),
       }),
     )
 
-    if (cleanup instanceof Promise) {
-      cleanup.catch((error) => {
-        if (!isAbort(error)) throw error
-      })
-    }
+    if (cleanup instanceof Promise) cleanup.catch(noop)
 
     // TODO: abort on `connectHooks.delete`?
     const cleanupHook = (_ctx: Ctx) => {
@@ -128,13 +135,16 @@ const _onUpdate: {
 }
 
 export const onUpdate: typeof _onUpdate = (anAtom: Atom, cb = noop) =>
-  ((anAtom as Atom & { deps?: Array<Atom> }).deps ?? []).reduce((acc, dep) => {
-    const un = onUpdate(dep, (ctx) => ctx.get(anAtom))
-    return () => {
-      un()
-      acc()
-    }
-  }, _onUpdate(anAtom, cb) as Unsubscribe)
+  ((anAtom as Atom & { deps?: Array<Atom> }).deps ?? []).reduce(
+    (acc, dep) => {
+      const un = onUpdate(dep, (ctx) => ctx.get(anAtom))
+      return () => {
+        un()
+        acc()
+      }
+    },
+    _onUpdate(anAtom, cb) as Unsubscribe,
+  )
 
 /** @deprecated use the second parameter of `ctx.spy` instead */
 // @ts-ignore
@@ -186,3 +196,17 @@ export const isConnected = (ctx: Ctx, { __reatom: proto }: Atom) =>
     const cache = proto.patch ?? read(proto)
     return !!cache && cache.subs.size + cache.listeners.size > 0
   })
+
+const initializations = atom(
+  null! as WeakMap<AtomProto, AtomCache>,
+  'initializations',
+)
+initializations.__reatom.initState = () => new WeakMap()
+export const isInit = (ctx: Ctx) => {
+  const inits = ctx.get(initializations)
+  if (!inits.has(ctx.cause.proto)) {
+    inits.set(ctx.cause.proto, ctx.cause)
+    return true
+  }
+  return inits.get(ctx.cause.proto) === ctx.cause
+}

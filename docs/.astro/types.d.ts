@@ -20,26 +20,14 @@ declare module 'astro:content' {
 
 declare module 'astro:content' {
 	export { z } from 'astro/zod';
-	export type CollectionEntry<C extends keyof AnyEntryMap> = AnyEntryMap[C][keyof AnyEntryMap[C]];
 
-	// TODO: Remove this when having this fallback is no longer relevant. 2.3? 3.0? - erika, 2023-04-04
-	/**
-	 * @deprecated
-	 * `astro:content` no longer provide `image()`.
-	 *
-	 * Please use it through `schema`, like such:
-	 * ```ts
-	 * import { defineCollection, z } from "astro:content";
-	 *
-	 * defineCollection({
-	 *   schema: ({ image }) =>
-	 *     z.object({
-	 *       image: image(),
-	 *     }),
-	 * });
-	 * ```
-	 */
-	export const image: never;
+	type Flatten<T> = T extends { [K: string]: infer U } ? U : never;
+
+	export type CollectionKey = keyof AnyEntryMap;
+	export type CollectionEntry<C extends CollectionKey> = Flatten<AnyEntryMap[C]>;
+
+	export type ContentCollectionKey = keyof ContentEntryMap;
+	export type DataCollectionKey = keyof DataEntryMap;
 
 	// This needs to be in sync with ImageMetadata
 	export type ImageFunction = () => import('astro/zod').ZodObject<{
@@ -54,19 +42,17 @@ declare module 'astro:content' {
 				import('astro/zod').ZodLiteral<'tiff'>,
 				import('astro/zod').ZodLiteral<'webp'>,
 				import('astro/zod').ZodLiteral<'gif'>,
-				import('astro/zod').ZodLiteral<'svg'>
+				import('astro/zod').ZodLiteral<'svg'>,
+				import('astro/zod').ZodLiteral<'avif'>,
 			]
 		>;
 	}>;
 
 	type BaseSchemaWithoutEffects =
 		| import('astro/zod').AnyZodObject
-		| import('astro/zod').ZodUnion<import('astro/zod').AnyZodObject[]>
+		| import('astro/zod').ZodUnion<[BaseSchemaWithoutEffects, ...BaseSchemaWithoutEffects[]]>
 		| import('astro/zod').ZodDiscriminatedUnion<string, import('astro/zod').AnyZodObject[]>
-		| import('astro/zod').ZodIntersection<
-				import('astro/zod').AnyZodObject,
-				import('astro/zod').AnyZodObject
-		  >;
+		| import('astro/zod').ZodIntersection<BaseSchemaWithoutEffects, BaseSchemaWithoutEffects>;
 
 	type BaseSchema =
 		| BaseSchemaWithoutEffects
@@ -97,7 +83,7 @@ declare module 'astro:content' {
 
 	export function getEntryBySlug<
 		C extends keyof ContentEntryMap,
-		E extends ValidContentEntrySlug<C> | (string & {})
+		E extends ValidContentEntrySlug<C> | (string & {}),
 	>(
 		collection: C,
 		// Note that this has to accept a regular string too, for SSR
@@ -122,7 +108,7 @@ declare module 'astro:content' {
 
 	export function getEntry<
 		C extends keyof ContentEntryMap,
-		E extends ValidContentEntrySlug<C> | (string & {})
+		E extends ValidContentEntrySlug<C> | (string & {}),
 	>(entry: {
 		collection: C;
 		slug: E;
@@ -131,7 +117,7 @@ declare module 'astro:content' {
 		: Promise<CollectionEntry<C> | undefined>;
 	export function getEntry<
 		C extends keyof DataEntryMap,
-		E extends keyof DataEntryMap[C] | (string & {})
+		E extends keyof DataEntryMap[C] | (string & {}),
 	>(entry: {
 		collection: C;
 		id: E;
@@ -140,7 +126,7 @@ declare module 'astro:content' {
 		: Promise<CollectionEntry<C> | undefined>;
 	export function getEntry<
 		C extends keyof ContentEntryMap,
-		E extends ValidContentEntrySlug<C> | (string & {})
+		E extends ValidContentEntrySlug<C> | (string & {}),
 	>(
 		collection: C,
 		slug: E
@@ -149,7 +135,7 @@ declare module 'astro:content' {
 		: Promise<CollectionEntry<C> | undefined>;
 	export function getEntry<
 		C extends keyof DataEntryMap,
-		E extends keyof DataEntryMap[C] | (string & {})
+		E extends keyof DataEntryMap[C] | (string & {}),
 	>(
 		collection: C,
 		id: E
@@ -199,30 +185,9 @@ declare module 'astro:content' {
 
 	type ContentEntryMap = {
 		"docs": {
-"adapter/npm-cookie-baker.md": {
-	id: "adapter/npm-cookie-baker.md";
-  slug: "adapter/npm-cookie-baker";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"adapter/npm-history.md": {
-	id: "adapter/npm-history.md";
-  slug: "adapter/npm-history";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"adapter/npm-react.md": {
-	id: "adapter/npm-react.md";
-  slug: "adapter/npm-react";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"adapter/npm-svelte.md": {
-	id: "adapter/npm-svelte.md";
-  slug: "adapter/npm-svelte";
+"blog/what-is-state-manager.md": {
+	id: "blog/what-is-state-manager.md";
+  slug: "blog/what-is-state-manager";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -255,9 +220,9 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"core.md": {
-	id: "core.md";
-  slug: "core";
+"contributing.md": {
+	id: "contributing.md";
+  slug: "contributing";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -269,65 +234,37 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"general/what-is-state-manager.md": {
-	id: "general/what-is-state-manager.md";
-  slug: "general/what-is-state-manager";
+"getting-started/debugging.md": {
+	id: "getting-started/debugging.md";
+  slug: "getting-started/debugging";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/architecture.md": {
-	id: "guides/architecture.md";
-  slug: "guides/architecture";
+"getting-started/learning.md": {
+	id: "getting-started/learning.md";
+  slug: "getting-started/learning";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/atomization.md": {
-	id: "guides/atomization.md";
-  slug: "guides/atomization";
+"getting-started/setup.md": {
+	id: "getting-started/setup.md";
+  slug: "getting-started/setup";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/contributing.md": {
-	id: "guides/contributing.md";
-  slug: "guides/contributing";
+"getting-started/testing.md": {
+	id: "getting-started/testing.md";
+  slug: "getting-started/testing";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"guides/custom-operator.md": {
-	id: "guides/custom-operator.md";
-  slug: "guides/custom-operator";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/debug.md": {
-	id: "guides/debug.md";
-  slug: "guides/debug";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/lifecycle.md": {
-	id: "guides/lifecycle.md";
-  slug: "guides/lifecycle";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/naming.md": {
-	id: "guides/naming.md";
-  slug: "guides/naming";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"guides/typescript.md": {
-	id: "guides/typescript.md";
-  slug: "guides/typescript";
+"handbook.md": {
+	id: "handbook.md";
+  slug: "handbook";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -346,6 +283,13 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"package/core.md": {
+	id: "package/core.md";
+  slug: "package/core";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "package/effects.md": {
 	id: "package/effects.md";
   slug: "package/effects";
@@ -356,13 +300,6 @@ declare module 'astro:content' {
 "package/eslint-plugin.md": {
 	id: "package/eslint-plugin.md";
   slug: "package/eslint-plugin";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/form-web.md": {
-	id: "package/form-web.md";
-  slug: "package/form-web";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -405,6 +342,48 @@ declare module 'astro:content' {
 "package/logger.md": {
 	id: "package/logger.md";
   slug: "package/logger";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-cookie-baker.md": {
+	id: "package/npm-cookie-baker.md";
+  slug: "package/npm-cookie-baker";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-history.md": {
+	id: "package/npm-history.md";
+  slug: "package/npm-history";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-react.md": {
+	id: "package/npm-react.md";
+  slug: "package/npm-react";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-solid-js.md": {
+	id: "package/npm-solid-js.md";
+  slug: "package/npm-solid-js";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-svelte.md": {
+	id: "package/npm-svelte.md";
+  slug: "package/npm-svelte";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"package/npm-vue.md": {
+	id: "package/npm-vue.md";
+  slug: "package/npm-vue";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
@@ -465,6 +444,34 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
+"package/web.md": {
+	id: "package/web.md";
+  slug: "package/web";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/atomization.md": {
+	id: "recipes/atomization.md";
+  slug: "recipes/atomization";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/custom-operator.md": {
+	id: "recipes/custom-operator.md";
+  slug: "recipes/custom-operator";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
+"recipes/typescript.md": {
+	id: "recipes/typescript.md";
+  slug: "recipes/typescript";
+  body: string;
+  collection: "docs";
+  data: InferEntrySchema<"docs">
+} & { render(): Render[".md"] };
 "repl.mdx": {
 	id: "repl.mdx";
   slug: "repl";
@@ -472,13 +479,6 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".mdx"] };
-"tutorial.md": {
-	id: "tutorial.md";
-  slug: "tutorial";
-  body: string;
-  collection: "docs";
-  data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
 };
 
 	};

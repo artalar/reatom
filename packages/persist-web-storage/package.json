@@ -1,6 +1,6 @@
 {
   "name": "@reatom/persist-web-storage",
-  "version": "3.2.3",
+  "version": "3.3.3",
   "sideEffects": false,
   "description": "Reatom adapter for localStorage and sessionStorage",
   "source": "src/index.ts",
@@ -20,13 +20,14 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs",
+    "build": "microbundle -f esm,cjs && cp src/types.d.ts build/types.d.ts",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
     "@reatom/core": "^3.3.0",
-    "@reatom/persist": "^3.1.0"
+    "@reatom/persist": "^3.1.0",
+    "idb-keyval": "^6.2.1"
   },
   "author": "artalar",
   "license": "MIT",

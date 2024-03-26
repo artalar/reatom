@@ -4,165 +4,117 @@
 
 import { Atom, Ctx } from '@reatom/core'
 import * as csstype from 'csstype'
-
-type DOMElement = Element
+import { JsxNode, Computable } from './types'
 
 export namespace JSX {
-  type AtomMaybe<T = unknown> = Atom<T> | T
-  interface ArrayElement extends Array<Element> {}
-  interface FunctionElement {
-    (): DOMElement
+  type EventHandler<T, E extends Event> = (
+    ctx: Ctx,
+    event: E & { currentTarget: T; target: Element },
+  ) => void
+
+  interface IntrinsicAttributes {}
+
+  type ElementSpreadableProps<T> = Omit<T, `on${string}` | '$props'>
+  type ElementSpread<T> =
+    | ElementSpreadableProps<T>
+    | Atom<ElementSpreadableProps<T>>
+    | Array<ElementSpreadableProps<T> | Atom<ElementSpreadableProps<T>>>
+
+  interface ElementProps<T = Element> extends CustomEventHandlers<T> {
+    $props?: ElementSpread<this>
+    children?: JsxNode
+    [field: `field:${string}`]: any
+    [css: `css:${string}`]: string | number | false | null | undefined
+
+    oncopy?: EventHandler<T, ClipboardEvent>
+    oncut?: EventHandler<T, ClipboardEvent>
+    onpaste?: EventHandler<T, ClipboardEvent>
+    oncompositionend?: EventHandler<T, CompositionEvent>
+    oncompositionstart?: EventHandler<T, CompositionEvent>
+    oncompositionupdate?: EventHandler<T, CompositionEvent>
+    onfocusout?: EventHandler<T, FocusEvent>
+    onfocusin?: EventHandler<T, FocusEvent>
+    onencrypted?: EventHandler<T, Event>
+    ondragexit?: EventHandler<T, DragEvent>
   }
-  export type Element =
-    | AtomMaybe
-    | Node
-    | ArrayElement
-    | FunctionElement
-    | (string & {})
-    | number
-    | boolean
-    | null
-    | undefined
-  interface ElementClass {
-    // empty, libs can define requirements downstream
-  }
-  interface ElementAttributesProperty {
-    // empty, libs can define requirements downstream
-  }
-  interface ElementChildrenAttribute {
-    children: {}
-  }
-  interface EventHandler<T, E extends Event> {
-    (
-      e: E & {
-        currentTarget: T
-        target: DOMElement
-      },
-    ): void
-  }
-  interface BoundEventHandler<T, E extends Event> {
-    (
-      ctx: Ctx,
-      e: E & {
-        currentTarget: T
-        target: DOMElement
-      },
-    ): any
-  }
-  type EventHandlerUnion<T, E extends Event> =
-    | EventHandler<T, E>
-    | BoundEventHandler<T, E>
-  interface IntrinsicAttributes {
-    ref?: unknown | ((e: unknown) => void)
-  }
-  type Accessor<T> = () => T
-  interface Directives {}
-  interface DirectiveFunctions {
-    [x: string]: (el: Element, accessor: Accessor<any>) => void
-  }
-  interface ExplicitProperties {}
-  interface ExplicitAttributes {}
-  interface CustomEvents {}
-  interface CustomCaptureEvents {}
-  interface DOMAttributes<T> extends CustomEventHandlersLowerCase<T> {
-    children?: Element
-    innerHTML?: string
-    innerText?: string | number
-    textContent?: string | number
-    // lower case events
-    oncopy?: EventHandlerUnion<T, ClipboardEvent>
-    oncut?: EventHandlerUnion<T, ClipboardEvent>
-    onpaste?: EventHandlerUnion<T, ClipboardEvent>
-    oncompositionend?: EventHandlerUnion<T, CompositionEvent>
-    oncompositionstart?: EventHandlerUnion<T, CompositionEvent>
-    oncompositionupdate?: EventHandlerUnion<T, CompositionEvent>
-    onfocusout?: EventHandlerUnion<T, FocusEvent>
-    onfocusin?: EventHandlerUnion<T, FocusEvent>
-    onencrypted?: EventHandlerUnion<T, Event>
-    ondragexit?: EventHandlerUnion<T, DragEvent>
-  }
+
   /**
    * @type {GlobalEventHandlers}
    */
-  interface CustomEventHandlersLowerCase<T> {
-    onabort?: EventHandlerUnion<T, Event>
-    onanimationend?: EventHandlerUnion<T, AnimationEvent>
-    onanimationiteration?: EventHandlerUnion<T, AnimationEvent>
-    onanimationstart?: EventHandlerUnion<T, AnimationEvent>
-    onauxclick?: EventHandlerUnion<T, MouseEvent>
-    onbeforeinput?: EventHandlerUnion<T, InputEvent>
-    onblur?: EventHandlerUnion<T, FocusEvent>
-    oncanplay?: EventHandlerUnion<T, Event>
-    oncanplaythrough?: EventHandlerUnion<T, Event>
-    onchange?: EventHandlerUnion<T, Event>
-    onclick?: EventHandlerUnion<T, MouseEvent>
-    oncontextmenu?: EventHandlerUnion<T, MouseEvent>
-    ondblclick?: EventHandlerUnion<T, MouseEvent>
-    ondrag?: EventHandlerUnion<T, DragEvent>
-    ondragend?: EventHandlerUnion<T, DragEvent>
-    ondragenter?: EventHandlerUnion<T, DragEvent>
-    ondragleave?: EventHandlerUnion<T, DragEvent>
-    ondragover?: EventHandlerUnion<T, DragEvent>
-    ondragstart?: EventHandlerUnion<T, DragEvent>
-    ondrop?: EventHandlerUnion<T, DragEvent>
-    ondurationchange?: EventHandlerUnion<T, Event>
-    onemptied?: EventHandlerUnion<T, Event>
-    onended?: EventHandlerUnion<T, Event>
-    onerror?: EventHandlerUnion<T, Event>
-    onfocus?: EventHandlerUnion<T, FocusEvent>
-    ongotpointercapture?: EventHandlerUnion<T, PointerEvent>
-    oninput?: EventHandlerUnion<T, InputEvent>
-    oninvalid?: EventHandlerUnion<T, Event>
-    onkeydown?: EventHandlerUnion<T, KeyboardEvent>
-    onkeypress?: EventHandlerUnion<T, KeyboardEvent>
-    onkeyup?: EventHandlerUnion<T, KeyboardEvent>
-    onload?: EventHandlerUnion<T, Event>
-    onloadeddata?: EventHandlerUnion<T, Event>
-    onloadedmetadata?: EventHandlerUnion<T, Event>
-    onloadstart?: EventHandlerUnion<T, Event>
-    onlostpointercapture?: EventHandlerUnion<T, PointerEvent>
-    onmousedown?: EventHandlerUnion<T, MouseEvent>
-    onmouseenter?: EventHandlerUnion<T, MouseEvent>
-    onmouseleave?: EventHandlerUnion<T, MouseEvent>
-    onmousemove?: EventHandlerUnion<T, MouseEvent>
-    onmouseout?: EventHandlerUnion<T, MouseEvent>
-    onmouseover?: EventHandlerUnion<T, MouseEvent>
-    onmouseup?: EventHandlerUnion<T, MouseEvent>
-    onpause?: EventHandlerUnion<T, Event>
-    onplay?: EventHandlerUnion<T, Event>
-    onplaying?: EventHandlerUnion<T, Event>
-    onpointercancel?: EventHandlerUnion<T, PointerEvent>
-    onpointerdown?: EventHandlerUnion<T, PointerEvent>
-    onpointerenter?: EventHandlerUnion<T, PointerEvent>
-    onpointerleave?: EventHandlerUnion<T, PointerEvent>
-    onpointermove?: EventHandlerUnion<T, PointerEvent>
-    onpointerout?: EventHandlerUnion<T, PointerEvent>
-    onpointerover?: EventHandlerUnion<T, PointerEvent>
-    onpointerup?: EventHandlerUnion<T, PointerEvent>
-    onprogress?: EventHandlerUnion<T, Event>
-    onratechange?: EventHandlerUnion<T, Event>
-    onreset?: EventHandlerUnion<T, Event>
-    onscroll?: EventHandlerUnion<T, UIEvent>
-    onseeked?: EventHandlerUnion<T, Event>
-    onseeking?: EventHandlerUnion<T, Event>
-    onselect?: EventHandlerUnion<T, UIEvent>
-    onstalled?: EventHandlerUnion<T, Event>
-    onsubmit?: EventHandlerUnion<
-      T,
-      Event & {
-        submitter: HTMLElement
-      }
-    >
-    onsuspend?: EventHandlerUnion<T, Event>
-    ontimeupdate?: EventHandlerUnion<T, Event>
-    ontouchcancel?: EventHandlerUnion<T, TouchEvent>
-    ontouchend?: EventHandlerUnion<T, TouchEvent>
-    ontouchmove?: EventHandlerUnion<T, TouchEvent>
-    ontouchstart?: EventHandlerUnion<T, TouchEvent>
-    ontransitionend?: EventHandlerUnion<T, TransitionEvent>
-    onvolumechange?: EventHandlerUnion<T, Event>
-    onwaiting?: EventHandlerUnion<T, Event>
-    onwheel?: EventHandlerUnion<T, WheelEvent>
+  interface CustomEventHandlers<T> {
+    onabort?: EventHandler<T, Event>
+    onanimationend?: EventHandler<T, AnimationEvent>
+    onanimationiteration?: EventHandler<T, AnimationEvent>
+    onanimationstart?: EventHandler<T, AnimationEvent>
+    onauxclick?: EventHandler<T, MouseEvent>
+    onbeforeinput?: EventHandler<T, InputEvent>
+    onblur?: EventHandler<T, FocusEvent>
+    oncanplay?: EventHandler<T, Event>
+    oncanplaythrough?: EventHandler<T, Event>
+    onchange?: EventHandler<T, Event>
+    onclick?: EventHandler<T, MouseEvent>
+    oncontextmenu?: EventHandler<T, MouseEvent>
+    ondblclick?: EventHandler<T, MouseEvent>
+    ondrag?: EventHandler<T, DragEvent>
+    ondragend?: EventHandler<T, DragEvent>
+    ondragenter?: EventHandler<T, DragEvent>
+    ondragleave?: EventHandler<T, DragEvent>
+    ondragover?: EventHandler<T, DragEvent>
+    ondragstart?: EventHandler<T, DragEvent>
+    ondrop?: EventHandler<T, DragEvent>
+    ondurationchange?: EventHandler<T, Event>
+    onemptied?: EventHandler<T, Event>
+    onended?: EventHandler<T, Event>
+    onerror?: EventHandler<T, Event>
+    onfocus?: EventHandler<T, FocusEvent>
+    ongotpointercapture?: EventHandler<T, PointerEvent>
+    oninput?: EventHandler<T, InputEvent>
+    oninvalid?: EventHandler<T, Event>
+    onkeydown?: EventHandler<T, KeyboardEvent>
+    onkeypress?: EventHandler<T, KeyboardEvent>
+    onkeyup?: EventHandler<T, KeyboardEvent>
+    onload?: EventHandler<T, Event>
+    onloadeddata?: EventHandler<T, Event>
+    onloadedmetadata?: EventHandler<T, Event>
+    onloadstart?: EventHandler<T, Event>
+    onlostpointercapture?: EventHandler<T, PointerEvent>
+    onmousedown?: EventHandler<T, MouseEvent>
+    onmouseenter?: EventHandler<T, MouseEvent>
+    onmouseleave?: EventHandler<T, MouseEvent>
+    onmousemove?: EventHandler<T, MouseEvent>
+    onmouseout?: EventHandler<T, MouseEvent>
+    onmouseover?: EventHandler<T, MouseEvent>
+    onmouseup?: EventHandler<T, MouseEvent>
+    onpause?: EventHandler<T, Event>
+    onplay?: EventHandler<T, Event>
+    onplaying?: EventHandler<T, Event>
+    onpointercancel?: EventHandler<T, PointerEvent>
+    onpointerdown?: EventHandler<T, PointerEvent>
+    onpointerenter?: EventHandler<T, PointerEvent>
+    onpointerleave?: EventHandler<T, PointerEvent>
+    onpointermove?: EventHandler<T, PointerEvent>
+    onpointerout?: EventHandler<T, PointerEvent>
+    onpointerover?: EventHandler<T, PointerEvent>
+    onpointerup?: EventHandler<T, PointerEvent>
+    onprogress?: EventHandler<T, Event>
+    onratechange?: EventHandler<T, Event>
+    onreset?: EventHandler<T, Event>
+    onscroll?: EventHandler<T, UIEvent>
+    onseeked?: EventHandler<T, Event>
+    onseeking?: EventHandler<T, Event>
+    onselect?: EventHandler<T, UIEvent>
+    onstalled?: EventHandler<T, Event>
+    onsubmit?: EventHandler<T, Event & { submitter: HTMLElement }>
+    onsuspend?: EventHandler<T, Event>
+    ontimeupdate?: EventHandler<T, Event>
+    ontouchcancel?: EventHandler<T, TouchEvent>
+    ontouchend?: EventHandler<T, TouchEvent>
+    ontouchmove?: EventHandler<T, TouchEvent>
+    ontouchstart?: EventHandler<T, TouchEvent>
+    ontransitionend?: EventHandler<T, TransitionEvent>
+    onvolumechange?: EventHandler<T, Event>
+    onwaiting?: EventHandler<T, Event>
+    onwheel?: EventHandler<T, WheelEvent>
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -223,7 +175,7 @@ export namespace JSX {
     | 'worker'
 
   // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
-  interface AriaAttributes {
+  interface AriaProps {
     /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
     'aria-activedescendant'?: string
     /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
@@ -434,7 +386,7 @@ export namespace JSX {
     'aria-valuenow'?: number | string
     /** Defines the human readable text alternative of aria-valuenow for a range widget. */
     'aria-valuetext'?: string
-    role?: AtomMaybe<
+    role?: Computable<
       | 'alert'
       | 'alertdialog'
       | 'application'
@@ -508,40 +460,41 @@ export namespace JSX {
     >
   }
 
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    accessKey?: AtomMaybe<string>
-    class?: AtomMaybe<string> | undefined
-    contenteditable?: AtomMaybe<boolean | 'inherit'>
-    contextmenu?: AtomMaybe<string>
-    dir?: AtomMaybe<HTMLDir>
-    draggable?: AtomMaybe<boolean>
-    hidden?: AtomMaybe<boolean>
-    id?: AtomMaybe<string>
-    lang?: AtomMaybe<string>
-    spellcheck?: AtomMaybe<boolean>
-    style?: AtomMaybe<CSSProperties | string>
-    tabindex?: AtomMaybe<number | string>
-    title?: AtomMaybe<string>
-    translate?: AtomMaybe<'yes' | 'no'>
-    about?: AtomMaybe<string>
-    datatype?: AtomMaybe<string>
-    inlist?: AtomMaybe<any>
-    prefix?: AtomMaybe<string>
-    property?: AtomMaybe<string>
-    resource?: AtomMaybe<string>
-    typeof?: AtomMaybe<string>
-    vocab?: AtomMaybe<string>
-    autocapitalize?: AtomMaybe<HTMLAutocapitalize>
-    slot?: AtomMaybe<string>
-    color?: AtomMaybe<string>
-    itemprop?: AtomMaybe<string>
-    itemscope?: AtomMaybe<boolean>
-    itemtype?: AtomMaybe<string>
-    itemid?: AtomMaybe<string>
-    itemref?: AtomMaybe<string>
-    part?: AtomMaybe<string>
-    exportparts?: AtomMaybe<string>
-    inputmode?: AtomMaybe<
+  interface HTMLAttributes<T> extends AriaProps, ElementProps<T> {
+    accessKey?: Computable<string>
+    class?: Computable<string> | undefined
+    className?: Computable<string>
+    contenteditable?: Computable<boolean | 'inherit'>
+    contextmenu?: Computable<string>
+    dir?: Computable<HTMLDir>
+    draggable?: Computable<boolean>
+    hidden?: Computable<boolean>
+    id?: Computable<string>
+    lang?: Computable<string>
+    spellcheck?: Computable<boolean>
+    style?: Computable<CSSProperties | string>
+    tabindex?: Computable<number | string>
+    title?: Computable<string>
+    translate?: Computable<'yes' | 'no'>
+    about?: Computable<string>
+    datatype?: Computable<string>
+    inlist?: Computable<any>
+    prefix?: Computable<string>
+    property?: Computable<string>
+    resource?: Computable<string>
+    typeof?: Computable<string>
+    vocab?: Computable<string>
+    autocapitalize?: Computable<HTMLAutocapitalize>
+    slot?: Computable<string>
+    color?: Computable<string>
+    itemprop?: Computable<string>
+    itemscope?: Computable<boolean>
+    itemtype?: Computable<string>
+    itemid?: Computable<string>
+    itemref?: Computable<string>
+    part?: Computable<string>
+    exportparts?: Computable<string>
+    inputmode?: Computable<
       | 'none'
       | 'text'
       | 'tel'
@@ -551,17 +504,17 @@ export namespace JSX {
       | 'decimal'
       | 'search'
     >
-    contentEditable?: AtomMaybe<boolean | 'inherit'>
-    contextMenu?: AtomMaybe<string>
-    tabIndex?: AtomMaybe<number | string>
-    autoCapitalize?: AtomMaybe<HTMLAutocapitalize>
-    itemProp?: AtomMaybe<string>
-    itemScope?: AtomMaybe<boolean>
-    itemType?: AtomMaybe<string>
-    itemId?: AtomMaybe<string>
-    itemRef?: AtomMaybe<string>
-    exportParts?: AtomMaybe<string>
-    inputMode?: AtomMaybe<
+    contentEditable?: Computable<boolean | 'inherit'>
+    contextMenu?: Computable<string>
+    tabIndex?: Computable<number | string>
+    autoCapitalize?: Computable<HTMLAutocapitalize>
+    itemProp?: Computable<string>
+    itemScope?: Computable<boolean>
+    itemType?: Computable<string>
+    itemId?: Computable<string>
+    itemRef?: Computable<string>
+    exportParts?: Computable<string>
+    inputMode?: Computable<
       | 'none'
       | 'text'
       | 'tel'
@@ -573,387 +526,1226 @@ export namespace JSX {
     >
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: AtomMaybe<any>
-    href?: AtomMaybe<string>
-    hreflang?: AtomMaybe<string>
-    media?: AtomMaybe<string>
-    ping?: AtomMaybe<string>
-    referrerpolicy?: AtomMaybe<HTMLReferrerPolicy>
-    rel?: AtomMaybe<string>
-    target?: AtomMaybe<string>
-    type?: AtomMaybe<string>
-    referrerPolicy?: AtomMaybe<HTMLReferrerPolicy>
+    download?: Computable<any>
+    href?: Computable<string>
+    hreflang?: Computable<string>
+    media?: Computable<string>
+    ping?: Computable<string>
+    referrerpolicy?: Computable<HTMLReferrerPolicy>
+    rel?: Computable<string>
+    target?: Computable<string>
+    type?: Computable<string>
+    referrerPolicy?: Computable<HTMLReferrerPolicy>
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: AtomMaybe<string>
-    coords?: AtomMaybe<string>
-    download?: AtomMaybe<any>
-    href?: AtomMaybe<string>
-    hreflang?: AtomMaybe<string>
-    ping?: AtomMaybe<string>
-    referrerpolicy?: AtomMaybe<HTMLReferrerPolicy>
-    rel?: AtomMaybe<string>
-    shape?: AtomMaybe<'rect' | 'circle' | 'poly' | 'default'>
-    target?: AtomMaybe<string>
-    referrerPolicy?: AtomMaybe<HTMLReferrerPolicy>
+    alt?: Computable<string>
+    coords?: Computable<string>
+    download?: Computable<any>
+    href?: Computable<string>
+    hreflang?: Computable<string>
+    ping?: Computable<string>
+    referrerpolicy?: Computable<HTMLReferrerPolicy>
+    rel?: Computable<string>
+    shape?: Computable<'rect' | 'circle' | 'poly' | 'default'>
+    target?: Computable<string>
+    referrerPolicy?: Computable<HTMLReferrerPolicy>
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
-    href?: AtomMaybe<string>
-    target?: AtomMaybe<string>
+    href?: Computable<string>
+    target?: Computable<string>
   }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: AtomMaybe<string>
+    cite?: Computable<string>
   }
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: AtomMaybe<boolean>
-    disabled?: AtomMaybe<boolean>
-    form?: AtomMaybe<string>
-    formaction?: AtomMaybe<string>
-    formenctype?: AtomMaybe<HTMLFormEncType>
-    formmethod?: AtomMaybe<HTMLFormMethod>
-    formnovalidate?: AtomMaybe<boolean>
-    formtarget?: AtomMaybe<string>
-    name?: AtomMaybe<string>
-    type?: AtomMaybe<'submit' | 'reset' | 'button'>
-    value?: AtomMaybe<string>
-    formAction?: AtomMaybe<string>
-    formEnctype?: AtomMaybe<HTMLFormEncType>
-    formMethod?: AtomMaybe<HTMLFormMethod>
-    formNoValidate?: AtomMaybe<boolean>
-    formTarget?: AtomMaybe<string>
+    autofocus?: Computable<boolean>
+    disabled?: Computable<boolean>
+    form?: Computable<string>
+    formaction?: Computable<string>
+    formenctype?: Computable<HTMLFormEncType>
+    formmethod?: Computable<HTMLFormMethod>
+    formnovalidate?: Computable<boolean>
+    formtarget?: Computable<string>
+    name?: Computable<string>
+    type?: Computable<'submit' | 'reset' | 'button'>
+    value?: Computable<string>
+    formAction?: Computable<string>
+    formEnctype?: Computable<HTMLFormEncType>
+    formMethod?: Computable<HTMLFormMethod>
+    formNoValidate?: Computable<boolean>
+    formTarget?: Computable<string>
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    width?: AtomMaybe<number | string>
-    height?: AtomMaybe<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: AtomMaybe<number | string>
-    width?: AtomMaybe<number | string>
+    span?: Computable<number | string>
+    width?: Computable<number | string>
   }
   interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: AtomMaybe<number | string>
+    span?: Computable<number | string>
   }
   interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: AtomMaybe<string | string[] | number>
+    value?: Computable<string | string[] | number>
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: AtomMaybe<boolean>
-    onToggle?: EventHandlerUnion<T, Event>
-    ontoggle?: EventHandlerUnion<T, Event>
+    open?: Computable<boolean>
+    ontoggle?: EventHandler<T, Event>
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: AtomMaybe<boolean>
+    open?: Computable<boolean>
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: AtomMaybe<number | string>
-    src?: AtomMaybe<string>
-    type?: AtomMaybe<string>
-    width?: AtomMaybe<number | string>
+    height?: Computable<number | string>
+    src?: Computable<string>
+    type?: Computable<string>
+    width?: Computable<number | string>
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: AtomMaybe<boolean>
-    form?: AtomMaybe<string>
-    name?: AtomMaybe<string>
+    disabled?: Computable<boolean>
+    form?: Computable<string>
+    name?: Computable<string>
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-    acceptcharset?: AtomMaybe<string>
-    action?: AtomMaybe<string>
-    autocomplete?: AtomMaybe<string>
-    encoding?: AtomMaybe<HTMLFormEncType>
-    enctype?: AtomMaybe<HTMLFormEncType>
-    method?: AtomMaybe<HTMLFormMethod>
-    name?: AtomMaybe<string>
-    novalidate?: AtomMaybe<boolean>
-    target?: AtomMaybe<string>
-    acceptCharset?: AtomMaybe<string>
-    noValidate?: AtomMaybe<boolean>
+    acceptcharset?: Computable<string>
+    action?: Computable<string>
+    autocomplete?: Computable<string>
+    encoding?: Computable<HTMLFormEncType>
+    enctype?: Computable<HTMLFormEncType>
+    method?: Computable<HTMLFormMethod>
+    name?: Computable<string>
+    novalidate?: Computable<boolean>
+    target?: Computable<string>
+    acceptCharset?: Computable<string>
+    noValidate?: Computable<boolean>
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
-    allow?: AtomMaybe<string>
-    allowfullscreen?: AtomMaybe<boolean>
-    height?: AtomMaybe<number | string>
-    name?: AtomMaybe<string>
-    referrerpolicy?: AtomMaybe<HTMLReferrerPolicy>
+    allow?: Computable<string>
+    allowfullscreen?: Computable<boolean>
+    height?: Computable<number | string>
+    name?: Computable<string>
+    referrerpolicy?: Computable<HTMLReferrerPolicy>
     sandbox?: HTMLIframeSandbox | string
-    src?: AtomMaybe<string>
-    srcdoc?: AtomMaybe<string>
-    width?: AtomMaybe<number | string>
-    referrerPolicy?: AtomMaybe<HTMLReferrerPolicy>
+    src?: Computable<string>
+    srcdoc?: Computable<string>
+    width?: Computable<number | string>
+    referrerPolicy?: Computable<HTMLReferrerPolicy>
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: AtomMaybe<string>
-    crossorigin?: AtomMaybe<HTMLCrossorigin>
-    decoding?: AtomMaybe<'sync' | 'async' | 'auto'>
-    height?: AtomMaybe<number | string>
-    ismap?: AtomMaybe<boolean>
-    isMap?: AtomMaybe<boolean>
-    loading?: AtomMaybe<'eager' | 'lazy'>
-    referrerpolicy?: AtomMaybe<HTMLReferrerPolicy>
-    referrerPolicy?: AtomMaybe<HTMLReferrerPolicy>
-    sizes?: AtomMaybe<string>
-    src?: AtomMaybe<string>
-    srcset?: AtomMaybe<string>
-    srcSet?: AtomMaybe<string>
-    usemap?: AtomMaybe<string>
-    useMap?: AtomMaybe<string>
-    width?: AtomMaybe<number | string>
-    crossOrigin?: AtomMaybe<HTMLCrossorigin>
+    alt?: Computable<string>
+    crossorigin?: Computable<HTMLCrossorigin>
+    decoding?: Computable<'sync' | 'async' | 'auto'>
+    height?: Computable<number | string>
+    ismap?: Computable<boolean>
+    isMap?: Computable<boolean>
+    loading?: Computable<'eager' | 'lazy'>
+    referrerpolicy?: Computable<HTMLReferrerPolicy>
+    referrerPolicy?: Computable<HTMLReferrerPolicy>
+    sizes?: Computable<string>
+    src?: Computable<string>
+    srcset?: Computable<string>
+    srcSet?: Computable<string>
+    usemap?: Computable<string>
+    useMap?: Computable<string>
+    width?: Computable<number | string>
+    crossOrigin?: Computable<HTMLCrossorigin>
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-    accept?: AtomMaybe<string>
-    alt?: AtomMaybe<string>
-    autocomplete?: AtomMaybe<string>
-    autofocus?: AtomMaybe<boolean>
-    capture?: AtomMaybe<boolean | string>
-    checked?: AtomMaybe<boolean>
-    crossorigin?: AtomMaybe<HTMLCrossorigin>
-    disabled?: AtomMaybe<boolean>
-    form?: AtomMaybe<string>
-    formaction?: AtomMaybe<string>
-    formenctype?: AtomMaybe<HTMLFormEncType>
-    formmethod?: AtomMaybe<HTMLFormMethod>
-    formnovalidate?: AtomMaybe<boolean>
-    formtarget?: AtomMaybe<string>
-    height?: AtomMaybe<number | string>
-    list?: AtomMaybe<string>
-    max?: AtomMaybe<number | string>
-    maxlength?: AtomMaybe<number | string>
-    min?: AtomMaybe<number | string>
-    minlength?: AtomMaybe<number | string>
-    multiple?: AtomMaybe<boolean>
-    name?: AtomMaybe<string>
-    pattern?: AtomMaybe<string>
-    placeholder?: AtomMaybe<string>
-    readonly?: AtomMaybe<boolean>
-    required?: AtomMaybe<boolean>
-    size?: AtomMaybe<number | string>
-    src?: AtomMaybe<string>
-    step?: AtomMaybe<number | string>
-    type?: AtomMaybe<string>
-    value?: AtomMaybe<string | string[] | number>
-    width?: AtomMaybe<number | string>
-    crossOrigin?: AtomMaybe<HTMLCrossorigin>
-    formAction?: AtomMaybe<string>
-    formEnctype?: AtomMaybe<HTMLFormEncType>
-    formMethod?: AtomMaybe<HTMLFormMethod>
-    formNoValidate?: AtomMaybe<boolean>
-    formTarget?: AtomMaybe<string>
-    maxLength?: AtomMaybe<number | string>
-    minLength?: AtomMaybe<number | string>
-    readOnly?: AtomMaybe<boolean>
+    accept?: Computable<string>
+    alt?: Computable<string>
+    autocomplete?: Computable<string>
+    autofocus?: Computable<boolean>
+    capture?: Computable<boolean | string>
+    checked?: Computable<boolean>
+    crossorigin?: Computable<HTMLCrossorigin>
+    disabled?: Computable<boolean>
+    form?: Computable<string>
+    formaction?: Computable<string>
+    formenctype?: Computable<HTMLFormEncType>
+    formmethod?: Computable<HTMLFormMethod>
+    formnovalidate?: Computable<boolean>
+    formtarget?: Computable<string>
+    height?: Computable<number | string>
+    list?: Computable<string>
+    max?: Computable<number | string>
+    maxlength?: Computable<number | string>
+    min?: Computable<number | string>
+    minlength?: Computable<number | string>
+    multiple?: Computable<boolean>
+    name?: Computable<string>
+    pattern?: Computable<string>
+    placeholder?: Computable<string>
+    readonly?: Computable<boolean>
+    required?: Computable<boolean>
+    size?: Computable<number | string>
+    src?: Computable<string>
+    step?: Computable<number | string>
+    type?: Computable<string>
+    value?: Computable<string | string[] | number>
+    width?: Computable<number | string>
+    crossOrigin?: Computable<HTMLCrossorigin>
+    formAction?: Computable<string>
+    formEnctype?: Computable<HTMLFormEncType>
+    formMethod?: Computable<HTMLFormMethod>
+    formNoValidate?: Computable<boolean>
+    formTarget?: Computable<string>
+    maxLength?: Computable<number | string>
+    minLength?: Computable<number | string>
+    readOnly?: Computable<boolean>
   }
   interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: AtomMaybe<string>
-    dateTime?: AtomMaybe<string>
+    cite?: Computable<string>
+    dateTime?: Computable<string>
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: AtomMaybe<boolean>
-    challenge?: AtomMaybe<string>
-    disabled?: AtomMaybe<boolean>
-    form?: AtomMaybe<string>
-    keytype?: AtomMaybe<string>
-    keyparams?: AtomMaybe<string>
-    name?: AtomMaybe<string>
+    autofocus?: Computable<boolean>
+    challenge?: Computable<string>
+    disabled?: Computable<boolean>
+    form?: Computable<string>
+    keytype?: Computable<string>
+    keyparams?: Computable<string>
+    name?: Computable<string>
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
-    for?: AtomMaybe<string>
-    form?: AtomMaybe<string>
+    for?: Computable<string>
+    form?: Computable<string>
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: AtomMaybe<number | string>
+    value?: Computable<number | string>
   }
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
-    as?: AtomMaybe<HTMLLinkAs>
-    crossorigin?: AtomMaybe<HTMLCrossorigin>
-    disabled?: AtomMaybe<boolean>
-    href?: AtomMaybe<string>
-    hreflang?: AtomMaybe<string>
-    integrity?: AtomMaybe<string>
-    media?: AtomMaybe<string>
-    referrerpolicy?: AtomMaybe<HTMLReferrerPolicy>
-    rel?: AtomMaybe<string>
-    sizes?: AtomMaybe<string>
-    type?: AtomMaybe<string>
-    crossOrigin?: AtomMaybe<HTMLCrossorigin>
-    referrerPolicy?: AtomMaybe<HTMLReferrerPolicy>
+    as?: Computable<HTMLLinkAs>
+    crossorigin?: Computable<HTMLCrossorigin>
+    disabled?: Computable<boolean>
+    href?: Computable<string>
+    hreflang?: Computable<string>
+    integrity?: Computable<string>
+    media?: Computable<string>
+    referrerpolicy?: Computable<HTMLReferrerPolicy>
+    rel?: Computable<string>
+    sizes?: Computable<string>
+    type?: Computable<string>
+    crossOrigin?: Computable<HTMLCrossorigin>
+    referrerPolicy?: Computable<HTMLReferrerPolicy>
   }
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: AtomMaybe<string>
+    name?: Computable<string>
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autoplay?: AtomMaybe<boolean>
-    controls?: AtomMaybe<boolean>
-    crossorigin?: AtomMaybe<HTMLCrossorigin>
-    loop?: AtomMaybe<boolean>
-    mediagroup?: AtomMaybe<string>
-    muted?: AtomMaybe<boolean>
-    preload?: AtomMaybe<'none' | 'metadata' | 'auto' | ''>
-    src?: AtomMaybe<string>
-    crossOrigin?: AtomMaybe<HTMLCrossorigin>
-    mediaGroup?: AtomMaybe<string>
+    autoplay?: Computable<boolean>
+    controls?: Computable<boolean>
+    crossorigin?: Computable<HTMLCrossorigin>
+    loop?: Computable<boolean>
+    mediagroup?: Computable<string>
+    muted?: Computable<boolean>
+    preload?: Computable<'none' | 'metadata' | 'auto' | ''>
+    src?: Computable<string>
+    crossOrigin?: Computable<HTMLCrossorigin>
+    mediaGroup?: Computable<string>
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
-    label?: AtomMaybe<string>
-    type?: AtomMaybe<'context' | 'toolbar'>
+    label?: Computable<string>
+    type?: Computable<'context' | 'toolbar'>
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
-    charset?: AtomMaybe<string>
-    content?: AtomMaybe<string>
-    httpequiv?: AtomMaybe<string>
-    name?: AtomMaybe<string>
-    httpEquiv?: AtomMaybe<string>
+    charset?: Computable<string>
+    content?: Computable<string>
+    httpequiv?: Computable<string>
+    name?: Computable<string>
+    httpEquiv?: Computable<string>
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: AtomMaybe<string>
-    high?: AtomMaybe<number | string>
-    low?: AtomMaybe<number | string>
-    max?: AtomMaybe<number | string>
-    min?: AtomMaybe<number | string>
-    optimum?: AtomMaybe<number | string>
-    value?: AtomMaybe<string | string[] | number>
+    form?: Computable<string>
+    high?: Computable<number | string>
+    low?: Computable<number | string>
+    max?: Computable<number | string>
+    min?: Computable<number | string>
+    optimum?: Computable<number | string>
+    value?: Computable<string | string[] | number>
   }
   interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: AtomMaybe<string>
+    cite?: Computable<string>
   }
   interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
-    data?: AtomMaybe<string>
-    form?: AtomMaybe<string>
-    height?: AtomMaybe<number | string>
-    name?: AtomMaybe<string>
-    type?: AtomMaybe<string>
-    usemap?: AtomMaybe<string>
-    width?: AtomMaybe<number | string>
-    useMap?: AtomMaybe<string>
+    data?: Computable<string>
+    form?: Computable<string>
+    height?: Computable<number | string>
+    name?: Computable<string>
+    type?: Computable<string>
+    usemap?: Computable<string>
+    width?: Computable<number | string>
+    useMap?: Computable<string>
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: AtomMaybe<boolean>
-    start?: AtomMaybe<number | string>
-    type?: AtomMaybe<'1' | 'a' | 'A' | 'i' | 'I'>
+    reversed?: Computable<boolean>
+    start?: Computable<number | string>
+    type?: Computable<'1' | 'a' | 'A' | 'i' | 'I'>
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: AtomMaybe<boolean>
-    label?: AtomMaybe<string>
+    disabled?: Computable<boolean>
+    label?: Computable<string>
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: AtomMaybe<boolean>
-    label?: AtomMaybe<string>
-    selected?: AtomMaybe<boolean>
-    value?: AtomMaybe<string | string[] | number>
+    disabled?: Computable<boolean>
+    label?: Computable<string>
+    selected?: Computable<boolean>
+    value?: Computable<string | string[] | number>
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: AtomMaybe<string>
-    for?: AtomMaybe<string>
-    name?: AtomMaybe<string>
+    form?: Computable<string>
+    for?: Computable<string>
+    name?: Computable<string>
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: AtomMaybe<string>
-    value?: AtomMaybe<string | string[] | number>
+    name?: Computable<string>
+    value?: Computable<string | string[] | number>
   }
   interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
-    max?: AtomMaybe<number | string>
-    value?: AtomMaybe<string | string[] | number>
+    max?: Computable<number | string>
+    value?: Computable<string | string[] | number>
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: AtomMaybe<boolean>
-    charset?: AtomMaybe<string>
-    crossorigin?: AtomMaybe<HTMLCrossorigin>
-    defer?: AtomMaybe<boolean>
-    integrity?: AtomMaybe<string>
-    nomodule?: AtomMaybe<boolean>
-    nonce?: AtomMaybe<string>
-    referrerpolicy?: AtomMaybe<HTMLReferrerPolicy>
-    src?: AtomMaybe<string>
-    type?: AtomMaybe<string>
-    crossOrigin?: AtomMaybe<HTMLCrossorigin>
-    noModule?: AtomMaybe<boolean>
-    referrerPolicy?: AtomMaybe<HTMLReferrerPolicy>
+    async?: Computable<boolean>
+    charset?: Computable<string>
+    crossorigin?: Computable<HTMLCrossorigin>
+    defer?: Computable<boolean>
+    integrity?: Computable<string>
+    nomodule?: Computable<boolean>
+    nonce?: Computable<string>
+    referrerpolicy?: Computable<HTMLReferrerPolicy>
+    src?: Computable<string>
+    type?: Computable<string>
+    crossOrigin?: Computable<HTMLCrossorigin>
+    noModule?: Computable<boolean>
+    referrerPolicy?: Computable<HTMLReferrerPolicy>
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: AtomMaybe<string>
-    autofocus?: AtomMaybe<boolean>
-    disabled?: AtomMaybe<boolean>
-    form?: AtomMaybe<string>
-    multiple?: AtomMaybe<boolean>
-    name?: AtomMaybe<string>
-    required?: AtomMaybe<boolean>
-    size?: AtomMaybe<number | string>
-    value?: AtomMaybe<string | string[] | number>
+    autocomplete?: Computable<string>
+    autofocus?: Computable<boolean>
+    disabled?: Computable<boolean>
+    form?: Computable<string>
+    multiple?: Computable<boolean>
+    name?: Computable<string>
+    required?: Computable<boolean>
+    size?: Computable<number | string>
+    value?: Computable<string | string[] | number>
   }
   interface HTMLSlotElementAttributes<T = HTMLSlotElement>
     extends HTMLAttributes<T> {
-    name?: AtomMaybe<string>
+    name?: Computable<string>
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
-    media?: AtomMaybe<string>
-    sizes?: AtomMaybe<string>
-    src?: AtomMaybe<string>
-    srcset?: AtomMaybe<string>
-    type?: AtomMaybe<string>
+    media?: Computable<string>
+    sizes?: Computable<string>
+    src?: Computable<string>
+    srcset?: Computable<string>
+    type?: Computable<string>
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
-    media?: AtomMaybe<string>
-    nonce?: AtomMaybe<string>
-    scoped?: AtomMaybe<boolean>
-    type?: AtomMaybe<string>
+    media?: Computable<string>
+    nonce?: Computable<string>
+    scoped?: Computable<boolean>
+    type?: Computable<string>
   }
   interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: AtomMaybe<number | string>
-    headers?: AtomMaybe<string>
-    rowspan?: AtomMaybe<number | string>
-    colSpan?: AtomMaybe<number | string>
-    rowSpan?: AtomMaybe<number | string>
+    colspan?: Computable<number | string>
+    headers?: Computable<string>
+    rowspan?: Computable<number | string>
+    colSpan?: Computable<number | string>
+    rowSpan?: Computable<number | string>
   }
   interface TemplateHTMLAttributes<T extends HTMLTemplateElement>
     extends HTMLAttributes<T> {
-    content?: AtomMaybe<DocumentFragment>
+    content?: Computable<DocumentFragment>
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: AtomMaybe<string>
-    autofocus?: AtomMaybe<boolean>
-    cols?: AtomMaybe<number | string>
-    dirname?: AtomMaybe<string>
-    disabled?: AtomMaybe<boolean>
-    form?: AtomMaybe<string>
-    maxlength?: AtomMaybe<number | string>
-    minlength?: AtomMaybe<number | string>
-    name?: AtomMaybe<string>
-    placeholder?: AtomMaybe<string>
-    readonly?: AtomMaybe<boolean>
-    required?: AtomMaybe<boolean>
-    rows?: AtomMaybe<number | string>
-    value?: AtomMaybe<string | string[] | number>
-    wrap?: AtomMaybe<'hard' | 'soft' | 'off'>
-    maxLength?: AtomMaybe<number | string>
-    minLength?: AtomMaybe<number | string>
-    readOnly?: AtomMaybe<boolean>
+    autocomplete?: Computable<string>
+    autofocus?: Computable<boolean>
+    cols?: Computable<number | string>
+    dirname?: Computable<string>
+    disabled?: Computable<boolean>
+    form?: Computable<string>
+    maxlength?: Computable<number | string>
+    minlength?: Computable<number | string>
+    name?: Computable<string>
+    placeholder?: Computable<string>
+    readonly?: Computable<boolean>
+    required?: Computable<boolean>
+    rows?: Computable<number | string>
+    value?: Computable<string | string[] | number>
+    wrap?: Computable<'hard' | 'soft' | 'off'>
+    maxLength?: Computable<number | string>
+    minLength?: Computable<number | string>
+    readOnly?: Computable<boolean>
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: AtomMaybe<number | string>
-    headers?: AtomMaybe<string>
-    rowspan?: AtomMaybe<number | string>
-    colSpan?: AtomMaybe<number | string>
-    rowSpan?: AtomMaybe<number | string>
-    scope?: AtomMaybe<'col' | 'row' | 'rowgroup' | 'colgroup'>
+    colspan?: Computable<number | string>
+    headers?: Computable<string>
+    rowspan?: Computable<number | string>
+    colSpan?: Computable<number | string>
+    rowSpan?: Computable<number | string>
+    scope?: Computable<'col' | 'row' | 'rowgroup' | 'colgroup'>
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
-    datetime?: AtomMaybe<string>
-    dateTime?: AtomMaybe<string>
+    datetime?: Computable<string>
+    dateTime?: Computable<string>
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: AtomMaybe<boolean>
-    kind?: AtomMaybe<
+    default?: Computable<boolean>
+    kind?: Computable<
       'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata'
     >
-    label?: AtomMaybe<string>
-    src?: AtomMaybe<string>
-    srclang?: AtomMaybe<string>
+    label?: Computable<string>
+    src?: Computable<string>
+    srclang?: Computable<string>
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    height?: AtomMaybe<number | string>
-    playsinline?: AtomMaybe<boolean>
-    poster?: AtomMaybe<string>
-    width?: AtomMaybe<number | string>
+    height?: Computable<number | string>
+    playsinline?: Computable<boolean>
+    poster?: Computable<string>
+    width?: Computable<number | string>
+  }
+  type SVGPreserveAspectRatio =
+    | 'none'
+    | 'xMinYMin'
+    | 'xMidYMin'
+    | 'xMaxYMin'
+    | 'xMinYMid'
+    | 'xMidYMid'
+    | 'xMaxYMid'
+    | 'xMinYMax'
+    | 'xMidYMax'
+    | 'xMaxYMax'
+    | 'xMinYMin meet'
+    | 'xMidYMin meet'
+    | 'xMaxYMin meet'
+    | 'xMinYMid meet'
+    | 'xMidYMid meet'
+    | 'xMaxYMid meet'
+    | 'xMinYMax meet'
+    | 'xMidYMax meet'
+    | 'xMaxYMax meet'
+    | 'xMinYMin slice'
+    | 'xMidYMin slice'
+    | 'xMaxYMin slice'
+    | 'xMinYMid slice'
+    | 'xMidYMid slice'
+    | 'xMaxYMid slice'
+    | 'xMinYMax slice'
+    | 'xMidYMax slice'
+    | 'xMaxYMax slice'
+  type ImagePreserveAspectRatio =
+    | SVGPreserveAspectRatio
+    | 'defer none'
+    | 'defer xMinYMin'
+    | 'defer xMidYMin'
+    | 'defer xMaxYMin'
+    | 'defer xMinYMid'
+    | 'defer xMidYMid'
+    | 'defer xMaxYMid'
+    | 'defer xMinYMax'
+    | 'defer xMidYMax'
+    | 'defer xMaxYMax'
+    | 'defer xMinYMin meet'
+    | 'defer xMidYMin meet'
+    | 'defer xMaxYMin meet'
+    | 'defer xMinYMid meet'
+    | 'defer xMidYMid meet'
+    | 'defer xMaxYMid meet'
+    | 'defer xMinYMax meet'
+    | 'defer xMidYMax meet'
+    | 'defer xMaxYMax meet'
+    | 'defer xMinYMin slice'
+    | 'defer xMidYMin slice'
+    | 'defer xMaxYMin slice'
+    | 'defer xMinYMid slice'
+    | 'defer xMidYMid slice'
+    | 'defer xMaxYMid slice'
+    | 'defer xMinYMax slice'
+    | 'defer xMidYMax slice'
+    | 'defer xMaxYMax slice'
+  type SVGUnits = 'userSpaceOnUse' | 'objectBoundingBox'
+  interface CoreSVGAttributes<T> extends AriaProps, ElementProps<T> {
+    id?: Computable<string>
+    lang?: Computable<string>
+    tabIndex?: Computable<number | string>
+    tabindex?: Computable<number | string>
+  }
+  interface StylableSVGAttributes {
+    class?: Computable<string> | undefined
+    style?: Computable<CSSProperties | string>
+  }
+  interface TransformableSVGAttributes {
+    transform?: Computable<string>
+  }
+  interface ConditionalProcessingSVGAttributes {
+    requiredExtensions?: Computable<string>
+    requiredFeatures?: Computable<string>
+    systemLanguage?: Computable<string>
+  }
+  interface ExternalResourceSVGAttributes {
+    externalResourcesRequired?: Computable<'true' | 'false'>
+  }
+  interface AnimationTimingSVGAttributes {
+    begin?: Computable<string>
+    dur?: Computable<string>
+    end?: Computable<string>
+    min?: Computable<string>
+    max?: Computable<string>
+    restart?: Computable<'always' | 'whenNotActive' | 'never'>
+    repeatCount?: Computable<number | 'indefinite'>
+    repeatDur?: Computable<string>
+    fill?: Computable<'freeze' | 'remove'>
+  }
+  interface AnimationValueSVGAttributes {
+    calcMode?: Computable<'discrete' | 'linear' | 'paced' | 'spline'>
+    values?: Computable<string>
+    keyTimes?: Computable<string>
+    keySplines?: Computable<string>
+    from?: Computable<number | string>
+    to?: Computable<number | string>
+    by?: Computable<number | string>
+  }
+  interface AnimationAdditionSVGAttributes {
+    attributeName?: Computable<string>
+    additive?: Computable<'replace' | 'sum'>
+    accumulate?: Computable<'none' | 'sum'>
+  }
+  interface AnimationAttributeTargetSVGAttributes {
+    attributeName?: Computable<string>
+    attributeType?: Computable<'CSS' | 'XML' | 'auto'>
+  }
+  interface PresentationSVGAttributes {
+    'alignment-baseline'?:
+      | 'auto'
+      | 'baseline'
+      | 'before-edge'
+      | 'text-before-edge'
+      | 'middle'
+      | 'central'
+      | 'after-edge'
+      | 'text-after-edge'
+      | 'ideographic'
+      | 'alphabetic'
+      | 'hanging'
+      | 'mathematical'
+      | 'inherit'
+    'baseline-shift'?: Computable<number | string>
+    clip?: Computable<string>
+    'clip-path'?: Computable<string>
+    'clip-rule'?: 'nonzero' | 'evenodd' | 'inherit'
+    color?: Computable<string>
+    'color-interpolation'?: 'auto' | 'sRGB' | 'linearRGB' | 'inherit'
+    'color-interpolation-filters'?: 'auto' | 'sRGB' | 'linearRGB' | 'inherit'
+    'color-profile'?: Computable<string>
+    'color-rendering'?: 'auto' | 'optimizeSpeed' | 'optimizeQuality' | 'inherit'
+    cursor?: Computable<string>
+    direction?: 'ltr' | 'rtl' | 'inherit'
+    display?: Computable<string>
+    'dominant-baseline'?:
+      | 'auto'
+      | 'text-bottom'
+      | 'alphabetic'
+      | 'ideographic'
+      | 'middle'
+      | 'central'
+      | 'mathematical'
+      | 'hanging'
+      | 'text-top'
+      | 'inherit'
+    'enable-background'?: Computable<string>
+    fill?: Computable<string>
+    'fill-opacity'?: Computable<number | string | 'inherit'>
+    'fill-rule'?: Computable<'nonzero' | 'evenodd' | 'inherit'>
+    filter?: Computable<string>
+    'flood-color'?: Computable<string>
+    'flood-opacity'?: Computable<number | string | 'inherit'>
+    'font-family'?: Computable<string>
+    'font-size'?: Computable<string>
+    'font-size-adjust'?: Computable<number | string>
+    'font-stretch'?: Computable<string>
+    'font-style'?: Computable<'normal' | 'italic' | 'oblique' | 'inherit'>
+    'font-variant'?: Computable<string>
+    'font-weight'?: Computable<number | string>
+    'glyph-orientation-horizontal'?: Computable<string>
+    'glyph-orientation-vertical'?: Computable<string>
+    'image-rendering'?: Computable<
+      'auto' | 'optimizeQuality' | 'optimizeSpeed' | 'inherit'
+    >
+    kerning?: Computable<string>
+    'letter-spacing'?: Computable<number | string>
+    'lighting-color'?: Computable<string>
+    'marker-end'?: Computable<string>
+    'marker-mid'?: Computable<string>
+    'marker-start'?: Computable<string>
+    mask?: Computable<string>
+    opacity?: Computable<number | string | 'inherit'>
+    overflow?: Computable<'visible' | 'hidden' | 'scroll' | 'auto' | 'inherit'>
+    'pointer-events'?: Computable<
+      | 'bounding-box'
+      | 'visiblePainted'
+      | 'visibleFill'
+      | 'visibleStroke'
+      | 'visible'
+      | 'painted'
+      | 'color'
+      | 'fill'
+      | 'stroke'
+      | 'all'
+      | 'none'
+      | 'inherit'
+    >
+    'shape-rendering'?: Computable<
+      'auto' | 'optimizeSpeed' | 'crispEdges' | 'geometricPrecision' | 'inherit'
+    >
+    'stop-color'?: Computable<string>
+    'stop-opacity'?: Computable<number | string | 'inherit'>
+    stroke?: Computable<string>
+    'stroke-dasharray'?: Computable<string>
+    'stroke-dashoffset'?: Computable<number | string>
+    'stroke-linecap'?: Computable<'butt' | 'round' | 'square' | 'inherit'>
+    'stroke-linejoin'?: Computable<
+      'arcs' | 'bevel' | 'miter' | 'miter-clip' | 'round' | 'inherit'
+    >
+    'stroke-miterlimit'?: Computable<number | string | 'inherit'>
+    'stroke-opacity'?: Computable<number | string | 'inherit'>
+    'stroke-width'?: Computable<number | string>
+    'text-anchor'?: Computable<'start' | 'middle' | 'end' | 'inherit'>
+    'text-decoration'?: Computable<
+      'none' | 'underline' | 'overline' | 'line-through' | 'blink' | 'inherit'
+    >
+    'text-rendering'?: Computable<
+      | 'auto'
+      | 'optimizeSpeed'
+      | 'optimizeLegibility'
+      | 'geometricPrecision'
+      | 'inherit'
+    >
+    'unicode-bidi'?: Computable<string>
+    visibility?: Computable<'visible' | 'hidden' | 'collapse' | 'inherit'>
+    'word-spacing'?: Computable<number | string>
+    'writing-mode'?: Computable<
+      'lr-tb' | 'rl-tb' | 'tb-rl' | 'lr' | 'rl' | 'tb' | 'inherit'
+    >
+  }
+  interface AnimationElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      ConditionalProcessingSVGAttributes {}
+  interface ContainerElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'clip-path'
+        | 'mask'
+        | 'cursor'
+        | 'opacity'
+        | 'filter'
+        | 'enable-background'
+        | 'color-interpolation'
+        | 'color-rendering'
+      > {}
+  interface FilterPrimitiveElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<PresentationSVGAttributes, 'color-interpolation-filters'> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    result?: Computable<string>
+  }
+  interface SingleInputFilterSVGAttributes {
+    in?: Computable<string>
+  }
+  interface DoubleInputFilterSVGAttributes {
+    in?: Computable<string>
+    in2?: Computable<string>
+  }
+  interface FitToViewBoxSVGAttributes {
+    viewBox?: Computable<string>
+    preserveAspectRatio?: Computable<SVGPreserveAspectRatio>
+  }
+  interface GradientElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    gradientUnits?: Computable<SVGUnits>
+    gradientTransform?: Computable<string>
+    spreadMethod?: Computable<'pad' | 'reflect' | 'repeat'>
+  }
+  interface GraphicsElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'clip-rule'
+        | 'mask'
+        | 'pointer-events'
+        | 'cursor'
+        | 'opacity'
+        | 'filter'
+        | 'display'
+        | 'visibility'
+        | 'color-interpolation'
+        | 'color-rendering'
+      > {}
+  interface LightSourceElementSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface NewViewportSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
+    viewBox?: Computable<string>
+  }
+  interface ShapeElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'color'
+        | 'fill'
+        | 'fill-rule'
+        | 'fill-opacity'
+        | 'stroke'
+        | 'stroke-width'
+        | 'stroke-linecap'
+        | 'stroke-linejoin'
+        | 'stroke-miterlimit'
+        | 'stroke-dasharray'
+        | 'stroke-dashoffset'
+        | 'stroke-opacity'
+        | 'shape-rendering'
+      > {}
+  interface TextContentElementSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      Pick<
+        PresentationSVGAttributes,
+        | 'font-family'
+        | 'font-style'
+        | 'font-variant'
+        | 'font-weight'
+        | 'font-stretch'
+        | 'font-size'
+        | 'font-size-adjust'
+        | 'kerning'
+        | 'letter-spacing'
+        | 'word-spacing'
+        | 'text-decoration'
+        | 'glyph-orientation-horizontal'
+        | 'glyph-orientation-vertical'
+        | 'direction'
+        | 'unicode-bidi'
+        | 'text-anchor'
+        | 'dominant-baseline'
+        | 'color'
+        | 'fill'
+        | 'fill-rule'
+        | 'fill-opacity'
+        | 'stroke'
+        | 'stroke-width'
+        | 'stroke-linecap'
+        | 'stroke-linejoin'
+        | 'stroke-miterlimit'
+        | 'stroke-dasharray'
+        | 'stroke-dashoffset'
+        | 'stroke-opacity'
+      > {}
+  interface ZoomAndPanSVGAttributes {
+    zoomAndPan?: Computable<'disable' | 'magnify'>
+  }
+  interface AnimateSVGAttributes<T>
+    extends AnimationElementSVGAttributes<T>,
+      AnimationAttributeTargetSVGAttributes,
+      AnimationTimingSVGAttributes,
+      AnimationValueSVGAttributes,
+      AnimationAdditionSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'color-interpolation' | 'color-rendering'
+      > {}
+  interface AnimateMotionSVGAttributes<T>
+    extends AnimationElementSVGAttributes<T>,
+      AnimationTimingSVGAttributes,
+      AnimationValueSVGAttributes,
+      AnimationAdditionSVGAttributes {
+    path?: Computable<string>
+    keyPoints?: Computable<string>
+    rotate?: Computable<number | string | 'auto' | 'auto-reverse'>
+    origin?: Computable<'default'>
+  }
+  interface AnimateTransformSVGAttributes<T>
+    extends AnimationElementSVGAttributes<T>,
+      AnimationAttributeTargetSVGAttributes,
+      AnimationTimingSVGAttributes,
+      AnimationValueSVGAttributes,
+      AnimationAdditionSVGAttributes {
+    type?: Computable<'translate' | 'scale' | 'rotate' | 'skewX' | 'skewY'>
+  }
+  interface CircleSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    cx?: Computable<number | string>
+    cy?: Computable<number | string>
+    r?: Computable<number | string>
+  }
+  interface ClipPathSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'clip-path'> {
+    clipPathUnits?: Computable<SVGUnits>
+  }
+  interface DefsSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {}
+  interface DescSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      StylableSVGAttributes {}
+  interface EllipseSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    cx?: Computable<number | string>
+    cy?: Computable<number | string>
+    rx?: Computable<number | string>
+    ry?: Computable<number | string>
+  }
+  interface FeBlendSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      DoubleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    mode?: Computable<'normal' | 'multiply' | 'screen' | 'darken' | 'lighten'>
+  }
+  interface FeColorMatrixSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    type?: Computable<'matrix' | 'saturate' | 'hueRotate' | 'luminanceToAlpha'>
+    values?: Computable<string>
+  }
+  interface FeComponentTransferSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {}
+  interface FeCompositeSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      DoubleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    operator?: Computable<'over' | 'in' | 'out' | 'atop' | 'xor' | 'arithmetic'>
+    k1?: Computable<number | string>
+    k2?: Computable<number | string>
+    k3?: Computable<number | string>
+    k4?: Computable<number | string>
+  }
+  interface FeConvolveMatrixSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    order?: Computable<number | string>
+    kernelMatrix?: Computable<string>
+    divisor?: Computable<number | string>
+    bias?: Computable<number | string>
+    targetX?: Computable<number | string>
+    targetY?: Computable<number | string>
+    edgeMode?: Computable<'duplicate' | 'wrap' | 'none'>
+    kernelUnitLength?: Computable<number | string>
+    preserveAlpha?: Computable<'true' | 'false'>
+  }
+  interface FeDiffuseLightingSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color' | 'lighting-color'> {
+    surfaceScale?: Computable<number | string>
+    diffuseConstant?: Computable<number | string>
+    kernelUnitLength?: Computable<number | string>
+  }
+  interface FeDisplacementMapSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      DoubleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    scale?: Computable<number | string>
+    xChannelSelector?: Computable<'R' | 'G' | 'B' | 'A'>
+    yChannelSelector?: Computable<'R' | 'G' | 'B' | 'A'>
+  }
+  interface FeDistantLightSVGAttributes<T>
+    extends LightSourceElementSVGAttributes<T> {
+    azimuth?: Computable<number | string>
+    elevation?: Computable<number | string>
+  }
+  interface FeFloodSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'color' | 'flood-color' | 'flood-opacity'
+      > {}
+  interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
+    type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma'
+    tableValues?: Computable<string>
+    slope?: Computable<number | string>
+    intercept?: Computable<number | string>
+    amplitude?: Computable<number | string>
+    exponent?: Computable<number | string>
+    offset?: Computable<number | string>
+  }
+  interface FeGaussianBlurSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    stdDeviation?: Computable<number | string>
+  }
+  interface FeImageSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    preserveAspectRatio?: Computable<SVGPreserveAspectRatio>
+    href?: Computable<string>
+  }
+  interface FeMergeSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes {}
+  interface FeMergeNodeSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      SingleInputFilterSVGAttributes {}
+  interface FeMorphologySVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    operator?: Computable<'erode' | 'dilate'>
+    radius?: Computable<number | string>
+  }
+  interface FeOffsetSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {
+    dx?: Computable<number | string>
+    dy?: Computable<number | string>
+  }
+  interface FePointLightSVGAttributes<T>
+    extends LightSourceElementSVGAttributes<T> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    z?: Computable<number | string>
+  }
+  interface FeSpecularLightingSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color' | 'lighting-color'> {
+    surfaceScale?: Computable<string>
+    specularConstant?: Computable<string>
+    specularExponent?: Computable<string>
+    kernelUnitLength?: Computable<number | string>
+  }
+  interface FeSpotLightSVGAttributes<T>
+    extends LightSourceElementSVGAttributes<T> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    z?: Computable<number | string>
+    pointsAtX?: Computable<number | string>
+    pointsAtY?: Computable<number | string>
+    pointsAtZ?: Computable<number | string>
+    specularExponent?: Computable<number | string>
+    limitingConeAngle?: Computable<number | string>
+  }
+  interface FeTileSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      SingleInputFilterSVGAttributes,
+      StylableSVGAttributes {}
+  interface FeTurbulanceSVGAttributes<T>
+    extends FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes {
+    baseFrequency?: Computable<number | string>
+    numOctaves?: Computable<number | string>
+    seed?: Computable<number | string>
+    stitchTiles?: Computable<'stitch' | 'noStitch'>
+    type?: Computable<'fractalNoise' | 'turbulence'>
+  }
+  interface FilterSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    filterUnits?: Computable<SVGUnits>
+    primitiveUnits?: Computable<SVGUnits>
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    filterRes?: Computable<number | string>
+  }
+  interface ForeignObjectSVGAttributes<T>
+    extends NewViewportSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'display' | 'visibility'> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+  }
+  interface GSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'display' | 'visibility'> {}
+  interface ImageSVGAttributes<T>
+    extends NewViewportSVGAttributes<T>,
+      GraphicsElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color-profile' | 'image-rendering'> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    preserveAspectRatio?: Computable<ImagePreserveAspectRatio>
+    href?: Computable<string>
+  }
+  interface LineSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    x1?: Computable<number | string>
+    y1?: Computable<number | string>
+    x2?: Computable<number | string>
+    y2?: Computable<number | string>
+  }
+  interface LinearGradientSVGAttributes<T>
+    extends GradientElementSVGAttributes<T> {
+    x1?: Computable<number | string>
+    x2?: Computable<number | string>
+    y1?: Computable<number | string>
+    y2?: Computable<number | string>
+  }
+  interface MarkerSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
+    markerUnits?: Computable<'strokeWidth' | 'userSpaceOnUse'>
+    refX?: Computable<number | string>
+    refY?: Computable<number | string>
+    markerWidth?: Computable<number | string>
+    markerHeight?: Computable<number | string>
+    orient?: Computable<string>
+  }
+  interface MaskSVGAttributes<T>
+    extends Omit<ContainerElementSVGAttributes<T>, 'opacity' | 'filter'>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes {
+    maskUnits?: Computable<SVGUnits>
+    maskContentUnits?: Computable<SVGUnits>
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+  }
+  interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface PathSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    d?: Computable<string>
+    pathLength?: Computable<number | string>
+  }
+  interface PatternSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    patternUnits?: Computable<SVGUnits>
+    patternContentUnits?: Computable<SVGUnits>
+    patternTransform?: Computable<string>
+  }
+  interface PolygonSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    points?: Computable<string>
+  }
+  interface PolylineSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'marker-start' | 'marker-mid' | 'marker-end'
+      > {
+    points?: Computable<string>
+  }
+  interface RadialGradientSVGAttributes<T>
+    extends GradientElementSVGAttributes<T> {
+    cx?: Computable<number | string>
+    cy?: Computable<number | string>
+    r?: Computable<number | string>
+    fx?: Computable<number | string>
+    fy?: Computable<number | string>
+  }
+  interface RectSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ShapeElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    rx?: Computable<number | string>
+    ry?: Computable<number | string>
+  }
+  interface StopSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      StylableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'color' | 'stop-color' | 'stop-opacity'> {
+    offset?: Computable<number | string>
+  }
+  interface SvgSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      NewViewportSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      ZoomAndPanSVGAttributes,
+      PresentationSVGAttributes {
+    version?: Computable<string>
+    baseProfile?: Computable<string>
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    contentScriptType?: Computable<string>
+    contentStyleType?: Computable<string>
+    xmlns?: Computable<string>
+  }
+  interface SwitchSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'display' | 'visibility'> {}
+  interface SymbolSVGAttributes<T>
+    extends ContainerElementSVGAttributes<T>,
+      NewViewportSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      FitToViewBoxSVGAttributes {}
+  interface TextSVGAttributes<T>
+    extends TextContentElementSVGAttributes<T>,
+      GraphicsElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes,
+      Pick<PresentationSVGAttributes, 'writing-mode' | 'text-rendering'> {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    dx?: Computable<number | string>
+    dy?: Computable<number | string>
+    rotate?: Computable<number | string>
+    textLength?: Computable<number | string>
+    lengthAdjust?: Computable<'spacing' | 'spacingAndGlyphs'>
+  }
+  interface TextPathSVGAttributes<T>
+    extends TextContentElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
+      > {
+    startOffset?: Computable<number | string>
+    method?: Computable<'align' | 'stretch'>
+    spacing?: Computable<'auto' | 'exact'>
+    href?: Computable<string>
+  }
+  interface TSpanSVGAttributes<T>
+    extends TextContentElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
+      > {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    dx?: Computable<number | string>
+    dy?: Computable<number | string>
+    rotate?: Computable<number | string>
+    textLength?: Computable<number | string>
+    lengthAdjust?: Computable<'spacing' | 'spacingAndGlyphs'>
+  }
+  interface UseSVGAttributes<T>
+    extends GraphicsElementSVGAttributes<T>,
+      ConditionalProcessingSVGAttributes,
+      ExternalResourceSVGAttributes,
+      StylableSVGAttributes,
+      TransformableSVGAttributes {
+    x?: Computable<number | string>
+    y?: Computable<number | string>
+    width?: Computable<number | string>
+    height?: Computable<number | string>
+    href?: Computable<string>
+  }
+  interface ViewSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      ExternalResourceSVGAttributes,
+      FitToViewBoxSVGAttributes,
+      ZoomAndPanSVGAttributes {
+    viewTarget?: Computable<string>
   }
   /**
    * @type {HTMLElementTagNameMap}
@@ -1071,17 +1863,71 @@ export namespace JSX {
     video: VideoHTMLAttributes<HTMLVideoElement>
     wbr: HTMLAttributes<HTMLElement>
   }
+
   /**
-   * @type {HTMLElementDeprecatedTagNameMap}
+   * @type {SVGElementTagNameMap}
    */
-  interface HTMLElementDeprecatedTags {
-    big: HTMLAttributes<HTMLElement>
-    keygen: KeygenHTMLAttributes<HTMLElement>
-    menuitem: HTMLAttributes<HTMLElement>
-    noindex: HTMLAttributes<HTMLElement>
-    param: ParamHTMLAttributes<HTMLParamElement>
+  interface SVGElementTags {
+    'svg:animate': AnimateSVGAttributes<SVGAnimateElement>
+    'svg:animateMotion': AnimateMotionSVGAttributes<SVGAnimateMotionElement>
+    'svg:animateTransform': AnimateTransformSVGAttributes<SVGAnimateTransformElement>
+    'svg:circle': CircleSVGAttributes<SVGCircleElement>
+    'svg:clipPath': ClipPathSVGAttributes<SVGClipPathElement>
+    'svg:defs': DefsSVGAttributes<SVGDefsElement>
+    'svg:desc': DescSVGAttributes<SVGDescElement>
+    'svg:ellipse': EllipseSVGAttributes<SVGEllipseElement>
+    'svg:feBlend': FeBlendSVGAttributes<SVGFEBlendElement>
+    'svg:feColorMatrix': FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>
+    'svg:feComponentTransfer': FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>
+    'svg:feComposite': FeCompositeSVGAttributes<SVGFECompositeElement>
+    'svg:feConvolveMatrix': FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>
+    'svg:feDiffuseLighting': FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>
+    'svg:feDisplacementMap': FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>
+    'svg:feDistantLight': FeDistantLightSVGAttributes<SVGFEDistantLightElement>
+    'svg:feDropShadow': Partial<SVGFEDropShadowElement>
+    'svg:feFlood': FeFloodSVGAttributes<SVGFEFloodElement>
+    'svg:feFuncA': FeFuncSVGAttributes<SVGFEFuncAElement>
+    'svg:feFuncB': FeFuncSVGAttributes<SVGFEFuncBElement>
+    'svg:feFuncG': FeFuncSVGAttributes<SVGFEFuncGElement>
+    'svg:feFuncR': FeFuncSVGAttributes<SVGFEFuncRElement>
+    'svg:feGaussianBlur': FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>
+    'svg:feImage': FeImageSVGAttributes<SVGFEImageElement>
+    'svg:feMerge': FeMergeSVGAttributes<SVGFEMergeElement>
+    'svg:feMergeNode': FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>
+    'svg:feMorphology': FeMorphologySVGAttributes<SVGFEMorphologyElement>
+    'svg:feOffset': FeOffsetSVGAttributes<SVGFEOffsetElement>
+    'svg:fePointLight': FePointLightSVGAttributes<SVGFEPointLightElement>
+    'svg:feSpecularLighting': FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>
+    'svg:feSpotLight': FeSpotLightSVGAttributes<SVGFESpotLightElement>
+    'svg:feTile': FeTileSVGAttributes<SVGFETileElement>
+    'svg:feTurbulence': FeTurbulanceSVGAttributes<SVGFETurbulenceElement>
+    'svg:filter': FilterSVGAttributes<SVGFilterElement>
+    'svg:foreignObject': ForeignObjectSVGAttributes<SVGForeignObjectElement>
+    'svg:g': GSVGAttributes<SVGGElement>
+    'svg:image': ImageSVGAttributes<SVGImageElement>
+    'svg:line': LineSVGAttributes<SVGLineElement>
+    'svg:linearGradient': LinearGradientSVGAttributes<SVGLinearGradientElement>
+    'svg:marker': MarkerSVGAttributes<SVGMarkerElement>
+    'svg:mask': MaskSVGAttributes<SVGMaskElement>
+    'svg:metadata': MetadataSVGAttributes<SVGMetadataElement>
+    'svg:mpath': Partial<SVGMPathElement>
+    'svg:path': PathSVGAttributes<SVGPathElement>
+    'svg:pattern': PatternSVGAttributes<SVGPatternElement>
+    'svg:polygon': PolygonSVGAttributes<SVGPolygonElement>
+    'svg:polyline': PolylineSVGAttributes<SVGPolylineElement>
+    'svg:radialGradient': RadialGradientSVGAttributes<SVGRadialGradientElement>
+    'svg:rect': RectSVGAttributes<SVGRectElement>
+    'svg:set': Partial<SVGSetElement>
+    'svg:stop': StopSVGAttributes<SVGStopElement>
+    'svg:svg': SvgSVGAttributes<SVGSVGElement>
+    'svg:switch': SwitchSVGAttributes<SVGSwitchElement>
+    'svg:symbol': SymbolSVGAttributes<SVGSymbolElement>
+    'svg:text': TextSVGAttributes<SVGTextElement>
+    'svg:textPath': TextPathSVGAttributes<SVGTextPathElement>
+    'svg:tspan': TSpanSVGAttributes<SVGTSpanElement>
+    'svg:use': UseSVGAttributes<SVGUseElement>
+    'svg:view': ViewSVGAttributes<SVGViewElement>
   }
-  interface IntrinsicElements
-    extends HTMLElementTags,
-      HTMLElementDeprecatedTags {}
+
+  interface IntrinsicElements extends HTMLElementTags, SVGElementTags {}
 }

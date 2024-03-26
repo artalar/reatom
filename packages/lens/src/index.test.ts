@@ -5,6 +5,10 @@ import { createTestCtx, mockFn } from '@reatom/testing'
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
+import './match.test'
+import './parseAtoms.test'
+import './select.test'
+
 import {
   combine,
   debounce,

@@ -102,7 +102,7 @@ export const dataAtom = fetchList.pipe(
 
 ## `mapInput`
 
-Create action witch map input to passed action / atom.
+Create action which map input to passed action / atom.
 
 ```ts
 import { atom } from '@reatom/core'
@@ -186,52 +186,47 @@ export const countAtom = _countAtom.pipe(readonly)
 
 ## `parseAtoms`
 
-Jsonify [atomized](https://www.reatom.dev/guides/atomization) structure. Needed for parse values of deep structures with nested atoms.
-Useful for snapshots. Will be reactive if the passed `ctx` is `CtxSpy`.
+Recursively unwrap all atoms in an [atomized](https://www.reatom.dev/recipes/atomization) structure. Useful for making snapshots of reactive state. Uses `ctx.spy` if it's available.
 
-### parseAtoms snapshot example
+### `parseAtoms`: persistence example
 
 https://codesandbox.io/s/reatom-react-atomization-k39vrs?file=/src/model.ts
 
 ```ts
 import { action, atom, Action, AtomMut } from '@reatom/core'
-import { onUpdate, withInit } from '@reatom/hooks'
+import { withLocalStorage } from '@reatom/persist-web-storage'
 import { parseAtoms, ParseAtoms } from '@reatom/lens'
 
 export type Field = {
-  id: number;
-  name: string;
-  value: AtomMut<string>;
-  remove: Action;
-};
-
-const KEY = "FIELDS";
-const fromLS = () => {
-  const snap = localStorage.getItem(KEY);
-  if (!snap) return [];
-  const json: ParseAtoms<Array<Field>> = JSON.parse(snap);
-  return json.map(({ id, name, value }) => getField(id, name, value));
-};
-const toLS = action((ctx) => {
-  const list = parseAtoms(ctx, listAtom);
-  localStorage.setItem(KEY, JSON.stringify(list));
-}, "toLS");
+  id: number
+  name: string
+  value: AtomMut<string>
+  remove: Action
+}
 
 const getField = (id: number, name: string, value: string): Field => {
-  // ...
-};
+  return {
+    id,
+    name,
+    value: atom(value),
+    remove: action((ctx) => {
+      // ...
+    }),
+  }
+}
 
-export const listAtom = atom(new Array<Field>(), "listAtom").pipe(
-  withInit(fromLS)
-);
-onUpdate(listAtom, toLS);
+export const listAtom = atom<Array<Field>>([], 'listAtom').pipe(
+  withLocalStorage({
+    toSnapshot: (state) => parseAtoms(state),
+    fromSnapshot: (snapshot: any) =>
+      getField(snapshot.id, snapshot.name, snapshot.value),
+  }),
+)
 ```
 
-### parseAtoms shortcut example
+### `parseAtoms`: shortcut example
 
-It could be handy to use `parseAtoms` to reduce the amount of "read atom" code.
-
-For example, we have a few-fields structure.
+You can use `parseAtoms` to reduce the amount of . Let's suppose you have the following structure:
 
 ```ts
 interface User {
@@ -242,7 +237,7 @@ interface User {
 }
 ```
 
-How could you display it without `parseAtoms`?
+And use it like this:
 
 ```tsx
 import { useAtom } from '@reatom/npm-react'
@@ -257,24 +252,50 @@ export const User = ({ user }: { user: User }) => {
 }
 ```
 
-How could `parseAtoms` helps you?
+With `parseAtoms` you can refactor usage to look like this:
 
 ```tsx
 import { parseAtoms } from '@reatom/lens'
 import { useAtom, useAction } from '@reatom/npm-react'
 
 export const User = ({ user }: { user: User }) => {
-  const [{ name, bio, website, address }] = useAtom((ctx) =>
-    parseAtoms(ctx, user),
-  )
+  const [
+    {
+      name, //
+      bio,
+      website,
+      address,
+    },
+  ] = useAtom((ctx) => parseAtoms(ctx, user))
 
   return <form>...</form>
 }
 ```
 
+## `match`
+
+Creates an atom that depending on some condition or data patterns, which can be an atom too. Useful for describing UIs with [`@reatom/jsx`](https://www.reatom.dev/package/jsx) or any other renderers. Here is the example of routing description from [the base template](https://github.com/artalar/reatom-react-ts) (Vite, TypeScript, React, Reatom).
+
+```ts
+export const routes = match(isLoggedAtom)
+  .default(() => <Auth />)
+  .truthy(
+    match((ctx) => ctx.spy(urlAtom).pathname)
+      .is('/me', () => <Profile />)
+      .default(() => <Home />),
+  )
+```
+
+You can call `match` with any primitive value, computed function, or existing atom. The returned atom depends on the initial expression and contains the `undefined` state by default. To add handlers and complete the state type, use chain methods. Each chain mutates the original atoms. It is a good practice to use it in the same place where atom was created.
+
+- `default` for replacing `undefined` fallback state
+- `is` for strict comparison
+- `truthy` ([MDN](https://developer.mozilla.org/en-US/docs/Glossary/Truthy)) and `falsy` ([MDN](https://developer.mozilla.org/en-US/docs/Glossary/Falsy)) for empty things handling
+- `with` structural handling
+
 ## `bind`
 
-Bind context to stable function.
+Bind action or atom update function with passed callback.
 
 ```ts
 import { action, createCtx } from '@reatom/core'
@@ -287,9 +308,6 @@ export handleSome = bind(ctx, doSome)
 
 handleSome(123)
 // 123
-
-bind(ctx, doSome) === bind(ctx, doSome)
-// true
 ```
 
 ## `withReset`
@@ -306,3 +324,25 @@ import { onDisconnect } from '@reatom/hooks'
 export const dataAtom = atom([], 'dataAtom').pipe(withReset())
 onDisconnect(dataAtom, dataAtom.reset)
 ```
+
+## `select`
+
+Sometimes you need to get computed value from an atom in another computer, but you don't want to trigger other recomputations if the computed value is not changed. It is the common case for `reatomComponent` from [reatom/npm-react](https://www.reatom.dev/package/npm-react/) package. The `select` allows you to perform and memorize some computation by a simple inline callback. It is specially useful when you can't create separate memorized function because your target atom is dynamically created.
+
+```tsx
+import { select } from '@reatom/framework'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const ListSize = reatomComponent(({ ctx }) => {
+  // wrong way, the component will rerender on each element update
+  const length = ctx.spy(listAtom).length
+  // correct optimal way, the component will rerender only on `length` change
+  const length = select(ctx, (ctx) => ctx.spy(listAtom).length)
+
+  return <div>{length}</div>
+}, 'ListSize')
+```
+
+Under the hood `select` creates additional atom, so you can perform all regular tasks in the callback of the `select`, just like in the regular computed atom.
+
+Important note is that you could use only one select in each atom, this is done for performance reasons and API simplicity. If, for some reason, you really need a few select, you could nest it and call one in another and so on.

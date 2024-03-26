@@ -47,7 +47,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/adapter/npm-cookie-baker",
+  "homepage": "https://www.reatom.dev/package/npm-cookie-baker",
   "files": [
     "/build",
     "/package.json"

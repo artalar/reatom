@@ -12,7 +12,67 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`
 
 ## Use atom
 
-`useAtom` is your main hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
+### reatomComponent
+
+The main API to bind atoms and actions to a component lifetime is `reatomComponent`. It wraps your regular react component and put `ctx` into the props. There is no additional rules or behavior, you can use any other hooks, accept props, return any valid `ReactNode`. But if you using `ctx.spy`, just like in any computed atom, it will subscribe to the passed atom and rerender from by changes.
+
+```tsx
+import { atom } from '@reatom/core'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const countAtom = atom(0)
+export const Counter = reatomComponent(
+  ({ ctx }) => (
+    <input
+      type="number"
+      value={ctx.spy(count)}
+      onChange={(e) => countAtom(ctx, e.target.valueAsNumber)}
+    />
+  ),
+  'Counter',
+)
+```
+
+You can describe props types in the generic, it can be any kind of values, regular string, JSON, and atoms too. For example, here is a controlled component with atom state.
+
+```tsx
+import { atom, Atom } from '@reatom/core'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const Counter = reatomComponent<{
+  atom: Atom<number>
+  onChange: Action
+}>(
+  ({ ctx, atom, onChange }) => (
+    <input type="number" value={ctx.spy(atom)} onChange={ctx.bind(onChange)} />
+  ),
+  'Counter',
+)
+```
+
+One of the most powerful features of `reatomComponent` is that you are not bound by react hooks rules, you could use `ctx.spy` in any order, right in your template.
+
+```tsx
+export const SomeList = reatomComponent(
+  ({ ctx }) =>
+    ctx.spy(isLoadingAtom) ? (
+      <span>Loading...</span>
+    ) : (
+      <ul>
+        {ctx.spy(listAtom).map((el) => (
+          <li>{el.text}</li>
+        ))}
+      </ul>
+    ),
+  'SomeList',
+)
+```
+
+Do not forget to put the component name to the second argument, it will increase your feature debug experience a lot!
+
+### useAtom
+
+`useAtom` is your main hook, when you need to describe reusable logic in hight order hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
 
 In a component:
 
@@ -67,7 +127,7 @@ We recommend to setup [logger](https://www.reatom.dev/package/logger) here.
 
 ## Use atom selector
 
-It is possible to paste a reducer function to `useState`, which will create a new computed atom (`setState` will be `undefined` in this case).
+Another use case for the hook is describing additional computations inside a component (create temporal computed atom). It is possible to put a reducer function to `useState`, which will create a new computed atom (`setState` will be `undefined` in this case).
 
 ```ts
 import { useAtom } from '@reatom/npm-react'
@@ -99,6 +159,8 @@ export const GoodsItem = ({ idx }: { idx: number }) => {
 ```
 
 ### Advanced usage
+
+Check this out!
 
 ```js
 export const Greeting = ({ initialGreeting = '' }) => {
@@ -132,7 +194,7 @@ What, why? In the example bellow we creating "inline" atoms, which will live onl
 - You could depend your atoms by a props (deps changing will cause the callback rerun, the atom will the same).
 - Easy access to services, in case you use reatom as a DI.
 - Component inline atoms could be used for other computations, which could prevent rerenders ([see above](#prevent-rerenders)).
-- Created actions and atoms will be visible in logger / debugger with async `cause` tracking, witch is much better for debugging than `useEffect`.
+- Created actions and atoms will be visible in logger / debugger with async `cause` tracking, which is much better for debugging than `useEffect`.
 - Unify codestyle for any state (local and global) description.
 - Easy to refactor to global state.
 
@@ -230,7 +292,7 @@ return (
 
 ## Use update
 
-`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [updates hook](https://www.reatom.dev/guides/lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching (as it 'on' already). Subscriptions to a values works like regular `useEffect` hook.
+`useUpdate` is a similar to `useEffect` hook, but it allows you to subscribe to atoms and receive it values in the callback. Important semantic difference is that subscription to atoms works as [`onChange` hook](https://www.reatom.dev/handbook#lifecycle) and your callback will call during transaction, so you need to schedule an effects, but could mutate an atoms without batching. Subscriptions to a values works like regular `useEffect` hook.
 
 The most common use case for this hook is to synchronize some state from a props or context to an atom.
 
@@ -258,6 +320,82 @@ export const MyForm = () => {
       <Sync />
       .....
     </Form>
+  )
+}
+```
+
+And it works well in the opposite direction, you could synchronise an atom's data with the local state, or do any other kind of effect. You can use `useUpdate` as a safety replacement for `onChange` + `useEffect`.
+
+For example, you need a controlled input from the passed atom.
+
+Here is a naive implementation:
+
+```tsx
+export const Item = ({ itemAtom }) => {
+  const [value, setValue] = React.useState('')
+
+  React.useEffect(() => {
+    const cleanup = itemAtom.onChange((ctx, state) => setValue(state))
+    // DO NOT FORGET TO RETURN THE CLEANUP
+    return cleanup
+  }, [itemAtom])
+
+  return (
+    <input value={value} onChange={(e) => setValue(e.currentTarget.value)} />
+  )
+}
+```
+
+Here is a simpler and more reliable implementation:
+
+```tsx
+export const Item = ({ itemAtom }) => {
+  const [value, setValue] = React.useState(itemAtom)
+
+  useUpdate((ctx, state) => setValue(state), [itemAtom])
+
+  return (
+    <input value={value} onChange={(e) => setValue(e.currentTarget.value)} />
+  )
+}
+```
+
+## Use atom promise
+
+If you have an atom with a promise and want to use its value directly, you could use `useAtomPromise`. This function relies on [React Suspense](https://react.dev/reference/react/Suspense) and throws the promise until it resolves. It can be useful with [reatomResource](https://www.reatom.dev/package/async/#reatomresource).
+
+```tsx
+import { atom, reatomResource } from '@reatom/framework'
+import { useAtom, useAction, useAtomPromise } from '@reatom/npm-react'
+
+const pageAtom = atom(1, 'pageAtom')
+const listReaction = reatomResource(async (ctx) => {
+  const page = ctx.spy(pageAtom)
+  const response = await ctx.schedule(() => fetch(`/api/list?page=${page}`))
+  if (!response.ok) throw new Error(response.statusText)
+  return response.json()
+})
+
+export const List = () => {
+  const [page] = useAtom(pageAtom)
+  const prev = useAction((ctx) =>
+    pageAtom(ctx, (state) => Math.max(1, state - 1)),
+  )
+  const next = useAction((ctx) => pageAtom(ctx, (state) => state + 1))
+  const list = useAtomPromise(listReaction.promiseAtom)
+
+  return (
+    <section>
+      <ul>
+        {list.map((el) => (
+          <li key={el.id}>...</li>
+        ))}
+      </ul>
+      <hr />
+      <button onClick={prev}>prev</button>
+      {page}
+      <button onClick={next}>next</button>
+    </section>
   )
 }
 ```

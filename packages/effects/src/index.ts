@@ -1,20 +1,30 @@
 import {
+  __count,
+  atom,
   Atom,
   AtomCache,
   AtomProto,
   AtomReturn,
   Ctx,
+  CtxSpy,
   Fn,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { AbortError, noop, toAbortError } from '@reatom/utils'
+import {
+  AbortError,
+  isAbort,
+  merge,
+  noop,
+  throwIfAborted,
+  toAbortError,
+} from '@reatom/utils'
 
 export class CauseContext<T> extends WeakMap<AtomCache, T> {
   has(cause: AtomCache): boolean {
     return super.has(cause) || (cause.cause !== null && this.has(cause.cause))
   }
-  get(cause: AtomCache) {
+  get(cause: AtomCache): T | undefined {
     while (!super.has(cause) && cause.cause) {
       cause = cause.cause
     }
@@ -22,18 +32,25 @@ export class CauseContext<T> extends WeakMap<AtomCache, T> {
   }
 }
 
+export const abortCauseContext = new CauseContext<AbortController | undefined>()
+
 export const getTopController = (
   patch: AtomCache & { controller?: AbortController },
-): null | AbortController =>
-  patch.controller ?? (patch.cause && getTopController(patch.cause))
+): null | AbortController => abortCauseContext.get(patch) ?? null
 
 /** Handle abort signal from a cause */
-export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
+export const onCtxAbort = (
+  ctx: Ctx,
+  cb: Fn<[AbortError]>,
+): undefined | Unsubscribe => {
   const controller = getTopController(ctx.cause)
 
   if (controller) {
     const handler = () => cb(toAbortError(controller.signal.reason))
+    const cleanup = () =>
+      controller.signal.removeEventListener('abort', handler)
 
+    // TODO schedule
     if (controller.signal.aborted) handler()
     else {
       controller.signal.addEventListener('abort', handler)
@@ -41,6 +58,7 @@ export const onCtxAbort = (ctx: Ctx, cb: Fn<[AbortError]>) => {
         () => controller.signal.removeEventListener('abort', handler),
         -1,
       )
+      return cleanup
     }
   }
 }
@@ -78,6 +96,8 @@ export const __thenReatomed = <T>(
         ctx.get((read, actualize) =>
           chain!.catch.forEach((cb) => cb(error, read, actualize)),
         )
+        // prevent Uncaught DOMException for aborts
+        if (isAbort(error)) promise.catch(noop)
         throw error
       },
     )
@@ -139,42 +159,52 @@ export const disposable = (
   })
 }
 
+const skip: unique symbol = Symbol()
+type skip = typeof skip
 export const take = <T extends Atom, Res = AtomReturn<T>>(
-  ctx: Ctx & { controller?: AbortController },
+  ctx: Ctx,
   anAtom: T,
-  mapper: Fn<[Ctx, Awaited<AtomReturn<T>>], Res> = (ctx, v: any) => v,
-): Promise<Awaited<Res>> =>
-  new Promise<Awaited<Res>>((res: Fn, rej) => {
-    onCtxAbort(ctx, rej)
+  mapper: Fn<[Ctx, Awaited<AtomReturn<T>>, skip], Res | skip> = (ctx, v: any) =>
+    v,
+): Promise<Awaited<Res>> => {
+  const cleanups: Array<Fn> = []
+  return new Promise<Awaited<Res>>((res: Fn, rej) => {
+    cleanups.push(
+      onCtxAbort(ctx, rej) ?? noop,
+      ctx.subscribe(anAtom, async (state) => {
+        // skip the first sync call
+        if (!cleanups.length) return
 
-    let skipFirst = true,
-      un = ctx.subscribe(anAtom, (state) => {
-        if (skipFirst) return (skipFirst = false)
-        un()
-        if (anAtom.__reatom.isAction) state = state[0].payload
-        if (state instanceof Promise) {
-          state.then((v) => res(mapper(ctx, v)), rej)
-        } else {
-          res(mapper(ctx, state))
+        try {
+          if (anAtom.__reatom.isAction) state = state[0].payload
+          const value = await state
+          const result = mapper(ctx, value, skip)
+          if (result !== skip) res(result)
+        } catch (error) {
+          rej(error)
         }
-      })
-    ctx.schedule(un, -1)
-  })
+      }),
+    )
+  }).finally(() => cleanups.forEach((cb) => cb()))
+}
 
 export const takeNested = <I extends any[]>(
-  ctx: Ctx & { controller?: AbortController },
+  ctx: Ctx,
   cb: Fn<[Ctx, ...I]>,
   ...params: I
 ): Promise<void> =>
   new Promise<void>((resolve, reject) => {
-    onCtxAbort(ctx, reject)
+    const unabort = onCtxAbort(ctx, reject)
 
     let i = 1 // one for extra check
     const { schedule } = ctx
     const check = () => {
-      if (i === 0) resolve()
+      if (i === 0) {
+        unabort?.()
+        resolve()
+      }
 
-      // add extra tick to make shure there is no microtask races
+      // add extra tick to make sure there is no microtask races
       if (--i === 0) Promise.resolve().then(check)
     }
 
@@ -203,6 +233,114 @@ export const takeNested = <I extends any[]>(
     return result
   })
 
-export const isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
+const _isCausedBy = (cause: AtomCache, proto: AtomProto): boolean =>
   cause.cause !== null &&
   (cause.cause.proto === proto || isCausedBy(cause.cause, proto))
+
+export const isCausedBy = (
+  caused: Ctx | AtomCache,
+  by: Atom | AtomProto,
+): boolean =>
+  _isCausedBy(
+    'subscribe' in caused ? caused.cause : caused,
+    '__reatom' in by ? by.__reatom : by,
+  )
+
+export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
+  const { schedule } = ctx
+
+  return merge(ctx, {
+    schedule(
+      this: Ctx,
+      cb: Parameters<typeof schedule>[0],
+      step?: Parameters<typeof schedule>[1],
+    ) {
+      if (step === -1) return schedule.call(this, cb, step)
+
+      let resolve: Fn
+      let reject: Fn
+      const promise = new Promise((res, rej) => {
+        resolve = res
+        reject = rej
+      })
+      // do not wait the effect if the abort occurs
+      const unabort = onCtxAbort(this, (error) => {
+        // prevent unhandled error for abort
+        promise.catch(noop)
+        reject(error)
+      })
+      schedule.call(
+        this,
+        async (_ctx) => {
+          const controller = getTopController(this.cause)
+          try {
+            throwIfAborted(controller)
+            const value = await cb(_ctx)
+            throwIfAborted(controller)
+            resolve(value)
+          } catch (error) {
+            reject(error)
+          }
+          unabort?.()
+        },
+        step,
+      )
+
+      return promise
+    },
+  })
+}
+
+export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
+  const abortControllerAtom = atom<null | AbortController>(
+    null,
+    `${__count('_concurrent')}.abortControllerAtom`,
+  )
+
+  return Object.assign(
+    (ctx: Ctx, ...a: any[]) => {
+      const prevController = ctx.get(abortControllerAtom)
+      // do it outside of the schedule to save the call stack
+      const abort = toAbortError('concurrent')
+      // TODO it is better to do it sync?
+      if (prevController) ctx.schedule(() => prevController.abort(abort))
+
+      const unabort = onCtxAbort(ctx, (error) => {
+        // prevent unhandled error for abort
+        if (res instanceof Promise) res.catch(noop)
+        controller.abort(error)
+      })
+      const controller = abortControllerAtom(ctx, new AbortController())!
+      ctx = { ...ctx, cause: { ...ctx.cause } }
+      abortCauseContext.set(ctx.cause, controller)
+
+      var res = fn(withAbortableSchedule(ctx), ...a)
+      if (res instanceof Promise) {
+        res = res.finally(() => {
+          unabort?.()
+          throwIfAborted(controller)
+        })
+        // prevent uncaught rejection for the abort
+        controller.signal.addEventListener('abort', () => {
+          res.catch(noop)
+        })
+
+        return res
+      }
+      return res
+    },
+    // if the `fn` is an atom we need to assign all related properties
+    fn,
+  )
+}
+
+export const spawn = <Args extends any[], Payload>(
+  ctx: Ctx,
+  fn: Fn<[Ctx, ...Args], Payload>,
+  args: Args = [] as any[] as Args,
+  controller = new AbortController(),
+): Payload => {
+  ctx = { ...ctx, cause: { ...ctx.cause } }
+  abortCauseContext.set(ctx.cause, controller)
+  return fn(ctx, ...args)
+}

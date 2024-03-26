@@ -1,6 +1,6 @@
 {
   "name": "@reatom/logger",
-  "version": "3.4.3",
+  "version": "3.6.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for logger",
@@ -26,7 +26,9 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": "^3.1.0"
+    "@reatom/core": "^3.1.0",
+    "@reatom/jsx": "^3.4.0",
+    "stylerun": "^1.0.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -41,5 +43,8 @@
   "files": [
     "/build",
     "/package.json"
-  ]
+  ],
+  "devDependencies": {
+    "@reatom/npm-react": "^3.6.1"
+  }
 }

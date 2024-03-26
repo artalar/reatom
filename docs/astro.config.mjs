@@ -1,12 +1,16 @@
 import { $ } from 'zx'
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
+import rehypeExternalLinks from 'rehype-external-links'
 if (!process.env.VERCEL) await $`tsx sync-readme-to-pages.ts`
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://www.reatom.dev',
   output: 'static',
+  redirects: {
+    '/core': '/package/core',
+  },
   integrations: [
     starlight({
       title: 'Reatom',
@@ -25,31 +29,23 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       sidebar: [
         {
-          label: 'Core',
-          link: 'core',
+          label: 'Getting Started',
+          autogenerate: {
+            directory: 'getting-started',
+          },
         },
         {
           label: 'Examples',
           link: 'examples',
         },
         {
-          label: 'Tutorial',
-          link: 'tutorial',
+          label: 'Handbook',
+          link: 'handbook',
         },
         {
-          label: 'REPL',
-          link: 'repl',
-        },
-        {
-          label: 'Guides',
+          label: 'Recipes',
           autogenerate: {
-            directory: 'guides',
-          },
-        },
-        {
-          label: 'General',
-          autogenerate: {
-            directory: 'general',
+            directory: 'recipes',
           },
         },
         {
@@ -59,11 +55,8 @@ export default defineConfig({
           },
         },
         {
-          label: 'Adapters',
-          autogenerate: {
-            directory: 'adapter',
-            collapsed: true,
-          },
+          label: 'REPL',
+          link: 'repl',
         },
         {
           label: 'Compat',
@@ -72,7 +65,14 @@ export default defineConfig({
             collapsed: true,
           },
         },
+        {
+          label: 'Contributing',
+          link: 'contributing',
+        },
       ],
+      components: {
+        MarkdownContent: './src/components/MarkdownContent.astro',
+      },
     }),
   ],
   // Process images with sharp: https://docs.astro.build/en/guides/assets/#using-sharp
@@ -80,5 +80,26 @@ export default defineConfig({
     service: {
       entrypoint: 'astro/assets/services/sharp',
     },
+  },
+  markdown: {
+    rehypePlugins: [
+      [
+        rehypeExternalLinks,
+        {
+          contentProperties: { className: ['external-link-icon'] },
+          content: (node) => {
+            const imgChild = node.children.find((c) => c.tagName === 'img')
+
+            return imgChild
+              ? undefined
+              : {
+                  type: 'text',
+                  value: '↗',
+                }
+          },
+          target: '_blank',
+        },
+      ],
+    ],
   },
 })

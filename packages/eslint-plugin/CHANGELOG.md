@@ -1,5 +1,41 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.5.0...eslint-plugin-v3.6.0) (2024-02-16)
+
+
+### Features
+
+* **eslint-plugin:** enforce domain in names ([#764](https://github.com/artalar/reatom/issues/764)) ([0b4ccff](https://github.com/artalar/reatom/commit/0b4ccffa80fa738233f2160fc9b3a70269c6d4d5))
+
+## [3.5.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.3...eslint-plugin-v3.5.0) (2024-02-05)
+
+
+### Features
+
+* **eslint-plugin:** add async-rule & unit-naming-rule ([#709](https://github.com/artalar/reatom/issues/709)) ([04de10c](https://github.com/artalar/reatom/commit/04de10cb9bd3d39d2deec3ed1a5e0aface9de3c9))
+
+## [3.4.3](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.2...eslint-plugin-v3.4.3) (2023-10-20)
+
+
+### Bug Fixes
+
+* **lens:** match default case ([27061af](https://github.com/artalar/reatom/commit/27061af1ac338f5223190d110cf6e090d884e203))
+
+## [3.4.2](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.1...eslint-plugin-v3.4.2) (2023-10-10)
+
+
+### Bug Fixes
+
+* **eslint-plugin:** allow any template literal ([#661](https://github.com/artalar/reatom/issues/661)) ([5539cdd](https://github.com/artalar/reatom/commit/5539cddb5628de56f7e7f011c41ec4230d7a4ae5))
+* **eslint-plugin:** allow explicit empty atomPostfix ([7bac17f](https://github.com/artalar/reatom/commit/7bac17f83350349b8e428688a1aceb16cfefbe11))
+
+## [3.4.1](https://github.com/artalar/reatom/compare/eslint-plugin-v3.4.0...eslint-plugin-v3.4.1) (2023-09-13)
+
+
+### Bug Fixes
+
+* **esling-plugin:** highlight atom name, not atom declaration in case of wrong name ([#624](https://github.com/artalar/reatom/issues/624)) ([39b0d01](https://github.com/artalar/reatom/commit/39b0d015b6de6a5cfa83da17871bbcb52e101994))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.3.0...eslint-plugin-v3.4.0) (2023-05-21)
 
 

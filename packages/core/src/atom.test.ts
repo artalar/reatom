@@ -343,16 +343,16 @@ test('async cause track', () => {
   const act1 = action((ctx) => ctx.schedule(() => act2(ctx)), 'act1')
   const act2 = action((ctx) => a1(ctx, (s) => ++s), 'act2')
   const ctx = createCtx()
-  const logger = mockFn()
+  const track = mockFn()
 
-  ctx.subscribe(logger)
+  ctx.subscribe(track)
 
   ctx.subscribe(a1, (v) => {})
 
   act1(ctx)
 
   assert.is(
-    logger.lastInput().find((patch: AtomCache) => patch.proto.name === 'a1')
+    track.lastInput().find((patch: AtomCache) => patch.proto.name === 'a1')
       ?.cause.proto.name,
     'act2',
   )
@@ -673,6 +673,81 @@ test('ctx collision', () => {
 
   assert.throws(() => ctx1.get(() => ctx2.get(a)))
   ;`👍` //?
+})
+
+test('conditional deps duplication', () => {
+  const listAtom = atom([1, 2, 3])
+
+  const filterAtom = atom<'odd' | 'even'>('odd')
+
+  const filteredListAtom = atom((ctx) => {
+    if (ctx.spy(filterAtom) === 'odd') {
+      return ctx.spy(listAtom).filter((n) => n % 2 === 1)
+    } else if (ctx.spy(filterAtom) === 'even') {
+      return ctx.spy(listAtom).filter((n) => n % 2 === 0)
+    }
+    return ctx.spy(listAtom)
+  })
+
+  const ctx = createCtx()
+
+  const track = mockFn()
+
+  ctx.subscribe(filteredListAtom, track)
+  assert.equal(track.lastInput(), [1, 3])
+
+  filterAtom(ctx, 'even')
+  assert.equal(track.lastInput(), [2])
+
+  filterAtom(ctx, 'odd')
+  assert.equal(track.lastInput(), [1, 3])
+
+  filterAtom(ctx, 'even')
+  assert.equal(track.lastInput(), [2])
+  ;`👍` //?
+})
+
+test('nested schedule', async () => {
+  const act = action((ctx) => {
+    return ctx.schedule(() => {
+      return ctx.schedule(async () => {})
+    })
+  })
+
+  const ctx = createCtx()
+  await act(ctx)
+  ;`👍` //?
+})
+
+test('dynamic spy callback prevValue', () => {
+  let testPrev: any
+  const a = atom(0)
+  const b = atom((ctx) => {
+    ctx.spy(a)
+    const anAtom = atom(0)
+    ctx.spy(anAtom, (next, prev) => {
+      testPrev = prev
+    })
+  })
+  const ctx = createCtx()
+  ctx.subscribe(b, () => {})
+  assert.is(testPrev, undefined)
+
+  a(ctx, 1)
+  assert.is(testPrev, undefined)
+  ;`👍` //?
+})
+
+test('should drop actualization of stale atom during few updates in one transaction', () => {
+  const a = atom(0)
+  const b = atom((ctx) => ctx.spy(a))
+  const ctx = createCtx()
+
+  ctx.get(() => {
+    assert.is(ctx.get(b), 0)
+    a(ctx, 1)
+    assert.is(ctx.get(b), 1)
+  })
 })
 
 // test(`maximum call stack`, () => {

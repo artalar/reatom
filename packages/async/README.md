@@ -1,6 +1,19 @@
-This package is all you need to handle async requests / logic / flow effectively and predictable. You could wrap your async functions to the main primitive `reatomAsync` and get basic action hooks: `onFulfill`, `onReject`, `onSettle` and `pendingAtom` with count of pending requests. But you could grow as you need and add extra features by adding additional operators: [withDataAtom](#withdataatom) (resolve payload memoization), [withErrorAtom](#witherroratom) (reject payload memoization), [withStatusesAtom](#withstatusesatom) (`isPending`, `isEverSettled` and so on), [withCache](#withcache) (advanced cache policies), [withAbort](#withabort) (concurrent management), [withRetry](#withretry) (flexible retry management).
+This package is all you need to handle async requests / logic / flow effectively and predictable.
+You could wrap your async actions into the main primitive `reatomAsync` and get basic action hooks: `onFulfill`, `onReject`, `onSettle` and `pendingAtom` with count of pending requests.
+Or you can wrap your get requests into `reatomResource` and refetch data whenever some of parameters change.
 
 > included in [@reatom/framework](https://www.reatom.dev/package/framework)
+
+To chose the most appropriate async primitive refer to the table below:
+
+|  type |             computed              |          mutation           |
+| ----: | :-------------------------------: | :-------------------------: |
+|  sync |               atom                |           action            |
+| async | [reatomResource](#reatomresource) | [reatomAsync](#reatomasync) |
+
+You could utilize extra features by piping additional operators: [withDataAtom](#withdataatom) (resolve payload memoization), [withErrorAtom](#witherroratom) (reject payload memoization), [withStatusesAtom](#withstatusesatom) (`isPending`, `isEverSettled` and so on), [withCache](#withcache) (advanced cache policies), [withAbort](#withabort) (concurrent management), [withRetry](#withretry) (flexible retry management).
+
+## reatomAsync
 
 `reatomAsync` accepts effect function which returns a promise (it could be just `async` function) and call it in effects queue. `ctx` already includes `controller` which is a native [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController). The most cool feature of this package and game changer for your DX and your code reliability is automatic linking of nested abort controllers. It means that if you have concurrent ([abortable](#withabort)) process, like on input search with a few serial requests, when a new search starts, previous search and all generated effects cancel automatically.
 
@@ -152,7 +165,7 @@ The amount of the _list resource_ logic reduced dramatically. All thous features
 
 Want to know more - check the docs below.
 
-## `withDataAtom`
+## withDataAtom
 
 This is the most dump and useful operator to manage data from a backend. Adds property `dataAtom` which updates by `onFulfill` or manually. It is like a tiny cache level, but mostly for client purposes. `reset` action included already.
 
@@ -208,7 +221,7 @@ export const fetchList = reatomAsync(
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
-What this code do? When you connect to `fetchList.dataAtom` it will automatically call `fetchList` action. Connection could appear in any place of your application, by `ctx.subscribe(fetchList.dataAtom, cb)` or by using `useAtom(fetchList.dataAtom)` hook from [@reatom/npm-react](https://www.reatom.dev/adapter/npm-react). Even by a different atom.
+What this code do? When you connect to `fetchList.dataAtom` it will automatically call `fetchList` action. Connection could appear in any place of your application, by `ctx.subscribe(fetchList.dataAtom, cb)` or by using `useAtom(fetchList.dataAtom)` hook from [@reatom/npm-react](https://www.reatom.dev/package/npm-react). Even by a different atom.
 
 ```ts
 export const filteredListAtom = atom(
@@ -235,7 +248,7 @@ export const fetchFeed = reatomAsync(async (ctx, page: number) => {
 }, 'fetchFeed').pipe(
   withDataAtom([], (ctx, { data, page }, state) => {
     const newState = [...state]
-    state.splice((page - 1) * PAGE_SIZE, PAGE_SIZE, ...data)
+    newState.splice((page - 1) * PAGE_SIZE, PAGE_SIZE, ...data)
     return newState
   }),
 )
@@ -303,9 +316,11 @@ fetchList.onFulfill.onCall((ctx, payload) =>
 )
 ```
 
-## `withErrorAtom`
+## withErrorAtom
 
-Adds `errorAtom`, similar to `dataAtom`, which updates by `onReject` and clears by `onFulfill`. You could add a mapper function and reset trigger: `null | 'onEffect' | 'onFulfill'` (`onEffect` by default).
+Adds `errorAtom`, similar to `dataAtom`, which updates by `onReject` and clears by `onFulfill` by default. You could add an optional mapper function by the first parameter to ensure your error type. By the second optional object parameter you could set `resetTrigger` (`null | 'onEffect' | 'onFulfill'`) or `initState`. The last one `undefined` by default and it also used in reset logic.
+
+You could update the error atom manually as a usual atom: `fetchList.errorAtom(ctx, someError)`. You could reset the state by yourself by additional `reset` action: `fetchList.errorAtom.reset(ctx)`
 
 ```ts
 import { reatomAsync, withErrorAtom } from '@reatom/async'
@@ -324,7 +339,7 @@ export const fetchList = reatomAsync(
 )
 ```
 
-## `withStatusesAtom`
+## withStatusesAtom
 
 Adds property `statusesAtom` with additional statuses, which updates by the effect calling, `onFulfill` and `onReject`. The state is a record with following boolean properties: `isPending`, `isFulfilled`, `isRejected`, `isSettled`, `isFirstPending`, `isEverPending`, `isEverSettled`.
 
@@ -335,6 +350,8 @@ export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
   'fetchList',
 ).pipe(withStatusesAtom())
+
+// ...
 
 const initStatuses = ctx.get(fetchList.statusesAtom)
 
@@ -350,6 +367,15 @@ initStatuses.isEverSettled // false
 
 > `!isEverPending` is like _init_ state, `isEverSettled` is like _loaded_ state, `isFirstPending` is perfect match for "stale while revalidate" pattern.
 
+`statusesAtom` has an additional `reset` action that you can use to clear all statuses. Any pending promises will be ignored in this case. For example:
+
+```ts
+onDisconnect(fetchList.dataAtom, (ctx) => {
+  fetchList.dataAtom.reset(ctx)
+  fetchList.statusesAtom.reset(ctx)
+})
+```
+
 You could import special types of statuses of each effect state and use it for typesafe conditional logic.
 
 ```ts
@@ -364,11 +390,13 @@ export type AsyncStatuses =
   | AsyncStatusesRejected
 ```
 
-## `withCache`
+## withCache
 
 This is the most famous feature of any resource management. You are not required to use `withDataAtom`, the cache worked for effect results, but if `dataAtom` exists - it will worked as well and you could react on data changes immediately.
 
-This operator adds `cacheAtom` property which is `MapAtom` from [@reatom/primitives](https://www.reatom.dev/package/primitives) and contains the cache of effect results. Do not change it manually! But you could use `reset` action for cache invalidation.
+This operator adds `cacheAtom` property which is `MapAtom` from [@reatom/primitives](https://www.reatom.dev/package/primitives#reatommap) and contains the cache of effect results. Do not change it manually! But you could use `reset` action to clear the cache. Also `cacheAtom` contains `invalidate` action which clears all existed cache and call new fetch with the last payload.
+
+`withCache` adds `swrPendingAtom` which is relative to `swr` option (see above).
 
 If the async action will called with the same params during existing fetching - the same promise will returned.
 
@@ -380,7 +408,8 @@ You could rule the cache behavior by set of optional parameters.
 - **isEqual** - check the equality of a cache record and passed params to find the cache. Default is `isDeepEqual` from [@reatom/utils](https://www.reatom.dev/package/utils).
 - **paramsToKey** - convert params to a string as a key of the cache map. Not used by default, equality check (`isEqual`) is used instead. This option is useful if you have a complex object as a params which equality check is too expensive, or you was set large `length` option and want to speed up the cache search.
   > You could import and use [toStringKey](https://www.reatom.dev/package/utils#tostringkey) function from the utils package for this purposes.
-- **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to run fetch for the fresh data on the background and return the cached data immediately (if exist). Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch.
+- **swr** - enable [stale while revalidate](https://web.dev/stale-while-revalidate/) pattern. Default is `true`. It allow to return the cached data immediately (if exist) and run extra fetch for the fresh data on the background. Success SWR fetch will call `onFulfill` to force new data for `dataAtom`, you could change this behavior by `swr: { shouldFulfill: false }`, in this case the SWR logic is just a background silent synchronization to speedup a next fetch. There also two additional options, which is `false` by default: `shouldReject` and `shouldPending`.
+  `withCache` adds `swrPendingAtom` to passed async
 - **withPersist** - `WithPersist` instance from one of the adapter of [@reatom/persist](https://www.reatom.dev/package/persist). It will used with predefined optimal parameters for internal Map (de)serialization and so on.
 - **ignoreAbort** - define if the effect should be prevented from abort. The outer abort strategy is not affected, which means that all hooks and returned promise will behave the same. But the effect execution could be continued even if abort appears, to save the result in the cache. Default is `true`.
 
@@ -488,7 +517,7 @@ export const fetchList = reatomAsync(
 ).pipe(withDataAtom([]), withCache({ withPersist }))
 ```
 
-## `withRetry`
+## withRetry
 
 Adds `retry` action and `paramsAtom` to store last params of the effect call.
 
@@ -544,10 +573,10 @@ const fetchData = export const fetchList = reatomAsync(
 
 ### Retry request with exponential backoff
 
-Progressive retry: `100 * Math.min(200, retries ** 3)`. Will retry after 100ms, 800ms, 2700ms, 6400ms, 1250ms, 20s, 20s and so on.
+Progressive retry: `100 * Math.min(200, retries ** 3)`. Will retry after 100ms, 800ms, 2700ms, 6400ms, 1250ms, 20s, 20s and so on. To show a loader during retrying you can rely on `retriesAtom` with the number of retries.
 
 ```ts
-import { reatomAsync, withRetry } from '@reatom/async'
+import { atom, reatomAsync, withRetry } from '@reatom/async'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
@@ -557,11 +586,44 @@ export const fetchList = reatomAsync(
     onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
   }),
 )
+export const isFetchListLoading = atom(
+  (ctx) =>
+    ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
+  'isFetchListLoading',
+)
+```
+
+Note that `retriesAtom` will drop to `0` when any promise resolves successfully or when you return `undefined` or a negative number. So, it is good practice to avoid calling multiple async actions in parallel. If you are using `withRetry`, it is recommended to always use it with [withAbort](#withabort) (with the default 'last-in-win' strategy).
+
+```ts
+import { atom, reatomAsync, withAbort, withErrorAtom, withRetry } from '@reatom/async'
+
+export const fetchList = reatomAsync(
+  (ctx) => request('api/list', ctx.controller),
+  'fetchList',
+).pipe(
+  withAbort(),
+  withRetry({
+    onReject: (ctx, error, retries) => {
+      // try to retry the request only 7 times
+      if (retries < 7) {
+        return 100 * Math.min(200, retries ** 3)
+      }
+      // otherwise do nothing - prevent retrying and show the error
+    },
+  }),
+  withErrorAtom(),
+)
+export const isFetchListLoading = atom(
+  (ctx) =>
+    ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
+  'isFetchListLoading',
+)
 ```
 
 ### Periodic refresh for used data
 
-Lets use `onConnect` from [@reatom/hooks](https://www.reatom.dev/package/hooks) to control the data neediness.
+Do you need to implement a **pooling** pattern to stay your data fresh? Lets use `onConnect` from [@reatom/hooks](https://www.reatom.dev/package/hooks) to control the neediness of this.
 
 ```ts
 import {
@@ -573,66 +635,163 @@ import {
 } from '@reatom/framework'
 
 export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
+  (ctx, search: string) => request(`/api/list?q=${search}`, ctx.controller),
   'fetchList',
 ).pipe(withDataAtom([]), withRetry())
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (ctx.isConnected()) {
     await fetchList.retry(ctx).catch(() => {})
-    await sleep(5000)
+    await ctx.schedule(() => sleep(5000))
   }
 })
 ```
 
-You could use `onConnect` automatic abort strategy to manage the neediness of the periodic refresh automatically!
+You could use `onConnect` automatic abort strategy to manage the neediness of the periodic refresh automatically! In other words, if you using `ctx.schedule` (which is highly recommended) you don't need `ctx.isConnected()`, as the schedule will throw abort automatically on disconnect.
 
 ```ts
 import { reatomAsync, withAbort, withDataAtom, withRetry, sleep } from '@reatom/framework' /* prettier-ignore */
 
 export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
+  (ctx, search: string) => request(`/api/list?q=${search}`, ctx.controller),
   'fetchList',
 ).pipe(withAbort(), withDataAtom([]), withRetry())
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (true) {
     await fetchList.retry(ctx).catch(() => {})
-    await sleep(5000)
+    await ctx.schedule(() => sleep(5000))
   }
 })
 ```
 
 Here we rely on the fact that `onConnect` will be called only when `fetchList.dataAtom` is connected (subscribed) to the consumer and will be aborted when `fetchList.dataAtom` is disconnected (unsubscribed).
 
-## `withAbort`
+To be clear, you don't need to use `retry`, if you have no need to manage parameters.
 
-This is the most powerful feature for advanced async flow management. Allow to configure concurrency strategy ("last in win" by default) for `ctx.controller.abort` call. This operator allows you to use the full power of Reatom architecture by relies on a context causes and give the ability to handle concurrent requests like with [AsyncLocalStorage](https://nodejs.org/api/async_context.html) / AsyncContext ([Ecma TC39 proposal slides](https://docs.google.com/presentation/d/1LLcZxYyuQ1DhBH1htvEFp95PkeYM5nLSrlQoOmWpYEI/edit#slide=id.p)) from a mature backend frameworks. Like redux-saga or rxjs it allows you to cancel concurrent requests of any depth, but unlike them, it does not require you to use generators, observables, or any additional abstraction! All needed information already stored in the context.
+```ts
+import { reatomAsync, withAbort, withDataAtom, sleep } from '@reatom/framework'
 
-Currently, automatic aborting is supported only for features from @reatom/effects package. `onConnect`, `take`, `takeNested` automatically provides AbortController or subscribes to it.
+export const fetchList = reatomAsync(
+  (ctx) => request('/api/list', ctx.controller),
+  'fetchList',
+).pipe(withAbort(), withDataAtom([]), withRetry())
+onConnect(fetchList.dataAtom, async (ctx) => {
+  while (true) {
+    await fetchList(ctx).catch(() => {})
+    await ctx.schedule(() => sleep(5000))
+  }
+})
+```
 
-`withAbort` operator adds `onAbort` action for handling abort from any cause, `abort` action for manual aborting, `abortControllerAtom` witch stores AbortController of the last effect call. Be noted that abort errors do not trigger `onReject` hook, but `onAbort` hook.
+## withAbort
 
-An example of a simple resource fabric with aborting request on a data usage disconnect.
+This is the most powerful feature for advanced async flow management. It allows you to configure concurrency strategy of your effect. This operator allows you to use the full power of Reatom architecture by relies on a context causes and give the ability to handle concurrent requests like with [AsyncLocalStorage](https://nodejs.org/api/async_context.html) / AsyncContext ([Ecma TC39 proposal slides](https://docs.google.com/presentation/d/1LLcZxYyuQ1DhBH1htvEFp95PkeYM5nLSrlQoOmWpYEI/edit#slide=id.p)) from a mature backend frameworks. Like redux-saga or rxjs it allows you to cancel concurrent requests of any depth, but unlike them, it does not require you to use generators, observables, or any additional abstraction! All needed information already stored in the context.
+
+So, how does it work? By default, each effect in `reatomAsync` has its own `AbortController` in `ctx.controller`, but it isn't managed and doesn't do anything. To achieve the basic concurrency strategy of "last-in-win," you need to call `ctx.controller.abort()` for the previous effect when the new one is called, and to do it, you need to store the previous controller somewhere. We have an example code demonstrating this logic at the beginning of this page, check `abortControllerAtom` usage. However, performing this manually is annoying, so we have moved this logic to a reusable operator called `withAbort` and added a few additional methods:
+
+- `abort` action: You can manually call this action to manage the abort logic yourself.
+- `abortControllerAtom`: An atom that stores the `AbortController` of the last effect call.
+- `onAbort` action: Used for handling abort from any cause. Please do not call it manually. It is useful to hook this action (`onAbort.onCall(doSome)`) for additional logic.
+
+`withAbort` accepts an optional parameters object with a `strategy` property, which can be set to either `none`, `first-in-win`, or `last-in-win` (default).
+
+Note that the behavior of your effect is influenced not only by the strategy and additional actions but also by the top-level cause controllers. For instance, `onConnect` also produces an `AbortController`. It will cancel your request when the associated atom is disconnected. However, it is possible that your request was called after connection with some additional parameters, and you still want to cancel it if the `dataAtom` becomes disconnected. You should describe this logic additionally. Please check the example below.
 
 ```ts
 import { reatomAsync, withDataAtom, withAbort } from '@reatom/async'
-import { onDisconnect } from '@reatom/hooks'
+import { onConnect } from '@reatom/hooks'
 
-const reatomResource = (initState, url, concurrent = true) => {
-  const resource = reatomAsync((ctx) =>
-    fetch(url, ctx.controller).then((response) => {
-      if (response.status !== 200) throw response
-      return response.json()
-    }),
-  ).pipe(
-    withDataAtom(initState),
-    withAbort({ strategy: concurrent ? 'last-in-win' : 'none' }),
-  )
+export const fetchList = reatomAsync(
+  (ctx, page = 1) => request(`api/list?page=${page}`, ctx.controller),
+  'fetchList',
+).pipe(withDataAtom([]), withAbort())
 
+onConnect(fetchList.dataAtom, (ctx) => {
+  fetchList(ctx)
   // abort unneeded request
-  onDisconnect(resource.dataAtom, resource.abort)
-
-  return resource
-}
+  return () => fetchList.abort(ctx)
+})
 ```
 
+In this case, the `fetchList` could be called with parameters, and each new request will cancel the previous one. Also, when the user leaves the page and the `dataAtom` becomes disconnected, the last request will be canceled too.
+
 Check the real-world example in pooling example from [story tests below](https://www.reatom.dev/package/async#story-test) ([src](https://github.com/artalar/reatom/blob/v3/packages/async/src/index.story.test.ts)).
+
+## reatomResource
+
+This method is the simplest solution to describe an asynchronous resource that is based on local states. Let's delve into the problem.
+
+For example, we need to display a list of items, and we have paging and a search field.
+
+```ts
+export const pageAtom = atom(1, 'pageAtom')
+export const searchAtom = atom('', 'searchAtom')
+```
+
+We need to describe the fetching logic. How can we describe it using Reatom? The naive solution requires us to explicitly declare types. We also need to declare fetching triggers, which may not be obvious to the reader since it follows at the end of the code block. The problem with separate triggers is that if the dependent atoms update together (for example, on a reset button), there would be extra calls to fetching. So, to prevent race conditions in this case and for frequently used events, we need to use `withAbort`. Oh, and don't forget to include `onConnect` for initial loading!
+
+```ts
+import { reatomAsync, withDataAtom, withAbort } from '@reatom/async'
+import { onConnect } from '@reatom/hooks'
+
+const fetchList = reatomAsync(async (ctx, page: string, search: string) => {
+  return await request(`/api/list?page=${page}&q=${search}`, ctx.controller)
+}, 'fetchList').pipe(withDataAtom([]), withAbort())
+onConnect(fetchList.dataAtom, (ctx) => {
+  // init
+  fetchList(ctx, ctx.get(pageAtom), ctx.get(searchAtom))
+  // cleanup
+  return () => fetchList.abort(ctx)
+})
+// trigger
+pageAtom.onChange((ctx, page) =>
+  fetchSuggestion(ctx, page, ctx.get(searchAtom)),
+)
+searchAtom.onChange((ctx, search) =>
+  fetchSuggestion(ctx, ctx.get(pageAtom), search),
+)
+```
+
+There are a lot of boilerplates. `reatomResource` is a fabric method that encapsulates all this logic and allows you to use `ctx.spy` just like in the regular `atom`. It is much simpler, more intuitive, and works automatically for both caching and cancelling previous requests.
+
+```ts
+import { reatomResource, withDataAtom } from '@reatom/async'
+
+const listResource = reatomResource(async (ctx) => {
+  const page = ctx.spy(pageAtom)
+  const search = ctx.spy(searchAtom)
+  return await ctx.schedule(() =>
+    request(`/api/list?page=${page}&q=${search}`, ctx.controller),
+  )
+}, 'listResource').pipe(withDataAtom([]))
+```
+
+That's all. The code becomes much cleaner and simpler! The only additional change is the need for `ctx.schedule` for effects, as the callback in the `reatomResource` is called in the pure computations queue (to make `spy` work).
+
+Also, `listResource` now has a `promiseAtom` that contains the last promise. You can use it with [useAtomPromise](https://www.reatom.dev/package/npm-react/#useatompromise) in a React application, for example.
+
+If you need to set up a default value and use it synchronously, simply use `withDataAtom` as you would with any other async action. All async operators work fine with `reatomResource`. You could use `withRetry` and even `withCache`!
+
+But that's not all! The most powerful feature of `reatomResource` is that you can use `promiseAtom` in another resources, which greatly simplifies dependent request descriptions and prevents complex race conditions, as the stale promises are always automatically canceled.
+
+```ts
+import { reatomResource } from '@reatom/async'
+
+const aResource = reatomResource(async (ctx) => {
+  const page = ctx.spy(pageAtom)
+  return await ctx.schedule(() =>
+    request(`/api/a?page=${page}`, ctx.controller),
+  )
+}, 'aResource')
+const bResource = reatomResource(async (ctx) => {
+  const a = await ctx.spy(aResource.promiseAtom)
+  return await ctx.schedule(() => request(`/api/b/${b}`, ctx.controller))
+}, 'bResource')
+```
+
+In this example, when the `pageAtom` updates, the entire chain of previous requests aborts, and all computed effects are called immediately.
+
+Please note that `ctx.get` and `ctx.spy` of a `promiseAtom` return a promise, and you should `await` it to obtain the value.
+
+## reatomAsyncReaction
+
+> Deprecated: use [reatomResource](#reatomresource) instead

@@ -1,6 +1,6 @@
 {
   "name": "@reatom/url",
-  "version": "3.3.0",
+  "version": "3.7.1",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for url",
@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@reatom/core": "^3.5.0",
-    "@reatom/effects": "^3.4.0",
+    "@reatom/effects": "^3.7.0",
     "@reatom/hooks": "^3.4.0",
     "@reatom/utils": "^3.4.0"
   },

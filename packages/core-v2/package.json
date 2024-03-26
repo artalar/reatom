@@ -33,7 +33,7 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/adapter/core-v2",
+  "homepage": "https://www.reatom.dev/compat/core-v2",
   "files": [
     "/build",
     "/package.json",

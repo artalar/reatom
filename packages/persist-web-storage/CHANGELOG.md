@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.3.3](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.2...persist-web-storage-v3.3.3) (2024-03-24)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** isWebStorageAvailable check ([3e21b28](https://github.com/artalar/reatom/commit/3e21b28e061bea255235498e803239183eea4243))
+
+## [3.3.2](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.1...persist-web-storage-v3.3.2) (2024-02-26)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** indexedDB is not defined ([e5a527b](https://github.com/artalar/reatom/commit/e5a527b12c60dbea3383a32154a5cd2352849ce1))
+
+## [3.3.1](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.0...persist-web-storage-v3.3.1) (2024-02-20)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** types ([ab0e826](https://github.com/artalar/reatom/commit/ab0e8261f39d81998bccc6425f3dee577143da7c))
+
+## [3.3.0](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.3...persist-web-storage-v3.3.0) (2024-02-05)
+
+
+### Features
+
+* **persist-web-storage:** add withBroadcastChannel and withIndexedDb ([#740](https://github.com/artalar/reatom/issues/740)) ([fe74b4a](https://github.com/artalar/reatom/commit/fe74b4ab4e0007cb7ae417f156ef65e4d0b4ce42))
+
+
+### Bug Fixes
+
+* **persist-web-storage:** fix getting initialState for BroadcastChannel and IDB adapters ([#755](https://github.com/artalar/reatom/issues/755)) ([5302c57](https://github.com/artalar/reatom/commit/5302c575a0bb3c27d1d7935961db362b0d651f2d))
+* **persist-web-storage:** init logic, types ([6921517](https://github.com/artalar/reatom/commit/69215171b55107549a886fc05cc983a091ee2bcc))
+* **persist-web-storage:** memCache management ([72d6f89](https://github.com/artalar/reatom/commit/72d6f898244ae7818a3b7b0b01043beb851094df))
+
 ## [3.2.3](https://github.com/artalar/reatom/compare/persist-web-storage-v3.2.2...persist-web-storage-v3.2.3) (2023-07-12)
 
 

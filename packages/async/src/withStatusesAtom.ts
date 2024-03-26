@@ -1,4 +1,4 @@
-import { atom, Atom } from '@reatom/core'
+import { action, Action, atom, Atom } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 
 import { AsyncAction } from '.'
@@ -85,8 +85,7 @@ export type AsyncStatuses =
   | AsyncStatusesRejected
 
 export interface AsyncStatusesAtom extends Atom<AsyncStatuses> {
-  // TODO how to reset during pending?
-  // reset: Action<[], AsyncStatuses>
+  reset: Action<[], AsyncStatusesNeverPending>
 }
 
 const memo =
@@ -96,6 +95,20 @@ const memo =
     return isShallowEqual(state, newState) ? state : newState
   }
 
+export const asyncStatusesInitState: AsyncStatuses = {
+  isPending: false,
+  isFulfilled: false,
+  isRejected: false,
+  isSettled: false,
+
+  isFirstPending: false,
+  // isAnotherPending: false,
+  isEverPending: false,
+  // isNeverPending: true,
+  isEverSettled: false,
+  // isNeverSettled: true,
+}
+
 export const withStatusesAtom =
   <
     T extends AsyncAction & {
@@ -104,85 +117,102 @@ export const withStatusesAtom =
   >() =>
   (anAsync: T): T & { statusesAtom: AsyncStatusesAtom } => {
     if (!anAsync.statusesAtom) {
-      const statusesAtom = (anAsync.statusesAtom = atom<AsyncStatuses>(
-        {
-          isPending: false,
-          isFulfilled: false,
-          isRejected: false,
-          isSettled: false,
+      const relatedPromisesAtom = atom(
+        new WeakSet<Promise<any>>(),
+        `${anAsync.__reatom.name}.statusesAtom._relatedPromisesAtom`,
+      )
 
-          isFirstPending: false,
-          // isAnotherPending: false,
-          isEverPending: false,
-          // isNeverPending: true,
-          isEverSettled: false,
-          // isNeverSettled: true,
-        },
+      const statusesAtom = atom<AsyncStatuses>(
+        asyncStatusesInitState,
         `${anAsync.__reatom.name}.statusesAtom`,
-      ))
-      anAsync.onCall((ctx, payload) => {
-        statusesAtom(
-          ctx,
-          memo((statuses) => {
-            return {
-              isPending: ctx.get(anAsync.pendingAtom) > 0,
-              isFulfilled: false,
-              isRejected: false,
-              isSettled: false,
+      )
 
-              isFirstPending: !statuses.isEverSettled,
-              // isAnotherPending: statuses.isEverPending,
-              isEverPending: true,
-              // isNeverPending: false,
-              isEverSettled: statuses.isEverSettled,
-              // isNeverSettled: statuses.isNeverSettled,
-            } as AsyncStatuses
-          }),
-        )
+      // @ts-expect-error computer dump types
+      statusesAtom.__reatom.computer = (ctx, state: AsyncStatuses) => {
+        ctx.spy(anAsync, ({ payload }) => {
+          ctx.get(relatedPromisesAtom).add(payload)
+          state = memo(
+            (statuses) =>
+              ({
+                isPending: ctx.get(anAsync.pendingAtom) > 0,
+                isFulfilled: false,
+                isRejected: false,
+                isSettled: false,
+
+                isFirstPending: !statuses.isEverSettled,
+                // isAnotherPending: statuses.isEverPending,
+                isEverPending: true,
+                // isNeverPending: false,
+                isEverSettled: statuses.isEverSettled,
+                // isNeverSettled: statuses.isNeverSettled,
+              }) as AsyncStatuses,
+          )(state)
+        })
+        return state
+      }
+
+      anAsync.statusesAtom = Object.assign(statusesAtom, {
+        reset: action((ctx) => {
+          relatedPromisesAtom(ctx, new Set())
+          return statusesAtom(
+            ctx,
+            asyncStatusesInitState,
+          ) as AsyncStatusesNeverPending
+        }),
+      })
+
+      anAsync.onCall((ctx, payload) => {
+        ctx.get(statusesAtom)
 
         __thenReatomed(
           ctx,
           payload,
-          () =>
-            statusesAtom(
-              ctx,
-              memo(() => {
-                const isPending = ctx.get(anAsync.pendingAtom) > 0
-                return {
-                  isPending,
-                  isFulfilled: !isPending,
-                  isRejected: false,
-                  isSettled: !isPending,
+          () => {
+            if (ctx.get(relatedPromisesAtom).has(payload)) {
+              statusesAtom(
+                ctx,
+                memo(() => {
+                  const isPending = ctx.get(anAsync.pendingAtom) > 0
+                  return {
+                    isPending,
+                    isFulfilled: !isPending,
+                    isRejected: false,
+                    isSettled: !isPending,
 
-                  isFirstPending: false,
-                  // isAnotherPending: false,
-                  isEverPending: true,
-                  // isNeverPending: false,
-                  isEverSettled: true,
-                  // isNeverSettled: false,
-                } as AsyncStatuses
-              }),
-            ),
-          () =>
-            statusesAtom(
-              ctx,
-              memo(() => {
-                const isPending = ctx.get(anAsync.pendingAtom) > 0
-                return {
-                  isPending,
-                  isFulfilled: false,
-                  isRejected: !isPending,
-                  isSettled: !isPending,
+                    isFirstPending: false,
+                    // isAnotherPending: false,
+                    isEverPending: true,
+                    // isNeverPending: false,
+                    isEverSettled: true,
+                    // isNeverSettled: false,
+                  } as AsyncStatuses
+                }),
+              )
+            }
+          },
+          () => {
+            if (ctx.get(relatedPromisesAtom).has(payload)) {
+              statusesAtom(
+                ctx,
+                memo(() => {
+                  const isPending = ctx.get(anAsync.pendingAtom) > 0
+                  return {
+                    isPending,
+                    isFulfilled: false,
+                    isRejected: !isPending,
+                    isSettled: !isPending,
 
-                  isFirstPending: false,
-                  // isAnotherPending: false,
-                  isEverPending: true,
-                  // isNeverPending: false,
-                  isEverSettled: true,
-                  // isNeverSettled: false,
-                } as AsyncStatuses
-              }),
-            ),
+                    isFirstPending: false,
+                    // isAnotherPending: false,
+                    isEverPending: true,
+                    // isNeverPending: false,
+                    isEverSettled: true,
+                    // isNeverSettled: false,
+                  } as AsyncStatuses
+                }),
+              )
+            }
+          },
         )
       })
     }

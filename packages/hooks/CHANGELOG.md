@@ -1,5 +1,40 @@
 # Changelog
 
+## [3.5.3](https://github.com/artalar/reatom/compare/hooks-v3.5.2...hooks-v3.5.3) (2024-03-06)
+
+
+### Bug Fixes
+
+* **hooks:** correct isInit behaviour ([#775](https://github.com/artalar/reatom/issues/775)) ([f61d4ac](https://github.com/artalar/reatom/commit/f61d4acbe5603628f18c84f1ef6b3d869ec83b71))
+
+## [3.5.2](https://github.com/artalar/reatom/compare/hooks-v3.5.1...hooks-v3.5.2) (2023-11-23)
+
+
+### Bug Fixes
+
+* **hooks:** improve isInit perf ([be6a829](https://github.com/artalar/reatom/commit/be6a82984f798fd63786bace9a324bdf3d8ff3c6))
+
+## [3.5.1](https://github.com/artalar/reatom/compare/hooks-v3.5.0...hooks-v3.5.1) (2023-11-20)
+
+
+### Bug Fixes
+
+* **hooks:** use abortCauseContext ([dcb437c](https://github.com/artalar/reatom/commit/dcb437c44ef4346df73f4cc94c90d132fe09edc0))
+
+## [3.5.0](https://github.com/artalar/reatom/compare/hooks-v3.4.3...hooks-v3.5.0) (2023-10-21)
+
+
+### Features
+
+* **hooks:** add isInit method ([5138685](https://github.com/artalar/reatom/commit/51386857231c036534596df0bd63b6240a30454a))
+
+## [3.4.3](https://github.com/artalar/reatom/compare/hooks-v3.4.2...hooks-v3.4.3) (2023-10-20)
+
+
+### Bug Fixes
+
+* **hooks:** do not change onConnect promise caught behavior ([3754d73](https://github.com/artalar/reatom/commit/3754d73a8c312ef300b8569dc1d415fa7a462488))
+
 ## [3.4.2](https://github.com/artalar/reatom/compare/hooks-v3.4.1...hooks-v3.4.2) (2023-06-12)
 
 

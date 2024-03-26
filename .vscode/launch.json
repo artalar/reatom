@@ -5,13 +5,33 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "tsx",
+      "name": "with core",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "tsx",
       "args": ["${relativeFile}"],
       "cwd": "${workspaceRoot}",
-      "internalConsoleOptions": "openOnSessionStart"
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/node_modules/**/*.js",
+        "${workspaceFolder}/packages/testing/**/*.js"
+      ]
+    },
+    {
+      "name": "without core",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "tsx",
+      "args": ["${relativeFile}"],
+      "cwd": "${workspaceRoot}",
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**",
+        "${workspaceFolder}/node_modules/**/*.js",
+        "${workspaceFolder}/packages/core/**/*.js",
+        "${workspaceFolder}/packages/testing/**/*.js"
+      ]
     }
   ]
 }

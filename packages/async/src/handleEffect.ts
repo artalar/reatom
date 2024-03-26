@@ -24,7 +24,7 @@ export const handleEffect = (
       new Promise((res, rej) => {
         throwIfAborted(ctx.controller)
         effect(...params).then(res, rej)
-        ctx.controller.signal.addEventListener('abort', (e) =>
+        ctx.controller.signal.addEventListener('abort', () =>
           rej(toAbortError(ctx.controller.signal.reason)),
         )
       }),

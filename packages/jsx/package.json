@@ -1,6 +1,6 @@
 {
   "name": "@reatom/jsx",
-  "version": "3.1.0",
+  "version": "3.7.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for jsx",
@@ -29,15 +29,17 @@
     "mangle": false
   },
   "scripts": {
-    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle && echo '&& cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build'",
+    "build": "microbundle -f esm,cjs && cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@reatom/core": ">=3.1.0",
-    "csstype": "^3.1.2"
+    "@reatom/core": ">=3.5.0",
+    "@reatom/lens": "^3.6.2",
+    "@reatom/utils": "^3.5.0",
+    "csstype": "^3.1.2",
+    "linkedom": "^0.16.4"
   },
   "author": "artalar",
   "maintainers": [
@@ -57,6 +59,8 @@
   "homepage": "https://www.reatom.dev/package/jsx",
   "files": [
     "/build",
-    "/package.json"
+    "/package.json",
+    "/jsx-runtime",
+    "/jsx-dev-runtime"
   ]
 }

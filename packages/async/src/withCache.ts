@@ -2,7 +2,8 @@ import {
   Action,
   action,
   ActionParams,
-  AtomMut,
+  atom,
+  Atom,
   AtomState,
   Ctx,
   Fn,
@@ -13,15 +14,19 @@ import { type WithPersistOptions } from '@reatom/persist'
 
 import {
   AsyncAction,
-  AsyncCause,
   AsyncCtx,
   AsyncDataAtom,
   AsyncResp,
   ControlledPromise,
-  unstable_dropController,
 } from '.'
 import { handleEffect } from './handleEffect'
 import { onConnect } from '@reatom/hooks'
+import {
+  __thenReatomed,
+  abortCauseContext,
+  getTopController,
+  spawn,
+} from '@reatom/effects'
 
 export interface CacheRecord<T = any, Params extends any[] = unknown[]> {
   clearTimeoutId: ReturnType<typeof setTimeout>
@@ -32,6 +37,7 @@ export interface CacheRecord<T = any, Params extends any[] = unknown[]> {
   lastUpdate: number
   params: Params
   promise: undefined | Promise<T>
+  controller: AbortController
   value: undefined | T
   /** value version */
   version: number
@@ -43,6 +49,7 @@ export interface CacheAtom<T = any, Params extends any[] = unknown[]>
   invalidate: Action<[], null | ControlledPromise<T>>
   // setWithParams: Action<[params: Params, value: T]>
   // deleteWithParams: Action<[params: Params]>
+  options: WithCacheOptions
 }
 
 type CacheMapRecord<T extends AsyncAction = AsyncAction> =
@@ -86,12 +93,21 @@ export type WithCacheOptions<T extends AsyncAction = AsyncAction> = {
   swr?:
     | boolean
     | {
-        /** success revalidation should trigger `onFulfill` to notify about the fresh data
+        /**
+         * success revalidation should trigger `onFulfill` to notify about the fresh data
          * @default true
          */
         shouldFulfill?: boolean
-        /** error revalidation trigger `onReject` to notify about the error
-         * @default true
+
+        /**
+         * pendingAtom should follow SWR promises too
+         * @default false
+         */
+        shouldPending?: boolean
+
+        /**
+         * error revalidation trigger `onReject` to notify about the error
+         * @default false
          */
         shouldReject?: boolean
       }
@@ -141,6 +157,7 @@ export const withCache =
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom
       cacheAtom?: CacheAtom<AsyncResp<T>, ActionParams<T>>
+      swrPendingAtom?: Atom<number>
     },
   >({
     ignoreAbort = true,
@@ -158,6 +175,7 @@ export const withCache =
     [T],
     T & {
       cacheAtom: CacheAtom<AsyncResp<T>, ActionParams<T>>
+      swrPendingAtom: Atom<number>
     }
   > =>
   // @ts-ignore
@@ -168,8 +186,14 @@ export const withCache =
       type ThisCacheRecord = CacheRecord<AsyncResp<T>, ThisParams>
 
       const swr = !!swrOptions
-      // @ts-expect-error valid and correct JS
-      const { shouldFulfill = swr, shouldReject = swr } = swrOptions
+      const {
+        // @ts-expect-error valid and correct JS
+        shouldPending = false,
+        // @ts-expect-error valid and correct JS
+        shouldFulfill = swr,
+        // @ts-expect-error valid and correct JS
+        shouldReject = false,
+      } = swrOptions
       if (staleTime !== Infinity)
         staleTime = Math.min(MAX_SAFE_TIMEOUT, staleTime)
 
@@ -241,6 +265,16 @@ export const withCache =
         return latest ? anAsync(ctx, ...latest.params) : null
       }, `${cacheAtom.__reatom.name}.invalidate`)
 
+      cacheAtom.options = {
+        ignoreAbort,
+        length,
+        paramsLength,
+        staleTime,
+        swr,
+        // @ts-expect-error
+        withPersist,
+      }
+
       if (withPersist) {
         // TODO the key could be provided by a decorator function
         // like `withPersist: options => withLocalStorage({ ...options, key: 'key' })`
@@ -304,10 +338,16 @@ export const withCache =
         )
       }
 
+      const swrPendingAtom = (anAsync.swrPendingAtom = atom(
+        0,
+        `${anAsync.__reatom.name}.swrPendingAtom`,
+      ))
+
       const handlePromise = (
         ctx: Ctx,
         key: unknown,
         cached: ThisCacheRecord,
+        swr: boolean,
       ) => {
         cached.clearTimeoutId = planCleanup(ctx, key)
         // the case: the whole cache was cleared and a new fetching was started
@@ -320,35 +360,39 @@ export const withCache =
         cached.promise = new Promise<AsyncResp<T>>((...a) => ([res, rej] = a))
 
         return async (...a: Parameters<T>) => {
-          if (ignoreAbort) {
-            a[0] = unstable_dropController(a[0])
-          }
-
           try {
-            const value = await unstable_fn(...a)
+            const value = await (ignoreAbort
+              ? spawn(a[0], unstable_fn, a.slice(1))
+              : unstable_fn(...a))
             res(value)
 
-            if (isSame()) {
-              cacheAtom.set(ctx, key, {
-                ...cached,
-                promise: undefined,
-                value,
-                version: cached.version + 1,
-              })
-            }
-          } catch (error) {
-            rej(error)
-
-            if (isSame()) {
-              if (cached.version > 0) {
+            ctx.get(() => {
+              if (isSame()) {
                 cacheAtom.set(ctx, key, {
                   ...cached,
                   promise: undefined,
+                  value,
+                  version: cached.version + 1,
                 })
-              } else {
-                cacheAtom.delete(ctx, key)
               }
-            }
+              if (swr) swrPendingAtom(ctx, (s) => s - 1)
+            })
+          } catch (error) {
+            rej(error)
+
+            ctx.get(() => {
+              if (isSame()) {
+                if (cached.version > 0) {
+                  cacheAtom.set(ctx, key, {
+                    ...cached,
+                    promise: undefined,
+                  })
+                } else {
+                  cacheAtom.delete(ctx, key)
+                }
+              }
+              if (swr) swrPendingAtom(ctx, (s) => s - 1)
+            })
           }
           return cached.promise
         }
@@ -359,8 +403,8 @@ export const withCache =
         // @ts-expect-error can't type the context
         (...params: [AsyncCtx, ...ThisParams]): ControlledPromise => {
           const [ctx] = params
-          const { controller } = ctx.cause.cause as AsyncCause
-          ctx.controller = ctx.cause.controller = controller
+          const controller = getTopController(ctx.cause.cause!)!
+          abortCauseContext.set(ctx.cause, (ctx.controller = controller))
 
           const paramsKey = params.slice(
             1,
@@ -373,24 +417,35 @@ export const withCache =
               promise: undefined,
               value: undefined,
               version: 0,
+              controller,
               lastUpdate: -1,
               params: [],
             },
             key,
           } = find(ctx, paramsKey)
 
+          const prevController = cached.controller
+
           cached = {
             ...cached,
             lastUpdate: Date.now(),
             params: paramsKey,
+            controller,
           }
+
+          // let lastUpdate = Date.now()
+          // if (cached.lastUpdate === lastUpdate) lastUpdate += 0.001
+          // cached.lastUpdate = lastUpdate
 
           const cache = cacheAtom.set(ctx, key, cached)
           if (cache.size > length) deleteOldest(cache)
 
-          if (cached.version === 0 && !cached.promise) {
+          if (
+            (cached.version === 0 && !cached.promise) ||
+            (cached.promise && prevController.signal.aborted)
+          ) {
             return handleEffect(anAsync, params, {
-              effect: handlePromise(ctx, key, cached),
+              effect: handlePromise(ctx, key, cached, false),
             })
           }
 
@@ -406,9 +461,11 @@ export const withCache =
             })
           }
 
+          if (swr) swrPendingAtom(ctx, (s) => s + 1)
+
           return handleEffect(anAsync, params, {
-            effect: handlePromise(ctx, key, cached),
-            shouldPending: false,
+            effect: handlePromise(ctx, key, cached, swr),
+            shouldPending,
             shouldFulfill,
             shouldReject,
           })

@@ -1,6 +1,6 @@
 {
   "name": "@reatom/form",
-  "version": "3.1.6",
+  "version": "3.3.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for form",
@@ -27,9 +27,12 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
+    "@reatom/async": "^3.10.1",
     "@reatom/core": "^3.1.21",
+    "@reatom/effects": "^3.6.0",
     "@reatom/hooks": "^3.1.0",
-    "@reatom/primitives": "^3.1.0"
+    "@reatom/primitives": "^3.1.0",
+    "@reatom/utils": "^3.7.0"
   },
   "author": "artalar",
   "license": "MIT",

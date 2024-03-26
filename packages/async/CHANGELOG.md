@@ -1,5 +1,157 @@
 # Changelog
 
+## [3.13.6](https://github.com/artalar/reatom/compare/async-v3.13.5...async-v3.13.6) (2024-03-19)
+
+
+### Bug Fixes
+
+* **async:** drop retriesAtom if onReject returns undefined ([77e71b3](https://github.com/artalar/reatom/commit/77e71b3cafe79732a5611d4983778ed90d95f69e))
+
+## [3.13.5](https://github.com/artalar/reatom/compare/async-v3.13.4...async-v3.13.5) (2024-03-06)
+
+
+### Bug Fixes
+
+* **async:** withAbort + reatomResource ([47d81f7](https://github.com/artalar/reatom/commit/47d81f7aed563720692c4ecbf627d701e4cafe29))
+
+## [3.13.4](https://github.com/artalar/reatom/compare/async-v3.13.3...async-v3.13.4) (2024-01-21)
+
+
+### Bug Fixes
+
+* **async:** prevent ERR_UNHANDLED_REJECTION if the onReject has any handlers ([c66ad56](https://github.com/artalar/reatom/commit/c66ad56e9b4cd536fda93e9cf0cc4a4b862abf91))
+
+## [3.13.3](https://github.com/artalar/reatom/compare/async-v3.13.2...async-v3.13.3) (2023-11-25)
+
+
+### Bug Fixes
+
+* **async:** prevent unhandled error for abort ([8c64522](https://github.com/artalar/reatom/commit/8c64522bed4d13b35a9f7f354ef6b086b5fbda98))
+
+## [3.13.2](https://github.com/artalar/reatom/compare/async-v3.13.1...async-v3.13.2) (2023-11-23)
+
+
+### Bug Fixes
+
+* **async:** reatomResource: do not drop the cache of an error ([75f54e6](https://github.com/artalar/reatom/commit/75f54e6fe8ab5a46d20846656d908c0779551e81))
+
+## [3.13.1](https://github.com/artalar/reatom/compare/async-v3.13.0...async-v3.13.1) (2023-11-20)
+
+
+### Bug Fixes
+
+* **async:** allow optional resetTrigger for withErrorAtom ([185f99d](https://github.com/artalar/reatom/commit/185f99db81541ad72c18b5360517a89a08386807))
+* **async:** more mem safety for abortCauseContext ([aa5e29f](https://github.com/artalar/reatom/commit/aa5e29f17d250a20a10476cb2054897feda43628))
+* **async:** use abortCauseContext ([6133f27](https://github.com/artalar/reatom/commit/6133f275d4cb3529fd744558324e38a621cb66a4))
+
+## [3.13.0](https://github.com/artalar/reatom/compare/async-v3.12.1...async-v3.13.0) (2023-11-12)
+
+
+### Features
+
+* **async:** add initState to errorAtom ([6852b72](https://github.com/artalar/reatom/commit/6852b7291ccc4fb6acfb9ecfb48d3c2326fa78ee))
+
+
+### Bug Fixes
+
+* **async:** activate resource on pending connection ([81f19b9](https://github.com/artalar/reatom/commit/81f19b996c0a2535b2c9056dd4197f447620604f))
+* **async:** dataAtom should be computed first ([8aab299](https://github.com/artalar/reatom/commit/8aab299916f35afc0cb89983c58eeb4ae5b237cb))
+* **async:** withErrorAtom should be computed first ([0c458da](https://github.com/artalar/reatom/commit/0c458da9f1eaf6a3226ca2e57f8ba5360dc7ce9e))
+* **async:** withRetry races ([0abe299](https://github.com/artalar/reatom/commit/0abe29976c319525544efd5fd659e004b76d6edf))
+
+## [3.12.1](https://github.com/artalar/reatom/compare/async-v3.12.0...async-v3.12.1) (2023-11-07)
+
+
+### Bug Fixes
+
+* **async:** errorAtom: AtomMut ([a1349a8](https://github.com/artalar/reatom/commit/a1349a8118366a75d4cb9bf40d6e94274a2a87f2))
+
+## [3.12.0](https://github.com/artalar/reatom/compare/async-v3.11.0...async-v3.12.0) (2023-11-05)
+
+
+### Features
+
+* **async:** add shouldPending and swrPendingAtom ([103e30c](https://github.com/artalar/reatom/commit/103e30c7aa8bd7879da347d2653389a39221d952))
+
+
+### Bug Fixes
+
+* **async:** reatomResource small mem leak ([408d916](https://github.com/artalar/reatom/commit/408d9167712cf53dc4381caee3c08f353752d990))
+
+## [3.11.0](https://github.com/artalar/reatom/compare/async-v3.10.1...async-v3.11.0) (2023-10-31)
+
+
+### Features
+
+* **async:** add reset action to statusesAtom ([7803168](https://github.com/artalar/reatom/commit/78031689792d7737641fc822324dbe482c4a8fec))
+
+
+### Bug Fixes
+
+* **async:** improve withStatusesAtom update order ([316bac5](https://github.com/artalar/reatom/commit/316bac55d18cdd24c743e3e6e6eb5645b2ebf5c6))
+* **async:** withAbort + withRetry ([d5190ab](https://github.com/artalar/reatom/commit/d5190ab87d57e3925652e07c0741c2938b80cd39))
+
+## [3.10.1](https://github.com/artalar/reatom/compare/async-v3.10.0...async-v3.10.1) (2023-10-23)
+
+
+### Bug Fixes
+
+* **async:** allow empty deps for reatomResource ([47c9a2e](https://github.com/artalar/reatom/commit/47c9a2e4350522ca39af3c5c4cf848a1ad5f967a))
+
+## [3.10.0](https://github.com/artalar/reatom/compare/async-v3.9.4...async-v3.10.0) (2023-10-20)
+
+
+### Features
+
+* **async:** deprecate reatomAsyncReaction in favor of reatomReactiveAsync ([678adf2](https://github.com/artalar/reatom/commit/678adf2b337b6a895f94e5997739274822332c4f))
+
+
+### Bug Fixes
+
+* **async:** do not cache aborted promise ([1b6fbe8](https://github.com/artalar/reatom/commit/1b6fbe83ae10a0b170996a16c272a1783d77cb39))
+
+## [3.9.4](https://github.com/artalar/reatom/compare/async-v3.9.3...async-v3.9.4) (2023-10-09)
+
+
+### Bug Fixes
+
+* **async:** reatomAsyncReaction direct call ([e88b96c](https://github.com/artalar/reatom/commit/e88b96cadfe40ff25432d6bb5d69cbbc20ce67f8))
+* **async:** retry abort ([7722626](https://github.com/artalar/reatom/commit/7722626effd408f81a6a1864ce12faa43a617581))
+
+## [3.9.3](https://github.com/artalar/reatom/compare/async-v3.9.2...async-v3.9.3) (2023-09-26)
+
+
+### Bug Fixes
+
+* **async:** abort should not stale for reatomAsyncReaction ([2a7e272](https://github.com/artalar/reatom/commit/2a7e2720bb5e8a681128eac161535e350fc04c59))
+* **async:** prevent unhandled exception for reatomAsyncReaction ([4b940ae](https://github.com/artalar/reatom/commit/4b940aee188ccfcb66a137834f5b877b24321e00))
+
+## [3.9.2](https://github.com/artalar/reatom/compare/async-v3.9.1...async-v3.9.2) (2023-09-13)
+
+
+### Bug Fixes
+
+* **async:** reatomAsyncReaction withCache ([3bfee9d](https://github.com/artalar/reatom/commit/3bfee9de70e5c645979e81abb6edacde3e8ecac7))
+
+## [3.9.1](https://github.com/artalar/reatom/compare/async-v3.9.0...async-v3.9.1) (2023-09-13)
+
+
+### Bug Fixes
+
+* **async:** promiseAtomConnection ([cc3b707](https://github.com/artalar/reatom/commit/cc3b707312ba504e8853facf5dce3dbbfafd4bbe))
+
+## [3.9.0](https://github.com/artalar/reatom/compare/async-v3.8.3...async-v3.9.0) (2023-09-13)
+
+
+### Features
+
+* **async:** add reatomAsyncReaction ([e44e641](https://github.com/artalar/reatom/commit/e44e6417b5795c380e8c2e5dd1e576e7a6462bc0))
+
+
+### Bug Fixes
+
+* **async:** reatomAsyncReaction AsyncCtxSpy ([c0d014d](https://github.com/artalar/reatom/commit/c0d014d987cf1b3081133b45a146c30e107fb063))
+
 ## [3.8.3](https://github.com/artalar/reatom/compare/async-v3.8.2...async-v3.8.3) (2023-08-08)
 
 

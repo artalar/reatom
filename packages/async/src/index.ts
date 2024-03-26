@@ -18,7 +18,15 @@ import {
   Unsubscribe,
   AtomState,
 } from '@reatom/core'
-import { __thenReatomed, onCtxAbort } from '@reatom/effects'
+import {
+  __thenReatomed,
+  abortCauseContext,
+  getTopController,
+  onCtxAbort,
+  spawn,
+  withAbortableSchedule,
+} from '@reatom/effects'
+import { onConnect } from '@reatom/hooks'
 import { assign, isAbort, noop, sleep, toAbortError } from '@reatom/utils'
 
 import { handleEffect } from './handleEffect'
@@ -34,6 +42,12 @@ export type {
   AsyncStatuses,
   AsyncStatusesAtom,
 } from './withStatusesAtom'
+export {
+  reatomAsyncReaction,
+  AsyncReaction,
+  ResourceAtom,
+  reatomResource,
+} from './reatomResource'
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
@@ -54,7 +68,7 @@ export interface AsyncCause extends AtomCache {
 
 export interface AsyncCtx extends Ctx {
   controller: AbortController
-  cause: AsyncCause
+  cause: AtomCache
 }
 
 export interface AsyncOptions<Params extends any[] = any[], Resp = any> {
@@ -74,18 +88,6 @@ export const isAbortError = isAbort
 const getCache = (ctx: Ctx, anAtom: Atom): AtomCache => {
   ctx.get(anAtom)
   return anAtom.__reatom.patch ?? ctx.get((read) => read(anAtom.__reatom))!
-}
-
-export const unstable_dropController = (ctx: Ctx): AsyncCtx => {
-  const controller = new AbortController()
-  return {
-    ...ctx,
-    cause: {
-      ...ctx.cause,
-      controller,
-    },
-    controller,
-  }
 }
 
 export const reatomAsync = <
@@ -108,31 +110,45 @@ export const reatomAsync = <
   const pendingAtom = atom(0, `${name}.pendingAtom`)
 
   // @ts-expect-error the missed properties assigned later
-  const onEffect: AsyncAction = Object.assign(
+  const theAsync: AsyncAction = Object.assign(
     // do not put this function inside `action` to not broke effect mocking
     (...params: Params) =>
       params[0].get((read, actualize) => {
         const { state } = actualize!(
           params[0],
-          onEffect.__reatom,
+          theAsync.__reatom,
           (ctx: AsyncCtx, patch: AtomCache) => {
             // userspace controller
-            ctx.controller = ctx.cause.controller = new AbortController()
+            abortCauseContext.set(
+              ctx.cause,
+              (ctx.controller = new AbortController()),
+            )
 
-            onCtxAbort(params[0], (error) => ctx.controller.abort(error))
+            const unabort = onCtxAbort(params[0], (error) => {
+              // prevent unhandled error for abort
+              payload?.catch(noop)
+              ctx.controller.abort(error)
+            })
+            if (unabort) {
+              ctx.controller.signal.addEventListener('abort', unabort)
+            }
 
-            params[0] = ctx
+            params[0] = withAbortableSchedule(ctx)
 
-            patch.state = [
-              ...patch.state,
-              {
-                params: params.slice(1),
-                payload: onEffect._handleCache
-                  ? // @ts-expect-error
-                    onEffect._handleCache(...params)
-                  : handleEffect(onEffect, params),
-              },
-            ]
+            var payload = theAsync._handleCache
+              ? // @ts-expect-error
+                theAsync._handleCache(...params)
+              : handleEffect(theAsync, params)
+
+            // prevent ERR_UNHANDLED_REJECTION if the onReject has any handlers
+            __thenReatomed(ctx, payload, undefined, () => {
+              // One hook is for "onSettle"
+              if (onReject.__reatom.updateHooks!.size > 1) {
+                payload.catch(noop)
+              }
+            })
+
+            patch.state = [...patch.state, { params: params.slice(1), payload }]
           },
         )
         return state[state.length - 1]!.payload
@@ -152,7 +168,7 @@ export const reatomAsync = <
   onReject.onCall((ctx) => onSettle(ctx))
 
   if (onEffectHook) {
-    onEffect.onCall((ctx, promise, params) =>
+    theAsync.onCall((ctx, promise, params) =>
       onEffectHook(ctx, params as any, promise),
     )
   }
@@ -160,7 +176,9 @@ export const reatomAsync = <
   if (onRejectHook) onReject.onCall(onRejectHook)
   if (onSettleHook) onSettle.onCall(onSettleHook)
 
-  return assign(onEffect, {
+  onConnect(pendingAtom, (ctx) => ctx.subscribe(theAsync, noop))
+
+  return assign(theAsync, {
     onFulfill,
     onReject,
     onSettle,
@@ -236,18 +254,23 @@ export const withDataAtom: {
       const dataAtom: AsyncDataAtom = (anAsync.dataAtom = Object.assign(
         atom(initState, `${anAsync.__reatom.name}.dataAtom`),
         {
-          reset: action(
-            (ctx) => void dataAtom(ctx, initState),
-            `${anAsync.__reatom.name}.dataAtom.reset`,
-          ),
+          reset: action((ctx) => {
+            dataAtom(ctx, initState)
+          }, `${anAsync.__reatom.name}.dataAtom.reset`),
           mapFulfill,
         },
       ) as AsyncDataAtom)
-      anAsync.onFulfill.onCall((ctx, payload) =>
-        dataAtom(ctx, (state: any) =>
-          mapFulfill ? mapFulfill(ctx, payload, state) : payload,
-        ),
-      )
+      dataAtom.__reatom.computer = (ctx, state) => {
+        ctx.spy(anAsync.onFulfill, ({ payload }) => {
+          state = mapFulfill ? mapFulfill(ctx, payload, state) : payload
+        })
+        return state
+      }
+      anAsync.onFulfill.onCall((ctx) => {
+        ctx.get(dataAtom)
+      })
+
+      onConnect(dataAtom, (ctx) => ctx.subscribe(anAsync, noop))
     }
 
     return anAsync
@@ -256,52 +279,67 @@ export const withDataAtom: {
 export const withErrorAtom =
   <
     T extends AsyncAction & {
-      errorAtom?: AtomMut<undefined | Err> & { reset: Action }
+      errorAtom?: AtomMut<EmptyError | Err> & { reset: Action }
     },
     Err = Error,
+    EmptyError = undefined,
   >(
     parseError: Fn<[Ctx, unknown], Err> = (ctx, e) =>
       (e instanceof Error ? e : new Error(String(e))) as Err,
     {
-      resetTrigger,
+      initState,
+      resetTrigger = 'onEffect',
     }: {
-      resetTrigger:
+      initState?: EmptyError
+      resetTrigger?:
         | null
         | 'onEffect'
         | 'onFulfill'
         | ('dataAtom' extends keyof T ? 'dataAtom' : null)
-    } = {
-      resetTrigger: 'onEffect',
-    },
-  ): Fn<[T], T & { errorAtom: Atom<undefined | Err> & { reset: Action } }> =>
+    } = {},
+  ): Fn<
+    [T],
+    T & { errorAtom: AtomMut<EmptyError | Err> & { reset: Action } }
+  > =>
   (anAsync) => {
     if (!anAsync.errorAtom) {
       const errorAtomName = `${anAsync.__reatom.name}.errorAtom`
+      const resetTriggerAtom =
+        resetTrigger &&
+        ({ ...anAsync, onEffect: anAsync }[resetTrigger] as Atom)
       const errorAtom = (anAsync.errorAtom = assign(
-        atom<undefined | Err>(undefined, errorAtomName),
+        atom(initState as EmptyError | Err, errorAtomName),
         {
           reset: action((ctx) => {
-            errorAtom(ctx, undefined)
+            errorAtom(ctx, initState as EmptyError)
           }, `${errorAtomName}.reset`),
         },
       ))
-      anAsync.onReject.onCall((ctx, payload) =>
-        errorAtom(ctx, parseError(ctx, payload)),
-      )
-      if (resetTrigger) {
-        const resetTriggerAtom = { ...anAsync, onEffect: anAsync }[
-          resetTrigger
-        ] as Atom
+      errorAtom.__reatom.computer = (ctx, state) => {
+        if (resetTriggerAtom) {
+          ctx.spy(resetTriggerAtom, (ctx) => {
+            state = initState
+          })
+        }
 
-        resetTriggerAtom.onChange((ctx) => {
-          if (ctx.get(errorAtom) !== undefined) {
-            errorAtom.reset(ctx)
-          }
+        ctx.spy(anAsync.onReject, ({ payload }) => {
+          state = parseError(ctx, payload)
         })
+
+        return state
       }
+
+      // enforce the atom not be outdated, as the `spy` is lazy
+      const triggers: Array<Atom> = [anAsync.onReject]
+      if (resetTriggerAtom) triggers.push(resetTriggerAtom)
+      triggers.forEach((trigger) =>
+        trigger.onChange((ctx) => {
+          ctx.get(errorAtom)
+        }),
+      )
     }
 
-    return anAsync as T & { errorAtom: Atom<undefined | Err> }
+    return anAsync as T & { errorAtom: Atom<EmptyError | Err> }
   }
 
 export const withAbort =
@@ -322,6 +360,10 @@ export const withAbort =
     }
   > =>
   (anAsync) => {
+    throwReatomError(
+      'promiseAtom' in anAsync,
+      'Can\'t apply "withAbort" to "reatomResource", it already has its own abort strategy',
+    )
     if (!anAsync.abort) {
       const abortControllerAtom = (anAsync.abortControllerAtom = atom(
         (
@@ -423,7 +465,9 @@ export const withRetry =
       anAsync.retry = action((ctx, after = 0): ActionPayload<T> => {
         throwReatomError(after < 0, 'wrong timeout')
 
-        const params = ctx.get(anAsync.paramsAtom!)
+        let params = ctx.get(anAsync.paramsAtom!)
+        // @ts-expect-error
+        if (anAsync.promiseAtom) params ??= []
         throwReatomError(!params, 'no cached params')
 
         const asyncSnapshot = getCache(ctx, anAsync)
@@ -431,15 +475,14 @@ export const withRetry =
 
         retriesAtom(ctx, (s) => s + 1)
 
-        return ctx.schedule(async () => {
-          if (after > 0) await sleep(after)
+        if (after > 0) {
+          return sleep(after).then(() => {
+            if (hasOtherCall()) throw toAbortError('outdated retry')
+            return anAsync(ctx, ...params!)
+          }) as ActionPayload<T>
+        }
 
-          if (hasOtherCall()) {
-            throw toAbortError('outdated retry')
-          }
-
-          return await anAsync(ctx, ...params!)
-        }) as ActionPayload<T>
+        return anAsync(ctx, ...params!) as ActionPayload<T>
       }, `${anAsync.__reatom.name}.retry`)
 
       const retriesAtom = (anAsync.retriesAtom = atom(
@@ -454,12 +497,29 @@ export const withRetry =
             payload,
             () => retriesAtom(ctx, 0),
             (error) => {
+              // do not `retriesAtom(ctx, 0)`, as it handles with `signal?.addEventListener` below
               if (isAbort(error)) return
+
               const timeout = onReject(ctx, error, ctx.get(retriesAtom)) ?? -1
 
-              if (timeout < 0) return
+              if (timeout < 0) {
+                retriesAtom(ctx, 0)
+                return
+              }
 
-              anAsync.retry!(unstable_dropController(ctx), timeout).catch(noop)
+              const controller = new AbortController()
+
+              spawn(ctx, anAsync.retry!, [timeout], controller).catch(noop)
+              const state = ctx.get(anAsync)
+
+              const signal = getTopController(ctx.cause.cause!)?.signal
+              // it is important to add the listener only after the `spawn`
+              signal?.addEventListener('abort', () => {
+                controller.abort(signal.reason)
+                if (state === ctx.get(anAsync)) {
+                  retriesAtom(ctx, 0)
+                }
+              })
             },
           )
         })
