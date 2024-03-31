@@ -5,5 +5,8 @@
   "files.trimFinalNewlines": true,
   "editor.tabCompletion": "on",
   "diffEditor.codeLens": true,
-  "cSpell.words": ["localstorage"],
+  "cSpell.words": [
+    "linkedom",
+    "localstorage"
+  ],
 }
