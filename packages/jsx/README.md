@@ -1,9 +1,19 @@
 An **EXPERIMENTAL** JSX runtime for describing dynamic DOM UIs with Reatom.
 
+## Core benefits
+
+- No extra build step needed; we use plain TSX (JSX), which is currently supported in various tools.
+- Nice integrations with the platform; `<div />` returns the real element.
+- Rerender-less architecture with direct reactive bindings, which means extreme performance!
+- Only 1kb runtime script (excluding the tiny core package).
+- Built-in CSS management with a simple API and efficient CSS variables usage.
+
 ## Installation
 
+You can use `@reatom/core` instead of the framework, but we highly recommend using the framework to access the maximum features of Reatom.
+
 ```sh
-npm install @reatom/jsx
+npm install @reatom/framework @reatom/jsx
 ```
 
 `tsconfig.json`:
@@ -33,6 +43,8 @@ export default defineConfig({
 
 ## Example
 
+> Advanced example with dynamic entities you can find here: https://github.com/artalar/reatom/tree/v3/examples/reatom-jsx
+
 Define a component:
 
 ```ts
@@ -42,7 +54,7 @@ export const inputAtom = atom('')
 const onInput = action((ctx, event) =>
   inputAtom(ctx, event.currentTarget.value),
 )
-export const Input = () => <input value={inputAtom} oninput={onInput} />
+export const Input = () => <input value={inputAtom} on:input={onInput} />
 ```
 
 Render it:
@@ -52,34 +64,51 @@ import { connectLogger } from '@reatom/framework'
 import { ctx, mount } from '@reatom/jsx'
 import { App } from './App'
 
-if (import.meta.env.DEV) {
-  const disconnect = connectLogger(ctx)
+if (import.meta.env.MODE === 'development') {
+  connectLogger(ctx)
 }
 
 mount(document.getElementById('app')!, <App />)
 ```
 
+You can create `ctx` manually and use it to create a scoped render instance with `reatomJsx`.
+
 ## Reference
 
 This library implements a common TypeScript JSX factory that creates and configures **native** DOM elements.
 
-By default, props passed to the JSX factory are set as attributes. Add `field:` prefix to a prop name to set element fields instead of attributes. It can be used to set stuff like `HTMLInputElement..indeterminate` and `SVGPathElement..d`. There are props that treated as fields by default:
+By default, props passed to the JSX factory are set as properties. Add `attr:` prefix to the name to set element attribute instead of property.
 
-- `innerHTML`
-- `innerText`
+For all kinds of properties you can pass a primitive value or an atom with a primitive value.
 
-Atom- or function-valued props can be used to create reactive bindings to an element's attributes/fields. The binding is automatically disposed when the element is disconnected from the DOM.
-
-`children` prop specifies the inner content of an element, which can be one of the following:
+The `children` prop specifies the inner content of an element, which can be one of the following:
 
 - `false`/`null`/`undefined` to render nothing
-- a string, a number, or `true` to create a text node
+- a string or a number to create a text node
 - a native DOM node to insert it as-is
 - an atom or a function returning any option listed above
 
 ### Handling events
 
-Use `on*` props to add event handlers. Passed functions are automatically bound to a relevant `Ctx` value: `oninput={(ctx, event) => setValue(ctx, event.currentTarget.value)}`.
+Use `on:*` props to add event handlers. Passed functions are automatically bound to a relevant `Ctx` value: `on:input={(ctx, event) => setValue(ctx, event.currentTarget.value)}`.
+
+### Models
+
+For simple `AtomMut` bindings to the native input you can use `model:value` syntax, where "value" could be: `value`, `valueAsNumber`, `checked`.
+
+```tsx
+export const inputAtom = atom('')
+export const Input = () => <input model:value={inputAtom} />
+```
+
+By the way, you can safely create any needed resources inside a component body, as it calls only once when it created.
+
+```tsx
+export const Input = () => {
+  export const input = atom('')
+  return <input model:value={input} />
+}
+```
 
 ### Styles
 
@@ -87,14 +116,64 @@ Object-valued `style` prop applies styles granularly: `style={{top: 0, display: 
 
 `false`, `null` and `undefined` style values remove the property. Non-string style values are stringified (we don't add `px` to numeric values automatically).
 
+### CSS-in-JS
+
+We have a minimal, intuitive, and efficient styling engine tightly integrated with components. You can set a styles in `css` prop and all relative css-variables to `css:variable-name` prop.
+
+> The example below is correctly formatted by Prettier and has syntax highlighting provided by the 'vscode-styled-components' extension
+
+```tsx
+export const HeaderInput = ({ size = 0 }) => {
+  const input = atom('')
+  const size = atom((ctx) => ctx.spy(input).length)
+  return (
+    <input
+      model:value={input}
+      css:size={size}
+      css={`
+        font-size: calc(1em + var(--size) * 0.1em);
+      `}
+    />
+  )
+}
+```
+
+Under the hood, it will create a unique class name and will be converted to this code:
+
+```tsx
+export const HeaderInput = ({ size = 0 }) => {
+  const input = atom('')
+  const size = atom((ctx) => ctx.spy(input).length)
+  return (
+    <input
+      className={createAndInsertClass(`
+        font-size: calc(1em + var(--size) * 0.1em);
+      `)}
+      style={atom((ctx) => ({
+        '--size': ctx.spy(size),
+      }))}
+    />
+  )
+}
+```
+
+### Components
+
+Components in `@reatom/jsx` are just functions returning JSX elements. They neither have state nor any lifecycle associated with them. Because component instantiation boils down into function calls, features like `$spread` are not supported in them.
+
 ### Spreads
 
-There's a special `$props` prop which can be used to spread props reactively: `<div someStaticProp $props={ctx => getDynamicProps(ctx)}>`. Valid `$props` values are the following:
+In Reatom, there is no concept of "rerender" like React. Instead, we have a special `$spread` prop that can be used to spread props reactively.
 
-- a plain props record
-- a function returning a record
-- an atom storing a record
-- an array of options listed above
+```tsx
+<div
+  $spread={atom((ctx) =>
+    ctx.spy(valid)
+      ? { disabled: true, readonly: true }
+      : { disabled: false, readonly: false },
+  )}
+/>
+```
 
 ### SVG
 
@@ -103,12 +182,12 @@ To create elements with names within the SVG namespace, you should prepend `svg:
 ```tsx
 const anSvgElement = (
   <svg:svg>
-    <svg:path field:d="???" />
+    <svg:path d="???" />
   </svg:svg>
 )
 ```
 
-### Lifecycle
+<!-- ### Lifecycle
 
 In Reatom, every atom has lifecycle events to which you can subscribe with `onConnect`/`onDisconnect` functions. By default, components don't have an atom associated with them, but you may wrap the component code in an atom manually to achieve the same result:
 
@@ -140,54 +219,11 @@ const MyWidget = () => {
     </Lifecycle>
   )
 }
-```
-
-### CSS-in-JS
-
-This module implements a minimal, intuitive and efficient styling engine.
-
-```tsx
-import { css } from '@reatom/jsx'
-
-const colorHovered = atom('red', 'colorHovered')
-
-export const Box = ({ size = 0 }) => {
-  return (
-    <div
-      css:padding={`${size}rem`}
-      css={`
-        padding: var(--size);
-      `}
-    />
-  );
-};
-
-export const HeaderInput = () => {
-  const sizeAtom = atom(`1em`);
-  const handleChange = action((ctx, e) =>
-    sizeAtom(ctx, `${1 + e.target.value.length * 0.1}em`)
-  );
-
-  return (
-    <input
-      oninput={handleChange}
-      css:size={sizeAtom}
-      css={`
-        font-size: var(--size);
-      `}
-    />
-  );
-};
-
-```
-
-The example above is correctly formatted by Prettier and has syntax highlighting provided by `vscode-styled-components` extension.
-
-### Components
-
-Components in `@reatom/jsx` are just functions returning JSX elements. They neither have state nor any lifecycle associated with them. Because component instantiation boils down into function calls, features like `$props` are not supported in them.
+``` -->
 
 ## Limitations
+
+These limitations will be fixed in the feature
 
 - No DOM-less SSR (requires a DOM API implementation like `linkedom` to be provided)
 - No keyed lists support

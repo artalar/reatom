@@ -1,212 +1,208 @@
 import {
+  action,
+  AtomMut,
+  createCtx,
   Ctx,
-  CtxSpy,
   Fn,
-  Rec,
-  Unsubscribe,
-  atom,
   isAtom,
+  Rec,
   throwReatomError,
+  Unsubscribe,
 } from '@reatom/core'
-import { noop } from '@reatom/utils'
-import { ReatomElement, JsxNode, DomElement, Computable } from './types'
+import { random } from '@reatom/utils'
+import type { JSX } from './jsx'
+declare type JSXElement = JSX.Element
+export type { JSXElement, JSX }
 
-type DomApis = Pick<typeof window, 'document' | 'Node' | 'Text' | 'Element'>
+type DomApis = Pick<
+  typeof window,
+  | 'document'
+  | 'Node'
+  | 'Text'
+  | 'Element'
+  | 'MutationObserver'
+  | 'HTMLElement'
+  | 'DocumentFragment'
+>
 
-const StylesheetId = 'reatom-jsx-styles'
-let styles: Map<string, string> | undefined
-let stylesheet: HTMLStyleElement | undefined
+export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
+  let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
+  const StylesheetId = 'reatom-jsx-styles'
+  let styles: Rec<string> = {}
+  let stylesheet: HTMLStyleElement | undefined
+  let name = ''
 
-export const reatomJsx = (ctx: Ctx, w: DomApis = globalThis.window) => ({
-  mount(parent: Element, child: JsxNode) {
-    throwReatomError(!(child instanceof w.Element), 'Can only mount elements')
+  let set = (element: JSX.Element, key: string, val: any) => {
+    if (key.startsWith('on:')) {
+      key = key.slice(3)
+      // only for logging purposes
+      val = action(val, `${name}.${element.nodeName.toLowerCase()}.${key}`)
+      element.addEventListener(key, (event) => val(ctx, event))
+    } else if (key.startsWith('css:')) {
+      key = '--' + key.slice(4)
+      if (val == null) element.style.removeProperty(key)
+      else element.style.setProperty(key, String(val))
+    } else if (key === 'css') {
+      stylesheet ??= DOM.document.getElementById(StylesheetId) as any
+      if (!stylesheet) {
+        stylesheet = DOM.document.createElement('style')
+        stylesheet.id = StylesheetId
+        DOM.document.head.appendChild(stylesheet)
+      }
 
-    const unsub = ctx.subscribe(
-      atom((ctx) => sync(ctx, child as ReatomElement)),
-      noop,
-    )
+      let className = styles[val]
+      if (!className) {
+        className = styles[val] = 'reatom-' + random()
 
-    parent.appendChild(child as Node)
-    return () => {
-      unsub()
-      parent.removeChild(child as Node)
+        stylesheet.innerText += '.' + className + '{' + val + '}\n'
+      }
+      element.classList.add(className)
+    } else if (key === 'style' && typeof val === 'object') {
+      for (const key in val) {
+        if (val[key] == null) element.style.removeProperty(key)
+        else element.style.setProperty(key, val[key])
+      }
+    } else if (key.startsWith('prop:')) {
+      ;(element as any)[key.slice(5)] = val
+    } else {
+      if (key.startsWith('attr:')) {
+        key = key.slice(5)
+      }
+      if (val == null) element.removeAttribute(key)
+      else element.setAttribute(key, String(val))
     }
-  },
+  }
 
-  h(component: any, props: Rec, children?: any) {
-    if (children) props.children = children
-    if (typeof component === 'function') return component(props)
-    return this.element(component, props)
-  },
-
-  element(tag: string, props: Rec) {
-    const e = (tag.startsWith('svg:')
-      ? w.document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4))
-      : w.document.createElement(tag)) as any as ReatomElement
-
-    e.$$reatom = true
-
-    for (const key in props) {
-      let val = props[key]
-
-      if (key === 'children') {
-        if (!val) continue
-        let childHandles = [] as Array<Unsubscribe>
-        const unsub = () => {
-          for (const u of childHandles) u()
+  let unlink = (parent: any, un: Unsubscribe) => {
+    Promise.resolve().then(() => {
+      if (!parent.isConnected) un()
+      else {
+        while (parent.parentElement && !unsubscribesMap.get(parent)?.push(un)) {
+          parent = parent.parentElement
         }
+      }
+    })
+  }
 
-        e.syncChildren ??= atom((ctx, clock?: boolean) => {
-          let children = unwrap(ctx, val)
-          if (!Array.isArray(children)) children = [children]
+  let h = (tag: any, props: Rec, ...children: any[]) => {
+    if (tag === hf) return children
 
-          unsub()
-          childHandles.length = 0
+    if (typeof tag === 'function') {
+      ;(props ??= {}).children = children
 
-          e.replaceChildren()
-
-          const elements = [] as Array<ReatomElement>
-          for (let child of children) {
-            if (child == null || child === false) continue
-
-            let node: Element | Text
-
-            if (!isAtom(child) && typeof child === 'function') {
-              child = atom(child)
-            }
-            if (isAtom(child)) {
-              node = new w.Text()
-              childHandles.push(
-                ctx.subscribe(child, (child) => {
-                  if (child instanceof w.Node) {
-                    if ('$$reatom' in child) elements.push(child as any)
-                    node.replaceWith((node = child as any))
-                  } else {
-                    child = String(child)
-                    if (node instanceof w.Text) {
-                      node.textContent = child
-                    } else {
-                      node.replaceWith((node = new w.Text(child)))
-                    }
-                  }
-                }),
-              )
-            } else {
-              if (child instanceof w.Node) {
-                node = child as Element
-                if ('$$reatom' in child) elements.push(child as any)
-              } else {
-                node = new w.Text(String(child))
-              }
-            }
-            e.appendChild(node)
-          }
-
-          for (const element of elements) sync(ctx, element)
-
-          return !clock
-        })
-
-        const disco = new Set<Fn>()
-        disco.add(unsub)
-        e.syncChildren.__reatom.disconnectHooks = disco
-      } else if (key === '$props') {
-        if (!val) continue
-        val = Array.isArray(val) ? val : [val]
-
-        e.syncSpreads = atom((ctx, clock?: boolean) => {
-          for (let rec of val) {
-            rec = unwrap(ctx, rec)
-            const unused = e.spreaded
-            e.spreaded = new Set<string>()
-
-            for (const key in rec) {
-              set(w, e, key, unwrap(ctx, rec[key]))
-              unused?.delete(key)
-              if (!(key in props)) e.spreaded.add(key)
-            }
-
-            if (unused) {
-              for (const key of unused) set(w, e, key, undefined)
-            }
-          }
-          return !clock
-        })
-      } else if (key.startsWith('on')) {
-        ;(e as any)[key.slice(3)] = (event: Event) => val(ctx, event)
-      } else if (isAtom(val) || typeof val == 'function') {
-        e.syncProps ??= atom((ctx, clock?: boolean) => {
-          for (const key in props) {
-            if (key === '$props' || key.startsWith('on')) continue
-
-            let val = props[key]
-            if (isAtom(val)) val = ctx.spy(val)
-            else if (typeof val === 'function') val = val(ctx)
-            else continue
-
-            set(w, e, key, val)
-          }
-          return !clock
-        })
-      } else {
-        set(w, e, key, val)
+      let _name = tag.name
+      try {
+        name = tag.name
+        return tag(props)
+      } finally {
+        name = _name
       }
     }
 
-    return e
-  },
-})
+    let element: JSX.Element = tag.startsWith('svg:')
+      ? DOM.document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4))
+      : DOM.document.createElement(tag)
 
-export const sync = (ctx: CtxSpy, e: ReatomElement) => {
-  if (e.syncSpreads) ctx.spy(e.syncSpreads)
-  if (e.syncProps) ctx.spy(e.syncProps)
-  if (e.syncChildren) ctx.spy(e.syncChildren)
-}
+    for (let k in props) {
+      let prop = props[k]
+      if (isAtom(prop) && !prop.__reatom.isAction) {
+        if (k.startsWith('model:')) {
+          let name = (k = k.slice(6))
+          set(element, 'on:input', (ctx: Ctx, event: any) => {
+            ;(prop as AtomMut)(
+              ctx,
+              name === 'valueAsNumber'
+                ? +event.target.value
+                : event.target[name],
+            )
+          })
+          if (k === 'valueAsNumber') k = 'value'
+          k = 'prop:' + k
+        }
+        // TODO handle unsubscribe!
+        let un: undefined | Unsubscribe
+        un = ctx.subscribe(prop, (v) =>
+          !un || element.isConnected
+            ? k === '$spread'
+              ? Object.entries(v).forEach(([k, v]) => set(element, k, v))
+              : set(element, k, v)
+            : un(),
+        )
 
-export const unwrap = <T>(ctx: CtxSpy, val: Computable<T>): T => {
-  if (isAtom(val)) return ctx.spy(val)
-  if (typeof val === 'function') return (val as any)(ctx)
-  return val
-}
-
-const set = (w: DomApis, e: DomElement, key: string, val: any) => {
-  if (key.startsWith('field:')) {
-    ;(e as any)[key.slice(6)] = val
-  } else if (key === 'style' && typeof val === 'object') {
-    for (const key in val) {
-      if (val[key] == null) e.style.removeProperty(key)
-      else e.style.setProperty(key, val[key])
+        unlink(element, un)
+      } else {
+        set(element, k, prop)
+      }
     }
-  } else if (key === 'css') {
-    stylesheet ??= w.document.getElementById(StylesheetId) as any
-    if (!stylesheet) {
-      stylesheet = w.document.createElement('style')
-      stylesheet.id = StylesheetId
-      w.document.head.appendChild(stylesheet)
+
+    let walk = (child: any) => {
+      if (Array.isArray(child)) child.forEach(walk)
+      else {
+        if (isAtom(child)) {
+          let innerChild = DOM.document.createTextNode('') as
+            | ChildNode
+            | DocumentFragment
+          let un: undefined | Unsubscribe
+          un = ctx.subscribe(child, (v) => {
+            if (un && !innerChild.isConnected) un()
+            else {
+              throwReatomError(
+                Array.isArray(v),
+                'array children are not supported',
+              )
+
+              if (v instanceof DOM.HTMLElement) {
+                let list = unsubscribesMap.get(v)
+                if (!list) unsubscribesMap.set(v, (list = []))
+
+                if (un) element.replaceChild(v, innerChild)
+                innerChild = v
+              } else {
+                innerChild.textContent = v
+              }
+            }
+          })
+          unlink(element, un)
+          element.appendChild(innerChild)
+        } else {
+          element.appendChild(
+            child?.nodeType
+              ? child
+              : DOM.document.createTextNode(String(child)),
+          )
+        }
+      }
     }
 
-    let className = (styles ??= new Map()).get(val)
-    if (!className) {
-      styles.set(
-        val,
-        (className =
-          'reatom-' +
-          Math.random()
-            .toString(36)
-            .slice(2, length + 2)),
-      )
+    children.forEach(walk)
 
-      stylesheet.innerText += '.' + className + '{' + val + '}\n'
-    }
-    e.classList.add(className)
-  } else if (key.startsWith('css:')) {
-    key = '--' + key.slice(4)
-    if (val == null) e.style.removeProperty(key)
-    else e.style.setProperty(key, String(val))
-  } else {
-    if (val == null) e.removeAttribute(key)
-    else e.setAttribute(key, String(val))
+    return element
   }
+
+  /** Fragment */
+  let hf = () => {}
+
+  let mount = (target: Element, child: Element) => {
+    target.appendChild(child)
+
+    new DOM.MutationObserver((mutationsList) => {
+      for (let mutation of mutationsList) {
+        for (let removedNode of mutation.removedNodes) {
+          let list = unsubscribesMap.get(removedNode as any)
+          if (list) {
+            list.forEach((fn) => fn())
+            unsubscribesMap.delete(removedNode as any)
+          }
+        }
+      }
+    }).observe(target, {
+      childList: true,
+      subtree: true,
+    })
+  }
+
+  return { h, hf, mount }
 }
 
-export * from './lifecycle'
+export const ctx = createCtx()
+export const { h, hf, mount } = reatomJsx(ctx)

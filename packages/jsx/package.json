@@ -31,14 +31,15 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs && cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build",
-    "test": "ts-node src/index.test.ts",
-    "test:watch": "tsx watch src/index.test.ts"
+    "test": "tsc && tsx src/index.test.tsx",
+    "test:watch": "tsx watch src/index.test.tsx"
   },
   "dependencies": {
     "@reatom/core": ">=3.5.0",
-    "@reatom/lens": "^3.6.2",
     "@reatom/utils": "^3.5.0",
-    "csstype": "^3.1.2",
+    "csstype": "^3.1.2"
+  },
+  "devDependencies": {
     "linkedom": "^0.16.4"
   },
   "author": "artalar",

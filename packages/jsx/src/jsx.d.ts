@@ -1,120 +1,287 @@
-/**
- * stolen from https://github.dev/solidjs/solid/blob/49793e9452ecd034d4d2ef5f95108f5d2ff4134a/packages/solid/h/jsx-runtime/src/jsx.d.ts
- */
+/* 
+Respectfully copied from https://github.com/ryansolid/dom-expressions/blob/ae71a417aa13b33517082628aff09513629df8b2/packages/dom-expressions/src/jsx.d.ts
+*/
 
-import { Atom, Ctx } from '@reatom/core'
 import * as csstype from 'csstype'
-import { JsxNode, Computable } from './types'
+import { Atom, AtomMaybe, AtomMut, Ctx } from '@reatom/core'
+
+// TODO write it manually to improve perf
+type AttributesAtomMaybe<T extends Record<keyof any, any>> = {
+  [K in keyof T]: T[K] | Atom<T[K]>
+}
+
+// TODO write it manually to improve perf
+type ElementsAttributesAtomMaybe<T extends Record<keyof any, any>> = {
+  [K in keyof T]: AttributesAtomMaybe<T[K]>
+}
 
 export namespace JSX {
-  type EventHandler<T, E extends Event> = (
-    ctx: Ctx,
-    event: E & { currentTarget: T; target: Element },
-  ) => void
+  type Element = HTMLElement | SVGElement
 
-  interface IntrinsicAttributes {}
+  type ElementChildren =
+    | Array<AtomMaybe<ElementChildren>>
+    | Node
+    | Element
+    | (string & {})
+    | number
+    | boolean
+    | null
+    | undefined
 
-  type ElementSpreadableProps<T> = Omit<T, `on${string}` | '$props'>
-  type ElementSpread<T> =
-    | ElementSpreadableProps<T>
-    | Atom<ElementSpreadableProps<T>>
-    | Array<ElementSpreadableProps<T> | Atom<ElementSpreadableProps<T>>>
-
-  interface ElementProps<T = Element> extends CustomEventHandlers<T> {
-    $props?: ElementSpread<this>
-    children?: JsxNode
-    [field: `field:${string}`]: any
-    [css: `css:${string}`]: string | number | false | null | undefined
-
-    oncopy?: EventHandler<T, ClipboardEvent>
-    oncut?: EventHandler<T, ClipboardEvent>
-    onpaste?: EventHandler<T, ClipboardEvent>
-    oncompositionend?: EventHandler<T, CompositionEvent>
-    oncompositionstart?: EventHandler<T, CompositionEvent>
-    oncompositionupdate?: EventHandler<T, CompositionEvent>
-    onfocusout?: EventHandler<T, FocusEvent>
-    onfocusin?: EventHandler<T, FocusEvent>
-    onencrypted?: EventHandler<T, Event>
-    ondragexit?: EventHandler<T, DragEvent>
+  interface ElementClass {
+    // empty, libs can define requirements downstream
   }
 
+  interface ElementAttributes<T> {
+    [k: `attr:${string}`]: unknown
+  }
+
+  interface ElementProperties<T> {
+    [k: `prop:${string}`]: unknown
+  }
+
+  interface $Spread<T> {
+    $spread?: Partial<this>
+  }
+
+  interface ElementChildrenAttribute {
+    children: {}
+  }
+
+  interface CssAttributes {
+    css?: string
+    [css: `css:${string}`]: string | number | false | null | undefined
+  }
+
+  interface EventHandler<T, E extends Event> {
+    (
+      ctx: Ctx,
+      e: E & {
+        currentTarget: T
+        target: Element
+      },
+    ): void
+  }
+
+  interface InputEventHandler<T, E extends InputEvent> {
+    (
+      ctx: Ctx,
+      e: E & {
+        currentTarget: T
+        target: T extends
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement
+          ? T
+          : Element
+      },
+    ): void
+  }
+
+  interface ChangeEventHandler<T, E extends Event> {
+    (
+      ctx: Ctx,
+      e: E & {
+        currentTarget: T
+        target: T extends
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement
+          ? T
+          : Element
+      },
+    ): void
+  }
+
+  interface FocusEventHandler<T, E extends FocusEvent> {
+    (
+      ctx: Ctx,
+      e: E & {
+        currentTarget: T
+        target: T extends
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement
+          ? T
+          : Element
+      },
+    ): void
+  }
+
+  const SERIALIZABLE: unique symbol
+  interface SerializableAttributeValue {
+    toString(): string
+    [SERIALIZABLE]: never
+  }
+
+  interface IntrinsicAttributes {
+    ref?: unknown | ((e: unknown) => void)
+  }
+  interface CustomAttributes<T> {
+    ref?: T | ((el: T) => void)
+    // classList?: {
+    //   [k: string]: boolean | undefined
+    // }
+  }
+  interface Directives {}
+  interface DirectiveFunctions {
+    [x: string]: (el: Element, accessor: Atom<any>) => void
+  }
+  interface ExplicitProperties {}
+  interface ExplicitAttributes {}
+  interface CustomEvents {}
+  interface CustomCaptureEvents {}
+  type DirectiveAttributes = {
+    [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
+  }
+  type DirectiveFunctionAttributes<T> = {
+    [K in keyof DirectiveFunctions as string extends K
+      ? never
+      : `use:${K}`]?: DirectiveFunctions[K] extends (
+      el: infer E, // will be unknown if not provided
+      ...rest: infer R // use rest so that we can check whether it's provided or not
+    ) => void
+      ? T extends E // everything extends unknown if E is unknown
+        ? R extends [infer A] // check if has accessor provided
+          ? A extends Atom<infer V>
+            ? V // it's an accessor
+            : never // it isn't, type error
+          : true // no accessor provided
+        : never // T is the wrong element
+      : never // it isn't a function
+  }
+  type PropAttributes = {
+    [Key in keyof ExplicitProperties as `prop:${Key}`]?: AtomMaybe<
+      ExplicitProperties[Key]
+    >
+  }
+  type AttrAttributes = {
+    [Key in keyof ExplicitAttributes as `attr:${Key}`]?: AtomMaybe<
+      ExplicitAttributes[Key]
+    >
+  }
+  type OnAttributes<T> = {
+    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<
+      T,
+      CustomEvents[Key]
+    >
+  }
+  type OnCaptureAttributes<T> = {
+    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
+      T,
+      CustomCaptureEvents[Key]
+    >
+  }
+  interface DOMAttributes<T>
+    extends CustomAttributes<T>,
+      DirectiveAttributes,
+      DirectiveFunctionAttributes<T>,
+      PropAttributes,
+      AttrAttributes,
+      OnAttributes<T>,
+      OnCaptureAttributes<T>,
+      CustomEventHandlers<T> {
+    children?: ElementChildren
+    innerHTML?: AtomMaybe<string>
+    innerText?: AtomMaybe<string | number>
+    textContent?: AtomMaybe<string | number>
+    'on:copy'?: EventHandler<T, ClipboardEvent>
+    'on:cut'?: EventHandler<T, ClipboardEvent>
+    'on:paste'?: EventHandler<T, ClipboardEvent>
+    'on:compositionend'?: EventHandler<T, CompositionEvent>
+    'on:compositionstart'?: EventHandler<T, CompositionEvent>
+    'on:compositionupdate'?: EventHandler<T, CompositionEvent>
+    'on:focusout'?: FocusEventHandler<T, FocusEvent>
+    'on:focusin'?: FocusEventHandler<T, FocusEvent>
+    'on:encrypted'?: EventHandler<T, Event>
+    'on:dragexit'?: EventHandler<T, DragEvent>
+  }
   /**
    * @type {GlobalEventHandlers}
    */
   interface CustomEventHandlers<T> {
-    onabort?: EventHandler<T, Event>
-    onanimationend?: EventHandler<T, AnimationEvent>
-    onanimationiteration?: EventHandler<T, AnimationEvent>
-    onanimationstart?: EventHandler<T, AnimationEvent>
-    onauxclick?: EventHandler<T, MouseEvent>
-    onbeforeinput?: EventHandler<T, InputEvent>
-    onblur?: EventHandler<T, FocusEvent>
-    oncanplay?: EventHandler<T, Event>
-    oncanplaythrough?: EventHandler<T, Event>
-    onchange?: EventHandler<T, Event>
-    onclick?: EventHandler<T, MouseEvent>
-    oncontextmenu?: EventHandler<T, MouseEvent>
-    ondblclick?: EventHandler<T, MouseEvent>
-    ondrag?: EventHandler<T, DragEvent>
-    ondragend?: EventHandler<T, DragEvent>
-    ondragenter?: EventHandler<T, DragEvent>
-    ondragleave?: EventHandler<T, DragEvent>
-    ondragover?: EventHandler<T, DragEvent>
-    ondragstart?: EventHandler<T, DragEvent>
-    ondrop?: EventHandler<T, DragEvent>
-    ondurationchange?: EventHandler<T, Event>
-    onemptied?: EventHandler<T, Event>
-    onended?: EventHandler<T, Event>
-    onerror?: EventHandler<T, Event>
-    onfocus?: EventHandler<T, FocusEvent>
-    ongotpointercapture?: EventHandler<T, PointerEvent>
-    oninput?: EventHandler<T, InputEvent>
-    oninvalid?: EventHandler<T, Event>
-    onkeydown?: EventHandler<T, KeyboardEvent>
-    onkeypress?: EventHandler<T, KeyboardEvent>
-    onkeyup?: EventHandler<T, KeyboardEvent>
-    onload?: EventHandler<T, Event>
-    onloadeddata?: EventHandler<T, Event>
-    onloadedmetadata?: EventHandler<T, Event>
-    onloadstart?: EventHandler<T, Event>
-    onlostpointercapture?: EventHandler<T, PointerEvent>
-    onmousedown?: EventHandler<T, MouseEvent>
-    onmouseenter?: EventHandler<T, MouseEvent>
-    onmouseleave?: EventHandler<T, MouseEvent>
-    onmousemove?: EventHandler<T, MouseEvent>
-    onmouseout?: EventHandler<T, MouseEvent>
-    onmouseover?: EventHandler<T, MouseEvent>
-    onmouseup?: EventHandler<T, MouseEvent>
-    onpause?: EventHandler<T, Event>
-    onplay?: EventHandler<T, Event>
-    onplaying?: EventHandler<T, Event>
-    onpointercancel?: EventHandler<T, PointerEvent>
-    onpointerdown?: EventHandler<T, PointerEvent>
-    onpointerenter?: EventHandler<T, PointerEvent>
-    onpointerleave?: EventHandler<T, PointerEvent>
-    onpointermove?: EventHandler<T, PointerEvent>
-    onpointerout?: EventHandler<T, PointerEvent>
-    onpointerover?: EventHandler<T, PointerEvent>
-    onpointerup?: EventHandler<T, PointerEvent>
-    onprogress?: EventHandler<T, Event>
-    onratechange?: EventHandler<T, Event>
-    onreset?: EventHandler<T, Event>
-    onscroll?: EventHandler<T, UIEvent>
-    onseeked?: EventHandler<T, Event>
-    onseeking?: EventHandler<T, Event>
-    onselect?: EventHandler<T, UIEvent>
-    onstalled?: EventHandler<T, Event>
-    onsubmit?: EventHandler<T, Event & { submitter: HTMLElement }>
-    onsuspend?: EventHandler<T, Event>
-    ontimeupdate?: EventHandler<T, Event>
-    ontouchcancel?: EventHandler<T, TouchEvent>
-    ontouchend?: EventHandler<T, TouchEvent>
-    ontouchmove?: EventHandler<T, TouchEvent>
-    ontouchstart?: EventHandler<T, TouchEvent>
-    ontransitionend?: EventHandler<T, TransitionEvent>
-    onvolumechange?: EventHandler<T, Event>
-    onwaiting?: EventHandler<T, Event>
-    onwheel?: EventHandler<T, WheelEvent>
+    'on:abort'?: EventHandler<T, Event>
+    'on:animationend'?: EventHandler<T, AnimationEvent>
+    'on:animationiteration'?: EventHandler<T, AnimationEvent>
+    'on:animationstart'?: EventHandler<T, AnimationEvent>
+    'on:auxclick'?: EventHandler<T, MouseEvent>
+    'on:beforeinput'?: InputEventHandler<T, InputEvent>
+    'on:blur'?: FocusEventHandler<T, FocusEvent>
+    'on:canplay'?: EventHandler<T, Event>
+    'on:canplaythrough'?: EventHandler<T, Event>
+    'on:change'?: ChangeEventHandler<T, Event>
+    'on:click'?: EventHandler<T, MouseEvent>
+    'on:contextmenu'?: EventHandler<T, MouseEvent>
+    'on:dblclick'?: EventHandler<T, MouseEvent>
+    'on:drag'?: EventHandler<T, DragEvent>
+    'on:dragend'?: EventHandler<T, DragEvent>
+    'on:dragenter'?: EventHandler<T, DragEvent>
+    'on:dragleave'?: EventHandler<T, DragEvent>
+    'on:dragover'?: EventHandler<T, DragEvent>
+    'on:dragstart'?: EventHandler<T, DragEvent>
+    'on:drop'?: EventHandler<T, DragEvent>
+    'on:durationchange'?: EventHandler<T, Event>
+    'on:emptied'?: EventHandler<T, Event>
+    'on:ended'?: EventHandler<T, Event>
+    'on:error'?: EventHandler<T, Event>
+    'on:focus'?: FocusEventHandler<T, FocusEvent>
+    'on:gotpointercapture'?: EventHandler<T, PointerEvent>
+    'on:input'?: InputEventHandler<T, InputEvent>
+    'on:invalid'?: EventHandler<T, Event>
+    'on:keydown'?: EventHandler<T, KeyboardEvent>
+    'on:keypress'?: EventHandler<T, KeyboardEvent>
+    'on:keyup'?: EventHandler<T, KeyboardEvent>
+    'on:load'?: EventHandler<T, Event>
+    'on:loadeddata'?: EventHandler<T, Event>
+    'on:loadedmetadata'?: EventHandler<T, Event>
+    'on:loadstart'?: EventHandler<T, Event>
+    'on:lostpointercapture'?: EventHandler<T, PointerEvent>
+    'on:mousedown'?: EventHandler<T, MouseEvent>
+    'on:mouseenter'?: EventHandler<T, MouseEvent>
+    'on:mouseleave'?: EventHandler<T, MouseEvent>
+    'on:mousemove'?: EventHandler<T, MouseEvent>
+    'on:mouseout'?: EventHandler<T, MouseEvent>
+    'on:mouseover'?: EventHandler<T, MouseEvent>
+    'on:mouseup'?: EventHandler<T, MouseEvent>
+    'on:pause'?: EventHandler<T, Event>
+    'on:play'?: EventHandler<T, Event>
+    'on:playing'?: EventHandler<T, Event>
+    'on:pointercancel'?: EventHandler<T, PointerEvent>
+    'on:pointerdown'?: EventHandler<T, PointerEvent>
+    'on:pointerenter'?: EventHandler<T, PointerEvent>
+    'on:pointerleave'?: EventHandler<T, PointerEvent>
+    'on:pointermove'?: EventHandler<T, PointerEvent>
+    'on:pointerout'?: EventHandler<T, PointerEvent>
+    'on:pointerover'?: EventHandler<T, PointerEvent>
+    'on:pointerup'?: EventHandler<T, PointerEvent>
+    'on:progress'?: EventHandler<T, Event>
+    'on:ratechange'?: EventHandler<T, Event>
+    'on:reset'?: EventHandler<T, Event>
+    'on:scroll'?: EventHandler<T, Event>
+    'on:scrollend'?: EventHandler<T, Event>
+    'on:seeked'?: EventHandler<T, Event>
+    'on:seeking'?: EventHandler<T, Event>
+    'on:select'?: EventHandler<T, UIEvent>
+    'on:stalled'?: EventHandler<T, Event>
+    'on:submit'?: EventHandler<
+      T,
+      Event & {
+        submitter: HTMLElement
+      }
+    >
+    'on:suspend'?: EventHandler<T, Event>
+    'on:timeupdate'?: EventHandler<T, Event>
+    'on:touchcancel'?: EventHandler<T, TouchEvent>
+    'on:touchend'?: EventHandler<T, TouchEvent>
+    'on:touchmove'?: EventHandler<T, TouchEvent>
+    'on:touchstart'?: EventHandler<T, TouchEvent>
+    'on:transitionstart'?: EventHandler<T, TransitionEvent>
+    'on:transitionend'?: EventHandler<T, TransitionEvent>
+    'on:transitionrun'?: EventHandler<T, TransitionEvent>
+    'on:transitioncancel'?: EventHandler<T, TransitionEvent>
+    'on:volumechange'?: EventHandler<T, Event>
+    'on:waiting'?: EventHandler<T, Event>
+    'on:wheel'?: EventHandler<T, WheelEvent>
   }
 
   interface CSSProperties extends csstype.PropertiesHyphen {
@@ -160,6 +327,7 @@ export namespace JSX {
     | 'allow-storage-access-by-user-activation'
     | 'allow-top-navigation'
     | 'allow-top-navigation-by-user-activation'
+    | 'allow-top-navigation-to-custom-protocols'
   type HTMLLinkAs =
     | 'audio'
     | 'document'
@@ -175,7 +343,7 @@ export namespace JSX {
     | 'worker'
 
   // All the WAI-ARIA 1.1 attributes from https://www.w3.org/TR/wai-aria-1.1/
-  interface AriaProps {
+  interface AriaAttributes {
     /** Identifies the currently active element when DOM focus is on a composite widget, textbox, group, or application. */
     'aria-activedescendant'?: string
     /** Indicates whether assistive technologies will present all, or only parts of, the changed region based on the change notifications defined by the aria-relevant attribute. */
@@ -386,7 +554,7 @@ export namespace JSX {
     'aria-valuenow'?: number | string
     /** Defines the human readable text alternative of aria-valuenow for a range widget. */
     'aria-valuetext'?: string
-    role?: Computable<
+    role?:
       | 'alert'
       | 'alertdialog'
       | 'application'
@@ -457,44 +625,59 @@ export namespace JSX {
       | 'tree'
       | 'treegrid'
       | 'treeitem'
-    >
   }
 
-  interface HTMLAttributes<T> extends AriaProps, ElementProps<T> {
-    accessKey?: Computable<string>
-    class?: Computable<string> | undefined
-    className?: Computable<string>
-    contenteditable?: Computable<boolean | 'inherit'>
-    contextmenu?: Computable<string>
-    dir?: Computable<HTMLDir>
-    draggable?: Computable<boolean>
-    hidden?: Computable<boolean>
-    id?: Computable<string>
-    lang?: Computable<string>
-    spellcheck?: Computable<boolean>
-    style?: Computable<CSSProperties | string>
-    tabindex?: Computable<number | string>
-    title?: Computable<string>
-    translate?: Computable<'yes' | 'no'>
-    about?: Computable<string>
-    datatype?: Computable<string>
-    inlist?: Computable<any>
-    prefix?: Computable<string>
-    property?: Computable<string>
-    resource?: Computable<string>
-    typeof?: Computable<string>
-    vocab?: Computable<string>
-    autocapitalize?: Computable<HTMLAutocapitalize>
-    slot?: Computable<string>
-    color?: Computable<string>
-    itemprop?: Computable<string>
-    itemscope?: Computable<boolean>
-    itemtype?: Computable<string>
-    itemid?: Computable<string>
-    itemref?: Computable<string>
-    part?: Computable<string>
-    exportparts?: Computable<string>
-    inputmode?: Computable<
+  // TODO: Should we allow this?
+  // type ClassKeys = `class:${string}`;
+  // type CSSKeys = Exclude<keyof csstype.PropertiesHyphen, `-${string}`>;
+
+  // type CSSAttributes = {
+  //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
+  // };
+
+  interface HTMLAttributes<T>
+    extends AriaAttributes,
+      DOMAttributes<T>,
+      CssAttributes,
+      ElementAttributes<T>,
+      ElementProperties<T>,
+      $Spread<T> {
+    // [key: ClassKeys]: boolean;
+    accessKey?: string
+    class?: string | undefined
+    contenteditable?: boolean | 'plaintext-only' | 'inherit'
+    contextmenu?: string
+    dir?: HTMLDir
+    draggable?: boolean | 'false' | 'true'
+    hidden?: boolean | 'hidden' | 'until-found'
+    id?: string
+    inert?: boolean
+    lang?: string
+    spellcheck?: boolean
+    style?: CSSProperties | string
+    tabindex?: number | string
+    title?: string
+    translate?: 'yes' | 'no'
+    about?: string
+    datatype?: string
+    inlist?: any
+    popover?: boolean | 'manual' | 'auto'
+    prefix?: string
+    property?: string
+    resource?: string
+    typeof?: string
+    vocab?: string
+    autocapitalize?: HTMLAutocapitalize
+    slot?: string
+    color?: string
+    itemprop?: string
+    itemscope?: boolean
+    itemtype?: string
+    itemid?: string
+    itemref?: string
+    part?: string
+    exportparts?: string
+    inputmode?:
       | 'none'
       | 'text'
       | 'tel'
@@ -503,410 +686,388 @@ export namespace JSX {
       | 'numeric'
       | 'decimal'
       | 'search'
-    >
-    contentEditable?: Computable<boolean | 'inherit'>
-    contextMenu?: Computable<string>
-    tabIndex?: Computable<number | string>
-    autoCapitalize?: Computable<HTMLAutocapitalize>
-    itemProp?: Computable<string>
-    itemScope?: Computable<boolean>
-    itemType?: Computable<string>
-    itemId?: Computable<string>
-    itemRef?: Computable<string>
-    exportParts?: Computable<string>
-    inputMode?: Computable<
-      | 'none'
-      | 'text'
-      | 'tel'
-      | 'url'
-      | 'email'
-      | 'numeric'
-      | 'decimal'
-      | 'search'
-    >
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
-    download?: Computable<any>
-    href?: Computable<string>
-    hreflang?: Computable<string>
-    media?: Computable<string>
-    ping?: Computable<string>
-    referrerpolicy?: Computable<HTMLReferrerPolicy>
-    rel?: Computable<string>
-    target?: Computable<string>
-    type?: Computable<string>
-    referrerPolicy?: Computable<HTMLReferrerPolicy>
+    download?: any
+    href?: string
+    hreflang?: string
+    media?: string
+    ping?: string
+    referrerpolicy?: HTMLReferrerPolicy
+    rel?: string
+    target?: string
+    type?: string
+    referrerPolicy?: HTMLReferrerPolicy
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
   interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: Computable<string>
-    coords?: Computable<string>
-    download?: Computable<any>
-    href?: Computable<string>
-    hreflang?: Computable<string>
-    ping?: Computable<string>
-    referrerpolicy?: Computable<HTMLReferrerPolicy>
-    rel?: Computable<string>
-    shape?: Computable<'rect' | 'circle' | 'poly' | 'default'>
-    target?: Computable<string>
-    referrerPolicy?: Computable<HTMLReferrerPolicy>
+    alt?: string
+    coords?: string
+    download?: any
+    href?: string
+    hreflang?: string
+    ping?: string
+    referrerpolicy?: HTMLReferrerPolicy
+    rel?: string
+    shape?: 'rect' | 'circle' | 'poly' | 'default'
+    target?: string
+    referrerPolicy?: HTMLReferrerPolicy
   }
   interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
-    href?: Computable<string>
-    target?: Computable<string>
+    href?: string
+    target?: string
   }
   interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: Computable<string>
+    cite?: string
   }
   interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: Computable<boolean>
-    disabled?: Computable<boolean>
-    form?: Computable<string>
-    formaction?: Computable<string>
-    formenctype?: Computable<HTMLFormEncType>
-    formmethod?: Computable<HTMLFormMethod>
-    formnovalidate?: Computable<boolean>
-    formtarget?: Computable<string>
-    name?: Computable<string>
-    type?: Computable<'submit' | 'reset' | 'button'>
-    value?: Computable<string>
-    formAction?: Computable<string>
-    formEnctype?: Computable<HTMLFormEncType>
-    formMethod?: Computable<HTMLFormMethod>
-    formNoValidate?: Computable<boolean>
-    formTarget?: Computable<string>
+    autofocus?: boolean
+    disabled?: boolean
+    form?: string
+    formaction?: string | SerializableAttributeValue
+    formenctype?: HTMLFormEncType
+    formmethod?: HTMLFormMethod
+    formnovalidate?: boolean
+    formtarget?: string
+    popovertarget?: string
+    popovertargetaction?: 'hide' | 'show' | 'toggle'
+    name?: string
+    type?: 'submit' | 'reset' | 'button'
+    value?: string
   }
   interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
-    width?: Computable<number | string>
-    height?: Computable<number | string>
+    width?: number | string
+    height?: number | string
   }
   interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: Computable<number | string>
-    width?: Computable<number | string>
+    span?: number | string
+    width?: number | string
   }
   interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    span?: Computable<number | string>
+    span?: number | string
   }
   interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: Computable<string | string[] | number>
+    value?: string | string[] | number
   }
   interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: Computable<boolean>
+    open?: boolean
     ontoggle?: EventHandler<T, Event>
   }
   interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
-    open?: Computable<boolean>
+    open?: boolean
+    'on:close'?: EventHandler<T, Event>
+    'on:cancel'?: EventHandler<T, Event>
   }
   interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
-    height?: Computable<number | string>
-    src?: Computable<string>
-    type?: Computable<string>
-    width?: Computable<number | string>
+    height?: number | string
+    src?: string
+    type?: string
+    width?: number | string
   }
   interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: Computable<boolean>
-    form?: Computable<string>
-    name?: Computable<string>
+    disabled?: boolean
+    form?: string
+    name?: string
   }
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
-    acceptcharset?: Computable<string>
-    action?: Computable<string>
-    autocomplete?: Computable<string>
-    encoding?: Computable<HTMLFormEncType>
-    enctype?: Computable<HTMLFormEncType>
-    method?: Computable<HTMLFormMethod>
-    name?: Computable<string>
-    novalidate?: Computable<boolean>
-    target?: Computable<string>
-    acceptCharset?: Computable<string>
-    noValidate?: Computable<boolean>
+    'accept-charset'?: string
+    action?: string | SerializableAttributeValue
+    autocomplete?: string
+    encoding?: HTMLFormEncType
+    enctype?: HTMLFormEncType
+    method?: HTMLFormMethod
+    name?: string
+    novalidate?: boolean
+    target?: string
   }
   interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
-    allow?: Computable<string>
-    allowfullscreen?: Computable<boolean>
-    height?: Computable<number | string>
-    name?: Computable<string>
-    referrerpolicy?: Computable<HTMLReferrerPolicy>
+    allow?: string
+    allowfullscreen?: boolean
+    height?: number | string
+    loading?: 'eager' | 'lazy'
+    name?: string
+    referrerpolicy?: HTMLReferrerPolicy
     sandbox?: HTMLIframeSandbox | string
-    src?: Computable<string>
-    srcdoc?: Computable<string>
-    width?: Computable<number | string>
-    referrerPolicy?: Computable<HTMLReferrerPolicy>
+    src?: string
+    srcdoc?: string
+    width?: number | string
   }
   interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
-    alt?: Computable<string>
-    crossorigin?: Computable<HTMLCrossorigin>
-    decoding?: Computable<'sync' | 'async' | 'auto'>
-    height?: Computable<number | string>
-    ismap?: Computable<boolean>
-    isMap?: Computable<boolean>
-    loading?: Computable<'eager' | 'lazy'>
-    referrerpolicy?: Computable<HTMLReferrerPolicy>
-    referrerPolicy?: Computable<HTMLReferrerPolicy>
-    sizes?: Computable<string>
-    src?: Computable<string>
-    srcset?: Computable<string>
-    srcSet?: Computable<string>
-    usemap?: Computable<string>
-    useMap?: Computable<string>
-    width?: Computable<number | string>
-    crossOrigin?: Computable<HTMLCrossorigin>
+    alt?: string
+    crossorigin?: HTMLCrossorigin
+    decoding?: 'sync' | 'async' | 'auto'
+    height?: number | string
+    ismap?: boolean
+    loading?: 'eager' | 'lazy'
+    referrerpolicy?: HTMLReferrerPolicy
+    sizes?: string
+    src?: string
+    srcset?: string
+    usemap?: string
+    width?: number | string
+    elementtiming?: string
+    fetchpriority?: 'high' | 'low' | 'auto'
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
-    accept?: Computable<string>
-    alt?: Computable<string>
-    autocomplete?: Computable<string>
-    autofocus?: Computable<boolean>
-    capture?: Computable<boolean | string>
-    checked?: Computable<boolean>
-    crossorigin?: Computable<HTMLCrossorigin>
-    disabled?: Computable<boolean>
-    form?: Computable<string>
-    formaction?: Computable<string>
-    formenctype?: Computable<HTMLFormEncType>
-    formmethod?: Computable<HTMLFormMethod>
-    formnovalidate?: Computable<boolean>
-    formtarget?: Computable<string>
-    height?: Computable<number | string>
-    list?: Computable<string>
-    max?: Computable<number | string>
-    maxlength?: Computable<number | string>
-    min?: Computable<number | string>
-    minlength?: Computable<number | string>
-    multiple?: Computable<boolean>
-    name?: Computable<string>
-    pattern?: Computable<string>
-    placeholder?: Computable<string>
-    readonly?: Computable<boolean>
-    required?: Computable<boolean>
-    size?: Computable<number | string>
-    src?: Computable<string>
-    step?: Computable<number | string>
-    type?: Computable<string>
-    value?: Computable<string | string[] | number>
-    width?: Computable<number | string>
-    crossOrigin?: Computable<HTMLCrossorigin>
-    formAction?: Computable<string>
-    formEnctype?: Computable<HTMLFormEncType>
-    formMethod?: Computable<HTMLFormMethod>
-    formNoValidate?: Computable<boolean>
-    formTarget?: Computable<string>
-    maxLength?: Computable<number | string>
-    minLength?: Computable<number | string>
-    readOnly?: Computable<boolean>
+    accept?: string
+    alt?: string
+    autocomplete?: string
+    autocorrect?: 'on' | 'off'
+    autofocus?: boolean
+    capture?: boolean | string
+    checked?: boolean
+    crossorigin?: HTMLCrossorigin
+    disabled?: boolean
+    enterkeyhint?:
+      | 'enter'
+      | 'done'
+      | 'go'
+      | 'next'
+      | 'previous'
+      | 'search'
+      | 'send'
+    form?: string
+    formaction?: string | SerializableAttributeValue
+    formenctype?: HTMLFormEncType
+    formmethod?: HTMLFormMethod
+    formnovalidate?: boolean
+    formtarget?: string
+    height?: number | string
+    incremental?: boolean
+    list?: string
+    max?: number | string
+    maxlength?: number | string
+    min?: number | string
+    minlength?: number | string
+    multiple?: boolean
+    name?: string
+    pattern?: string
+    placeholder?: string
+    readonly?: boolean
+    results?: number
+    required?: boolean
+    size?: number | string
+    src?: string
+    step?: number | string
+    type?: string
+    value?: string | string[] | number
+    width?: number | string
+
+    'model:value'?: AtomMut<string>
+    'model:valueAsNumber'?: AtomMut<number>
+    'model:checked'?: AtomMut<boolean>
   }
   interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: Computable<string>
-    dateTime?: Computable<string>
+    cite?: string
+    datetime?: string
   }
   interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
-    autofocus?: Computable<boolean>
-    challenge?: Computable<string>
-    disabled?: Computable<boolean>
-    form?: Computable<string>
-    keytype?: Computable<string>
-    keyparams?: Computable<string>
-    name?: Computable<string>
+    autofocus?: boolean
+    challenge?: string
+    disabled?: boolean
+    form?: string
+    keytype?: string
+    keyparams?: string
+    name?: string
   }
   interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
-    for?: Computable<string>
-    form?: Computable<string>
+    for?: string
+    form?: string
   }
   interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
-    value?: Computable<number | string>
+    value?: number | string
   }
   interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
-    as?: Computable<HTMLLinkAs>
-    crossorigin?: Computable<HTMLCrossorigin>
-    disabled?: Computable<boolean>
-    href?: Computable<string>
-    hreflang?: Computable<string>
-    integrity?: Computable<string>
-    media?: Computable<string>
-    referrerpolicy?: Computable<HTMLReferrerPolicy>
-    rel?: Computable<string>
-    sizes?: Computable<string>
-    type?: Computable<string>
-    crossOrigin?: Computable<HTMLCrossorigin>
-    referrerPolicy?: Computable<HTMLReferrerPolicy>
+    as?: HTMLLinkAs
+    crossorigin?: HTMLCrossorigin
+    disabled?: boolean
+    fetchpriority?: 'high' | 'low' | 'auto'
+    href?: string
+    hreflang?: string
+    imagesizes?: string
+    imagesrcset?: string
+    integrity?: string
+    media?: string
+    referrerpolicy?: HTMLReferrerPolicy
+    rel?: string
+    sizes?: string
+    type?: string
   }
   interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: Computable<string>
+    name?: string
   }
   interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autoplay?: Computable<boolean>
-    controls?: Computable<boolean>
-    crossorigin?: Computable<HTMLCrossorigin>
-    loop?: Computable<boolean>
-    mediagroup?: Computable<string>
-    muted?: Computable<boolean>
-    preload?: Computable<'none' | 'metadata' | 'auto' | ''>
-    src?: Computable<string>
-    crossOrigin?: Computable<HTMLCrossorigin>
-    mediaGroup?: Computable<string>
+    autoplay?: boolean
+    controls?: boolean
+    crossorigin?: HTMLCrossorigin
+    loop?: boolean
+    mediagroup?: string
+    muted?: boolean
+    preload?: 'none' | 'metadata' | 'auto' | ''
+    src?: string
   }
   interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
-    label?: Computable<string>
-    type?: Computable<'context' | 'toolbar'>
+    label?: string
+    type?: 'context' | 'toolbar'
   }
   interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
-    charset?: Computable<string>
-    content?: Computable<string>
-    httpequiv?: Computable<string>
-    name?: Computable<string>
-    httpEquiv?: Computable<string>
+    charset?: string
+    content?: string
+    'http-equiv'?: string
+    name?: string
+    media?: string
   }
   interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: Computable<string>
-    high?: Computable<number | string>
-    low?: Computable<number | string>
-    max?: Computable<number | string>
-    min?: Computable<number | string>
-    optimum?: Computable<number | string>
-    value?: Computable<string | string[] | number>
+    form?: string
+    high?: number | string
+    low?: number | string
+    max?: number | string
+    min?: number | string
+    optimum?: number | string
+    value?: string | string[] | number
   }
   interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
-    cite?: Computable<string>
+    cite?: string
   }
   interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
-    data?: Computable<string>
-    form?: Computable<string>
-    height?: Computable<number | string>
-    name?: Computable<string>
-    type?: Computable<string>
-    usemap?: Computable<string>
-    width?: Computable<number | string>
-    useMap?: Computable<string>
+    data?: string
+    form?: string
+    height?: number | string
+    name?: string
+    type?: string
+    usemap?: string
+    width?: number | string
+    useMap?: string
   }
   interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
-    reversed?: Computable<boolean>
-    start?: Computable<number | string>
-    type?: Computable<'1' | 'a' | 'A' | 'i' | 'I'>
+    reversed?: boolean
+    start?: number | string
+    type?: '1' | 'a' | 'A' | 'i' | 'I'
   }
   interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: Computable<boolean>
-    label?: Computable<string>
+    disabled?: boolean
+    label?: string
   }
   interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
-    disabled?: Computable<boolean>
-    label?: Computable<string>
-    selected?: Computable<boolean>
-    value?: Computable<string | string[] | number>
+    disabled?: boolean
+    label?: string
+    selected?: boolean
+    value?: string | string[] | number
   }
   interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
-    form?: Computable<string>
-    for?: Computable<string>
-    name?: Computable<string>
+    form?: string
+    for?: string
+    name?: string
   }
   interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
-    name?: Computable<string>
-    value?: Computable<string | string[] | number>
+    name?: string
+    value?: string | string[] | number
   }
   interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
-    max?: Computable<number | string>
-    value?: Computable<string | string[] | number>
+    max?: number | string
+    value?: string | string[] | number
   }
   interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
-    async?: Computable<boolean>
-    charset?: Computable<string>
-    crossorigin?: Computable<HTMLCrossorigin>
-    defer?: Computable<boolean>
-    integrity?: Computable<string>
-    nomodule?: Computable<boolean>
-    nonce?: Computable<string>
-    referrerpolicy?: Computable<HTMLReferrerPolicy>
-    src?: Computable<string>
-    type?: Computable<string>
-    crossOrigin?: Computable<HTMLCrossorigin>
-    noModule?: Computable<boolean>
-    referrerPolicy?: Computable<HTMLReferrerPolicy>
+    async?: boolean
+    charset?: string
+    crossorigin?: HTMLCrossorigin
+    defer?: boolean
+    integrity?: string
+    nomodule?: boolean
+    nonce?: string
+    referrerpolicy?: HTMLReferrerPolicy
+    src?: string
+    type?: string
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: Computable<string>
-    autofocus?: Computable<boolean>
-    disabled?: Computable<boolean>
-    form?: Computable<string>
-    multiple?: Computable<boolean>
-    name?: Computable<string>
-    required?: Computable<boolean>
-    size?: Computable<number | string>
-    value?: Computable<string | string[] | number>
+    autocomplete?: string
+    autofocus?: boolean
+    disabled?: boolean
+    form?: string
+    multiple?: boolean
+    name?: string
+    required?: boolean
+    size?: number | string
+    value?: string | string[] | number
   }
   interface HTMLSlotElementAttributes<T = HTMLSlotElement>
     extends HTMLAttributes<T> {
-    name?: Computable<string>
+    name?: string
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
-    media?: Computable<string>
-    sizes?: Computable<string>
-    src?: Computable<string>
-    srcset?: Computable<string>
-    type?: Computable<string>
+    media?: string
+    sizes?: string
+    src?: string
+    srcset?: string
+    type?: string
   }
   interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
-    media?: Computable<string>
-    nonce?: Computable<string>
-    scoped?: Computable<boolean>
-    type?: Computable<string>
+    media?: string
+    nonce?: string
+    scoped?: boolean
+    type?: string
   }
   interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: Computable<number | string>
-    headers?: Computable<string>
-    rowspan?: Computable<number | string>
-    colSpan?: Computable<number | string>
-    rowSpan?: Computable<number | string>
+    colspan?: number | string
+    headers?: string
+    rowspan?: number | string
   }
   interface TemplateHTMLAttributes<T extends HTMLTemplateElement>
     extends HTMLAttributes<T> {
-    content?: Computable<DocumentFragment>
+    content?: DocumentFragment
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: Computable<string>
-    autofocus?: Computable<boolean>
-    cols?: Computable<number | string>
-    dirname?: Computable<string>
-    disabled?: Computable<boolean>
-    form?: Computable<string>
-    maxlength?: Computable<number | string>
-    minlength?: Computable<number | string>
-    name?: Computable<string>
-    placeholder?: Computable<string>
-    readonly?: Computable<boolean>
-    required?: Computable<boolean>
-    rows?: Computable<number | string>
-    value?: Computable<string | string[] | number>
-    wrap?: Computable<'hard' | 'soft' | 'off'>
-    maxLength?: Computable<number | string>
-    minLength?: Computable<number | string>
-    readOnly?: Computable<boolean>
+    autocomplete?: string
+    autofocus?: boolean
+    cols?: number | string
+    dirname?: string
+    disabled?: boolean
+    enterkeyhint?:
+      | 'enter'
+      | 'done'
+      | 'go'
+      | 'next'
+      | 'previous'
+      | 'search'
+      | 'send'
+    form?: string
+    maxlength?: number | string
+    minlength?: number | string
+    name?: string
+    placeholder?: string
+    readonly?: boolean
+    required?: boolean
+    rows?: number | string
+    value?: string | string[] | number
+    wrap?: 'hard' | 'soft' | 'off'
   }
   interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
-    colspan?: Computable<number | string>
-    headers?: Computable<string>
-    rowspan?: Computable<number | string>
-    colSpan?: Computable<number | string>
-    rowSpan?: Computable<number | string>
-    scope?: Computable<'col' | 'row' | 'rowgroup' | 'colgroup'>
+    colspan?: number | string
+    headers?: string
+    rowspan?: number | string
+    colSpan?: number | string
+    rowSpan?: number | string
+    scope?: 'col' | 'row' | 'rowgroup' | 'colgroup'
   }
   interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
-    datetime?: Computable<string>
-    dateTime?: Computable<string>
+    datetime?: string
   }
   interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
-    default?: Computable<boolean>
-    kind?: Computable<
-      'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata'
-    >
-    label?: Computable<string>
-    src?: Computable<string>
-    srclang?: Computable<string>
+    default?: boolean
+    kind?: 'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata'
+    label?: string
+    src?: string
+    srclang?: string
   }
   interface VideoHTMLAttributes<T> extends MediaHTMLAttributes<T> {
-    height?: Computable<number | string>
-    playsinline?: Computable<boolean>
-    poster?: Computable<string>
-    width?: Computable<number | string>
+    height?: number | string
+    playsinline?: boolean
+    poster?: string
+    width?: number | string
   }
+
+  // #region SVG
+
   type SVGPreserveAspectRatio =
     | 'none'
     | 'xMinYMin'
@@ -967,55 +1128,54 @@ export namespace JSX {
     | 'defer xMidYMax slice'
     | 'defer xMaxYMax slice'
   type SVGUnits = 'userSpaceOnUse' | 'objectBoundingBox'
-  interface CoreSVGAttributes<T> extends AriaProps, ElementProps<T> {
-    id?: Computable<string>
-    lang?: Computable<string>
-    tabIndex?: Computable<number | string>
-    tabindex?: Computable<number | string>
+  interface CoreSVGAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    id?: string
+    lang?: string
+    tabindex?: number | string
   }
-  interface StylableSVGAttributes {
-    class?: Computable<string> | undefined
-    style?: Computable<CSSProperties | string>
+  interface StylableSVGAttributes extends CssAttributes {
+    class?: string | undefined
+    style?: CSSProperties | string
   }
   interface TransformableSVGAttributes {
-    transform?: Computable<string>
+    transform?: string
   }
   interface ConditionalProcessingSVGAttributes {
-    requiredExtensions?: Computable<string>
-    requiredFeatures?: Computable<string>
-    systemLanguage?: Computable<string>
+    requiredExtensions?: string
+    requiredFeatures?: string
+    systemLanguage?: string
   }
   interface ExternalResourceSVGAttributes {
-    externalResourcesRequired?: Computable<'true' | 'false'>
+    externalResourcesRequired?: 'true' | 'false'
   }
   interface AnimationTimingSVGAttributes {
-    begin?: Computable<string>
-    dur?: Computable<string>
-    end?: Computable<string>
-    min?: Computable<string>
-    max?: Computable<string>
-    restart?: Computable<'always' | 'whenNotActive' | 'never'>
-    repeatCount?: Computable<number | 'indefinite'>
-    repeatDur?: Computable<string>
-    fill?: Computable<'freeze' | 'remove'>
+    begin?: string
+    dur?: string
+    end?: string
+    min?: string
+    max?: string
+    restart?: 'always' | 'whenNotActive' | 'never'
+    repeatCount?: number | 'indefinite'
+    repeatDur?: string
+    fill?: 'freeze' | 'remove'
   }
   interface AnimationValueSVGAttributes {
-    calcMode?: Computable<'discrete' | 'linear' | 'paced' | 'spline'>
-    values?: Computable<string>
-    keyTimes?: Computable<string>
-    keySplines?: Computable<string>
-    from?: Computable<number | string>
-    to?: Computable<number | string>
-    by?: Computable<number | string>
+    calcMode?: 'discrete' | 'linear' | 'paced' | 'spline'
+    values?: string
+    keyTimes?: string
+    keySplines?: string
+    from?: number | string
+    to?: number | string
+    by?: number | string
   }
   interface AnimationAdditionSVGAttributes {
-    attributeName?: Computable<string>
-    additive?: Computable<'replace' | 'sum'>
-    accumulate?: Computable<'none' | 'sum'>
+    attributeName?: string
+    additive?: 'replace' | 'sum'
+    accumulate?: 'none' | 'sum'
   }
   interface AnimationAttributeTargetSVGAttributes {
-    attributeName?: Computable<string>
-    attributeType?: Computable<'CSS' | 'XML' | 'auto'>
+    attributeName?: string
+    attributeType?: 'CSS' | 'XML' | 'auto'
   }
   interface PresentationSVGAttributes {
     'alignment-baseline'?:
@@ -1032,18 +1192,18 @@ export namespace JSX {
       | 'hanging'
       | 'mathematical'
       | 'inherit'
-    'baseline-shift'?: Computable<number | string>
-    clip?: Computable<string>
-    'clip-path'?: Computable<string>
+    'baseline-shift'?: number | string
+    clip?: string
+    'clip-path'?: string
     'clip-rule'?: 'nonzero' | 'evenodd' | 'inherit'
-    color?: Computable<string>
+    color?: string
     'color-interpolation'?: 'auto' | 'sRGB' | 'linearRGB' | 'inherit'
     'color-interpolation-filters'?: 'auto' | 'sRGB' | 'linearRGB' | 'inherit'
-    'color-profile'?: Computable<string>
+    'color-profile'?: string
     'color-rendering'?: 'auto' | 'optimizeSpeed' | 'optimizeQuality' | 'inherit'
-    cursor?: Computable<string>
+    cursor?: string
     direction?: 'ltr' | 'rtl' | 'inherit'
-    display?: Computable<string>
+    display?: string
     'dominant-baseline'?:
       | 'auto'
       | 'text-bottom'
@@ -1055,35 +1215,34 @@ export namespace JSX {
       | 'hanging'
       | 'text-top'
       | 'inherit'
-    'enable-background'?: Computable<string>
-    fill?: Computable<string>
-    'fill-opacity'?: Computable<number | string | 'inherit'>
-    'fill-rule'?: Computable<'nonzero' | 'evenodd' | 'inherit'>
-    filter?: Computable<string>
-    'flood-color'?: Computable<string>
-    'flood-opacity'?: Computable<number | string | 'inherit'>
-    'font-family'?: Computable<string>
-    'font-size'?: Computable<string>
-    'font-size-adjust'?: Computable<number | string>
-    'font-stretch'?: Computable<string>
-    'font-style'?: Computable<'normal' | 'italic' | 'oblique' | 'inherit'>
-    'font-variant'?: Computable<string>
-    'font-weight'?: Computable<number | string>
-    'glyph-orientation-horizontal'?: Computable<string>
-    'glyph-orientation-vertical'?: Computable<string>
-    'image-rendering'?: Computable<
-      'auto' | 'optimizeQuality' | 'optimizeSpeed' | 'inherit'
-    >
-    kerning?: Computable<string>
-    'letter-spacing'?: Computable<number | string>
-    'lighting-color'?: Computable<string>
-    'marker-end'?: Computable<string>
-    'marker-mid'?: Computable<string>
-    'marker-start'?: Computable<string>
-    mask?: Computable<string>
-    opacity?: Computable<number | string | 'inherit'>
-    overflow?: Computable<'visible' | 'hidden' | 'scroll' | 'auto' | 'inherit'>
-    'pointer-events'?: Computable<
+    'enable-background'?: string
+    fill?: string
+    'fill-opacity'?: number | string | 'inherit'
+    'fill-rule'?: 'nonzero' | 'evenodd' | 'inherit'
+    filter?: string
+    'flood-color'?: string
+    'flood-opacity'?: number | string | 'inherit'
+    'font-family'?: string
+    'font-size'?: string
+    'font-size-adjust'?: number | string
+    'font-stretch'?: string
+    'font-style'?: 'normal' | 'italic' | 'oblique' | 'inherit'
+    'font-variant'?: string
+    'font-weight'?: number | string
+    'glyph-orientation-horizontal'?: string
+    'glyph-orientation-vertical'?: string
+    'image-rendering'?: 'auto' | 'optimizeQuality' | 'optimizeSpeed' | 'inherit'
+    kerning?: string
+    'letter-spacing'?: number | string
+    'lighting-color'?: string
+    'marker-end'?: string
+    'marker-mid'?: string
+    'marker-start'?: string
+    mask?: string
+    opacity?: number | string | 'inherit'
+    overflow?: 'visible' | 'hidden' | 'scroll' | 'auto' | 'inherit'
+    pathLength?: string | number
+    'pointer-events'?:
       | 'bounding-box'
       | 'visiblePainted'
       | 'visibleFill'
@@ -1096,39 +1255,53 @@ export namespace JSX {
       | 'all'
       | 'none'
       | 'inherit'
-    >
-    'shape-rendering'?: Computable<
-      'auto' | 'optimizeSpeed' | 'crispEdges' | 'geometricPrecision' | 'inherit'
-    >
-    'stop-color'?: Computable<string>
-    'stop-opacity'?: Computable<number | string | 'inherit'>
-    stroke?: Computable<string>
-    'stroke-dasharray'?: Computable<string>
-    'stroke-dashoffset'?: Computable<number | string>
-    'stroke-linecap'?: Computable<'butt' | 'round' | 'square' | 'inherit'>
-    'stroke-linejoin'?: Computable<
-      'arcs' | 'bevel' | 'miter' | 'miter-clip' | 'round' | 'inherit'
-    >
-    'stroke-miterlimit'?: Computable<number | string | 'inherit'>
-    'stroke-opacity'?: Computable<number | string | 'inherit'>
-    'stroke-width'?: Computable<number | string>
-    'text-anchor'?: Computable<'start' | 'middle' | 'end' | 'inherit'>
-    'text-decoration'?: Computable<
-      'none' | 'underline' | 'overline' | 'line-through' | 'blink' | 'inherit'
-    >
-    'text-rendering'?: Computable<
+    'shape-rendering'?:
+      | 'auto'
+      | 'optimizeSpeed'
+      | 'crispEdges'
+      | 'geometricPrecision'
+      | 'inherit'
+    'stop-color'?: string
+    'stop-opacity'?: number | string | 'inherit'
+    stroke?: string
+    'stroke-dasharray'?: string
+    'stroke-dashoffset'?: number | string
+    'stroke-linecap'?: 'butt' | 'round' | 'square' | 'inherit'
+    'stroke-linejoin'?:
+      | 'arcs'
+      | 'bevel'
+      | 'miter'
+      | 'miter-clip'
+      | 'round'
+      | 'inherit'
+    'stroke-miterlimit'?: number | string | 'inherit'
+    'stroke-opacity'?: number | string | 'inherit'
+    'stroke-width'?: number | string
+    'text-anchor'?: 'start' | 'middle' | 'end' | 'inherit'
+    'text-decoration'?:
+      | 'none'
+      | 'underline'
+      | 'overline'
+      | 'line-through'
+      | 'blink'
+      | 'inherit'
+    'text-rendering'?:
       | 'auto'
       | 'optimizeSpeed'
       | 'optimizeLegibility'
       | 'geometricPrecision'
       | 'inherit'
-    >
-    'unicode-bidi'?: Computable<string>
-    visibility?: Computable<'visible' | 'hidden' | 'collapse' | 'inherit'>
-    'word-spacing'?: Computable<number | string>
-    'writing-mode'?: Computable<
-      'lr-tb' | 'rl-tb' | 'tb-rl' | 'lr' | 'rl' | 'tb' | 'inherit'
-    >
+    'unicode-bidi'?: string
+    visibility?: 'visible' | 'hidden' | 'collapse' | 'inherit'
+    'word-spacing'?: number | string
+    'writing-mode'?:
+      | 'lr-tb'
+      | 'rl-tb'
+      | 'tb-rl'
+      | 'lr'
+      | 'rl'
+      | 'tb'
+      | 'inherit'
   }
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1151,30 +1324,31 @@ export namespace JSX {
   interface FilterPrimitiveElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, 'color-interpolation-filters'> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    result?: Computable<string>
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    result?: string
   }
   interface SingleInputFilterSVGAttributes {
-    in?: Computable<string>
+    in?: string
   }
   interface DoubleInputFilterSVGAttributes {
-    in?: Computable<string>
-    in2?: Computable<string>
+    in?: string
+    in2?: string
   }
   interface FitToViewBoxSVGAttributes {
-    viewBox?: Computable<string>
-    preserveAspectRatio?: Computable<SVGPreserveAspectRatio>
+    viewBox?: string
+    preserveAspectRatio?: SVGPreserveAspectRatio
   }
   interface GradientElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    gradientUnits?: Computable<SVGUnits>
-    gradientTransform?: Computable<string>
-    spreadMethod?: Computable<'pad' | 'reflect' | 'repeat'>
+    gradientUnits?: SVGUnits
+    gradientTransform?: string
+    spreadMethod?: 'pad' | 'reflect' | 'repeat'
+    href?: string
   }
   interface GraphicsElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1195,7 +1369,7 @@ export namespace JSX {
   interface NewViewportSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
-    viewBox?: Computable<string>
+    viewBox?: string
   }
   interface ShapeElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1214,6 +1388,7 @@ export namespace JSX {
         | 'stroke-dashoffset'
         | 'stroke-opacity'
         | 'shape-rendering'
+        | 'pathLength'
       > {}
   interface TextContentElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1250,7 +1425,7 @@ export namespace JSX {
         | 'stroke-opacity'
       > {}
   interface ZoomAndPanSVGAttributes {
-    zoomAndPan?: Computable<'disable' | 'magnify'>
+    zoomAndPan?: 'disable' | 'magnify'
   }
   interface AnimateSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -1267,10 +1442,10 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    path?: Computable<string>
-    keyPoints?: Computable<string>
-    rotate?: Computable<number | string | 'auto' | 'auto-reverse'>
-    origin?: Computable<'default'>
+    path?: string
+    keyPoints?: string
+    rotate?: number | string | 'auto' | 'auto-reverse'
+    origin?: 'default'
   }
   interface AnimateTransformSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
@@ -1278,7 +1453,7 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes {
-    type?: Computable<'translate' | 'scale' | 'rotate' | 'skewX' | 'skewY'>
+    type?: 'translate' | 'scale' | 'rotate' | 'skewX' | 'skewY'
   }
   interface CircleSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -1286,9 +1461,9 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {
-    cx?: Computable<number | string>
-    cy?: Computable<number | string>
-    r?: Computable<number | string>
+    cx?: number | string
+    cy?: number | string
+    r?: number | string
   }
   interface ClipPathSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1297,7 +1472,7 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, 'clip-path'> {
-    clipPathUnits?: Computable<SVGUnits>
+    clipPathUnits?: SVGUnits
   }
   interface DefsSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1315,23 +1490,23 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {
-    cx?: Computable<number | string>
-    cy?: Computable<number | string>
-    rx?: Computable<number | string>
-    ry?: Computable<number | string>
+    cx?: number | string
+    cy?: number | string
+    rx?: number | string
+    ry?: number | string
   }
   interface FeBlendSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    mode?: Computable<'normal' | 'multiply' | 'screen' | 'darken' | 'lighten'>
+    mode?: 'normal' | 'multiply' | 'screen' | 'darken' | 'lighten'
   }
   interface FeColorMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    type?: Computable<'matrix' | 'saturate' | 'hueRotate' | 'luminanceToAlpha'>
-    values?: Computable<string>
+    type?: 'matrix' | 'saturate' | 'hueRotate' | 'luminanceToAlpha'
+    values?: string
   }
   interface FeComponentTransferSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -1341,47 +1516,59 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: Computable<'over' | 'in' | 'out' | 'atop' | 'xor' | 'arithmetic'>
-    k1?: Computable<number | string>
-    k2?: Computable<number | string>
-    k3?: Computable<number | string>
-    k4?: Computable<number | string>
+    operator?: 'over' | 'in' | 'out' | 'atop' | 'xor' | 'arithmetic'
+    k1?: number | string
+    k2?: number | string
+    k3?: number | string
+    k4?: number | string
   }
   interface FeConvolveMatrixSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    order?: Computable<number | string>
-    kernelMatrix?: Computable<string>
-    divisor?: Computable<number | string>
-    bias?: Computable<number | string>
-    targetX?: Computable<number | string>
-    targetY?: Computable<number | string>
-    edgeMode?: Computable<'duplicate' | 'wrap' | 'none'>
-    kernelUnitLength?: Computable<number | string>
-    preserveAlpha?: Computable<'true' | 'false'>
+    order?: number | string
+    kernelMatrix?: string
+    divisor?: number | string
+    bias?: number | string
+    targetX?: number | string
+    targetY?: number | string
+    edgeMode?: 'duplicate' | 'wrap' | 'none'
+    kernelUnitLength?: number | string
+    preserveAlpha?: 'true' | 'false'
   }
   interface FeDiffuseLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, 'color' | 'lighting-color'> {
-    surfaceScale?: Computable<number | string>
-    diffuseConstant?: Computable<number | string>
-    kernelUnitLength?: Computable<number | string>
+    surfaceScale?: number | string
+    diffuseConstant?: number | string
+    kernelUnitLength?: number | string
   }
   interface FeDisplacementMapSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       DoubleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    scale?: Computable<number | string>
-    xChannelSelector?: Computable<'R' | 'G' | 'B' | 'A'>
-    yChannelSelector?: Computable<'R' | 'G' | 'B' | 'A'>
+    scale?: number | string
+    xChannelSelector?: 'R' | 'G' | 'B' | 'A'
+    yChannelSelector?: 'R' | 'G' | 'B' | 'A'
   }
   interface FeDistantLightSVGAttributes<T>
     extends LightSourceElementSVGAttributes<T> {
-    azimuth?: Computable<number | string>
-    elevation?: Computable<number | string>
+    azimuth?: number | string
+    elevation?: number | string
+  }
+  interface FeDropShadowSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      FilterPrimitiveElementSVGAttributes<T>,
+      StylableSVGAttributes,
+      Pick<
+        PresentationSVGAttributes,
+        'color' | 'flood-color' | 'flood-opacity'
+      > {
+    dx?: number | string
+    dy?: number | string
+    stdDeviation?: number | string
   }
   interface FeFloodSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -1392,25 +1579,25 @@ export namespace JSX {
       > {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
     type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma'
-    tableValues?: Computable<string>
-    slope?: Computable<number | string>
-    intercept?: Computable<number | string>
-    amplitude?: Computable<number | string>
-    exponent?: Computable<number | string>
-    offset?: Computable<number | string>
+    tableValues?: string
+    slope?: number | string
+    intercept?: number | string
+    amplitude?: number | string
+    exponent?: number | string
+    offset?: number | string
   }
   interface FeGaussianBlurSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    stdDeviation?: Computable<number | string>
+    stdDeviation?: number | string
   }
   interface FeImageSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    preserveAspectRatio?: Computable<SVGPreserveAspectRatio>
-    href?: Computable<string>
+    preserveAspectRatio?: SVGPreserveAspectRatio
+    href?: string
   }
   interface FeMergeSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -1422,42 +1609,42 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    operator?: Computable<'erode' | 'dilate'>
-    radius?: Computable<number | string>
+    operator?: 'erode' | 'dilate'
+    radius?: number | string
   }
   interface FeOffsetSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {
-    dx?: Computable<number | string>
-    dy?: Computable<number | string>
+    dx?: number | string
+    dy?: number | string
   }
   interface FePointLightSVGAttributes<T>
     extends LightSourceElementSVGAttributes<T> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    z?: Computable<number | string>
+    x?: number | string
+    y?: number | string
+    z?: number | string
   }
   interface FeSpecularLightingSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, 'color' | 'lighting-color'> {
-    surfaceScale?: Computable<string>
-    specularConstant?: Computable<string>
-    specularExponent?: Computable<string>
-    kernelUnitLength?: Computable<number | string>
+    surfaceScale?: string
+    specularConstant?: string
+    specularExponent?: string
+    kernelUnitLength?: number | string
   }
   interface FeSpotLightSVGAttributes<T>
     extends LightSourceElementSVGAttributes<T> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    z?: Computable<number | string>
-    pointsAtX?: Computable<number | string>
-    pointsAtY?: Computable<number | string>
-    pointsAtZ?: Computable<number | string>
-    specularExponent?: Computable<number | string>
-    limitingConeAngle?: Computable<number | string>
+    x?: number | string
+    y?: number | string
+    z?: number | string
+    pointsAtX?: number | string
+    pointsAtY?: number | string
+    pointsAtZ?: number | string
+    specularExponent?: number | string
+    limitingConeAngle?: number | string
   }
   interface FeTileSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
@@ -1466,23 +1653,23 @@ export namespace JSX {
   interface FeTurbulanceSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes {
-    baseFrequency?: Computable<number | string>
-    numOctaves?: Computable<number | string>
-    seed?: Computable<number | string>
-    stitchTiles?: Computable<'stitch' | 'noStitch'>
-    type?: Computable<'fractalNoise' | 'turbulence'>
+    baseFrequency?: number | string
+    numOctaves?: number | string
+    seed?: number | string
+    stitchTiles?: 'stitch' | 'noStitch'
+    type?: 'fractalNoise' | 'turbulence'
   }
   interface FilterSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    filterUnits?: Computable<SVGUnits>
-    primitiveUnits?: Computable<SVGUnits>
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    filterRes?: Computable<number | string>
+    filterUnits?: SVGUnits
+    primitiveUnits?: SVGUnits
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    filterRes?: number | string
   }
   interface ForeignObjectSVGAttributes<T>
     extends NewViewportSVGAttributes<T>,
@@ -1491,10 +1678,10 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, 'display' | 'visibility'> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
   }
   interface GSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1510,12 +1697,12 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, 'color-profile' | 'image-rendering'> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    preserveAspectRatio?: Computable<ImagePreserveAspectRatio>
-    href?: Computable<string>
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    preserveAspectRatio?: ImagePreserveAspectRatio
+    href?: string
   }
   interface LineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -1528,17 +1715,17 @@ export namespace JSX {
         PresentationSVGAttributes,
         'marker-start' | 'marker-mid' | 'marker-end'
       > {
-    x1?: Computable<number | string>
-    y1?: Computable<number | string>
-    x2?: Computable<number | string>
-    y2?: Computable<number | string>
+    x1?: number | string
+    y1?: number | string
+    x2?: number | string
+    y2?: number | string
   }
   interface LinearGradientSVGAttributes<T>
     extends GradientElementSVGAttributes<T> {
-    x1?: Computable<number | string>
-    x2?: Computable<number | string>
-    y1?: Computable<number | string>
-    y2?: Computable<number | string>
+    x1?: number | string
+    x2?: number | string
+    y1?: number | string
+    y2?: number | string
   }
   interface MarkerSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1546,26 +1733,27 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
-    markerUnits?: Computable<'strokeWidth' | 'userSpaceOnUse'>
-    refX?: Computable<number | string>
-    refY?: Computable<number | string>
-    markerWidth?: Computable<number | string>
-    markerHeight?: Computable<number | string>
-    orient?: Computable<string>
+    markerUnits?: 'strokeWidth' | 'userSpaceOnUse'
+    refX?: number | string
+    refY?: number | string
+    markerWidth?: number | string
+    markerHeight?: number | string
+    orient?: string
   }
   interface MaskSVGAttributes<T>
     extends Omit<ContainerElementSVGAttributes<T>, 'opacity' | 'filter'>,
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes {
-    maskUnits?: Computable<SVGUnits>
-    maskContentUnits?: Computable<SVGUnits>
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
+    maskUnits?: SVGUnits
+    maskContentUnits?: SVGUnits
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
   }
   interface MetadataSVGAttributes<T> extends CoreSVGAttributes<T> {}
+  interface MPathSVGAttributes<T> extends CoreSVGAttributes<T> {}
   interface PathSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -1577,8 +1765,8 @@ export namespace JSX {
         PresentationSVGAttributes,
         'marker-start' | 'marker-mid' | 'marker-end'
       > {
-    d?: Computable<string>
-    pathLength?: Computable<number | string>
+    d?: string
+    pathLength?: number | string
   }
   interface PatternSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1587,13 +1775,14 @@ export namespace JSX {
       StylableSVGAttributes,
       FitToViewBoxSVGAttributes,
       Pick<PresentationSVGAttributes, 'overflow' | 'clip'> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    patternUnits?: Computable<SVGUnits>
-    patternContentUnits?: Computable<SVGUnits>
-    patternTransform?: Computable<string>
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    patternUnits?: SVGUnits
+    patternContentUnits?: SVGUnits
+    patternTransform?: string
+    href?: string
   }
   interface PolygonSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -1606,7 +1795,7 @@ export namespace JSX {
         PresentationSVGAttributes,
         'marker-start' | 'marker-mid' | 'marker-end'
       > {
-    points?: Computable<string>
+    points?: string
   }
   interface PolylineSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -1619,15 +1808,15 @@ export namespace JSX {
         PresentationSVGAttributes,
         'marker-start' | 'marker-mid' | 'marker-end'
       > {
-    points?: Computable<string>
+    points?: string
   }
   interface RadialGradientSVGAttributes<T>
     extends GradientElementSVGAttributes<T> {
-    cx?: Computable<number | string>
-    cy?: Computable<number | string>
-    r?: Computable<number | string>
-    fx?: Computable<number | string>
-    fy?: Computable<number | string>
+    cx?: number | string
+    cy?: number | string
+    r?: number | string
+    fx?: number | string
+    fy?: number | string
   }
   interface RectSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
@@ -1636,18 +1825,22 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    rx?: Computable<number | string>
-    ry?: Computable<number | string>
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    rx?: number | string
+    ry?: number | string
   }
+  interface SetSVGAttributes<T>
+    extends CoreSVGAttributes<T>,
+      StylableSVGAttributes,
+      AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
       Pick<PresentationSVGAttributes, 'color' | 'stop-color' | 'stop-opacity'> {
-    offset?: Computable<number | string>
+    offset?: number | string
   }
   interface SvgSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1658,15 +1851,15 @@ export namespace JSX {
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes,
       PresentationSVGAttributes {
-    version?: Computable<string>
-    baseProfile?: Computable<string>
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    contentScriptType?: Computable<string>
-    contentStyleType?: Computable<string>
-    xmlns?: Computable<string>
+    version?: string
+    baseProfile?: string
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    contentScriptType?: string
+    contentStyleType?: string
+    xmlns?: string
   }
   interface SwitchSVGAttributes<T>
     extends ContainerElementSVGAttributes<T>,
@@ -1680,7 +1873,16 @@ export namespace JSX {
       NewViewportSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      FitToViewBoxSVGAttributes {}
+      FitToViewBoxSVGAttributes {
+    width?: number | string
+    height?: number | string
+    preserveAspectRatio?: SVGPreserveAspectRatio
+    refX?: number | string
+    refY?: number | string
+    viewBox?: string
+    x?: number | string
+    y?: number | string
+  }
   interface TextSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
       GraphicsElementSVGAttributes<T>,
@@ -1689,13 +1891,13 @@ export namespace JSX {
       StylableSVGAttributes,
       TransformableSVGAttributes,
       Pick<PresentationSVGAttributes, 'writing-mode' | 'text-rendering'> {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    dx?: Computable<number | string>
-    dy?: Computable<number | string>
-    rotate?: Computable<number | string>
-    textLength?: Computable<number | string>
-    lengthAdjust?: Computable<'spacing' | 'spacingAndGlyphs'>
+    x?: number | string
+    y?: number | string
+    dx?: number | string
+    dy?: number | string
+    rotate?: number | string
+    textLength?: number | string
+    lengthAdjust?: 'spacing' | 'spacingAndGlyphs'
   }
   interface TextPathSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -1706,10 +1908,10 @@ export namespace JSX {
         PresentationSVGAttributes,
         'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
       > {
-    startOffset?: Computable<number | string>
-    method?: Computable<'align' | 'stretch'>
-    spacing?: Computable<'auto' | 'exact'>
-    href?: Computable<string>
+    startOffset?: number | string
+    method?: 'align' | 'stretch'
+    spacing?: 'auto' | 'exact'
+    href?: string
   }
   interface TSpanSVGAttributes<T>
     extends TextContentElementSVGAttributes<T>,
@@ -1720,33 +1922,106 @@ export namespace JSX {
         PresentationSVGAttributes,
         'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
       > {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    dx?: Computable<number | string>
-    dy?: Computable<number | string>
-    rotate?: Computable<number | string>
-    textLength?: Computable<number | string>
-    lengthAdjust?: Computable<'spacing' | 'spacingAndGlyphs'>
+    x?: number | string
+    y?: number | string
+    dx?: number | string
+    dy?: number | string
+    rotate?: number | string
+    textLength?: number | string
+    lengthAdjust?: 'spacing' | 'spacingAndGlyphs'
   }
+  /**
+   * @see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/use
+   */
   interface UseSVGAttributes<T>
-    extends GraphicsElementSVGAttributes<T>,
-      ConditionalProcessingSVGAttributes,
-      ExternalResourceSVGAttributes,
+    extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
+      ConditionalProcessingSVGAttributes,
+      GraphicsElementSVGAttributes<T>,
+      PresentationSVGAttributes,
+      ExternalResourceSVGAttributes,
       TransformableSVGAttributes {
-    x?: Computable<number | string>
-    y?: Computable<number | string>
-    width?: Computable<number | string>
-    height?: Computable<number | string>
-    href?: Computable<string>
+    x?: number | string
+    y?: number | string
+    width?: number | string
+    height?: number | string
+    href?: string
   }
   interface ViewSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       ExternalResourceSVGAttributes,
       FitToViewBoxSVGAttributes,
       ZoomAndPanSVGAttributes {
-    viewTarget?: Computable<string>
+    viewTarget?: string
   }
+
+  /**
+   * @type {SVGElementTagNameMap}
+   */
+  interface SVGElementTags {
+    'svg:animate': AnimateSVGAttributes<SVGAnimateElement>
+    'svg:animateMotion': AnimateMotionSVGAttributes<SVGAnimateMotionElement>
+    'svg:animateTransform': AnimateTransformSVGAttributes<SVGAnimateTransformElement>
+    'svg:circle': CircleSVGAttributes<SVGCircleElement>
+    'svg:clipPath': ClipPathSVGAttributes<SVGClipPathElement>
+    'svg:defs': DefsSVGAttributes<SVGDefsElement>
+    'svg:desc': DescSVGAttributes<SVGDescElement>
+    'svg:ellipse': EllipseSVGAttributes<SVGEllipseElement>
+    'svg:feBlend': FeBlendSVGAttributes<SVGFEBlendElement>
+    'svg:feColorMatrix': FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>
+    'svg:feComponentTransfer': FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>
+    'svg:feComposite': FeCompositeSVGAttributes<SVGFECompositeElement>
+    'svg:feConvolveMatrix': FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>
+    'svg:feDiffuseLighting': FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>
+    'svg:feDisplacementMap': FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>
+    'svg:feDistantLight': FeDistantLightSVGAttributes<SVGFEDistantLightElement>
+    'svg:feDropShadow': FeDropShadowSVGAttributes<SVGFEDropShadowElement>
+    'svg:feFlood': FeFloodSVGAttributes<SVGFEFloodElement>
+    'svg:feFuncA': FeFuncSVGAttributes<SVGFEFuncAElement>
+    'svg:feFuncB': FeFuncSVGAttributes<SVGFEFuncBElement>
+    'svg:feFuncG': FeFuncSVGAttributes<SVGFEFuncGElement>
+    'svg:feFuncR': FeFuncSVGAttributes<SVGFEFuncRElement>
+    'svg:feGaussianBlur': FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>
+    'svg:feImage': FeImageSVGAttributes<SVGFEImageElement>
+    'svg:feMerge': FeMergeSVGAttributes<SVGFEMergeElement>
+    'svg:feMergeNode': FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>
+    'svg:feMorphology': FeMorphologySVGAttributes<SVGFEMorphologyElement>
+    'svg:feOffset': FeOffsetSVGAttributes<SVGFEOffsetElement>
+    'svg:fePointLight': FePointLightSVGAttributes<SVGFEPointLightElement>
+    'svg:feSpecularLighting': FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>
+    'svg:feSpotLight': FeSpotLightSVGAttributes<SVGFESpotLightElement>
+    'svg:feTile': FeTileSVGAttributes<SVGFETileElement>
+    'svg:feTurbulence': FeTurbulanceSVGAttributes<SVGFETurbulenceElement>
+    'svg:filter': FilterSVGAttributes<SVGFilterElement>
+    'svg:foreignObject': ForeignObjectSVGAttributes<SVGForeignObjectElement>
+    'svg:g': GSVGAttributes<SVGGElement>
+    'svg:image': ImageSVGAttributes<SVGImageElement>
+    'svg:line': LineSVGAttributes<SVGLineElement>
+    'svg:linearGradient': LinearGradientSVGAttributes<SVGLinearGradientElement>
+    'svg:marker': MarkerSVGAttributes<SVGMarkerElement>
+    'svg:mask': MaskSVGAttributes<SVGMaskElement>
+    'svg:metadata': MetadataSVGAttributes<SVGMetadataElement>
+    'svg:mpath': MPathSVGAttributes<SVGMPathElement>
+    'svg:path': PathSVGAttributes<SVGPathElement>
+    'svg:pattern': PatternSVGAttributes<SVGPatternElement>
+    'svg:polygon': PolygonSVGAttributes<SVGPolygonElement>
+    'svg:polyline': PolylineSVGAttributes<SVGPolylineElement>
+    'svg:radialGradient': RadialGradientSVGAttributes<SVGRadialGradientElement>
+    'svg:rect': RectSVGAttributes<SVGRectElement>
+    'svg:set': SetSVGAttributes<SVGSetElement>
+    'svg:stop': StopSVGAttributes<SVGStopElement>
+    'svg:svg': SvgSVGAttributes<SVGSVGElement>
+    'svg:switch': SwitchSVGAttributes<SVGSwitchElement>
+    'svg:symbol': SymbolSVGAttributes<SVGSymbolElement>
+    'svg:text': TextSVGAttributes<SVGTextElement>
+    'svg:textPath': TextPathSVGAttributes<SVGTextPathElement>
+    'svg:tspan': TSpanSVGAttributes<SVGTSpanElement>
+    'svg:use': UseSVGAttributes<SVGUseElement>
+    'svg:view': ViewSVGAttributes<SVGViewElement>
+  }
+
+  // #endregion
+
   /**
    * @type {HTMLElementTagNameMap}
    */
@@ -1833,7 +2108,8 @@ export namespace JSX {
     ruby: HTMLAttributes<HTMLElement>
     s: HTMLAttributes<HTMLElement>
     samp: HTMLAttributes<HTMLElement>
-    script: ScriptHTMLAttributes<HTMLElement>
+    script: ScriptHTMLAttributes<HTMLScriptElement>
+    search: HTMLAttributes<HTMLElement>
     section: HTMLAttributes<HTMLElement>
     select: SelectHTMLAttributes<HTMLSelectElement>
     slot: HTMLSlotElementAttributes
@@ -1863,71 +2139,19 @@ export namespace JSX {
     video: VideoHTMLAttributes<HTMLVideoElement>
     wbr: HTMLAttributes<HTMLElement>
   }
-
   /**
-   * @type {SVGElementTagNameMap}
+   * @type {HTMLElementDeprecatedTagNameMap}
    */
-  interface SVGElementTags {
-    'svg:animate': AnimateSVGAttributes<SVGAnimateElement>
-    'svg:animateMotion': AnimateMotionSVGAttributes<SVGAnimateMotionElement>
-    'svg:animateTransform': AnimateTransformSVGAttributes<SVGAnimateTransformElement>
-    'svg:circle': CircleSVGAttributes<SVGCircleElement>
-    'svg:clipPath': ClipPathSVGAttributes<SVGClipPathElement>
-    'svg:defs': DefsSVGAttributes<SVGDefsElement>
-    'svg:desc': DescSVGAttributes<SVGDescElement>
-    'svg:ellipse': EllipseSVGAttributes<SVGEllipseElement>
-    'svg:feBlend': FeBlendSVGAttributes<SVGFEBlendElement>
-    'svg:feColorMatrix': FeColorMatrixSVGAttributes<SVGFEColorMatrixElement>
-    'svg:feComponentTransfer': FeComponentTransferSVGAttributes<SVGFEComponentTransferElement>
-    'svg:feComposite': FeCompositeSVGAttributes<SVGFECompositeElement>
-    'svg:feConvolveMatrix': FeConvolveMatrixSVGAttributes<SVGFEConvolveMatrixElement>
-    'svg:feDiffuseLighting': FeDiffuseLightingSVGAttributes<SVGFEDiffuseLightingElement>
-    'svg:feDisplacementMap': FeDisplacementMapSVGAttributes<SVGFEDisplacementMapElement>
-    'svg:feDistantLight': FeDistantLightSVGAttributes<SVGFEDistantLightElement>
-    'svg:feDropShadow': Partial<SVGFEDropShadowElement>
-    'svg:feFlood': FeFloodSVGAttributes<SVGFEFloodElement>
-    'svg:feFuncA': FeFuncSVGAttributes<SVGFEFuncAElement>
-    'svg:feFuncB': FeFuncSVGAttributes<SVGFEFuncBElement>
-    'svg:feFuncG': FeFuncSVGAttributes<SVGFEFuncGElement>
-    'svg:feFuncR': FeFuncSVGAttributes<SVGFEFuncRElement>
-    'svg:feGaussianBlur': FeGaussianBlurSVGAttributes<SVGFEGaussianBlurElement>
-    'svg:feImage': FeImageSVGAttributes<SVGFEImageElement>
-    'svg:feMerge': FeMergeSVGAttributes<SVGFEMergeElement>
-    'svg:feMergeNode': FeMergeNodeSVGAttributes<SVGFEMergeNodeElement>
-    'svg:feMorphology': FeMorphologySVGAttributes<SVGFEMorphologyElement>
-    'svg:feOffset': FeOffsetSVGAttributes<SVGFEOffsetElement>
-    'svg:fePointLight': FePointLightSVGAttributes<SVGFEPointLightElement>
-    'svg:feSpecularLighting': FeSpecularLightingSVGAttributes<SVGFESpecularLightingElement>
-    'svg:feSpotLight': FeSpotLightSVGAttributes<SVGFESpotLightElement>
-    'svg:feTile': FeTileSVGAttributes<SVGFETileElement>
-    'svg:feTurbulence': FeTurbulanceSVGAttributes<SVGFETurbulenceElement>
-    'svg:filter': FilterSVGAttributes<SVGFilterElement>
-    'svg:foreignObject': ForeignObjectSVGAttributes<SVGForeignObjectElement>
-    'svg:g': GSVGAttributes<SVGGElement>
-    'svg:image': ImageSVGAttributes<SVGImageElement>
-    'svg:line': LineSVGAttributes<SVGLineElement>
-    'svg:linearGradient': LinearGradientSVGAttributes<SVGLinearGradientElement>
-    'svg:marker': MarkerSVGAttributes<SVGMarkerElement>
-    'svg:mask': MaskSVGAttributes<SVGMaskElement>
-    'svg:metadata': MetadataSVGAttributes<SVGMetadataElement>
-    'svg:mpath': Partial<SVGMPathElement>
-    'svg:path': PathSVGAttributes<SVGPathElement>
-    'svg:pattern': PatternSVGAttributes<SVGPatternElement>
-    'svg:polygon': PolygonSVGAttributes<SVGPolygonElement>
-    'svg:polyline': PolylineSVGAttributes<SVGPolylineElement>
-    'svg:radialGradient': RadialGradientSVGAttributes<SVGRadialGradientElement>
-    'svg:rect': RectSVGAttributes<SVGRectElement>
-    'svg:set': Partial<SVGSetElement>
-    'svg:stop': StopSVGAttributes<SVGStopElement>
-    'svg:svg': SvgSVGAttributes<SVGSVGElement>
-    'svg:switch': SwitchSVGAttributes<SVGSwitchElement>
-    'svg:symbol': SymbolSVGAttributes<SVGSymbolElement>
-    'svg:text': TextSVGAttributes<SVGTextElement>
-    'svg:textPath': TextPathSVGAttributes<SVGTextPathElement>
-    'svg:tspan': TSpanSVGAttributes<SVGTSpanElement>
-    'svg:use': UseSVGAttributes<SVGUseElement>
-    'svg:view': ViewSVGAttributes<SVGViewElement>
+  interface HTMLElementDeprecatedTags {
+    big: HTMLAttributes<HTMLElement>
+    keygen: KeygenHTMLAttributes<HTMLElement>
+    menuitem: HTMLAttributes<HTMLElement>
+    noindex: HTMLAttributes<HTMLElement>
+    param: ParamHTMLAttributes<HTMLParamElement>
   }
 
-  interface IntrinsicElements extends HTMLElementTags, SVGElementTags {}
+  interface IntrinsicElements
+    extends ElementsAttributesAtomMaybe<HTMLElementTags>,
+      ElementsAttributesAtomMaybe<HTMLElementDeprecatedTags>,
+      ElementsAttributesAtomMaybe<SVGElementTags> {}
 }
