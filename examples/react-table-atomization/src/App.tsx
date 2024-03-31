@@ -2,6 +2,7 @@ import React from 'react'
 import { TableWithUseState } from './TableWithUseState'
 import { TableWithReatom } from './TableWithReatom'
 import { TableWithAtomization } from './TableWithAtomization'
+import { TableWithComponentAtomization } from './TableWithComponentAtomization'
 import {
   FormControl,
   InputLabel,
@@ -27,6 +28,7 @@ export const App = () => {
     useState: TableWithUseState,
     Reatom: TableWithReatom,
     Atomization: TableWithAtomization,
+    ComponentAtomization: TableWithComponentAtomization,
   }[state]
 
   return (
@@ -42,6 +44,9 @@ export const App = () => {
           <MenuItem value="useState">useState</MenuItem>
           <MenuItem value="Reatom">Reatom</MenuItem>
           <MenuItem value="Atomization">Atomization</MenuItem>
+          <MenuItem value="ComponentAtomization">
+            Component Atomization
+          </MenuItem>
         </Select>
       </FormControl>
       <br />
