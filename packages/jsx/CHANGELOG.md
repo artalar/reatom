@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/jsx-v3.7.0...jsx-v3.8.0) (2024-03-31)
+
+
+### Features
+
+* **jsx:** huge refactor, add css support ([8e0019e](https://github.com/artalar/reatom/commit/8e0019e17299eba58d897eda18affb56c5de8b71))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/jsx-v3.6.0...jsx-v3.7.0) (2024-02-20)
 
 
