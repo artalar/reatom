@@ -1,6 +1,6 @@
 # Reatom comparison with TanStack Query
 
-[Open in StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/tanstack-vs-reatom)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/tanstack-vs-reatom)
 
 There are four examples files with the equal UI, but different implementation and behavior. Try to run the dev server and play with it. You could find the both base examples code simple and easy to use. TanStack Query is really good solution which is give you a lot right from the box.
 

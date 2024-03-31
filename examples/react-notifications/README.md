@@ -7,4 +7,4 @@ This example perfectly illustrates the benefits of [atomization](https://www.rea
 - **Versatile Use**: reatom/timer is not limited to [Pomodoro demos](https://github.com/artalar/reatom/tree/v3/examples/react-pomodoro), it can be used to manage the progress of just about anything. It comes with settings for update frequency and pause control out of the box.
 - **A Nice Bonus**: The essence of atomization lies in state isolation, which is more performance-optimized compared to managing elements by recreating lists in Redux and Effector.
 
-[Open in StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-notifications)
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-notifications)
