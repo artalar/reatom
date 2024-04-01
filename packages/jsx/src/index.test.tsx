@@ -173,4 +173,15 @@ test('spreads', () => {
   assert.is(clickTrack.calls.length, 1)
 })
 
+test('fragment as child', () => {
+  const { ctx, h, hf, mount, parent, window } = setup()
+
+  const child = <><div>foo</div><><div>bar</div></></>
+  mount(parent, child)
+
+  assert.is(parent.childNodes.length, 2)
+  assert.is(parent.childNodes[0]?.textContent, 'foo')
+  assert.is(parent.childNodes[1]?.textContent, 'bar')
+})
+
 test.run()
