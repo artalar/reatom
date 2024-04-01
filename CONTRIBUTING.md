@@ -101,8 +101,10 @@ fix(core): add check for atoms with equal ids
 - https://github.com/artalar/reatom/labels/Hacktoberfest, https://github.com/artalar/reatom/labels/hacktoberfest-accepted` are used to attend [Hacktoberfest](https://hacktoberfest.com/).
 - https://github.com/artalar/reatom/labels/duplicate is used to mark issues and pull requests that already exist
 - https://github.com/artalar/reatom/labels/good%20first%20issue is used to mark issues that can be solved by newcommers and are shown at [/contribute](https://github.com/artalar/reatom/contribute) page
-- https://github.com/artalar/reatom/labels/dependencies is used by [Dependabot](https://github.com/apps/dependabot)
 - https://github.com/artalar/reatom/labels/wontfix this will not be worked on
 - https://github.com/artalar/reatom/labels/need%20info description is partial and describe only the topic 
 - https://github.com/artalar/reatom/labels/Fund is used to mark issues that are paid
 
+### Automation labels
+- https://github.com/artalar/reatom/labels/autorelease%3A%20pending, https://github.com/artalar/reatom/labels/autorelease%3A%20tagged are used by release-please
+- https://github.com/artalar/reatom/labels/dependencies is used by [Dependabot](https://github.com/apps/dependabot)
