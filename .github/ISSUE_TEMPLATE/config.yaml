@@ -1,14 +1,11 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Reatom Community Support
+  - name: Propose Enhancements
     url: https://github.com/artalar/reatom/discussions
-    about: Please ask and answer questions here.
-#  - name: GitHub Security Bug Bounty
-#    url: https://bounty.github.com/
-#    about: Please report security vulnerabilities here.
-
-x-reatom:
-  nonPackageParts:
-    - Documentation site
-    - Contributor tooling
-    - CI
+    about: You can express your ideas and discuss future here
+  - name: Community in Telegram (RU/EN)
+    url: https://t.me/reatom_ru
+    about: Ask and discuss. Feel free to write in English :)
+  - name: Community Support in Discord (EN)
+    url: https://discord.gg/kt3h7bX3ZK
+    about: Primary for questions and answers
