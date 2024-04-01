@@ -183,7 +183,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
   let hf = () => {}
 
   let mount = (target: Element, child: Element) => {
-    target.appendChild(child)
+    target.append(...[child].flat(Infinity))
 
     new DOM.MutationObserver((mutationsList) => {
       for (let mutation of mutationsList) {
