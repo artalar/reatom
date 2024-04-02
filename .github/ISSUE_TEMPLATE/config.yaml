@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Propose Enhancement
+    url: https://github.com/artalar/reatom/discussions/new?category=ideas
+    about: You can express your ideas and discuss future here
+  - name: Community in Telegram (RU/EN)
+    url: https://t.me/reatom_ru
+    about: Ask and discuss. Feel free to write in English :)
+  - name: Community Support in Discord (EN)
+    url: https://discord.gg/kt3h7bX3ZK
+    about: Primary for questions and answers

@@ -10,7 +10,9 @@ If you want to contribute to improving the library, use the following instructio
 
 ## Creating an issue
 
-If you found a bug or want to make an improvement in the library please check whether the same issue already exists in the [list of issues](https://github.com/artalar/reatom/issues). If you don't find the issue there, [create a new one](https://github.com/artalar/reatom/issues/new) including a description of the problem.
+If you found a bug or want to make an improvement in the library please check whether the same issue already exists in the [list of issues](https://github.com/artalar/reatom/issues). If you don't find the issue there, [create a new one](https://github.com/artalar/reatom/issues/new) including a description of the problem. Note [labels used](#labels-used-in-repository).
+
+If you have a question or want to propose a feature or an improvement, please create [a discussion](https://github.com/artalar/reatom/discussions).
 
 ## Sending a Pull Request
 
@@ -91,3 +93,18 @@ Directory name from `/packages/<scope>`
 docs: fix typo in npm-react
 fix(core): add check for atoms with equal ids
 ```
+
+## Labels used in repository
+
+- https://github.com/artalar/reatom/labels/bug is for problems with @reatom/* ecosystem
+- https://github.com/artalar/reatom/labels/defect is for problems with reatom.dev site or with development tools like CI and others
+
+### Meta labels
+- https://github.com/artalar/reatom/labels/Hacktoberfest, https://github.com/artalar/reatom/labels/hacktoberfest-accepted` are used to attend [Hacktoberfest](https://hacktoberfest.com/).
+- https://github.com/artalar/reatom/labels/good%20first%20issue is used to mark issues that can be solved by newcommers and are shown at [/contribute](https://github.com/artalar/reatom/contribute) page
+- https://github.com/artalar/reatom/labels/need%20info description is partial and describe only the topic 
+- https://github.com/artalar/reatom/labels/Fund is used to mark issues that are paid
+
+### Automation labels
+- https://github.com/artalar/reatom/labels/autorelease%3A%20pending, https://github.com/artalar/reatom/labels/autorelease%3A%20tagged are used by release-please
+- https://github.com/artalar/reatom/labels/dependencies is used by [Dependabot](https://github.com/apps/dependabot)
