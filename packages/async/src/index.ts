@@ -210,7 +210,7 @@ export const withDataAtom: {
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<AsyncResp<T>>
     },
-  >(): Fn<[T], T & { dataAtom: AtomMut<undefined | AsyncResp<T>> }>
+  >(): Fn<[T], T & { dataAtom: AsyncDataAtom<AsyncResp<T> | undefined> }>
   <
     T extends AsyncAction & {
       dataAtom?: AsyncDataAtom<AsyncResp<T>>
