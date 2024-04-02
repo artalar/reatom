@@ -12,6 +12,8 @@ If you want to contribute to improving the library, use the following instructio
 
 If you found a bug or want to make an improvement in the library please check whether the same issue already exists in the [list of issues](https://github.com/artalar/reatom/issues). If you don't find the issue there, [create a new one](https://github.com/artalar/reatom/issues/new) including a description of the problem. Note [labels used](#labels-used-in-repository).
 
+If you have a question or want to propose a feature or an improvement, please create [a discussion](https://github.com/artalar/reatom/discussions).
+
 ## Sending a Pull Request
 
 1. 🐙 Fork and clone the repository.
