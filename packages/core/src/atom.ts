@@ -292,7 +292,7 @@ export const createCtx = ({
   }
 
   let enqueueComputers = (cache: AtomCache) => {
-    for (let subProto of cache.subs.keys()) {
+    for (let subProto of cache.subs) {
       let subCache = subProto.patch ?? read(subProto)!
 
       if (!subProto.patch || subProto.actual) {
