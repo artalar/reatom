@@ -1,4 +1,5 @@
 import { Action, atom, AtomMut, Rec } from '@reatom/core'
+// TODO withReducers->withAssign
 import { withReducers } from './withReducers'
 
 export type EnumFormat = 'camelCase' | 'snake_case'

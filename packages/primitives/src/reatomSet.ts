@@ -1,4 +1,4 @@
-import { action, Action, atom, AtomMut, Ctx } from '@reatom/core'
+import { action, atom, Ctx } from '@reatom/core'
 import { withAssign } from './withAssign'
 
 export type SetAtom<T> = ReturnType<typeof reatomSet<T>>

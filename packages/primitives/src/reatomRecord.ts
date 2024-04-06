@@ -1,17 +1,10 @@
-import { action, Action, atom, AtomMut, Rec } from '@reatom/core'
+import { action, atom, Rec } from '@reatom/core'
 import { omit } from '@reatom/utils'
 import { withAssign } from './withAssign'
 
-export interface RecordAtom<T extends Rec> extends AtomMut<T> {
-  merge: Action<[slice: Partial<T>], T>
-  omit: Action<[...keys: Array<keyof T>], T>
-  reset: Action<[...keys: Array<keyof T>], T>
-}
+export type RecordAtom<T extends Rec> = ReturnType<typeof reatomRecord<T>>
 
-export const reatomRecord = <T extends Rec>(
-  initState: T,
-  name?: string,
-): RecordAtom<T> =>
+export const reatomRecord = <T extends Rec>(initState: T, name?: string) =>
   atom(initState, name).pipe(
     withAssign((theAtom) => ({
       merge: action(
