@@ -1,15 +1,16 @@
-import { atom, AtomMut } from '@reatom/core'
-import { WithReducers, withReducers } from './withReducers'
+import { Action, action, atom, AtomMut } from '@reatom/core'
+import { withAssign } from './withAssign'
 
-export type StringAtom<State extends string = string> = WithReducers<
-  AtomMut<State>,
-  {
-    reset: () => State
-  }
->
+export type StringAtom<T extends string = string> = AtomMut<T> & {
+  reset: Action<[], T>
+}
 
 export const reatomString: {
-  (initState?: string, name?: string): StringAtom
-  <T extends string>(initState: T, name?: string): StringAtom<T>
-} = (initState = '' as string, name?: string) =>
-  atom(initState, name).pipe(withReducers({ reset: () => initState }))
+  (init?: string, name?: string): StringAtom
+  <T extends string>(init: T, name?: string): StringAtom<T>
+} = (init = '', name?: string) =>
+  atom(init, name).pipe(
+    withAssign((theAtom) => ({
+      reset: action((ctx) => theAtom(ctx, init)),
+    })),
+  )
