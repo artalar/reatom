@@ -1,6 +1,6 @@
 name: Defect
 description: Report reatom.dev site problem or problems with development tools
-title: ""
+title: Defect of reatom.dev site or developer tools
 labels:
   - defect
 body:

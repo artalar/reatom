@@ -1,6 +1,6 @@
 name: Bug Report
 description: File a bug report for the library in @reatom/*
-title: ""
+title: Bug with reatom library
 labels:
   - bug
 body:
