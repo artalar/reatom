@@ -50,7 +50,7 @@ ctx.subscribe(googStockAtom, updateView)
 ```
 
 ## onEvent checkpoint example
-Make sure to listen to event before you actually need it. As in [take](https://reatom.dev/package/effects/#take) you should use checkpoints
+Make sure to listen to event before you actually need it. As in [take](https://reatom.dev/package/effects/#take-checkpoints) you should use checkpoints
 to handle all events without skipping it.
 
 ```ts

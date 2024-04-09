@@ -148,6 +148,7 @@ onConnect(formAtom, (ctx) => {
 })
 ```
 
+#### take checkpoints
 But be aware that `take` only starts listening when it's called:
 
 ```ts
