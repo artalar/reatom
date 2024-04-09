@@ -144,7 +144,7 @@ onConnect(formAtom, (ctx) => {
   // "history" docs: https://github.com/remix-run/history/blob/main/docs/blocking-transitions.md
   const unblock = historyAtom.block(ctx, async ({ retry }) => {
     if (!ctx.get(formAtom).isSubmitted && !ctx.get(confirmModalAtom).opened) {
-      confirmModalAtom.open(ctx, 'Are you sure want to leave?')
+      confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
 
       const confirmed = await take(ctx, confirmModalAtom.close)
 
@@ -154,6 +154,46 @@ onConnect(formAtom, (ctx) => {
       }
     }
   })
+})
+```
+
+#### take checkpoints
+But be aware that `take` only starts listening when it's called:
+
+```ts
+import { take } from "@reatom/effects"
+import { reatomAsync } from "@reatom/async"
+import { confirmModalAtom } from '~/features/modal'
+import { api } from '~/api'
+
+const closeDocument = reatomAsync(async (ctx)=>{
+    confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
+    
+    const presaveId = await api.presaveDocument()
+    
+    // ❌ Bug: 
+    // If person's connection is not fast enough or they are too fast 
+    // they can close the modal before we get presaveId and start to listening to modal.close.
+    // So now we are stuck in loading state forever...
+    await take(ctx, confirmModalAtom.close)
+    
+    await api.finalizeDocument(presaveId)
+})
+```
+
+You can fix this bug by creating a checkpoint before starting any process:
+```ts
+const closeDocument = reatomAsync(async (ctx) => {
+    confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
+    // ✅ Now we listen for changes before we start any process...
+    const modalConfirmedCheckpoint = take(ctx, confirmModalAtom.close)
+
+    const presaveId = await api.presaveDocument()
+
+    // ...and we will catch them for sure
+    await modalConfirmedCheckpoint
+
+    await api.finalizeDocument(presaveId)
 })
 ```
 
