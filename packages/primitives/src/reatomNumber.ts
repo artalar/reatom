@@ -1,9 +1,14 @@
-import { action, atom } from '@reatom/core'
+import { Action, AtomMut, action, atom } from '@reatom/core'
 import { withAssign } from './withAssign'
 
-export type NumberAtom = ReturnType<typeof reatomNumber>
+export interface NumberAtom extends AtomMut<number> {
+  increment: Action<[by?: number], number>
+  decrement: Action<[by?: number], number>
+  random: Action<[], number>
+  reset: Action<[], number>
+}
 
-export const reatomNumber = (initState = 0, name?: string) =>
+export const reatomNumber = (initState = 0, name?: string): NumberAtom =>
   atom(initState, name).pipe(
     withAssign((theAtom, name) => ({
       increment: action(

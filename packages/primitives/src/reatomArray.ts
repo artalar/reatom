@@ -1,9 +1,17 @@
-import { action, atom } from '@reatom/core'
+import { Action, AtomMut, action, atom } from '@reatom/core'
 import { withAssign } from './withAssign'
 
-export type ArrayAtom<T> = ReturnType<typeof reatomArray<T>>
+export interface ArrayAtom<T> extends AtomMut<Array<T>> {
+  toReversed: Action<[], T[]>
+  toSorted: Action<[compareFn?: (a: T, b: T) => number], T[]>
+  toSpliced: Action<[start: number, deleteCount: number, ...items: T[]], T[]>
+  with: Action<[i: number, value: T], T[]>
+}
 
-export const reatomArray = <T>(initState = new Array<T>(), name?: string) =>
+export const reatomArray = <T>(
+  initState = [] as T[],
+  name?: string,
+): ArrayAtom<T> =>
   atom(initState, name).pipe(
     withAssign((theAtom, name) => ({
       toReversed: action(

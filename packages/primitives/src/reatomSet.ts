@@ -1,9 +1,18 @@
-import { action, atom, Ctx } from '@reatom/core'
+import { Action, action, atom, AtomMut, Ctx } from '@reatom/core'
 import { withAssign } from './withAssign'
 
-export type SetAtom<T> = ReturnType<typeof reatomSet<T>>
+export interface SetAtom<T> extends AtomMut<Set<T>> {
+  set: Action<[el: T], Set<T>>
+  delete: Action<[el: T], Set<T>>
+  clear: Action<[], Set<T>>
+  reset: Action<[], Set<T>>
+  has: (ctx: Ctx, el: T) => boolean
+}
 
-export const reatomSet = <T>(initState = new Set<T>(), name?: string) =>
+export const reatomSet = <T>(
+  initState = new Set<T>(),
+  name?: string,
+): SetAtom<T> =>
   atom(initState, name).pipe(
     withAssign((theAtom, name) => ({
       set: action((ctx, el) => {

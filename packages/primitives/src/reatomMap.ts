@@ -1,12 +1,19 @@
-import { action, atom, Ctx } from '@reatom/core'
+import { Action, action, atom, AtomMut, Ctx } from '@reatom/core'
 import { withAssign } from './withAssign'
 
-export type MapAtom<Key, Value> = ReturnType<typeof reatomMap<Key, Value>>
+export interface MapAtom<Key, Value> extends AtomMut<Map<Key, Value>> {
+  get: (ctx: Ctx, key: Key) => Value | undefined
+  has: (ctx: Ctx, key: Key) => boolean
+  set: Action<[key: Key, value: Value], Map<Key, Value>>
+  delete: Action<[key: Key], Map<Key, Value>>
+  clear: Action<[], Map<Key, Value>>
+  reset: Action<[], Map<Key, Value>>
+}
 
 export const reatomMap = <Key, Value>(
   initState = new Map<Key, Value>(),
   name?: string,
-) =>
+): MapAtom<Key, Value> =>
   atom(initState, name).pipe(
     withAssign((theAtom, name) => ({
       get: (ctx: Ctx, key: Key) => ctx.get(theAtom).get(key),
