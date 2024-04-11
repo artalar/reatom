@@ -767,3 +767,5 @@ export const experimental_PLUGINS: Array<(anAtom: Atom) => Atom> = []
  * @deprecated
  */
 export const __root = atom(undefined, 'root').__reatom
+
+export const batch = <T>(ctx: Ctx, cb: Fn<[], T>): T => ctx.get(cb)
