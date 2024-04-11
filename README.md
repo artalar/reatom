@@ -248,6 +248,8 @@ Of course there are no software without limitations. Reatom is trying to be a si
 ### Media
 
 - [en twitter](https://twitter.com/ReatomJS)
+- [en discord](https://discord.gg/EPAKK5SNFh)
+- [en github discussion](https://github.com/artalar/reatom/discussions)
 - [ru telegram](https://t.me/reatom_ru)
 - [ru youtube](https://www.youtube.com/playlist?list=PLXObawgXpIfxERCN8Lqd89wdsXeUHm9XU)
 
