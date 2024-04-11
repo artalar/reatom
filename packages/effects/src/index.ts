@@ -291,14 +291,14 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
   })
 }
 
-export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
+export const concurrent = <TCtx extends Ctx, T extends Fn<[TCtx, ...any[]]> = Fn<[TCtx, ...any[]]>>(fn: T): T => {
   const abortControllerAtom = atom<null | AbortController>(
     null,
     `${__count('_concurrent')}.abortControllerAtom`,
   )
 
   return Object.assign(
-    (ctx: Ctx, ...a: any[]) => {
+    (ctx: TCtx, ...a: any[]) => {
       const prevController = ctx.get(abortControllerAtom)
       // do it outside of the schedule to save the call stack
       const abort = toAbortError('concurrent')
