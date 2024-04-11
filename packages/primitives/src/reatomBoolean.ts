@@ -1,21 +1,22 @@
-import { atom, AtomMut } from '@reatom/core'
-import { withReducers, WithReducers } from './withReducers'
+import { Action, AtomMut, action, atom } from '@reatom/core'
+import { withAssign } from './withAssign'
 
-export type BooleanReducers = {
-  toggle: () => boolean
-  setTrue: () => boolean
-  setFalse: () => boolean
-  reset: () => boolean
+export interface BooleanAtom extends AtomMut<boolean> {
+  toggle: Action<[], boolean>
+  setTrue: Action<[], true>
+  setFalse: Action<[], false>
+  reset: Action<[], boolean>
 }
 
-export type BooleanAtom = WithReducers<AtomMut<boolean>, BooleanReducers>
-
-export const reatomBoolean = (initState = false, name?: string): BooleanAtom =>
-  atom(initState, name).pipe(
-    withReducers({
-      toggle: (state) => !state,
-      setTrue: () => true,
-      setFalse: () => false,
-      reset: () => initState,
-    }),
+export const reatomBoolean = (init = false, name?: string): BooleanAtom =>
+  atom(init, name).pipe(
+    withAssign((target, name) => ({
+      toggle: action((ctx) => target(ctx, (prev) => !prev), `${name}.toggle`),
+      setTrue: action((ctx) => target(ctx, true) as true, `${name}.setTrue`),
+      setFalse: action(
+        (ctx) => target(ctx, false) as false,
+        `${name}.setFalse`,
+      ),
+      reset: action((ctx) => target(ctx, init), `${name}.reset`),
+    })),
   )

@@ -9,14 +9,14 @@ export type WithReducers<A extends AtomMut, R extends Reducers<A>> = A & {
     : never
 }
 
+/** @deprecated use withAssign instead */
 export const withReducers =
   <A extends AtomMut, R extends Reducers<A>>(reducers: R) =>
-  (anAtom: A): WithReducers<A, R> =>
+  (anAtom: A) =>
     Object.keys(reducers).reduce((anAtom, k) => {
-      // @ts-expect-error
-      anAtom[k] = action(
+      ;(anAtom as any)[k] = action(
         (ctx, ...args) => anAtom(ctx, reducers[k]!(ctx.get(anAtom), ...args)),
         `${anAtom.__reatom.name}._${k}`,
       )
       return anAtom
-    }, anAtom) as any
+    }, anAtom) as WithReducers<A, R>

@@ -1,51 +1,45 @@
-import { Action, atom, AtomMut, Ctx, Fn } from '@reatom/core'
-import { assign } from '@reatom/utils'
-import { withReducers } from './withReducers'
+import { Action, action, atom, AtomMut, Ctx } from '@reatom/core'
+import { withAssign } from './withAssign'
 
-export interface MapAtomReducers<Key, Element> {
-  set(state: Map<Key, Element>, key: Key, el: Element): Map<Key, Element>
-  delete(state: Map<Key, Element>, key: Key): Map<Key, Element>
-  clear(): Map<Key, Element>
-  reset(): Map<Key, Element>
+export interface MapAtom<Key, Value> extends AtomMut<Map<Key, Value>> {
+  get: (ctx: Ctx, key: Key) => Value | undefined
+  has: (ctx: Ctx, key: Key) => boolean
+  set: Action<[key: Key, value: Value], Map<Key, Value>>
+  delete: Action<[key: Key], Map<Key, Value>>
+  clear: Action<[], Map<Key, Value>>
+  reset: Action<[], Map<Key, Value>>
 }
 
-export interface MapAtom<Key, Element> extends AtomMut<Map<Key, Element>> {
-  set: Action<[key: Key, el: Element], Map<Key, Element>>
-  delete: Action<[key: Key], Map<Key, Element>>
-  clear: Action<[], Map<Key, Element>>
-  reset: Action<[], Map<Key, Element>>
-  get: Fn<[Ctx, Key], Element | undefined>
-  has: Fn<[Ctx, Key], boolean>
-}
-
-export const reatomMap = <Key, Element>(
-  initState = new Map<Key, Element>(),
+export const reatomMap = <Key, Value>(
+  initState = new Map<Key, Value>(),
   name?: string,
-): MapAtom<Key, Element> => {
-  const theAtom = atom(initState, name).pipe(
-    withReducers({
-      set: (state, key, el) => {
-        const prevEl = state.get(key)
-
-        if (Object.is(prevEl, el) && (el !== undefined || state.has(key))) {
-          return state
-        }
-
-        return new Map(state).set(key, el)
-      },
-      delete: (state, key) => {
-        if (!state.has(key)) return state
-        const newState = new Map(state)
-        newState.delete(key)
-        return newState
-      },
-      clear: () => new Map(),
-      reset: () => initState,
-    }),
+): MapAtom<Key, Value> =>
+  atom(initState, name).pipe(
+    withAssign((target, name) => ({
+      get: (ctx: Ctx, key: Key) => ctx.get(target).get(key),
+      has: (ctx: Ctx, key: Key) => ctx.get(target).has(key),
+      set: action(
+        (ctx, key: Key, value: Value) =>
+          target(ctx, (prev) => {
+            const valuePrev = prev.get(key)
+            return Object.is(valuePrev, value) &&
+              (value !== undefined || prev.has(key))
+              ? prev
+              : new Map(prev).set(key, value)
+          }),
+        `${name}.set`,
+      ),
+      delete: action(
+        (ctx, key: Key) =>
+          target(ctx, (prev) => {
+            if (!prev.has(key)) return prev
+            const next = new Map(prev)
+            next.delete(key)
+            return next
+          }),
+        `${name}.delete`,
+      ),
+      clear: action((ctx) => target(ctx, new Map()), `${name}.clear`),
+      reset: action((ctx) => target(ctx, initState), `${name}.reset`),
+    })),
   )
-
-  return assign(theAtom, {
-    get: (ctx: Ctx, key: any) => ctx.get(theAtom).get(key),
-    has: (ctx: Ctx, key: any) => ctx.get(theAtom).has(key),
-  })
-}

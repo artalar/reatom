@@ -1,43 +1,46 @@
-import { atom, AtomMut } from '@reatom/core'
-import { withReducers, WithReducers } from './withReducers'
+import { Action, AtomMut, action, atom } from '@reatom/core'
+import { withAssign } from './withAssign'
 
-export type ArrayAtom<T> = WithReducers<
-  AtomMut<Array<T>>,
-  {
-    toReversed(state: Array<T>): Array<T>
-    toSorted(state: Array<T>, compareFn?: (a: T, b: T) => number): Array<T>
-    toSpliced(
-      state: Array<T>,
-      start: number,
-      deleteCount: number,
-      ...items: T[]
-    ): Array<T>
-    with(state: Array<T>, index: number, value: T): Array<T>
-  }
->
+export interface ArrayAtom<T> extends AtomMut<Array<T>> {
+  toReversed: Action<[], T[]>
+  toSorted: Action<[compareFn?: (a: T, b: T) => number], T[]>
+  toSpliced: Action<[start: number, deleteCount: number, ...items: T[]], T[]>
+  with: Action<[i: number, value: T], T[]>
+}
 
 export const reatomArray = <T>(
-  initState = new Array<T>(),
+  initState = [] as T[],
   name?: string,
-): ArrayAtom<T> => {
-  return atom(initState, name).pipe(
-    withReducers({
-      toReversed: (state) => state.slice(0).reverse(),
-      toSorted: (state, compareFn) => state.slice(0).sort(compareFn),
-      toSpliced: (state, start, deleteCount, ...items) => {
-        state = state.slice(0)
-        state.splice(start, deleteCount, ...items)
-
-        return state
-      },
-      with: (state, index, value) => {
-        if (Object.is(state.at(index), value)) return state
-
-        state = state.slice(0)
-        state[index] = value
-
-        return state
-      },
-    }),
+): ArrayAtom<T> =>
+  atom(initState, name).pipe(
+    withAssign((target, name) => ({
+      toReversed: action(
+        (ctx) => target(ctx, (prev) => prev.slice().reverse()),
+        `${name}.toReversed`,
+      ),
+      toSorted: action(
+        (ctx, compareFn?: (a: T, b: T) => number) =>
+          target(ctx, (prev) => prev.slice().sort(compareFn)),
+        `${name}.toSorted`,
+      ),
+      toSpliced: action(
+        (ctx, start: number, deleteCount: number, ...items: T[]) =>
+          target(ctx, (state) => {
+            state = state.slice()
+            state.splice(start, deleteCount, ...items)
+            return state
+          }),
+        `${name}.toSpliced`,
+      ),
+      with: action(
+        (ctx, i: number, value: T) =>
+          target(ctx, (state) => {
+            if (Object.is(state.at(i), value)) return state
+            state = state.slice()
+            state[i] = value
+            return state
+          }),
+        `${name}.with`,
+      ),
+    })),
   )
-}

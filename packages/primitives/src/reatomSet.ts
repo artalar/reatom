@@ -1,34 +1,38 @@
-import { Action, atom, AtomMut, Ctx, Fn } from '@reatom/core'
-import { assign } from '@reatom/utils'
-import { withReducers } from './withReducers'
+import { Action, action, atom, AtomMut, Ctx } from '@reatom/core'
+import { withAssign } from './withAssign'
 
 export interface SetAtom<T> extends AtomMut<Set<T>> {
   set: Action<[el: T], Set<T>>
   delete: Action<[el: T], Set<T>>
   clear: Action<[], Set<T>>
   reset: Action<[], Set<T>>
-  has: Fn<[Ctx, T], boolean>
+  has: (ctx: Ctx, el: T) => boolean
 }
 
 export const reatomSet = <T>(
   initState = new Set<T>(),
   name?: string,
-): SetAtom<T> => {
-  const theAtom = atom(initState, name).pipe(
-    withReducers({
-      set: (state, el) => (state.has(el) ? state : new Set(state).add(el)),
-      delete: (state, el) => {
-        if (!state.has(el)) return state
-        const newState = new Set(state)
-        newState.delete(el)
-        return newState
-      },
-      clear: () => new Set(),
-      reset: () => initState,
-    }),
+): SetAtom<T> =>
+  atom(initState, name).pipe(
+    withAssign((target, name) => ({
+      set: action((ctx, el) =>
+        target(ctx, (prev) => prev.has(el) ? prev : new Set(prev).add(el))
+        , `${name}.set`),
+      delete: action((ctx, el) => {
+        return target(ctx, (prev) => {
+          if (!prev.has(el)) return prev
+          const next = new Set(prev)
+          next.delete(el)
+          return next
+        })
+      }, `${name}.delete`),
+      clear: action((ctx) => {
+        return target(ctx, (prev) => {
+          if (prev.size === 0) return prev
+          return new Set<T>()
+        })
+      }, `${name}.clear`),
+      reset: action((ctx) => target(ctx, initState), `${name}.reset`),
+      has: (ctx: Ctx, el: T) => ctx.get(target).has(el),
+    })),
   )
-
-  return assign(theAtom, {
-    has: (ctx: Ctx, el: T) => ctx.get(theAtom).has(el),
-  })
-}

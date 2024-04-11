@@ -1,54 +1,58 @@
-import { atom, AtomMut, Rec } from '@reatom/core'
-import { withReducers, WithReducers } from './withReducers'
+import { action, Action, atom, AtomMut, Ctx, throwReatomError } from '@reatom/core'
+
+export type EnumFormat = 'camelCase' | 'snake_case'
 
 export type EnumAtom<
   T extends string,
-  Format extends 'camelCase' | 'snake_case' = 'camelCase',
-> = WithReducers<
-  AtomMut<T>,
-  {
-    [K in T as Format extends 'camelCase'
-      ? `set${Capitalize<K>}`
-      : Format extends 'snake_case'
-      ? `set_${K}`
-      : never]: () => K
-  } & {
-    reset: () => T
-  }
-> & {
+  Format extends EnumFormat = 'camelCase',
+> = AtomMut<T> & {
+  [Variant in T as Format extends 'camelCase'
+  ? `set${Capitalize<Variant>}`
+  : Format extends 'snake_case'
+  ? `set_${Variant}`
+  : never]: Action<[], Variant>
+} & {
+  reset: Action<[], T>
   enum: { [K in T]: K }
 }
 
 export type EnumAtomOptions<
   T extends string,
-  Format extends 'camelCase' | 'snake_case' = 'camelCase',
+  Format extends EnumFormat = 'camelCase',
 > = {
   name?: string
   format?: Format
-  initState?: T extends any ? T : never
+  initState?: T
 }
 
 export const reatomEnum = <
-  T extends string,
+  const T extends string,
   Format extends 'camelCase' | 'snake_case' = 'camelCase',
 >(
   variants: ReadonlyArray<T>,
   options: string | EnumAtomOptions<T, Format> = {},
-): EnumAtom<T, Format> => {
+) => {
   const {
     name,
     format = 'camelCase' as Format,
     initState = variants[0],
   }: EnumAtomOptions<T, Format> = typeof options === 'string'
-    ? { name: options }
-    : options
-  const cases = {} as Rec
-  const reducers = {} as Rec
+      ? { name: options }
+      : options
+
+  const stateAtom = atom(initState, name) as EnumAtom<T, Format>
+  const enumAtom: typeof stateAtom = Object.assign((ctx: Ctx, update: any) => {
+    const state = stateAtom(ctx, update)
+    throwReatomError(!variants.includes(state), `invalid enum value "${state}" for "${name}" enum`)
+    return state
+  }, stateAtom)
+  const cases = (enumAtom.enum = {} as { [K in T]: K })
+
+  enumAtom.reset = action((ctx) => enumAtom(ctx, initState!), `${name}.reset`)
 
   for (const variant of variants) {
     cases[variant] = variant
-
-    const reducerName = variant.replace(
+    const setterName = variant.replace(
       /^./,
       (firstLetter) =>
         'set' +
@@ -56,13 +60,12 @@ export const reatomEnum = <
           ? firstLetter.toUpperCase()
           : `_${firstLetter}`),
     )
-    reducers[reducerName] = () => variant
+
+      ; (enumAtom as any)[setterName] = action(
+        (ctx) => enumAtom(ctx, variant)!,
+        `${name}.${setterName}`,
+      )
   }
 
-  reducers.reset = () => initState
-
-  // @ts-expect-error
-  return Object.assign(atom(initState, name).pipe(withReducers(reducers)), {
-    enum: cases,
-  })
+  return enumAtom as EnumAtom<T, Format>
 }

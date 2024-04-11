@@ -1,23 +1,25 @@
-import { atom, AtomMut } from '@reatom/core'
-import { withReducers, WithReducers } from './withReducers'
+import { Action, AtomMut, action, atom } from '@reatom/core'
+import { withAssign } from './withAssign'
 
-// it would be better for semantic use additional `add` and `subtract`
-// but is it really needed to take slow down creation and increase mem usage?
-export type NumberAtomReducers = {
-  increment(state: number, value?: number): number
-  decrement(state: number, value?: number): number
-  random(): number
-  reset(): number
+export interface NumberAtom extends AtomMut<number> {
+  increment: Action<[by?: number], number>
+  decrement: Action<[by?: number], number>
+  random: Action<[], number>
+  reset: Action<[], number>
 }
-
-export type NumberAtom = WithReducers<AtomMut<number>, NumberAtomReducers>
 
 export const reatomNumber = (initState = 0, name?: string): NumberAtom =>
   atom(initState, name).pipe(
-    withReducers({
-      increment: (state, value = 1) => state + value,
-      decrement: (state, value = 1) => state - value,
-      random: Math.random,
-      reset: () => initState,
-    }),
+    withAssign((target, name) => ({
+      increment: action(
+        (ctx, by = 1) => target(ctx, (prev) => prev + by),
+        `${name}.increment`,
+      ),
+      decrement: action(
+        (ctx, by = 1) => target(ctx, (prev) => prev - by),
+        `${name}.decrement`,
+      ),
+      random: action((ctx) => target(ctx, Math.random()), `${name}.decrement`),
+      reset: action((ctx) => target(ctx, initState), `${name}.reset`),
+    })),
   )

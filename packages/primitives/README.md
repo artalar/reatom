@@ -127,7 +127,48 @@ const inputAtom = reatomString()
 inputAtom.reset(ctx)
 ```
 
+## `withAssign`
+
+An operator that makes it easier to attach properties such as computed atoms, reducer actions etc.
+
+```ts
+import {
+  atom,
+  withAssign,
+  action,
+  reatomResource,
+  withRetry,
+} from '@reatom/framework'
+
+const pageAtom = atom(1).pipe(
+  withAssign((pageAtom, name) => ({
+    prev: action(
+      (ctx) => pageAtom(ctx, (prev) => Math.max(1, prev - 1)),
+      `${name}.prev`,
+    ),
+    next: action((ctx) => pageAtom(ctx, (prev) => prev + 1), `${name}.next`),
+  })),
+)
+
+const list = reatomResource(async (ctx) => {
+  const page = ctx.spy(pageAtom)
+  return await ctx.schedule(() => request(`/api/list/${page}`))
+}, 'fetchList').pipe(
+  withRetry({
+    onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
+  }),
+  withAssign((list, name) => ({
+    loadingAtom: atom(
+      (ctx) => ctx.spy(list.pendingAtom) > 0 || ctx.spy(list.retriesAtom) > 0,
+      `${name}.loadingAtom`,
+    ),
+  })),
+)
+```
+
 ## `withReducers`
+
+Deprecated, use [`withAssign`](#withassign) instead.
 
 ```ts
 import { atom } from '@reatom/core'
@@ -140,7 +181,7 @@ const pageAtom = atom(1).pipe(
   }),
 )
 
-// built-in actions:
-pageAtom.next(ctx)
-pageAtom.prev(ctx)
+// `prev` and `next` actions are added automatically
+pageAtom.next(ctx) // => 2
+pageAtom.prev(ctx) // => 1
 ```

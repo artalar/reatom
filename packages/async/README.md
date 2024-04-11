@@ -585,18 +585,27 @@ export const fetchList = reatomAsync(
   withRetry({
     onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
   }),
-)
-export const isFetchListLoading = atom(
-  (ctx) =>
-    ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
-  'isFetchListLoading',
+  withAssign((target, name) => ({
+    loadingAtom: atom(
+      (ctx) =>
+        ctx.spy(target.pendingAtom) > 0 ||
+        ctx.spy(target.retriesAtom) > 0,
+      `${name}.loadingAtom`,
+    ),
+  })),
 )
 ```
 
 Note that `retriesAtom` will drop to `0` when any promise resolves successfully or when you return `undefined` or a negative number. So, it is good practice to avoid calling multiple async actions in parallel. If you are using `withRetry`, it is recommended to always use it with [withAbort](#withabort) (with the default 'last-in-win' strategy).
 
 ```ts
-import { atom, reatomAsync, withAbort, withErrorAtom, withRetry } from '@reatom/async'
+import {
+  atom,
+  reatomAsync,
+  withAbort,
+  withErrorAtom,
+  withRetry,
+} from '@reatom/async'
 
 export const fetchList = reatomAsync(
   (ctx) => request('api/list', ctx.controller),
