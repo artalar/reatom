@@ -585,11 +585,11 @@ export const fetchList = reatomAsync(
   withRetry({
     onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
   }),
-  withAssign((list, name) => ({
+  withAssign((target, name) => ({
     loadingAtom: atom(
       (ctx) =>
-        ctx.spy(fetchList.pendingAtom) > 0 ||
-        ctx.spy(fetchList.retriesAtom) > 0,
+        ctx.spy(target.pendingAtom) > 0 ||
+        ctx.spy(target.retriesAtom) > 0,
       `${name}.loadingAtom`,
     ),
   })),

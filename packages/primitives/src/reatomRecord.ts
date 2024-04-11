@@ -4,8 +4,8 @@ import { withAssign } from './withAssign'
 
 export interface RecordAtom<T extends Rec> extends AtomMut<T> {
   merge: Action<[slice: Partial<T>], T>
-  omit: Action<(keyof T)[], T>
-  reset: Action<(keyof T)[], T>
+  omit: Action<Array<(keyof T)>, T>
+  reset: Action<Array<(keyof T)>, T>
 }
 
 export const reatomRecord = <T extends Rec>(
@@ -13,10 +13,10 @@ export const reatomRecord = <T extends Rec>(
   name?: string,
 ): RecordAtom<T> =>
   atom(initState, name).pipe(
-    withAssign((theAtom) => ({
+    withAssign((target) => ({
       merge: action(
         (ctx, slice: Partial<T>) =>
-          theAtom(ctx, (prev) => {
+          target(ctx, (prev) => {
             for (const key in prev) {
               if (!Object.is(prev[key], slice[key])) {
                 return { ...prev, ...slice }
@@ -28,8 +28,8 @@ export const reatomRecord = <T extends Rec>(
       ),
 
       omit: action(
-        (ctx, ...keys: (keyof T)[]) =>
-          theAtom(ctx, (prev) => {
+        (ctx, ...keys: Array<(keyof T)>) =>
+          target(ctx, (prev) => {
             if (keys.some((key) => key in prev)) return omit(prev, keys) as any
             return prev
           }),
@@ -38,7 +38,7 @@ export const reatomRecord = <T extends Rec>(
 
       reset: action(
         (ctx, ...keys: (keyof T)[]) =>
-          theAtom(ctx, (prev) => {
+          target(ctx, (prev) => {
             if (keys.length === 0) return initState
             const next = {} as T
             let changed = false

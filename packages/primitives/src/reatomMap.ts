@@ -15,12 +15,12 @@ export const reatomMap = <Key, Value>(
   name?: string,
 ): MapAtom<Key, Value> =>
   atom(initState, name).pipe(
-    withAssign((theAtom, name) => ({
-      get: (ctx: Ctx, key: Key) => ctx.get(theAtom).get(key),
-      has: (ctx: Ctx, key: Key) => ctx.get(theAtom).has(key),
+    withAssign((target, name) => ({
+      get: (ctx: Ctx, key: Key) => ctx.get(target).get(key),
+      has: (ctx: Ctx, key: Key) => ctx.get(target).has(key),
       set: action(
         (ctx, key: Key, value: Value) =>
-          theAtom(ctx, (prev) => {
+          target(ctx, (prev) => {
             const valuePrev = prev.get(key)
             return Object.is(valuePrev, value) &&
               (value !== undefined || prev.has(key))
@@ -31,7 +31,7 @@ export const reatomMap = <Key, Value>(
       ),
       delete: action(
         (ctx, key: Key) =>
-          theAtom(ctx, (prev) => {
+          target(ctx, (prev) => {
             if (!prev.has(key)) return prev
             const next = new Map(prev)
             next.delete(key)
@@ -39,7 +39,7 @@ export const reatomMap = <Key, Value>(
           }),
         `${name}.delete`,
       ),
-      clear: action((ctx) => theAtom(ctx, new Map()), `${name}.clear`),
-      reset: action((ctx) => theAtom(ctx, initState), `${name}.reset`),
+      clear: action((ctx) => target(ctx, new Map()), `${name}.clear`),
+      reset: action((ctx) => target(ctx, initState), `${name}.reset`),
     })),
   )

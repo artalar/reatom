@@ -10,7 +10,7 @@ export const reatomString: {
   <T extends string>(init: T, name?: string): StringAtom<T>
 } = (init = '', name?: string) =>
   atom(init, name).pipe(
-    withAssign((theAtom) => ({
-      reset: action((ctx) => theAtom(ctx, init)),
+    withAssign((target, name) => ({
+      reset: action((ctx) => target(ctx, init), `${name}.reset`),
     })),
   )

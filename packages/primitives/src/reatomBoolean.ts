@@ -10,13 +10,13 @@ export interface BooleanAtom extends AtomMut<boolean> {
 
 export const reatomBoolean = (init = false, name?: string): BooleanAtom =>
   atom(init, name).pipe(
-    withAssign((theAtom, name) => ({
-      toggle: action((ctx) => theAtom(ctx, (prev) => !prev), `${name}.toggle`),
-      setTrue: action((ctx) => theAtom(ctx, true) as true, `${name}.setTrue`),
+    withAssign((target, name) => ({
+      toggle: action((ctx) => target(ctx, (prev) => !prev), `${name}.toggle`),
+      setTrue: action((ctx) => target(ctx, true) as true, `${name}.setTrue`),
       setFalse: action(
-        (ctx) => theAtom(ctx, false) as false,
+        (ctx) => target(ctx, false) as false,
         `${name}.setFalse`,
       ),
-      reset: action((ctx) => theAtom(ctx, init), `${name}.reset`),
+      reset: action((ctx) => target(ctx, init), `${name}.reset`),
     })),
   )

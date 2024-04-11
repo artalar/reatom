@@ -10,16 +10,16 @@ export interface NumberAtom extends AtomMut<number> {
 
 export const reatomNumber = (initState = 0, name?: string): NumberAtom =>
   atom(initState, name).pipe(
-    withAssign((theAtom, name) => ({
+    withAssign((target, name) => ({
       increment: action(
-        (ctx, by = 1) => theAtom(ctx, (prev) => prev + by),
+        (ctx, by = 1) => target(ctx, (prev) => prev + by),
         `${name}.increment`,
       ),
       decrement: action(
-        (ctx, by = 1) => theAtom(ctx, (prev) => prev - by),
+        (ctx, by = 1) => target(ctx, (prev) => prev - by),
         `${name}.decrement`,
       ),
-      random: action((ctx) => theAtom(ctx, Math.random()), `${name}.decrement`),
-      reset: action((ctx) => theAtom(ctx, initState), `${name}.reset`),
+      random: action((ctx) => target(ctx, Math.random()), `${name}.decrement`),
+      reset: action((ctx) => target(ctx, initState), `${name}.reset`),
     })),
   )

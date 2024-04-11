@@ -4,7 +4,7 @@ import * as assert from 'uvu/assert'
 
 import { reatomString } from './reatomString'
 
-test('reatomString..reset', () => {
+test('reatomString.reset', () => {
   const ctx = createCtx()
   const a = reatomString(`string`)
 

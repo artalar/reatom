@@ -1,4 +1,4 @@
-import { action, Action, atom, AtomMut } from '@reatom/core'
+import { action, Action, atom, AtomMut, Ctx, throwReatomError } from '@reatom/core'
 
 export type EnumFormat = 'camelCase' | 'snake_case'
 
@@ -7,10 +7,10 @@ export type EnumAtom<
   Format extends EnumFormat = 'camelCase',
 > = AtomMut<T> & {
   [Variant in T as Format extends 'camelCase'
-    ? `set${Capitalize<Variant>}`
-    : Format extends 'snake_case'
-    ? `set_${Variant}`
-    : never]: Action<[], Variant>
+  ? `set${Capitalize<Variant>}`
+  : Format extends 'snake_case'
+  ? `set_${Variant}`
+  : never]: Action<[], Variant>
 } & {
   reset: Action<[], T>
   enum: { [K in T]: K }
@@ -37,13 +37,18 @@ export const reatomEnum = <
     format = 'camelCase' as Format,
     initState = variants[0],
   }: EnumAtomOptions<T, Format> = typeof options === 'string'
-    ? { name: options }
-    : options
+      ? { name: options }
+      : options
 
-  const theAtom = atom(initState, name) as EnumAtom<T, Format>
-  const cases = (theAtom.enum = {} as { [K in T]: K })
+  const stateAtom = atom(initState, name) as EnumAtom<T, Format>
+  const enumAtom: typeof stateAtom = Object.assign((ctx: Ctx, update: any) => {
+    const state = stateAtom(ctx, update)
+    throwReatomError(!variants.includes(state), `invalid enum value "${state}" for "${name}" enum`)
+    return state
+  }, stateAtom)
+  const cases = (enumAtom.enum = {} as { [K in T]: K })
 
-  theAtom.reset = action((ctx) => theAtom(ctx, initState!), `${name}.reset`)
+  enumAtom.reset = action((ctx) => enumAtom(ctx, initState!), `${name}.reset`)
 
   for (const variant of variants) {
     cases[variant] = variant
@@ -56,11 +61,11 @@ export const reatomEnum = <
           : `_${firstLetter}`),
     )
 
-    ;(theAtom as any)[setterName] = action(
-      (ctx) => theAtom(ctx, variant)!,
-      `${name}.${setterName}`,
-    )
+      ; (enumAtom as any)[setterName] = action(
+        (ctx) => enumAtom(ctx, variant)!,
+        `${name}.${setterName}`,
+      )
   }
 
-  return theAtom as EnumAtom<T, Format>
+  return enumAtom as EnumAtom<T, Format>
 }
