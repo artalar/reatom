@@ -291,7 +291,16 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
   })
 }
 
-export const concurrent = <TCtx extends Ctx, T extends Fn<[TCtx, ...any[]]> = Fn<[TCtx, ...any[]]>>(fn: T): T => {
+interface ConcurrentFn {
+  <TCtx extends Ctx>(fn: Fn<[TCtx]>): Fn<[TCtx]>
+  <TCtx extends Ctx, T1>(fn: Fn<[TCtx, T1]>): Fn<[TCtx, T1]>
+  <TCtx extends Ctx, T1, T2>(fn: Fn<[TCtx, T1, T2]>): Fn<[TCtx, T1, T2]>
+  <TCtx extends Ctx, T1, T2, T3>(fn: Fn<[TCtx, T1, T2, T3]>): Fn<[TCtx, T1, T2, T3]>
+}
+
+export const concurrent: ConcurrentFn = <TCtx extends Ctx>(
+  fn: Fn<[TCtx, ...any[]]>,
+): Fn<[TCtx, ...any[]]> => {
   const abortControllerAtom = atom<null | AbortController>(
     null,
     `${__count('_concurrent')}.abortControllerAtom`,
