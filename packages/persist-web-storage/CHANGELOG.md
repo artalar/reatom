@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.4](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.3...persist-web-storage-v3.3.4) (2024-04-12)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** availability of BroadcastChannel ([199d69a](https://github.com/artalar/reatom/commit/199d69a13a3b2b0eabc22bb5ffaaa8e025f40041))
+
 ## [3.3.3](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.2...persist-web-storage-v3.3.3) (2024-03-24)
 
 

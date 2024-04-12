@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.0](https://github.com/artalar/reatom/compare/primitives-v3.2.1...primitives-v3.3.0) (2024-04-12)
+
+
+### Features
+
+* **primitives:** add withAssign, deprecate withReducers ([3ac66fc](https://github.com/artalar/reatom/commit/3ac66fc76fffa4ef05e9782d93c982020188196f))
+
 ## [3.2.1](https://github.com/artalar/reatom/compare/primitives-v3.2.0...primitives-v3.2.1) (2023-05-21)
 
 

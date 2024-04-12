@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/jsx-v3.8.0...jsx-v3.9.0) (2024-04-12)
+
+
+### Features
+
+* **jsx:** support array children ([c555206](https://github.com/artalar/reatom/commit/c555206b4349494912cc278b5157d9b167cc54a0))
+
+
+### Bug Fixes
+
+* **jsx:** mount fragment as child ([#782](https://github.com/artalar/reatom/issues/782)) ([33a0fda](https://github.com/artalar/reatom/commit/33a0fda91bd1ed5a384d8214baa08f0b295861f2))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/jsx-v3.7.0...jsx-v3.8.0) (2024-03-31)
 
 
