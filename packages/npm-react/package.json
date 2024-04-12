@@ -46,5 +46,9 @@
   "files": [
     "/build",
     "/package.json"
-  ]
+  ],
+  "devDependencies": {
+    "@types/react": "^18.2.77",
+    "react": "^18.2.0"
+  }
 }

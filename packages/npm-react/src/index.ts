@@ -287,7 +287,7 @@ export const reatomComponent = <T>(
               i < pubs.length;
               i++
             ) {
-              // @ts-expect-error we haven't a reference to the atom, but `spy`  reads only `proto`
+              // @ts-expect-error we haven't a reference to the atom, but `spy` reads only `proto`
               ctx.spy({ __reatom: pubs[i]!.proto })
             }
 
