@@ -49,7 +49,7 @@ Now, let's outline some logic.
 
 ```ts
 // ~/features/search/model.ts
-import { action, atom } from '@reatom/core'
+import { action, atom, batch } from '@reatom/core'
 
 // define your base mutable data references
 // by passing a primitive initial values
@@ -94,8 +94,8 @@ const fetchGoods = action(async (ctx, search: string) => {
     fetch(`/api/goods?search=${search}`).then((r) => r.json()),
   )
 
-  // pass a callback to `get` to batch a few updates inside async resolve
-  ctx.get(() => {
+  // use `batch` to prevent glitches and extra effects.
+  batch(ctx, () => {
     isSearchingAtom(ctx, false)
     goodsAtom(ctx, goods)
   })
@@ -125,7 +125,6 @@ document.getElementById('search-input').addEventListener('input', (event) => {
 
 > Do you want to see [the docs for React adapter](/package/npm-react) next?
 
-
 ### Action handling (advanced)
 
 It is better to keep atoms stupid and handle all logic inside actions. But sometimes you need to turn the direction of your code coupling and make atoms depend on an action. And you can do it!
@@ -134,6 +133,7 @@ An action is an atom with a temporal state, which is an array of all passed payl
 
 ```ts
 // ~/modules/someFlow
+import { atom, batch } from '@reatom/core'
 import { newMessage } from '~/modules/ws'
 
 const FLOW_NAME = 'someFlow'
@@ -154,8 +154,7 @@ export const someFlowManagerAtom = atom((ctx) => {
 // socket service:
 socket.on(
   throttle(150, (msgs) =>
-    // batch  updates
-    ctx.get(() => {
+    batch(ctx, () => {
       msgs.forEach((msg) => newMessage(ctx, msg))
     }),
   ),
@@ -359,7 +358,7 @@ Action state is `Array<{ params: Array<any>, payload: any }>`, but action call r
 ```ts
 const submit = action((ctx, name, password) => ({ name, password }))
 
-ctx.get(() => {
+batch(ctx, () => {
   submit(ctx, 'Joe', 'Bom')
   // { name: 'Joe', password: 'Bom' }
 
@@ -389,31 +388,29 @@ doSome.onCall((ctx, payload, params) => {
 
 An important rule to note, even if you might not need it, is: don't run one context inside another, such as ctx1.get(() => ctx2.get(anAtom)). Doing so will throw an error.
 
-#### `ctx.get` atom API
+### `ctx.get` atom API
 
 Get fresh atom state
 
 `get<T>(anAtom: Atom<T>): T`
 
-#### `ctx.get` batch API
+### `ctx.get` batch API
 
-Start transaction and batch all updates, same as in action call
+You can call `ctx.get` with a function to achieve batching, but it is preferred to use the separate [batch](#batch) API.
 
-`get<T>(cb: () => T): T`
-
-#### `ctx.subscribe` atom API
+### `ctx.subscribe` atom API
 
 Subscribe to atom new state. Passed callback called immediately and after each atom state change.
 
 `subscribe<T>(anAtom: Atom<T>, cb: (newState: T) => void): () => void`
 
-#### `ctx.subscribe` log API
+### `ctx.subscribe` log API
 
 Subscribe to transaction end. Useful for logging.
 
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
-#### `ctx.schedule`
+### `ctx.schedule`
 
 To achieve [atomicity](/general/what-is-state-manager#state), each update (action call / atom mutation) starts a complex batch operation, which tries to optimize your updates and collect them into a new immutable [log](#ctx.subscribe-log-API) of new immutable cache snapshots. If some computation throws an error (like `can't use property of undefined`) the whole update will be canceled, otherwise the new caches will be merged into the context internal `caches` weak map. To achieve purity of computations and the ability to cancel them, all side-effects should be called separately in a different queue, after all computations. This is where `schedule` comes in; it accepts an effect callback and returns a promise which will be resolved after the effect call or rejected if the transaction fails.
 
@@ -436,7 +433,7 @@ A unique feature of Reatom, especially in scheduling, is ability to define the t
 
 > Read more in the [lifecycle guild](/handbook#lifecycle).
 
-#### `ctx.schedule` rollback API
+### `ctx.schedule` rollback API
 
 Sometimes, you may want to perform a side-effect during clean calculations or need to store an artifact of an effect. To make it clean, you should describe a rollback (cleanup) function for the case of an unexpected error by passing `-1` as the second argument of `ctx.schedule`. Check out this example with a debounced action:
 
@@ -462,4 +459,184 @@ export const doSome = action((ctx) => {
   timeoutIdAtom(ctx, newTimeoutId)
   ctx.schedule(() => clearTimeout(newTimeoutId), -1)
 })
+```
+
+### batch
+
+Start transaction and batch all updates.
+
+`batch<T>(ctx: Ctx, cb: () => T): T`.
+
+Normally, all your synchronous computations should be described in a separate action. However, sometimes you already have an asynchronous action and just want to save the resulting data. Here is how it works:
+
+```ts
+import { action, atom, batch } from '@reatom/core'
+
+export const firstNameAtom = atom('', 'firstNameAtom')
+export const lastNameAtom = atom('', 'lastNameAtom')
+export const fullNameAtom = atom(
+  (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
+  'fullNameAtom',
+)
+export const fetchUser = action(async (ctx, id: string) => {
+  const user = await ctx.schedule(() => api.getUser(id))
+  firstNameAtom(ctx, user.firstName)
+  lastNameAtom(ctx, user.lastName)
+}, 'fetchUser')
+
+ctx.subscribe(fullNameAtom, console.log)
+// log: " "
+fetchUser(ctx, 1)
+// log: "John "
+// log: "John Doe"
+fetchUser(ctx, 2)
+// A MISTAKE, DATA COLLISION!
+// log: "Mat Doe"
+// log: "Mat Black"
+```
+
+```ts
+import { action, atom, batch } from '@reatom/core'
+
+export const firstNameAtom = atom('', 'firstNameAtom')
+export const lastNameAtom = atom('', 'lastNameAtom')
+export const fullNameAtom = atom(
+  (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
+  'fullNameAtom',
+)
+export const fetchUser = action(async (ctx, id: string) => {
+  const user = await ctx.schedule(() => api.getUser(id))
+  batch(ctx, () => {
+    firstNameAtom(ctx, user.firstName)
+    lastNameAtom(ctx, user.lastName)
+  })
+}, 'fetchUser')
+
+ctx.subscribe(fullNameAtom, console.log)
+// log: " "
+fetchUser(ctx, 1)
+// log: "John Doe"
+// All good
+fetchUser(ctx, 2)
+// log: "Mat Black"
+```
+
+And you can use additional actions instead, of course.
+
+```ts
+import { action, atom, batch } from '@reatom/core'
+
+export const firstNameAtom = atom('', 'firstNameAtom')
+export const lastNameAtom = atom('', 'lastNameAtom')
+export const fullNameAtom = atom(
+  (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
+  'fullNameAtom',
+)
+export const saveUser = action((ctx, firstName: string, lastName: string) => {
+  firstNameAtom(ctx, firstName)
+  lastNameAtom(ctx, lastName)
+}, 'saveUser')
+export const fetchUser = action(async (ctx, id: string) => {
+  const user = await ctx.schedule(() => api.getUser(id))
+  saveUser(ctx, user.firstName, user.lastName)
+}, 'fetchUser')
+
+ctx.subscribe(fullNameAtom, console.log)
+// log: " "
+fetchUser(ctx, 1)
+// log: "John Doe"
+// All good
+fetchUser(ctx, 2)
+// log: "Mat Black"
+```
+
+But beware, in the example above, `saveUser` starts a new synchronous transaction because it is called after the await. If you need to call multiple actions, such as `saveUser` and `loading(ctx, false)`, there will still be two transactions. You should either batch these action calls with `batch` again or move them to another action like `resolveFetchUser`, for example.
+
+In the code below in a User component which subscribes to `isUserLoadingAtom` and `fullNameAtom` will be two rerenders, where the first contains the fetched full name but still shows the loader and the only second one will show the full name without loader.
+
+```ts
+import { action, atom, batch } from '@reatom/core'
+
+export const isUserLoadingAtom = atom(false, 'isUserLoadingAtom')
+export const firstNameAtom = atom('', 'firstNameAtom')
+export const lastNameAtom = atom('', 'lastNameAtom')
+export const fullNameAtom = atom(
+  (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
+  'fullNameAtom',
+)
+export const saveUser = action((ctx, firstName: string, lastName: string) => {
+  firstNameAtom(ctx, firstName)
+  lastNameAtom(ctx, lastName)
+}, 'saveUser')
+export const fetchUser = action(async (ctx, id: string) => {
+  isUserLoadingAtom(ctx, true)
+  try {
+    const user = await ctx.schedule(() => api.getUser(id))
+    saveUser(ctx, user.firstName, user.lastName)
+    isUserLoadingAtom(ctx, false)
+  } catch {
+    isUserLoadingAtom(ctx, false)
+  }
+}, 'fetchUser')
+```
+
+Here is the fixed version, which will force to rerender the user component only once with the all final correct data.
+
+```ts
+import { action, atom, batch } from '@reatom/core'
+
+export const isUserLoadingAtom = atom(false, 'isUserLoadingAtom')
+export const firstNameAtom = atom('', 'firstNameAtom')
+export const lastNameAtom = atom('', 'lastNameAtom')
+export const fullNameAtom = atom(
+  (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
+  'fullNameAtom',
+)
+export const saveUser = action((ctx, firstName: string, lastName: string) => {
+  firstNameAtom(ctx, firstName)
+  lastNameAtom(ctx, lastName)
+}, 'saveUser')
+export const resolveFetchUser = action(
+  (ctx, firstName: string, lastName: string) => {
+    saveUser(ctx, firstName, firstName)
+    isUserLoadingAtom(ctx, false)
+  },
+  'resolveFetchUser',
+)
+export const fetchUser = action(async (ctx, id: string) => {
+  isUserLoadingAtom(ctx, true)
+  try {
+    const user = await ctx.schedule(() => api.getUser(id))
+    resolveFetchUser(ctx, user.firstName, user.lastName)
+  } catch {
+    isUserLoadingAtom(ctx, false)
+  }
+}, 'fetchUser')
+```
+
+The code above is a perfect example of code decomposition. It also produces a lot of logs about each step of the data processing. However, if you want, you can reduce the amount of code with the 'batch' method.
+
+```ts
+import { action, atom, batch } from '@reatom/core'
+
+export const isUserLoadingAtom = atom(false, 'isUserLoadingAtom')
+export const firstNameAtom = atom('', 'firstNameAtom')
+export const lastNameAtom = atom('', 'lastNameAtom')
+export const fullNameAtom = atom(
+  (ctx) => `${ctx.spy(firstNameAtom)} ${ctx.spy(lastNameAtom)}`,
+  'fullNameAtom',
+)
+export const fetchUser = action(async (ctx, id: string) => {
+  isUserLoadingAtom(ctx, true)
+  try {
+    const user = await ctx.schedule(() => api.getUser(id))
+    batch(ctx, () => {
+      isUserLoadingAtom(ctx, false)
+      firstNameAtom(ctx, user.firstName)
+      lastNameAtom(ctx, user.lastName)
+    })
+  } catch {
+    isUserLoadingAtom(ctx, false)
+  }
+}, 'fetchUser')
 ```

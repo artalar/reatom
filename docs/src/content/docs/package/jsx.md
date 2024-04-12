@@ -50,6 +50,20 @@ export default defineConfig({
 })
 ```
 
+### Using with different framework.
+
+You can use different JSX pragmas in different files. For example, if you have a React project and want to speedup some of you components, you can write them with reatom/jsx with a couple of simple steps:
+
+- create a separate package for you Reatom components
+- insert `tsconfig.json` as described above, you can use [extends](https://www.typescriptlang.org/tsconfig#extends) property, to use your project configurations
+- in every `*.tsx` file use the following code:
+
+```tsx
+// @jsxRuntime classic
+// @jsx h
+import { h } from '@reatom/jsx';
+```
+
 ## Example
 
 > Advanced example with dynamic entities you can find here: https://github.com/artalar/reatom/tree/v3/examples/reatom-jsx
@@ -169,6 +183,10 @@ export const HeaderInput = ({ size = 0 }) => {
 ### Components
 
 Components in `@reatom/jsx` are just functions returning JSX elements. They neither have state nor any lifecycle associated with them. Because component instantiation boils down into function calls, features like `$spread` are not supported in them.
+
+You can put an atom with a list of other elements as a children of an element to archive rendering of a dynamic list. But be note that you can't put a as children a few atoms with a list and other elements, as the [fragment](https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment) is not supported to replace itself.
+
+> You should know that when you create a component which uses some atoms, it creates a subscription to those atoms immediately. The subscription will disposed only after you will put the elements to the `mount`ed node and if it will be unused after some condition rendering. Do not put the same elements as a children to other elements a few times! Recreate them with a component instead.
 
 ### Spreads
 

@@ -307,7 +307,7 @@ The most common use case for this hook is to synchronize some state from a props
 
 ```tsx
 import { action, atom } from '@reatom/core'
-import { useAction, useUpdate } from '@reatom/react'
+import { useAction, useUpdate } from '@reatom/npm-react'
 import Form from 'form-library'
 
 const formValuesAtom = atom({})
