@@ -77,7 +77,15 @@ export interface TestCtx extends Ctx {
 }
 
 // override default `setTimeout(() => throw...)`
-const callSafelySilent = (fn: Fn, ...a: any[]) => fn(...a)
+const callSafelySilent = (fn: Fn, ...a: any[]) => {
+  try {
+    return fn(...a)
+  } catch (err: any) {
+    console.log('Error in Reatom effects queue:')
+    console.error(err)
+    return err instanceof Error ? err : (err = new Error(err))
+  }
+}
 
 export const createTestCtx = (options?: CtxOptions): TestCtx => {
   const ctx = createCtx({
