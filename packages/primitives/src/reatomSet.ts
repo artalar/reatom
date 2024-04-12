@@ -2,11 +2,13 @@ import { Action, action, atom, AtomMut, Ctx } from '@reatom/core'
 import { withAssign } from './withAssign'
 
 export interface SetAtom<T> extends AtomMut<Set<T>> {
-  set: Action<[el: T], Set<T>>
+  add: Action<[el: T], Set<T>>
   delete: Action<[el: T], Set<T>>
   clear: Action<[], Set<T>>
   reset: Action<[], Set<T>>
   has: (ctx: Ctx, el: T) => boolean
+  /** @deprecated */
+  set: Action<[el: T], Set<T>>
 }
 
 export const reatomSet = <T>(
@@ -15,9 +17,17 @@ export const reatomSet = <T>(
 ): SetAtom<T> =>
   atom(initState, name).pipe(
     withAssign((target, name) => ({
-      set: action((ctx, el) =>
-        target(ctx, (prev) => prev.has(el) ? prev : new Set(prev).add(el))
-        , `${name}.set`),
+      add: action(
+        (ctx, el) =>
+          target(ctx, (prev) => (prev.has(el) ? prev : new Set(prev).add(el))),
+        `${name}.add`,
+      ),
+      /** @deprecated */
+      set: action(
+        (ctx, el) =>
+          target(ctx, (prev) => (prev.has(el) ? prev : new Set(prev).add(el))),
+        `${name}.set`,
+      ),
       delete: action((ctx, el) => {
         return target(ctx, (prev) => {
           if (!prev.has(el)) return prev

@@ -57,13 +57,14 @@ import { reatomMap } from '@reatom/primitives'
 const thingsAtom = reatomMap<string, Entity>()
 
 // built-in actions:
-thingsAtom.set(ctx, key, el)
+thingsAtom.set(ctx, key, new Entity())
 thingsAtom.delete(ctx, key)
 thingsAtom.clear(ctx)
 thingsAtom.reset(ctx)
+thingsAtom.getOrCreate(ctx, key, () => new Entity()) // non nullable entity
 
 // built-in functions:
-thingsAtom.get(ctx, key)
+thingsAtom.get(ctx, key) // nullable entity
 thingsAtom.has(ctx, key)
 ```
 
@@ -108,11 +109,14 @@ import { reatomSet } from '@reatom/primitives'
 const setAtom = reatomSet<Entity>()
 
 // built-in actions:
-setAtom.set(ctx, el)
+setAtom.add(ctx, el)
 setAtom.delete(ctx, el)
 setAtom.clear(ctx)
 setAtom.reset(ctx)
+setAtom.getOrCreate(ctx, key, () => new Entity()) // non nullable entity
+
 // built-in functions:
+setAtom.get(ctx, key) // nullable entity
 setAtom.has(ctx, el)
 ```
 
