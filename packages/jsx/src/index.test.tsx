@@ -22,6 +22,13 @@ export const createWindow = () => {
     },
   })
 
+  // crutch: https://github.com/WebReflection/linkedom/issues/252
+  const DocumentFragment = new Proxy(window.DocumentFragment, {
+    construct() {
+      return window.document.createDocumentFragment()
+    },
+  })
+
   // linkedom `window` can't just be spread - add fields manually as needed
   return {
     document: window.document,
@@ -30,7 +37,7 @@ export const createWindow = () => {
     Element: window.Element,
     MutationObserver: window.MutationObserver,
     HTMLElement: window.HTMLElement,
-    DocumentFragment: window.DocumentFragment,
+    DocumentFragment,
   }
 }
 
@@ -176,12 +183,54 @@ test('spreads', () => {
 test('fragment as child', () => {
   const { ctx, h, hf, mount, parent, window } = setup()
 
-  const child = <><div>foo</div><><div>bar</div></></>
+  const child = (
+    <>
+      <div>foo</div>
+      <>
+        <div>bar</div>
+      </>
+    </>
+  )
   mount(parent, child)
 
   assert.is(parent.childNodes.length, 2)
   assert.is(parent.childNodes[0]?.textContent, 'foo')
   assert.is(parent.childNodes[1]?.textContent, 'bar')
+})
+
+test('array children', () => {
+  const {
+    ctx,
+    h,
+    hf,
+    mount,
+    parent,
+    window: { document },
+  } = setup()
+
+  const n = atom(1)
+  const list = atom((ctx) =>
+    Array.from({ length: ctx.spy(n) }, (_, i) => <li>{i + 1}</li>),
+  )
+
+  assert.throws(() => {
+    mount(
+      parent,
+      <ul>
+        {list}
+        <br />
+      </ul>,
+    )
+  })
+
+  const element = <ul>{list}</ul>
+
+  assert.is(element.childNodes.length, 1)
+  assert.is(element.textContent, '1')
+
+  n(ctx, 2)
+  assert.is(element.childNodes.length, 2)
+  assert.is(element.textContent, '12')
 })
 
 test.run()

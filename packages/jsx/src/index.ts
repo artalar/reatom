@@ -77,7 +77,10 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
     Promise.resolve().then(() => {
       if (!parent.isConnected) un()
       else {
-        while (parent.parentElement && !unsubscribesMap.get(parent)?.push(un)) {
+        while (
+          parent.parentElement &&
+          !unsubscribesMap.get(parent)?.push(() => parent.isConnected || un())
+        ) {
           parent = parent.parentElement
         }
       }
@@ -143,25 +146,43 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
             | ChildNode
             | DocumentFragment
           let un: undefined | Unsubscribe
-          un = ctx.subscribe(child, (v) => {
-            if (un && !innerChild.isConnected) un()
-            else {
-              throwReatomError(
-                Array.isArray(v),
-                'array children are not supported',
-              )
-
-              if (v instanceof DOM.HTMLElement) {
-                let list = unsubscribesMap.get(v)
-                if (!list) unsubscribesMap.set(v, (list = []))
-
-                if (un) element.replaceChild(v, innerChild)
-                innerChild = v
+          let error: any
+          un = ctx.subscribe(child, (v): void => {
+            try {
+              if (
+                un &&
+                !innerChild.isConnected &&
+                innerChild instanceof DOM.DocumentFragment === false
+              ) {
+                un()
               } else {
-                innerChild.textContent = v
+                throwReatomError(
+                  Array.isArray(v) && children.length > 1,
+                  'array children with other children are not supported',
+                )
+
+                if (v instanceof DOM.HTMLElement) {
+                  let list = unsubscribesMap.get(v)
+                  if (!list) unsubscribesMap.set(v, (list = []))
+
+                  if (un) element.replaceChild(v, innerChild)
+                  innerChild = v
+                } else if (Array.isArray(v)) {
+                  if (un) element.replaceChildren(...v)
+                  else {
+                    const fragment = new DOM.DocumentFragment()
+                    v.forEach((el) => fragment.append(el))
+                    innerChild = fragment
+                  }
+                } else {
+                  innerChild.textContent = v
+                }
               }
+            } catch (e) {
+              error = e
             }
           })
+          if (error) throw error
           unlink(element, un)
           element.appendChild(innerChild)
         } else {
