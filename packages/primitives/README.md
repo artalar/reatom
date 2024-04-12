@@ -131,9 +131,37 @@ const inputAtom = reatomString()
 inputAtom.reset(ctx)
 ```
 
+## `withComputed`
+
+This operator allows you to react to external dependency for a changeable atom. It is better to use this operator instead of `onChange` for adding extra computation logic.
+
+So, code like this:
+
+```ts
+export const searchAtom = atom('', 'searchAtom')
+export const pageAtom = atom(0, 'pageAtom')
+searchAtom.onChange((ctx) => {
+  pageAtom(ctx, 0)
+})
+```
+
+Should be like this:
+
+```ts
+export const searchAtom = atom('', 'searchAtom')
+export const pageAtom = atom(0, 'pageAtom').pipe(
+  withComputed((ctx, state) => {
+    ctx.spy(searchAtom, () => {
+      state = 0
+    })
+    return state
+  }),
+)
+```
+
 ## `withAssign`
 
-An operator that makes it easier to attach properties such as computed atoms, reducer actions etc.
+An operator that makes it easier to attach properties such as computed atoms, reducer actions etc. It is just a better code organization pattern to have `thingAtom`, `thingAtom.doSome`, instead of `thingAtom` and `doSomeThing`.
 
 ```ts
 import {
