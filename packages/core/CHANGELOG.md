@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/core-v3.7.0...core-v3.8.0) (2024-04-12)
+
+
+### Features
+
+* **core:** add batch method ([2e082b6](https://github.com/artalar/reatom/commit/2e082b6296d933ca24046f60ad31b11098027af2))
+
+
+### Bug Fixes
+
+* **core:** remove extra computation ([6e3d86d](https://github.com/artalar/reatom/commit/6e3d86dc9d8de9dd78a9c10ce4cb3a899e407093))
+
 ## [3.7.0](https://github.com/artalar/reatom/compare/core-v3.6.6...core-v3.7.0) (2024-02-16)
 
 

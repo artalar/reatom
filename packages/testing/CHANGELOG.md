@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.5](https://github.com/artalar/reatom/compare/testing-v3.4.4...testing-v3.4.5) (2024-04-12)
+
+
+### Bug Fixes
+
+* **testing:** callSafelySilent ([d80f013](https://github.com/artalar/reatom/commit/d80f0132542b5dad732228e0c49bf807dfc916ae))
+
 ## [3.4.4](https://github.com/artalar/reatom/compare/testing-v3.4.3...testing-v3.4.4) (2023-09-26)
 
 

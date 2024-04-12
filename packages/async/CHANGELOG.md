@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.14.0](https://github.com/artalar/reatom/compare/async-v3.13.6...async-v3.14.0) (2024-04-12)
+
+
+### Features
+
+* **primitives:** add withAssign, deprecate withReducers ([3ac66fc](https://github.com/artalar/reatom/commit/3ac66fc76fffa4ef05e9782d93c982020188196f))
+
+
+### Bug Fixes
+
+* **async:** change type of dataAtom in withDataAtom operator without initState ([#785](https://github.com/artalar/reatom/issues/785)) ([ecf44a6](https://github.com/artalar/reatom/commit/ecf44a6039e3217cb2d45c465564a67bd21f095c))
+
 ## [3.13.6](https://github.com/artalar/reatom/compare/async-v3.13.5...async-v3.13.6) (2024-03-19)
 
 
