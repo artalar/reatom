@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/primitives-v3.3.0...primitives-v3.4.0) (2024-04-12)
+
+
+### Features
+
+* **primitives:** add getOrCreate to reatomMap ([a6f9d48](https://github.com/artalar/reatom/commit/a6f9d4843e7e983d1a37b0c3a85214642a4d0925))
+* **primitives:** add withComputed ([055a5a7](https://github.com/artalar/reatom/commit/055a5a72524a5ce147ebbb1d7cbb4af7c9d88ca3))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/primitives-v3.2.1...primitives-v3.3.0) (2024-04-12)
 
 
