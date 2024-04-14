@@ -12,16 +12,32 @@ const ImportAtom = 'import {atom} from "@reatom/framework"'
 
 tester.run('unit-naming-rule', unitNamingRule, {
   valid: [
-    `${ImportAtom}; const some = atom(0, 'some')`,
-    {
-      code: `${ImportAtom}; const $some = atom(0, '$some')`,
-      options: [{ atomPrefix: '$' }],
-    },
-    {
-      code: `${ImportAtom}; const someAtom = atom(0, 'someAtom')`,
-      options: [{ atomPostfix: 'Atom' }],
-    },
-  ],
+    { atomPrefix: '$' },
+    { atomPostfix: 'Atom' },
+    { domainVariable: 'domain' },
+  ].flatMap((options) => {
+    const prefix = options.atomPrefix ?? ''
+    const postfix = options.atomPostfix ?? ''
+    const domain = options.domainVariable ?? 'name'
+    return [
+      {
+        code: `${ImportAtom}; const ${prefix}some${postfix} = atom(0, '${prefix}some${postfix}')`,
+        options: [options],
+      },
+      {
+        code: `${ImportAtom}; let ${domain}; const ${prefix}some${postfix} = atom(0, \`\${${domain}}.${prefix}some${postfix}\`)`,
+        options: [options],
+      },
+      {
+        code: `${ImportAtom}; const obj = { ${prefix}some${postfix}: atom(0, 'obj.${prefix}some${postfix}') }`,
+        options: [options],
+      },
+      {
+        code: `${ImportAtom}; let ${domain}; const obj = { ${prefix}some${postfix}: atom(0, \`\${${domain}}.obj.${prefix}some${postfix}\`) }`,
+        options: [options],
+      },
+    ]
+  }),
   invalid: [
     {
       code: `${ImportAtom}; const some = atom(0)`,
