@@ -56,17 +56,21 @@ main::before {
   display: inline-block;
 }
 
-.heading-wrapper > :first-child {
+.heading-wrapper > :is(h2, h3, h4, h5, h6) {
   display: inline;
 }
 
 .heading-wrapper .anchor-link {
   opacity: 0;
   margin-inline-start: calc(var(--icon-size) / 2);
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .heading-wrapper:hover .anchor-link,
-.anchor-link:focus {
+.heading-wrapper .anchor-link:focus {
   opacity: 1;
 }
 
@@ -86,7 +90,6 @@ main::before {
   font-size: var(--sl-text-h5);
 }
 
-.heading-wrapper svg {
-  display: inline;
-  width: var(--icon-size);
+.level-h6 {
+  font-size: var(--sl-text-h6);
 }
