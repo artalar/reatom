@@ -125,9 +125,28 @@ This example is close to real life and shows the complexity of interactive UI. I
 
 ### Install framework
 
-```sh
-npm i @reatom/framework @reatom/npm-react
-```
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/framework @reatom/npm-react react
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/framework @reatom/npm-react react
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/framework @reatom/npm-react react
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/framework @reatom/npm-react react
+  ```
+</TabItem>
+</Tabs>
 
 [codesandbox](https://codesandbox.io/s/reatom-react-search-component-l4pe8q?file=/src/App.tsx)
 
