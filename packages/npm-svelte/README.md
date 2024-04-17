@@ -1,8 +1,30 @@
+Adapter for [svelte](https://svelte.dev/) framework
+
 ## Installation
 
-```sh
-npm i @reatom/npm-svelte
-```
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/npm-svelte
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/npm-svelte
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/npm-svelte
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/npm-svelte
+  ```
+</TabItem>
+</Tabs>
+
 
 ## Usage
 

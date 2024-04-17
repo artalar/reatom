@@ -2,13 +2,33 @@
 
 ## Installation
 
-```sh
-npm i @reatom/persist-web-storage
-```
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/persist-web-storage
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/persist-web-storage
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/persist-web-storage
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/persist-web-storage
+  ```
+</TabItem>
+</Tabs>
+`
 
 ## Usage
 
-### withLocalStorage
+### `withLocalStorage`
 
 Synchronizes atom state to the `localStorage` with a given name
 
@@ -19,7 +39,7 @@ import { withLocalStorage } from '@reatom/persist-web-storage'
 export const tokenAtom = atom('', 'tokenAtom').pipe(withLocalStorage('token'))
 ```
 
-### withSesssionStorage
+### `withSessionStorage`
 
 Synchronizes atom state to the `sessionsStorage` with a given name
 
@@ -30,7 +50,7 @@ import { withSessionStorage } from '@reatom/persist-web-storage'
 export const tokenAtom = atom('', 'tokenAtom').pipe(withSessionStorage('token'))
 ```
 
-### withBroadcastChannel
+### `withBroadcastChannel`
 
 The main goal of this adapter is to synchronize atom between tabs without polluting `localStorage`
 
@@ -62,7 +82,7 @@ export const isAuthedAtom = atom('', 'isAuthedAtom').pipe(
 )
 ```
 
-### withIndexedDb
+### `withIndexedDb`
 
 IMPORTANT: The state currently flicks (goes from `null` to actual value) on the first page load (due to asynchronous nature of IndexedDB and current synchronous architecture of `@reatom/persist`)
 

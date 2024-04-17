@@ -143,34 +143,34 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"compat/core-v1.md": {
-	id: "compat/core-v1.md";
+"compat/core-v1.mdx": {
+	id: "compat/core-v1.mdx";
   slug: "compat/core-v1";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"compat/core-v2.md": {
-	id: "compat/core-v2.md";
+} & { render(): Render[".mdx"] };
+"compat/core-v2.mdx": {
+	id: "compat/core-v2.mdx";
   slug: "compat/core-v2";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"compat/react-v1.md": {
-	id: "compat/react-v1.md";
+} & { render(): Render[".mdx"] };
+"compat/react-v1.mdx": {
+	id: "compat/react-v1.mdx";
   slug: "compat/react-v1";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"compat/react-v2.md": {
-	id: "compat/react-v2.md";
+} & { render(): Render[".mdx"] };
+"compat/react-v2.mdx": {
+	id: "compat/react-v2.mdx";
   slug: "compat/react-v2";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
+} & { render(): Render[".mdx"] };
 "contributing.md": {
 	id: "contributing.md";
   slug: "contributing";
@@ -220,188 +220,188 @@ declare module 'astro:content' {
   collection: "docs";
   data: InferEntrySchema<"docs">
 } & { render(): Render[".md"] };
-"index.md": {
-	id: "index.md";
+"index.mdx": {
+	id: "index.mdx";
   slug: "index";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/async.md": {
-	id: "package/async.md";
+} & { render(): Render[".mdx"] };
+"package/async.mdx": {
+	id: "package/async.mdx";
   slug: "package/async";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/core.md": {
-	id: "package/core.md";
+} & { render(): Render[".mdx"] };
+"package/core.mdx": {
+	id: "package/core.mdx";
   slug: "package/core";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/effects.md": {
-	id: "package/effects.md";
+} & { render(): Render[".mdx"] };
+"package/effects.mdx": {
+	id: "package/effects.mdx";
   slug: "package/effects";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/eslint-plugin.md": {
-	id: "package/eslint-plugin.md";
+} & { render(): Render[".mdx"] };
+"package/eslint-plugin.mdx": {
+	id: "package/eslint-plugin.mdx";
   slug: "package/eslint-plugin";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/form.md": {
-	id: "package/form.md";
+} & { render(): Render[".mdx"] };
+"package/form.mdx": {
+	id: "package/form.mdx";
   slug: "package/form";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/framework.md": {
-	id: "package/framework.md";
+} & { render(): Render[".mdx"] };
+"package/framework.mdx": {
+	id: "package/framework.mdx";
   slug: "package/framework";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/hooks.md": {
-	id: "package/hooks.md";
+} & { render(): Render[".mdx"] };
+"package/hooks.mdx": {
+	id: "package/hooks.mdx";
   slug: "package/hooks";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/jsx.md": {
-	id: "package/jsx.md";
+} & { render(): Render[".mdx"] };
+"package/jsx.mdx": {
+	id: "package/jsx.mdx";
   slug: "package/jsx";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/lens.md": {
-	id: "package/lens.md";
+} & { render(): Render[".mdx"] };
+"package/lens.mdx": {
+	id: "package/lens.mdx";
   slug: "package/lens";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/logger.md": {
-	id: "package/logger.md";
+} & { render(): Render[".mdx"] };
+"package/logger.mdx": {
+	id: "package/logger.mdx";
   slug: "package/logger";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/npm-cookie-baker.md": {
-	id: "package/npm-cookie-baker.md";
+} & { render(): Render[".mdx"] };
+"package/npm-cookie-baker.mdx": {
+	id: "package/npm-cookie-baker.mdx";
   slug: "package/npm-cookie-baker";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/npm-history.md": {
-	id: "package/npm-history.md";
+} & { render(): Render[".mdx"] };
+"package/npm-history.mdx": {
+	id: "package/npm-history.mdx";
   slug: "package/npm-history";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/npm-react.md": {
-	id: "package/npm-react.md";
+} & { render(): Render[".mdx"] };
+"package/npm-react.mdx": {
+	id: "package/npm-react.mdx";
   slug: "package/npm-react";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/npm-solid-js.md": {
-	id: "package/npm-solid-js.md";
+} & { render(): Render[".mdx"] };
+"package/npm-solid-js.mdx": {
+	id: "package/npm-solid-js.mdx";
   slug: "package/npm-solid-js";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/npm-svelte.md": {
-	id: "package/npm-svelte.md";
+} & { render(): Render[".mdx"] };
+"package/npm-svelte.mdx": {
+	id: "package/npm-svelte.mdx";
   slug: "package/npm-svelte";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/npm-vue.md": {
-	id: "package/npm-vue.md";
+} & { render(): Render[".mdx"] };
+"package/npm-vue.mdx": {
+	id: "package/npm-vue.mdx";
   slug: "package/npm-vue";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/persist-web-storage.md": {
-	id: "package/persist-web-storage.md";
+} & { render(): Render[".mdx"] };
+"package/persist-web-storage.mdx": {
+	id: "package/persist-web-storage.mdx";
   slug: "package/persist-web-storage";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/persist.md": {
-	id: "package/persist.md";
+} & { render(): Render[".mdx"] };
+"package/persist.mdx": {
+	id: "package/persist.mdx";
   slug: "package/persist";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/primitives.md": {
-	id: "package/primitives.md";
+} & { render(): Render[".mdx"] };
+"package/primitives.mdx": {
+	id: "package/primitives.mdx";
   slug: "package/primitives";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/testing.md": {
-	id: "package/testing.md";
+} & { render(): Render[".mdx"] };
+"package/testing.mdx": {
+	id: "package/testing.mdx";
   slug: "package/testing";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/timer.md": {
-	id: "package/timer.md";
+} & { render(): Render[".mdx"] };
+"package/timer.mdx": {
+	id: "package/timer.mdx";
   slug: "package/timer";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/undo.md": {
-	id: "package/undo.md";
+} & { render(): Render[".mdx"] };
+"package/undo.mdx": {
+	id: "package/undo.mdx";
   slug: "package/undo";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/url.md": {
-	id: "package/url.md";
+} & { render(): Render[".mdx"] };
+"package/url.mdx": {
+	id: "package/url.mdx";
   slug: "package/url";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/utils.md": {
-	id: "package/utils.md";
+} & { render(): Render[".mdx"] };
+"package/utils.mdx": {
+	id: "package/utils.mdx";
   slug: "package/utils";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
-"package/web.md": {
-	id: "package/web.md";
+} & { render(): Render[".mdx"] };
+"package/web.mdx": {
+	id: "package/web.mdx";
   slug: "package/web";
   body: string;
   collection: "docs";
   data: InferEntrySchema<"docs">
-} & { render(): Render[".md"] };
+} & { render(): Render[".mdx"] };
 "recipes/atomization.md": {
 	id: "recipes/atomization.md";
   slug: "recipes/atomization";
@@ -440,5 +440,5 @@ declare module 'astro:content' {
 
 	type AnyEntryMap = ContentEntryMap & DataEntryMap;
 
-	export type ContentConfig = typeof import("./../src/content/config.js");
+	export type ContentConfig = typeof import("../src/content/config.js");
 }

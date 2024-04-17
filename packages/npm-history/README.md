@@ -1,8 +1,28 @@
-## Installation
+Adapter for [history](https://github.com/remix-run/history) package
 
-```sh
-npm i @reatom/npm-history
-```
+## Installation
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/npm-history
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/npm-history
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/npm-history
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/npm-history
+  ```
+</TabItem>
+</Tabs>
 
 ## Usage
 

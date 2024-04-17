@@ -8,9 +8,29 @@ The cherry on the cake is dynamic field management. You don't need to use weird 
 
 ## Installation
 
-```sh
-npm i @reatom/form
-```
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/form
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/form
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/form
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/form
+  ```
+</TabItem>
+</Tabs>
+
 
 ## Usage
 

@@ -2,11 +2,32 @@ This package exposes a set of handy bindings to browser APIs.
 
 ## Installation
 
-```sh
-npm i @reatom/web
-```
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/web
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/web
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/web
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/web
+  ```
+</TabItem>
+</Tabs>
 
-## onEvent
+## Usage
+
+## `onEvent`
 
 The `onEvent` function enables you to respond to various types of events for the target element that supports the `addEventListener` interface, such as `HTMLInputElement` or `WebSocket`, among others.
 
@@ -14,7 +35,7 @@ You can pass a callback as the last argument. In this case, the method will retu
 
 Please note that this API handles the abort context from the [onConnect](https://www.reatom.dev/package/hooks/#onconnect) effect and other Reatom APIs. It enables you to describe complex logic in a concise and clear manner with memory safety underneath.
 
-### onEvent WebSocket example 
+### `onEvent` WebSocket example 
 
 Here is a usage example, which was derived from [this observable example](https://github.com/domfarolino/observable/blob/c232b2e585b71a61034fd23ba4337570b537ef27/README.md?plain=1#L86):
 
@@ -49,7 +70,7 @@ const googStockAtom = reatomStock('GOOG')
 ctx.subscribe(googStockAtom, updateView)
 ```
 
-## onEvent checkpoint example
+## `onEvent` checkpoint example
 Make sure to listen to event before you actually need it. As in [take](https://reatom.dev/package/effects/#take-checkpoints) you should use checkpoints
 to handle all events without skipping it.
 

@@ -10,11 +10,31 @@ An **EXPERIMENTAL** JSX runtime for describing dynamic DOM UIs with Reatom.
 
 ## Installation
 
-You can use `@reatom/core` instead of the framework, but we highly recommend using the framework to access the maximum features of Reatom.
+You can use [@reatom/core](https://reatom.dev/packages/core) instead of the [@reatom/framework](https://reatom.dev/packages/framework), but we highly recommend using the framework to access the most features of Reatom.
 
-```sh
+<Tabs>
+<TabItem label="npm">
+  ```sh
 npm install @reatom/framework @reatom/jsx
-```
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/framework @reatom/jsx
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/framework @reatom/jsx
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/framework @reatom/jsx
+  ```
+</TabItem>
+</Tabs>
+
 
 `tsconfig.json`:
 

@@ -1,14 +1,31 @@
-# `@reatom/eslint-plugin`
-
 Reatom-specific ESLint rules.
 
 > NOTE: You are viewing documentation for an **EXPERIMENTAL** version! We recommend to use it, but we can't guarantee its stability, the rules and its behavior could be changed during minor updates. However, since this is only a DX package, things can't go too badly, so don't worry and have fun ;)
 
 ## Installation
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install -D @reatom/eslint-plugin
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add -D @reatom/eslint-plugin
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add -D @reatom/eslint-plugin
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add -D @reatom/eslint-plugin
+  ```
+</TabItem>
+</Tabs>
 
-```sh
-npm i -D @reatom/eslint-plugin
-```
 
 ## Usage
 

@@ -1,9 +1,9 @@
-**Reatom is a ultimate logic and state manager for small widgets and huge SPAs.**
+**Reatom is an ultimate logic and state manager for small widgets and huge SPAs.**
 
 ## Key features
 
 - **simple** and powerful abstractions.
-  <small>There are only three main primitives: `ctx`, `atom`, `action`, all other features and packages works on top of that.</small>
+  <small>Only three main primitives: `ctx`, `atom`, `action`, all other features and packages work on top of that.</small>
 - **immutable** and reliable.
   <small>All pure computations processed with atomicity guaranties.</small>
 - **explicit reactivity** without proxies.
@@ -15,23 +15,42 @@
 - implicit **DI**.
   <small>To run tests and SSR <strong>100% safety</strong> you need an isolation layer, which `ctx` is! We have the extra [testing package](https://www.reatom.dev/package/testing) with pack of helpers for a mocking.</small>
 - actor-like **lifecycle hooks**
-  <small> To archive a trhtully modularity you have ability to describe [self-sufficient models](https://www.reatom.dev/handbook#lifecycle)</small>
+  <small>To achieve true modularity, you can describe [self-sufficient models](https://www.reatom.dev/handbook#lifecycle)</small>
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
   <small>Because of the power of the base primitives all ecosystem with A LOT of enterprize-grade helpers took only [~15KB](https://bundlejs.com/?q=%40reatom%2Fframework%2C%40reatom%2Fnpm-react%2C%40reatom%2Fpersist-web-storage%2C%40reatom%2Fundo%2C%40reatom%2Fform-web&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D) - insane!</small>
 - **best TypeScript** experience
-  <small>[Automatic type inference](https://www.reatom.dev/recipes/typescript/) is one of the main priority of Reatom developement.</small>
+  <small>[Automatic type inference](https://www.reatom.dev/recipes/typescript/) is one of the main priority of Reatom developement</small>
 
 [The core package](https://www.reatom.dev/core) includes most these features and you may use it anywhere, from huge apps to even small libs, as the overhead is tiny. Also, you could reuse our carefully written [helper tools](https://www.reatom.dev/package/framework) to solve complex tasks in a couple lines of code. We are trying to build a stable and balanced ecosystem for perfect DX and predictable maintains even for years ahead.
 
 ## Simple example
 
-Let's define input state and compute a greeting from it.
+Let's define the input state and compute a greeting from it.
 
 ### Install
 
-```sh
-npm i @reatom/core
-```
+<Tabs>
+<TabItem label="npm">
+  ```sh
+npm install @reatom/core
+  ```
+</TabItem>
+<TabItem label="pnpm">
+  ```sh
+pnpm add @reatom/core
+  ```
+</TabItem>
+<TabItem label="yarn">
+  ```sh
+yarn add @reatom/core
+  ```
+</TabItem>
+<TabItem label="bun">
+  ```sh
+bun add @reatom/core
+  ```
+</TabItem>
+</Tabs>
 
 [vanilla codesandbox](https://codesandbox.io/s/reatom-vanila-hello-world-6oo36v?file=/src/index.ts)
 
@@ -237,13 +256,13 @@ Also, check out [atomization guide](https://www.reatom.dev/recipes/atomization).
 
 ### Limitations
 
-Of course there are no software without limitations. Reatom is trying to be a silver bullet but we still have some cases which you should know about.
+Of course there is no software without limitations. Reatom is trying to be a silver bullet, but we still have some cases which you should know about.
 
-- Immutable data always have an additional performance impact and in critical cases you should think well about your structures and how you could handle it better. The good news is that you [don't have to use normalization](https://www.reatom.dev/recipes/atomization).
+- Immutable data always has an additional performance impact and in critical cases you should think well about your structures and how you could handle it better. The good news is that you [don't have to use normalization](https://www.reatom.dev/recipes/atomization).
 - Laziness could be not obvious in some cases and will cause some updates missing. But it easy to debug a missing update, which is more explicit, than memory leaks and performance issues of hot observables. Anyway, we have [hooks](https://www.reatom.dev/package/hooks) for hot linking.
 - Currently, there is no way to subscribe on error of any dependency, but we are working on it. In [reatomAsync](https://www.reatom.dev/package/async) passed effects wraps to an error handler and allow you to handle errors, but again - you should wrap it explicit.
 - Currently, there is no asynchronous transactions support, but we are working on it. It is important feature for simplify building of optimistic UI and we really think it will improve UX a lot.
-- We have a lot of utils and the ecosystem is growing all the time, but the target of that is have a set of well done logic primitives, and there is no architecture framework or codestyle / declarative framework to fit you in one strict flow. Reatom trying to be in the middle of a library and a framework. We love procedural programming with minimum extra API and semantic overhead. Our defaults are good already to help to you to write a better code: immutability and lazyness, transactions and separation of pure computations and effects, `ctx` and connections and processes virtualizations.
+- We have a lot of utils and the ecosystem is growing all the time, but the target of that is having a set of well-done logic primitives, and there is no architecture framework or code style / declarative framework to fit you in one strict flow. Reatom trying to be in the middle of a library and a framework. We love procedural programming with minimum extra API and semantic overhead. Our defaults are good already to help to you to write a better code: immutability and lazyness, transactions and separation of pure computations and effects, `ctx` and connections and processes virtualizations.
 
 ### Media
 
@@ -261,11 +280,8 @@ https://www.patreon.com/artalar_dev
 
 - **Good primitive is more than a framework**
 - Composition beats configuration
-<!--
-- General context explicit enough to be hidden
-  - A feature semantic should be visible
-
--->
+<!-- General context explicit enough to be hidden -->
+<!-- A feature semantic should be visible -->
 
 ## Credits
 
@@ -276,4 +292,4 @@ Software development in 202X is hard and we really appreciate all [contributors]
 - [Quokka](https://wallabyjs.com/oss/) and [uvu](https://github.com/lukeed/uvu) for incredible testing experience
 - [TURBO](https://turbo.build) for simple monorepo management
 - [Astro](https://astro.build) for best in class combine of performance and developer experience
-- [Vercel](https://vercel.com/) for free hosting and perfect CI/CD (preview branches are <3)
+- [Vercel](https://vercel.com/) for free hosting and perfect CI/CD (preview branches ❤️)
