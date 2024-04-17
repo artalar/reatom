@@ -1,10 +1,38 @@
-This package have a set of methods to handle a state history for an atom or a set of atoms. Useful for complex forms, WYSIWYG and so on.
+This package has a set of methods to handle a state history for an atom or a set of atoms. Useful for complex forms, WYSIWYG and so on.
 
 ## Installation
 
-```sh
-npm i @reatom/undo
-```
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/undo
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/undo
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/undo
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/undo
+  ```
+
+</TabItem>
+</Tabs>
+
 
 ## Usage
 
@@ -25,7 +53,7 @@ All methods accepts the optional properties:
 - `shouldUpdate` function allows you to skip some updates, return false by default
 - `shouldReplace` function allows you define what to do with the new update, replace the last history record (`true`) or add a new record (`false` - by default)
 
-### withUndo
+### `withUndo`
 
 `withUndo` adds extra methods for an existing atom to handle the state history and navigate through it.
 
@@ -36,7 +64,7 @@ import { withUndo } from '@reatom/undo'
 const inputAtom = atom('').pipe(withUndo())
 ```
 
-#### shouldReplace
+#### `shouldReplace`
 
 Example: https://codesandbox.io/s/reatom-react-undo-7g2cwg?file=/src/App.tsx
 
@@ -63,7 +91,7 @@ inputAtom.undo(ctx)
 ctx.get(inputAtom) // 'This'
 ```
 
-### reatomUndo
+### `reatomUndo`
 
 `reatomUndo` creates a computed atom that collects the states of the passed atoms and manages them in a single history line. You can read the state of the resulting atom as a snapshot of all the states of the passed atoms.
 
@@ -76,7 +104,7 @@ import { reatomUndo } from '@reatom/undo'
 const formUndoAtom = reatomUndo([emailAtom, passwordAtom], { length: 50 })
 ```
 
-### reatomDynamicUndo
+### `reatomDynamicUndo`
 
 `reatomDynamicUndo` accepts a callback to spy a dynamic list of atoms and manage their changes in a single history line. It is useful when you want to use [atomization pattern](https://www.reatom.dev/recipes/atomization/). It is a more powerful version of `reatomUndo`, but it requires proper subscription to function correctly. Also, the state of this atom is not useful, do not read it.
 

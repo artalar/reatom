@@ -46,6 +46,10 @@ export default defineConfig({
           link: 'handbook',
         },
         {
+          label: 'Articles',
+          link: 'blog',
+        },
+        {
           label: 'Recipes',
           autogenerate: {
             directory: 'recipes',

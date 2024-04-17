@@ -2,11 +2,38 @@ This is the binding for the [Solid](https://solidjs.com) view framework. The rea
 
 ## Installation
 
-```sh
-npm i @reatom/npm-solid-js
-```
+<Tabs>
+<TabItem label="npm">
 
-Also, you need to be installed `@reatom/core` or `@reatom/framework` and `solid-js`.
+  ```sh
+npm install @reatom/npm-solid-js @reatom/framework solid-js
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/npm-solid-js @reatom/framework solid-js
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/npm-solid-js @reatom/framework solid-js
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/npm-solid-js @reatom/framework solid-js
+  ```
+
+</TabItem>
+</Tabs>
+
+To use it, you need to install `@reatom/core` or `@reatom/framework` and `solid-js`.
 
 > Read [the core docs](https://www.reatom.dev/core) first for production usage.
 

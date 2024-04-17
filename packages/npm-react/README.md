@@ -1,18 +1,44 @@
-Adapter for [react](https://github.com/facebook/react).
+Adapter for [React](https://react.dev) package
 
 ## Installation
+<Tabs>
+<TabItem label="npm">
 
-```sh
-npm i @reatom/npm-react
-```
+  ```sh
+npm install @reatom/npm-react @reatom/framework react
+  ```
 
-Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`.
+</TabItem>
+<TabItem label="pnpm">
 
-> Read [the core docs](https://www.reatom.dev/core) first for production usage.
+  ```sh
+pnpm add @reatom/npm-react @reatom/framework react
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/npm-react @reatom/framework react
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/npm-react @reatom/framework react
+  ```
+
+</TabItem>
+</Tabs>
+
+To use it, you need to install `@reatom/core` or `@reatom/framework` and `react`.
+
+> Read the [@reatom/core docs](https://www.reatom.dev/core) first for production usage.
 
 ## Use atom
 
-### reatomComponent
+### `reatomComponent`
 
 The main API to bind atoms and actions to a component lifetime is `reatomComponent`. It wraps your regular react component and put `ctx` into the props. There is no additional rules or behavior, you can use any other hooks, accept props, return any valid `ReactNode`. But if you using `ctx.spy`, just like in any computed atom, it will subscribe to the passed atom and rerender from by changes.
 
@@ -70,7 +96,7 @@ export const SomeList = reatomComponent(
 
 Do not forget to put the component name to the second argument, it will increase your feature debug experience a lot!
 
-### useAtom
+### `useAtom`
 
 `useAtom` is your main hook, when you need to describe reusable logic in hight order hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
 

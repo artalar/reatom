@@ -1,10 +1,37 @@
-Reatom integration for Vue Composition API.
+Reatom integration for [Vue](https://vuejs.org/) Composition API
 
 ## Installation
 
-```sh
-npm i @reatom/npm-vue
-```
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/npm-vue
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/npm-vue
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/npm-vue
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/npm-vue
+  ```
+
+</TabItem>
+</Tabs>
 
 ## API
 
@@ -80,12 +107,12 @@ To bind an action to a custom `Ctx` object, pass it as a field of a config objec
 ```ts
 const doSomething = useAction(model.doSomething, { ctx: differentCtx })
 
-const doSomething = useAction(
+const doSomethingElse = useAction(
   (ctx) => {
     doSomethingBad(ctx)
     doSomethingGood(ctx)
   },
-  { name: 'doSomething', ctx: differentCtx },
+  { name: 'doSomethingElse', ctx: differentCtx },
 )
 ```
 

@@ -1,12 +1,45 @@
+All atoms and actions have hooks to their lifecycle, this package exposes friendly helpers to use these hooks.
+
+We assume that you already understand [reatom lifecycle](https://www.reatom.dev/handbook#lifecycle).
+
+You could find a lot of cool examples in the docs for [@reatom/async](https://www.reatom.dev/package/async).
+
+## Installation
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/hooks
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/hooks
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/hooks
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/hooks
+  ```
+
+</TabItem>
+</Tabs>
+
 > included in [@reatom/framework](https://www.reatom.dev/package/framework)
 
-All atoms and actions have a hooks to they lifecycle, this package exposes friendly helpers to use this hooks.
-
-We assumes that you already read [lifecycle guide](https://www.reatom.dev/handbook#lifecycle).
-
-A lot of cool examples you could find in [async package docs](https://www.reatom.dev/package/async).
-
-## onConnect
+## Hooks
+### `onConnect`
 
 `onConnect` allows you to react to atom connection (first subscribtion). Optionally, you could return a cleanup callback.
 
@@ -32,7 +65,7 @@ const dispose = onConnect(messagesAtom, (ctx) => {
 
 The passed `ctx` has an `isConnected` method to check the current status of the passed atom. You can refer to the [async example](https://www.reatom.dev/package/async#periodic-refresh-for-used-data) for more information. Additionally, the `ctx` includes a `controller` property, which is an AbortController. You can conveniently reuse it with `reatomAsync`. For further details, you can refer to [another async example](https://www.reatom.dev/package/async#abortable-process).
 
-### Comparison with React
+### Comparison with `React.useEffect`
 
 For example, in React you should manage abort strategy by yourself by `useEffect`, if you want to cancel async process on unmount.
 
@@ -80,11 +113,11 @@ export const List = () => {
 
 Isn't it cool, how the size of the code is reduced and how the logic is simplified?
 
-## onDisconnect
+### `onDisconnect`
 
 Shortcut to `onConnect` returned callback.
 
-## isInit
+### `isInit`
 
 This utility allows you to check that the current atom or action is being called for the first time (in the current context). It is useful to perform some initialisation effects only once.
 
@@ -100,7 +133,7 @@ export const doSome = action((ctx, payload) => {
 })
 ```
 
-## onUpdate
+### `onUpdate`
 
 The `onUpdate` hook allows you to react to state updates of the passed atom. However, **this hook will be deprecated in the future**. It is recommended and more convenient to use the atom's `onChange` method and the action's `onCall` method. You can find more information about these methods in the [core package documentation](https://www.reatom.dev/core/#atomonchange-api).
 

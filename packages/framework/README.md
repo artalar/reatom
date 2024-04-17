@@ -19,3 +19,36 @@ All size is around [6.5kb](https://bundlejs.com/?q=%40reatom%2Fasync%2C%40reatom
 
 <!-- TODO -->
 <!-- All exported variables: -->
+
+## Installation
+
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/framework
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/framework
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/framework
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/framework
+  ```
+
+</TabItem>
+</Tabs>

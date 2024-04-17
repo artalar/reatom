@@ -1,4 +1,36 @@
-Tiny logger with a couple nice configurations.
+Tiny logger with a couple of nice configurations.
+
+## Installation
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/logger
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/logger
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/logger
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/logger
+  ```
+
+</TabItem>
+</Tabs>
 
 > included in [@reatom/framework](https://www.reatom.dev/package/framework)
 
@@ -52,4 +84,4 @@ Every log record includes a number in the start of the name to fix autosorting k
 
 Here is how it looks like ([from this example](https://www.reatom.dev/examples#search-component)):
 
-<img loading="lazy" width="100%" alt="logger console output" src="https://www.reatom.dev/assets/logger_example.png">
+<img loading="lazy" width="100%" alt="logger console output" src="https://www.reatom.dev/assets/logger_example.png"/>

@@ -1,5 +1,40 @@
 Timer model to manage some countdown. Useful for [classic pomodoro](https://github.com/artalar/reatom/tree/v3/examples/react-pomodoro) or any time-progress states, like [notifications](https://github.com/artalar/reatom/tree/v3/examples/react-notifications).
 
+## Installation
+
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/timer
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/timer
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/timer
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/timer
+  ```
+
+</TabItem>
+</Tabs>
+
+## Usage
+
 ```ts
 import { reatomTimer } from '@reatom/timer'
 

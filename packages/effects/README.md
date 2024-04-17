@@ -1,24 +1,57 @@
 This package is inspired by [Sagas](https://redux-saga.js.org) and gives you advanced effect management solutions.
 
-> included in [@reatom/framework](https://www.reatom.dev/package/framework)
-
 First of all you should know that some effects and async ([reatom/async](https://www.reatom.dev/package/async) + [reatom/hooks](https://www.reatom.dev/package/hooks)) logic uses [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController) under the hood and if some of the controller aborted all nested effects will aborted too! It is a powerful feature for managing async logic which allows you to easily write concurrent logic, like with redux-saga or rxjs, but with the simpler native API.
 
 Before we start, you could find a lot of useful helpers to manage aborts in [reatom/utils](https://www.reatom.dev/package/utils/)
 
-## The differences between Redux-Saga and Reatom.
+## Installation
+
+<Tabs>
+<TabItem label="npm">
+
+  ```sh
+npm install @reatom/effects
+  ```
+
+</TabItem>
+<TabItem label="pnpm">
+
+  ```sh
+pnpm add @reatom/effects
+  ```
+
+</TabItem>
+<TabItem label="yarn">
+
+  ```sh
+yarn add @reatom/effects
+  ```
+
+</TabItem>
+<TabItem label="bun">
+
+  ```sh
+bun add @reatom/effects
+  ```
+
+</TabItem>
+</Tabs>
+
+> included in [@reatom/framework](https://www.reatom.dev/package/framework)
+
+## The differences between Redux-Saga and Reatom
 
 - [Sagas `take`](https://redux-saga.js.org/docs/api/#takepattern) is like [`take`](#take) + `await`.
-- [Sagas `takeMaybe`](https://redux-saga.js.org/docs/api/#takemaybepattern) - is like [`take`](#take) WITHOUT `await`.
-- [Sagas `takeEvery`](https://redux-saga.js.org/docs/api/#takemaybepattern) - is like `anAtom.onChange` / `anAction.onCall`.
-- [Sagas `takeLatest`](https://redux-saga.js.org/docs/api/#takelatestpattern-saga-args) - is like `anAtom.onChange` / `anAction.onCall` + [`concurrent`](#concurrent).
-- [Sagas `takeLeading`](https://redux-saga.js.org/docs/api/#takeleadingpattern-saga-args) - is like `anAtom.onChange` + `reatomAsync().pipe(withAbort({ strategy: 'first-in-win' }))`.
+- [Sagas `takeMaybe`](https://redux-saga.js.org/docs/api/#takemaybepattern) is like [`take`](#take) WITHOUT `await`.
+- [Sagas `takeEvery`](https://redux-saga.js.org/docs/api/#takemaybepattern) is like `anAtom.onChange` / `anAction.onCall`.
+- [Sagas `takeLatest`](https://redux-saga.js.org/docs/api/#takelatestpattern-saga-args) is like `anAtom.onChange` / `anAction.onCall` + [`concurrent`](#concurrent).
+- [Sagas `takeLeading`](https://redux-saga.js.org/docs/api/#takeleadingpattern-saga-args) is like `anAtom.onChange` + `reatomAsync().pipe(withAbort({ strategy: 'first-in-win' }))`.
 - [Sagas `call`](https://redux-saga.js.org/docs/api/#callfn-args) is a regular function call with a context + `await`.
 - [Sagas `fork`](https://redux-saga.js.org/docs/api/#forkfn-args) is a regular function call with a context WITHOUT `await`.
 - [Sagas `spawn`](https://redux-saga.js.org/docs/api/#spawnfn-args) is [`spawn`](#spawn)
-- [Sagas `join`](https://redux-saga.js.org/docs/api/#jointask) - is just `await` in Reatom.
+- [Sagas `join`](https://redux-saga.js.org/docs/api/#jointask) is `await` in Reatom.
 - [Sagas `cancel`](https://redux-saga.js.org/docs/api/#canceltask) is like `getTopController(ctx.cause)?.abort()`.
-- [Sagas `cancelled`](https://redux-saga.js.org/docs/api/#cancelled) - is like [`onCtxAbort`](#onctxabort).
+- [Sagas `cancelled`](https://redux-saga.js.org/docs/api/#cancelled) is like [`onCtxAbort`](#onctxabort).
 
 <!-- The picture of a complex logic management could be represented like this:
 
@@ -26,7 +59,7 @@ Before we start, you could find a lot of useful helpers to manage aborts in [rea
 
 ## API
 
-### concurrent
+### `concurrent`
 
 This is the basic, useful API for performing concurrent async logic. Wrap your function with the `concurrent` decorator, and all scheduled tasks of the passed `ctx` will throw the abort error when a new request appears.
 
@@ -99,7 +132,7 @@ const onChangeConcurrent = concurrent(async (ctx, event) => {
 })
 ```
 
-### take
+### `take`
 
 This is the simplest and most powerful API that allows you to wait for an atom update, which is useful for describing certain procedures. It is a shortcut for subscribing to the atom and unsubscribing after the first update. `take` respects the main Reatom abort context and will throw `AbortError` when the abort occurs. This allows you to describe redux-saga-like procedural logic in synchronous code style with native async/await.
 
@@ -148,7 +181,7 @@ onConnect(formAtom, (ctx) => {
 })
 ```
 
-#### take checkpoints
+### `take` checkpoints
 But be aware that `take` only starts listening when it's called:
 
 ```ts
@@ -188,7 +221,7 @@ const closeDocument = reatomAsync(async (ctx) => {
 })
 ```
 
-#### take filter
+### `take` filter
 
 You can pass the third argument to map the update to the required format.
 
@@ -218,7 +251,7 @@ const { data } = await take(ctx, someRequest, (ctx, payload, skip) =>
 )
 ```
 
-### takeNested
+### `takeNested`
 
 Allow you to wait all dependent effects, event if they was called in the nested async effect or by [spawn](#spawn).
 
@@ -252,7 +285,7 @@ await takeNested(ctx, historyAtom.push, req.url)
 render()
 ```
 
-### onCtxAbort
+### `onCtxAbort`
 
 Handle an abort signal from the cause stack. For example, if you want to separate a task from the body of the concurrent handler, you can do it without explicit abort management; all tasks are carried out on top of `ctx`.
 
@@ -277,7 +310,7 @@ export const handleImportantWork = reatomAsync((ctx) => {
 }).pipe(withAbort())
 ```
 
-### getTopController
+### `getTopController`
 
 This is a simple util to find an abort controller on top of your cause stack. For example, it is useful to stop some async operation inside a regular actions, which are probably called from a concurrent context.
 
@@ -296,7 +329,7 @@ const doSome = action(async (ctx) => {
 }, 'doSome')
 ```
 
-### spawn
+### `spawn`
 
 This utility allow you to start a function with context which will NOT follow an abort of the cause.
 
