@@ -85,13 +85,13 @@ amountAtom.getState()
 > PR welcome for other framework agnostic managers.
 
 | Name       | Bundle size | Granularity | API strictness | Lifetime      | Atomicity | Effects managements | API      | Direction | Glitch free | Immutability |
-| ---------- | ----------- | ----------- | -------------- | ------------- | --------- | ------------------- | -------- | --------- | ----------- | ------------ |
+|------------|-------------|-------------|----------------|---------------|-----------|---------------------|----------|-----------|-------------|--------------|
 | Reatom     | 2kb gzip    | +           | +              | warm          | +         | +                   | selector | pull/push | +           | +            |
 | Redux      | 1.6kb gzip  | -           | -              | hot/cold      | +/-       | -                   | selector | pull      | -           | +            |
 | RTK        | 11kb gzip   | -           | +/-            | hot/warm/cold | +/-       | +/-                 | selector | pull      | +           | +            |
 | Mobx       | 15kb gzip   | +           | -              | warm          | -         | +/-                 | proxy    | pull/push | +           | -            |
 | Effector   | 10kb gzip   | +           | -              | hot           | -         | +                   | selector | push      | +           | +            |
-| Nanostores | <1kb gzip   | +           | -              | warm          | -         | +/-                 | selector | push      | -           | +            |
+| Nanostores | 1kb gzip    | +           | -              | warm          | -         | +/-                 | selector | push      | -           | +            |
 
 <details>
  <summary>Explanation</summary>
