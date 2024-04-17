@@ -5,24 +5,32 @@ Reatom-specific ESLint rules.
 ## Installation
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install -D @reatom/eslint-plugin
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add -D @reatom/eslint-plugin
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add -D @reatom/eslint-plugin
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add -D @reatom/eslint-plugin
   ```
+
 </TabItem>
 </Tabs>
 

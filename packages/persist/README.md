@@ -6,24 +6,32 @@ Check out [`@reatom/persist-web-storage`](https://www.reatom.dev/package/persist
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/persist
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/persist
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/persist
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/persist
   ```
+
 </TabItem>
 </Tabs>
 

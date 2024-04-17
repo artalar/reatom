@@ -4,24 +4,32 @@ This package has a set of methods to handle a state history for an atom or a set
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/undo
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/undo
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/undo
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/undo
   ```
+
 </TabItem>
 </Tabs>
 

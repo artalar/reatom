@@ -4,24 +4,32 @@ Timer model to manage some countdown. Useful for [classic pomodoro](https://gith
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/timer
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/timer
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/timer
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/timer
   ```
+
 </TabItem>
 </Tabs>
 

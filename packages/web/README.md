@@ -4,24 +4,32 @@ This package exposes a set of handy bindings to browser APIs.
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/web
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/web
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/web
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/web
   ```
+
 </TabItem>
 </Tabs>
 

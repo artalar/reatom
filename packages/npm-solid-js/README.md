@@ -4,24 +4,32 @@ This is the binding for the [Solid](https://solidjs.com) view framework. The rea
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/npm-solid-js @reatom/framework solid-js
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/npm-solid-js @reatom/framework solid-js
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/npm-solid-js @reatom/framework solid-js
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/npm-solid-js @reatom/framework solid-js
   ```
+
 </TabItem>
 </Tabs>
 

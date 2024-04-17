@@ -4,24 +4,32 @@
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/persist-web-storage
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/persist-web-storage
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/persist-web-storage
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/persist-web-storage
   ```
+
 </TabItem>
 </Tabs>
 `

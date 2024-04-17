@@ -16,24 +16,32 @@ You could utilize extra features by piping additional operators: [withDataAtom](
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/async
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/async
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/async
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/async
   ```
+
 </TabItem>
 </Tabs>
 

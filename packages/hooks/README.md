@@ -7,24 +7,32 @@ You could find a lot of cool examples in the docs for [@reatom/async](https://ww
 ## Installation
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/hooks
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/hooks
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/hooks
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/hooks
   ```
+
 </TabItem>
 </Tabs>
 

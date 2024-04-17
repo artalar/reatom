@@ -4,24 +4,32 @@ Small context wrapper simplify your mocking and testing.
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/testing
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/testing
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/testing
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/testing
   ```
+
 </TabItem>
 </Tabs>
 

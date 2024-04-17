@@ -14,24 +14,32 @@ You can use [@reatom/core](https://reatom.dev/packages/core) instead of the [@re
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/framework @reatom/jsx
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/framework @reatom/jsx
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/framework @reatom/jsx
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/framework @reatom/jsx
   ```
+
 </TabItem>
 </Tabs>
 

@@ -6,24 +6,32 @@ Under the hood all changes produced immutably by state recreation, but every act
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/primitives
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/primitives
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/primitives
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/primitives
   ```
+
 </TabItem>
 </Tabs>
 

@@ -14,24 +14,32 @@ Reatom is inspired by the React and Redux architectures. All processed data shou
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
   npm install @reatom/core
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
   pnpm add @reatom/core
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
   yarn add @reatom/core
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
   bun add @reatom/core
   ```
+
 </TabItem>
 </Tabs>
 
