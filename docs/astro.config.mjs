@@ -2,6 +2,9 @@ import { $ } from 'zx'
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
 import rehypeExternalLinks from 'rehype-external-links'
+import rehypeAutolinkHeadings from 'rehype-autolink-headings'
+import rehypeSlug from 'rehype-slug'
+
 if (!process.env.VERCEL) await $`tsx sync-readme-to-pages.ts`
 
 // https://astro.build/config
@@ -98,6 +101,22 @@ export default defineConfig({
                 }
           },
           target: '_blank',
+        },
+      ],
+      rehypeSlug,
+      [
+        rehypeAutolinkHeadings,
+        {
+          properties: { class: 'anchor-link' },
+          behavior: 'after',
+          content: () => [{ type: 'text', value: '#' }],
+          group: ({ tagName }) => ({
+            type: 'element',
+            tagName: 'div',
+            properties: {
+              class: `heading-wrapper level-${tagName}`,
+            },
+          }),
         },
       ],
     ],

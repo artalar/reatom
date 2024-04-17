@@ -11,6 +11,9 @@
   --sl-color-gray-5: #35354c;
   --sl-color-gray-6: #24243a;
   --sl-color-black: #171721;
+
+  /* heading anchor icon size */
+  --icon-size: 0.75em;
 }
 /* Light mode colors. */
 :root[data-theme='light'] {
@@ -51,4 +54,42 @@ main::before {
 .external-link-icon {
   text-decoration: none;
   display: inline-block;
+}
+
+.heading-wrapper > :is(h2, h3, h4, h5, h6) {
+  display: inline;
+}
+
+.heading-wrapper .anchor-link {
+  opacity: 0;
+  margin-inline-start: calc(var(--icon-size) / 2);
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.heading-wrapper:hover .anchor-link,
+.heading-wrapper .anchor-link:focus {
+  opacity: 1;
+}
+
+.level-h2 {
+  font-size: var(--sl-text-h2);
+}
+
+.level-h3 {
+  font-size: var(--sl-text-h3);
+}
+
+.level-h4 {
+  font-size: var(--sl-text-h4);
+}
+
+.level-h5 {
+  font-size: var(--sl-text-h5);
+}
+
+.level-h6 {
+  font-size: var(--sl-text-h6);
 }
