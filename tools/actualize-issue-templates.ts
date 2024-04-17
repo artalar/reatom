@@ -49,7 +49,7 @@ const main = async () => {
   const templateConfig: { nonPackageParts?: string[] } =
     parse(
       await fs.readFile(
-        path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE', 'config.yaml'),
+        path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE', 'config.yml'),
         'utf-8',
       ),
     )?.['x-reatom'] ?? {}
@@ -58,7 +58,7 @@ const main = async () => {
     path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE'),
   )
   for (const issueTemplateFile of issueTemplateFiles) {
-    if (issueTemplateFile === 'config.yaml') continue
+    if (issueTemplateFile === 'config.yml') continue
 
     const issueTemplatePath = path.join(
       process.cwd(),

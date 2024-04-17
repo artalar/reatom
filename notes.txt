@@ -1,0 +1,5 @@
+Removed .npmrc engine-strict - deprecated
+Removed .prettierignore - since 3.0 .gitignore is respected by default
+Removed .gitmodules - no longer used
+Removed unused dependencies
+Cleaned up .gitignore

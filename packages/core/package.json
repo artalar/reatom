@@ -4,14 +4,11 @@
   "private": false,
   "description": "The ultimate state manager",
   "source": "src/index.ts",
+  "type": "module",
   "exports": {
-    "types": "./build/index.d.ts",
-    "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.js",
+    "types": "./build/index.d.ts"
   },
-  "main": "build/index.js",
-  "module": "build/index.module.js",
-  "types": "build/index.d.ts",
   "sideEffects": false,
   "browserslist": [
     "last 1 year"
@@ -20,13 +17,13 @@
     "mangle": false
   },
   "scripts": {
-    "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs --raw=true",
-    "test": "ts-node src/atom.test.ts",
-    "test:watch": "tsx watch src/atom.test.ts",
-    "bench": "ts-node src/index.bench.test.ts"
+    "prepublishOnly": "bun run build && bun run test",
+    "build": "bun build.ts",
+    "test": "bun src/atom.test.ts",
+    "test:watch": "bun --watch src/atom.test.ts",
+    "bench": "bun src/index.bench.test.ts"
   },
-  "author": "artalar",
+  "author": "qweered",
   "contributors": [
     {
       "name": "artalar",

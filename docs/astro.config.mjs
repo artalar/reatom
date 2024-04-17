@@ -5,7 +5,7 @@ import rehypeExternalLinks from 'rehype-external-links'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
 import rehypeSlug from 'rehype-slug'
 
-if (!process.env.VERCEL) await $`tsx sync-readme-to-pages.ts`
+if (!process.env.VERCEL) await $`bun sync-readme-to-pages.ts`
 
 // https://astro.build/config
 export default defineConfig({

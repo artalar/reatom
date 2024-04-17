@@ -9,25 +9,26 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "update": "npx npm-check-updates -u"
+    "update": "bunx npm-check-updates -u"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/state": "^6.4.1",
-    "@discoveryjs/discovery": "^1.0.0-beta.82",
+    "@discoveryjs/discovery": "^1.0.0-beta.83",
     "@observablehq/inspector": "^5.0.0",
     "codemirror": "^6.0.1",
     "mermaid": "^10.9.0",
     "sucrase": "^3.35.0"
   },
   "devDependencies": {
-    "@astrojs/starlight": "^0.21.2",
+    "@astrojs/starlight": "^0.21.5",
+    "@types/bun": "^1.1.0",
+    "bun": "^1.1.4",
     "rehype-autolink-headings": "^7.1.0",
     "rehype-external-links": "^3.0.0",
     "rehype-slug": "^6.0.0",
     "sharp": "^0.33.3",
-    "tsx": "^4.7.1",
-    "typescript": "^5.4.3",
-    "zx": "^7.2.3"
+    "typescript": "^5.4.5",
+    "zx": "^8.0.1"
   }
 }
