@@ -31,24 +31,32 @@ Let's define the input state and compute a greeting from it.
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/core
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/core
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/core
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/core
   ```
+
 </TabItem>
 </Tabs>
 
@@ -127,24 +135,32 @@ This example is close to real life and shows the complexity of interactive UI. I
 
 <Tabs>
 <TabItem label="npm">
+
   ```sh
 npm install @reatom/framework @reatom/npm-react react
   ```
+
 </TabItem>
 <TabItem label="pnpm">
+
   ```sh
 pnpm add @reatom/framework @reatom/npm-react react
   ```
+
 </TabItem>
 <TabItem label="yarn">
+
   ```sh
 yarn add @reatom/framework @reatom/npm-react react
   ```
+
 </TabItem>
 <TabItem label="bun">
+
   ```sh
 bun add @reatom/framework @reatom/npm-react react
   ```
+
 </TabItem>
 </Tabs>
 
