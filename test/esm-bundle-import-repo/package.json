@@ -1,0 +1,17 @@
+{
+  "name": "check-ts-issue",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "dependencies": {
+    "@reatom/framework": "^3.4.37"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node ./dist/hello.js"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}

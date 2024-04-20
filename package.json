@@ -16,7 +16,8 @@
     "actualize-issue-templates": "npx tsx ./tools/actualize-issue-templates.ts"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "test/esm-bundler-import-repo"
   ],
   "author": "artalar",
   "license": "MIT",
