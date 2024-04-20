@@ -8,10 +8,10 @@
   "exports": {
     "types": "./build/index.d.ts",
     "require": "./build/index.js",
-    "default": "./build/index.module.js"
+    "default": "./build/index.mjs"
   },
   "main": "build/index.js",
-  "module": "build/index.module.js",
+  "module": "build/index.mjs",
   "types": "build/index.d.ts",
   "browserslist": [
     "last 1 year"

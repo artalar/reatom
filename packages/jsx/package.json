@@ -8,19 +8,19 @@
   "exports": {
     ".": {
       "types": "./build/index.d.ts",
-      "default": "./build/index.module.js"
+      "default": "./build/index.mjs"
     },
     "./jsx-runtime": {
       "types": "./build/index.d.ts",
-      "default": "./build/index.module.js"
+      "default": "./build/index.mjs"
     },
     "./jsx-dev-runtime": {
       "types": "./build/index.d.ts",
-      "default": "./build/index.module.js"
+      "default": "./build/index.mjs"
     }
   },
   "main": "build/index.js",
-  "module": "build/index.module.js",
+  "module": "build/index.mjs",
   "types": "build/index.d.ts",
   "browserslist": [
     "last 1 year"
