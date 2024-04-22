@@ -19,3 +19,6 @@ pnpm-debug.log*
 # macOS-specific files
 .DS_Store
 .vercel
+
+# astro metadata https://docs.astro.build/en/guides/content-collections/#the-astro-directory
+.astro/

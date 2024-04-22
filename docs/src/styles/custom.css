@@ -12,8 +12,9 @@
   --sl-color-gray-6: #24243a;
   --sl-color-black: #171721;
 
-  /* heading anchor icon size */
+  /* heading anchor icon */
   --icon-size: 0.75em;
+  --icon-spacing: 0.25em;
 }
 /* Light mode colors. */
 :root[data-theme='light'] {
@@ -58,11 +59,12 @@ main::before {
 
 .heading-wrapper > :is(h2, h3, h4, h5, h6) {
   display: inline;
+  margin-inline-end: calc(var(--icon-size) + var(--icon-spacing));
 }
 
 .heading-wrapper .anchor-link {
   opacity: 0;
-  margin-inline-start: calc(var(--icon-size) / 2);
+  margin-inline-start: calc(-1 * var(--icon-size));
   text-decoration: none;
   &:hover {
     text-decoration: underline;
