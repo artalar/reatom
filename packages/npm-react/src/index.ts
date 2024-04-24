@@ -17,7 +17,7 @@ import {
   throwReatomError,
 } from '@reatom/core'
 import { bind, Binded } from '@reatom/lens'
-import { abortCauseContext } from '@reatom/effects'
+import { abortCauseContext, withAbortableSchedule } from '@reatom/effects'
 import { toAbortError } from '@reatom/utils'
 
 // useLayoutEffect will show warning if used during ssr, e.g. with Next.js
@@ -259,7 +259,9 @@ export const reatomComponent = <T>(
             const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
             if (rendering) {
-              const initCtx = React.useRef(ctx).current
+              const initCtxRef = React.useRef<Ctx>()
+              const initCtx = (initCtxRef.current ??=
+                withAbortableSchedule(ctx)) as CtxRender
 
               if (!abortCauseContext.has(initCtx.cause)) {
                 abortCauseContext.set(initCtx.cause, controller)
