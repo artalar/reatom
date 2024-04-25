@@ -4,6 +4,7 @@ Respectfully copied from https://github.com/ryansolid/dom-expressions/blob/ae71a
 
 import * as csstype from 'csstype'
 import { Atom, AtomMaybe, AtomMut, Ctx } from '@reatom/core'
+import { LinkedListLikeAtom, LinkedList, LLNode } from '@reatom/primitives'
 
 // TODO write it manually to improve perf
 type AttributesAtomMaybe<T extends Record<keyof any, any>> = {
@@ -18,8 +19,7 @@ type ElementsAttributesAtomMaybe<T extends Record<keyof any, any>> = {
 export namespace JSX {
   type Element = HTMLElement | SVGElement
 
-  type ElementChildren =
-    | Array<AtomMaybe<ElementChildren>>
+  type ElementPrimitiveChildren =
     | Node
     | Element
     | (string & {})
@@ -27,6 +27,11 @@ export namespace JSX {
     | boolean
     | null
     | undefined
+
+  type ElementChildren =
+    | Array<ElementChildren | AtomMaybe<ElementPrimitiveChildren>>
+    | AtomMaybe<ElementPrimitiveChildren>
+    | ElementPrimitiveChildren
 
   interface ElementClass {
     // empty, libs can define requirements downstream
@@ -181,7 +186,7 @@ export namespace JSX {
       OnAttributes<T>,
       OnCaptureAttributes<T>,
       CustomEventHandlers<T> {
-    children?: ElementChildren
+    children?: ElementChildren | LinkedListLikeAtom<LinkedList<LLNode<Element>>>
     innerHTML?: AtomMaybe<string>
     innerText?: AtomMaybe<string | number>
     textContent?: AtomMaybe<string | number>

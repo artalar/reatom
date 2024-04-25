@@ -1,10 +1,14 @@
 /* @jsx h */
 import { parseHTML } from 'linkedom'
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
-import { CtxSpy, Fn, Rec, atom } from '@reatom/core'
-import { JSX, reatomJsx } from '.'
+import { Fn, atom } from '@reatom/core'
+import { reatomLinkedList } from '@reatom/primitives'
+import { isConnected } from '@reatom/hooks'
+import { reatomJsx } from '.'
+
+const test = suite('reatomJsx')
 
 export const createWindow = () => {
   const window = parseHTML(`
@@ -51,7 +55,7 @@ const setup = () => {
 }
 
 test('static props & children', () => {
-  const { ctx, h, hf, mount, parent, window } = setup()
+  const { h, hf } = setup()
 
   const element = <div id="some-id">Hello, world!</div>
 
@@ -62,7 +66,7 @@ test('static props & children', () => {
 })
 
 test('dynamic props', () => {
-  const { ctx, h, hf, mount, parent, window } = setup()
+  const { ctx, h, hf, mount, parent } = setup()
 
   const val = atom('val', 'val')
   const prp = atom('prp', 'prp')
@@ -125,7 +129,7 @@ test('children updates', () => {
 })
 
 test('dynamic children', () => {
-  const { ctx, h, hf, mount, parent, window } = setup()
+  const { ctx, h, hf, mount, parent } = setup()
 
   const children = atom(<div />)
 
@@ -159,7 +163,7 @@ test('dynamic children', () => {
 })
 
 test('spreads', () => {
-  const { ctx, h, hf, mount, parent, window } = setup()
+  const { h, hf, mount, parent } = setup()
 
   const clickTrack = mockFn()
   const props = atom({
@@ -181,7 +185,7 @@ test('spreads', () => {
 })
 
 test('fragment as child', () => {
-  const { ctx, h, hf, mount, parent, window } = setup()
+  const { h, hf, mount, parent } = setup()
 
   const child = (
     <>
@@ -199,14 +203,7 @@ test('fragment as child', () => {
 })
 
 test('array children', () => {
-  const {
-    ctx,
-    h,
-    hf,
-    mount,
-    parent,
-    window: { document },
-  } = setup()
+  const { ctx, h, hf, mount, parent } = setup()
 
   const n = atom(1)
   const list = atom((ctx) =>
@@ -217,7 +214,7 @@ test('array children', () => {
     mount(
       parent,
       <ul>
-        {list}
+        {list /* expected TS error */ as any}
         <br />
       </ul>,
     )
@@ -231,6 +228,38 @@ test('array children', () => {
   n(ctx, 2)
   assert.is(element.childNodes.length, 2)
   assert.is(element.textContent, '12')
+})
+
+test('linked list', () => {
+  const { ctx, h, hf, mount, parent } = setup()
+
+  const list = reatomLinkedList((ctx, n: number) => atom(n))
+  const jsxList = list.reatomMap((ctx, n) => <li>{n}</li>)
+  const one = list.create(ctx, 1)
+  const two = list.create(ctx, 2)
+  const ul = <ul>{jsxList}</ul>
+
+  mount(parent, ul)
+
+  ctx.get(jsxList).head!.innerHTML += 0
+  assert.is(parent.innerText, '10\n2')
+
+  list.swap(ctx, one, two)
+  assert.is(parent.innerText, '2\n10')
+
+  list.clear(ctx)
+  assert.is(parent.innerText, '')
+
+  // TODO
+  // assert.not.ok(isConnected(ctx, one))
+
+  // assert.is(parent.children.length, 1)
+  // assert.ok(isConnected(ctx, jsxList))
+
+  // ul.remove()
+  // list.create(ctx, 1)
+  // assert.is(parent.children.length, 0)
+  // assert.not.ok(isConnected(ctx, jsxList))
 })
 
 test.run()

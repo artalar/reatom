@@ -1,5 +1,6 @@
 import {
   action,
+  Atom,
   AtomMut,
   createCtx,
   Ctx,
@@ -9,7 +10,13 @@ import {
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { random } from '@reatom/utils'
+import { isObject, random } from '@reatom/utils'
+import {
+  type LinkedList,
+  type LLNode,
+  isLinkedListAtom,
+  LL_NEXT,
+} from '@reatom/primitives'
 import type { JSX } from './jsx'
 declare type JSXElement = JSX.Element
 export type { JSXElement, JSX }
@@ -25,8 +32,78 @@ type DomApis = Pick<
   | 'DocumentFragment'
 >
 
+let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
+let unlink = (parent: any, un: Unsubscribe) => {
+  // check the connection in the next tick
+  // to give the user (programmer) an ability
+  // to put the created element in the dom
+  Promise.resolve().then(() => {
+    if (!parent.isConnected) un()
+    else {
+      while (
+        parent.parentElement &&
+        !unsubscribesMap.get(parent)?.push(() => parent.isConnected || un())
+      ) {
+        parent = parent.parentElement
+      }
+    }
+  })
+}
+
+const walkLinkedList = (
+  ctx: Ctx,
+  el: JSX.Element,
+  list: Atom<LinkedList<LLNode<JSX.Element>>>,
+) => {
+  let lastVersion = -1
+  unlink(
+    el,
+    ctx.subscribe(list, (state) => {
+      if (state.version - 1 > lastVersion) {
+        el.innerHTML = ''
+        for (let { head } = state; head; head = head[LL_NEXT]) {
+          el.append(head)
+        }
+      } else {
+        for (const change of state.changes) {
+          if (change.kind === 'create') {
+            el.append(change.node)
+          }
+          if (change.kind === 'remove') {
+            el.removeChild(change.node)
+          }
+          if (change.kind === 'swap') {
+            let [aNext, bNext] = [change.a.nextSibling, change.b.nextSibling]
+            if (bNext) {
+              el.insertBefore(change.a, bNext)
+            } else {
+              el.append(change.a)
+            }
+
+            if (aNext) {
+              el.insertBefore(change.b, aNext)
+            } else {
+              el.append(change.b)
+            }
+          }
+          if (change.kind === 'move') {
+            if (change.after) {
+              change.after.insertAdjacentElement('afterend', change.node)
+            } else {
+              el.append(change.node)
+            }
+          }
+          if (change.kind === 'clear') {
+            el.innerHTML = ''
+          }
+        }
+      }
+      lastVersion = state.version
+    }),
+  )
+}
+
 export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
-  let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
   const StylesheetId = 'reatom-jsx-styles'
   let styles: Rec<string> = {}
   let stylesheet: HTMLStyleElement | undefined
@@ -36,7 +113,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
     if (key.startsWith('on:')) {
       key = key.slice(3)
       // only for logging purposes
-      val = action(val, `${name}.${element.nodeName.toLowerCase()}.${key}`)
+      val = action(val, `${name}.${element.nodeName.toLowerCase()}._${key}`)
       element.addEventListener(key, (event) => val(ctx, event))
     } else if (key.startsWith('css:')) {
       key = '--' + key.slice(4)
@@ -71,20 +148,6 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       if (val == null) element.removeAttribute(key)
       else element.setAttribute(key, String(val))
     }
-  }
-
-  let unlink = (parent: any, un: Unsubscribe) => {
-    Promise.resolve().then(() => {
-      if (!parent.isConnected) un()
-      else {
-        while (
-          parent.parentElement &&
-          !unsubscribesMap.get(parent)?.push(() => parent.isConnected || un())
-        ) {
-          parent = parent.parentElement
-        }
-      }
-    })
   }
 
   let h = (tag: any, props: Rec, ...children: any[]) => {
@@ -138,16 +201,18 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       }
     }
 
-    let walk = (child: any) => {
-      if (Array.isArray(child)) child.forEach(walk)
-      else {
-        if (isAtom(child)) {
+    let walk = (child: JSX.DOMAttributes<JSX.Element>['children']) => {
+      if (Array.isArray(child)) {
+        for (let i = 0; i < child.length; i++) walk(child[i])
+      } else {
+        if (isLinkedListAtom(child)) {
+          walkLinkedList(ctx, element, child)
+        } else if (isAtom(child)) {
           let innerChild = DOM.document.createTextNode('') as
             | ChildNode
             | DocumentFragment
-          let un: undefined | Unsubscribe
           let error: any
-          un = ctx.subscribe(child, (v): void => {
+          var un: undefined | Unsubscribe = ctx.subscribe(child, (v): void => {
             try {
               if (
                 un &&
@@ -175,7 +240,8 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
                     innerChild = fragment
                   }
                 } else {
-                  innerChild.textContent = v
+                  // TODO more tests
+                  innerChild.textContent = String(v)
                 }
               }
             } catch (e) {
@@ -187,8 +253,8 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
           element.appendChild(innerChild)
         } else {
           element.appendChild(
-            child?.nodeType
-              ? child
+            isObject(child) && 'nodeType' in child
+              ? (child as JSX.Element)
               : DOM.document.createTextNode(String(child)),
           )
         }
