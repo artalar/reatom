@@ -43,7 +43,7 @@ rl.question("What's a new package name? ", async (name) => {
 
   await personalizeTemplate(newPackageLocation, name)
 
-  console.log(`Done! You could go to ${newPackageLocation}`)
+  console.log(`\nDone! You could go to ${newPackageLocation}/src/index.ts`)
 
   process.exit()
 })
