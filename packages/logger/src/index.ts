@@ -21,10 +21,17 @@ export interface LogMsg {
 }
 
 // use recursion to drop stack limit error for circle causes
-export const getCause = (patch: AtomCache, log = ''): string =>
-  patch.cause !== null && patch.cause.proto !== __root
-    ? getCause(patch.cause, log + ' <-- ' + patch.cause.proto.name ?? 'unnamed')
-    : log || 'root'
+export const getCause = (patch: AtomCache, log = ''): string => {
+  if (log.length > 10_000) return `${log} ...`
+  if (patch.cause !== null && patch.cause.proto !== __root)
+    return getCause(
+      patch.cause,
+      log + ' <-- ' + patch.cause.proto.name ?? 'unnamed',
+    )
+  else {
+    return log || 'root'
+  }
+}
 
 const getTimeStampDefault = () => {
   let ms: number | string = new Date().getMilliseconds()
