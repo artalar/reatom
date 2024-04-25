@@ -1,55 +1,60 @@
-import { atom, action, reatomNumber, NumberAtom } from '@reatom/framework'
-
-const list = atom<Array<NumberAtom>>([], 'list')
-const sum = atom(
-  (ctx) => ctx.spy(list).reduce((acc, counter) => acc + ctx.spy(counter), 0),
-  'sum',
-)
-const init = atom(0, 'init')
-const add = action((ctx) => {
-  list(ctx, (state) => {
-    const counter = reatomNumber(ctx.get(init), `list#${state.length}`)
-    return [...state, counter]
-  })
-  init(ctx, 0)
-}, 'add')
-const clear = action((ctx) => list(ctx, []), 'clear')
+import { atom } from '@reatom/framework'
+import { add, count, list, ListElement, moveDown, moveUp } from './model'
+import { Dragable } from './DragTarget'
 
 const Add = () => (
-  <>
-    <input model:valueAsNumber={init} />
-    <button on:click={add}>add</button>
-  </>
+  <form
+    on:submit={(ctx, e) => {
+      e.preventDefault()
+      add(ctx)
+    }}
+  >
+    <input model:valueAsNumber={count} type="number" min={1} autofocus />
+    <button>add</button>
+  </form>
 )
 
-const Counter = ({ counter }: { counter: NumberAtom }) => (
-  <button
-    css={`
-      font-size: calc(1em + var(--size) * 5px);
-    `}
-    css:size={counter}
-    on:click={(ctx) => counter.increment(ctx)}
-  >
-    {counter}
-  </button>
-)
+const Item = ({ input }: { input: ListElement }) => {
+  const name = input.__reatom.name!
+  const hue = atom((ctx) => (ctx.spy(input).length * 30) % 360, `${name}.hue`)
+
+  return (
+    <Dragable
+      as="li"
+      list={list}
+      item={input}
+      followX={false}
+      css={`
+        margin: 1em;
+        &::marker {
+          content: '';
+        }
+      `}
+    >
+      <input
+        model:value={input}
+        css={`
+          color: hsl(var(--hue), 50%, 50%);
+        `}
+        css:hue={hue}
+      />
+      <button on:click={(ctx) => moveUp(ctx, input)}>👆</button>
+      <button on:click={(ctx) => moveDown(ctx, input)}>👇</button>
+      <button on:click={(ctx) => list.remove(ctx, input)}>🗑️</button>
+    </Dragable>
+  )
+}
 
 export const App = () => (
   <main>
     <Add />
     <br />
-    <span>Sum: {sum}</span>
+    <button on:click={list.clear}>clear</button>
     <br />
-    <button on:click={clear}>clear</button>
-    <br />
-    {atom((ctx) => (
-      <ul>
-        {ctx.spy(list).map((counter) => (
-          <li>
-            <Counter counter={counter} />
-          </li>
-        ))}
-      </ul>
-    ))}
+    <ul>
+      {list.reatomMap((ctx, input) => (
+        <Item input={input} />
+      ))}
+    </ul>
   </main>
 )

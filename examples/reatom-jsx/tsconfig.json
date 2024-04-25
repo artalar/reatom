@@ -10,6 +10,8 @@
     "jsxImportSource": "@reatom/jsx",
     "types": ["vite/client"],
     "noEmit": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "strict": true,
+    "strictNullChecks": true
   }
 }
