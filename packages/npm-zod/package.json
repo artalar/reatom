@@ -1,0 +1,64 @@
+{
+  "name": "@reatom/npm-zod",
+  "version": "3.8.0",
+  "publishConfig": {
+    "tag": "alpha"
+  },
+  "private": false,
+  "sideEffects": false,
+  "description": "Reatom for npm-zod",
+  "source": "src/index.ts",
+  "exports": {
+    "types": "./build/index.d.ts",
+    "require": "./build/index.js",
+    "default": "./build/index.module.js"
+  },
+  "main": "build/index.js",
+  "module": "build/index.module.js",
+  "types": "build/index.d.ts",
+  "browserslist": [
+    "last 1 year"
+  ],
+  "minify": {
+    "mangle": false
+  },
+  "scripts": {
+    "sandbox": "vite",
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "microbundle",
+    "test": "ts-node src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
+  },
+  "dependencies": {
+    "@reatom/core": ">=3.8.0",
+    "@reatom/primitives": ">=3.5.0",
+    "zod": "^3.23.4"
+  },
+  "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://www.reatom.dev/package/npm-zod",
+  "keywords": [
+    "npm-zod",
+    "reactive",
+    "reactivity",
+    "state-manager",
+    "reatom"
+  ],
+  "files": [
+    "/build",
+    "/package.json"
+  ]
+}
