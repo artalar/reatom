@@ -1,7 +1,9 @@
 import { createCtx } from '@reatom/core'
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { reatomRecord } from '../build'
+import { reatomRecord } from './reatomRecord'
+
+const test = suite('reatomRecord')
 
 test('reatomRecord', () => {
   const ctx = createCtx()

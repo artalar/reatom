@@ -1,8 +1,10 @@
 import { atom, createCtx } from '@reatom/core'
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 
 import { withComputed } from './withComputed'
+
+const test = suite('withComputed')
 
 test('withComputed', () => {
   const a = atom(0)

@@ -1,8 +1,10 @@
 import { createCtx } from '@reatom/core'
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 
 import { reatomEnum } from './reatomEnum'
+
+const test = suite('reatomEnum')
 
 test(`reatomEnum. static enum property`, async () => {
   const enumAtom = reatomEnum(['a', 'b'])

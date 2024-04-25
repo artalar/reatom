@@ -1,8 +1,10 @@
 import { createCtx } from '@reatom/core'
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 
 import { reatomString } from './reatomString'
+
+const test = suite('reatomString')
 
 test('reatomString.reset', () => {
   const ctx = createCtx()

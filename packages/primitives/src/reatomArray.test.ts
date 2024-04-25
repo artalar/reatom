@@ -1,8 +1,10 @@
 import { createCtx } from '@reatom/core'
-import { test } from 'uvu'
+import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
  
 import { reatomArray } from './reatomArray'
+
+const test = suite('reatomArray')
  
 test(`reatomArray. init`, () => {
   const ctx = createCtx()

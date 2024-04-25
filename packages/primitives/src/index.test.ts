@@ -1,5 +1,6 @@
 import './reatomArray.test'
-import './reatomRecord.test'
 import './reatomEnum.test'
+import './reatomLinkedList.test'
+import './reatomRecord.test'
 import './reatomString.test'
-import './withComputed'
+import './withComputed.test'
