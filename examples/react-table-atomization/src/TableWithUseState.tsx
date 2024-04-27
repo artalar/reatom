@@ -7,7 +7,8 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
-import { Data, rows } from './data'
+import { dataRows } from './data'
+import { Data, DataList } from './types'
 
 const Cell = ({
   idx,
@@ -18,8 +19,8 @@ const Cell = ({
 }: TableCellProps & {
   idx: number
   name: keyof Data
-  list: typeof rows
-  setList: React.Dispatch<React.SetStateAction<typeof rows>>
+  list: DataList
+  setList: React.Dispatch<React.SetStateAction<DataList>>
 }) => {
   const handleChange: React.ChangeEventHandler<HTMLInputElement> =
     React.useCallback(
@@ -47,7 +48,7 @@ const Cell = ({
 }
 
 export const TableWithUseState = () => {
-  const [list, setList] = React.useState(rows)
+  const [list, setList] = React.useState(dataRows)
 
   return (
     <TableContainer component={Paper}>

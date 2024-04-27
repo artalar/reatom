@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es2022": true
+    "es2022": true,
   },
   "parser": "@typescript-eslint/parser",
   "extends": [
@@ -10,18 +10,18 @@
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
     "plugin:react/jsx-runtime",
-    "plugin:@reatom/recommended"
+    // "plugin:@reatom/recommended"
   ],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "project": ["tsconfig.json"]
+    "project": ["tsconfig.json"],
   },
-  "plugins": ["prettier", "@typescript-eslint", "react", "@reatom"],
+  "plugins": ["prettier", "@typescript-eslint", "react" /* "@reatom" */],
   "rules": {
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/array-type": "off",
-    "@typescript-eslint/strict-boolean-expressions": "off"
+    "@typescript-eslint/strict-boolean-expressions": "off",
   },
-  "root": true
+  "root": true,
 }

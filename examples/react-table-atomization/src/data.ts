@@ -1,32 +1,24 @@
-import { atom } from '@reatom/framework'
+import { atom, random } from '@reatom/framework'
+import { reatomZod } from '@reatom/npm-zod'
+import { DataList } from './types'
 
-const createData = (
-  name: string,
-  calories: number,
-  fat: number,
-  carbs: number,
-  protein: number,
-) => ({ name, calories, fat, carbs, protein })
+export const getData = (length: number): DataList =>
+  Array.from({ length }, () => ({
+    name: random(1e10, 1e20).toString(32),
+    calories: random(0, 100),
+    fat: random(0, 100),
+    carbs: random(0, 100),
+    protein: random(0, 100),
+  }))
 
-export type Data = ReturnType<typeof createData>
+export const dataRows = getData(20)
 
-export const rows = [
-  createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-  createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-  createData('Eclair', 262, 16.0, 24, 6.0),
-  createData('Cupcake', 305, 3.7, 67, 4.3),
-  createData('Gingerbread', 356, 16.0, 49, 3.9),
-]
-rows.push(...rows)
-rows.push(...rows)
-rows.push(...rows)
+export const atomizedRows = dataRows.map((data) => ({
+  name: data.name,
+  calories: atom(data.calories, 'calories'),
+  fat: atom(data.fat, 'fat'),
+  carbs: atom(data.carbs, 'carbs'),
+  protein: atom(data.protein, 'protein'),
+}))
 
-export const atomizedRows = rows.map(
-  ({ name, calories, fat, carbs, protein }) => ({
-    name,
-    calories: atom(calories, 'calories'),
-    fat: atom(fat, 'fat'),
-    carbs: atom(carbs, 'carbs'),
-    protein: atom(protein, 'protein'),
-  }),
-)
+export const zodRows = reatomZod(DataList, { initState: dataRows })

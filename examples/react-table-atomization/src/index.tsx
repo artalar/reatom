@@ -1,6 +1,7 @@
 import ReactDOM from 'react-dom/client'
 import { createCtx, connectLogger } from '@reatom/framework'
 import { reatomContext } from '@reatom/npm-react'
+import './reatomZodComponents'
 import { App } from './App'
 import './index.css'
 
