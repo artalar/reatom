@@ -705,7 +705,7 @@ export function atom<T>(
     connectHooks: null,
     disconnectHooks: null,
     updateHooks: null,
-    actual: false
+    actual: false,
   }
 
   theAtom.pipe = pipe
