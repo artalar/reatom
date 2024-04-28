@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://github.com/artalar/reatom/compare/primitives-v3.4.0...primitives-v3.5.0) (2024-04-28)
+
+
+### Features
+
+* **primitives:** add reatomLinkedList ([0987d83](https://github.com/artalar/reatom/commit/0987d83df0aec36996ce16a8890012773358c7ac))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/primitives-v3.3.0...primitives-v3.4.0) (2024-04-12)
 
 
