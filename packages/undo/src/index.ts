@@ -63,10 +63,18 @@ export const withUndo =
     if (!anAtom.undo) {
       const { name } = anAtom.__reatom
 
-      const historyAtom = (anAtom.historyAtom = atom<Array<AtomState<T>>>(
+      const historyAtom = anAtom.historyAtom = atom<Array<AtomState<T>>>(
         [],
         `${name}.Undo._historyAtom`,
-      ).pipe(withInit((ctx) => [ctx.get(anAtom)])))
+      )
+
+      anAtom.pipe(
+        withInit((ctx, init) => {
+          const state = init(ctx)
+          historyAtom(ctx, [state])
+          return state
+        }),
+      )
 
       const positionAtom = (anAtom.positionAtom = atom(0, `${name}._position`))
 
