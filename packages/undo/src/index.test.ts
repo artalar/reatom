@@ -55,6 +55,18 @@ test('withUndo', async () => {
   ;('👍') //?
 })
 
+test('withUndo without getting historyAtom before first change', async () => {
+  const a = atom(0).pipe(withUndo({ length: 5 }))
+  const ctx = createTestCtx()
+
+  a(ctx, 1)
+  assert.is(ctx.get(a), 1)
+  assert.is(ctx.get(a.isUndoAtom), true)
+  assert.is(ctx.get(a.isRedoAtom), false)
+  assert.equal(ctx.get(a.historyAtom), [0, 1])
+  ;('👍') //?
+})
+
 test('limit', () => {
   const a = atom(0).pipe(withUndo({ length: 5 }))
   const ctx = createTestCtx()

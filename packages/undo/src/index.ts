@@ -61,12 +61,12 @@ export const withUndo =
     throwReatomError(isAction(anAtom) || !isAtom(anAtom), 'atom expected')
 
     if (!anAtom.undo) {
-      const { name } = anAtom.__reatom
+      const { name, initValue } = anAtom.__reatom
 
-      const historyAtom = (anAtom.historyAtom = atom<Array<AtomState<T>>>(
-        [],
+      const historyAtom = anAtom.historyAtom = atom<Array<AtomState<T>>>(
+        [initValue],
         `${name}.Undo._historyAtom`,
-      ).pipe(withInit((ctx) => [ctx.get(anAtom)])))
+      )
 
       const positionAtom = (anAtom.positionAtom = atom(0, `${name}._position`))
 
@@ -94,7 +94,7 @@ export const withUndo =
       anAtom.redo = action((ctx) => jump(ctx, 1), `${name}.Undo.redo`)
 
       anAtom.clearHistory = action((ctx) => {
-        historyAtom(ctx, () => [ctx.get(anAtom)])
+        historyAtom(ctx, () => [initValue])
         positionAtom(ctx, 0)
       }, `${name}.Undo.clearHistory`)
 
