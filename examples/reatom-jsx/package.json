@@ -13,7 +13,8 @@
     "vite": "^5.2.7"
   },
   "dependencies": {
-    "@reatom/framework": "^3.4.35",
-    "@reatom/jsx": "^3.8.0"
+    "@reatom/framework": "^3.*.*",
+    "@reatom/jsx": "^3.*.*",
+    "@reatom/web": "^3.*.*"
   }
 }
