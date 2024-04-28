@@ -119,7 +119,6 @@ export interface AtomMut<State = any> extends Atom<State> {
 
 export interface AtomProto<State = any> {
   name: undefined | string
-  initValue: undefined | State
   isAction: boolean
   /** temporal cache of the last patch during transaction */
   patch: null | AtomCache
@@ -706,8 +705,7 @@ export function atom<T>(
     connectHooks: null,
     disconnectHooks: null,
     updateHooks: null,
-    actual: false,
-    initValue: initState
+    actual: false
   }
 
   theAtom.pipe = pipe
