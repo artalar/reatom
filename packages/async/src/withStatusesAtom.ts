@@ -2,7 +2,7 @@ import { action, Action, atom, Atom } from '@reatom/core'
 import { __thenReatomed } from '@reatom/effects'
 
 import { AsyncAction } from '.'
-import { isShallowEqual } from '@reatom/utils'
+import { isAbort, isShallowEqual } from '@reatom/utils'
 
 export interface AsyncStatusesNeverPending {
   isPending: false
@@ -11,11 +11,8 @@ export interface AsyncStatusesNeverPending {
   isSettled: false
 
   isFirstPending: false
-  // isAnotherPending: false
   isEverPending: false
-  // isNeverPending: true
   isEverSettled: false
-  // isNeverSettled: true
 }
 
 export interface AsyncStatusesFirstPending {
@@ -25,11 +22,30 @@ export interface AsyncStatusesFirstPending {
   isSettled: false
 
   isFirstPending: true
-  // isAnotherPending: false
   isEverPending: true
-  // isNeverPending: false
   isEverSettled: false
-  // isNeverSettled: true
+}
+
+export interface AsyncStatusesFirstAborted {
+  isPending: false
+  isFulfilled: false
+  isRejected: false
+  isSettled: false
+
+  isFirstPending: false
+  isEverPending: true
+  isEverSettled: false
+}
+
+export interface AsyncStatusesAbortedPending {
+  isPending: true
+  isFulfilled: false
+  isRejected: false
+  isSettled: false
+
+  isFirstPending: false
+  isEverPending: true
+  isEverSettled: false
 }
 
 export interface AsyncStatusesFulfilled {
@@ -39,11 +55,8 @@ export interface AsyncStatusesFulfilled {
   isSettled: true
 
   isFirstPending: false
-  // isAnotherPending: false
   isEverPending: true
-  // isNeverPending: false
   isEverSettled: true
-  // isNeverSettled: false
 }
 
 export interface AsyncStatusesRejected {
@@ -53,11 +66,8 @@ export interface AsyncStatusesRejected {
   isSettled: true
 
   isFirstPending: false
-  // isAnotherPending: false
   isEverPending: true
-  // isNeverPending: false
   isEverSettled: true
-  // isNeverSettled: false
 }
 
 export interface AsyncStatusesAnotherPending {
@@ -67,19 +77,18 @@ export interface AsyncStatusesAnotherPending {
   isSettled: false
 
   isFirstPending: false
-  // isAnotherPending: true
   isEverPending: true
-  // isNeverPending: false
   isEverSettled: true
-  // isNeverSettled: false
 }
 
 export type AsyncStatusesPending =
   | AsyncStatusesFirstPending
+  | AsyncStatusesAbortedPending
   | AsyncStatusesAnotherPending
 
 export type AsyncStatuses =
   | AsyncStatusesNeverPending
+  | AsyncStatusesFirstAborted
   | AsyncStatusesPending
   | AsyncStatusesFulfilled
   | AsyncStatusesRejected
@@ -102,11 +111,8 @@ export const asyncStatusesInitState: AsyncStatuses = {
   isSettled: false,
 
   isFirstPending: false,
-  // isAnotherPending: false,
   isEverPending: false,
-  // isNeverPending: true,
   isEverSettled: false,
-  // isNeverSettled: true,
 }
 
 export const withStatusesAtom =
@@ -117,6 +123,8 @@ export const withStatusesAtom =
   >() =>
   (anAsync: T): T & { statusesAtom: AsyncStatusesAtom } => {
     if (!anAsync.statusesAtom) {
+      // `anAsync.onCall` is global over all contexts,
+      // so we should compute each `statusesAtom` only from related promises
       const relatedPromisesAtom = atom(
         new WeakSet<Promise<any>>(),
         `${anAsync.__reatom.name}.statusesAtom._relatedPromisesAtom`,
@@ -131,20 +139,18 @@ export const withStatusesAtom =
       statusesAtom.__reatom.computer = (ctx, state: AsyncStatuses) => {
         ctx.spy(anAsync, ({ payload }) => {
           ctx.get(relatedPromisesAtom).add(payload)
+          const pending = ctx.get(anAsync.pendingAtom)
           state = memo(
             (statuses) =>
               ({
-                isPending: ctx.get(anAsync.pendingAtom) > 0,
+                isPending: pending > 0,
                 isFulfilled: false,
                 isRejected: false,
                 isSettled: false,
 
-                isFirstPending: !statuses.isEverSettled,
-                // isAnotherPending: statuses.isEverPending,
+                isFirstPending: !statuses.isEverPending,
                 isEverPending: true,
-                // isNeverPending: false,
                 isEverSettled: statuses.isEverSettled,
-                // isNeverSettled: statuses.isNeverSettled,
               }) as AsyncStatuses,
           )(state)
         })
@@ -180,22 +186,34 @@ export const withStatusesAtom =
                     isSettled: !isPending,
 
                     isFirstPending: false,
-                    // isAnotherPending: false,
                     isEverPending: true,
-                    // isNeverPending: false,
                     isEverSettled: true,
-                    // isNeverSettled: false,
                   } as AsyncStatuses
                 }),
               )
             }
           },
-          () => {
+          (error) => {
             if (ctx.get(relatedPromisesAtom).has(payload)) {
+              const isPending = ctx.get(anAsync.pendingAtom) > 0
               statusesAtom(
                 ctx,
-                memo(() => {
-                  const isPending = ctx.get(anAsync.pendingAtom) > 0
+                memo((state) => {
+                  if (isAbort(error) && !state.isEverSettled) {
+                    return {
+                      isPending,
+                      isFulfilled: false,
+                      isRejected: false,
+                      isSettled: false,
+
+                      isFirstPending: false,
+                      isEverPending: true,
+                      isEverSettled: false,
+                    } satisfies
+                      | AsyncStatusesAbortedPending
+                      | AsyncStatusesFirstAborted
+                  }
+
                   return {
                     isPending,
                     isFulfilled: false,
@@ -203,11 +221,8 @@ export const withStatusesAtom =
                     isSettled: !isPending,
 
                     isFirstPending: false,
-                    // isAnotherPending: false,
                     isEverPending: true,
-                    // isNeverPending: false,
                     isEverSettled: true,
-                    // isNeverSettled: false,
                   } as AsyncStatuses
                 }),
               )

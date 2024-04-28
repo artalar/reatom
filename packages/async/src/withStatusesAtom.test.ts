@@ -4,6 +4,7 @@ import { createTestCtx } from '@reatom/testing'
 
 import { reatomAsync, withAbort, withCache } from './'
 import {
+  AsyncStatusesAbortedPending,
   AsyncStatusesAnotherPending,
   AsyncStatusesFirstPending,
   AsyncStatusesFulfilled,
@@ -12,7 +13,8 @@ import {
   asyncStatusesInitState,
   withStatusesAtom,
 } from './withStatusesAtom'
-import { sleep } from '@reatom/utils'
+import { noop, sleep } from '@reatom/utils'
+import { reatomResource } from '../build'
 
 const test = suite('withStatusesAtom')
 
@@ -155,9 +157,12 @@ test('withStatusesAtom parallel requests', async () => {
   assert.equal(track.lastInput(), neverPending)
 
   const p1 = fetchData(ctx)
-  const p2 = fetchData(ctx)
 
   assert.equal(track.lastInput(), firstPending)
+
+  const p2 = fetchData(ctx)
+
+  assert.equal(track.lastInput(), { ...firstPending, isFirstPending: false })
 
   await p1
 
@@ -186,7 +191,7 @@ test('reset during pending', async () => {
 })
 
 test('do not reject on abort', async () => {
-  const fetchData = reatomAsync(async () => {}).pipe(
+  const fetchData = reatomAsync(async () => sleep()).pipe(
     withAbort(),
     withStatusesAtom(),
   )
@@ -195,8 +200,38 @@ test('do not reject on abort', async () => {
   assert.is(ctx.get(fetchData.statusesAtom), asyncStatusesInitState)
 
   fetchData(ctx)
-  fetchData.abort(ctx)
-  assert.is(ctx.get(fetchData.statusesAtom).isRejected, false)
+  fetchData(ctx)
+  await null
+  assert.equal(ctx.get(fetchData.statusesAtom), {
+    isPending: true,
+    isFulfilled: false,
+    isRejected: false,
+    isSettled: false,
+
+    isFirstPending: false,
+    isEverPending: true,
+    isEverSettled: false,
+  } satisfies AsyncStatusesAbortedPending)
+  ;`👍` //?
+})
+
+test('do not reject on resource abort', async () => {
+  const fetchData = reatomResource(async (ctx) => {}).pipe(withStatusesAtom())
+  const ctx = createTestCtx()
+
+  ctx.subscribe(fetchData, noop)()
+  ctx.subscribe(fetchData, noop)
+  await null
+  assert.equal(ctx.get(fetchData.statusesAtom), {
+    isPending: true,
+    isFulfilled: false,
+    isRejected: false,
+    isSettled: false,
+
+    isFirstPending: false,
+    isEverPending: true,
+    isEverSettled: false,
+  } satisfies AsyncStatusesAbortedPending)
   ;`👍` //?
 })
 
