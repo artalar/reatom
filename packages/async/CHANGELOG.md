@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.1](https://github.com/artalar/reatom/compare/async-v3.14.0...async-v3.14.1) (2024-04-28)
+
+
+### Bug Fixes
+
+* **async:** add AsyncStatusesFirstAborted and AsyncStatusesAbortedPending ([f653bb2](https://github.com/artalar/reatom/commit/f653bb2cd2a07eef9c062aa9477de91b06716e69))
+
 ## [3.14.0](https://github.com/artalar/reatom/compare/async-v3.13.6...async-v3.14.0) (2024-04-12)
 
 

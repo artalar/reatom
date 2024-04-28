@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/artalar/reatom/compare/logger-v3.6.0...logger-v3.6.1) (2024-04-28)
+
+
+### Bug Fixes
+
+* **logger:** cause infinity loop ([a8af2b8](https://github.com/artalar/reatom/commit/a8af2b824e4772e64eb6c85695eba494856e52cf))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/logger-v3.5.0...logger-v3.6.0) (2023-10-09)
 
 

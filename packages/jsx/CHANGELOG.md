@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.0](https://github.com/artalar/reatom/compare/jsx-v3.9.0...jsx-v3.10.0) (2024-04-28)
+
+
+### Features
+
+* **jsx:** support reatomLinkedList ([0e027e8](https://github.com/artalar/reatom/commit/0e027e8317e10a59b9f65b0ec1070e3a5637aeca))
+
 ## [3.9.0](https://github.com/artalar/reatom/compare/jsx-v3.8.0...jsx-v3.9.0) (2024-04-12)
 
 

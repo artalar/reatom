@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.5](https://github.com/artalar/reatom/compare/npm-react-v3.8.4...npm-react-v3.8.5) (2024-04-28)
+
+
+### Bug Fixes
+
+* **npm-react:** add withAbortableSchedule to reatomComponent ([4aadfb5](https://github.com/artalar/reatom/commit/4aadfb5c5e48193d5b3b1cddb0c148141ea8c7df))
+
 ## [3.8.4](https://github.com/artalar/reatom/compare/npm-react-v3.8.3...npm-react-v3.8.4) (2024-02-20)
 
 

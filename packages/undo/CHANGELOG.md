@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.2](https://github.com/artalar/reatom/compare/undo-v3.3.1...undo-v3.3.2) (2024-04-28)
+
+
+### Bug Fixes
+
+* **undo:** adding initial state in historyAtom ([#828](https://github.com/artalar/reatom/issues/828)) ([4006e44](https://github.com/artalar/reatom/commit/4006e44ad408f9daf7680cd65e86a0fc8521eade))
+
 ## [3.3.1](https://github.com/artalar/reatom/compare/undo-v3.3.0...undo-v3.3.1) (2023-08-07)
 
 
