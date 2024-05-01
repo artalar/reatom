@@ -48,7 +48,7 @@ import { atom } from '@reatom/framework'
 import { withBroadcastChannel } from '@reatom/persist-web-storage'
 
 export const isAuthedAtom = atom('', 'isAuthedAtom').pipe(
-  withBroadcastChannel()('isAuthedAtom'),
+  withBroadcastChannel('isAuthedAtom'),
 )
 ```
 
@@ -56,18 +56,21 @@ You can also give an instance of `BroadcastChannel`
 
 ```ts
 import { atom } from '@reatom/framework'
-import { withBroadcastChannel } from '@reatom/persist-web-storage'
+import { reatomPersistBroadcastChannel } from '@reatom/persist-web-storage'
 
-const channel = new BroadcastChannel('isAuthed')
+const myChannel = new BroadcastChannel('customReusableChannel')
 
-channel.onmessage((event) => {
+myChannel.onmessage((event) => {
   console.log(event)
   // Do some work here
   // ...
 })
 
+const withMyBroadcastChannel = reatomPersistBroadcastChannel(myChannel)
+
+
 export const isAuthedAtom = atom('', 'isAuthedAtom').pipe(
-  withBroadcastChannel({ key: 'isAuthedAtom', channel }),
+  withMyBroadcastChannel('isAuthedAtom'),
 )
 ```
 
