@@ -39,7 +39,7 @@ import { atom } from '@reatom/framework'
 import { withBroadcastChannel } from '@reatom/persist-web-storage'
 
 export const isAuthedAtom = atom('', 'isAuthedAtom').pipe(
-  withBroadcastChannel()('isAuthedAtom'),
+  withBroadcastChannel('isAuthedAtom'),
 )
 ```
 
