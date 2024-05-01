@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.4...persist-web-storage-v3.4.0) (2024-05-01)
+
+
+### Features
+
+* **persist-web-storage:** add withCookie ([#830](https://github.com/artalar/reatom/issues/830)) ([25a865e](https://github.com/artalar/reatom/commit/25a865e58ca67ea230a5001a973132d3f76fc207))
+
 ## [3.3.4](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.3...persist-web-storage-v3.3.4) (2024-04-12)
 
 

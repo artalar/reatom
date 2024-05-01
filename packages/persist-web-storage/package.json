@@ -1,6 +1,6 @@
 {
   "name": "@reatom/persist-web-storage",
-  "version": "3.3.4",
+  "version": "3.4.0",
   "sideEffects": false,
   "description": "Reatom adapter for localStorage and sessionStorage",
   "source": "src/index.ts",
