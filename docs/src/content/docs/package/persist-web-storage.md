@@ -118,3 +118,29 @@ onConnect(listResource, async (ctx) => {
   return () => isListReadyAtom(ctx, false)
 })
 ```
+
+### withCookie
+
+Synchronizes atom state to the `document.cookie` with a given name. 
+
+When using `withCookie`, the first argument it takes is an options object that allows you to configure various aspects of cookie behavior.
+
+```ts
+import { atom } from '@reatom/framework'
+import { withCookie } from '@reatom/persist-web-storage'
+
+interface CookieAttributes {
+  maxAge?: number
+  expires?: Date
+  path?: string
+  domain?: string
+  secure?: boolean
+  sameSite?: 'strict' | 'lax' | 'none'
+}
+
+export const tokenAtom = atom("", "tokenAtom").pipe(
+  withCookie({
+    maxAge: 3600, // 1 hour
+  })("token"),
+);
+```
