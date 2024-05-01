@@ -22,6 +22,16 @@ const stringifyAttrs = (options: CookieAttributes): string => {
   return attrs
 }
 
+const converter = {
+  read: (value: string): string =>
+    value.replace(/(%[\dA-F]{2})+/gi, decodeURIComponent),
+  write: (value: string): string =>
+    encodeURIComponent(value).replace(
+      /%(2[346BF]|3[AC-F]|40|5[BDE]|60|7[BCD])/g,
+      decodeURIComponent,
+    ),
+}
+
 export const reatomPersistCookie =
   (name: string, document: Document) =>
   (options: CookieAttributes = {}): WithPersistWebStorage => {
@@ -46,7 +56,7 @@ export const reatomPersistCookie =
 
           if (!dataStr) return null
 
-          const rec: PersistRecord = JSON.parse(dataStr)
+          const rec: PersistRecord = JSON.parse(converter.read(dataStr))
 
           if (rec.to < Date.now()) {
             this.clear!(ctx, key)
@@ -82,9 +92,8 @@ export const reatomPersistCookie =
         memCache.set(key, rec)
 
         ctx.schedule(() => {
-          document.cookie = `${key}=${JSON.stringify(rec)}${stringifyAttrs(
-            options,
-          )}`
+          const value = converter.write(JSON.stringify(rec))
+          document.cookie = `${key}=${value}${stringifyAttrs(options)}`
         })
       },
       clear(ctx, key) {
