@@ -34,18 +34,18 @@ export const reatomPersistCookie =
     return reatomPersist({
       name,
       get(ctx, key) {
-        const cookie = document.cookie
-
-        if (cookie === '') return null
-
-        const dataStr = cookie
-          .split('; ')
-          .find((row) => row.startsWith(`${key}=`))
-          ?.split('=')[1]
-
-        if (!dataStr) return null
-
         try {
+          const cookie = document.cookie
+
+          if (cookie === '') return null
+
+          const dataStr = cookie
+            .split('; ')
+            .find((row) => row.startsWith(`${key}=`))
+            ?.split('=')[1]
+
+          if (!dataStr) return null
+
           const rec: PersistRecord = JSON.parse(dataStr)
 
           if (rec.to < Date.now()) {
