@@ -107,7 +107,7 @@ export const reatomPersistCookie =
   }
 
 try {
-  var isCookieAvailable = !!globalThis.document.cookie
+  var isCookieAvailable = 'cookie' in globalThis.document
 } catch (error) {
   isCookieAvailable = false
 }
