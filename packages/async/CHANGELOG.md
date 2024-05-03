@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.14.2](https://github.com/artalar/reatom/compare/async-v3.14.1...async-v3.14.2) (2024-05-03)
+
+
+### Bug Fixes
+
+* **async:** add AsyncStatusesAbortedSettle ([bd03669](https://github.com/artalar/reatom/commit/bd03669bfa1814e1ce4cd28387c8de70a5d0b4d7))
+
 ## [3.14.1](https://github.com/artalar/reatom/compare/async-v3.14.0...async-v3.14.1) (2024-04-28)
 
 

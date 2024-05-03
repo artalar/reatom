@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.3](https://github.com/artalar/reatom/compare/effects-v3.7.2...effects-v3.7.3) (2024-05-03)
+
+
+### Bug Fixes
+
+* **effects:** missed abort... ([66d2afd](https://github.com/artalar/reatom/commit/66d2afd9bb6cfc1ababdffb7b547b7cee3e9425b))
+
 ## [3.7.2](https://github.com/artalar/reatom/compare/effects-v3.7.1...effects-v3.7.2) (2023-11-25)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.1](https://github.com/artalar/reatom/compare/persist-web-storage-v3.4.0...persist-web-storage-v3.4.1) (2024-05-03)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** fix cookie availability check ([#836](https://github.com/artalar/reatom/issues/836)) ([8da6fe3](https://github.com/artalar/reatom/commit/8da6fe364ff61403f4e6dd6239eb7923520d5143))
+
 ## [3.4.0](https://github.com/artalar/reatom/compare/persist-web-storage-v3.3.4...persist-web-storage-v3.4.0) (2024-05-01)
 
 
