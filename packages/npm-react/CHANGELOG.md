@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.6](https://github.com/artalar/reatom/compare/npm-react-v3.8.5...npm-react-v3.8.6) (2024-05-03)
+
+
+### Bug Fixes
+
+* **npm-react:** concurrent react ([ebb4e85](https://github.com/artalar/reatom/commit/ebb4e852a72346093cfb4a92abaf840268ae1767))
+
 ## [3.8.5](https://github.com/artalar/reatom/compare/npm-react-v3.8.4...npm-react-v3.8.5) (2024-04-28)
 
 
