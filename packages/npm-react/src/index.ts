@@ -248,7 +248,7 @@ export const reatomComponent = <T>(
       const { controller, propsAtom, renderAtom } = React.useMemo(() => {
         const controller = new AbortController()
 
-        const propsAtom = atom<T>(
+        const propsAtom = atom<T & { ctx: CtxRender }>(
           {} as T & { ctx: CtxRender },
           `${name}._propsAtom`,
         )
@@ -259,19 +259,23 @@ export const reatomComponent = <T>(
             const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
             if (rendering) {
-              const initCtxRef = React.useRef<Ctx>()
-              const initCtx = (initCtxRef.current ??=
-                withAbortableSchedule(ctx)) as CtxRender
+              const initCtxRef = React.useRef<CtxRender>()
 
-              if (!abortCauseContext.has(initCtx.cause)) {
+              if (!initCtxRef.current) {
+                const initCtx = (initCtxRef.current =
+                  withAbortableSchedule(ctx))
                 abortCauseContext.set(initCtx.cause, controller)
-                initCtx.bind = bind(initCtx, bindBind)
               }
 
+              const initCtx = initCtxRef.current!
+
               props.ctx = {
-                ...ctx,
+                get: ctx.get,
+                spy: ctx.spy,
+                schedule: ctx.schedule,
+                subscribe: ctx.subscribe,
                 cause: initCtx.cause,
-                bind: initCtx.bind,
+                bind: bind(initCtx, bindBind),
               }
 
               const result = Component(props)
@@ -306,18 +310,28 @@ export const reatomComponent = <T>(
       const [, forceUpdate] = React.useState({} as JSX.Element)
 
       React.useEffect(() => {
+        let finalController = controller
+        if (finalController.signal.aborted) {
+          // Mount after unmount with the same cache.
+          // Brave React World...
+          const initCause = ctx.get(propsAtom).ctx.cause
+          abortCauseContext.set(
+            initCause,
+            (finalController = new AbortController()),
+          )
+        }
         const unsubscribe = ctx.subscribe(renderAtom, (element) => {
           if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
         })
 
         return () => {
           unsubscribe()
-          controller.abort(toAbortError(`${name} unmount`))
+          finalController.abort(toAbortError(`${name} unmount`))
         }
       }, [ctx, renderAtom])
 
       return ctx.get(() => {
-        propsAtom(ctx, { ...props })
+        propsAtom(ctx, { ...props } as T & { ctx: CtxRender })
         try {
           rendering = true
           return ctx.get(renderAtom)
