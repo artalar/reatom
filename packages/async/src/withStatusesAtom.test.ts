@@ -4,6 +4,7 @@ import { createTestCtx } from '@reatom/testing'
 
 import { reatomAsync, withAbort, withCache } from './'
 import {
+  AsyncStatusesAbortedFulfill,
   AsyncStatusesAbortedPending,
   AsyncStatusesAnotherPending,
   AsyncStatusesFirstPending,
@@ -232,6 +233,41 @@ test('do not reject on resource abort', async () => {
     isEverPending: true,
     isEverSettled: false,
   } satisfies AsyncStatusesAbortedPending)
+  ;`👍` //?
+})
+
+test('restore isFulfilled after abort', async () => {
+  const fetchData = reatomAsync(async (ctx) => {}).pipe(
+    withAbort(),
+    withStatusesAtom(),
+  )
+  const ctx = createTestCtx()
+
+  await fetchData(ctx)
+  assert.equal(ctx.get(fetchData.statusesAtom), {
+    isPending: false,
+    isFulfilled: true,
+    isRejected: false,
+    isSettled: true,
+
+    isFirstPending: false,
+    isEverPending: true,
+    isEverSettled: true,
+  } satisfies AsyncStatusesFulfilled)
+
+  fetchData(ctx)
+  fetchData.abort(ctx)
+  await null
+  assert.equal(ctx.get(fetchData.statusesAtom), {
+    isPending: false,
+    isFulfilled: true,
+    isRejected: false,
+    isSettled: true,
+
+    isFirstPending: false,
+    isEverPending: true,
+    isEverSettled: true,
+  } satisfies AsyncStatusesAbortedFulfill)
   ;`👍` //?
 })
 

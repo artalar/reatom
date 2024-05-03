@@ -48,6 +48,32 @@ export interface AsyncStatusesAbortedPending {
   isEverSettled: false
 }
 
+export interface AsyncStatusesAbortedFulfill {
+  isPending: false
+  isFulfilled: true
+  isRejected: false
+  isSettled: true
+
+  isFirstPending: false
+  isEverPending: true
+  isEverSettled: true
+}
+
+export interface AsyncStatusesAbortedReject {
+  isPending: false
+  isFulfilled: false
+  isRejected: true
+  isSettled: true
+
+  isFirstPending: false
+  isEverPending: true
+  isEverSettled: true
+}
+
+export type AsyncStatusesAbortedSettle =
+  | AsyncStatusesAbortedFulfill
+  | AsyncStatusesAbortedReject
+
 export interface AsyncStatusesFulfilled {
   isPending: false
   isFulfilled: true
@@ -92,6 +118,7 @@ export type AsyncStatuses =
   | AsyncStatusesPending
   | AsyncStatusesFulfilled
   | AsyncStatusesRejected
+  | AsyncStatusesAbortedSettle
 
 export interface AsyncStatusesAtom extends Atom<AsyncStatuses> {
   reset: Action<[], AsyncStatusesNeverPending>
@@ -128,6 +155,11 @@ export const withStatusesAtom =
       const relatedPromisesAtom = atom(
         new WeakSet<Promise<any>>(),
         `${anAsync.__reatom.name}.statusesAtom._relatedPromisesAtom`,
+      )
+
+      const lastSettledStatusAtom = atom<null | 'fulfilled' | 'rejected'>(
+        null,
+        `${anAsync.__reatom.name}.statusesAtom._lastSettledStatusAtom`,
       )
 
       const statusesAtom = atom<AsyncStatuses>(
@@ -191,27 +223,45 @@ export const withStatusesAtom =
                   } as AsyncStatuses
                 }),
               )
+
+              lastSettledStatusAtom(ctx, 'fulfilled')
             }
           },
           (error) => {
             if (ctx.get(relatedPromisesAtom).has(payload)) {
               const isPending = ctx.get(anAsync.pendingAtom) > 0
+
               statusesAtom(
                 ctx,
                 memo((state) => {
-                  if (isAbort(error) && !state.isEverSettled) {
-                    return {
-                      isPending,
-                      isFulfilled: false,
-                      isRejected: false,
-                      isSettled: false,
+                  if (isAbort(error)) {
+                    const lastSettledStatus = ctx.get(lastSettledStatusAtom)
 
-                      isFirstPending: false,
-                      isEverPending: true,
-                      isEverSettled: false,
-                    } satisfies
-                      | AsyncStatusesAbortedPending
-                      | AsyncStatusesFirstAborted
+                    if (state.isEverSettled && !isPending) {
+                      return {
+                        isPending,
+                        isFulfilled: lastSettledStatus === 'fulfilled',
+                        isRejected: lastSettledStatus === 'rejected',
+                        isSettled: true,
+
+                        isFirstPending: false,
+                        isEverPending: true,
+                        isEverSettled: true,
+                      } as AsyncStatusesAbortedSettle
+                    } else {
+                      return {
+                        isPending,
+                        isFulfilled: false,
+                        isRejected: false,
+                        isSettled: false,
+
+                        isFirstPending: false,
+                        isEverPending: true,
+                        isEverSettled: false,
+                      } satisfies
+                        | AsyncStatusesAbortedPending
+                        | AsyncStatusesFirstAborted
+                    }
                   }
 
                   return {
@@ -226,6 +276,8 @@ export const withStatusesAtom =
                   } as AsyncStatuses
                 }),
               )
+
+              if (!isAbort(error)) lastSettledStatusAtom(ctx, 'rejected')
             }
           },
         )
