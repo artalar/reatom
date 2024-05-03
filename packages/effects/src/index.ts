@@ -253,9 +253,9 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
     schedule(
       this: Ctx,
       cb: Parameters<typeof schedule>[0],
-      step?: Parameters<typeof schedule>[1],
+      step: Parameters<typeof schedule>[1] = 1,
     ) {
-      if (step === -1) return schedule.call(this, cb, step)
+      if (step < 1) return schedule.call(this, cb, step)
 
       let resolve: Fn
       let reject: Fn
@@ -269,22 +269,27 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
         promise.catch(noop)
         reject(error)
       })
-      schedule.call(
-        this,
-        async (_ctx) => {
-          const controller = getTopController(this.cause)
-          try {
-            throwIfAborted(controller)
-            const value = await cb(_ctx)
-            throwIfAborted(controller)
-            resolve(value)
-          } catch (error) {
-            reject(error)
-          }
+      schedule
+        .call(
+          this,
+          async (_ctx) => {
+            try {
+              const controller = getTopController(this.cause)
+              throwIfAborted(controller)
+              const value = await cb(_ctx)
+              throwIfAborted(controller)
+              resolve(value)
+            } catch (error) {
+              reject(error)
+            }
+            unabort?.()
+          },
+          step,
+        )
+        .catch((error) => {
+          reject(error)
           unabort?.()
-        },
-        step,
-      )
+        })
 
       return promise
     },
