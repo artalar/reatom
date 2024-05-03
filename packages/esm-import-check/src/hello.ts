@@ -1,4 +1,4 @@
 import {atom, createCtx} from '@reatom/framework'
-const me = atom('hello', 'me')
+const me = atom('check ✅', 'me')
 const ctx = createCtx()
-console.log('mol:', ctx.get(me))
+console.log('ESM import:', ctx.get(me))

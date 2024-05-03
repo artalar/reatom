@@ -1,15 +1,18 @@
 {
-  "name": "check-ts-issue",
+  "name": "@reatom-private/cjs-import-check",
   "version": "1.0.0",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
+  "private": true,
   "license": "MIT",
   "dependencies": {
     "@reatom/framework": "^3.4.37"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node ./dist/hello.js"
+    "start": "node ./dist/hello.js",
+    "pretest": "npm run build",
+    "test": "node ./dist/hello.js"
   },
   "devDependencies": {
     "typescript": "5.4.5"
