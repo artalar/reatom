@@ -16,6 +16,9 @@
     "@codemirror/state": "^6.4.1",
     "@discoveryjs/discovery": "^1.0.0-beta.82",
     "@observablehq/inspector": "^5.0.0",
+    "@vercel/edge": "^1.1.1",
+    "@vercel/functions": "^1.0.2",
+    "@vercel/kv": "^1.0.1",
     "codemirror": "^6.0.1",
     "mermaid": "^10.9.0",
     "sucrase": "^3.35.0"
