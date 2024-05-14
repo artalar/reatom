@@ -1,9 +1,9 @@
 {
-  "name": "@reatom/<%= name %>",
+  "name": null,
   "version": "3.5.0",
+  "description": null,
   "private": false,
   "sideEffects": false,
-  "description": "Reatom for <%= name %>",
   "source": "src/index.ts",
   "exports": {
     "types": "./build/index.d.ts",
@@ -20,7 +20,6 @@
     "mangle": false
   },
   "scripts": {
-    "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle",
     "test": "ts-node src/index.test.ts",
@@ -29,24 +28,19 @@
   "dependencies": {
     "@reatom/core": ">=3.5.0"
   },
-  "author": "artalar",
-  "maintainers": [
-    {
-      "name": "artalar",
-      "url": "https://github.com/artalar"
-    }
-  ],
+  "author": null,
+  "maintainers": null,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/artalar/reatom.git"
+    "url": "git+ssh://git@github.com/artalar/reatom.git",
+    "directory": null
   },
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/package/<%= name %>",
+  "homepage": null,
   "keywords": [
-    "<%= name %>",
     "reactive",
     "reactivity",
     "state-manager",
