@@ -14,7 +14,7 @@ If you want to report a bug, create a reproduction using StackBlitz or CodeSandb
 ## Sending a Pull Request
 
 1. fork and clone the repository
-2. create a development branch from `v3` 
+2. create a development branch from `v3`
 3. install dependencies from the root of the repo (`node@18` and `npm@8` are required):
    ```sh
    npm install
@@ -32,19 +32,20 @@ If you want to report a bug, create a reproduction using StackBlitz or CodeSandb
 
 ## Creating a package
 
-The goal of Reatom ecosystem is to provide adapters for Web APIs and popular npm modules. Therefore, the process of creating a new package is almost identical to editing an existing one ([Sending a Pull Request](#sending-a-pull-request)) with
+The goal of Reatom ecosystem is to provide adapters for Web APIs and popular npm modules. Therefore, the process of creating a new package is almost identical to editing an existing one ([Sending a Pull Request](#sending-a-pull-request)), but you should also create the package using an interactive script ran in the repository root:
 
 ```sh
 npm run package-generator
 ```
 
-After running the script, edit `author` field and add yourself to `maintainers` of the newly-created `package.json`.
-
 Add needed dependencies by running `npm install` in your package's directory. If you're making an adapter for a particular npm library (like `@reatom/npm-react` for React), the library should be saved as peer: `npm install --save-peer <LIBRARY>`
 
+<!-- ??? -->
 <!-- To add dependencies, add them manually to the `package.json` of the new package and install them from the root of the repo. -->
 
 ### Package naming rule
+
+Packages that integrate Reatom with external APIs should have their names prefixed with one of the following strings: `node-`, `npm-`, `web-`. For example, [`@reatom/npm-history`](https://reatom.dev/package/npm-history) provides an adapter for the [`history`](https://npmjs.com/history) package. Similiarly, a potential adapter for [Web History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) would be named `@reatom/web-history`.
 
 ## Coding guide
 
@@ -63,20 +64,20 @@ Commit messages should follow the [Conventional Commits](https://conventionalcom
 
 ### Allowed `<type>`
 
-<!-- - `chore`: ??? -->
+- `chore`: any repository maintainance changes
 - `feat`: code change that adds a new feature
 - `fix`: bug fix
-- `refactor`: code change that is neither a bug fix nor a feature addition
-- `docs`: documentation only changes
 - `perf`: code change that improves performance
+- `refactor`: code change that is neither a feature addition nor a bug fix nor a performance improvement
+- `docs`: documentation only changes
 - `ci`: a change made to CI configurations and scripts
-- `style`: cosmetic code changes
+- `style`: cosmetic code change
 - `test`: change that only adds or corrects tests
-- `revert`: change
+- `revert`: change that reverts previous commits
 
 ### Allowed `<scope>`
 
-Name of the package from `/packages/<scope>`
+Name of directory of a package (`/packages/<scope>`)
 
 ### `<description>` rules
 
