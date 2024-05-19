@@ -19,7 +19,7 @@ If you want to report a bug, create a reproduction using StackBlitz or CodeSandb
    ```sh
    npm install
    ```
-   Dependencies are installed for all packages, but only packages included in `@reatom/framework` (`core`, `utils`, `async` etc.) are built.
+   Note: this command installs dependencies for all packages, but only builds packages included in `@reatom/framework`, like `core`, `utils`, `async`, etc.
 4. build the package you are editing from the root of the repo:
    ```sh
    npx turbo run build --filter=<PACKAGE_NAME>
@@ -45,7 +45,7 @@ Add needed dependencies by running `npm install` in your package's directory. If
 
 ### Package naming rule
 
-Packages that integrate Reatom with external APIs should have their names prefixed with one of the following strings: `node-`, `npm-`, `web-`. For example, [`@reatom/npm-history`](https://reatom.dev/package/npm-history) provides an adapter for the [`history`](https://npmjs.com/history) package. Similiarly, a potential adapter for [Web History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) would be named `@reatom/web-history`.
+Packages that integrate Reatom with external APIs should have their names prefixed with API or library source kind: `node-`, `npm-`, `web-`. For example, [`@reatom/npm-history`](https://reatom.dev/package/npm-history) provides an adapter for the [`history`](https://npmjs.com/history) package. Similarly, a potential adapter for [Web History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) would be named `@reatom/web-history`.Name of directory of a package (`/packages/<scope>`)
 
 ## Coding guide
 
@@ -77,14 +77,14 @@ Commit messages should follow the [Conventional Commits](https://conventionalcom
 
 ### Allowed `<scope>`
 
-Name of directory of a package (`/packages/<scope>`)
+Package directory name. Eg: `/packages/effects` is scoped as `effects`.
 
 ### `<description>` rules
 
 - should be written in English
-- should be in imperative form (like `change` instead `changed` or `changes`)
+- should be in imperative mood (like `change` instead `changed` or `changes`)
 - should not be capitalized
-- should not have period at the end
+- should not have period (`.`) at the end
 
 ### Commit message examples
 
