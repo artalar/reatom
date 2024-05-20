@@ -51,8 +51,11 @@ export {
 
 export interface AsyncAction<Params extends any[] = any[], Resp = any>
   extends Action<Params, ControlledPromise<Resp>> {
+  /** @deprecated use anAction.onFulfill.onCall */
   onFulfill: Action<[Resp], Resp>
+  /** @deprecated use anAction.onReject.onCall */
   onReject: Action<[unknown], unknown>
+  /** @deprecated use anAction.onSettle.onCall */
   onSettle: Action<[], void>
   pendingAtom: Atom<number>
 

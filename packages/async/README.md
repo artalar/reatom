@@ -41,11 +41,41 @@ For simple cases of turning plain async function to `AsyncAction`-s, you can use
 
 ### Hooks
 
-TODO
+`AsyncAction` has several action fields you can subscribe to with `onCall`. They are called automatically when a promise returned by user code is settled:
+
+- `onFulfill`: called when promise is resolved, like `Promise.then`
+- `onReject`: called when promise is rejected, like `Promise..catch`
+- `onSettle`: called when promise is either resolved or rejected, like `Promise..finally`
+
+Example:
+
+```ts
+const reatomDoSomething = reatomAsync(async ctx => {
+  // ...
+}, 'reatomDoSomething')
+
+let status: 'n/a' | 'pending' | 'resolved' | 'rejected' = 'n/a'
+
+reatomDoSomething.onCall((ctx) => {
+  status = 'pending'
+})
+
+reatomDoSomething.onSettle.onCall((ctx) => {
+  // ...
+})
+
+reatomDoSomething.onFulfill.onCall((ctx) => {
+  status = 'resolved'
+})
+
+reatomDoSomething.onReject.onCall((ctx) => {
+  status = 'rejected'
+})
+```
 
 ### Prologue to examples
 
-In examples below, the following helper will be used:
+In examples below, the following helper will be used for making HTTP requests:
 
 ```ts
 async function request<T>(...args: Parameters<typeof fetch>): Promise<T> {
@@ -69,7 +99,7 @@ export const fetchList = reatomAsync(
 
 ### Advanced example
 
-Now we are going to solve a more complex task: remember the last fetched list state and error if the request failed, cancel previous requests when making subsequent ones and add an action to mutate the list. The next snippet assumes that you are familiar with [`withAssign`] and [`atom..onCall`].
+Now we are going to solve a more complex task: remember the last fetched list state and error if the request failed, cancel previous requests when making subsequent ones and add an action to mutate the list. The next snippet assumes that you are familiar with [`withAssign`](https://reatom.dev/package/primitives#withassign) and [`action..onCall`](https://reatom.dev/package/core#actiononcall-api).
 
 ```ts
 import { reatomAsync } from '@reatom/async'
@@ -144,7 +174,9 @@ type Element = {
 
 export const fetchList = reatomAsync(
   (ctx, page: number) =>
-    request<Array<Element>>(`/api/list?page=${page}`, {signal:ctx.controller.signal}),
+    request<Array<Element>>(`/api/list?page=${page}`, {
+      signal: ctx.controller.signal,
+    }),
   'fetchList',
 ).pipe(withDataAtom([]), withErrorAtom(), withAbort(), withStatusesAtom())
 
