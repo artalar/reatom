@@ -45,7 +45,7 @@ Add needed dependencies by running `npm install` in your package's directory. If
 
 ### Package naming rule
 
-Packages that integrate Reatom with external APIs should have their names prefixed with API or library source kind: `node-`, `npm-`, `web-`. For example, [`@reatom/npm-history`](https://reatom.dev/package/npm-history) provides an adapter for the [`history`](https://npmjs.com/history) package. Similarly, a potential adapter for [Web History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) would be named `@reatom/web-history`.Name of directory of a package (`/packages/<scope>`)
+Packages that integrate Reatom with external APIs should have their names prefixed with API or library source kind: `node-`, `npm-`, `web-`. For example, [`@reatom/npm-history`](https://reatom.dev/package/npm-history) provides an adapter for the [`history`](https://npmjs.com/history) package. Similarly, a potential adapter for [Web History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API) would be named `@reatom/web-history`.
 
 ## Coding guide
 
