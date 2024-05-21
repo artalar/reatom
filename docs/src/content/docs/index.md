@@ -20,7 +20,7 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 - perfect **effects management**.
   <small>Advanced [async package](/package/async) allows you to describe complex async flows, including caching, retrying and automatic cancellation with native `await` and `AbortController`.</small>
 - nice **debugging** experience.
-  <small>Each atom and action updates the store's [immutable cause (call) stack](/getting-started/debugging/). It helps a&nbsp;lot in debugging complex async flows. We also provide a [logger package](/package/logger) for that.</small>
+  <small>Each atom and action updates the ctx's [immutable cause (call) stack](/getting-started/debugging/). It helps a&nbsp;lot in debugging complex async flows. We also provide a [logger package](/package/logger) for that.</small>
 - implicit **DI**.
   <small>An isolation layer is essential to ensure <strong>complete safety</strong> when running tests and using SSR. The `ctx` is such an isolation layer! We offer a [testing package](/package/testing) with various helpers for mocking.</small>
 - actor-like **lifecycle hooks**
@@ -28,7 +28,7 @@ description: Reatom - tiny and powerful reactive system with immutable nature
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
   <small>With the power of base primitives, the whole ecosystem with <strong>A&nbsp;LOT</strong> of enterprise-level helpers takes only [~15KB](https://bundlejs.com/?q=%40reatom%2Fframework%2C%40reatom%2Fnpm-react%2C%40reatom%2Fpersist-web-storage%2C%40reatom%2Fundo%2C%40reatom%2Fform-web&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D). Insane!</small>
 - **the best TypeScript** experience
-  <small>[Type inference](/recipes/typescript/) is one of the main priorities for Reatom.</small>
+  <small>[Type inference](/recipes/typescript/)  is one of the main priorities for Reatom.</small>
 
 [The core package](/core) includes most of these features and, due to its minimal overhead, can be used in any project, from small libraries to large applications.
 

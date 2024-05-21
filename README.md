@@ -7,21 +7,21 @@
 - **immutable** and reliable.
   <small>All pure computations processed with atomicity guarantees.</small>
 - **explicit reactivity** without proxies.
-  <small>We use the [atomization](/recipes/atomization) pattern to achieve [maximum](#how-performant-reatom-is) performance </small>
+  <small>We use the [atomization](https://www.reatom.dev/recipes/atomization) pattern to achieve [maximum](#how-performant-reatom-is) performance </small>
 - perfect **effects management**.
-  <small>Advanced [async package](/package/async) allows you to describe complex async flows, including caching, retrying and automatic cancellation with native `await` and `AbortController`.</small>
+  <small>Advanced [async package](https://www.reatom.dev/package/async) allows you to describe complex async flows, including caching, retrying and automatic cancellation with native `await` and `AbortController`.</small>
 - nice **debugging** experience.
-  <small>Each atom and action updates the store's [immutable cause (call) stack](/getting-started/debugging/). It helps a&nbsp;lot in debugging complex async flows. We also provide a [logger package](/package/logger) for that.</small>
+  <small>Each atom and action updates the ctx's [immutable cause (call) stack](https://www.reatom.dev/getting-started/debugging/). It helps a&nbsp;lot in debugging complex async flows. We also provide a [logger package](https://www.reatom.dev/package/logger) for that.</small>
 - implicit **DI**.
-  <small>An isolation layer is essential to ensure <strong>complete safety</strong> when running tests and using SSR. The `ctx` is such an isolation layer! We offer a [testing package](/package/testing) with various helpers for mocking.</small>
+  <small>An isolation layer is essential to ensure <strong>complete safety</strong> when running tests and using SSR. The `ctx` is such an isolation layer! We offer a [testing package](https://www.reatom.dev/package/testing) with various helpers for mocking.</small>
 - actor-like **lifecycle hooks**
-  <small>Learn more about [self-sufficient models](/handbook#lifecycle) to achieve true modularity.</small>
+  <small>Learn more about [self-sufficient models](https://www.reatom.dev/handbook#lifecycle) to achieve true modularity.</small>
 - **smallest bundle** size: [2 KB](https://bundlejs.com/?q=%40reatom%2Fcore) gzipped
   <small>With the power of base primitives, the whole ecosystem with <strong>A&nbsp;LOT</strong> of enterprise-level helpers takes only [~15KB](https://bundlejs.com/?q=%40reatom%2Fframework%2C%40reatom%2Fnpm-react%2C%40reatom%2Fpersist-web-storage%2C%40reatom%2Fundo%2C%40reatom%2Fform-web&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D). Insane!</small>
 - **the best TypeScript** experience
-  <small>[Type inference](/recipes/typescript/) is one of the main priorities for Reatom.</small>
+  <small>[Type inference](https://www.reatom.dev/recipes/typescript/)  is one of the main priorities for Reatom.</small>
 
-[The core package](/core) includes most of these features and, due to its minimal overhead, can be used in any project, from small libraries to large applications.
+[The core package](https://www.reatom.dev/core) includes most of these features and, due to its minimal overhead, can be used in any project, from small libraries to large applications.
 
 Adopting our well-designed helper tools allows you to efficiently handle complex tasks with minimal code.
 We aim to build a stable and balanced ecosystem that enhances DX and guarantees predictable maintenance for the long haul.
@@ -103,9 +103,9 @@ document.getElementById('save').addEventListener('click', () => {
 })
 ```
 
-Check out [@reatom/core docs](/core) for a detailed explanation of fundamental principles and features.
+Check out [@reatom/core docs](https://www.reatom.dev/core) for a detailed explanation of fundamental principles and features.
 
-Do you use React.js? Check out [npm-react](/package/npm-react) package!
+Do you use React.js? Check out [npm-react](https://www.reatom.dev/package/npm-react) package!
 
 ## Advanced example
 
@@ -129,7 +129,7 @@ npm i @reatom/framework @reatom/npm-react
 
 ### Advanced example description
 
-In this example, we will use the [@reatom/core](/core), [@reatom/async](/package/async) and [@reatom/hooks](/package/hooks) from the meta [@reatom/framework](/package/framework) package.
+In this example, we will use the [@reatom/core](https://www.reatom.dev/core), [@reatom/async](https://www.reatom.dev/package/async) and [@reatom/hooks](https://www.reatom.dev/package/hooks) from the meta [@reatom/framework](https://www.reatom.dev/package/framework) package.
 It simplifies imports and dependencies management.
 
 `reatomAsync` is a simple decorator that wraps your async function and adds extra actions and atoms to track the async execution statuses.
@@ -144,9 +144,9 @@ It simplifies imports and dependencies management.
 
 `sleep` is a built-in `debounce` alternative from `lodash`
 
-> Take a look at a tiny [utils package](/package/utils). It contains the most popular helpers you might need.
+> Take a look at a tiny [utils package](https://www.reatom.dev/package/utils). It contains the most popular helpers you might need.
 
-`onUpdate` is a [hook](/package/hooks) that connects to the atom and calls the passed callback on every atom update.
+`onUpdate` is a [hook](https://www.reatom.dev/package/hooks) that connects to the atom and calls the passed callback on every atom update.
 
 ### Advanced example model
 
@@ -217,15 +217,15 @@ Imagine the line count in other libraries!
 The most impressive part is that the overhead is [less than 4KB (gzip)](https://bundlejs.com/?q=%28import%29%40reatom%2Fframework%2C%28import%29%40reatom%2Fnpm-react&treeshake=%5B%7B%0A++atom%2CcreateCtx%2ConUpdate%2CreatomAsync%2Csleep%2CwithAbort%2CwithDataAtom%2CwithRetry%2C%7D%5D%2C%5B%7B+useAtom+%7D%5D&share=MYewdgzgLgBBCmBDATsAFgQSiAtjAvDItjgBQBE5ANDOQiulruQJQDcAUKJLAGbxR0ASQgQArvAgEYyJCQwQAnmGClESlTFLAoADxoBHCckUAuOFGQBLMAHMWBAHwwA3hxhEA7oiuwIAG3h4AAdSACYAVgAGdhgAejiYABN4ACMQMRV4dxhuaFcYX3gcKQBfaURvXyJgqwA6fkE0EXFJUiN4ExodXTruSxB-QOR2HNkoMWQwQqhiiE5SmnJG4VEJCFY62uD4UhzPXzQAEWJEJjIAbQBdFip9w4x05ChSFwtkYnhbM1p-dSgALQ2AEHMDkGClW73KBoABKAhMrxyHnA8IAVvAdNo9DROsgQMhzIgwIoaONrJIHG4PDT4olxpNpik-opCtMSjACTAAQBGGDYGDBWQAN3gYFg5KskmRNIZUxgeIJAH46jhJBBELZ4HUbMB-GIUhAKB9ZjB-FYcL5WDLaUqYDyolEYAAqGAAWWIaFVNlI0SiZIRUqkztdYRYNpp5l5nFpixykLuowSMkyMBWzTWkk503gopMcCQqEwJBgYmCSU%2BHHAAFVy59SPQi%2BcaOmWutRlxZJ8AMJ6UijMQIc6kVuZiB1CtQM4kFhAA&config=%7B%22esbuild%22%3A%7B%22external%22%3A%5B%22react%22%2C%22use-sync-external-store%22%5D%7D%7D). Amazing, right?
 On top of that, you’re not limited to network cache. Reatom is powerful and expressive enough to manage any state.
 
-Please take a look at the [tutorial](/getting-started/setup/) to get the most out of Reatom and its ecosystem.
-If you're looking for a lightweight solution, check out the [core package documentation](/core).
-Additionally, we offer a [testing package](/package/testing) for your convenience!
+Please take a look at the [tutorial](https://www.reatom.dev/getting-started/setup/) to get the most out of Reatom and its ecosystem.
+If you're looking for a lightweight solution, check out the [core package documentation](https://www.reatom.dev/core).
+Additionally, we offer a [testing package](https://www.reatom.dev/package/testing) for your convenience!
 
 ## Roadmap
 
-- Finish [forms package](/package/form).
-- Finish ~~[persist](/package/persist)~~, improve [url](/package/url/) package.
-- Add adapters for the most popular ui frameworks: ~~[react](/package/npm-react)~~, angular, vue, ~~[svelte](/package/npm-svelte)~~, ~~[solid](/package/npm-solid-js/)~~.
+- Finish [forms package](https://www.reatom.dev/package/form).
+- Finish ~~[persist](https://www.reatom.dev/package/persist)~~, improve [url](https://www.reatom.dev/package/url/) package.
+- Add adapters for the most popular ui frameworks: ~~[react](https://www.reatom.dev/package/npm-react)~~, angular, vue, ~~[svelte](https://www.reatom.dev/package/npm-svelte)~~, ~~[solid](https://www.reatom.dev/package/npm-solid-js/)~~.
 - Port some components logic from reakit.io to make it fast, light and portable.
 - Add the ability to make async transactions and elaborate optimistic-ui patterns.
 
@@ -236,7 +236,7 @@ Additionally, we offer a [testing package](/package/testing) for your convenienc
 **Redux** is fantastic, and Reatom draws significant inspiration from it.
 The principles of immutability, separating computations, and managing effects are excellent architectural design principles.
 However, additional capabilities are often needed when building large applications or describing small features.
-Some limitations are challenging to address, such as [batching](/core#ctxget-batch-api), [O(n) complexity](/recipes/atomization/#reducing-computational-complexity), and non-inspectable selectors that break [atomicity](/general/what-is-state-manager#state).
+Some limitations are challenging to address, such as [batching](https://www.reatom.dev/core#ctxget-batch-api), [O(n) complexity](https://www.reatom.dev/recipes/atomization/#reducing-computational-complexity), and non-inspectable selectors that break [atomicity](https://www.reatom.dev/general/what-is-state-manager#state).
 Others are just [difficult to improve](https://github.com/reduxjs/reselect/discussions/491).
 And boilerplate, of course. [The difference is significant](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6).
 Reatom resolves these problems while offering many more features within a similar bundle size.
@@ -249,7 +249,7 @@ Furthermore, as highlighted in [this example](https://github.com/artalar/state-m
 **Effector** is quite opinionated.
 It lacks first-class support for **lazy** reactive computations, and all connections are always [hot](https://luukgruijs.medium.com/understanding-hot-vs-cold-observables-62d04cf92e03).
 While this can be more predictable, it is certainly not optimal.
-Effector's hot connections make it unfriendly for factory creation, which prevents the use of [atomization](/recipes/atomization/) patterns necessary for efficient immutability handling.
+Effector's hot connections make it unfriendly for factory creation, which prevents the use of [atomization](https://www.reatom.dev/recipes/atomization/) patterns necessary for efficient immutability handling.
 Additionally, Effector's [bundle size is 2-3 times more significant](https://bundlejs.com/?q=effector&treeshake=%5B%7BcraeteStore%2CcreateEvent%2Ccombine%7D%5D) with [worse performance](https://github.com/artalar/reactive-computed-bench).
 
 [Zustand](https://github.com/pmndrs/zustand), [nanostores](https://github.com/nanostores/nanostores), [xstate](https://xstate.js.org), and [many other](https://gist.github.com/artalar/e5e8a7274dfdfbe9d36c9e5ec22fc650) state managers do not offer the same exceptional combination of type  inference, features, bundle size, and performance that Reatom provides.
@@ -257,15 +257,15 @@ Additionally, Effector's [bundle size is 2-3 times more significant](https://bun
 ### Why immutability?
 
 Immutable data is more predictable and easier to debug than mutable states and their wrappers.
-Reatom is specifically designed to focus on [simple debugging of asynchronous chains](/getting-started/debugging/) and offers [patterns](/recipes/atomization/) to achieve [excellent performance](#how-performant-reatom-is).
+Reatom is specifically designed to focus on [simple debugging of asynchronous chains](https://www.reatom.dev/getting-started/debugging/) and offers [patterns](https://www.reatom.dev/recipes/atomization/) to achieve [excellent performance](#how-performant-reatom-is).
 
 ### What LTS policy is used and what about bus factor?
 
 Reatom is built for the long haul.
 We dropped our first Long Term Support (LTS) version (v1) in [December 2019](https://github.com/artalar/reatom/releases/tag/v1.0).
 In 2022, we introduced breaking changes with a new LTS (v3) version.
-Don't worry — we've got you covered with this [Migration guide](/compat/core-v1#migration-guide).
-We're not stopping our three years of solid support — it's ongoing with our [adapter package](/compat/core-v1).
+Don't worry — we've got you covered with this [Migration guide](https://www.reatom.dev/compat/core-v1#migration-guide).
+We're not stopping our three years of solid support — it's ongoing with our [adapter package](https://www.reatom.dev/compat/core-v1).
 We hope this proves how committed we are to our users.
 
 Right now, our dev team consists of four people: [@artalar](https://github.com/artalar) and [@krulod](https://github.com/krulod) handle the core features, while [@BANOnotIT](https://github.com/BANOnotIT) and [@Akiyamka](https://github.com/Akiyamka) take care of documentation and issue management.
@@ -281,18 +281,18 @@ For more details, check out the `package.json` file.
 ### How performant Reatom is?
 
 Check out this [benchmark](https://github.com/artalar/reactive-computed-bench) for complex computations across different state managers.
-Remember that Reatom uses immutable data structures, operates in a separate context (DI-like), and maintains [atomicity](/general/what-is-state-manager#state).
+Remember that Reatom uses immutable data structures, operates in a separate context (DI-like), and maintains [atomicity](https://www.reatom.dev/general/what-is-state-manager#state).
 That means the Reatom test covers more features than other state manager tests.
 Still, Reatom performs faster than MobX for mid-range numbers, which is pretty impressive.
 
-Also, remember to check out our [atomization guide](/recipes/atomization).
+Also, remember to check out our [atomization guide](https://www.reatom.dev/recipes/atomization).
 
 ### Limitations
 
 No software is perfect, and Reatom is no exception. Here are some limitations you should be aware of:
-- **Immutable Data**: While immutable data structures are great, they can impact performance. In critical situations, think carefully about your data structures. The good news is you [don't have to use normalization](/recipes/atomization).
-- **Laziness**: Laziness is less obvious sometimes and might lead to missed updates. However, debugging a missing update is straightforward and often easier than dealing with hot observables' memory leaks and performance issues. We also have [hooks](/package/hooks) for hot linking.
-- **Error Handling**: Currently, you can't subscribe to errors from any dependency, but we're working on it. In [reatomAsync](/package/async), passed effects are wrapped in an error handler, allowing you to manage errors, but you need to wrap them explicitly.
+- **Immutable Data**: While immutable data structures are great, they can impact performance. In critical situations, think carefully about your data structures. The good news is you [don't have to use normalization](https://www.reatom.dev/recipes/atomization).
+- **Laziness**: Laziness is less obvious sometimes and might lead to missed updates. However, debugging a missing update is straightforward and often easier than dealing with hot observables' memory leaks and performance issues. We also have [hooks](https://www.reatom.dev/package/hooks) for hot linking.
+- **Error Handling**: Currently, you can't subscribe to errors from any dependency, but we're working on it. In [reatomAsync](https://www.reatom.dev/package/async), passed effects are wrapped in an error handler, allowing you to manage errors, but you need to wrap them explicitly.
 - **Asynchronous Transactions**: Asynchronous transactions are not supported yet, but they're in the works. This feature will simplify building optimistic UIs and improve UX significantly.
 - **Ecosystem and Utilities**: While we have many utilities and a growing ecosystem, our goal is to provide well-designed logic primitives. Reatom sits between a library and a framework, embracing procedural programming with minimal extra API and semantic overhead. Our defaults, such as immutability, laziness, transactions, and the separation of pure computations and effects, are designed to help you write better code.
 
