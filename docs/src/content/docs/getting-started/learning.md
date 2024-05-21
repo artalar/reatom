@@ -8,7 +8,7 @@ sidebar:
 ### Before we start
 
 In the examples we will use the [@reatom/framework](/package/framework/) package which is an umbrella package for the most common reatom packages.
-You can install it with the command
+You can install it with the following command
 
 ```bash
 npm install --save @reatom/framework
@@ -16,12 +16,14 @@ npm install --save @reatom/framework
 
 ### Basic primitives
 
-The reatom is based on three basic primitives: Atom, Action and Context.
-Below you can see how they are used together, after which we will look at each line and what happens in it
+The reatom is based on three basic primitives: `Atom`, `Action` and `Context`.
+Below you can see an example of how they are used together.
+We'll break down each line and explain what happens.
 
 ## Context
 
-The first thing we did was create a _context_. It is required for read, modify and subscribe operations. Later we will see what tricks it allows us to do, but now we will focus on the fact that it is enough to create **one context for the whole application**
+First, we created a _context_. It is essential for reading, modifying, and subscribing to changes.
+We'll explore its cool features later, but for now, remember: **one context is enough for the whole application**.
 
 ```ts
 import { createCtx } from '@reatom/framework'
@@ -38,66 +40,76 @@ const aAtom = atom(1, 'aAtom')
 const bAtom = atom(2, 'bAtom')
 ```
 
-An atom is like a variable, it has a type and a value. However, unlike a variable, we can track changes in its value and react to that changes in some way.
-To create an atom we use the `atom` factory function
+An atom is like a variable — it has a type and a value.
+However, unlike a regular variable, we can track its changes and react accordingly.
+We create an atom using the `atom` factory function.
 
-In line above we create atom with initial value `1` and name `aAtom`.  
-The name, though not required, will come in handy during the debug stage
+Here's an example of creating an atom with an initial value of `1` and naming it `aAtom`.
+The name isn't required, but it's super helpful for debugging.
 
-Atoms can also be computable, i.e. use the values of other atoms.
-This line of code can be read as - "To find out the value of `cAtom` you need to read the current values of `aAtom` and `bAtom` and summarize them".
+Atoms can also be computed from other atoms.
+This line of code means: "To get the value of `cAtom`, you need to read the current values of `aAtom` and `bAtom` and sum them up."
 
 ```ts
 const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 ```
 
-Computed atoms should be pure functions to archive the correct order of all computations
+Computed atoms should be pure functions to ensure the correct order of all computations.
 
 ### Read Atom
 
-To read the value of an atom you need a previously created context
+To read the value of an atom, you need to use the previously created context.
 
 ```ts
 import { atom, createCtx } from '@reatom/framework'
 
 const ctx = createCtx()
+
 const aAtom = atom(1, 'aAtom')
 const bAtom = atom(2, 'bAtom')
 const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 ctx.get(aAtom) // 1
+ctx.get(bAtom) // 2
 ctx.get(cAtom) // 3
 ```
 
-It is important to note that the retrieval of the value of an atom will happen only after its reading.
-In other words, it means that if a computed atom has not been read by anyone, the atom will not run the function passed to it
+It's important to note that an atom's value is retrieved only when read.
+In other words, if no one has read a computed atom, its associated function won't run.
 
 ### Update Atom
 
-To change the value in an atom you also need a context, but this time you need to pass it to the atom
+To change the value of an atom, you also need a context.
+This time, you need to pass the context to the atom.
 
 ```ts
 import { atom, createCtx } from '@reatom/framework'
 
 const ctx = createCtx()
+
 const aAtom = atom(1, 'aAtom')
+
+ctx.get(aAtom) // 1
 aAtom(ctx, 3)
+ctx.get(aAtom) // 3
 ```
 
-The current value of the atom can also be used in the update operation, by passing function
+You can use the current value of the atom in the update operation by passing a function.
 
 ```ts
 const greetAtom = atom('Hello', 'greetAtom')
+
 greetAtom(ctx, (greet) => greet + ', atom') // 'Hello, atom'
 greetAtom(ctx, (greet) => greet + ', atom') // 'Hello, atom, atom'
 ```
 
-The previous state can also be used in computable atoms
+You can also use the previous state in computable atoms.
 
 ```ts
 import { atom, isDeepEqual } from '@reatom/framework'
 
 const listAtom = atom<number[]>([1, 2, 3, 4, 5], 'listAtom')
+
 const evenListAtom = atom((ctx, state = []) => {
   const newState = ctx.spy(listAtom).filter((n) => n % 2 === 0)
   return isDeepEqual(state, newState) ? state : newState
@@ -106,12 +118,13 @@ const evenListAtom = atom((ctx, state = []) => {
 
 ### Subscribe to Atom
 
-Finally you can subscribe to atom changes using context
+Finally, you can subscribe to atom changes using the context.
 
 ```ts
 import { atom, createCtx } from '@reatom/framework'
 
 const ctx = createCtx()
+
 const aAtom = atom(1, 'aAtom')
 const bAtom = atom(2, 'bAtom')
 const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
@@ -122,22 +135,17 @@ ctx.subscribe(cAtom, (c) => {
   console.log(`${a} + ${b} = ${c}`)
 })
 
-aAtom(ctx, 3)
-// logs: 3 + 2 = 5
-
-bAtom(ctx, 4)
-// logs: 3 + 4 = 7
-
-bAtom(ctx, 4)
-// does not log anything, as the state is not changed
+aAtom(ctx, 3) // logs: 3 + 2 = 5
+bAtom(ctx, 4) // logs: 3 + 4 = 7
+bAtom(ctx, 4) // does not log anything, as the state is not changed
 ```
 
 ## Actions
 
 ### Actions are transactions
 
-Setting atoms manually is good thing but more often we want to do many changes at once.
-Let's edit example so that we are able to change `a` and `b` simultaneously.
+Setting atoms manually is useful, but more often, we want to make multiple changes at once.
+Let's modify the example so we can change `aAtom` and `bAtom` simultaneously.
 
 ```typescript
 import { createCtx, atom, action } from '@reatom/framework'
@@ -160,21 +168,17 @@ ctx.subscribe(cAtom, (c) => {
   console.log(`${a} + ${b} = ${c}`)
 })
 
-setParams(ctx, 10, 12)
-// change a=10, b=12
-// 10 + 12 = 22
-
-setParams(ctx, 10, 12)
-// change a=10, b=12
-// (does not log the result because it has not changed)
+setParams(ctx, 10, 12) // change a=10, b=12, 10 + 12 = 22
+setParams(ctx, 10, 12) // change a=10, b=12, does not log the result because it hasn't changed
 ```
 
-As we see here the subscribe callback only called with both a and b values changed.
-This is called "transactions". They help to reduce the number of subscriber calls, and avoid the creation of unwanted intermediate states
+As we can see, the subscribe callback is only called when both `aAtom` and `bAtom` values change.
+It's called a "transaction".
+Transactions help to reduce the number of subscriber calls and prevent the creation of unwanted intermediate states.
 
 ### Async actions
 
-Creating asynchronous actions is also possible, but keep in mind that async operations must be called inside `ctx.schedule` callback
+Creating asynchronous actions is also possible, but remember that async operations must be called inside the `ctx.schedule` callback.
 
 ```ts
 import { createCtx, atom, action } from '@reatom/framework'
@@ -193,7 +197,7 @@ export const fetchData = action(async (ctx) => {
 
 ### Actions nesting
 
-You can call actions from other actions. And asynchronous actions will return the promise
+You can call actions from other actions. Asynchronous actions will return a promise.
 
 ```ts
 import { action, atom } from '@reatom/core'
@@ -227,7 +231,8 @@ export const loadTodo = action(async (ctx) => {
 
 ### Multiple contexts
 
-Contexts are used to glue up atoms and actions, track transactions and many more features. You can use same dependency trees in different contexts:
+Contexts connect atoms and actions, track transactions, and offer many more features.
+You can use the same dependency trees in different contexts.
 
 ```typescript
 import { createCtx, atom } from '@reatom/framework'
@@ -237,20 +242,18 @@ const ctx2 = createCtx()
 
 const someAtom = atom(1, 'someAtom')
 
-console.log(ctx1.get(someAtom), ctx2.get(someAtom))
-// logs: 1, 1
+console.log(ctx1.get(someAtom), ctx2.get(someAtom)) // logs: 1, 1
 
 // change value of an atom only in one context
 someAtom(ctx1, 100)
 
-console.log(ctx1.get(someAtom), ctx2.get(someAtom))
-// logs: 100, 1
+console.log(ctx1.get(someAtom), ctx2.get(someAtom)) // logs: 100, 1
 ```
 
-Computed atoms can't depend on atom values from different contexts and actions can't change atoms of different context.
-Context will initiate new item state referring to that atom.
+Computed atoms can't depend on atom values from different contexts, and actions can't change atoms in a different context.
+The context will initiate a new item state referring to that atom.
 
-This enables us to easily test things. But beware of function closures because they are not context dependent!
+It makes testing easier. However, be cautious with function closures, as they are not context-dependent!
 
 ```typescript
 import { createCtx, atom } from '@reatom/framework'
@@ -263,13 +266,10 @@ let someExternalVar = 1
 const someAtom = atom(() => someExternalVar, 'someAtom')
 
 // check using ctx1
-console.log(ctx1.get(someAtom))
-// logs: 1
+console.log(ctx1.get(someAtom)) // logs: 1
 
 someExternalVar = 100
 
 // check using ctx1 and ctx2
-console.log(ctx1.get(someAtom), ctx2.get(someAtom))
-// logs: 1, 100
-// because ctx1 cached 1 and ctx2 was only read when value changed
+console.log(ctx1.get(someAtom), ctx2.get(someAtom)) // logs: 1, 100 because ctx1 cached 1 and ctx2 was only read when value changed
 ```

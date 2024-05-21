@@ -8,7 +8,7 @@ show: false
 
 <!-- TODO add `anAtom.onChange(console.log)` docs above -->
 
-For debugging we recommend `@reatom/logger` package (included in `@reatom/framework`)
+For debugging, we recommend using the `@reatom/logger` package, which is included in the `@reatom/framework`.
 
 ## Installation
 
@@ -16,7 +16,7 @@ For debugging we recommend `@reatom/logger` package (included in `@reatom/framew
 npm i @reatom/logger
 ```
 
-After install finished you need to connect logger to reatom context
+After the installation is finished, you need to connect the logger to the reatom context.
 
 ```ts
 import { createCtx } from '@reatom/core'
@@ -26,12 +26,12 @@ const ctx = createCtx()
 connectLogger(ctx)
 ```
 
-More settings you can found in [@reatom/logger](https://www.reatom.dev/package/logger) documentation
+You can find more settings in the [@reatom/logger](/package/logger) documentation.
 
 ## Usage
 
-Immutable nature of Reatom give us incredible possibilities for debugging any data flow kind: synchronous and asynchronous.  
-Let's start from simple example.
+The immutable nature of reatom gives us incredible possibilities for debugging any data flow, whether synchronous or asynchronous.
+Let's start with a simple example.
 
 ```ts
 import { createCtx, atom } from '@reatom/core'
@@ -46,7 +46,7 @@ const doubledAtom = atom((ctx) => counterAtom * 2)
 counterAtom(ctx, 24)
 ```
 
-This is what we see in logs:
+Here is what we see in logs:
 
 ```
 Reatom 1 transaction
@@ -69,10 +69,9 @@ Reatom 1 transaction
 └─ 48
 ```
 
-Records comes in pairs: atom and new state value.
-Under atom name record you can found few properties:
+Records come in pairs: the atom and its new state value.
+Under the atom name record, you can find a few properties:
+ - cause: Describes why this update happened and what triggered it.
+ - history: Shows the atom values before the update.
 
-- cause - describe why this update happens, why trigger it
-- history - atom values that was before update
-
-More complex example you can find in [@reatom/logger](/package/logger) package documentation
+Check out the [@reatom/logger](/package/logger) package documentation for a more complex example.
