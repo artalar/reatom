@@ -1,13 +1,12 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
-
 import { createTestCtx } from '@reatom/testing'
+import {} from './index'
 
-import {} from './'
-
-test('base API', async () => {
+test('stub', () => {
   const ctx = createTestCtx()
-  assert.ok(false, 'You forgot test you code')
+
+  assert.ok(false, 'No tests!')
 })
 
 test.run()
