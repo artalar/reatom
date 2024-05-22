@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-The first thing you need to do is install the test helpers
+The first thing you need to do is install the test helpers.
 
 ```
 npm i @reatom/testing
@@ -44,13 +44,12 @@ test('Test main module', () => {
 
   // Check that action "add" work properly
   expect(track.calls.length).toBe(3)
-  expect(track.lastInput()).toBe(15)
-  // same as
-  // expect(ctx.get(countAtom)).toBe(15)
+  expect(track.lastInput()).toBe(15) // it's the same as expect(ctx.get(countAtom)).toBe(15)
 })
 ```
 
-Also you can mock actions if needed. In next example we have an async api.
+You can also mock actions if needed.
+In the next example, we have an async API.
 
 > Note: In real code, we recommend using the `@reatom/async` to work with asynchronous APIs
 
@@ -78,7 +77,7 @@ export const loadTodo = action(async (ctx) => {
 })
 ```
 
-Let's test it without calling real api
+Let's test it without calling the real api
 
 ```js
 import { expect, test } from 'vitest';

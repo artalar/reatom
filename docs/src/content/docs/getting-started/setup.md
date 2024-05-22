@@ -5,15 +5,20 @@ sidebar:
   order: 1
 ---
 
-Reatom is a framework-agnostic state manager, and you can use it with various adapters for different frameworks. This guide provides a common usage with React.js, as it is the most commonly used view library currently.
+Reatom is a framework-agnostic state manager, meaning you can use it with various adapters for different frameworks.
+This guide focuses on using Reatom with React.js, as it's currently the most popular view library.
 
 ## Create new project from template
 
-The base template project includes Vite, TypeScript, React and Reatom ecosystem: https://github.com/artalar/reatom-react-ts
+The base template project includes Vite, TypeScript, React and Reatom ecosystem.
+You can check in out [here](https://github.com/artalar/reatom-react-ts)
 
-You could try it online: [codesandbox](https://codesandbox.io/p/sandbox/github/artalar/reatom-react-ts/tree/main), [stackblitz](https://githubblitz.com/artalar/reatom-react-ts), [gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
+You can also try it online:
+ - [codesandbox](https://codesandbox.io/p/sandbox/github/artalar/reatom-react-ts/tree/main)
+ - [stackblitz](https://githubblitz.com/artalar/reatom-react-ts)
+ - [gitpod](https://gitpod.io/#https://github.com/artalar/reatom-react-ts)
 
-To setup it in your machine you can use [degit](https://github.com/Rich-Harris/degit) package.
+To setup it in your machine you can use the [degit](https://github.com/Rich-Harris/degit) package.
 
 ```sh
 npx degit github:artalar/reatom-react-ts PROJECT-NAME
@@ -37,7 +42,7 @@ npm i @reatom/core
 npm i @reatom/npm-react
 ```
 
-You need to set up the main context and put it into the provider at the top of your application.
+You need to set up the main context and wrap your application in a provider at the top level.
 
 ```jsx
 import { createCtx } from '@reatom/core'
@@ -55,7 +60,7 @@ export const App = () => (
 
 #### Usage
 
-The `useAtom` function allows you to have an experience similar to `useState`, but with shared atom state.
+The `useAtom` function lets you manage state similar to `useState`, but with the added benefit of shared atom state.
 
 ```jsx
 const nameAtom = atom('Joe')
@@ -77,7 +82,7 @@ const Greeting = () => {
 }
 ```
 
-Also, you can create computed atoms (kind of selectors) right inside `useAtom`.
+Additionally, you can create computed atoms (similar to selectors) directly inside `useAtom`.
 
 ```jsx
 const nameAtom = atom('Joe')
@@ -102,7 +107,8 @@ const Greeting = () => {
 }
 ```
 
-This is very basic functionality of reatom-react bindings, see more in [@reatom/npm-react](/package/npm-react/) package documentation
+This is just the basic functionality of reatom-react bindings.
+For more details, check out the @reatom/npm-react package documentation.
 
 <!--
 ### With Solid
