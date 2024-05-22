@@ -1,4 +1,4 @@
-import { Atom, Ctx, isAtom, Rec } from '@reatom/core'
+import { atom, Atom, Ctx, isAtom, Rec } from '@reatom/core'
 import { isRec } from '@reatom/utils'
 
 export type ParseAtoms<T> = T extends Atom<infer T>
@@ -13,37 +13,31 @@ export type ParseAtoms<T> = T extends Atom<infer T>
     }
   : T
 
-export const parseAtoms = <Value>(
-  ctx: Ctx,
-  value: Value,
-): ParseAtoms<Value> => {
-  while (isAtom(value)) value = ctx.spy ? ctx.spy(value) : ctx.get(value)
+export const parseAtoms = <T>(ctx: Ctx, value: T) => unwrap(ctx, value, new WeakMap)
+
+const unwrap = <T>(ctx: Ctx, value: T, cache: WeakMap<any, any>): ParseAtoms<T> => {
+  while (isAtom(value)) value = ctx.spy ? ctx.spy(value) : ctx.get(value)    
 
   if (typeof value !== 'object' || value === null) return value as any
 
+  if (cache.has(value)) return cache.get(value)
+
+  let res: any = value
+
   if (isRec(value)) {
-    const res = {} as Rec
-    for (const k in value) res[k] = parseAtoms(ctx, value[k])
-    return res as any
+    res = {}
+    for (const k in value) res[k] = unwrap(ctx, value[k], cache)
+  } else if (Array.isArray(value)) {
+    res = []
+    for (const v of value) res.push(unwrap(ctx, v, cache))
+  } else if (value instanceof Map) {
+    res = new Map()
+    for (const [k, v] of value) res.set(k, unwrap(ctx, v, cache))
+  } else if (value instanceof Set) {
+    res = new Set()
+    for (const v of value) res.add(unwrap(ctx, v, cache))
   }
 
-  if (Array.isArray(value)) {
-    const res = []
-    for (const v of value) res.push(parseAtoms(ctx, v))
-    return res as any
-  }
-
-  if (value instanceof Map) {
-    const res = new Map()
-    for (const [k, v] of value) res.set(k, parseAtoms(ctx, v))
-    return res as any
-  }
-
-  if (value instanceof Set) {
-    const res = new Set()
-    for (const v of value) res.add(parseAtoms(ctx, v))
-    return res as any
-  }
-
-  return value as any
+  cache.set(value, res)
+  return res
 }
