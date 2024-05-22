@@ -1,7 +1,6 @@
 {
   "name": "reatom",
   "private": true,
-  "description": "Expressive and deterministic state manager",
   "scripts": {
     "release": "npx tsx ./tools/publish.ts",
     "postinstall": "turbo run build --filter=core --filter=framework --filter=testing",
