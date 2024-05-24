@@ -74,21 +74,25 @@ type Users = AtomMut<
 
 ## Reducing computational complexity
 
-In continue of example above. Wrapping editable properties of a list element to atoms helps you to prevent excessive immutable work - array recreation. In a classic immutable state managers it is ok to each update of a property recreate the whole array with a new element reference with changed property. This is definitely not optimal and you could fix it with Reatom! By replacing changeable property to stable atom reference you separate data structure definition and data structure mutation. Generally it calls **ref pattern**, in Reatom context we call it **atomization** and it much useful to comparing with a different solutions.
+In continue of example above. Wrapping editable properties of a list element to atoms helps prevent excessive immutable work - array recreation. In classic immutable state managers, it is normal to recreate the entire array with a new element reference for each property update. However, this is not optimal. Reatom offers a solution by allowing you to replace changeable properties with stable atom references, separating data structure definition and mutation. Generally it calls **ref pattern**, in Reatom we call it **atomization** and it much useful to comparing with other solutions.
 
 ```ts
 // redux way: O(n)
-export const updateProp = (state, idx, prop) => {
-  const newList = [...state.list]
-  newList[idx] = { ...newList[idx], prop }
+export const updateUserName = (state, idx, name) => {
+  const newList = [...state.users]
+  newList[idx] = { ...newList[idx], name }
   return { ...state, list: newList }
 }
 // reatom way: O(1)
-export const updateProp = action((ctx, idx, prop) => {
-  const propAtom = ctx.get(listAtom)[idx].prop
-  propAtom(ctx, prop)
+export const updateUserName = action((ctx, idx, name) => {
+  const nameAtom = ctx.get(listAtom)[idx].name
+  nameAtom(ctx, name)
 })
 ```
+
+Note that an atom is itself a getter and a setter for its state, so you typically don't need to write an `updateUserName` action and can instead mutate the name atom directly in the relevant component. This doesn't lead to "messy streams flows" like in other observable libraries, as Reatom has `cause` tracking, which allows you to inspect the reason for each update, providing an even better debugging experience than working with plain JSON data structures.
+
+Another cool feature and one of the biggest benefits of this pattern is demonstrated when you have a computed list from another list. For example, if you map a list of JSX elements, it will re-render on each property update. This issue can be fixed only with normalization, which is a more complex and less powerful technique than atomization.
 
 ## Reasonability
 
