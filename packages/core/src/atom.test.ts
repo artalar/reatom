@@ -750,6 +750,28 @@ test('should drop actualization of stale atom during few updates in one transact
   })
 })
 
+test('nested condition branches', () => {
+  const a = atom(true)
+  const b = atom(1)
+  const c = atom(1)
+  const d = atom((ctx) => (ctx.spy(a) ? ctx.spy(b) : ctx.spy(c)))
+  const e = atom((ctx) => ctx.spy(d))
+
+  const ctx = createCtx()
+  const track = mockFn()
+
+  ctx.subscribe(e, track)
+  track.calls.length = 0
+
+  assert.ok(isConnected(ctx, b))
+  assert.not.ok(isConnected(ctx, c))
+
+  a(ctx, false)
+  assert.not.ok(isConnected(ctx, b))
+  assert.ok(isConnected(ctx, c))
+  ;`👍` //?
+})
+
 // test(`maximum call stack`, () => {
 //   const atoms = new Map<AtomProto, Atom>()
 //   let i = 0
