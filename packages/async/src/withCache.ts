@@ -8,7 +8,7 @@ import {
   Ctx,
   Fn,
 } from '@reatom/core'
-import { MapAtom, reatomMap } from '@reatom/primitives'
+import { MapAtom, reatomMap, withAssign } from '@reatom/primitives'
 import { isDeepEqual, MAX_SAFE_TIMEOUT } from '@reatom/utils'
 import { type WithPersistOptions } from '@reatom/persist'
 
@@ -47,8 +47,8 @@ export interface CacheAtom<T = any, Params extends any[] = unknown[]>
   extends MapAtom<unknown, CacheRecord<T, Params>> {
   /** Clear all records and call the effect with the last params. */
   invalidate: Action<[], null | ControlledPromise<T>>
-  // setWithParams: Action<[params: Params, value: T]>
-  // deleteWithParams: Action<[params: Params]>
+  setWithParams: Action<[params: Params, value: T]>
+  deleteWithParams: Action<[params: Params]>
   options: WithCacheOptions
 }
 
@@ -255,6 +255,31 @@ export const withCache =
       const cacheAtom = (anAsync.cacheAtom = reatomMap(
         new Map(),
         `${anAsync.__reatom.name}._cacheAtom`,
+      ).pipe(
+        withAssign((target, name) => ({
+          setWithParams: action(
+            (ctx, params: ThisParams, value: AsyncResp<T>) => {
+              const { cached, key } = find(ctx, params)
+
+              cacheAtom.set(ctx, key, {
+                clearTimeoutId: planCleanup(ctx, key),
+                promise: undefined,
+                value,
+                version: cached ? cached.version + 1 : 1,
+                controller: new AbortController(),
+                lastUpdate: Date.now(),
+                params,
+              })
+
+              // TODO ?
+              // cached?.controller.abort()
+            },
+          ),
+          deleteWithParams: action((ctx, params: ThisParams) => {
+            const { cached, key } = find(ctx, params)
+            if (cached) cacheAtom.delete(ctx, key)
+          }),
+        })),
       ) as ThisCacheAtom)
 
       cacheAtom.invalidate = action((ctx) => {

@@ -1,12 +1,12 @@
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn, createMockStorage } from '@reatom/testing'
+import { noop, sleep } from '@reatom/utils'
+import { Ctx } from '@reatom/core'
 import { reatomPersist } from '@reatom/persist'
 import { onConnect } from '@reatom/hooks'
 
 import { reatomAsync, withAbort, withDataAtom, withCache, AsyncCtx } from './'
-import { noop, sleep, toAbortError } from '@reatom/utils'
-import { Ctx } from '@reatom/core'
 
 const test = suite('withCache')
 
@@ -277,6 +277,35 @@ test('do not cache aborted promise', async () => {
   assert.is(effect.calls.length, 4)
   assert.is(ctx.get(fetchData.dataAtom), 1)
   ;`👍` //?
+})
+
+test('should be able to manage cache manually', async () => {
+  const effect = mockFn(async (ctx: any, n: number) => n)
+  const fetchData = reatomAsync(effect).pipe(
+    withDataAtom(0),
+    withCache({ swr: false }),
+  )
+  const ctx = createTestCtx()
+
+  fetchData(ctx, 1)
+  assert.is(effect.calls.length, 1)
+  assert.is(ctx.get(fetchData.dataAtom), 0)
+  await sleep()
+  assert.is(ctx.get(fetchData.dataAtom), 1)
+
+  fetchData.cacheAtom.setWithParams(ctx, [2], 2)
+  fetchData(ctx, 2)
+  assert.is(effect.calls.length, 1)
+  assert.is(ctx.get(fetchData.dataAtom), 2)
+  await sleep()
+  assert.is(ctx.get(fetchData.dataAtom), 2)
+
+  fetchData(ctx, 1)
+  assert.is(effect.calls.length, 1)
+
+  fetchData.cacheAtom.deleteWithParams(ctx, [1])
+  fetchData(ctx, 1)
+  assert.is(effect.calls.length, 2)
 })
 
 test.run()

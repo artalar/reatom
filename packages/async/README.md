@@ -436,7 +436,7 @@ isEqual(firstResult, ctx.get(fetchList.dataAtom)) // true
 
 ### Invalidate cache
 
-You could invalidate the cache by `reset` action on `cacheAtom`. It will clear the whole cache records of the async action.
+You can invalidate the cache by `reset` action on `cacheAtom`. It will clear the whole cache records of the async action.
 
 ```ts
 import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
@@ -446,13 +446,13 @@ export const fetchList = reatomAsync(
   'fetchList',
 ).pipe(withCache(), withDataAtom())
 
-export const updateList = reatomAction(() => {
+export const updateList = reatomAction(async () => {
   /*  */
 }, 'updateList')
 updateList.onFulfill.onCall(fetchList.cacheAtom.reset)
 ```
 
-You could use `withRetry` to retry the effect after cache invalidation or use built-in action for that. `cacheAtom.invalidate` will clear the cache and call the effect immediately with the last params.
+You can use `withRetry` to retry the effect after cache invalidation or use built-in action for that. `cacheAtom.invalidate` will clear the cache and call the effect immediately with the last params.
 
 ```ts
 import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
@@ -462,7 +462,7 @@ export const fetchList = reatomAsync(
   'fetchList',
 ).pipe(withCache(), withDataAtom())
 
-export const updateList = reatomAction(() => {
+export const updateList = reatomAction(async () => {
   /*  */
 }, 'updateList')
 updateList.onFulfill.onCall(fetchList.cacheAtom.invalidate)
@@ -473,6 +473,34 @@ export const listLoadingAtom = atom(
 ```
 
 Use `listLoadingAtom` to show a loader in a UI during the whole process of data updating and invalidation.
+
+Note that cache changes (`setWithParams`) or clearing (`reset`) do not abort existing promises. If needed, you should manually cancel them.
+
+```ts
+export const resetListFetching = action((ctx) => {
+  for (const [, { controller }] of ctx.get(fetchList.cacheAtom)) {
+    controller.abort(toAbortError('reset'))
+  }
+  fetchList.cacheAtom.reset(ctx)
+})
+```
+
+### Update cache
+
+You can manage the cache precisely using separate methods of the `cacheAtom`: `setWithParams` and `deleteWithParams`. It can be useful for implementing "optimistic update" logic.
+
+```ts
+import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
+
+export const fetchElement = reatomAsync(async (ctx, id, search) => {
+  return await request(`api/list/${id}?search=${search}`, ctx.controller)
+}, 'fetchElement').pipe(withCache(), withDataAtom())
+
+export const updateElement = reatomAction(async (ctx, id, data) => {
+  fetchElement.cacheAtom.setWithParams(ctx, [id, ''], data)
+  // call api for update...
+}, 'updateElement')
+```
 
 ### Sync cache
 
@@ -529,7 +557,7 @@ export const fetchList = reatomAsync(
   'fetchList',
 ).pipe(withCache(), withDataAtom(), withRetry())
 
-export const updateList = reatomAction(() => {
+export const updateList = reatomAction(async () => {
   /*  */
 }, 'updateList')
 updateList.onFulfill.onCall(fetchList.cacheAtom.reset)
@@ -588,8 +616,7 @@ export const fetchList = reatomAsync(
   withAssign((target, name) => ({
     loadingAtom: atom(
       (ctx) =>
-        ctx.spy(target.pendingAtom) > 0 ||
-        ctx.spy(target.retriesAtom) > 0,
+        ctx.spy(target.pendingAtom) > 0 || ctx.spy(target.retriesAtom) > 0,
       `${name}.loadingAtom`,
     ),
   })),
