@@ -1,14 +1,16 @@
 ---
 title: Atomization
-description: How to doing fabrics right with Reatom
+description: How to do factories in a correct way with Reatom
 order: 1
 ---
 
-You could store your data from the backend in atoms without any mappings, but it is a good practice to wrap some of your model slices to atoms for better control and to have access to more reactive features. The rule is simple: **mutable properties could be an atom, readonly properties shout stay a primitive**.
+You could store your backend data in atoms without any mappings, but it's a good practice to wrap parts of your model in atoms for better control and access to more reactive features.
 
-In case you have a user model with editable `name` property:
+The rule is simple: **mutable properties should be atoms, readonly properties should stay as primitives**.
 
-> [DTO](https://en.wikipedia.org/wiki/Data_transfer_object) is a data from backed, application model could be have some difference.
+> [DTO](https://en.wikipedia.org/wiki/Data_transfer_object) is data from the backend, but the application model can differ slightly.
+
+For example, if you have a user model with an editable name property:
 
 ```ts
 // ~/features/user/model.ts
@@ -25,6 +27,7 @@ type User = {
 }
 
 export const userAtom = atom<null | User>(null, 'user')
+
 export const fetchUser = action(
   (ctx) =>
     ctx.schedule(async () => {
@@ -34,6 +37,7 @@ export const fetchUser = action(
     }),
   'fetchUser',
 )
+
 export const syncUserName = action((ctx) => {
   const name = ctx.get(ctx.get(userAtom).name)
   return ctx.schedule(() => api.updateUser({ name }))
@@ -46,13 +50,15 @@ import { useAction, useAtom } from '@reatom/npm-react'
 
 // user component
 const [name] = useAtom((ctx) => ctx.spy(ctx.get(userAtom).name))
+
 const handleChange = useAction((ctx, e: React.ChangeEvent<HTMLInputElement>) =>
   ctx.get(userAtom).name(ctx, e.currentTarget.name),
 )
+
 const handleSubmit = useAction(syncUserName)
 ```
 
-In case you have a list of users and you will CRUD this list (paging / sorting / adding) you should wrap it to atom too:
+If you have a list of users and need to perform CRUD operations (paging, sorting, adding) on it, you should wrap it in an atom too:
 
 > Check out our simple primitives for working with arrays: [reatomArray](/package/primitives#reatomArray)
 
@@ -74,7 +80,13 @@ type Users = AtomMut<
 
 ## Reducing computational complexity
 
-In continue of example above. Wrapping editable properties of a list element to atoms helps prevent excessive immutable work - array recreation. In classic immutable state managers, it is normal to recreate the entire array with a new element reference for each property update. However, this is not optimal. Reatom offers a solution by allowing you to replace changeable properties with stable atom references, separating data structure definition and mutation. Generally it calls **ref pattern**, in Reatom we call it **atomization** and it much useful to comparing with other solutions.
+Continuing from the example above, wrapping editable properties of a list element in atoms helps prevent excessive immutable work, like array recreation.
+
+In classic immutable state managers, it's common to recreate the entire array with a new element reference for each property update, but this could be more optimal.
+Reatom offers a solution by allowing you to replace changeable properties with stable atom references, separating data structure definition and mutation.
+
+This approach is generally called the **ref pattern**.
+In Reatom, we call it **atomization**, and it's much more useful than other solutions.
 
 ```ts
 // redux way: O(n)
@@ -83,6 +95,7 @@ export const updateUserName = (state, idx, name) => {
   newList[idx] = { ...newList[idx], name }
   return { ...state, list: newList }
 }
+
 // reatom way: O(1)
 export const updateUserName = action((ctx, idx, name) => {
   const nameAtom = ctx.get(listAtom)[idx].name
@@ -90,12 +103,24 @@ export const updateUserName = action((ctx, idx, name) => {
 })
 ```
 
-Note that an atom is itself a getter and a setter for its state, so you typically don't need to write an `updateUserName` action and can instead mutate the name atom directly in the relevant component. This doesn't lead to "messy streams flows" like in other observable libraries, as Reatom has `cause` tracking, which allows you to inspect the reason for each update, providing an even better debugging experience than working with plain JSON data structures.
+Note that an atom is both a getter and a setter for its state, so you usually don't need to write an `updateUserName` action.
+Instead, you can directly mutate the name atom in the relevant component.
 
-Another cool feature and one of the biggest benefits of this pattern is demonstrated when you have a computed list from another list. For example, if you map a list of JSX elements, it will re-render on each property update. This issue can be fixed only with normalization, which is a more complex and less powerful technique than atomization.
+This approach avoids the "messy stream flows" common in other observable libraries.
+Reatom's `cause` tracking lets you inspect the reason for each update, offering an even better debugging experience than working with plain JSON data structures.
+
+Another cool feature and significant benefit of this pattern is seen when you have a computed list derived from another list.
+For example, mapping a list of JSX elements will re-render each property update.
+This issue can only be fixed with normalization, which is more complex and less powerful than atomization.
 
 ## Reasonability
 
-"mutable properties could be an atom, readonly properties should stay a primitive" - this rule is generic, but you could always find a corner case you need to handle differently. For example, if you have a huge list (>10_000) of entities that have a lot of editable properties (>10), it may be not optimal to create an atom for each property. Wrap an entity to an atom with primitive properties and updating it by recreation of entity object would be reasonable in this case.
+"Mutable properties could be an atom, readonly properties should stay a primitive" is a general rule, but exceptions exist.
+For example, if you have a huge list (>10,000) of entities with many editable properties (>10), it may not be optimal to create an atom for each property.
+In such cases, wrapping an entity in an atom with primitive properties and updating it by recreating the entity object is more reasonable.
 
-This is where explicit atoms declarations look powerful. In state managers with proxy-based API, you mostly couldn’t control an atoms/stores/signals creations, use a dot - to create an observer. Implicit reactivity is handy for simple cases but isn’t flexible for complex cases. Reatom is always trying to be simple and brief, but the main design goal is to be the best tool for huge apps which means not taking control away from the developer.
+This is where explicit atom declarations shine.
+In state managers with proxy-based APIs, you often can't control atom/store/signal creation, and using a dot creates an observer.
+While implicit reactivity is convenient for simple cases, it's not flexible enough for complex ones.
+
+Reatom aims to be simple and brief, but its main design goal is to be the best tool for large applications, ensuring developers retain control.

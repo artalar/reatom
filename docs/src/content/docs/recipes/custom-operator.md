@@ -3,9 +3,10 @@ title: Custom operator
 description: How to create custom operators to improve your code and modularize it
 ---
 
-All atoms and actions by default includes [pipe operator](/core#atompipe-api) for simple extending and composing. You can create your own operators to improve your code and modularize it.
+All atoms and actions by default include the [pipe operator](/core#atompipe-api) for easy extending and composing.
+You can create your own operators to enhance your code and make it more modular.
 
-We assume that you already read [core](/core) docs.
+We assume that you've already read the [core](/core) docs.
 
 ## Prefix and types
 
@@ -22,7 +23,7 @@ declare function mapState<T, Res>(
 
 > [Real `mapState`](/package/lens#mapstate)
 
-If operator isn't create a new atom and mutate the passed you should use `with` prefix.
+If an operator doesn't create a new atom and instead mutates the passed one, you should use the `with` prefix.
 
 ```ts
 import { Atom, AtomState } from '@reatom/core'
@@ -33,8 +34,7 @@ declare function withStateHistory<T extends Atom>(
   stateHistoryAtom: Atom<AtomState<T>>
 }
 ```
-
-We use here `T extends Atom` instead of much simpler `<T>(length: string): (anAtom: Atom<T>) Atom<T> & {...}` to save all additional properties witch added by previous operators.
+We use `T extends Atom` instead of the simpler `<T>(length: string): (anAtom: Atom<T>) => Atom<T> & {...}` to preserve all additional properties added by previous operators.
 
 > [Real `historyAtom`](/package/undo)
 
