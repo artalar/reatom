@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.0](https://github.com/artalar/reatom/compare/lens-v3.9.1...lens-v3.10.0) (2024-05-25)
+
+
+### Features
+
+* **lens:** allow to call select multiple times ([6ea0223](https://github.com/artalar/reatom/commit/6ea022382ace846f5bb15abdf41bc35783764555))
+
 ## [3.9.1](https://github.com/artalar/reatom/compare/lens-v3.9.0...lens-v3.9.1) (2023-11-25)
 
 

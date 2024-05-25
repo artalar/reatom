@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.15.0](https://github.com/artalar/reatom/compare/async-v3.14.2...async-v3.15.0) (2024-05-25)
+
+
+### Features
+
+* **async:** add to cache setWithParams and deleteWithParams [#796](https://github.com/artalar/reatom/issues/796) ([b53fe98](https://github.com/artalar/reatom/commit/b53fe98b37e178735240b274336c29de6e3be1c5))
+
 ## [3.14.2](https://github.com/artalar/reatom/compare/async-v3.14.1...async-v3.14.2) (2024-05-03)
 
 
