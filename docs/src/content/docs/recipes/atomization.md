@@ -96,6 +96,6 @@ Another cool feature and one of the biggest benefits of this pattern is demonstr
 
 ## Reasonability
 
-"mutable properties could be an atom, readonly properties shout stay a primitive" - this rule is generic, but you could always find a corner case you need to handle differently. For example, if you have a huge list (>10_000) of entities that have a lot of editable properties (>10), it may be not optimal to create an atom for each property. Wrap an entity to an atom with primitive properties and updating it by recreation of entity object would be reasonable in this case.
+"mutable properties could be an atom, readonly properties should stay a primitive" - this rule is generic, but you could always find a corner case you need to handle differently. For example, if you have a huge list (>10_000) of entities that have a lot of editable properties (>10), it may be not optimal to create an atom for each property. Wrap an entity to an atom with primitive properties and updating it by recreation of entity object would be reasonable in this case.
 
 This is where explicit atoms declarations look powerful. In state managers with proxy-based API, you mostly couldn’t control an atoms/stores/signals creations, use a dot - to create an observer. Implicit reactivity is handy for simple cases but isn’t flexible for complex cases. Reatom is always trying to be simple and brief, but the main design goal is to be the best tool for huge apps which means not taking control away from the developer.
