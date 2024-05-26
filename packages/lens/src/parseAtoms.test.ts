@@ -1,7 +1,7 @@
 import { createTestCtx } from '@reatom/testing'
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
-import { atom } from '@reatom/core'
+import { Atom, atom } from '@reatom/core'
 import { parseAtoms } from './parseAtoms'
 
 const test = suite('parseAtoms')
@@ -151,18 +151,24 @@ test('should parse deep structures', () => {
   ;`👍` //?
 })
 
-test('circular references', () => {
-  const a = atom([1])
-  const aRec = { a }
-  const b = atom([2])
-  const bRec = { b }
-  const c = atom({ a: aRec.a, b: bRec.b })
+test('circular structures', () => {
   const ctx = createTestCtx()
 
-  const snapshot = parseAtoms(ctx, c)
-  a(ctx, [10])
-  assert.is.not(snapshot, parseAtoms(ctx, c))
-  assert.is.not(snapshot.a, parseAtoms(ctx, c).a)
+  const dummy = atom(null)
+
+  const a = atom((ctx):{b: Atom<any>} => {
+    ctx.spy(dummy) // add a dependency to prevent it from restarting on every call
+    return {b}
+  })
+
+  const b = atom((ctx) => {
+    ctx.spy(dummy)
+    return {a}
+  })
+
+  const snapshot = parseAtoms(ctx, a)
+  assert.equal(snapshot, snapshot.b.a)
+  assert.equal(snapshot.b, snapshot.b.a.b)
 })
 
 test.run()
