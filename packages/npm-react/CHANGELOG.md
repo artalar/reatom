@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.7](https://github.com/artalar/reatom/compare/npm-react-v3.8.6...npm-react-v3.8.7) (2024-05-26)
+
+
+### Bug Fixes
+
+* **npm-react:** wrong bundle ([7ac1d74](https://github.com/artalar/reatom/commit/7ac1d749425cf7d33890a1e9ff036b4553693a94))
+
 ## [3.8.6](https://github.com/artalar/reatom/compare/npm-react-v3.8.5...npm-react-v3.8.6) (2024-05-03)
 
 
