@@ -6,7 +6,7 @@ order: 2
 
 ## Reatom and Typescript
 
-You don't need to do anything, reatom have out of box typescript support. Inference works as you'd expect
+You don't need to do anything special because Reatom has out-of-the-box TypeScript support. Inference works as you'd expect.
 
 ```ts
 // AtomMut<number>
@@ -23,7 +23,7 @@ const dynamicAtom = atom((ctx) => {
 })
 ```
 
-It is recommended to use `strict:true`, or `strictNullChecks: true` in the tsconfig.json project for better experience
+It is recommended to set `strict: true` or `strictNullChecks: true` in your `tsconfig.json` project for a better experience.
 
 ```ts
 /* strictNullChecks: true */
