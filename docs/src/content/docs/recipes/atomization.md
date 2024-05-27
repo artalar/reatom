@@ -103,11 +103,9 @@ export const updateUserName = action((ctx, idx, name) => {
 })
 ```
 
-Note that an atom is both a getter and a setter for its state, so you usually don't need to write an `updateUserName` action.
-Instead, you can directly mutate the name atom in the relevant component.
+Note that an atom is both a getter and a setter for its state, so you usually don't need to write an `updateUserName` action. You can directly modify the name atom in the relevant component.
 
-This approach avoids the "messy stream flows" common in other observable libraries.
-Reatom's `cause` tracking lets you inspect the reason for each update, offering an even better debugging experience than working with plain JSON data structures.
+In most libraries, this is an anti-pattern because it's challenging to debug what and where changes were made. However, in Reatom, you have `cause` tracking, allowing you to inspect the reason for any atom change. This provides an even better debugging experience than working with plain JSON data structures.
 
 Another cool feature and significant benefit of this pattern is seen when you have a computed list derived from another list.
 For example, mapping a list of JSX elements will re-render each property update.
