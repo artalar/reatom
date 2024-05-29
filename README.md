@@ -236,7 +236,7 @@ Additionally, we offer a [testing package](https://www.reatom.dev/package/testin
 **Redux** is fantastic, and Reatom draws significant inspiration from it.
 The principles of immutability, separating computations, and managing effects are excellent architectural design principles.
 However, additional capabilities are often needed when building large applications or describing small features.
-Some limitations are challenging to address, such as [batching](https://www.reatom.dev/core#ctxget-batch-api), [O(n) complexity](https://www.reatom.dev/recipes/atomization/#reducing-computational-complexity), and non-inspectable selectors that break [atomicity](https://www.reatom.dev/general/what-is-state-manager#state).
+Some limitations are challenging to address, such as [batching](https://www.reatom.dev/core#ctxget-batch-api), [O(n) complexity](https://www.reatom.dev/recipes/atomization/#reducing-computational-complexity), and non-inspectable selectors that break [atomicity](https://www.reatom.dev/handbook#data-consistency).
 Others are just [difficult to improve](https://github.com/reduxjs/reselect/discussions/491).
 And boilerplate, of course. [The difference is significant](https://github.com/artalar/RTK-entities-basic-example/pull/1/files#diff-43162f68100a9b5eb2e58684c7b9a5dc7b004ba28fd8a4eb6461402ec3a3a6c6).
 Reatom resolves these problems while offering many more features within a similar bundle size.
@@ -281,7 +281,7 @@ For more details, check out the `package.json` file.
 ### How performant Reatom is?
 
 Check out this [benchmark](https://github.com/artalar/reactive-computed-bench) for complex computations across different state managers.
-Remember that Reatom uses immutable data structures, operates in a separate context (DI-like), and maintains [atomicity](https://www.reatom.dev/general/what-is-state-manager#state).
+Remember that Reatom uses immutable data structures, operates in a separate context (DI-like), and maintains [atomicity](https://www.reatom.dev/handbook#data-consistency).
 That means the Reatom test covers more features than other state manager tests.
 Still, Reatom performs faster than MobX for mid-range numbers, which is pretty impressive.
 
