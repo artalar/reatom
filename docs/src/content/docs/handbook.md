@@ -3,47 +3,70 @@ title: Handbook
 description: The full guide of how to use Reatom
 ---
 
-Welcome to the wonderful world of the Reatom library! 🤗
+Welcome to the awesome world of the Reatom library! 🤗
 
-This robust solution is designed to become your go-to resource for building anything from micro libraries to comprehensive applications. We know the drill - regular development would often mean having to repeatedly implement similar high-level patterns, or relying on external libraries, both equally challenging in achieving perfect harmony in interface equality and semantics compatibility, performance and the principles of ACID, debugging and logging experience, tests setup and mocking.
+This powerful tool is designed to become your go-to resource for building anything from tiny libraries to full-blown applications.
 
-To make your development journey smoother, we've developed the perfect primitives (`atom` and `action`) and a set of packages on top of them. Together, they address and simplify these challenges, allowing you more room to get creative.
+We know the drill: usually, you'd have to keep reinventing the wheel with high-level patterns or depend on external libraries.
+Both are tough to balance perfectly for interface equality, semantic compatibility, performance, ACID principles, debugging, logging, test setup, and mocking.
 
-This guide will introduce you to all the features of Reatom, including the core concepts and mental model, the ecosystem, and the infrastructure.
+To make life easier, we've crafted the perfect building blocks (`atom` and `action`) and a bunch of packages on top of them.
+These tools tackle the tough stuff so you can focus on being creative.
+
+This guide will walk you through all the features of Reatom, including the core concepts, mental model, ecosystem, and infrastructure.
 
 ## TL;DR
 
-Need a fast start? Here is a list of key topics:
+Need a quick start? Here is a list of the key topics:
 
-- `@reatom/core` provides basic primitives to build anything. Just put your state in the `atom` and your logic in the `action`.
-- All data changes should be immutable, like in React or Redux.
-- `ctx` is needed for better debugging, simple tests, and SSR setup.
-- [@reatom/async](/package/async/) will help you manage network state.
-- There are many other helpful packages, check the **Packages** section in the sidebar.
-- [@reatom/eslint-plugin](/package/eslint-plugin/) will automatically add debug names to your code, and [@reatom/logger](/package/logger/) will print useful logs to your console.
-- [Template repo](https://github.com/artalar/reatom-react-ts)
+- [@reatom/core](/package/core/): provides basic primitives to build anything. Store your state in an `atom` and your logic in an `action`.
+- **Immutable Data**: just like in React or Redux, all data changes should be immutable.
+- `ctx`: this is essential for better debugging, simple testing, and SSR setup.
+- [@reatom/async](/package/async/): will help you to handle network state smoothly.
+- **Helpful Packages**: check out the **Packages** section in the sidebar for more useful tools.
+- [@reatom/eslint-plugin](/package/eslint-plugin/): automatically adds debug names to your code, and [@reatom/logger](/package/logger/) prints helpful logs to your console.
+- [Template repo](https://github.com/artalar/reatom-react-ts): will help you to get started quickly
 
 ## Installation
 
-The **core** package is already feature-rich and has excellent architecture. You can use it in small apps as is or in large apps and build your own framework on top of it.
+The [core](/package/core/) package is packed with features and has a great architecture.
+You can use it as is for small apps or build your own framework on top of it for larger projects.
 
-However, for most apps and developers, we have built a "framework" package, which is a collection of the most useful packages. Technically, the "framework" package is just a set of reexports, but it simplifies the way Reatom is used and maintained. Your imports are shortened, your direct dependencies are shortened, and it becomes easier to update.
+For your convenience, we've created a [framework](/package/framework/) package suitable for most apps and developers.
+Basically, it's a collection of the most useful packages reexported, simplifying Reatom's use and maintenance.
+It shortens imports and direct dependencies, making updates easier.
 
-All of this works fine with tree shaking, don't worry about the bundle size, Reatom development is very focused on this aspect.
+Tree shaking works just fine, so don't worry about the bundle size.
+Reatom development is highly focused on efficiency in this aspect.
 
-This guide will follow you through all the main features, so we will install infrastructure packages too such as "testing" and "eslint-plugin". We also have the "logger" package, but it is already included in the framework and doesn't need an additional part in the installation script.
+This guide will walk you through all the main features, including installing infrastructure packages like [testing](/package/testing/) and [eslint-plugin](/package/eslint-plugin/).
+The [logger](/package/logger/) package is already included in the framework, so no extra installation is needed.
 
-The final non-general part of the installation script is a bindings package, depending on your stack. Usually, these days, users need the "@reatom/npm-react" adapter package, but we have adapters to other view frameworks too. By the way, the "npm-" prefix is used in all adapter packages to prevent naming collisions with the ecosystem packages, as the NPM global namespace is widely used and many common words are occupied by some packages.
+The final piece of the installation script depends on your stack.
+
+Most likely you will need [@reatom/npm-react](/package/npm-react/) adapter package, but we also have adapters for other view frameworks.
+
+> The "npm-" prefix in adapter packages prevents naming collisions with ecosystem packages, as the NPM global namespace is widely used, and many common words are already taken.
+
 
 ```sh
 npm i @reatom/framework @reatom/testing @reatom/eslint-plugin @reatom/npm-react
 ```
 
-A note about the ecosystem: all packages that start with "@reatom/" are built and maintained in [the monorepo](https://github.com/artalar/reatom). This approach allows us to have precise control over the compatibility and stability of all packages, even with minor releases. If you want to contribute a new package, feel free to follow [the contributing guide](/contributing/). We have a `package-generator` script that will bootstrap a template for a new package, and all we require from your side are the sources, tests, and a piece of docs ;)
+A note about the ecosystem: all packages that start with "@reatom/" are built and maintained in [the monorepo](https://github.com/artalar/reatom).
+
+This approach allows us to control compatibility and stability precisely, even with minor releases.
+If you want to contribute a new package, feel free to follow [the contributing guide](/contributing/).
+
+We have a `package-generator` script that will bootstrap a template for a new package.
+All we need from you are the source code, tests, and documentation 😉
 
 ## Reactivity
 
-Let's get some simple form code and make it reactive to enhance its scalability, debuggability, and testability. Of course, the reason to use a separate state manager in this form is for example purposes, and the profit will increase as your real application grows.
+Let's write some simple form code and make it reactive to boost scalability, debuggability, and testability.
+
+We're using a separate state manager for this form as an example to show how it works.
+The benefits will get bigger as your real application grows.
 
 ```html
 <input id="NAME" />
@@ -70,13 +93,25 @@ greeting = `Hello, ${name}!`
 GREETING.innerText = greeting
 ```
 
-So, is the code above pretty dumb, yeah? But it already messy and have unexpected bugs.
+So, the code above is pretty straightforward, isn't it?
+However, it's already messy and has some unexpected bugs.
 
-The first obvious problem is code duplication - we write `Hello...` and `innerText` assignment twice and it couldn't be fixed. Of course, you can move it to a separate function, but you still need to call that function two times: for initialization and for updating.
+**The first** obvious issue is code duplication.
+We repeat `Hello...` and assign `innerText` twice, and this can't be fixed easily.
+Moving it to a separate function might help, but you'll still need to call that function twice: once for initialization and once for updating.
 
-The second serious problem is code coupling. In the code above, the logic for updating the greeting is stored in the name update handler, but the actual data direction is inverse: the greeting depends on the name. In this minimal example, the problem may not seem important. However, in real application code organization and business requirements are much more complex, and it is easy to lose the sense of the logic—why one thing changes others or vice versa.
+**The second** significant issue is code coupling.
+In the code above, the update logic for the greeting is in the name update handler, but the actual data flow is inverse: the greeting depends on the name.
+While this might seem trivial in a small example, it can lead to confusion in real applications with complex code organization and business requirements.
+You might lose track of why one part of the code changes another.
 
-Reactive programming, in general, solves these problems. It enables you to accurately describe the dependent computations of your data in the correct manner, scoped to each domain. Let's do it with Reatom. We need to wrap our changeable data in the `atom` function. If you put a primitive value into the created atom, you will allow the state of the atom to be changed. If you put a computed function into the `atom`, you will get a readonly atom that will automatically recompute when a dependent atom changes, but only if the computed atom has a subscription.
+Reactive programming can address these issues by accurately describing dependent computations within each domain.
+
+Let's refactor the code using Reatom.
+
+We use the `atom` function to wrap our changeable data:
+ - If you pass a primitive value to the atom, it allows the state to change.
+ - If you pass a `computer` function to the atom, it creates a read-only atom that automatically recomputes when dependent atoms change, but only if the computed atom has a subscription.
 
 ```ts
 export const nameAtom = atom(localStorage.getItem('name') ?? '')
@@ -99,19 +134,37 @@ ctx.subscribe(greetingAtom, (greeting) => {
 })
 ```
 
-Now, we have the same amount of code, but it is much better organized and structured. And we have `ctx` now! It gives us superpowers for debugging, testing, and many other helpful features. We'll cover it later.
+Now, we have the same amount of code, but it is much better organized and structured.
+Plus, we have `ctx`!
+
+This context object provides powerful capabilities for debugging, testing, and many other useful features.
+We'll explore these advantages in more detail later.
 
 ### Data consistency
 
-There is still a problem, one of the most serious, which is hard to manage in all cases and even harder to debug. This problem is data consistency. If the code is running in an environment that actively uses the storage (`localStorage`), you could encounter a quota error when trying to set new data. In this case, the user will see the input changes, but no greeting updates. Certainly, it is a good reason to wrap the storage processing code in a `try-catch` block, but in real development, these kinds of errors (and many others!) are considered too rare to be handled. This is a practical approach, but it would be cool to fix these kinds of problems with just one elegant pattern, yeah?
+Data consistency is a critical challenge that can be difficult to manage and debug.
 
-Reatom provides excellent features for handling data consistency. All data processing is accumulated and saved in the internal store only after completion. If an error occurs, such as "Cannot read property of undefined," all changes will be discarded. This mechanism is very similar to how React handles errors in renders or how Redux handles errors in reducers. This is a well-known pattern from database theory and is described in [A part of ACID](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>). And this is the reason why `atom` is named so.
+For instance, if your code runs in an environment that heavily uses a storage (`localStorage`, for example), you might encounter a quota error when setting new data.
+In such cases, users will see their input changes, but the greeting updates won't occur.
+Although wrapping storage processing code in a `try-catch` block can handle this, many developers consider these errors too rare to address in practice.
+It would be great to solve these problems elegantly with a consistent pattern.
 
-This transaction logic works automatically under the hood, and all you need to worry about is keeping the data immutable. For example, to update an array state, you should create a new one using the spread operator, `map`, `filter`, and so on.
+Reatom provides excellent features for maintaining data consistency.
+All data processing is accumulated and saved in the internal store only after completion.
+If an error occurs, like "Cannot read property of undefined," all changes are discarded.
+This mechanism is similar to how React handles errors during the rendering process or how Redux handles errors in reducers.
 
-Reatom proposes the `ctx.schedule` API, which allows you to separate pure computation and effects. The handy thing is that you can call `ctx.schedule` anywhere, as the context follows through all primitives and callbacks of Reatom units. This scheduler will push the callback to a separate queue, which will be called only after all pure computations. It is much safer and helps you manage your data flow better.
+> This concept comes from database theory and is [part of the ACID principles](<https://en.wikipedia.org/wiki/Atomicity_(database_systems)>). That's why the `atom` is named so.
 
-So, let's do a small refactoring.
+This transaction logic works automatically, ensuring data consistency under the hood.
+You only need to keep the data immutable.
+For instance, to update an array state, create a new one using the spread operator, `map`, `filter`, etc.
+
+Reatom also offers the `ctx.schedule` API, which separates pure computation from effects.
+The benefit is that you can call `ctx.schedule` anywhere, as the context propagates through all primitives and callbacks of Reatom units.
+This scheduler pushes the callback to a separate queue, which is executed only after all pure computations, making your data flow safer and more manageable.
+
+Let's apply a minor refactoring to illustrate these improvements.
 
 ```ts
 export const nameAtom = atom(localStorage.getItem('name') ?? '')
@@ -122,13 +175,18 @@ nameAtom.onChange((ctx, name) => {
 })
 ```
 
-That's all! Now your pure computations and effects are separated. An error in local storage logic will not affect the results of the atoms computations.
+That's it!
+Now, your pure computations and effects are separated.
+An error in the local storage logic won't affect the results of the atoms' computations.
 
-Another cool feature of the `schedule` API is that it returns a promise with the data from the callback. This allows you to easily manage various data-related side effects, such as backend requests, step-by-step. In the next chapter, we will introduce `action` as a logic container and explore async effects.
+Another cool feature of the `schedule` API is that it returns a promise with the data from the callback.
+This makes it easy to handle various data-related side effects, such as backend requests, step-by-step.
+
+In the next section, we will introduce `action` as a logic container and explore async effects.
 
 ## Actions
 
-Let's enhance our form to create something valuable. Maybe a login form?
+Let's enhance our form to create something more valuable, like a login form
 
 ```html
 <form id="FORM">
@@ -178,15 +236,19 @@ FORM.onsubmit = (event) => {
 }
 ```
 
-**That's all for now. The remaining part of the tutorial is a work in progress. 😅**
+> That's it for now. The remaining part of the tutorial is a work in progress 😅
 
 ...
 
-## Debug
+## Debugging
 
-The immutable nature of Reatom gives us incredible possibilities for debugging any kind of data flow: synchronous and asynchronous. The internal data structures of atoms are specially designed for simple investigation and analytics. The simplest way to debug data states and their causes is by logging `ctx`, which includes the `cause` property with internal representation and all meta information.
+The immutable nature of Reatom provides incredible possibilities for debugging various types of data flow, both synchronous and asynchronous.
+Atoms' internal data structures are specially designed for easy investigation and analysis.
 
-Let's check out [this example](https://codesandbox.io/s/reatom-react-debug-4tvezk?file=/src/App.tsx).
+One of the simplest ways to debug data states and their causes is by logging the `ctx` object.
+The `ctx` object includes the `cause` property, which holds internal representation and all meta information.
+
+Check out [this example](https://codesandbox.io/s/reatom-react-debug-4tvezk?file=/src/App.tsx) to see it in action.
 
 ```tsx
 export const pageAtom = atom(1, 'pageAtom').pipe(
@@ -212,7 +274,9 @@ export const issuesTitlesAtom = atom((ctx) => {
 }, 'issuesTitlesAtom')
 ```
 
-Here is what you will see from `issuesTitlesAtom ctx` log (some data below omitted for a short, check the sandbox for real log.
+Here is an example of what you will see from logging the `issuesTitlesAtom ctx`
+
+> Some data is omitted for brevity, check the sandbox for the full log
 
 ```json
 {
@@ -241,17 +305,30 @@ Here is what you will see from `issuesTitlesAtom ctx` log (some data below omitt
 }
 ```
 
-As you can see, the `cause` property includes all state change causes, even asynchronous ones. But what are the empty arrays in action states? These are lists of action calls (with `payload` and `params`) that only exist during a transaction and are automatically cleared to prevent memory leaks.
+As you can see, the `cause` property includes all state change causes, even asynchronous ones.
+But what about the empty arrays in action states?
+These are lists of action calls (with `payload` and `params`) that only exist during a transaction and are automatically cleared to prevent memory leaks.
 
-To view persisted actions data and explore many more features, please try [reatom/logger](https://www.reatom.dev/package/logger/)!
+To view persisted actions data and explore many more features, try [reatom/logger](/package/logger/).
 
-By the way, you could inspect all atom and action patches by `ctx.subscribe(logs => console.log(logs))`.
+Additionally, you can inspect all atom and action patches by using:
+
+```javascript
+ctx.subscribe(logs => console.log(logs));
+```
 
 ## Lifecycle
 
-Reatom is a heavy inspired by [actor model](https://en.wikipedia.org/wiki/Actor_model), which important quality is that each component of the system is isolated from the others. This isolation is achieved by the fact that each component has its own state and its own lifecycle. This is the same for an atoms. We have API that allows you to create a system of components that are independent of each other and can be used in different modules with minimum setup. This is the main advantage of Reatom over other state management libraries.
+Reatom is heavily inspired by the [actor model](https://en.wikipedia.org/wiki/Actor_model), which emphasizes that each component of the system is isolated from the others.
+This isolation is achieved because each component has its own state and lifecycle.
 
-For example, you could create some data resource, which depends of a backend service and will connect to the service only when the data atom used. This is a very common case for a frontend application. In Reatom you could do it with [lifecycle hooks](https://www.reatom.dev/package/hooks).
+This concept is applied to atoms in Reatom.
+We have an API allows you to create a system of components that are independent of each other and can be used in different modules with minimal setup.
+This is one of Reatom's main advantages over other state management libraries.
+
+For example, you can create a data resource that depends on a backend service and will connect to the service only when the data atom is used.
+This is a very common scenario for frontend applications.
+In Reatom, you can achieve this using [lifecycle hooks](/package/hooks).
 
 ```ts
 import { atom, action } from '@reatom/core'
@@ -269,9 +346,19 @@ export const fetchList = action(
 onConnect(listAtom, (ctx) => fetchList(ctx))
 ```
 
-What happens here? We want to fetch the list only when a user comes to the relative page and the UI subscribes to `listAtom`. It is work same as `useEffect(fetchList, [])` in React.js. As an atoms represents a shared state the connection status is "one for many" listeners, which means an `onConnect` hook triggers only for a first subscriber and not calling for a new listeners. It is super useful coz you could use `listAtom` in many components to reduce props drilling, but request the side effect only once. If an user leaves the page and all subscriptions gone the atom marks as _unconnected_, an `onConnect` hook will called again only when a new subscription occurs.
+What happens here?
+We want to fetch the list only when a user navigates to the relevant page and the UI subscribes to `listAtom`.
+This works similarly to `useEffect(fetchList, [])` in React.
+Since atoms represent shared state, the connection status is "one for many" listeners, meaning an `onConnect` hook triggers only for the first subscriber and not for new listeners.
 
-The important knowledge about Reatom atoms is that they are lazy. It means that they will be connected only when they will be used. This usage is possible only by `ctx.subscribe`, but the magic of underhood Reatom graph is that `ctx.spy` apply connections too! So, if you have a main data atom, compute some others atoms from it and use them in some components, the main atom will be connected when some component will be mounted.
+This is extremely useful because you can use `listAtom` in multiple components to reduce props drilling, but the side effect is requested only once.
+If the user leaves the page and all subscriptions are gone, the atom is marked as _unconnected_, and the `onConnect` hook will be called again only when a new subscription occurs.
+
+An important aspect of atoms is that they are lazy.
+This means they will only connect when they are used.
+This connection is triggered by `ctx.subscribe`, but the magic of Reatom’s internal graph is that `ctx.spy` also establishes connections.
+
+So, if you have a main data atom, compute other atoms from it, and use these computed atoms in some components, the main atom will only connect when one of those components is mounted.
 
 ```ts
 const filteredListAtom = atom((ctx) => {
@@ -281,11 +368,12 @@ const filteredListAtom = atom((ctx) => {
 ctx.subscribe(filteredListAtom, sideEffect)
 ```
 
-The code above will trigger `listAtom` connection and `fetchList` call as expected.
+The code above will trigger the `listAtom` connection and the `fetchList` call as expected.
 
-> Notice that the links between computed atoms have only a one direction - `filteredListAtom` is a dependency of `listAtom`, in other words `filteredListAtom` is a dependent from `listAtom`. `listAtom` doesn't know about `filteredListAtom`. If you have `onConnect(filteredListAtom, cb)` and only `listAtom` have a subscription the callback will **not** be called.
+> Note that the relationships between computed atoms are unidirectional. This means `filteredListAtom` depends on `listAtom`. Therefore, `listAtom` is unaware of `filteredListAtom`. If you use `onConnect(filteredListAtom, cb)` and only `listAtom` has a subscription, the callback will **not** be invoked.
 
-When you use an adapter package, like `npm-react`, under the hood it will use `ctx.subscribe` to listen the fresh state of the atom. So, if you connect an atom with `useAtom`, the atom will be connected when the component will be mounted.
+When you use an adapter package like `npm-react`, it utilizes `ctx.subscribe` under the hood to listen to the atom's fresh state.
+So, if you connect an atom with `useAtom`, the atom will be connected when the component mounts.
 
 ```ts
 const [filteredList] = useAtom(filteredListAtom)
@@ -293,15 +381,17 @@ const [filteredList] = useAtom(filteredListAtom)
 
 Now, you have lazy computations and **lazy effects**!
 
-This pattern allow you to stay control of data neednes in view layer or any other consumer module, but do it implicitly, and explicitly for data models. You don't need extra _start_ actions or something like that. It is a more clean and scalable way to design your code, with better ability to reuse a components.
+This pattern allows you to control data requirements in the view layer or any other consumer module implicitly, while being explicit for data models.
+There's no need for additional _start_ actions or similar mechanisms.
+This approach leads to cleaner and more scalable code, enhancing the reusability of components.
 
-A lot of cool examples you could find in [async package docs](https://www.reatom.dev/package/async).
+You can find many great examples in the [async package docs](/package/async).
 
 ### Lifecycle scheme
 
-Here is a scheme of the execution order of the build-in queues.
+Here is a scheme illustrating the execution order of the built-in queues.
 
-> Check [ctx.schedule](https://www.reatom.dev/core#ctxschedule) docs for more details about the ability to use the queues.
+> For more details on how to use the queues, refer to the [ctx.schedule](/package/core#ctxschedule) documentation.
 
 <!-- https://excalidraw.com/#json=NnnwgtZL8Euq_BpC4knMZ,ibz37ULiZzV0YmHPHpJsvQ -->
 
