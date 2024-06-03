@@ -8,6 +8,7 @@ import {
   __count,
   action,
   Action,
+  throwReatomError,
 } from '@reatom/core'
 import { isCausedBy } from '@reatom/effects'
 import {
@@ -251,12 +252,36 @@ export const reatomZod = <Schema extends z.ZodFirstPartySchemaTypes>(
       break
     }
     case z.ZodFirstPartyTypeKind.ZodUnion: {
-      // TODO @artalar not sure about this logic
       state =
         def.options.find(
           (type: z.ZodDefault<any>) => type._def.defaultValue?.(),
         ) ?? initState
       break
+    }
+    case z.ZodFirstPartyTypeKind.ZodDiscriminatedUnion: {
+      const getState = (initState: any) => {
+        const state = def.options.find(
+          (type: z.ZodDiscriminatedUnionOption<string>) => {
+            try {
+              type.parse(initState);
+            } catch {
+              return undefined;
+            }
+
+            return type;
+          },
+        );
+
+        throwReatomError(!state, 'Missed init state for discriminated union');
+
+        return reatomZod(state, { sync, initState, name });
+      };
+
+      const originAtom = atom(getState(initState), name);
+      theAtom = Object.assign((ctx: Ctx, value: any) => {
+        originAtom(ctx, getState(value));
+      }, originAtom);
+      break;
     }
     case z.ZodFirstPartyTypeKind.ZodOptional: {
       // TODO @artalar allow `undefined` in innerType
