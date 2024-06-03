@@ -1,5 +1,6 @@
 import {
   __count,
+  Action,
   atom,
   Atom,
   AtomCache,
@@ -296,7 +297,10 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
   })
 }
 
-export const concurrent = <T extends Fn<[Ctx, ...any[]]>>(fn: T): T => {
+export const concurrent: {
+  <T extends Fn<[CtxSpy, ...any[]]>>(fn: T): T
+  <T extends Fn<[Ctx, ...any[]]>>(fn: T): T
+} = (fn: Fn<[Ctx, ...any[]]>) => {
   const abortControllerAtom = atom<null | AbortController>(
     null,
     `${__count('_concurrent')}.abortControllerAtom`,

@@ -1,9 +1,10 @@
+import { test } from 'uvu'
+import * as assert from 'uvu/assert'
 import { Action, action, atom, Ctx, Fn } from '@reatom/core'
 import { noop, sleep } from '@reatom/utils'
 import { createTestCtx, mockFn } from '@reatom/testing'
+import { onConnect } from '@reatom/hooks'
 import { mapPayloadAwaited } from '@reatom/lens'
-import { test } from 'uvu'
-import * as assert from 'uvu/assert'
 
 import {
   concurrent,
@@ -12,8 +13,7 @@ import {
   take,
   takeNested,
   withAbortableSchedule,
-} from '../build'
-import { onConnect } from '@reatom/hooks'
+} from '.'
 
 test('disposable async branch', async () => {
   const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
