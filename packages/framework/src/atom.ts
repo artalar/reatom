@@ -1,23 +1,19 @@
 //#region TYPE UTILS
 
+/** A shorthand to `Record<string, Values>`, useful as `{}` type means any reference and primitive type */
 export interface Rec<Values = any> extends Record<string, Values> {}
 
+/** A shorthand to any function `(...a: any[]): any` */
+// TODO remove the generic to force using normal function syntax, as this syntax requires to specify params names.
 export interface Fn<Args extends any[] = any[], Return = any> {
   (...a: Args): Return
 }
 
-export type AllTypes =
-  | undefined
-  | null
-  | boolean
-  | number
-  | string
-  | Record<keyof any, any>
-  | Fn
-  | symbol
-  | bigint
+export type Shallow<T> = {
+  [K in keyof T]: T[K]
+} & {}
 
-export interface Pipe<This> {
+export interface Compose<This> {
   <T1>(operator1: Fn<[This], T1>): T1
   <T1, T2>(operator1: Fn<[This], T1>, operator2: Fn<[T1], T2>): T2
   /* prettier-ignore */ <T1, T2, T3>(operator1: Fn<[This], T1>, operator2: Fn<[T1], T2>, operator3: Fn<[T2], T3>): T3
@@ -30,6 +26,20 @@ export interface Pipe<This> {
   /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(operator1: Fn<[This], T1>, operator2: Fn<[T1], T2>, operator3: Fn<[T2], T3>, operator4: Fn<[T3], T4>, operator5: Fn<[T4], T5>, operator6: Fn<[T5], T6>, operator7: Fn<[T6], T7>, operator8: Fn<[T7], T8>, operator9: Fn<[T8], T9>, operator10: Fn<[T9], T10>): T10
   /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(operator1: Fn<[This], T1>, operator2: Fn<[T1], T2>, operator3: Fn<[T2], T3>, operator4: Fn<[T3], T4>, operator5: Fn<[T4], T5>, operator6: Fn<[T5], T6>, operator7: Fn<[T6], T7>, operator8: Fn<[T7], T8>, operator9: Fn<[T8], T9>, operator10: Fn<[T9], T10>, operator11: Fn<[T10], T11>): T11
   /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(operator1: Fn<[This], T1>, operator2: Fn<[T1], T2>, operator3: Fn<[T2], T3>, operator4: Fn<[T3], T4>, operator5: Fn<[T4], T5>, operator6: Fn<[T5], T6>, operator7: Fn<[T6], T7>, operator8: Fn<[T7], T8>, operator9: Fn<[T8], T9>, operator10: Fn<[T9], T10>, operator11: Fn<[T10], T11>, operator12: Fn<[T11], T12>): T12
+}
+
+export interface Mix<This> {
+  /* prettier-ignore */ <T>(extension: T): This & Shallow<T>
+  /* prettier-ignore */ <T1>(operator1: (target: This) => T1): This & Shallow<T1>
+  /* prettier-ignore */ <T1, T2>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2): This & Shallow<T1 & T2>
+  /* prettier-ignore */ <T1, T2, T3>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3): This & Shallow<T1 & T2 & T3>
+  /* prettier-ignore */ <T1, T2, T3, T4>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4): This & Shallow<T1 & T2 & T3 & T4>
+  /* prettier-ignore */ <T1, T2, T3, T4, T5>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4, operator5: (target: This & T1 & T2 & T3 & T4) => T5): This & Shallow<T1 & T2 & T3 & T4 & T5>
+  /* prettier-ignore */ <T1, T2, T3, T4, T5, T6>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4, operator5: (target: This & T1 & T2 & T3 & T4) => T5, operator6: (target: This & T1 & T2 & T3 & T4 & T5) => T6): This & Shallow<T1 & T2 & T3 & T4 & T5 & T6>
+  /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4, operator5: (target: This & T1 & T2 & T3 & T4) => T5, operator6: (target: This & T1 & T2 & T3 & T4 & T5) => T6, operator7: (target: This & T1 & T2 & T3 & T4 & T5 & T6) => T7): This & Shallow<T1 & T2 & T3 & T4 & T5 & T6 & T7>
+  /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7, T8>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4, operator5: (target: This & T1 & T2 & T3 & T4) => T5, operator6: (target: This & T1 & T2 & T3 & T4 & T5) => T6, operator7: (target: This & T1 & T2 & T3 & T4 & T5 & T6) => T7, operator8: (target: This & T1 & T2 & T3 & T4 & T5 & T6 & T7) => T8): This & Shallow<T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8>
+  /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7, T8, T9>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4, operator5: (target: This & T1 & T2 & T3 & T4) => T5, operator6: (target: This & T1 & T2 & T3 & T4 & T5) => T6, operator7: (target: This & T1 & T2 & T3 & T4 & T5 & T6) => T7, operator8: (target: This & T1 & T2 & T3 & T4 & T5 & T6 & T7) => T8, operator9: (target: This & T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8) => T9): This & Shallow<T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9>
+  /* prettier-ignore */ <T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(operator1: (target: This) => T1, operator2: (target: This & T1) => T2, operator3: (target: This & T1 & T2) => T3, operator4: (target: This & T1 & T2 & T3) => T4, operator5: (target: This & T1 & T2 & T3 & T4) => T5, operator6: (target: This & T1 & T2 & T3 & T4 & T5) => T6, operator7: (target: This & T1 & T2 & T3 & T4 & T5 & T6) => T7, operator8: (target: This & T1 & T2 & T3 & T4 & T5 & T6 & T7) => T8, operator9: (target: This & T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8) => T9, operator10: (target: This & T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9) => T10): This & Shallow<T1 & T2 & T3 & T4 & T5 & T6 & T7 & T8 & T9 & T10>
 }
 
 //#endregion
@@ -60,19 +70,16 @@ export type AtomMaybe<T = unknown> = Atom<T> | T
 
 /** Main context of data storing and effects processing */
 export interface Ctx {
+  /** Read the atom value.
+   * @deprecated just call the atom as a function with one argument - `ctx`, or use separate `read` method.
+   */
   get<T>(atom: Atom<T>): T
-  get<T>(
-    cb: Fn<
-      [
-        read: Fn<[proto: AtomProto], AtomCache<any> | undefined>,
-        // this is `actualize` function and
-        // the types intentionally awkward
-        // coz it only for internal usage
-        fn?: Fn,
-      ],
-      T
-    >,
-  ): T
+  /** Batch updates in one transaction.
+   * @deprecated a batching is automatic now */
+  get<T>(cb: Fn<[], T>): T
+  /** Read the atom value and subscribe to it changes.
+   * @deprecated just call the atom as a function with one argument - `ctx`, or use separate `track` method.
+   */
   spy?: {
     <T>(anAtom: Atom<T>): T
     <Params extends any[] = any[], Payload = any>(
@@ -82,63 +89,66 @@ export interface Ctx {
     <T>(atom: Atom<T>, cb: Fn<[newState: T, prevState: undefined | T]>): void
   }
 
+  /** Schedule an effect to one of the sequent queues.
+   * @deprecated replace the schedule call without `step` parameter with `wrap` or use separate `schedule` method.
+   */
   schedule<T = void>(
     cb: Fn<[Ctx], T>,
     step?: -1 | 0 | 1 | 2,
   ): Promise<Awaited<T>>
 
+  /** Subscribe to atom changes and make it "connected".
+   * @deprecated use separate `effect` method.
+   */
   subscribe<T>(atom: Atom<T>, cb: Fn<[T]>): Unsubscribe
+  /** Subscribe to all atoms and actions changes, useful for logging.
+   * @deprecated an alternative is not implemented.
+   */
+  // TODO an alternative?
   subscribe(cb: Fn<[patches: Logs, error?: Error]>): Unsubscribe
 
-  cause: AtomCache
+  cause: AtomFrame
 }
 
+/** Computed atom context.
+ * @deprecated just call the atom as a function with one argument - `ctx`, or use separate `track` method.
+ */
 export interface CtxSpy extends Required<Ctx> {}
 
-export interface Logs extends Array<AtomCache> {}
+export interface Logs extends Array<AtomFrame> {}
 
-export interface Atom<State = any> {
-  __reatom: AtomProto<State>
-  pipe: Pipe<this>
+/** Base atom interface, any atoms and actions extends from this interface. */
+export interface Atom<State = any, Update = State> {
+  (ctx: Ctx): State
 
-  onChange: (
-    cb: (
-      ctx: Ctx,
-      newState: State,
-      // TODO there could be different `prevState` for each ctx
-      // prevState: State,
-      // patch: AtomCache<State>,
-    ) => any,
-  ) => Unsubscribe
+  mix: Mix<this>
+
+  /** Cold(!) subscription to the atom changes.
+   * @deprecated use hot `reaction` method for describing business flows and separate `onChange` method for utility features.
+   */
+  onChange: (cb: (ctx: Ctx, newState: State) => any) => Unsubscribe
+
+  /** @deprecated use `mix` instead */
+  pipe: Compose<this>
+
+  /** @internal The list of applied mixins. */
+  __reatomMixins: Array<Fn>
 }
 
-type Update<State> = State | Fn<[State, Ctx], State>
-export interface AtomMut<State = any> extends Atom<State> {
-  (ctx: Ctx, update: Update<State>): State
+export type AtomUpdate<State, Update> = Update | Fn<[State, Ctx], Update>
+
+export interface AtomMut<State = any, Update = State> extends Atom<State> {
+  (ctx: Ctx, update: AtomUpdate<State, Update>): State
 }
 
-export interface AtomProto<State = any> {
-  name: undefined | string
-  isAction: boolean
-  /** temporal cache of the last patch during transaction */
-  patch: null | AtomCache
-  initState: Fn<[Ctx], State>
-  computer: null | Fn<[CtxSpy, unknown], unknown>
-  connectHooks: null | Set<Fn<[Ctx]>>
-  disconnectHooks: null | Set<Fn<[Ctx]>>
-  updateHooks: null | Set<Fn<[Ctx, AtomCache]>>
-  actual: boolean
-}
-
-export interface AtomCache<State = any> {
+export interface AtomFrame<State = any, Update = State> {
+  error: null | NonNullable<unknown>
   state: State
-  readonly proto: AtomProto
+  atom: Atom<State, Update>
   // nullable state mean cache is dirty (has updated pubs, which could produce new state)
-  cause: null | AtomCache
-  pubs: Array<AtomCache>
-  readonly subs: Set<AtomProto>
-  readonly listeners: Set<Fn>
-  error?: unknown
+  cause: null | AtomFrame
+  pubs: Array<AtomFrame>
+  subs: Array<Atom>
 }
 
 export interface Action<Params extends any[] = any[], Payload = any>
@@ -207,7 +217,7 @@ export const isAction = (thing: any): thing is Action => {
 // export const getCache = <T>(ctx: Ctx, anAtom: Atom<T>): AtomCache<T> =>
 //   ctx.get((read) => (ctx.get(anAtom), read(anAtom.__reatom)!))
 
-const isConnected = (cache: AtomCache): boolean => {
+const isConnected = (cache: AtomFrame): boolean => {
   return cache.subs.size + cache.listeners.size > 0
 }
 
@@ -227,7 +237,7 @@ export interface CtxOptions {
   callNearEffect?: typeof callSafely
 }
 
-const getRootCause = (cause: AtomCache): AtomCache =>
+const getRootCause = (cause: AtomFrame): AtomFrame =>
   cause.cause === null ? cause : getRootCause(cause.cause)
 
 let CTX: undefined | Ctx
@@ -236,8 +246,8 @@ export const createCtx = ({
   callLateEffect = callSafely,
   callNearEffect = callSafely,
 }: CtxOptions = {}): Ctx => {
-  let caches = new WeakMap<AtomProto, AtomCache>()
-  let read = (proto: AtomProto): undefined | AtomCache => caches.get(proto)
+  let caches = new WeakMap<AtomProto, AtomFrame>()
+  let read = (proto: AtomProto): undefined | AtomFrame => caches.get(proto)
   let logsListeners = new Set<Fn<[Logs, Error?]>>()
 
   let nearEffects: Array<Fn<[Ctx]>> = []
@@ -248,7 +258,7 @@ export const createCtx = ({
   let trError: null | Error = null
   let trUpdates: Array<Fn<[Ctx]>> = []
   let trRollbacks: Array<Fn> = []
-  let trLogs: Array<AtomCache> = []
+  let trLogs: Array<AtomFrame> = []
   let trNearEffectsStart: typeof nearEffects.length = 0
   let trLateEffectsStart: typeof lateEffects.length = 0
   let effectsProcessing = false
@@ -274,8 +284,8 @@ export const createCtx = ({
   }
 
   let addPatch = (
-    { state, proto, pubs, subs, listeners }: AtomCache,
-    cause: AtomCache,
+    { state, proto, pubs, subs, listeners }: AtomFrame,
+    cause: AtomFrame,
   ) => {
     proto.actual = false
     trLogs.push(
@@ -291,7 +301,7 @@ export const createCtx = ({
     return proto.patch
   }
 
-  let enqueueComputers = (cache: AtomCache) => {
+  let enqueueComputers = (cache: AtomFrame) => {
     for (let subProto of cache.subs) {
       let subCache = subProto.patch ?? read(subProto)!
 
@@ -303,7 +313,7 @@ export const createCtx = ({
     }
   }
 
-  let disconnect = (proto: AtomProto, pubPatch: AtomCache): void => {
+  let disconnect = (proto: AtomProto, pubPatch: AtomFrame): void => {
     if (pubPatch.subs.delete(proto)) {
       trRollbacks.push(() => pubPatch.subs.add(proto))
 
@@ -319,7 +329,7 @@ export const createCtx = ({
     }
   }
 
-  let connect = (proto: AtomProto, pubPatch: AtomCache) => {
+  let connect = (proto: AtomProto, pubPatch: AtomFrame) => {
     if (!pubPatch.subs.has(proto)) {
       let wasConnected = isConnected(pubPatch)
       pubPatch.subs.add(proto)
@@ -337,7 +347,7 @@ export const createCtx = ({
     }
   }
 
-  let actualizePubs = (patchCtx: Ctx, patch: AtomCache) => {
+  let actualizePubs = (patchCtx: Ctx, patch: AtomFrame) => {
     let { proto, pubs } = patch
     let isDepsChanged = false
 
@@ -401,8 +411,8 @@ export const createCtx = ({
   let actualize = (
     ctx: Ctx,
     proto: AtomProto,
-    updater?: Fn<[patchCtx: Ctx, patch: AtomCache]>,
-  ): AtomCache => {
+    updater?: Fn<[patchCtx: Ctx, patch: AtomFrame]>,
+  ): AtomFrame => {
     let { patch, actual } = proto
     let updating = updater !== undefined
 
@@ -458,7 +468,7 @@ export const createCtx = ({
         enqueueComputers(patch)
       }
 
-      if (proto.updateHooks) {
+      if (proto.changeHooks) {
         let ctx = {
           get: patchCtx.get,
           spy: undefined,
@@ -466,7 +476,7 @@ export const createCtx = ({
           subscribe: patchCtx.subscribe,
           cause: patchCtx.cause,
         }
-        proto.updateHooks.forEach((hook) =>
+        proto.changeHooks.forEach((hook) =>
           trUpdates.push(() => hook(ctx, patch!)),
         )
       }
@@ -658,7 +668,7 @@ function pipe(this: Atom, ...fns: Array<Fn>) {
   return fns.reduce((acc, fn) => fn(acc), this)
 }
 function onChange(this: Atom, cb: Fn) {
-  const hook = (ctx: Ctx, patch: AtomCache) => cb(ctx, patch.state)
+  const hook = (ctx: Ctx, patch: AtomFrame) => cb(ctx, patch.state)
 
   ;(this.__reatom.updateHooks ??= new Set()).add(hook)
 
@@ -681,7 +691,7 @@ export function atom<T>(
   let theAtom: any = (ctx: Ctx, update: any) =>
     ctx.get(
       (read, actualize) =>
-        actualize!(ctx, theAtom.__reatom, (patchCtx: Ctx, patch: AtomCache) => {
+        actualize!(ctx, theAtom.__reatom, (patchCtx: Ctx, patch: AtomFrame) => {
           patch.state =
             typeof update === 'function'
               ? update(patch.state, patchCtx)
@@ -769,3 +779,9 @@ export const experimental_PLUGINS: Array<(anAtom: Atom) => Atom> = []
 export const __root = atom(undefined, 'root').__reatom
 
 export const batch = <T>(ctx: Ctx, cb: Fn<[], T>): T => ctx.get(cb)
+
+const a1 = atom(0).mix(
+  (target) => ({ a: 1 }),
+  (target) => ({ b: 1 }),
+  (target) => ({ c: 1 }),
+)

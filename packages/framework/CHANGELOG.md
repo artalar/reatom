@@ -1,0 +1,17 @@
+- remove `AllTypes` type
+- rename `Pipe` type to `Compose`
+- add `Mix` type
+- deprecate `ctx.get` getter method to direct atom call or separate `read` method
+- deprecate `ctx.get` batch method, as a batching is automatic now
+- deprecate `ctx.spy` method to direct atom call or separate `track` method
+- deprecate `ctx.schedule` method to separate `wrap` or `schedule` method
+- deprecate `ctx.subscribe` method for atom subscription to separate `effect` method
+- deprecate `ctx.subscribe` method for logs subscription
+- deprecate `CtxSpy` method
+- make base `Atom` callable 
+- deprecate `Atom.onChange` method to separate `reaction` or `onChange` method
+- replace `Atom.__reatom` (`AtomProto`) with `Atom.__reatomMixins` - an array of applied mixins
+  - `AtomProto.name` replaced by `name` property of atom itself
+  - `AtomProto.patch` and `AtomProto.actual` isn't safe in new async (auto)batching paradigm
+  - `AtomProto.updateHooks`, `AtomProto.connectHooks`, `AtomProto.disconnectHooks` and `AtomProto.initState` could be replaced by the decorators
+- deprecate `AtomCache` in favour of `AtomFrame`

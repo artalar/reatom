@@ -12,7 +12,7 @@ import {
   Ctx,
   CtxSpy,
   Fn,
-  AtomCache,
+  AtomFrame,
 } from './atom'
 
 const callSafelySilent = (fn: Fn, ...a: any[]) => {
@@ -352,7 +352,7 @@ test('async cause track', () => {
   act1(ctx)
 
   assert.is(
-    track.lastInput().find((patch: AtomCache) => patch.proto.name === 'a1')
+    track.lastInput().find((patch: AtomFrame) => patch.proto.name === 'a1')
       ?.cause.proto.name,
     'act2',
   )
