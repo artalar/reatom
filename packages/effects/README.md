@@ -109,23 +109,31 @@ This API is a variation of "effect" / "useEffect" API of others libraries. For e
 import { atom, reaction } from '@reatom/framework'
 import { reatomComponent } from '@reatom/npm-react'
 
+const reatomFilters = () => {
+  const searchAtom = atom('', 'Filters.searchAtom')
+  const tagsAtom = atom(0, 'Filters.tagsAtom')
+  const pageAtom = atom(0, 'Filters.pageAtom')
+  const changeReaction = reaction(async (ctx, onChange) => {
+    const search = ctx.spy(searchAtom)
+    const tags = ctx.spy(tagsAtom)
+    const page = ctx.spy(pageAtom)
+    onChange({ search, tags, page })
+  }, 'Filters.changeReaction')
+
+  return { searchAtom, tagsAtom, pageAtom, changeReaction }
+}
+
 export const Filters = reatomComponent(({ ctx, onChange }) => {
   const model = useMemo(
     () => {
-      const searchAtom = atom('', 'Search.searchAtom')
-      const tagsAtom = atom(0, 'Search.tagsAtom')
-      const pageAtom = atom(0, 'Search.pageAtom')
-      const searchReaction = reaction(async (ctx) => {
-        const search = ctx.spy(searchAtom)
-        const tags = ctx.spy(tagsAtom)
-        const page = ctx.spy(pageAtom)
-        onChange({ search, tags, page })
-      })
+      const model = reatomFilters()
 
-      // initiate the reaction!
-      // It will dispose automatically with the component unmount,
-      /// thanks to `reatomComponent` ctx logic.
-      searchReaction(ctx)
+      // Initiate the reaction!
+      // It will be disposed automatically when the component unmounts,
+      // as it is a part of `reatomComponent` ctx logic.
+      model.changeReaction(ctx, onChange)
+
+      return model
     },
     [], // Doesn't work in StrictMode!
   )
@@ -140,8 +148,6 @@ export const Filters = reatomComponent(({ ctx, onChange }) => {
   )
 }, 'Filters')
 ```
-
-Note, that you can describe parameters for `reaction` as for normal action, `const someReaction = reaction((ctx, data: Data) => {/*...*/})`
 
 ### take
 
