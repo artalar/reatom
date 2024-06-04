@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.8.0](https://github.com/artalar/reatom/compare/effects-v3.7.3...effects-v3.8.0) (2024-06-04)
+
+
+### Features
+
+* **effects:** add reaction API ([4c9d589](https://github.com/artalar/reatom/commit/4c9d5892f733e04e575937133eca3ec51424759f))
+
+
+### Bug Fixes
+
+* **effects:** allow to use "concurrent" with CtxSpy ([4da1ab0](https://github.com/artalar/reatom/commit/4da1ab04ecbd1de66d783c2bad2da6671981905a))
+
 ## [3.7.3](https://github.com/artalar/reatom/compare/effects-v3.7.2...effects-v3.7.3) (2024-05-03)
 
 

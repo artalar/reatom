@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.1](https://github.com/artalar/reatom/compare/core-v3.8.0...core-v3.8.1) (2024-06-04)
+
+
+### Bug Fixes
+
+* **docs:** fixed links to Reatom handbook ([#855](https://github.com/artalar/reatom/issues/855)) ([c9e6a56](https://github.com/artalar/reatom/commit/c9e6a56201c9a496664cd9409fe0fa5dff67606e))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/core-v3.7.0...core-v3.8.0) (2024-04-12)
 
 
