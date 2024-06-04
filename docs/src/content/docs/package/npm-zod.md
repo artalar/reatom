@@ -39,3 +39,9 @@ export const model = reatomZod(User, {
   initState: JSON.parse(localStorage.getItem(KEY) || '{}'),
 })
 ```
+
+## Mapping
+
+This section describes how types coverts to a specific atoms.
+
+`union` type creates an atom with all possible state variants and `discriminatedUnion` creates an atom with all possible atoms variants.
