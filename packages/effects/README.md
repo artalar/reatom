@@ -99,6 +99,50 @@ const onChangeConcurrent = concurrent(async (ctx, event) => {
 })
 ```
 
+### reaction
+
+This is a base API to describe and perform side effects. It is a combination of action, atom, and "concurrent" functionality. It helps you create an action with a computed function, allowing you to use `ctx.spy` within it. The action call creates an atom with the passed function, subscribes to it, and returns the created atom with an `unsubscribe` method. Note that the passed computed function is already wrapped by the [concurrent](#concurrent) function and also tracks the subscription status with an abort context.
+
+This API is a variation of "effect" / "useEffect" API of others libraries. For example, here is how it can be used with `reatomComponent` from [@reatom/npm-react](https://www.reatom.dev/package/npm-react/).
+
+```tsx
+import { atom, reaction } from '@reatom/framework'
+import { reatomComponent } from '@reatom/npm-react'
+
+export const Filters = reatomComponent(({ ctx, onChange }) => {
+  const model = useMemo(
+    () => {
+      const searchAtom = atom('', 'Search.searchAtom')
+      const tagsAtom = atom(0, 'Search.tagsAtom')
+      const pageAtom = atom(0, 'Search.pageAtom')
+      const searchReaction = reaction(async (ctx) => {
+        const search = ctx.spy(searchAtom)
+        const tags = ctx.spy(tagsAtom)
+        const page = ctx.spy(pageAtom)
+        onChange({ search, tags, page })
+      })
+
+      // initiate the reaction!
+      // It will dispose automatically with the component unmount,
+      /// thanks to `reatomComponent` ctx logic.
+      searchReaction(ctx)
+    },
+    [], // Doesn't work in StrictMode!
+  )
+
+  // This component will not rerender, but it will react to all related changes!
+  return (
+    <Layout>
+      <Search model={model.search} />
+      <Tags model={model.tags} />
+      <Page model={model.page} />
+    </Layout>
+  )
+}, 'Filters')
+```
+
+Note, that you can describe parameters for `reaction` as for normal action, `const someReaction = reaction((ctx, data: Data) => {/*...*/})`
+
 ### take
 
 This is the simplest and most powerful API that allows you to wait for an atom update, which is useful for describing certain procedures. It is a shortcut for subscribing to the atom and unsubscribing after the first update. `take` respects the main Reatom abort context and will throw `AbortError` when the abort occurs. This allows you to describe redux-saga-like procedural logic in synchronous code style with native async/await.
@@ -149,42 +193,44 @@ onConnect(formAtom, (ctx) => {
 ```
 
 #### take checkpoints
+
 But be aware that `take` only starts listening when it's called:
 
 ```ts
-import { take } from "@reatom/effects"
-import { reatomAsync } from "@reatom/async"
+import { take } from '@reatom/effects'
+import { reatomAsync } from '@reatom/async'
 import { confirmModalAtom } from '~/features/modal'
 import { api } from '~/api'
 
-const closeDocument = reatomAsync(async (ctx)=>{
-    confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
-    
-    const presaveId = await api.presaveDocument()
-    
-    // ❌ Bug: 
-    // If person's connection is not fast enough or they are too fast 
-    // they can close the modal before we get presaveId and start to listening to modal.close.
-    // So now we are stuck in loading state forever...
-    await take(ctx, confirmModalAtom.close)
-    
-    await api.finalizeDocument(presaveId)
+const closeDocument = reatomAsync(async (ctx) => {
+  confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
+
+  const presaveId = await api.presaveDocument()
+
+  // ❌ Bug:
+  // If person's connection is not fast enough or they are too fast
+  // they can close the modal before we get presaveId and start to listening to modal.close.
+  // So now we are stuck in loading state forever...
+  await take(ctx, confirmModalAtom.close)
+
+  await api.finalizeDocument(presaveId)
 })
 ```
 
 You can fix this bug by creating a checkpoint before starting any process:
+
 ```ts
 const closeDocument = reatomAsync(async (ctx) => {
-    confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
-    // ✅ Now we listen for changes before we start any process...
-    const modalConfirmedCheckpoint = take(ctx, confirmModalAtom.close)
+  confirmModalAtom.open(ctx, 'Are you sure you want to leave?')
+  // ✅ Now we listen for changes before we start any process...
+  const modalConfirmedCheckpoint = take(ctx, confirmModalAtom.close)
 
-    const presaveId = await api.presaveDocument()
+  const presaveId = await api.presaveDocument()
 
-    // ...and we will catch them for sure
-    await modalConfirmedCheckpoint
+  // ...and we will catch them for sure
+  await modalConfirmedCheckpoint
 
-    await api.finalizeDocument(presaveId)
+  await api.finalizeDocument(presaveId)
 })
 ```
 

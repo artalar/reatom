@@ -9,11 +9,13 @@ import { mapPayloadAwaited } from '@reatom/lens'
 import {
   concurrent,
   disposable,
+  reaction,
   spawn,
   take,
   takeNested,
   withAbortableSchedule,
-} from '.'
+  // effects should be tested only on top of builded sources
+} from '../build'
 
 test('disposable async branch', async () => {
   const act = action((ctx, v: number) => ctx.schedule(() => Promise.resolve(v)))
@@ -35,7 +37,6 @@ test('disposable async branch', async () => {
   disposableCtx.dispose()
   await sleep()
   assert.is(track.calls.length, 0)
-  ;`👍` //?
 })
 
 test('take', async () => {
@@ -48,7 +49,6 @@ test('take', async () => {
 
   setTimeout(at, 0, ctx, 4)
   assert.is(await take(ctx, at), 4)
-  ;`👍` //?
 })
 
 test('await transaction', async () => {
@@ -92,7 +92,6 @@ test('await transaction', async () => {
   resolve3!()
   await sleep()
   assert.is(effect3Resolved, true)
-  ;`👍` //?
 })
 
 test('withAbortableSchedule', async () => {
@@ -128,7 +127,6 @@ test('withAbortableSchedule', async () => {
   ctx.subscribe(someAtom, () => {})()
   await sleep(10)
   assert.is(track.calls.length, 1)
-  ;`👍` //?
 })
 
 test('take filter', async () => {
@@ -148,7 +146,6 @@ test('take filter', async () => {
   await sleep()
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), '4')
-  ;`👍` //?
 })
 
 test('concurrent', async () => {
@@ -179,7 +176,6 @@ test('concurrent', async () => {
   await sleep()
   assert.is(results.length, 3)
   assert.is(results.at(-1).name, 'AbortError')
-  ;`👍` //?
 })
 
 test('spawn', async () => {
@@ -204,7 +200,71 @@ test('spawn', async () => {
 
   await sleep()
   assert.equal(results, [1, 2])
-  ;`👍` //?
+})
+
+test('reaction base usage', async () => {
+  const a = atom(0)
+  const someReaction = reaction(async (ctx) => {
+    const value = ctx.spy(a)
+    await ctx.schedule(() => sleep())
+    return track(value)
+  })
+  const track = mockFn((value: number) => value)
+  const ctx = createTestCtx()
+
+  const reactionAtom = someReaction(ctx)
+  await sleep()
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), 0)
+
+  a(ctx, 1)
+  a(ctx, 2)
+  a(ctx, 3)
+  await sleep()
+  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput(), 3)
+
+  a(ctx, 4)
+  reactionAtom.unsubscribe()
+  await sleep()
+  assert.is(track.calls.length, 2)
+
+  let changed = false
+  reactionAtom.onChange((ctx, value) => {
+    changed = true
+  })
+  a(ctx, 5)
+  assert.is(changed, false)
+})
+
+test('reaction parameters usage', async () => {
+  const a = atom('a')
+  const someReaction = reaction(async (ctx, param: string) => {
+    const value = ctx.spy(a)
+    await ctx.schedule(() => sleep())
+    return track(param + value)
+  })
+  const track = mockFn((value: string) => value)
+  const ctx = createTestCtx()
+
+  const reactionAtom = someReaction(ctx, '1')
+  await sleep()
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), '1a')
+
+  
+  a(ctx, 'b')
+  someReaction(ctx, '2')
+  a(ctx, 'c')
+  await sleep()
+  assert.is(track.calls.length, 3)
+  assert.equal(track.inputs(), ['1a', '1c', '2c'])
+
+  reactionAtom.unsubscribe()
+  a(ctx, 'd')
+  await sleep()
+  assert.is(track.calls.length, 4)
+  assert.equal(track.inputs(), ['1a', '1c', '2c', '2d'])
 })
 
 test.run()

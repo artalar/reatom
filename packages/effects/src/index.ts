@@ -1,5 +1,6 @@
 import {
   __count,
+  action,
   Action,
   atom,
   Atom,
@@ -297,6 +298,10 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
   })
 }
 
+export const concurrentControllers = new WeakMap<
+  Fn,
+  Atom<null | AbortController>
+>()
 export const concurrent: {
   <T extends Fn<[CtxSpy, ...any[]]>>(fn: T): T
   <T extends Fn<[Ctx, ...any[]]>>(fn: T): T
@@ -306,7 +311,7 @@ export const concurrent: {
     `${__count('_concurrent')}.abortControllerAtom`,
   )
 
-  return Object.assign(
+  const result = Object.assign(
     (ctx: Ctx, ...a: any[]) => {
       const prevController = ctx.get(abortControllerAtom)
       // do it outside of the schedule to save the call stack
@@ -341,6 +346,10 @@ export const concurrent: {
     // if the `fn` is an atom we need to assign all related properties
     fn,
   )
+
+  concurrentControllers.set(result, abortControllerAtom)
+
+  return result
 }
 
 export const spawn = <Args extends any[], Payload>(
@@ -353,3 +362,36 @@ export const spawn = <Args extends any[], Payload>(
   abortCauseContext.set(ctx.cause, controller)
   return fn(ctx, ...args)
 }
+
+export interface ReactionAtom<Payload> extends Atom<Payload> {
+  unsubscribe: Unsubscribe
+}
+
+export interface Reaction<Params extends any[], Payload>
+  extends Action<Params, ReactionAtom<Payload>> {}
+
+export const reaction = <Params extends any[], Payload>(
+  cb: (ctx: CtxSpy, ...params: Params) => Payload,
+  name = __count('reaction'),
+): Reaction<Params, Payload> =>
+  action((ctx, ...params: Params) => {
+    const reducer = concurrent((ctx) => cb(ctx, ...params))
+    const reactionAtom = atom(reducer, __count(name))
+    const abort = (reason: any) => {
+      const controller = concurrentControllers.get(reducer)
+      if (controller) {
+        ctx.get(controller)?.abort(toAbortError(reason))
+      }
+    }
+    const un = ctx.subscribe(reactionAtom, noop)
+    const unabort = onCtxAbort(ctx, (error) => {
+      un(), abort(error)
+    })
+    const unsubscribe = () => {
+      un()
+      unabort?.()
+      abort('unsubscribe')
+    }
+
+    return { ...reactionAtom, unsubscribe } as ReactionAtom<Payload>
+  })
