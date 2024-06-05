@@ -8,8 +8,11 @@ import {
   type Fn,
   throwReatomError,
   __count,
+  isAtom,
 } from '@reatom/core'
 import { isObject } from '@reatom/utils'
+
+type State<T> = T extends Atom<infer Value> ? Value : T
 
 const readonly = <T extends Atom>(
   anAtom: T,
@@ -48,11 +51,14 @@ export interface LinkedList<Node extends LLNode = LLNode> {
 export interface LinkedListLikeAtom<T extends LinkedList = LinkedList>
   extends Atom<T> {
   __reatomLinkedList: true
+
+  array: Atom<Array<T extends LinkedList<infer LLNode> ? LLNode : never>>
 }
 
 export interface LinkedListAtom<
   Params extends any[] = any[],
   Node extends Rec = Rec,
+  Key extends keyof Node = never,
 > extends LinkedListLikeAtom<LinkedList<LLNode<Node>>> {
   batch: Action<[cb: Fn], void>
 
@@ -64,7 +70,9 @@ export interface LinkedListAtom<
 
   find: (ctx: Ctx, cb: (node: LLNode<Node>) => boolean) => null | LLNode<Node>
 
-  array: Atom<Array<LLNode<Node>>>
+  /** This lazy map is useful for working with serializable identifier,
+   * but it is not recommended to use it for large (thousands elements) lists */
+  map: Key extends never ? never : Atom<Map<State<Node[Key]>, LLNode<Node>>>
 
   reatomMap: <T extends Rec>(
     cb: (ctx: Ctx, node: LLNode<Node>) => T,
@@ -98,15 +106,14 @@ export interface LinkedListAtom<
   // ) => Atom<T>
 }
 
+// TODO rename to `DerivedLinkedList`
 export interface LinkedListDerivedState<Node extends LLNode, T extends LLNode>
   extends LinkedList<T> {
   map: WeakMap<Node, T>
 }
 
 export interface LinkedListDerivedAtom<Node extends LLNode, T extends LLNode>
-  extends LinkedListLikeAtom<LinkedListDerivedState<Node, T>> {
-  array: Atom<Array<T>>
-}
+  extends LinkedListLikeAtom<LinkedListDerivedState<Node, T>> {}
 
 const addLL = <Node extends LLNode>(
   state: LinkedList<Node>,
@@ -200,17 +207,25 @@ const toArray = <T extends Rec>(
   return arr.length === prev?.length ? prev : arr
 }
 
-export const reatomLinkedList = <Params extends any[], Node extends Rec>(
+export const reatomLinkedList = <
+  Params extends any[],
+  Node extends Rec,
+  Key extends keyof Node = never,
+>(
   options:
     | ((ctx: Ctx, ...params: Params) => Node)
     | {
         create: (ctx: Ctx, ...params: Params) => Node
         initState?: Array<Node>
+        key?: Key
       },
   name = __count('reatomLinkedList'),
-): LinkedListAtom<Params, Node> => {
-  const { create: userCreate, initState = [] } =
-    typeof options === 'function' ? { create: options } : options
+): LinkedListAtom<Params, Node, Key> => {
+  const {
+    create: userCreate,
+    initState = [],
+    key = undefined,
+  } = typeof options === 'function' ? { create: options } : options
   const _name = name
 
   const isLL = (node: Node): node is LLNode<Node> =>
@@ -336,11 +351,27 @@ export const reatomLinkedList = <Params extends any[], Node extends Rec>(
     return null
   }
 
-  const array = atom(
+  const array: LinkedListAtom<Params, Node, Key>['array'] = atom(
     (ctx, state: Array<LLNode<Node>> = []) =>
       toArray(ctx.spy(linkedList).head, state),
     `${name}.array`,
   )
+
+  const map = key
+    ? (atom(
+        (ctx) =>
+          new Map(
+            // use array as it already memoized and simplifies the order tracking
+            ctx.spy(array).map((node) => {
+              const keyValue = node[key]
+              return [
+                isAtom(keyValue) ? ctx.spy(keyValue) : keyValue,
+                node,
+              ] as const
+            }),
+          ),
+      ) as LinkedListAtom<Params, Node, Key>['map'])
+    : (undefined as never)
 
   const reatomMap = <T extends Rec>(
     cb: (ctx: Ctx, node: LLNode<Node>) => T,
@@ -542,6 +573,7 @@ export const reatomLinkedList = <Params extends any[], Node extends Rec>(
     find,
 
     array,
+    map,
 
     reatomMap,
     // reatomFilter,

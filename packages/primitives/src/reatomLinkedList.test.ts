@@ -136,4 +136,19 @@ test(`should move elements`, () => {
   )
 })
 
+test('should respect node keys even if it is an atom', () => {
+  const ctx = createTestCtx()
+  const list = reatomLinkedList({
+    create: (ctx, id: string) => ({ id: atom(id) }),
+    key: 'id',
+    initState: [{ id: atom('1') }, { id: atom('2') }],
+  })
+  const track = ctx.subscribeTrack(atom((ctx) => [...ctx.spy(list.map).keys()]))
+
+  assert.equal(track.lastInput(), ['1', '2'])
+
+  ctx.get(list.map).get('1')?.id(ctx, '0')
+  assert.equal(track.lastInput(), ['0', '2'])
+})
+
 test.run()
