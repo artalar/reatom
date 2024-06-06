@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://github.com/artalar/reatom/compare/primitives-v3.5.0...primitives-v3.6.0) (2024-06-05)
+
+
+### Features
+
+* **primitives:** add map atom to LinkedListAtom ([fc58024](https://github.com/artalar/reatom/commit/fc580241e3867040a4513690a6b976d39f3ac6c0))
+
 ## [3.5.0](https://github.com/artalar/reatom/compare/primitives-v3.4.0...primitives-v3.5.0) (2024-04-28)
 
 
