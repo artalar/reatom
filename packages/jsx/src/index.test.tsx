@@ -262,4 +262,86 @@ test('linked list', () => {
   // assert.not.ok(isConnected(ctx, jsxList))
 })
 
+test('boolean as child', () => {
+  const { h, hf } = setup()
+
+  const trueAtom = atom(true, 'true')
+  const trueValue = true
+  const falseAtom = atom(false, 'false')
+  const falseValue = false
+
+  const element = <div>
+    {trueAtom}
+    {trueValue}
+    {falseAtom}
+    {falseValue}
+  </div>
+
+  assert.is(element.childNodes.length, 2)
+  assert.is(element.textContent, '')
+})
+
+test('null as child', () => {
+  const { h, hf } = setup()
+
+  const nullAtom = atom(null, 'null')
+  const nullValue = null
+
+  const element = <div>
+    {nullAtom}
+    {nullValue}
+  </div>
+
+  assert.is(element.childNodes.length, 1)
+  assert.is(element.textContent, '')
+})
+
+test('undefined as child', () => {
+  const { h, hf } = setup()
+
+  const undefinedAtom = atom(undefined, 'undefined')
+  const undefinedValue = undefined
+
+  const element = <div>
+    {undefinedAtom}
+    {undefinedValue}
+  </div>
+
+  assert.is(element.childNodes.length, 1)
+  assert.is(element.textContent, '')
+})
+
+test('empty string as child', () => {
+  const { h, hf } = setup()
+
+  const emptyStringAtom = atom('', 'emptyString')
+  const emptyStringValue = ''
+
+  const element = <div>
+    {emptyStringAtom}
+    {emptyStringValue}
+  </div>
+
+  assert.is(element.childNodes.length, 1)
+  assert.is(element.textContent, '')
+})
+
+test('update skipped atom', () => {
+  const { ctx, h, hf, mount, parent } = setup()
+
+  const valueAtom = atom<number | undefined>(undefined, 'value')
+
+  const element = <div>{valueAtom}</div>
+
+  mount(parent, element)
+
+  assert.is(parent.childNodes.length, 1)
+  assert.is(parent.textContent, '')
+
+  valueAtom(ctx, 123)
+
+  assert.is(parent.childNodes.length, 1)
+  assert.is(parent.textContent, '123')
+})
+
 test.run()

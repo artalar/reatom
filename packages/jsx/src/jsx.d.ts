@@ -1,4 +1,4 @@
-/* 
+/*
 Respectfully copied from https://github.com/ryansolid/dom-expressions/blob/ae71a417aa13b33517082628aff09513629df8b2/packages/dom-expressions/src/jsx.d.ts
 */
 

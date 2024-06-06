@@ -32,6 +32,8 @@ type DomApis = Pick<
   | 'DocumentFragment'
 >
 
+const isSkipped = (value: unknown): value is  boolean | '' | null | undefined => typeof value === 'boolean' || value === '' || value == null
+
 let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
 let unlink = (parent: any, un: Unsubscribe) => {
   // check the connection in the next tick
@@ -241,7 +243,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
                   }
                 } else {
                   // TODO more tests
-                  innerChild.textContent = String(v)
+                  innerChild.textContent = isSkipped(v) ? '' : String(v)
                 }
               }
             } catch (e) {
@@ -251,7 +253,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
           if (error) throw error
           unlink(element, un)
           element.appendChild(innerChild)
-        } else {
+        } else if (!isSkipped(child)) {
           element.appendChild(
             isObject(child) && 'nodeType' in child
               ? (child as JSX.Element)
