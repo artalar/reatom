@@ -67,6 +67,18 @@ test('withUndo without getting historyAtom before first change', async () => {
   ;('👍') //?
 })
 
+test('withUndo with undefined initial state', async () => {
+  const a = atom<number | undefined>(undefined).pipe(withUndo({ length: 5 }))
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(a.historyAtom), 1)
+  assert.is(ctx.get(a.isUndoAtom), false)
+  a(ctx, 123)
+
+  assert.is(ctx.get(a.isUndoAtom), true)
+  assert.is(ctx.get(a.historyAtom), 2)
+})
+
 test('limit', () => {
   const a = atom(0).pipe(withUndo({ length: 5 }))
   const ctx = createTestCtx()
@@ -94,31 +106,54 @@ test('reatomUndo', () => {
   ctx.subscribeTrack(c)
 
   assert.equal(ctx.get(c), { a: 0, b: 0 })
+  assert.equal(ctx.get(c.historyAtom).length, 1)
+  assert.equal(ctx.get(c.isUndoAtom), false)
+  assert.equal(ctx.get(c.isRedoAtom), false)
+  assert.equal(ctx.get(c.positionAtom), 0)
 
   a(ctx, 1)
   a(ctx, 2)
   b(ctx, 3)
   a(ctx, 4)
   assert.equal(ctx.get(c), { a: 4, b: 3 })
+  assert.equal(ctx.get(c.isUndoAtom), true)
+  assert.equal(ctx.get(c.isRedoAtom), false)
+  assert.equal(ctx.get(c.historyAtom).length, 5)
+  assert.equal(ctx.get(c.positionAtom), 4)
 
   c.undo(ctx)
   assert.equal(ctx.get(c), { a: 2, b: 3 })
   assert.is(ctx.get(a), 2)
   assert.is(ctx.get(b), 3)
+  assert.equal(ctx.get(c.isUndoAtom), true)
+  assert.equal(ctx.get(c.isRedoAtom), true)
+  assert.equal(ctx.get(c.historyAtom).length, 5)
+  assert.equal(ctx.get(c.positionAtom), 3)
 
   c.redo(ctx)
   assert.equal(ctx.get(c), { a: 4, b: 3 })
   assert.is(ctx.get(a), 4)
   assert.is(ctx.get(b), 3)
+  assert.equal(ctx.get(c.isUndoAtom), true)
+  assert.equal(ctx.get(c.isRedoAtom), false)
+  assert.equal(ctx.get(c.historyAtom).length, 5)
+  assert.equal(ctx.get(c.positionAtom), 4)
 
   c.jump(ctx, -2)
   assert.equal(ctx.get(c), { a: 2, b: 0 })
   assert.is(ctx.get(a), 2)
   assert.is(ctx.get(b), 0)
+  assert.equal(ctx.get(c.isUndoAtom), true)
+  assert.equal(ctx.get(c.isRedoAtom), true)
+  assert.equal(ctx.get(c.historyAtom).length, 5)
+  assert.equal(ctx.get(c.positionAtom), 2)
 
   b(ctx, 5)
   assert.equal(ctx.get(c), { a: 2, b: 5 })
   assert.is(ctx.get(c.isRedoAtom), false)
+  assert.equal(ctx.get(c.isUndoAtom), true)
+  assert.equal(ctx.get(c.historyAtom).length, 4)
+  assert.equal(ctx.get(c.positionAtom), 3)
   ;('👍') //?
 })
 

@@ -71,7 +71,7 @@ export const withUndo =
       anAtom.pipe(
         withInit((ctx, init) => {
           const state = init(ctx)
-          historyAtom(ctx, [state])
+          if (state !== undefined) historyAtom(ctx, [state])
           return state
         }),
       )
@@ -119,7 +119,7 @@ export const withUndo =
                 Math.max(0, position - (length - 2)),
                 position + 1,
               )
-              if (!shouldReplace(ctx, state, history, position)) {
+              if (!shouldReplace(ctx, state, history, position) && history[position] !== undefined) {
                 position++
               }
               position = Math.min(position, length - 1)
