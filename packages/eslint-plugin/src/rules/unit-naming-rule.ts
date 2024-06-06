@@ -10,6 +10,13 @@ import {
 type AutoDomain = typeof AutoDomain
 const AutoDomain = Symbol('AutoDomain')
 
+export const MESSAGES = {
+  nameMissing: 'nameMissing',
+  nameIncorrect: 'nameIncorrect',
+  nameDomainIncorrect: 'nameDomainIncorrect',
+}
+export type MESSAGES = keyof typeof MESSAGES
+
 export const unitNamingRule: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
@@ -19,9 +26,8 @@ export const unitNamingRule: Rule.RuleModule = {
     },
     messages: {
       nameMissing: 'Unit "{{unit}}" is missing a name',
-      nameIncorrect: 'Unit "{{unit}}" has malformed name',
-      prefixMissing: 'Atom "{{unit}}" name should start with "{{prefix}}"',
-      postfixMissing: 'Atom "{{unit}}" name should end with "{{postfix}}"',
+      nameIncorrect: 'Unit "{{unit}}" should be named with "{{atomPrefix}}{{unit}}{{atomPostfix}}"',
+      nameDomainIncorrect: 'Unit "{{unit}}" should be named with "{{domain}}.{{atomPrefix}}{{unit}}{{atomPostfix}}"',
     },
     fixable: 'code',
   },

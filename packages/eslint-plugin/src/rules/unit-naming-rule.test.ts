@@ -1,5 +1,5 @@
 import { RuleTester } from 'eslint'
-import { unitNamingRule } from './unit-naming-rule'
+import { MESSAGES, unitNamingRule } from './unit-naming-rule'
 
 const tester = new RuleTester({
   parserOptions: {
@@ -8,7 +8,7 @@ const tester = new RuleTester({
   },
 })
 
-const ImportAtom = 'import {atom} from "@reatom/framework"'
+const Imports = 'import { action, atom } from "@reatom/framework";'
 
 tester.run('unit-naming-rule', unitNamingRule, {
   valid: [
@@ -19,66 +19,88 @@ tester.run('unit-naming-rule', unitNamingRule, {
     const prefix = options.atomPrefix ?? ''
     const postfix = options.atomPostfix ?? ''
     const domain = options.domainVariable ?? 'name'
+    const name = `${prefix}some${postfix}`
     return [
       {
-        code: `${ImportAtom}; const ${prefix}some${postfix} = atom(0, '${prefix}some${postfix}')`,
+        code: `${Imports} const ${name} = atom(0, '${name}')`,
         options: [options],
       },
       {
-        code: `${ImportAtom}; let ${domain}; const ${prefix}some${postfix} = atom(0, \`\${${domain}}.${prefix}some${postfix}\`)`,
+        code: `${Imports} const doSome = action(() => {}, 'doSome')`,
         options: [options],
       },
       {
-        code: `${ImportAtom}; const obj = { ${prefix}some${postfix}: atom(0, 'obj.${prefix}some${postfix}') }`,
+        code: `${Imports} let ${domain}; const ${name} = atom(0, \`\${${domain}}.${name}\`)`,
         options: [options],
       },
       {
-        code: `${ImportAtom}; let ${domain}; const obj = { ${prefix}some${postfix}: atom(0, \`\${${domain}}.obj.${prefix}some${postfix}\`) }`,
+        code: `${Imports} let ${domain}; const doSome = action(0, \`\${${domain}}.doSome\`)`,
+        options: [options],
+      },
+      {
+        code: `${Imports} const obj = { ${name}: atom(0, 'obj.${name}') }`,
+        options: [options],
+      },
+      {
+        code: `${Imports} const obj = { doSome: action(() => {}, 'obj.doSome') }`,
+        options: [options],
+      },
+      {
+        code: `${Imports} let ${domain}; const obj = { ${name}: atom(0, \`\${${domain}}.obj.${name}\`) }`,
+        options: [options],
+      },
+      {
+        code: `${Imports} let ${domain}; const obj = { doSome: action(() => {}, \`\${${domain}}.obj.doSome\`) }`,
         options: [options],
       },
     ]
   }),
   invalid: [
-    {
-      code: `${ImportAtom}; const some = atom(0)`,
-      errors: [{ messageId: 'nameMissing' }],
-      output: `${ImportAtom}; const some = atom(0, 'some')`,
-    },
-    {
-      code: `${ImportAtom}; const some = atom(0, 'unrelated')`,
-      errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; const some = atom(0, 'some')`,
-    },
-    {
-      code: `${ImportAtom}; const some = atom(0, 'some')`,
-      options: [{ atomPostfix: 'Atom' }],
-      errors: [{ messageId: 'postfixMissing' }],
-      output: `${ImportAtom}; const someAtom = atom(0, 'someAtom')`,
-    },
-    {
-      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome._unrelated'); }`,
-      errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome._field'); }`,
-    },
-    {
-      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'field') }`,
-      errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
-    },
-    {
-      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'Some.field') }`,
-      errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
-    },
-    {
-      code: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, 'field'); }`,
-      errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
-    },
-    {
-      code: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, 'Some.field'); }`,
-      errors: [{ messageId: 'nameIncorrect' }],
-      output: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
-    },
-  ],
+    { atomPrefix: '$' },
+    { atomPostfix: 'Atom' },
+    { domainVariable: 'domain' },
+  ].flatMap((options) => {
+    const prefix = options.atomPrefix ?? ''
+    const postfix = options.atomPostfix ?? ''
+    const domain = options.domainVariable ?? 'name'
+    const name = `${prefix}some${postfix}`
+    return [
+      {
+        code: `${Imports} const ${name} = atom(0)`,
+        errors: [{ messageId: MESSAGES.nameMissing }],
+        output: `${Imports} const ${name} = atom(0, '${name}')`,
+        options: [options],
+      },
+      {
+        code: `${Imports} const doSome = action(() => {})`,
+        errors: [{ messageId: MESSAGES.nameMissing }],
+        output: `${Imports} const doSome = action(() => {}, 'doSome')`,
+        options: [options],
+      },
+      {
+        code: `${Imports} const obj = { ${name}: atom(0, 'dodge.${name}') }`,
+        errors: [{ messageId: MESSAGES.nameIncorrect }],
+        output: `${Imports} const obj = { ${name}: atom(0, 'obj.${name}') }`,
+        options: [options],
+      },
+      {
+        code: `${Imports} const obj = { doSome: action(() => {}, 'obj.doRun') }`,
+        errors: [{ messageId: MESSAGES.nameIncorrect }],
+        output: `${Imports} const obj = { doSome: action(() => {}, 'obj.doSome') }`,
+        options: [options],
+      },
+      {
+        code: `${Imports} let ${domain}; const obj = { ${name}: atom(0, \`\${${domain}}.dodge.${name}\`) }`,
+        errors: [{ messageId: MESSAGES.nameDomainIncorrect }],
+        output: `${Imports} let ${domain}; const obj = { ${name}: atom(0, \`\${${domain}}.obj.${name}\`) }`,
+        options: [options],
+      },
+      {
+        code: `${Imports} let ${domain}; const obj = { doSome: action(() => {}, \`\${${domain}}WAT.obj.doSome\`) }`,
+        errors: [{ messageId: MESSAGES.nameDomainIncorrect }],
+        output: `${Imports} let ${domain}; const obj = { doSome: action(() => {}, \`\${${domain}}.obj.doSome\`) }`,
+        options: [options],
+      },
+    ]
+  }),
 })
