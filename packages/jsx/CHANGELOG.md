@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.0](https://github.com/artalar/reatom/compare/jsx-v3.10.0...jsx-v3.11.0) (2024-06-07)
+
+
+### Features
+
+* **jsx:** handle falsy like React ([#861](https://github.com/artalar/reatom/issues/861)) ([ad52a74](https://github.com/artalar/reatom/commit/ad52a74b8104301b702d503f050b31754c2816d4))
+
 ## [3.10.0](https://github.com/artalar/reatom/compare/jsx-v3.9.0...jsx-v3.10.0) (2024-04-28)
 
 
