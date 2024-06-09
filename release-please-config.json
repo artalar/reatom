@@ -23,6 +23,7 @@
     "packages/npm-react": {},
     "packages/npm-solid-js": {},
     "packages/npm-svelte": {},
+    "packages/npm-zod": {},
     "packages/persist": {},
     "packages/persist-web-storage": {},
     "packages/primitives": {},
