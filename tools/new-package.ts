@@ -9,7 +9,41 @@ const rl = readline.createInterface(process.stdin, process.stdout)
 
 $.verbose = false
 
-void (async () => {
+const VERSION = JSON.parse(
+  fs.readFileSync(
+    path.join(process.cwd(), 'packages/core/package.json'),
+    'utf-8',
+  ),
+).version
+
+async function updateReleasePlease(pkgName: string) {
+  const rpManifest = JSON.parse(
+    await fs.promises.readFile(
+      path.join(process.cwd(), '.release-please-manifest.json'),
+      'utf-8',
+    ),
+  )
+  rpManifest[`packages/${pkgName}`] = VERSION
+  await fs.promises.writeFile(
+    path.join(process.cwd(), '.release-please-manifest.json'),
+    JSON.stringify(rpManifest, null, 2),
+  )
+
+  const rpConfig = JSON.parse(
+    await fs.promises.readFile(
+      path.join(process.cwd(), 'release-please-config.json'),
+      'utf-8',
+    ),
+  )
+  rpConfig.packages[`packages/${pkgName}`] = {}
+  await fs.promises.writeFile(
+    path.join(process.cwd(), 'release-please-config.json'),
+    JSON.stringify(rpConfig, null, 2),
+  )
+}
+
+main()
+async function main() {
   do {
     var pkgName = await rl.question('❓ How should the new package be named? ')
     pkgName = pkgName.trim()
@@ -31,11 +65,14 @@ void (async () => {
   console.log(`ℹ️ Author username is "${pkgName}"`)
 
   const pkg = path.join(process.cwd(), 'packages', pkgName)
-  fs.cpSync(templatePath, pkg, { recursive: true })
+  await fs.promises.cp(templatePath, pkg, { recursive: true })
 
   const pkgManifestPath = path.join(pkg, 'package.json')
-  const pkgManifest = JSON.parse(fs.readFileSync(pkgManifestPath, 'utf-8'))
+  const pkgManifest = JSON.parse(
+    await fs.promises.readFile(pkgManifestPath, 'utf-8'),
+  )
   pkgManifest.name = `@reatom/${pkgName}`
+  pkgManifest.version = VERSION
   if (description) pkgManifest.description = description
   pkgManifest.author = makePerson(authorName)
   pkgManifest.maintainers = [
@@ -43,19 +80,25 @@ void (async () => {
     ...(authorName === 'artalar' ? [] : [makePerson(authorName)]),
   ]
   pkgManifest.repository.directory = `packages/${pkgName}`
+  pkgManifest.dependencies['@reatom/core'] = `>=${VERSION}`
   pkgManifest.homepage = `https://www.reatom.dev/package/${pkgName}`
-  fs.writeFileSync(pkgManifestPath, JSON.stringify(pkgManifest, null, '\t'))
+  await fs.promises.writeFile(
+    pkgManifestPath,
+    JSON.stringify(pkgManifest, null, '\t'),
+  )
 
   const pkgReadmePath = path.join(pkg, 'README.md')
-  let pkgReadme = fs.readFileSync(pkgReadmePath, 'utf8')
+  let pkgReadme = await fs.promises.readFile(pkgReadmePath, 'utf8')
   pkgReadme = pkgReadme.replaceAll('{{name}}', pkgName)
   pkgReadme = pkgReadme.replaceAll('{{description}}', description)
-  fs.writeFileSync(pkgReadmePath, pkgReadme)
+  await fs.promises.writeFile(pkgReadmePath, pkgReadme)
+
+  await updateReleasePlease(pkgName)
 
   console.log(`\n🍾 Done! Package created in directory "${pkg}"`)
 
   process.exit(0)
-})()
+}
 
 function makePerson(name: string) {
   return { name, url: `https://github.com/${name}` }
