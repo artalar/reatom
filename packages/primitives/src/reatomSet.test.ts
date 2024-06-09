@@ -1,3 +1,5 @@
+import 'core-js/proposals/set-methods-v2'
+
 import { createCtx } from '@reatom/core'
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
