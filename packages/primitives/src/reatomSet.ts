@@ -4,7 +4,7 @@ import { withAssign } from './withAssign'
 export interface SetAtom<T> extends AtomMut<Set<T>> {
   add: Action<[el: T], Set<T>>
   delete: Action<[el: T], Set<T>>
-  switch: Action<[el: T], Set<T>>
+  toggle: Action<[el: T], Set<T>>
   clear: Action<[], Set<T>>
   reset: Action<[], Set<T>>
   intersection: Action<[set: Set<T>], Set<T>>
@@ -68,14 +68,14 @@ export const reatomSet = <T>(
           target(ctx, (prev) => new Set(prev).symmetricDifference(set)),
         `${name}.symmetricDifference`,
       ),
-      switch: action((ctx, el) => {
+      toggle: action((ctx, el) => {
         return target(ctx, (prev) => {
           if (!prev.has(el)) return new Set(prev).add(el)
           const next = new Set(prev)
           next.delete(el)
           return next
         })
-      }, `${name}.switch`),
+      }, `${name}.toggle`),
       has: (ctx: Ctx, el: T) => ctx.get(target).has(el),
       isSubsetOf: (ctx: Ctx, set: Set<T>) => ctx.get(target).isSubsetOf(set),
       isSupersetOf: (ctx: Ctx, set: Set<T>) =>

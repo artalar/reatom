@@ -24,12 +24,12 @@ test(`reatomSet. delete`, () => {
   assert.equal(reatomSet(new Set([1, 2, 3])).delete(ctx, 3), new Set([1, 2]))
 })
 
-test(`reatomSet. switch`, () => {
+test(`reatomSet. toggle`, () => {
   const ctx = createCtx()
   const a = reatomSet(new Set([1, 2, 3]))
 
-  assert.equal(a.switch(ctx, 3), new Set([1, 2]))
-  assert.equal(a.switch(ctx, 3), new Set([1, 2, 3]))
+  assert.equal(a.toggle(ctx, 3), new Set([1, 2]))
+  assert.equal(a.toggle(ctx, 3), new Set([1, 2, 3]))
 })
 
 test(`reatomSet. clear`, () => {
