@@ -4,11 +4,29 @@ import { withAssign } from './withAssign'
 export interface SetAtom<T> extends AtomMut<Set<T>> {
   add: Action<[el: T], Set<T>>
   delete: Action<[el: T], Set<T>>
+  toggle: Action<[el: T], Set<T>>
   clear: Action<[], Set<T>>
   reset: Action<[], Set<T>>
+  intersection: Action<[set: Set<T>], Set<T>>
+  union: Action<[set: Set<T>], Set<T>>
+  difference: Action<[set: Set<T>], Set<T>>
+  symmetricDifference: Action<[set: Set<T>], Set<T>>
   has: (ctx: Ctx, el: T) => boolean
+  isSubsetOf: (ctx: Ctx, set: Set<T>) => boolean
+  isSupersetOf: (ctx: Ctx, set: Set<T>) => boolean
+  isDisjointFrom: (ctx: Ctx, set: Set<T>) => boolean
   /** @deprecated */
   set: Action<[el: T], Set<T>>
+}
+
+interface ProposalSet<T> extends Set<T> {
+  difference(other: Set<T>): Set<T>
+  intersection(other: Set<T>): Set<T>
+  isDisjointFrom(other: Set<T>): boolean
+  isSubsetOf(other: Set<T>): boolean
+  isSupersetOf(other: Set<T>): boolean
+  symmetricDifference(other: Set<T>): Set<T>
+  union(other: Set<T>): Set<T>
 }
 
 export const reatomSet = <T>(
@@ -43,6 +61,42 @@ export const reatomSet = <T>(
         })
       }, `${name}.clear`),
       reset: action((ctx) => target(ctx, initState), `${name}.reset`),
+      intersection: action(
+        (ctx, set) =>
+          target(ctx, (prev) => (prev as ProposalSet<T>).intersection(set)),
+        `${name}.intersection`,
+      ),
+      union: action(
+        (ctx, set) =>
+          target(ctx, (prev) => (prev as ProposalSet<T>).union(set)),
+        `${name}.union`,
+      ),
+      difference: action(
+        (ctx, set) =>
+          target(ctx, (prev) => (prev as ProposalSet<T>).difference(set)),
+        `${name}.difference`,
+      ),
+      symmetricDifference: action(
+        (ctx, set) =>
+          target(ctx, (prev) =>
+            (prev as ProposalSet<T>).symmetricDifference(set),
+          ),
+        `${name}.symmetricDifference`,
+      ),
+      toggle: action((ctx, el) => {
+        return target(ctx, (prev) => {
+          if (!prev.has(el)) return new Set(prev).add(el)
+          const next = new Set(prev)
+          next.delete(el)
+          return next
+        })
+      }, `${name}.toggle`),
       has: (ctx: Ctx, el: T) => ctx.get(target).has(el),
+      isSubsetOf: (ctx: Ctx, set: Set<T>) =>
+        (ctx.get(target) as ProposalSet<T>).isSubsetOf(set),
+      isSupersetOf: (ctx: Ctx, set: Set<T>) =>
+        (ctx.get(target) as ProposalSet<T>).isSupersetOf(set),
+      isDisjointFrom: (ctx: Ctx, set: Set<T>) =>
+        (ctx.get(target) as ProposalSet<T>).isDisjointFrom(set),
     })),
   )
