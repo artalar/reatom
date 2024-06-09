@@ -112,11 +112,11 @@ test(`reatomSet. isDisjointFrom`, () => {
   const ctx = createCtx()
 
   assert.equal(
-    reatomSet(new Set([1, 2, 3])).isDisjointFrom(ctx, new Set([2, 3, 4])),
+    reatomSet(new Set([1, 2, 3])).isDisjointFrom(ctx, new Set([4, 5, 6])),
     true,
   )
   assert.equal(
-    reatomSet(new Set([1, 2, 3])).isDisjointFrom(ctx, new Set([1, 2, 3])),
+    reatomSet(new Set([1, 2, 3])).isDisjointFrom(ctx, new Set([3, 4, 5])),
     false,
   )
 })

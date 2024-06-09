@@ -19,6 +19,16 @@ export interface SetAtom<T> extends AtomMut<Set<T>> {
   set: Action<[el: T], Set<T>>
 }
 
+export interface ProposalSet<T> extends Set<T> {
+  difference(other: Set<T>): Set<T>
+  intersection(other: Set<T>): Set<T>
+  isDisjointFrom(other: Set<T>): boolean
+  isSubsetOf(other: Set<T>): boolean
+  isSupersetOf(other: Set<T>): boolean
+  symmetricDifference(other: Set<T>): Set<T>
+  union(other: Set<T>): Set<T>
+}
+
 export const reatomSet = <T>(
   initState = new Set<T>(),
   name?: string,
@@ -52,19 +62,25 @@ export const reatomSet = <T>(
       }, `${name}.clear`),
       reset: action((ctx) => target(ctx, initState), `${name}.reset`),
       intersection: action(
-        (ctx, set) => target(ctx, (prev) => prev.intersection(set)),
+        (ctx, set) =>
+          target(ctx, (prev) => (prev as ProposalSet<T>).intersection(set)),
         `${name}.intersection`,
       ),
       union: action(
-        (ctx, set) => target(ctx, (prev) => prev.union(set)),
+        (ctx, set) =>
+          target(ctx, (prev) => (prev as ProposalSet<T>).union(set)),
         `${name}.union`,
       ),
       difference: action(
-        (ctx, set) => target(ctx, (prev) => prev.difference(set)),
+        (ctx, set) =>
+          target(ctx, (prev) => (prev as ProposalSet<T>).difference(set)),
         `${name}.difference`,
       ),
       symmetricDifference: action(
-        (ctx, set) => target(ctx, (prev) => prev.symmetricDifference(set)),
+        (ctx, set) =>
+          target(ctx, (prev) =>
+            (prev as ProposalSet<T>).symmetricDifference(set),
+          ),
         `${name}.symmetricDifference`,
       ),
       toggle: action((ctx, el) => {
@@ -76,10 +92,11 @@ export const reatomSet = <T>(
         })
       }, `${name}.toggle`),
       has: (ctx: Ctx, el: T) => ctx.get(target).has(el),
-      isSubsetOf: (ctx: Ctx, set: Set<T>) => ctx.get(target).isSubsetOf(set),
+      isSubsetOf: (ctx: Ctx, set: Set<T>) =>
+        (ctx.get(target) as ProposalSet<T>).isSubsetOf(set),
       isSupersetOf: (ctx: Ctx, set: Set<T>) =>
-        ctx.get(target).isSupersetOf(set),
+        (ctx.get(target) as ProposalSet<T>).isSupersetOf(set),
       isDisjointFrom: (ctx: Ctx, set: Set<T>) =>
-        ctx.get(target).isDisjointFrom(set),
+        (ctx.get(target) as ProposalSet<T>).isDisjointFrom(set),
     })),
   )
