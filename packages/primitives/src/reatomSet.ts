@@ -19,7 +19,7 @@ export interface SetAtom<T> extends AtomMut<Set<T>> {
   set: Action<[el: T], Set<T>>
 }
 
-export interface ProposalSet<T> extends Set<T> {
+interface ProposalSet<T> extends Set<T> {
   difference(other: Set<T>): Set<T>
   intersection(other: Set<T>): Set<T>
   isDisjointFrom(other: Set<T>): boolean
