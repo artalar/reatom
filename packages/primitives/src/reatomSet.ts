@@ -52,20 +52,19 @@ export const reatomSet = <T>(
       }, `${name}.clear`),
       reset: action((ctx) => target(ctx, initState), `${name}.reset`),
       intersection: action(
-        (ctx, set) => target(ctx, (prev) => new Set(prev).intersection(set)),
+        (ctx, set) => target(ctx, (prev) => prev.intersection(set)),
         `${name}.intersection`,
       ),
       union: action(
-        (ctx, set) => target(ctx, (prev) => new Set(prev).union(set)),
+        (ctx, set) => target(ctx, (prev) => prev.union(set)),
         `${name}.union`,
       ),
       difference: action(
-        (ctx, set) => target(ctx, (prev) => new Set(prev).difference(set)),
+        (ctx, set) => target(ctx, (prev) => prev.difference(set)),
         `${name}.difference`,
       ),
       symmetricDifference: action(
-        (ctx, set) =>
-          target(ctx, (prev) => new Set(prev).symmetricDifference(set)),
+        (ctx, set) => target(ctx, (prev) => prev.symmetricDifference(set)),
         `${name}.symmetricDifference`,
       ),
       toggle: action((ctx, el) => {
