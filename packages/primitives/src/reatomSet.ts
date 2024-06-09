@@ -4,9 +4,17 @@ import { withAssign } from './withAssign'
 export interface SetAtom<T> extends AtomMut<Set<T>> {
   add: Action<[el: T], Set<T>>
   delete: Action<[el: T], Set<T>>
+  switch: Action<[el: T], Set<T>>
   clear: Action<[], Set<T>>
   reset: Action<[], Set<T>>
+  intersection: Action<[set: Set<T>], Set<T>>
+  union: Action<[set: Set<T>], Set<T>>
+  difference: Action<[set: Set<T>], Set<T>>
+  symmetricDifference: Action<[set: Set<T>], Set<T>>
   has: (ctx: Ctx, el: T) => boolean
+  isSubsetOf: (ctx: Ctx, set: Set<T>) => boolean
+  isSupersetOf: (ctx: Ctx, set: Set<T>) => boolean
+  isDisjointFrom: (ctx: Ctx, set: Set<T>) => boolean
   /** @deprecated */
   set: Action<[el: T], Set<T>>
 }
@@ -43,6 +51,36 @@ export const reatomSet = <T>(
         })
       }, `${name}.clear`),
       reset: action((ctx) => target(ctx, initState), `${name}.reset`),
+      intersection: action(
+        (ctx, set) => target(ctx, (prev) => new Set(prev).intersection(set)),
+        `${name}.intersection`,
+      ),
+      union: action(
+        (ctx, set) => target(ctx, (prev) => new Set(prev).union(set)),
+        `${name}.union`,
+      ),
+      difference: action(
+        (ctx, set) => target(ctx, (prev) => new Set(prev).difference(set)),
+        `${name}.difference`,
+      ),
+      symmetricDifference: action(
+        (ctx, set) =>
+          target(ctx, (prev) => new Set(prev).symmetricDifference(set)),
+        `${name}.symmetricDifference`,
+      ),
+      switch: action((ctx, el) => {
+        return target(ctx, (prev) => {
+          if (!prev.has(el)) return new Set(prev).add(el)
+          const next = new Set(prev)
+          next.delete(el)
+          return next
+        })
+      }, `${name}.switch`),
       has: (ctx: Ctx, el: T) => ctx.get(target).has(el),
+      isSubsetOf: (ctx: Ctx, set: Set<T>) => ctx.get(target).isSubsetOf(set),
+      isSupersetOf: (ctx: Ctx, set: Set<T>) =>
+        ctx.get(target).isSupersetOf(set),
+      isDisjointFrom: (ctx: Ctx, set: Set<T>) =>
+        ctx.get(target).isDisjointFrom(set),
     })),
   )
