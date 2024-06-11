@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/primitives-v3.6.0...primitives-v3.7.0) (2024-06-11)
+
+
+### Features
+
+* **primitives:** add new set methods and tests for reatomSet ([#866](https://github.com/artalar/reatom/issues/866)) ([a8ae20f](https://github.com/artalar/reatom/commit/a8ae20f9abe8adbde4e4c44247578a00b227e5e3))
+
+
+### Bug Fixes
+
+* **primitives:** linked list batch ([1fd859c](https://github.com/artalar/reatom/commit/1fd859c7309e4e398a578a1b278fdded434c026b))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/primitives-v3.5.0...primitives-v3.6.0) (2024-06-05)
 
 

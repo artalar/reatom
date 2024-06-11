@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/logger-v3.6.1...logger-v3.7.0) (2024-06-11)
+
+
+### Features
+
+* **logger:** add experimental_reatomInspector ([f1de3db](https://github.com/artalar/reatom/commit/f1de3db5eafb1822d974e43325b73f1f606591b5))
+
 ## [3.6.1](https://github.com/artalar/reatom/compare/logger-v3.6.0...logger-v3.6.1) (2024-04-28)
 
 
