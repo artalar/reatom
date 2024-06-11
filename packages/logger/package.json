@@ -26,7 +26,7 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@observablehq/inspector": "^5.0.0",
+    "@discoveryjs/discovery": "1.0.0-beta.83",
     "@reatom/core": "^3.8.1",
     "@reatom/jsx": "^3.11.0",
     "@reatom/lens": "^3.10.0"

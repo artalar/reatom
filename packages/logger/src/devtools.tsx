@@ -1,126 +1,12 @@
 // @jsxRuntime classic
 // @jsx h
-// TODO @artalar
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-// @ts-expect-error TODO write types
-import { Inspector } from '@observablehq/inspector'
 import { type AtomProto, type Ctx, type Rec } from '@reatom/core'
 import { parseAtoms } from '@reatom/lens'
-// eslint-disable-next-line unused-imports/no-unused-imports
 import { h, mount } from '@reatom/jsx'
+import { createDiscovery } from './discovery'
 
-export const experimental_reatomInspector = (ctx: Ctx) => {
-  /* eslint-disable react/no-unknown-property */
-
-  // For syntax highlighting and prettier support
-  const css = (styles: TemplateStringsArray) => styles.join('')
-
+export const experimental_reatomInspector = async (ctx: Ctx) => {
   const MAX_Z = Math.pow(2, 32) - 1
-
-  const styleEl = (
-    <style>{css`
-      .observablehq {
-        margin-left: 2rem;
-      }
-
-      .observablehq--inspect {
-        padding: 0.5rem 0;
-      }
-
-      .observablehq svg {
-        display: inline-block;
-      }
-
-      .observablehq--expanded,
-      .observablehq--collapsed,
-      .observablehq--function,
-      .observablehq--import,
-      .observablehq--string:before,
-      .observablehq--string:after,
-      .observablehq--gray {
-        /* color: var(--syntax_normal); */
-      }
-
-      .observablehq--collapsed,
-      .observablehq--inspect a {
-        cursor: pointer;
-      }
-
-      .observablehq--field {
-        text-indent: -1em;
-        margin-left: 1em;
-      }
-
-      .observablehq--empty {
-        /* color: var(--syntax_comment); */
-      }
-
-      .observablehq--keyword,
-      .observablehq--blue {
-        color: #3182bd;
-      }
-
-      .observablehq--forbidden,
-      .observablehq--pink {
-        color: #e377c2;
-      }
-
-      .observablehq--orange {
-        color: #e6550d;
-      }
-
-      .observablehq--null,
-      .observablehq--undefined,
-      .observablehq--boolean {
-        /* color: var(--syntax_atom); */
-      }
-
-      .observablehq--number,
-      .observablehq--bigint,
-      .observablehq--date,
-      .observablehq--regexp,
-      .observablehq--symbol,
-      .observablehq--green {
-        /* color: var(--syntax_number); */
-      }
-
-      .observablehq--index,
-      .observablehq--key {
-        /* color: var(--syntax_key); */
-      }
-
-      .observablehq--prototype-key {
-        color: #aaa;
-      }
-
-      .observablehq--empty {
-        font-style: oblique;
-      }
-
-      .observablehq--string,
-      .observablehq--purple {
-        /* color: var(--syntax_string); */
-      }
-
-      .observablehq--error,
-      .observablehq--red {
-        color: #e7040f;
-      }
-
-      .observablehq--inspect {
-        /* font: var(--mono_fonts); */
-        overflow-x: auto;
-        display: block;
-        white-space: pre;
-      }
-
-      .observablehq--error .observablehq--inspect {
-        word-break: break-all;
-        white-space: pre-wrap;
-      }
-    `}</style>
-  )
 
   // TODO: babel problem
   // const logo = (
@@ -130,6 +16,8 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
   //     fill="#151134"
   //     stroke="#fff"
   //     stroke-width="15px"
+  //     aria-label="Reatom devtools DnD handler"
+  //     tabindex="0"
   //     css={`
   //       --size: calc(5vmin + 5vmax);
   //       position: absolute;
@@ -137,6 +25,8 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
   //       height: var(--size);
   //       top: calc(var(--size) * -0.6);
   //       left: calc(var(--size) * -0.6);
+  //       outline: none;
+  //       z-index: ${MAX_Z};
   //     `}
   //     on:pointerdown={(ctx, e) => {
   //       e.currentTarget.setPointerCapture(e.pointerId)
@@ -181,6 +71,8 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
       fill: '#151134',
       stroke: '#fff',
       'stroke-width': '15px',
+      'aria-label': 'Reatom devtools DnD handler',
+      tabindex: 0,
       css: `
       --size: calc(5vmin + 5vmax);
       position: absolute;
@@ -188,11 +80,13 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
       height: var(--size);
       top: calc(var(--size) * -0.6);
       left: calc(var(--size) * -0.6);
+      outline: none;
+      z-index: ${MAX_Z};
     `,
-      'on:pointerdown': (ctx, e) => {
-        e.currentTarget.setPointerCapture(e.pointerId)
+      'on:pointerdown': (ctx: Ctx, e: any) => {
+        e.currentTarget?.setPointerCapture(e.pointerId)
       },
-      'on:pointermove': (ctx, e) => {
+      'on:pointermove': (ctx: Ctx, e: any) => {
         if (e.currentTarget.hasPointerCapture(e.pointerId)) {
           const x = Math.min(
             window.innerWidth * 0.9,
@@ -296,7 +190,6 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
         height: 100%;
         overflow: auto;
         z-index: 1;
-        margin: calc(1vmin + 1vmax);
       `}
     />
   )
@@ -309,17 +202,36 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
         right: 0;
         width: 0px;
         height: 0px;
-        background: #141132ee;
         z-index: ${MAX_Z};
       `}
     >
       {logo}
-      {styleEl}
+      <button
+        css={`
+          position: absolute;
+          top: 1px;
+          right: 5px;
+          width: 30px;
+          height: 30px;
+          border: none;
+          border-radius: 0 0 6px 6px;
+          z-index: 10;
+          background: transparent;
+          color: #7f7f7f;
+          cursor: pointer;
+        `}
+        aria-label="Reload"
+      >
+        ↻
+      </button>
+      <style>{`
+        .discovery { padding: 0; border: 1px solid #141132ee; }
+      `}</style>
       {inspectorEl}
     </div>
   )
 
-  const inspector = new Inspector(inspectorEl)
+  let widget = await createDiscovery(inspectorEl as HTMLElement)
   const logObject: Rec = {}
   const touched = new WeakSet<AtomProto>()
 
@@ -332,9 +244,9 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
       }
 
       let thisLogObject = logObject
-      let { name } = proto
+      let name = proto.name!
 
-      if (name[0] === name[0].toUpperCase()) {
+      if (name[0] === name[0]?.toUpperCase()) {
         thisLogObject = logObject.Component ??= {}
       }
 
@@ -365,7 +277,20 @@ export const experimental_reatomInspector = (ctx: Ctx) => {
     }
   })
 
-  inspector.fulfilled(logObject)
+  containerEl.querySelector('button')!.onclick = async () => {
+    // @ts-expect-error
+    widget.unloadData()
+    inspectorEl.innerHTML = ''
+    let widget = await createDiscovery(inspectorEl as HTMLElement)
+    widget.setData(logObject)
+  }
+
+  const clearId = setInterval(() => {
+    if (Object.keys(logObject).length > 0) {
+      widget.setData(logObject)
+      clearTimeout(clearId)
+    }
+  }, 100)
 
   mount(document.body, containerEl)
 }
