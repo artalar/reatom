@@ -344,4 +344,24 @@ test('update skipped atom', () => {
   assert.is(parent.textContent, '123')
 })
 
+test('render HTMLElement atom', () => {
+  const { h, hf } = setup()
+
+  const htmlAtom = atom(<div>div</div>, 'html')
+
+  const element = <div>{htmlAtom}</div>
+
+  assert.is(element.innerHTML, '<div>div</div>')
+})
+
+test('render SVGElement atom', () => {
+  const { h, hf } = setup()
+
+  const svgAtom = atom(<svg:svg>svg</svg:svg>, 'svg')
+
+  const element = <div>{svgAtom}</div>
+
+  assert.is(element.innerHTML, '<svg>svg</svg>')
+})
+
 test.run()

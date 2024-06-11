@@ -34,7 +34,7 @@ type DomApis = Pick<
 
 const isSkipped = (value: unknown): value is  boolean | '' | null | undefined => typeof value === 'boolean' || value === '' || value == null
 
-let unsubscribesMap = new WeakMap<HTMLElement, Array<Fn>>()
+let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
 let unlink = (parent: any, un: Unsubscribe) => {
   // check the connection in the next tick
   // to give the user (programmer) an ability
@@ -228,7 +228,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
                   'array children with other children are not supported',
                 )
 
-                if (v instanceof DOM.HTMLElement) {
+                if (v instanceof DOM.Element) {
                   let list = unsubscribesMap.get(v)
                   if (!list) unsubscribesMap.set(v, (list = []))
 
