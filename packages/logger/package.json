@@ -26,10 +26,10 @@
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
+    "@observablehq/inspector": "^5.0.0",
     "@reatom/core": "^3.8.1",
-    "@reatom/lens": "^3.10.0",
     "@reatom/jsx": "^3.11.0",
-    "@observablehq/inspector": "^5.0.0"
+    "@reatom/lens": "^3.10.0"
   },
   "author": "artalar",
   "license": "MIT",
