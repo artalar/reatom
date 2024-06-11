@@ -1,6 +1,6 @@
 {
   "name": "@reatom/npm-zod",
-  "version": "3.9.0",
+  "version": "3.10.0",
   "publishConfig": {
     "tag": "alpha"
   },
