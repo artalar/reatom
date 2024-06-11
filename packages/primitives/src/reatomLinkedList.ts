@@ -60,7 +60,7 @@ export interface LinkedListAtom<
   Node extends Rec = Rec,
   Key extends keyof Node = never,
 > extends LinkedListLikeAtom<LinkedList<LLNode<Node>>> {
-  batch: Action<[cb: Fn], void>
+  batch: Action<[cb: Fn]>
 
   create: Action<Params, LLNode<Node>>
   remove: Action<[LLNode<Node>], boolean>
@@ -261,8 +261,8 @@ export const reatomLinkedList = <
     }
   }
 
-  const batch = action((ctx, cb: Fn) => {
-    if (STATE) return STATE
+  const batchFn = <T>(ctx: Ctx, cb: Fn<[Ctx], T>): T => {
+    if (STATE) return cb(ctx)
 
     STATE = linkedList(ctx, ({ head, tail, size, version }) => ({
       size,
@@ -277,68 +277,72 @@ export const reatomLinkedList = <
     } finally {
       STATE = null
     }
-  }, `${name}._batch`)
+  }
+
+  const batch = action(batchFn, `${name}._batch`)
 
   const create = action((ctx, ...params: Params): LLNode<Node> => {
-    if (!STATE) return batch(ctx, () => create(ctx, ...params))
+    return batchFn(ctx, () => {
+      const node = userCreate(ctx, ...params) as LLNode<Node>
 
-    const node = userCreate(ctx, ...params) as LLNode<Node>
+      throwReatomError(
+        !isObject(node) && typeof node !== 'function',
+        `reatomLinkedList can operate only with objects or functions, received "${node}".`,
+      )
+      throwModel(node)
 
-    throwReatomError(
-      !isObject(node) && typeof node !== 'function',
-      `reatomLinkedList can operate only with objects or functions, received "${node}".`,
-    )
-    throwModel(node)
+      addLL(STATE!, node, STATE!.tail)
 
-    addLL(STATE, node, STATE.tail)
+      STATE!.changes.push({ kind: 'create', node })
 
-    STATE.changes.push({ kind: 'create', node })
-
-    return node
+      return node
+    })
   }, `${name}.create`)
 
   const remove = action((ctx, node: LLNode<Node>): boolean => {
-    if (!STATE) return batch(ctx, () => remove(ctx, node))
-    throwNotModel(node)
+    return batchFn(ctx, () => {
+      throwNotModel(node)
 
-    removeLL(STATE, node)
+      removeLL(STATE!, node)
 
-    STATE.changes.push({ kind: 'remove', node })
+      STATE!.changes.push({ kind: 'remove', node })
 
-    return true
+      return true
+    })
   }, `${name}.remove`)
 
   const swap = action((ctx, a: LLNode<Node>, b: LLNode<Node>): void => {
-    if (!STATE) return batch(ctx, () => swap(ctx, a, b))
+    return batchFn(ctx, () => {
+      throwNotModel(a)
+      throwNotModel(b)
 
-    throwNotModel(a)
-    throwNotModel(b)
+      if (a === b) return
 
-    if (a === b) return
+      swapLL(STATE!, a, b)
 
-    swapLL(STATE, a, b)
-
-    STATE.changes.push({ kind: 'swap', a, b })
+      STATE!.changes.push({ kind: 'swap', a, b })
+    })
   }, `${name}.swap`)
 
   const move = action(
     (ctx, node: LLNode<Node>, after: null | LLNode<Node>): void => {
-      if (!STATE) return batch(ctx, () => move(ctx, node, after))
-      throwNotModel(node)
+      return batchFn(ctx, () => {
+        throwNotModel(node)
 
-      moveLL(STATE, node, after)
+        moveLL(STATE!, node, after)
 
-      STATE.changes.push({ kind: 'move', node, after })
+        STATE!.changes.push({ kind: 'move', node, after })
+      })
     },
     `${name}.move`,
   )
 
   const clear = action((ctx): void => {
-    if (!STATE) return batch(ctx, () => clear(ctx))
+    return batchFn(ctx, () => {
+      clearLL(STATE!)
 
-    clearLL(STATE)
-
-    STATE.changes.push({ kind: 'clear' })
+      STATE!.changes.push({ kind: 'clear' })
+    })
   }, `${name}.clear`)
 
   const find = (

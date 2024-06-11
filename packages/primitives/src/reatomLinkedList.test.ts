@@ -1,10 +1,11 @@
-import { atom } from '@reatom/core'
-import { createTestCtx } from '@reatom/testing'
+import { action, atom } from '@reatom/core'
+import { createTestCtx, mockFn } from '@reatom/testing'
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 
 import { reatomLinkedList } from './reatomLinkedList'
 import { parseAtoms } from '@reatom/lens'
+import { isCausedBy } from '@reatom/effects'
 
 const test = suite('reatomLinkedList')
 
@@ -149,6 +150,21 @@ test('should respect node keys even if it is an atom', () => {
 
   ctx.get(list.map).get('1')?.id(ctx, '0')
   assert.equal(track.lastInput(), ['0', '2'])
+})
+
+test('should correctly handle batching and cause tracking', () => {
+  const ctx = createTestCtx()
+  const list = reatomLinkedList(() => ({}))
+  list.onChange((ctx) => {
+    isCausedBy(ctx, action())
+  })
+
+  list.create(ctx)
+
+  list.batch(ctx, () => {
+    list.create(ctx)
+    list.create(ctx)
+  })
 })
 
 test.run()
