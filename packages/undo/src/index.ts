@@ -54,7 +54,7 @@ const update = (ctx: Ctx, anAtom: AtomMut | Atom, state: any) =>
 export const withUndo =
   <T extends AtomMut & Partial<WithUndo<AtomState<T>>>>({
     length = 30,
-    shouldUpdate = () => true,
+    shouldUpdate = (ctx, state, history) => history[history.length - 1] !== state,
     shouldReplace = () => false,
   }: WithUndoOptions<AtomState<T>> = {}): Fn<[T], T & WithUndo<AtomState<T>>> =>
   (anAtom) => {
@@ -63,10 +63,10 @@ export const withUndo =
     if (!anAtom.undo) {
       const { name } = anAtom.__reatom
 
-      const historyAtom = anAtom.historyAtom = atom<Array<AtomState<T>>>(
+      const historyAtom = (anAtom.historyAtom = atom<Array<AtomState<T>>>(
         [],
         `${name}.Undo._historyAtom`,
-      )
+      ))
 
       anAtom.pipe(
         withInit((ctx, init) => {
@@ -114,17 +114,16 @@ export const withUndo =
           shouldUpdate(ctx, state, ctx.get(historyAtom), position)
         ) {
           historyAtom(ctx, (history) => {
-            if (history[history.length - 1] !== state) {
-              history = history.slice(
-                Math.max(0, position - (length - 2)),
-                position + 1,
-              )
-              if (!shouldReplace(ctx, state, history, position)) {
-                position++
-              }
-              position = Math.min(position, length - 1)
-              history[position] = state
+            history = history.slice(
+              Math.max(0, position - (length - 2)),
+              position + 1,
+            )
+            if (!shouldReplace(ctx, state, history, position)) {
+              position++
             }
+            position = Math.min(position, length - 1)
+            history[position] = state
+
             positionAtom(ctx, position)
             return history
           })

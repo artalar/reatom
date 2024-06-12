@@ -172,7 +172,7 @@ test('reatomDynamicUndo', () => {
   ;('👍') //?
 })
 
-test('shouldReplace', () => {
+test('"shouldReplace"', () => {
   const inputAtom = atom('').pipe(
     withUndo({ shouldReplace: (ctx, state) => !state.endsWith(' ') }),
   )
@@ -190,6 +190,28 @@ test('shouldReplace', () => {
   inputAtom.undo(ctx)
   inputAtom.undo(ctx)
   assert.is(ctx.get(inputAtom), 'This')
+  ;('👍') //?
+})
+
+test('"shouldUpdate"', () => {
+  const inputAtom = atom('').pipe(
+    withUndo({ shouldUpdate: () => true }),
+  )
+  const ctx = createTestCtx()
+
+  assert.is(ctx.get(inputAtom), '')
+  assert.is(ctx.get(inputAtom.historyAtom).length, 1)
+
+  inputAtom(ctx, 'a')
+  inputAtom(ctx, 'b')
+  assert.is(ctx.get(inputAtom), 'b')
+  assert.is(ctx.get(inputAtom.historyAtom).length, 3)
+
+  inputAtom.undo(ctx)
+  inputAtom.undo(ctx)
+  inputAtom(ctx, 'b')
+  assert.is(ctx.get(inputAtom), 'b')
+  assert.is(ctx.get(inputAtom.historyAtom).length, 2)
   ;('👍') //?
 })
 
