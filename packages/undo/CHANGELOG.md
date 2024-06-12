@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.3](https://github.com/artalar/reatom/compare/undo-v3.3.2...undo-v3.3.3) (2024-06-12)
+
+
+### Bug Fixes
+
+* **undo:** correct shouldUpdate ([f94d5b9](https://github.com/artalar/reatom/commit/f94d5b9489b0c0d0798eb258941af7dbc9b90a7c))
+
 ## [3.3.2](https://github.com/artalar/reatom/compare/undo-v3.3.1...undo-v3.3.2) (2024-04-28)
 
 
