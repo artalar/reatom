@@ -1,7 +1,9 @@
-import { Atom, Ctx, isAtom, Rec } from '@reatom/core'
+import { Action, Atom, Ctx, isAction, isAtom, Rec } from '@reatom/core'
 import { isRec } from '@reatom/utils'
 
-export type ParseAtoms<T> = T extends Atom<infer T>
+export type ParseAtoms<T> = T extends Action
+  ? T
+  : T extends Atom<infer T>
   ? ParseAtoms<T>
   : T extends Map<infer K, infer T>
   ? Map<K, ParseAtoms<T>>
@@ -17,6 +19,8 @@ export const parseAtoms = <Value>(
   ctx: Ctx,
   value: Value,
 ): ParseAtoms<Value> => {
+  if (isAction(value)) return value as ParseAtoms<Value>
+
   while (isAtom(value)) value = ctx.spy ? ctx.spy(value) : ctx.get(value)
 
   if (typeof value !== 'object' || value === null) return value as any
