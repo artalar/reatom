@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.11.0](https://github.com/artalar/reatom/compare/lens-v3.10.0...lens-v3.11.0) (2024-06-12)
+
+
+### Features
+
+* **lens:** support linked list in parseAtoms ([534d745](https://github.com/artalar/reatom/commit/534d74583af3890fe9ac18baf08b11c25dd1f957))
+
+
+### Bug Fixes
+
+* **lens:** do not perform actions in parseAtoms ([cff48d0](https://github.com/artalar/reatom/commit/cff48d060ae2a6a0afab4612353bac1926f39c21))
+
 ## [3.10.0](https://github.com/artalar/reatom/compare/lens-v3.9.1...lens-v3.10.0) (2024-05-25)
 
 
