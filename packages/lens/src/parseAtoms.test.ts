@@ -3,6 +3,7 @@ import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { atom } from '@reatom/core'
 import { parseAtoms } from './parseAtoms'
+import { reatomLinkedList } from '@reatom/primitives'
 
 const test = suite('parseAtoms')
 
@@ -148,6 +149,18 @@ test('should parse deep structures', () => {
   assert.equal(parseAtoms(ctx, [[[[[atom('deepStruct')]]]]]), [
     [[[['deepStruct']]]],
   ])
+  ;`👍` //?
+})
+
+test('should parse linked list as array', () => {
+  const ctx = createTestCtx()
+  const list = reatomLinkedList((ctx, n: number) => ({ n }))
+
+  list.create(ctx, 1)
+  list.create(ctx, 2)
+  list.create(ctx, 3)
+  const snapshot = parseAtoms(ctx, list)
+  assert.equal(snapshot, [{ n: 1 }, { n: 2 }, { n: 3 }])
   ;`👍` //?
 })
 

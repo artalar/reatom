@@ -1,8 +1,17 @@
 import { Action, Atom, Ctx, isAction, isAtom, Rec } from '@reatom/core'
+import {
+  isLinkedListAtom,
+  LinkedList,
+  LinkedListLikeAtom,
+} from '@reatom/primitives'
 import { isRec } from '@reatom/utils'
 
 export type ParseAtoms<T> = T extends Action
   ? T
+  : T extends LinkedListLikeAtom<infer T>
+  ? T extends LinkedList<infer T>
+    ? Array<T>
+    : never
   : T extends Atom<infer T>
   ? ParseAtoms<T>
   : T extends Map<infer K, infer T>
@@ -20,6 +29,8 @@ export const parseAtoms = <Value>(
   value: Value,
 ): ParseAtoms<Value> => {
   if (isAction(value)) return value as ParseAtoms<Value>
+
+  if (isLinkedListAtom(value)) value = value.array as any
 
   while (isAtom(value)) value = ctx.spy ? ctx.spy(value) : ctx.get(value)
 
