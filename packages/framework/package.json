@@ -1,6 +1,6 @@
 {
   "name": "@reatom/framework",
-  "version": "3.4.42",
+  "version": "3.4.43",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for framework",
@@ -26,9 +26,9 @@
     "@reatom/core": "^3.8.1",
     "@reatom/effects": "^3.8.0",
     "@reatom/hooks": "^3.5.3",
-    "@reatom/lens": "^3.10.0",
-    "@reatom/logger": "^3.6.1",
-    "@reatom/primitives": "^3.6.0",
+    "@reatom/lens": "^3.11.0",
+    "@reatom/logger": "^3.8.0",
+    "@reatom/primitives": "^3.7.0",
     "@reatom/utils": "^3.9.0"
   },
   "author": "artalar",
