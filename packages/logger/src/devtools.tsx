@@ -1,11 +1,20 @@
 // @jsxRuntime classic
 // @jsx h
 import { type AtomProto, type Ctx, type Rec } from '@reatom/core'
-import { parseAtoms } from '@reatom/lens'
+// import { parseAtoms } from '@reatom/lens'
 import { h, mount } from '@reatom/jsx'
-import { createDiscovery } from './discovery'
 
-export const experimental_reatomInspector = async (ctx: Ctx) => {
+export const experimental_reatomInspector = async (
+  ctx: Ctx,
+  {
+    separator = /\.|#/,
+    privatePrefix = '_',
+  }: { separator?: string | RegExp; privatePrefix?: string } = {},
+) => {
+  // discovery fix
+  globalThis.global = globalThis
+  const { createDiscovery } = await import('./discovery')
+
   const MAX_Z = Math.pow(2, 32) - 1
 
   // TODO: babel problem
@@ -194,6 +203,52 @@ export const experimental_reatomInspector = async (ctx: Ctx) => {
     />
   )
 
+  const reloadEl = (
+    <button
+      css={`
+        position: absolute;
+        top: 1px;
+        left: 40px;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 0 0 6px 6px;
+        font-size: 0.8em;
+        z-index: 10;
+        background: transparent;
+        color: #7f7f7f;
+        cursor: pointer;
+      `}
+      title="Reload"
+      aria-label="Reload"
+    >
+      ↻
+    </button>
+  )
+
+  const logEl = (
+    <button
+      css={`
+        position: absolute;
+        top: 1px;
+        left: 70px;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 0 0 6px 6px;
+        font-size: 0.8em;
+        z-index: 10;
+        background: transparent;
+        color: #7f7f7f;
+        cursor: pointer;
+      `}
+      title="Log structured clone"
+      aria-label="Log structured clone"
+    >
+      log
+    </button>
+  )
+
   const containerEl = (
     <div
       css={`
@@ -206,26 +261,10 @@ export const experimental_reatomInspector = async (ctx: Ctx) => {
       `}
     >
       {logo}
-      <button
-        css={`
-          position: absolute;
-          top: 1px;
-          right: 5px;
-          width: 30px;
-          height: 30px;
-          border: none;
-          border-radius: 0 0 6px 6px;
-          z-index: 10;
-          background: transparent;
-          color: #7f7f7f;
-          cursor: pointer;
-        `}
-        aria-label="Reload"
-      >
-        ↻
-      </button>
+      {reloadEl}
+      {logEl}
       <style>{`
-        .discovery { padding: 0; border: 1px solid #141132ee; }
+        .discovery { padding: 0; border: 1px solid #141132ee; height: 100%; }
       `}</style>
       {inspectorEl}
     </div>
@@ -236,10 +275,14 @@ export const experimental_reatomInspector = async (ctx: Ctx) => {
   const touched = new WeakSet<AtomProto>()
 
   ctx.subscribe(async (logs) => {
-    await null // needed to prevent `Maximum call stack size exceeded` coz `parseAtoms`
+    // await null // needed to prevent `Maximum call stack size exceeded` coz `parseAtoms`
 
     for (const { proto, state } of logs) {
-      if (proto.isAction || proto.name?.includes('_') || touched.has(proto)) {
+      if (
+        proto.isAction ||
+        proto.name?.includes(privatePrefix) ||
+        touched.has(proto)
+      ) {
         continue
       }
 
@@ -250,7 +293,7 @@ export const experimental_reatomInspector = async (ctx: Ctx) => {
         thisLogObject = logObject.Component ??= {}
       }
 
-      name.split(/\.|#/).forEach((key, i, { length }) => {
+      name.split(separator).forEach((key, i, { length }) => {
         if (i === length - 1) {
           name = key
         } else {
@@ -259,7 +302,7 @@ export const experimental_reatomInspector = async (ctx: Ctx) => {
       })
 
       let update = (state: any) => {
-        thisLogObject[name] = parseAtoms(ctx, state)
+        thisLogObject[name] = state // parseAtoms(ctx, state)
       }
 
       if (name === 'urlAtom') {
@@ -270,19 +313,26 @@ export const experimental_reatomInspector = async (ctx: Ctx) => {
 
       update(state)
       ;(proto.updateHooks ?? new Set()).add((ctx, { state }) => {
+        console.log('update', name, state)
         update(state)
       })
 
       touched.add(proto)
     }
+
+    console.log(logObject)
   })
 
-  containerEl.querySelector('button')!.onclick = async () => {
+  reloadEl.onclick = async () => {
     // @ts-expect-error
     widget.unloadData()
     inspectorEl.innerHTML = ''
     let widget = await createDiscovery(inspectorEl as HTMLElement)
     widget.setData(logObject)
+  }
+
+  logEl.onclick = () => {
+    console.log(structuredClone(logObject))
   }
 
   const clearId = setInterval(() => {

@@ -21,7 +21,7 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs",
+    "build": "microbundle -f esm,cjs --css inline",
     "test": "tsc && tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
@@ -45,9 +45,7 @@
     "/build",
     "/package.json"
   ],
-  "devDependencies": {
-    "@reatom/npm-react": "^3.6.1"
-  },
+  "devDependencies": {},
   "babel": {
     "presets": [
       [
