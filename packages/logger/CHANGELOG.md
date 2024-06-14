@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.1](https://github.com/artalar/reatom/compare/logger-v3.8.0...logger-v3.8.1) (2024-06-14)
+
+
+### Bug Fixes
+
+* **logger:** discoveryjs bundle ([0200114](https://github.com/artalar/reatom/commit/020011447a3f379a182f4b9dbb4dc754b46a4a85))
+
 ## [3.8.0](https://github.com/artalar/reatom/compare/logger-v3.7.0...logger-v3.8.0) (2024-06-12)
 
 

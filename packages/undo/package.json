@@ -1,6 +1,6 @@
 {
   "name": "@reatom/undo",
-  "version": "3.3.3",
+  "version": "3.4.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for undo",
