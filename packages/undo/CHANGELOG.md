@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/undo-v3.3.3...undo-v3.4.0) (2024-06-14)
+
+
+### Features
+
+* **undo:** add withPersist option ([f76d0fc](https://github.com/artalar/reatom/commit/f76d0fc4c7c0fe655de56f79f3c3b5ca874c8640))
+
 ## [3.3.3](https://github.com/artalar/reatom/compare/undo-v3.3.2...undo-v3.3.3) (2024-06-12)
 
 
