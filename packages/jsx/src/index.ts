@@ -34,7 +34,7 @@ type DomApis = Pick<
 
 const isSkipped = (value: unknown): value is  boolean | '' | null | undefined => typeof value === 'boolean' || value === '' || value == null
 
-let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
+let unsubscribesMap = new WeakMap<Node, Array<Fn>>()
 let unlink = (parent: any, un: Unsubscribe) => {
   // check the connection in the next tick
   // to give the user (programmer) an ability
@@ -152,8 +152,73 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
     }
   }
 
+  type Primitive = string | number | boolean | null | undefined
+  type AtomElement = HTMLElement | SVGElement | Text
+  type ArrayMaybe<T> = Array<T> | T
+
+  const toArray = <T>(array: ArrayMaybe<T>): Array<T> => Array.isArray(array) ? array : [array]
+  const nextTick = (cb: Fn): void => void Promise.resolve().then(cb)
+  /** @see https://github.com/vuejs/core/blob/7c8b12620aad4969b8dc4944d4fc486d16c3033c/packages/shared/src/toDisplayString.ts#L17 */
+  const prettyStringify = (value: unknown): string => JSON.stringify(value, undefined, 2)
+  const serializeRenderAtom = (at: Atom, count: number) => prettyStringify({
+    name: at.__reatom.name!,
+    count,
+  })
+
+  const renderAtom = (stateAtom: Atom<ArrayMaybe<AtomElement | Primitive>>) => {
+    const fragment = new DOM.DocumentFragment()
+    /** @todo Добавлять информацию об атоме. */
+    // const target = DOM.document.createComment(serializeRenderAtom(stateAtom, 0))
+    const target = DOM.document.createComment('')
+    let elements: AtomElement[] = []
+    let error: any
+
+    var un: undefined | Unsubscribe = ctx.subscribe(stateAtom, (newState): void => {
+      try {
+        if (un && !target.isConnected) {
+          un()
+        } else {
+          const newNodes = toArray(newState)
+            .filter((it) => !isSkipped(it))
+            .map((it) => {
+              if (it instanceof DOM.Node) {
+                return it
+              } else {
+                /** @todo Подумать над форматированием вывода с помощью `JSON.stringify`. */
+                const value = String(it)
+                const node = DOM.document.createTextNode(value)
+                return node
+              }
+            })
+
+          /** @todo Разобраться с назначением? */
+          // let list = unsubscribesMap.get(target)
+          // if (!list) unsubscribesMap.set(target, (list = []))
+
+          elements.forEach((node) => node.remove())
+          target.after(...newNodes)
+          // target.textContent = serializeRenderAtom(stateAtom, newNodes.length)
+          elements = newNodes
+        }
+      } catch (e) {
+        error = e
+      }
+    })
+    if (error) throw error
+    fragment.append(target, ...elements)
+    unlink(target, un)
+    return fragment
+  }
+
   let h = (tag: any, props: Rec, ...children: any[]) => {
-    if (tag === hf) return children
+    /** @todo Написать тесты. */
+    if (tag === hf) {
+      return children.map((child) => isAtom(child) ? renderAtom(child) : child)
+    }
+
+    if (isAtom(tag)) {
+      return renderAtom(tag)
+    }
 
     if (typeof tag === 'function') {
       ;(props ??= {}).children = children
@@ -161,7 +226,8 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       let _name = tag.name
       try {
         name = tag.name
-        return tag(props)
+        const el = tag(props)
+        return isAtom(el) ? renderAtom(el) : el
       } finally {
         name = _name
       }
@@ -210,48 +276,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         if (isLinkedListAtom(child)) {
           walkLinkedList(ctx, element, child)
         } else if (isAtom(child)) {
-          let innerChild = DOM.document.createTextNode('') as
-            | ChildNode
-            | DocumentFragment
-          let error: any
-          var un: undefined | Unsubscribe = ctx.subscribe(child, (v): void => {
-            try {
-              if (
-                un &&
-                !innerChild.isConnected &&
-                innerChild instanceof DOM.DocumentFragment === false
-              ) {
-                un()
-              } else {
-                throwReatomError(
-                  Array.isArray(v) && children.length > 1,
-                  'array children with other children are not supported',
-                )
-
-                if (v instanceof DOM.Element) {
-                  let list = unsubscribesMap.get(v)
-                  if (!list) unsubscribesMap.set(v, (list = []))
-
-                  if (un) element.replaceChild(v, innerChild)
-                  innerChild = v
-                } else if (Array.isArray(v)) {
-                  if (un) element.replaceChildren(...v)
-                  else {
-                    const fragment = new DOM.DocumentFragment()
-                    v.forEach((el) => fragment.append(el))
-                    innerChild = fragment
-                  }
-                } else {
-                  // TODO more tests
-                  innerChild.textContent = isSkipped(v) ? '' : String(v)
-                }
-              }
-            } catch (e) {
-              error = e
-            }
-          })
-          if (error) throw error
-          unlink(element, un)
+          const innerChild = renderAtom(child as Atom<AtomElement>)
           element.appendChild(innerChild)
         } else if (!isSkipped(child)) {
           element.appendChild(
