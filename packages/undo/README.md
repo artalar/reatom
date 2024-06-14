@@ -24,6 +24,7 @@ All methods accepts the optional properties:
 - `length` is the max amount of state records, **30** by default
 - `shouldUpdate` function allows you to skip some updates, return false by default
 - `shouldReplace` function allows you define what to do with the new update, replace the last history record (`true`) or add a new record (`false` - by default)
+- `withPersist` - `WithPersist` instance from one of the adapter of [@reatom/persist](https://www.reatom.dev/package/persist). It will persist data from `historyAtom` and `persistAtom`, the target atom init state may be derived from the history, if it preserve.
 
 ### withUndo
 

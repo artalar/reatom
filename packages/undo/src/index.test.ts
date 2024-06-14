@@ -6,6 +6,7 @@ import * as assert from 'uvu/assert'
 import { reatomDynamicUndo, reatomUndo, withUndo } from './'
 import { reatomMap } from '@reatom/primitives'
 import { parseAtoms } from '@reatom/lens'
+import { createMemStorage, reatomPersist } from '@reatom/persist'
 
 test('withUndo', async () => {
   const a = atom(0).pipe(withUndo({ length: 5 }))
@@ -194,10 +195,8 @@ test('"shouldReplace"', () => {
 })
 
 test('"shouldUpdate"', () => {
-  const inputAtom = atom('').pipe(
-    withUndo({ shouldUpdate: () => true }),
-  )
   const ctx = createTestCtx()
+  const inputAtom = atom('').pipe(withUndo({ shouldUpdate: () => true }))
 
   assert.is(ctx.get(inputAtom), '')
   assert.is(ctx.get(inputAtom.historyAtom).length, 1)
@@ -213,6 +212,25 @@ test('"shouldUpdate"', () => {
   assert.is(ctx.get(inputAtom), 'b')
   assert.is(ctx.get(inputAtom.historyAtom).length, 2)
   ;('👍') //?
+})
+
+test('withPersist', async () => {
+  const ctx = createTestCtx()
+  const mockStorage = createMemStorage({ name: 'undo' })
+  const withMock = reatomPersist(mockStorage)
+  const inputAtom = atom('').pipe(withUndo({ withPersist: withMock }))
+
+  inputAtom(ctx, 'a')
+  inputAtom(ctx, 'b')
+  inputAtom(ctx, 'c')
+  inputAtom.undo(ctx)
+
+  const anotherCtx = createTestCtx()
+  mockStorage.snapshotAtom(anotherCtx, ctx.get(mockStorage.snapshotAtom))
+  assert.is(anotherCtx.get(inputAtom), 'b')
+  assert.is(anotherCtx.get(inputAtom.positionAtom), 2)
+  assert.equal(anotherCtx.get(inputAtom.historyAtom), ['', 'a', 'b', 'c'])
+  ;`👍` //?
 })
 
 test.run()

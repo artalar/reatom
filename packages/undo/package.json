@@ -30,6 +30,7 @@
     "@reatom/core": "^3.1.21",
     "@reatom/effects": "^3.4.0",
     "@reatom/hooks": "^3.1.2",
+    "@reatom/persist": "^3.3.0",
     "@reatom/utils": "^3.4.0"
   },
   "author": "artalar",

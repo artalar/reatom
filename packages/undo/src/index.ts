@@ -17,6 +17,7 @@ import {
 } from '@reatom/core'
 import { isCausedBy } from '@reatom/effects'
 import { onConnect, withInit } from '@reatom/hooks'
+import { WithPersistOptions } from '@reatom/persist'
 import { isShallowEqual, noop, Plain } from '@reatom/utils'
 
 export interface WithUndo<T = any> {
@@ -30,6 +31,11 @@ export interface WithUndo<T = any> {
   undo: Action<[], T>
 }
 
+interface AggregateHistory<T> {
+  history: Array<T>
+  position: number
+}
+
 export interface WithUndoOptions<T = any> {
   length?: number
   shouldUpdate?: Fn<
@@ -40,6 +46,11 @@ export interface WithUndoOptions<T = any> {
     [ctx: Ctx, state: T, history: Array<T>, currentPosition: number],
     boolean
   >
+  withPersist?: (
+    options: WithPersistOptions<AggregateHistory<T>>,
+  ) => (
+    historyAggregateAtom: Atom<AggregateHistory<T>>,
+  ) => Atom<AggregateHistory<T>>
 }
 
 const update = (ctx: Ctx, anAtom: AtomMut | Atom, state: any) =>
@@ -54,8 +65,10 @@ const update = (ctx: Ctx, anAtom: AtomMut | Atom, state: any) =>
 export const withUndo =
   <T extends AtomMut & Partial<WithUndo<AtomState<T>>>>({
     length = 30,
-    shouldUpdate = (ctx, state, history) => history[history.length - 1] !== state,
+    shouldUpdate = (ctx, state, history) =>
+      history[history.length - 1] !== state,
     shouldReplace = () => false,
+    withPersist,
   }: WithUndoOptions<AtomState<T>> = {}): Fn<[T], T & WithUndo<AtomState<T>>> =>
   (anAtom) => {
     throwReatomError(isAction(anAtom) || !isAtom(anAtom), 'atom expected')
@@ -63,20 +76,35 @@ export const withUndo =
     if (!anAtom.undo) {
       const { name } = anAtom.__reatom
 
+      const aggregateHistoryAtom = atom<AggregateHistory<AtomState<T>>>(
+        {
+          history: [],
+          position: 0,
+        },
+        `${name}.Undo._aggregateHistoryAtom`,
+      )
+
       const historyAtom = (anAtom.historyAtom = atom<Array<AtomState<T>>>(
         [],
         `${name}.Undo._historyAtom`,
-      ))
+      )).pipe(withInit((ctx) => ctx.get(aggregateHistoryAtom).history))
 
       anAtom.pipe(
         withInit((ctx, init) => {
           const state = init(ctx)
+          const history = ctx.get(historyAtom)
+
+          if (history.length > 0) return history[ctx.get(positionAtom)]
+
           historyAtom(ctx, [state])
           return state
         }),
       )
 
-      const positionAtom = (anAtom.positionAtom = atom(0, `${name}._position`))
+      const positionAtom = (anAtom.positionAtom = atom(
+        0,
+        `${name}._position`,
+      )).pipe(withInit((ctx) => ctx.get(aggregateHistoryAtom).position))
 
       anAtom.isUndoAtom = atom(
         (ctx) => ctx.spy(positionAtom) > 0,
@@ -129,6 +157,26 @@ export const withUndo =
           })
         }
       })
+
+      if (withPersist) {
+        aggregateHistoryAtom.pipe(
+          withPersist({
+            key: anAtom.__reatom.name!,
+          }),
+        )
+        for (const target of [positionAtom, historyAtom]) {
+          target.onChange((ctx) => {
+            const history = ctx.get(historyAtom)
+            const position = ctx.get(positionAtom)
+
+            aggregateHistoryAtom(ctx, (state) =>
+              state.history === history && state.position === position
+                ? state
+                : { history, position },
+            )
+          })
+        }
+      }
     }
 
     return anAtom as any
