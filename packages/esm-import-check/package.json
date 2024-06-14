@@ -1,0 +1,20 @@
+{
+  "name": "@reatom-private/esm-import-check",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "@reatom/framework": "^3.4.37"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node ./dist/hello.js",
+    "pretest": "npm run build",
+    "test": "node ./dist/hello.js"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5"
+  }
+}
