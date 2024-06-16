@@ -5,7 +5,7 @@ import { BroadcastMessage, WithPersistWebStorage } from './types'
 
 const idb = { get, set, del, createStore }
 
-const reatomPersistIndexedDb = (
+export const reatomPersistIndexedDb = (
   dbName: string,
   channel: BroadcastChannel,
 ): WithPersistWebStorage => {
