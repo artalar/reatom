@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.1](https://github.com/artalar/reatom/compare/persist-v3.3.0...persist-v3.3.1) (2024-06-16)
+
+
+### Bug Fixes
+
+* **persist:** rm extra cache for transactions ([5efcd57](https://github.com/artalar/reatom/commit/5efcd5746e9e208e46b0b6b6692b823d950bc1b6))
+
 ## [3.3.0](https://github.com/artalar/reatom/compare/persist-v3.2.2...persist-v3.3.0) (2023-07-12)
 
 
