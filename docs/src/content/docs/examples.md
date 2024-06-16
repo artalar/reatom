@@ -15,4 +15,5 @@ description: Complex examples of Reatom state manager
 - React notifications example:[source](https://github.com/artalar/reatom/tree/v3/examples/react-notifications), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-notifications)
 - Comparison with Tanstack Query:[source](https://github.com/artalar/reatom/tree/v3/examples/tanstack-vs-reatom), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/tanstack-vs-reatom)
 - React tree example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-tree), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-tree)
+- React undo example: [source](https://github.com/artalar/reatom/tree/v3/examples/react-undo), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/react-undo)
 - Vue search (async, debounce, error handling) example: [source](https://github.com/artalar/reatom/tree/v3/examples/vue-search), [StackBlitz](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/vue-search)
