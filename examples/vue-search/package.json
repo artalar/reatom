@@ -11,8 +11,8 @@
   "dependencies": {
     "@quasar/quasar-ui-qmarkdown": "^1.4.4",
     "@quasar/vite-plugin": "^1.6.0",
-    "@reatom/framework": "^3.4.35",
-    "@reatom/npm-vue": "^3.5.0",
+    "@reatom/framework": "^3.*.*",
+    "@reatom/npm-vue": "^3.*.*",
     "quasar": "^2.15.1",
     "sass": "^1.72.0",
     "vue": "^3.4.21"

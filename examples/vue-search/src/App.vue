@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { reatomRef } from '@reatom/npm-vue'
-import * as model from './model'
+import { searchAtom, issuesResource } from './model'
 import { useQuasar } from 'quasar'
 import { effect } from 'vue'
 
-const search = reatomRef(model.searchAtom)
-const issuesPending = reatomRef(model.issues.pendingAtom)
-const issues = reatomRef(model.issues.dataAtom)
-const issuesError = reatomRef(model.issues.errorAtom)
+const search = reatomRef(searchAtom)
+const issuesPending = reatomRef(issuesResource.pendingAtom)
+const issues = reatomRef(issuesResource.dataAtom)
+const issuesError = reatomRef(issuesResource.errorAtom)
 
 const $q = useQuasar()
 
