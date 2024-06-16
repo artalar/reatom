@@ -20,7 +20,7 @@
   "packages/npm-solid-js": "3.6.0",
   "packages/npm-svelte": "3.1.2",
   "packages/npm-zod": "3.10.0",
-  "packages/persist": "3.3.0",
+  "packages/persist": "3.3.1",
   "packages/persist-web-storage": "3.4.1",
   "packages/primitives": "3.7.0",
   "packages/react-v1": "3.1.5",
