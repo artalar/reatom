@@ -3,13 +3,12 @@ import * as assert from 'uvu/assert'
 import { atom } from '@reatom/core'
 import { createTestCtx } from '@reatom/testing'
 import { noop } from '@reatom/utils'
-import { onUpdate } from '@reatom/hooks'
 
 import { createMemStorage, reatomPersist } from './'
 
 const withSomePersist = reatomPersist(createMemStorage({ name: 'test' }))
 
-test(`withPersist`, async () => {
+test('base', async () => {
   const a1 = atom(0).pipe(withSomePersist('a1'))
   const a2 = atom(0).pipe(withSomePersist('a2'))
 
@@ -25,20 +24,25 @@ test(`withPersist`, async () => {
     }),
   )
 
-  onUpdate(a1, (ctx, state) => {
-    console.log(state)
-  })
-
   assert.is(ctx.get(a1), 1)
   assert.is(ctx.get(a2), 2)
 
   a1(ctx, 11)
   assert.is(ctx.get(a1), 11)
   assert.is(ctx.get(a2), 2)
+  assert.is(ctx.get(withSomePersist.storageAtom).get(ctx, 'a1')?.data, 11)
+
+  ctx.get(() => {
+    a1(ctx, 12)
+    // it is important to not miss an update because of some sort of caching or batching
+    a1(ctx, (state) => (state ? state : state))
+  })
+  assert.is(ctx.get(a1), 12)
+  assert.is(ctx.get(withSomePersist.storageAtom).get(ctx, 'a1')?.data, 12)
   ;('👍') //?
 })
 
-test(`withPersist async`, async () => {
+test('async', async () => {
   let trigger = noop
   const number1Atom = atom(0).pipe(withSomePersist({ key: 'test' }))
   const number2Atom = atom(0).pipe(withSomePersist({ key: 'test' }))
@@ -70,6 +74,31 @@ test(`withPersist async`, async () => {
 
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), 11)
+  ;('👍') //?
+})
+
+test('should not skip double update', async () => {
+  const a1 = atom(0).pipe(withSomePersist('a1'))
+  const a2 = atom(0).pipe(withSomePersist('a2'))
+
+  const ctx = createTestCtx()
+  withSomePersist.storageAtom(
+    ctx,
+    createMemStorage({
+      name: 'test',
+      snapshot: {
+        a1: 1,
+        a2: 2,
+      },
+    }),
+  )
+
+  assert.is(ctx.get(a1), 1)
+  assert.is(ctx.get(a2), 2)
+
+  a1(ctx, 11)
+  assert.is(ctx.get(a1), 11)
+  assert.is(ctx.get(a2), 2)
   ;('👍') //?
 })
 
