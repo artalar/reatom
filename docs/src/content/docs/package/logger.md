@@ -13,12 +13,14 @@ Tiny logger with a couple nice configurations.
 
 ## Usage
 
-All atoms and actions with names or without underscore logs automatically
+All atoms and actions with names or without underscore in the name logs automatically
 
 ```ts
 import { connectLogger, createLogBatched } from '@reatom/logger'
 
-connectLogger(ctx)
+if (import.meta.env.DEV) {
+  connectLogger(ctx)
+}
 
 // OR
 

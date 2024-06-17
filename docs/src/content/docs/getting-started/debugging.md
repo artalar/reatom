@@ -8,7 +8,7 @@ show: false
 
 <!-- TODO add `anAtom.onChange(console.log)` docs above -->
 
-For debugging, we recommend using the `@reatom/logger` package, which is included in the `@reatom/framework`.
+For debugging, we recommend using the `@reatom/logger` package, which is included in the `@reatom/framework`. It logs all you actions and atoms changes in the console if you named it properly.
 
 ## Installation
 
@@ -23,10 +23,11 @@ import { createCtx } from '@reatom/core'
 import { connectLogger } from '@reatom/logger'
 
 const ctx = createCtx()
-connectLogger(ctx)
-```
 
-You can find more settings in the [@reatom/logger](/package/logger) documentation.
+if (import.meta.env.DEV) {
+  connectLogger(ctx)
+}
+```
 
 ## Usage
 
@@ -34,16 +35,22 @@ The immutable nature of reatom gives us incredible possibilities for debugging a
 Let's start with a simple example.
 
 ```ts
-import { createCtx, atom } from '@reatom/core'
+import { createCtx, atom, action } from '@reatom/core'
 import { connectLogger } from '@reatom/logger'
 
 const ctx = createCtx()
-connectLogger(ctx)
 
-const counterAtom = atom(0)
-const doubledAtom = atom((ctx) => counterAtom * 2)
+if (import.meta.env.DEV) {
+  connectLogger(ctx)
+}
 
-counterAtom(ctx, 24)
+const counterAtom = atom(0, 'counterAtom')
+const doubledAtom = atom((ctx) => counterAtom * 2, 'doubledAtom')
+const increment = action((ctx) => counterAtom(ctx, (state) => state + 1), 'increment')
+
+ctx.subscribe(doubledAtom, () => {})
+
+increment(ctx, 24)
 ```
 
 Here is what we see in logs:
@@ -51,27 +58,28 @@ Here is what we see in logs:
 ```
 Reatom 1 transaction
 ├─ 3:37:34 PM 477ms
+├─ increment
+│  └─ 1
 ├─ counterAtom
-│  ├─ cause: "root"
+│  ├─ cause: "<-- increment"
 │  ├─ history: [...]
-│  ├─ newState: 0
-│  ├─ oldState: 24
-│  ├─ patch: {...}
-│  └─ time: 275.94
-├─ 24
+│  ├─ newState: 1
+│  ├─ oldState: 0
+│  └─ patch: {...}
 ├─ doubledAtom
-│  ├─ cause: "<-- counterAtom"
+│  ├─ cause: "<-- counterAtom <-- increment"
 │  ├─ history: [...]
-│  ├─ newState: 0
-│  ├─ oldState: 48
-│  ├─ patch: {...}
-│  └─ time: 275.96
-└─ 48
+│  ├─ newState: 2
+│  ├─ oldState: 0
+│  └─ patch: {...}
 ```
 
 Records come in pairs: the atom and its new state value.
 Under the atom name record, you can find a few properties:
- - cause: Describes why this update happened and what triggered it.
- - history: Shows the atom values before the update.
 
-Check out the [@reatom/logger](/package/logger) package documentation for a more complex example.
+- cause: Describes why this update happened and what triggered it.
+- history: Shows the atom values before the update.
+
+Check out the [@reatom/logger](/package/logger) package documentation for available options.
+
+Try to use [@reatom/eslint-plugin](/package/eslint-plugin/) to automate the names indication.
