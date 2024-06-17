@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.2](https://github.com/artalar/reatom/compare/persist-web-storage-v3.4.1...persist-web-storage-v3.4.2) (2024-06-17)
+
+
+### Bug Fixes
+
+* **persist-web-storage:** missing export reatomPersistIndexedDb ([#876](https://github.com/artalar/reatom/issues/876)) ([e007b7f](https://github.com/artalar/reatom/commit/e007b7f11136b358e3f6452ecd9b3f7ffb73d48d))
+
 ## [3.4.1](https://github.com/artalar/reatom/compare/persist-web-storage-v3.4.0...persist-web-storage-v3.4.1) (2024-05-03)
 
 
