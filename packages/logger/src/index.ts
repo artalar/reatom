@@ -1,7 +1,6 @@
 import { AtomCache, AtomProto, Ctx, Fn, Rec, __root } from '@reatom/core'
 import { isShallowEqual, noop } from '@reatom/utils'
 import { logGraph } from './graphView'
-export { experimental_reatomInspector } from './devtools'
 
 export interface unstable_ChangeMsg {
   newState?: any

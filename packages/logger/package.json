@@ -21,15 +21,13 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs --css inline",
+    "build": "microbundle -f esm,cjs",
     "test": "tsc && tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
   "dependencies": {
-    "@discoveryjs/discovery": "1.0.0-beta.83",
     "@reatom/core": "^3.8.1",
-    "@reatom/jsx": "^3.11.0",
-    "@reatom/lens": "^3.10.0"
+    "@reatom/utils": "^3.9.0"
   },
   "author": "artalar",
   "license": "MIT",
@@ -45,18 +43,5 @@
     "/build",
     "/package.json"
   ],
-  "devDependencies": {},
-  "babel": {
-    "presets": [
-      [
-        "@babel/preset-react",
-        {
-          "pragma": "h",
-          "pragmaFrag": "hf",
-          "throwIfNamespace": false,
-          "importSource": "@reatom/jsx"
-        }
-      ]
-    ]
-  }
+  "devDependencies": {}
 }
