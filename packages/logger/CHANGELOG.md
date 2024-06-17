@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.2](https://github.com/artalar/reatom/compare/logger-v3.8.1...logger-v3.8.2) (2024-06-17)
+
+
+### Bug Fixes
+
+* **logger:** remove devtools ([613c2dc](https://github.com/artalar/reatom/commit/613c2dcb8eb894ad49a7de71d852ed9f86ee6834))
+
 ## [3.8.1](https://github.com/artalar/reatom/compare/logger-v3.8.0...logger-v3.8.1) (2024-06-14)
 
 

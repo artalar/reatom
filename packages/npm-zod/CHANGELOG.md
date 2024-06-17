@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.1](https://github.com/artalar/reatom/compare/npm-zod-v3.10.0...npm-zod-v3.10.1) (2024-06-17)
+
+
+### Bug Fixes
+
+* **npm-zod:** deps bundling ([557a570](https://github.com/artalar/reatom/commit/557a5700fa13603221d14a563b4e9c7334f9c35e))
+
 ## [3.10.0](https://github.com/artalar/reatom/compare/npm-zod-v3.9.0...npm-zod-v3.10.0) (2024-06-11)
 
 
