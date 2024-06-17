@@ -1,0 +1,60 @@
+{
+  "name": "@reatom/devtools",
+  "version": "0.1.0",
+  "description": "Reatom developer tools for states and actions inspecting",
+  "type": "module",
+  "private": false,
+  "sideEffects": false,
+  "exports": {
+    "types": "./build/index.d.ts",
+    "default": "./build/index.js"
+  },
+  "browserslist": [
+    "last 1 year"
+  ],
+  "minify": {
+    "mangle": false
+  },
+  "scripts": {
+    "prepublishOnly": "npm run build && npm run test",
+    "build": "rm -rf build && tsc && bun build src/index.tsx --outdir ./build --sourcemap=external  --loader .css:text --target browser",
+    "test": "tsx src/index.test.ts",
+    "test:watch": "tsx watch src/index.test.ts"
+  },
+  "dependencies": {},
+  "author": {
+    "name": "artalar",
+    "url": "https://github.com/artalar"
+  },
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/artalar/reatom.git",
+    "directory": "packages/devtools"
+  },
+  "bugs": {
+    "url": "https://github.com/artalar/reatom/issues"
+  },
+  "homepage": "https://www.reatom.dev/package/devtools",
+  "keywords": [
+    "reactive",
+    "reactivity",
+    "state-manager",
+    "reatom"
+  ],
+  "files": [
+    "/build",
+    "/package.json"
+  ],
+  "devDependencies": {
+    "@observablehq/inspector": "^5.0.0",
+    "@reatom/core": ">=3.8.1",
+    "@reatom/jsx": "^3.11.0"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declarationMap": true,
+    "jsx": "preserve",
+    "jsxImportSource": "@reatom/jsx",
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "sourceMap": false,
+    "outDir": "build"
+  },
+  "exclude": ["**/*.test.ts"]
+}

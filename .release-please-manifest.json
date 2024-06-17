@@ -30,5 +30,6 @@
   "packages/undo": "3.4.0",
   "packages/url": "3.7.1",
   "packages/utils": "3.9.0",
-  "packages/web": "3.5.1"
+  "packages/web": "3.5.1",
+  "packages/devtools": "0.1.0"
 }
