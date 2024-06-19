@@ -157,7 +157,15 @@ export const connectDevtools = async (
     </button>
   )
 
-  const observableContainer = <div />
+  const observableContainer = (
+    <div
+      css={`
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+      `}
+    />
+  )
 
   const containerEl = (
     <div
@@ -165,9 +173,12 @@ export const connectDevtools = async (
         position: fixed;
         bottom: 0;
         right: 0;
+        padding-top: 2em;
         width: var(--width);
         height: var(--height);
         z-index: ${MAX_Z};
+        background: hsl(244deg 20% 90%);
+        overflow: auto;
       `}
       css:width={width}
       css:height={height}
@@ -184,7 +195,8 @@ export const connectDevtools = async (
       {observablehqStyles.replaceAll(':root', '.observablehq')}
       {`
         .observablehq {
-          margin: 2rem;
+          margin: 1rem;
+          margin-top: 0em;
         }
 
         .observablehq--inspect {
