@@ -25,7 +25,7 @@ export const getCause = (patch: AtomCache, log = ''): string => {
   if (patch.cause !== null && patch.cause.proto !== __root)
     return getCause(
       patch.cause,
-      log + ' <-- ' + patch.cause.proto.name ?? 'unnamed',
+      log + ' <-- ' + (patch.cause.proto.name ?? 'unnamed'),
     )
   else {
     return log || 'root'
