@@ -114,7 +114,22 @@ export type ZodAtomization<T extends z.ZodFirstPartySchemaTypes, Union = never> 
                                                     ? ZodAtomization<T, null | Union>
                                                     : T extends z.ZodUnion<infer T>
                                                       ? AtomMut<z.infer<T[number]> | Union>
-                                                      : T;
+                                                      : T extends z.ZodDiscriminatedUnion<infer K, infer T>
+                                                        ? never extends Union
+                                                          ? T extends Array<z.ZodObject<infer Shape>>
+                                                            ? Atom<{
+                                                                [K in keyof Shape]: ZodAtomization<Shape[K]>;
+                                                              }> &
+                                                                ((
+                                                                  ctx: Ctx,
+                                                                  value: {
+                                                                    [K in keyof Shape]: z.infer<Shape[K]>;
+                                                                  },
+                                                                ) => void)
+                                                            : unknown
+                                                          : unknown
+                                                        : T;
+
 
 type Primitive = null | undefined | string | number | boolean | symbol | bigint;
 type BuiltIns = Primitive | Date | RegExp;
