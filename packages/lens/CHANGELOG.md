@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.2](https://github.com/artalar/reatom/compare/lens-v3.11.1...lens-v3.11.2) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.11.1](https://github.com/artalar/reatom/compare/lens-v3.11.0...lens-v3.11.1) (2024-06-22)
 
 

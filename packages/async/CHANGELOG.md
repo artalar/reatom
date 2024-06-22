@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.15.2](https://github.com/artalar/reatom/compare/async-v3.15.1...async-v3.15.2) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.15.1](https://github.com/artalar/reatom/compare/async-v3.15.0...async-v3.15.1) (2024-06-22)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.1](https://github.com/artalar/reatom/compare/npm-vue-v3.6.0...npm-vue-v3.6.1) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.6.0](https://github.com/artalar/reatom/compare/npm-vue-v3.5.0...npm-vue-v3.6.0) (2024-06-22)
 
 

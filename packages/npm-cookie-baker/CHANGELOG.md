@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.5](https://github.com/artalar/reatom/compare/npm-cookie-baker-v3.1.4...npm-cookie-baker-v3.1.5) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.1.4](https://github.com/artalar/reatom/compare/npm-cookie-baker-v3.1.3...npm-cookie-baker-v3.1.4) (2024-06-22)
 
 
