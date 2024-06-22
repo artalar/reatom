@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.4.6](https://github.com/artalar/reatom/compare/testing-v3.4.5...testing-v3.4.6) (2024-06-22)
+
+
+### Bug Fixes
+
+* esm module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **new-package-template:** use mjs in module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+
 ## [3.4.5](https://github.com/artalar/reatom/compare/testing-v3.4.4...testing-v3.4.5) (2024-04-12)
 
 

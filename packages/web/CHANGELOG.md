@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.5.2](https://github.com/artalar/reatom/compare/web-v3.5.1...web-v3.5.2) (2024-06-22)
+
+
+### Bug Fixes
+
+* esm module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **new-package-template:** use mjs in module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+
 ## [3.5.1](https://github.com/artalar/reatom/compare/web-v3.5.0...web-v3.5.1) (2023-09-13)
 
 

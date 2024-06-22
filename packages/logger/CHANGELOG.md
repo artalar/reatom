@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.8.3](https://github.com/artalar/reatom/compare/logger-v3.8.2...logger-v3.8.3) (2024-06-22)
+
+
+### Bug Fixes
+
+* esm module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **logger:** wrap nullish atom name ([#878](https://github.com/artalar/reatom/issues/878)) ([65c90ed](https://github.com/artalar/reatom/commit/65c90ed75c88d737a32c1e459d127980df1e4161))
+* **new-package-template:** use mjs in module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+
 ## [3.8.2](https://github.com/artalar/reatom/compare/logger-v3.8.1...logger-v3.8.2) (2024-06-17)
 
 

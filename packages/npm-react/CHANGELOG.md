@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.8.8](https://github.com/artalar/reatom/compare/npm-react-v3.8.7...npm-react-v3.8.8) (2024-06-22)
+
+
+### Bug Fixes
+
+* esm module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **new-package-template:** use mjs in module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+
 ## [3.8.7](https://github.com/artalar/reatom/compare/npm-react-v3.8.6...npm-react-v3.8.7) (2024-05-26)
 
 
