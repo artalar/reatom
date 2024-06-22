@@ -1,6 +1,6 @@
 {
   "name": "@reatom/npm-react",
-  "version": "3.8.7",
+  "version": "3.8.8",
   "private": false,
   "sideEffects": false,
   "description": "Reatom adapter for React",

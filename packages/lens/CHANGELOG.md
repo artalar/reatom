@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.11.1](https://github.com/artalar/reatom/compare/lens-v3.11.0...lens-v3.11.1) (2024-06-22)
+
+
+### Bug Fixes
+
+* esm module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **lens:** match ctx instead of cause in select ([3f1fd8e](https://github.com/artalar/reatom/commit/3f1fd8e21d457cc9f78d2a71ef9f8caa585fcf99))
+* **new-package-template:** use mjs in module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+
 ## [3.11.0](https://github.com/artalar/reatom/compare/lens-v3.10.0...lens-v3.11.0) (2024-06-12)
 
 

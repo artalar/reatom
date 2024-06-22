@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.10.2](https://github.com/artalar/reatom/compare/npm-zod-v3.10.1...npm-zod-v3.10.2) (2024-06-22)
+
+
+### Bug Fixes
+
+* esm module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **new-package-template:** use mjs in module export ([1011671](https://github.com/artalar/reatom/commit/10116719dd92d8102352a39e4ed772b8173d8668))
+* **npm-zod:** types for ZodDiscriminatedUnion ([3c73f8f](https://github.com/artalar/reatom/commit/3c73f8feed1dd4345027a1d91032ad85d87c674e))
+
 ## [3.10.1](https://github.com/artalar/reatom/compare/npm-zod-v3.10.0...npm-zod-v3.10.1) (2024-06-17)
 
 
