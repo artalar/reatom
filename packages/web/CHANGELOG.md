@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.3](https://github.com/artalar/reatom/compare/web-v3.5.2...web-v3.5.3) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.5.2](https://github.com/artalar/reatom/compare/web-v3.5.1...web-v3.5.2) (2024-06-22)
 
 

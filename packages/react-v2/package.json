@@ -1,6 +1,6 @@
 {
   "name": "@reatom/react-v2",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "React bindings for @reatom/core-v2",
   "homepage": "https://www.reatom.dev/compat/react-v2",
   "repository": {

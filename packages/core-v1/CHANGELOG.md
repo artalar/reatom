@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.9](https://github.com/artalar/reatom/compare/core-v1-v3.1.8...core-v1-v3.1.9) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.1.8](https://github.com/artalar/reatom/compare/core-v1-v3.1.7...core-v1-v3.1.8) (2024-06-22)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.5](https://github.com/artalar/reatom/compare/hooks-v3.5.4...hooks-v3.5.5) (2024-06-22)
+
+
+### Bug Fixes
+
+* **npm-svelte:** republish without tag ([93c7f7f](https://github.com/artalar/reatom/commit/93c7f7f5ec58247b1b3aec854cd83b0a0ecd6a6c))
+
 ## [3.5.4](https://github.com/artalar/reatom/compare/hooks-v3.5.3...hooks-v3.5.4) (2024-06-22)
 
 
