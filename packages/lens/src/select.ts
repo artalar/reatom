@@ -1,7 +1,7 @@
 import {
   Atom,
-  AtomCache,
   AtomProto,
+  Ctx,
   CtxSpy,
   __count,
   atom,
@@ -16,16 +16,16 @@ const mapAtom = atom(
 )
 mapAtom.__reatom.initState = () => new WeakMap()
 
-const touchedMap = new WeakMap<AtomCache, Set<FunctionSource>>()
+const touchedMap = new WeakMap<Ctx, Set<FunctionSource>>()
 
 export const select = <T>(
   ctx: CtxSpy,
   cb: (ctx: CtxSpy) => T,
   equal: (oldState: T, newState: T) => boolean = () => false,
 ): T => {
-  let touched = touchedMap.get(ctx.cause)
+  let touched = touchedMap.get(ctx)
   if (!touched) {
-    touchedMap.set(ctx.cause, (touched = new Set()))
+    touchedMap.set(ctx, (touched = new Set()))
   }
 
   const map = ctx.get(mapAtom)
