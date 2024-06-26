@@ -6,6 +6,8 @@ Developer tools for states and actions inspecting
 npm install @reatom/devtools
 ```
 
+**Note** that this package is published with ESM bundle only.
+
 ## Usage
 
 You typical setup would look like that.
