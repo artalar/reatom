@@ -22,17 +22,15 @@ import { toAbortError } from '@reatom/utils'
 
 // useLayoutEffect will show warning if used during ssr, e.g. with Next.js
 // useIsomorphicEffect removes it by replacing useLayoutEffect with useEffect during ssr
-export const useIsomorphicEffect =
-  typeof document !== 'undefined' ? React.useLayoutEffect : React.useEffect
+export const useIsomorphicEffect = typeof document !== 'undefined' ? React.useLayoutEffect : React.useEffect
 
 let getName = (type: string): string => {
   let Component =
     // @ts-expect-error do we have another way?
-    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner
-      ?.current?.type
+    React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner?.current?.type
 
   let name = Component?.displayName ?? Component?.name
-  return (name && name.concat('.', type)) || `_${type}`
+  return name ? `Component.${name}.${type}` : `_${type}`
 }
 
 let batch = (cb: Fn) => cb()
@@ -52,9 +50,7 @@ export const withBatching = (ctx: Ctx): Ctx => {
         cb &&
           ((value) =>
             Promise.resolve(queue.push(() => cb(value))).then(
-              (length) =>
-                length === queue.length &&
-                batch(() => queue.splice(0).forEach((cb) => cb())),
+              (length) => length === queue.length && batch(() => queue.splice(0).forEach((cb) => cb())),
             )),
       ),
   }
@@ -65,17 +61,13 @@ export const reatomContext = React.createContext<null | Ctx>(null)
 export const useCtx = (): Ctx => {
   let ctx = React.useContext(reatomContext)
 
-  throwReatomError(
-    !ctx,
-    'ctx is not set, you probably forgot to specify the ctx provider',
-  )
+  throwReatomError(!ctx, 'ctx is not set, you probably forgot to specify the ctx provider')
 
   return ctx!
 }
 
 let bindBind = (ctx: Ctx, fn: Fn) => bind(ctx, fn)
-export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) =>
-  bind(useCtx(), bindBind)
+export const useCtxBind = (): (<T extends Fn>(fn: T) => Binded<T>) => bind(useCtx(), bindBind)
 
 // @ts-ignore
 export const useAtom: {
@@ -83,22 +75,13 @@ export const useAtom: {
     atom: T,
     deps?: Array<any>,
     options?: boolean | { name?: string; subscribe?: boolean },
-  ): [
-    AtomState<T>,
-    T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : undefined,
-    T,
-    Ctx,
-  ]
+  ): [AtomState<T>, T extends Fn<[Ctx, ...infer Args], infer Res> ? Fn<Args, Res> : undefined, T, Ctx]
   <T>(
     init: T | Fn<[CtxSpy], T>,
     deps?: Array<any>,
     options?: boolean | { name?: string; subscribe?: boolean },
   ): [T, Fn<[T | Fn<[T, Ctx], T>], T>, AtomMut<T>, Ctx]
-} = (
-  anAtom: any,
-  userDeps: Array<any> = [],
-  options: boolean | { name?: string; subscribe?: boolean } = {},
-) => {
+} = (anAtom: any, userDeps: Array<any> = [], options: boolean | { name?: string; subscribe?: boolean } = {}) => {
   let { name, subscribe = true }: { name?: string; subscribe?: boolean } =
     typeof options === 'boolean' ? { subscribe: options } : options
   let ctx = useCtx()
@@ -136,21 +119,13 @@ export const useAtom: {
   return ctx.get(() => {
     if (!isAtom(anAtom)) {
       const prevDeps = ctx.get(depsAtom)
-      if (
-        userDeps.length !== prevDeps.length ||
-        userDeps.some((dep, i) => !Object.is(dep, prevDeps[i]))
-      ) {
+      if (userDeps.length !== prevDeps.length || userDeps.some((dep, i) => !Object.is(dep, prevDeps[i]))) {
         if (typeof anAtom === 'function') depsAtom(ctx, userDeps)
         else update!(ctx, anAtom)
       }
     }
 
-    return [
-      subscribe ? React.useSyncExternalStore(sub, get, get) : get(),
-      update,
-      theAtom,
-      ctx,
-    ]
+    return [subscribe ? React.useSyncExternalStore(sub, get, get) : get(), update, theAtom, ctx]
   })
 }
 
@@ -183,15 +158,9 @@ export const useUpdate = <T extends [any] | Array<any>>(
 
     call(ctx)
 
-    deps.forEach(
-      (thing, i) =>
-        isAtom(thing) && (thing.__reatom.updateHooks ??= new Set()).add(call),
-    )
+    deps.forEach((thing, i) => isAtom(thing) && (thing.__reatom.updateHooks ??= new Set()).add(call))
 
-    return () =>
-      deps.forEach(
-        (thing, i) => isAtom(thing) && thing.__reatom.updateHooks!.delete(call),
-      )
+    return () => deps.forEach((thing, i) => isAtom(thing) && thing.__reatom.updateHooks!.delete(call))
   }, deps.concat(ctx))
 
   return null
@@ -210,9 +179,7 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   if (isAction(fn)) deps.push(fn)
 
   let ref = React.useMemo(() => {
-    let theAction: Action = isAction(fn)
-      ? fn
-      : action((...a) => ref!.fn(...a), name ?? getName(`useAction`))
+    let theAction: Action = isAction(fn) ? fn : action((...a) => ref!.fn(...a), name ?? getName(`useAction`))
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, cb }
   }, deps)
@@ -239,8 +206,11 @@ type RenderState = JSX.Element & { REATOM_DEPS_CHANGE?: true }
 
 export const reatomComponent = <T>(
   Component: (props: T & { ctx: CtxRender }) => React.ReactNode,
-  name = __count('Component'),
+  name?: string,
 ): ((props: T) => JSX.Element) => {
+  if (name) name = `Component.${name}`
+  else name = __count('Component')
+
   let rendering = false
 
   return Object.defineProperty(
@@ -248,59 +218,50 @@ export const reatomComponent = <T>(
       const { controller, propsAtom, renderAtom } = React.useMemo(() => {
         const controller = new AbortController()
 
-        const propsAtom = atom<T & { ctx: CtxRender }>(
-          {} as T & { ctx: CtxRender },
-          `${name}._propsAtom`,
-        )
+        const propsAtom = atom<T & { ctx: CtxRender }>({} as T & { ctx: CtxRender }, `${name}._propsAtom`)
 
-        const renderAtom = atom(
-          (ctx: CtxRender, state?: RenderState): RenderState => {
-            const { pubs } = ctx.cause
-            const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
+        const renderAtom = atom((ctx: CtxRender, state?: RenderState): RenderState => {
+          const { pubs } = ctx.cause
+          const props = ctx.spy(propsAtom) as T & { ctx: CtxRender }
 
-            if (rendering) {
-              const initCtxRef = React.useRef<CtxRender>()
+          if (rendering) {
+            const initCtxRef = React.useRef<CtxRender>()
 
-              if (!initCtxRef.current) {
-                const initCtx = (initCtxRef.current =
-                  withAbortableSchedule(ctx))
-                abortCauseContext.set(initCtx.cause, controller)
-              }
-
-              const initCtx = initCtxRef.current!
-
-              props.ctx = {
-                get: ctx.get,
-                spy: ctx.spy,
-                schedule: ctx.schedule,
-                subscribe: ctx.subscribe,
-                cause: initCtx.cause,
-                bind: bind(initCtx, bindBind),
-              }
-
-              const result = Component(props)
-              return typeof result === 'object' &&
-                result !== null &&
-                !(Symbol.iterator in result)
-                ? result
-                : React.createElement(React.Fragment, null, result)
+            if (!initCtxRef.current) {
+              const initCtx = (initCtxRef.current = withAbortableSchedule(ctx))
+              abortCauseContext.set(initCtx.cause, controller)
             }
 
-            // do not drop subscriptions from the render
-            for (
-              // skip `propsAtom`
-              let i = 1;
-              i < pubs.length;
-              i++
-            ) {
-              // @ts-expect-error we haven't a reference to the atom, but `spy` reads only `proto`
-              ctx.spy({ __reatom: pubs[i]!.proto })
+            const initCtx = initCtxRef.current!
+
+            props.ctx = {
+              get: ctx.get,
+              spy: ctx.spy,
+              schedule: ctx.schedule,
+              subscribe: ctx.subscribe,
+              cause: initCtx.cause,
+              bind: bind(initCtx, bindBind),
             }
 
-            return { ...state!, REATOM_DEPS_CHANGE: true }
-          },
-          `${name}._renderAtom`,
-        ) as Atom as Atom<RenderState>
+            const result = Component(props)
+            return typeof result === 'object' && result !== null && !(Symbol.iterator in result)
+              ? result
+              : React.createElement(React.Fragment, null, result)
+          }
+
+          // do not drop subscriptions from the render
+          for (
+            // skip `propsAtom`
+            let i = 1;
+            i < pubs.length;
+            i++
+          ) {
+            // @ts-expect-error we haven't a reference to the atom, but `spy` reads only `proto`
+            ctx.spy({ __reatom: pubs[i]!.proto })
+          }
+
+          return { ...state!, REATOM_DEPS_CHANGE: true }
+        }, `${name}._renderAtom`) as Atom as Atom<RenderState>
 
         return { controller, propsAtom, renderAtom }
       }, [])
@@ -315,10 +276,7 @@ export const reatomComponent = <T>(
           // Mount after unmount with the same cache.
           // Brave React World...
           const initCause = ctx.get(propsAtom).ctx.cause
-          abortCauseContext.set(
-            initCause,
-            (finalController = new AbortController()),
-          )
+          abortCauseContext.set(initCause, (finalController = new AbortController()))
         }
         const unsubscribe = ctx.subscribe(renderAtom, (element) => {
           if (element.REATOM_DEPS_CHANGE) forceUpdate(element)
