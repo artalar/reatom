@@ -9,6 +9,7 @@
     "types": "./build/index.d.ts",
     "default": "./build/index.js"
   },
+  "types": "./build/index.d.ts",
   "browserslist": [
     "last 1 year"
   ],
