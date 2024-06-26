@@ -25,3 +25,12 @@ if (import.meta.env.DEV) {
 
 // ...
 ```
+
+`connectDevtools` has an optional second argument where you can specify how to process an atoms names.
+
+```ts
+type Options = {
+  separator?: string | RegExp | ((name: string) => Array<string>) // default is /\.|#/
+  privatePrefix?: string // default is '_'
+}
+```

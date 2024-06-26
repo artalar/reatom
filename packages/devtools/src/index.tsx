@@ -7,7 +7,10 @@ import observablehqStyles from '../../../node_modules/@observablehq/inspector/di
 
 export const connectDevtools = async (
   ctx: Ctx,
-  { separator = /\.|#/, privatePrefix = '_' }: { separator?: string | RegExp; privatePrefix?: string } = {},
+  {
+    separator = /\.|#/,
+    privatePrefix = '_',
+  }: { separator?: string | RegExp | ((name: string) => Array<string>); privatePrefix?: string } = {},
 ) => {
   const MAX_Z = Math.pow(2, 32) - 1
 
@@ -221,7 +224,7 @@ export const connectDevtools = async (
 
     for (const { proto, state } of logs) {
       let name = proto.name!
-      const path = name.split(separator)
+      const path = typeof separator === 'function' ? separator(name) : name.split(separator)
 
       if (proto.isAction || touched.has(proto) || path.some((key) => key.startsWith(privatePrefix))) {
         continue
