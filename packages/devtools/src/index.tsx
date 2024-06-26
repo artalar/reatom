@@ -149,6 +149,9 @@ export const connectDevtools = async (
         try {
           console.log(structuredClone(logObject))
         } catch {
+          console.warn(
+            "Reatom: can't make a structured clone to log a snapshot, log live state instead, the values could be changed during a time.",
+          )
           console.log(logObject)
         }
       }}
@@ -171,14 +174,13 @@ export const connectDevtools = async (
     <div
       css={`
         position: fixed;
-        bottom: 0;
+        bottom: calc(5rem / -2);
         right: 0;
         padding-top: 2em;
         width: var(--width);
         height: var(--height);
         z-index: ${MAX_Z};
         background: hsl(244deg 20% 90%);
-        overflow: auto;
       `}
       css:width={width}
       css:height={height}
@@ -218,18 +220,16 @@ export const connectDevtools = async (
     // await null // needed to prevent `Maximum call stack size exceeded` coz `parseAtoms`
 
     for (const { proto, state } of logs) {
-      if (proto.isAction || proto.name?.includes(privatePrefix) || touched.has(proto)) {
+      let name = proto.name!
+      const path = name.split(separator)
+
+      if (proto.isAction || touched.has(proto) || path.some((key) => key.startsWith(privatePrefix))) {
         continue
       }
 
       let thisLogObject = logObject
-      let name = proto.name!
 
-      if (name[0] === name[0]?.toUpperCase()) {
-        thisLogObject = logObject.Component ??= {}
-      }
-
-      name.split(separator).forEach((key, i, { length }) => {
+      path.forEach((key, i, { length }) => {
         if (i === length - 1) {
           name = key
         } else {
