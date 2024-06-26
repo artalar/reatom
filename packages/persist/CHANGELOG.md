@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.3.4](https://github.com/artalar/reatom/compare/persist-v3.3.3...persist-v3.3.4) (2024-06-26)
+
+
+### Bug Fixes
+
+* **persist:** snapshotAtom init state [#885](https://github.com/artalar/reatom/issues/885) ([209613f](https://github.com/artalar/reatom/commit/209613f425ee06e5cd81ebddb84b25accb1c5861))
+
 ## [3.3.3](https://github.com/artalar/reatom/compare/persist-v3.3.2...persist-v3.3.3) (2024-06-22)
 
 
