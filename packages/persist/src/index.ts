@@ -194,29 +194,26 @@ export const createMemStorage = ({
 }): PersistStorage & { snapshotAtom: AtomMut<Rec<PersistRecord>> } => {
   const timestamp = Date.now()
   const to = timestamp + MAX_SAFE_TIMEOUT
-  // eslint-disable-next-line @reatom/atom-rule
-  const snapshotAtom = atom(
-    Object.entries(snapshot).reduce(
-      (acc, [key, data]) => (
-        (acc[key] = {
-          data,
-          fromState: false,
-          id: 0,
-          timestamp,
-          to,
-          version: 0,
-        }),
-        acc
-      ),
-      {} as Rec<PersistRecord>,
+  const initState = Object.entries(snapshot).reduce(
+    (acc, [key, data]) => (
+      (acc[key] = {
+        data,
+        fromState: false,
+        id: 0,
+        timestamp,
+        to,
+        version: 0,
+      }),
+      acc
     ),
-    `${name}._snapshotAtom`,
+    {} as Rec<PersistRecord>,
   )
-  // eslint-disable-next-line @reatom/atom-rule
-  const listenersAtom = atom(
-    (ctx, state = new Map<string, Set<Fn<[PersistRecord]>>>()) => state,
-    `${name}._listenersAtom`,
-  )
+  const snapshotAtom = atom(initState, `${name}._snapshotAtom`)
+  snapshotAtom.__reatom.initState = () => ({ ...initState })
+
+  const listenersInitState = new Map<string, Set<Fn<[PersistRecord]>>>()
+  const listenersAtom = atom(listenersInitState, `${name}._listenersAtom`)
+  listenersAtom.__reatom.initState = () => new Map(listenersInitState)
 
   return {
     name,
