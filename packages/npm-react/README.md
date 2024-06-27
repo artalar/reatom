@@ -70,6 +70,12 @@ export const SomeList = reatomComponent(
 
 Do not forget to put the component name to the second argument, it will increase your feature debug experience a lot!
 
+#### Unmount
+
+An important feature of `reatomComponent` is automatic resource management with default for Reatom AbortController in the cause context. You may be familiar with this concept from [@reatom/effects](https://www.reatom.dev/package/effects/). The `ctx` in reatomComponent props includes the AbortController which is followed by all derived actions. For example, it means if you will update an atom from the component and it will cause [reatomResource](https://www.reatom.dev/package/async/#reatomresource) refetch and the component will unmaunt before the fetch end - the fetch will throw an abort error.
+
+This increases the stability of your application as it reduces the amount of possible race conditions. But be aware that sometimes you may want to create a request that you don't want to abort even if the unmount occurs. For example, it might be an analytic event, in which case you should use [spawn](https://www.reatom.dev/package/effects/#spawn).
+
 ### useAtom
 
 `useAtom` is your main hook, when you need to describe reusable logic in hight order hook. It accepts an atom to read it value and subscribes to the changes, or a primitive value to create a new mutable atom and subscribe to it. It alike `useState`, but with many additional features. It returns a tuple of `[state, setState, theAtom, ctx]`. `theAtom` is a reference to the passed or created atom.
