@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.10](https://github.com/artalar/reatom/compare/npm-react-v3.8.9...npm-react-v3.8.10) (2024-06-26)
+
+
+### Bug Fixes
+
+* **npm-react:** name should contain Component word ([94e1367](https://github.com/artalar/reatom/commit/94e1367d454cb7000115ba679dc2f424ec863a2f))
+
 ## [3.8.9](https://github.com/artalar/reatom/compare/npm-react-v3.8.8...npm-react-v3.8.9) (2024-06-22)
 
 
