@@ -15,6 +15,8 @@ Developer tools for states and actions inspecting
 npm install @reatom/devtools
 ```
 
+**Note** that this package is published with ESM bundle only.
+
 ## Usage
 
 You typical setup would look like that.
@@ -31,4 +33,13 @@ if (import.meta.env.DEV) {
 }
 
 // ...
+```
+
+`connectDevtools` has an optional second argument where you can specify how to process an atoms names.
+
+```ts
+type Options = {
+  separator?: string | RegExp | ((name: string) => Array<string>) // default is /\.|#/
+  privatePrefix?: string // default is '_'
+}
 ```
