@@ -1,10 +1,10 @@
 {
   "packages/all-settled": "3.1.4",
   "packages/async": "3.15.2",
-  "packages/core": "3.8.3",
+  "packages/core": "3.9.0",
   "packages/core-v1": "3.1.9",
   "packages/core-v2": "3.1.4",
-  "packages/effects": "3.8.2",
+  "packages/effects": "3.8.3",
   "packages/eslint-plugin": "3.6.2",
   "packages/form": "3.3.2",
   "packages/form-web": "3.2.2",
