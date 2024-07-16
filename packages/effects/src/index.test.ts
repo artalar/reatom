@@ -95,10 +95,7 @@ test('await transaction', async () => {
 })
 
 test('withAbortableSchedule', async () => {
-  const asyncAction = <I extends any[], O>(
-    cb: Fn<[Ctx, ...I], O>,
-    name: string,
-  ): Action<I, O> =>
+  const asyncAction = <I extends any[], O>(cb: Fn<[Ctx, ...I], O>, name: string): Action<I, O> =>
     action((ctx, ...a) => cb(withAbortableSchedule(ctx), ...a), name)
 
   const track = mockFn()
@@ -156,8 +153,8 @@ test('concurrent', async () => {
       try {
         await ctx.schedule(noop)
         results.push(count)
-      } catch (error) {
-        results.push(error)
+      } catch (error: any) {
+        results.push(error?.name)
       }
     }),
   )
@@ -166,16 +163,23 @@ test('concurrent', async () => {
   countAtom(ctx, 1)
   countAtom(ctx, 2)
   await sleep()
-  assert.is(results.length, 2)
-  assert.is(results[0]?.name, 'AbortError')
-  assert.is(results[1], 2)
+  assert.equal(results, ['AbortError', 2])
 
-  const anAtom = atom(null)
-  onConnect(anAtom, (ctx) => countAtom(ctx, 3))
-  ctx.subscribeTrack(anAtom).unsubscribe()
+  const anAtom1 = atom(null)
+  onConnect(anAtom1, (ctx) => countAtom(ctx, 3))
+  ctx.subscribeTrack(anAtom1).unsubscribe()
   await sleep()
-  assert.is(results.length, 3)
-  assert.is(results.at(-1).name, 'AbortError')
+  assert.equal(results, ['AbortError', 2, 'AbortError'])
+
+  const anAtom2 = atom(null)
+  onConnect(anAtom2, async (ctx) => {
+    await null
+    countAtom(ctx, 4)
+  })
+  ctx.subscribeTrack(anAtom2).unsubscribe()
+  await sleep()
+  // there was `ReferenceError: Cannot access 'controller' before initialization` previously
+  assert.equal(results, ['AbortError', 2, 'AbortError', 'AbortError'])
 })
 
 test('spawn', async () => {
@@ -252,7 +256,6 @@ test('reaction parameters usage', async () => {
   assert.is(track.calls.length, 1)
   assert.is(track.lastInput(), '1a')
 
-  
   a(ctx, 'b')
   someReaction(ctx, '2')
   a(ctx, 'c')
