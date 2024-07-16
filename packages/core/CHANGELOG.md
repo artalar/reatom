@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/core-v3.8.3...core-v3.9.0) (2024-07-16)
+
+
+### Features
+
+* **core:** add restrictMultipleContexts option and warning ([99e0e3c](https://github.com/artalar/reatom/commit/99e0e3c723a529effc43f0e2a4908806064d30af))
+
 ## [3.8.3](https://github.com/artalar/reatom/compare/core-v3.8.2...core-v3.8.3) (2024-06-22)
 
 
