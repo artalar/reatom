@@ -116,7 +116,7 @@ document.getElementById('search-input').addEventListener('input', (event) => {
 
 > Do you want to see [the docs for React adapter](https://www.reatom.dev/package/npm-react) next?
 
-### Action handling (advanced)
+## Action handling (advanced)
 
 It is better to keep atoms stupid and handle all logic inside actions. But sometimes you need to turn the direction of your code coupling and make atoms depend on an action. And you can do it!
 
@@ -159,9 +159,7 @@ socket.on(
 
 > You need to know one **rare** tricky thing. If during a transaction you call an action and read its dependent atom a few times step by step, `ctx.get` will return an array of all passed payloads, but `ctx.spy` will return an array with only new elements that weren't handled in this reducer during this transaction. To make this rare case correct, you should spy your dependencies in the same way each time, without conditions. In other words, for this case your dependencies list should be static.
 
-## API
-
-### `atom` API
+## atom API
 
 ```ts
 import { atom } from '@reatom/core'
@@ -264,7 +262,7 @@ export const currencyAtom = atom((ctx, state?: string) => {
 }, 'currencyAtom')
 ```
 
-### `atom.pipe` API
+## atom.pipe API
 
 Pipe is a general chain helper, it applies an operator to the atom to map it to another thing. Classic operator interface is `<T extends Atom>(options?: any) => (anAtom: T) => aNewThing`. The main reason is a readable and type-safe way to apply decorators.
 
@@ -282,7 +280,7 @@ Operator `with` prefix mean that the target atom will be changed somehow and the
 
 Btw, actions has `pipe` too!
 
-### `atom.onChange` API
+## atom.onChange API
 
 All links and computations between atoms and actions are performed in a separate context. However, there can be many cases when you need to describe some logic between two things statically outside a context, such as an action trigger on a data change, etc. The `onChange` hook allows you to define this common logic right in the place of your atoms definition.
 
@@ -314,7 +312,7 @@ const filteredSearchAtom = atom((ctx, state = '') => {
 filteredSearchAtom.onChange(fetchSearchSuggestion)
 ```
 
-### `action` API
+## action API
 
 Actions are atoms with temporal states, which live only during a transaction. The action state is an array of parameters and payloads. The array is needed to handle multiple action calls during a transaction batch. Action callbacks can change atoms or call other actions, but their dependencies will only be notified after the callback ends - that is what a batch means.
 
@@ -361,7 +359,7 @@ batch(ctx, () => {
 })
 ```
 
-### `action.onCall` API
+## action.onCall API
 
 The same as [atom.onChange](#atomonchange-api), but with the relative arguments: `payload` and `params`.
 
@@ -373,35 +371,48 @@ doSome.onCall((ctx, payload, params) => {
 })
 ```
 
-### `ctx` API
+
+## createCtx API
+
+A context creation function accepts a few optional parameters that you probably won't want to change in regular use. However, it might be useful for testing and some rare production needs.
+
+- `callLateEffect` - Use it to delay or track late effects such as subscriptions notification
+- `callNearEffect` - Use it to delay or track near effects such as API calls
+- `restrictMultipleContexts` - Mange multiple contexts warning
+
+The call effect handlers by default wrap all effects with a `catch` handler that converts the thrown value to `Error` instance to save the callstack for better debugging, and it does `setTimeout(() => { throw err })` to trigger a global handler of an uncaught error. The `setTimeout` behavior is modified in `createTestCtx` from [testing package](https://www.reatom.dev/package/testing/).
+
+The `restrictMultipleContexts` option, which is `true` by default, will log a "multiple contexts detected" warning to the console when a few `createCtx` occur in a browser environment. We highly recommend deduping all your packages and using only one instance of each reatom package to archive the stability of all features.
+
+## ctx API
 
 `ctx` is the main shell that holds the state for all atoms, and where all user and metadata reside. Each atom and action produces an immutable version of the context and it should not be mutated!
 
 An important rule to note, even if you might not need it, is: don't run one context inside another, such as ctx1.get(() => ctx2.get(anAtom)). Doing so will throw an error.
 
-### `ctx.get` atom API
+## ctx.get atom API
 
 Get fresh atom state
 
 `get<T>(anAtom: Atom<T>): T`
 
-### `ctx.get` batch API
+## ctx.get batch API
 
 You can call `ctx.get` with a function to achieve batching, but it is preferred to use the separate [batch](#batch) API.
 
-### `ctx.subscribe` atom API
+## ctx.subscribe atom API
 
 Subscribe to atom new state. Passed callback called immediately and after each atom state change.
 
 `subscribe<T>(anAtom: Atom<T>, cb: (newState: T) => void): () => void`
 
-### `ctx.subscribe` log API
+## ctx.subscribe log API
 
 Subscribe to transaction end. Useful for logging.
 
 `subscribe(cb: (logs: Array<AtomCache>, error?: Error) => void): () => void`
 
-### `ctx.schedule`
+## ctx.schedule
 
 To achieve [atomicity](https://www.reatom.dev/handbook#data-consistency), each update (action call / atom mutation) starts a complex batch operation, which tries to optimize your updates and collect them into a new immutable [log](#ctx.subscribe-log-API) of new immutable cache snapshots. If some computation throws an error (like `can't use property of undefined`) the whole update will be canceled, otherwise the new caches will be merged into the context internal `caches` weak map. To achieve purity of computations and the ability to cancel them, all side-effects should be called separately in a different queue, after all computations. This is where `schedule` comes in; it accepts an effect callback and returns a promise which will be resolved after the effect call or rejected if the transaction fails.
 
@@ -424,7 +435,7 @@ A unique feature of Reatom, especially in scheduling, is ability to define the t
 
 > Read more in the [lifecycle guild](https://www.reatom.dev/handbook#lifecycle).
 
-### `ctx.schedule` rollback API
+## ctx.schedule rollback API
 
 Sometimes, you may want to perform a side-effect during clean calculations or need to store an artifact of an effect. To make it clean, you should describe a rollback (cleanup) function for the case of an unexpected error by passing `-1` as the second argument of `ctx.schedule`. Check out this example with a debounced action:
 
@@ -452,7 +463,7 @@ export const doSome = action((ctx) => {
 })
 ```
 
-### batch
+## batch
 
 Start transaction and batch all updates.
 
