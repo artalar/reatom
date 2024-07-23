@@ -294,6 +294,7 @@ export namespace JSX {
     [key: `-${string}`]: string | number | undefined
   }
 
+  /** Controls automatic capitalization in inputted text. */
   type HTMLAutocapitalize =
     | 'off'
     | 'none'
@@ -301,6 +302,78 @@ export namespace JSX {
     | 'sentences'
     | 'words'
     | 'characters'
+  // TODO add combinations
+  /**
+   * The autocomplete attribute provides a hint to the user agent specifying how to, or indeed whether to, prefill a form control.
+   * @see https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete
+   */
+  type HTMLAutocomplete =
+    | 'additional-name'
+    | 'address-level1'
+    | 'address-level2'
+    | 'address-level3'
+    | 'address-level4'
+    | 'address-line1'
+    | 'address-line2'
+    | 'address-line3'
+    | 'bday-day'
+    | 'bday-month'
+    | 'bday-year'
+    | 'bday'
+    | 'billing'
+    | 'cc-additional-name'
+    | 'cc-csc'
+    | 'cc-exp-month'
+    | 'cc-exp-year'
+    | 'cc-exp'
+    | 'cc-family-name'
+    | 'cc-given-name'
+    | 'cc-name'
+    | 'cc-number'
+    | 'cc-type'
+    | 'country-name'
+    | 'country'
+    | 'current-password'
+    | 'email'
+    | 'family-name'
+    | 'fax'
+    | 'given-name'
+    | 'home'
+    | 'honorific-prefix'
+    | 'honorific-suffix'
+    | 'impp'
+    | 'language'
+    | 'mobile'
+    | 'name'
+    | 'new-password'
+    | 'nickname'
+    | 'off'
+    | 'on'
+    | 'one-time-code'
+    | 'organization-title'
+    | 'organization'
+    | 'page'
+    | 'photo'
+    | 'postal-code'
+    | 'sex'
+    | 'shipping'
+    | 'street-address'
+    | 'tel-area-code'
+    | 'tel-country-code'
+    | 'tel-extension'
+    | 'tel-local-prefix'
+    | 'tel-local-suffix'
+    | 'tel-local'
+    | 'tel-national'
+    | 'tel'
+    | 'transaction-amount'
+    | 'transaction-currency'
+    | 'url'
+    | 'username'
+    | 'webauthn'
+    | 'work'
+    | `section-${string}`
+    | (string & {})
   type HTMLDir = 'ltr' | 'rtl' | 'auto'
   type HTMLFormEncType =
     | 'application/x-www-form-urlencoded'
@@ -777,7 +850,7 @@ export namespace JSX {
   interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
     'accept-charset'?: string
     action?: string | SerializableAttributeValue
-    autocomplete?: string
+    autocomplete?: HTMLAutocomplete
     encoding?: HTMLFormEncType
     enctype?: HTMLFormEncType
     method?: HTMLFormMethod
@@ -816,7 +889,7 @@ export namespace JSX {
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
     accept?: string
     alt?: string
-    autocomplete?: string
+    autocomplete?: HTMLAutocomplete
     autocorrect?: 'on' | 'off'
     autofocus?: boolean
     capture?: boolean | string
@@ -854,7 +927,51 @@ export namespace JSX {
     size?: number | string
     src?: string
     step?: number | string
-    type?: string
+    type?:
+      /** A push button with no default behavior displaying the value of the value attribute, empty by default. */
+      | 'button'
+      /** A check box allowing single values to be selected/deselected. */
+      | 'checkbox'
+      /** A control for specifying a color; opening a color picker when active in supporting browsers. */
+      | 'color'
+      /** A control for entering a date (year, month, and day, with no time). Opens a date picker or numeric wheels for year, month, day when active in supporting browsers. */
+      | 'date'
+      /** A control for entering a date and time, with no time zone. Opens a date picker or numeric wheels for date- and time-components when active in supporting browsers. */
+      | 'datetime-local'
+      /** A field for editing an email address. Looks like a text input, but has validation parameters and relevant keyboard in supporting browsers and devices with dynamic keyboards. */
+      | 'email'
+      /** A control that lets the user select a file. Use the accept attribute to define the types of files that the control can select. */
+      | 'file'
+      /** A control that is not displayed but whose value is submitted to the server. There is an example in the next column, but it's hidden! */
+      | 'hidden'
+      /** A graphical submit button. Displays an image defined by the src attribute. The alt attribute displays if the image src is missing. */
+      | 'image'
+      /** A control for entering a month and year, with no time zone. */
+      | 'month'
+      /** A control for entering a number. Displays a spinner and adds default validation. Displays a numeric keypad in some devices with dynamic keypads. */
+      | 'number'
+      /** A single-line text field whose value is obscured. Will alert user if site is not secure. */
+      | 'password'
+      /** A radio button, allowing a single value to be selected out of multiple choices with the same name value. */
+      | 'radio'
+      /** A control for entering a number whose exact value is not important. Displays as a range widget defaulting to the middle value. Used in conjunction min and max to define the range of acceptable values. */
+      | 'range'
+      /** A button that resets the contents of the form to default values. Not recommended. */
+      | 'reset'
+      /** A single-line text field for entering search strings. Line-breaks are automatically removed from the input value. May include a delete icon in supporting browsers that can be used to clear the field. Displays a search icon instead of enter key on some devices with dynamic keypads. */
+      | 'search'
+      /** A button that submits the form. */
+      | 'submit'
+      /** A control for entering a telephone number. Displays a telephone keypad in some devices with dynamic keypads. */
+      | 'tel'
+      /** The default value. A single-line text field. Line-breaks are automatically removed from the input value. */
+      | 'text'
+      /** A control for entering a time value with no time zone. */
+      | 'time'
+      /** A field for entering a URL. Looks like a text input, but has validation parameters and relevant keyboard in supporting browsers and devices with dynamic keyboards. */
+      | 'url'
+      /** A control for entering a date consisting of a week-year number and a week number with no time zone. */
+      | 'week'
     value?: string | string[] | number
     width?: number | string
 
@@ -985,7 +1102,7 @@ export namespace JSX {
     type?: string
   }
   interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: string
+    autocomplete?: HTMLAutocomplete
     autofocus?: boolean
     disabled?: boolean
     form?: string
@@ -1022,7 +1139,7 @@ export namespace JSX {
     content?: DocumentFragment
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
-    autocomplete?: string
+    autocomplete?: HTMLAutocomplete
     autofocus?: boolean
     cols?: number | string
     dirname?: string
