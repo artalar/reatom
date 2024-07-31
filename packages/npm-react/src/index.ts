@@ -201,12 +201,19 @@ export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
   return ctxRef.current
 }
 
-type CtxRender = CtxSpy & { bind<T extends Fn>(fn: T): Binded<T> }
-type RenderState = JSX.Element & { REATOM_DEPS_CHANGE?: true }
+export type CtxRender = CtxSpy & { bind<T extends Fn>(fn: T): Binded<T> }
+export type RenderState = JSX.Element & { REATOM_DEPS_CHANGE?: true }
+export type ReatomProps<T> = T & { ctx: CtxRender }
+export type ReatomRender<T> = (props: ReatomProps<T>) => React.ReactNode
+
+const wrapFragment = (result: React.ReactNode) =>
+  typeof result === 'object' && result !== null && !(Symbol.iterator in result)
+    ? result
+    : React.createElement(React.Fragment, null, result)
 
 export const reatomComponent = <T>(
-  Component: (props: T & { ctx: CtxRender }) => React.ReactNode,
-  name?: string,
+  Component: ((initProps: T & { ctx: Ctx }) => ReatomRender<T>) | ReatomRender<T>,
+  name = __count('Component'),
 ): ((props: T) => JSX.Element) => {
   if (name) name = `Component.${name}`
   else name = __count('Component')
@@ -230,6 +237,34 @@ export const reatomComponent = <T>(
             if (!initCtxRef.current) {
               const initCtx = (initCtxRef.current = withAbortableSchedule(ctx))
               abortCauseContext.set(initCtx.cause, controller)
+              if (!abortCauseContext.has(initCtx.cause)) {
+                abortCauseContext.set(initCtx.cause, controller)
+                initCtx.bind = bind(initCtx, bindBind)
+              }
+
+              props.ctx = {
+                ...ctx,
+                cause: initCtx.cause,
+                bind: initCtx.bind,
+              }
+
+              let renderRef = React.useRef<typeof Component>()
+              let result: React.ReactNode
+
+              if (!renderRef.current) {
+                const mayBeRender = Component(props)
+                if (typeof mayBeRender === 'function') {
+                  renderRef.current = mayBeRender
+                  result = mayBeRender(props)
+                } else {
+                  renderRef.current = Component
+                  result = mayBeRender
+                }
+              } else {
+                result = renderRef.current(props) as React.ReactNode
+              }
+
+              return wrapFragment(result)
             }
 
             const initCtx = initCtxRef.current!
