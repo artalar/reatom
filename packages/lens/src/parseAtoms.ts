@@ -24,6 +24,7 @@ export type ParseAtoms<T> = T extends Action
     }
   : T
 
+const cache = new WeakMap<any, any>()
 export const parseAtoms = <Value>(
   ctx: Ctx,
   value: Value,
@@ -34,31 +35,56 @@ export const parseAtoms = <Value>(
 
   while (isAtom(value)) value = ctx.spy ? ctx.spy(value) : ctx.get(value)
 
-  if (typeof value !== 'object' || value === null) return value as any
+  if (typeof value !== 'object' || value === null) {
+    return value as ParseAtoms<Value>
+  }
+
+  let cached = cache.get(value)
+  let res
+  let changed = cached === undefined
 
   if (isRec(value)) {
-    const res = {} as Rec
-    for (const k in value) res[k] = parseAtoms(ctx, value[k])
-    return res as any
+    res = {} as Rec
+    for (const key in value) {
+      res[key] = parseAtoms(ctx, value[key])
+      changed ||= !Object.is(res[key], cached[key])
+    }
+    if (!changed && Object.keys(cached).length === Object.keys(res).length) {
+      res = cached
+    }
+  } else if (Array.isArray(value)) {
+    res = []
+    for (let i = 0; i < value.length; i++) {
+      const newItem = parseAtoms(ctx, value[i])
+      res.push(newItem)
+      changed ||= !Object.is(newItem, cached[i])
+    }
+    if (!changed && cached.length === res.length) {
+      res = cached
+    }
+  } else if (value instanceof Map) {
+    res = new Map()
+    for (const [key, item] of value) {
+      const newItem = parseAtoms(ctx, item)
+      res.set(key, newItem)
+      changed ||= !Object.is(item, cached.get(key))
+    }
+    if (!changed && cached.size === res.size) {
+      res = cached
+    }
+  } else if (value instanceof Set) {
+    res = new Set()
+    for (const item of value) {
+      const newItem = parseAtoms(ctx, item)
+      res.add(newItem)
+      changed ||= !Object.is(item, newItem)
+    }
+    if (!changed && cached.size === res.size) {
+      res = cached
+    }
   }
 
-  if (Array.isArray(value)) {
-    const res = []
-    for (const v of value) res.push(parseAtoms(ctx, v))
-    return res as any
-  }
+  cache.set(value, res)
 
-  if (value instanceof Map) {
-    const res = new Map()
-    for (const [k, v] of value) res.set(k, parseAtoms(ctx, v))
-    return res as any
-  }
-
-  if (value instanceof Set) {
-    const res = new Set()
-    for (const v of value) res.add(parseAtoms(ctx, v))
-    return res as any
-  }
-
-  return value as any
+  return res
 }
