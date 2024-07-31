@@ -6,12 +6,13 @@ import {
   AtomMut,
   AtomState,
   Ctx,
+  CtxSpy,
   Fn,
   Rec,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
-import { onConnect } from '@reatom/hooks'
+import { isInit, onConnect } from '@reatom/hooks'
 import { MAX_SAFE_TIMEOUT, random } from '@reatom/utils'
 
 export interface PersistRecord<T = unknown> {
@@ -43,7 +44,7 @@ export interface WithPersistOptions<T> {
   /**
    * Custom snapshot serializer.
    */
-  toSnapshot?: Fn<[ctx: Ctx, state: T], unknown>
+  toSnapshot?: Fn<[ctx: CtxSpy, state: T], unknown>
   /**
    * Custom snapshot deserializer.
    */
@@ -83,6 +84,10 @@ export const reatomPersist = (
   const withPersist: WithPersist =
     <T extends Atom>(options: string | WithPersistOptions<AtomState<T>>) =>
     (anAtom: T): T => {
+      if (typeof options === 'string') {
+        options = { key: options }
+      }
+
       const {
         key,
         fromSnapshot = (ctx, data: any) => data,
@@ -101,12 +106,12 @@ export const reatomPersist = (
         return rec?.id === state?.id ? state : rec ?? state
       }
 
-      const fromPersistRecord = (ctx: Ctx, rec: null | PersistRecord = getPersistRecord(ctx), state?: AtomState<T>) =>
-        rec === null || (rec.version !== version && migration === undefined)
+      const fromPersistRecord = (ctx: Ctx, rec?: PersistRecord, state?: AtomState<T>) =>
+        !rec || (rec.version !== version && migration === undefined)
           ? initState(ctx)
           : fromSnapshot(ctx, rec.version !== version ? migration!(ctx, rec) : rec.data, state)
 
-      const toPersistRecord = (ctx: Ctx, state: AtomState<T>): PersistRecord => ({
+      const toPersistRecord = (ctx: CtxSpy, state: AtomState<T>): PersistRecord => ({
         data: toSnapshot(ctx, state),
         fromState: true,
         id: random(),
@@ -120,28 +125,40 @@ export const reatomPersist = (
       const persistRecordAtom = atom<PersistRecord | null>(null, `${anAtom.__reatom.name}._${storage.name}Atom`)
       // @ts-expect-error TODO
       persistRecordAtom.__reatom.computer = getPersistRecord
+      const recAtom = atom((ctx: Ctx, state?: PersistRecord) => {
+        const rec = ctx.get(storageAtom).get(ctx, key)
 
-      if (subscribe) {
-        const { computer } = anAtom.__reatom
-        // @ts-expect-error hard to type optional `state`
-        anAtom.__reatom.computer = (ctx, state?: AtomState<T>) => {
-          ctx.spy(persistRecordAtom, (rec) => {
-            state = fromPersistRecord(ctx, rec, state)
-          })
+        return rec?.id === state?.id ? state : rec ?? state
+      }, `${proto.name}.${storage.name}._recAtom`)
 
-          return computer ? computer(ctx, state) : state
+      const controllerAtom = atom((ctx, rec?: PersistRecord) => {
+        let snapshotRec = rec
+        ctx.spy(recAtom, (rec) => {
+          if (rec && rec.id !== snapshotRec?.id) snapshotRec = rec
+        })
+
+        if (snapshotRec && snapshotRec !== rec) {
+          anAtom(ctx, fromPersistRecord(ctx, snapshotRec))
         }
 
-        onConnect(
-          anAtom,
-          (ctx) =>
-            ctx.get(storageAtom).subscribe?.(ctx, key, () => {
-              // this will rerun the computed
-              persistRecordAtom(ctx, (state) => state)
-            }),
-        )
-      } else {
-        anAtom.__reatom.initState = fromPersistRecord
+        let newState = false
+        ctx.spy(anAtom, () => (newState = true))
+
+        const stateRec = toPersistRecord(ctx, ctx.get(anAtom))
+        if (newState) {
+          ctx.get(storageAtom).set(ctx, key, stateRec)
+        }
+        return Object.is(snapshotRec?.data, stateRec.data) ? snapshotRec : stateRec
+      }, `${proto.name}.${storage.name}_controllerAtom`)
+      anAtom.onChange((ctx) => ctx.get(controllerAtom))
+
+      proto.initState = (ctx) => {
+        // ctx.schedule(() => ctx.get(controllerAtom), 0)
+        return fromPersistRecord(ctx, ctx.get(recAtom))
+      }
+
+      if (subscribe) {
+        onConnect(anAtom, (ctx) => ctx.get(storageAtom).subscribe?.(ctx, key, () => ctx.get(recAtom)))
       }
 
       anAtom.onChange((ctx, state) => {
