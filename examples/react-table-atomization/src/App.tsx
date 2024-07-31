@@ -1,8 +1,8 @@
 import React from 'react'
 import { TableWithUseState } from './TableWithUseState'
-// import { TableWithReatom } from './TableWithReatom'
+import { TableWithReatom } from './TableWithReatom'
 import { TableWithAtomization } from './TableWithAtomization'
-import { TableWithComponentAtomization } from './TableWithComponentAtomization'
+import { TableWithZodAtomization } from './TableWithZodAtomization'
 import {
   FormControl,
   InputLabel,
@@ -26,9 +26,9 @@ export const App = () => {
 
   const Component = {
     useState: TableWithUseState,
-    // Reatom: TableWithReatom,
+    Reatom: TableWithReatom,
     Atomization: TableWithAtomization,
-    ComponentAtomization: TableWithComponentAtomization,
+    ZodAtomization: TableWithZodAtomization,
   }[state]
 
   return (
@@ -42,11 +42,9 @@ export const App = () => {
           onChange={(e) => setState(e.target.value)}
         >
           <MenuItem value="useState">useState</MenuItem>
-          {/* <MenuItem value="Reatom">Reatom</MenuItem> */}
+          <MenuItem value="Reatom">Reatom</MenuItem>
           <MenuItem value="Atomization">Atomization</MenuItem>
-          <MenuItem value="ComponentAtomization">
-            Component Atomization
-          </MenuItem>
+          <MenuItem value="ZodAtomization">Zod Atomization</MenuItem>
         </Select>
       </FormControl>
       <br />

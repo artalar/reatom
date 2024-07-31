@@ -2,53 +2,63 @@ import * as React from 'react'
 import Paper from '@mui/material/Paper'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
-import TableCell, { TableCellProps } from '@mui/material/TableCell'
+import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
-import { dataRows } from './data'
+import { getData } from './data'
 import { Data, DataList } from './types'
 
-const Cell = ({
+const Field = React.memo(function Field({
   idx,
   name,
   list,
-  setList,
-  ...tableCellProps
-}: TableCellProps & {
+  onChange,
+}: {
   idx: number
   name: keyof Data
   list: DataList
-  setList: React.Dispatch<React.SetStateAction<DataList>>
-}) => {
+  onChange: (idx: number, name: keyof Data, value: string) => void
+}) {
   const handleChange: React.ChangeEventHandler<HTMLInputElement> =
     React.useCallback(
-      ({ currentTarget: { value } }) => {
-        setList((list) => {
-          const newList = [...list]
-          const newRecord = { ...list[idx], [name]: value }
-          newList[idx] = newRecord
-          return newList
-        })
-      },
-      [idx, name, setList],
+      ({ currentTarget: { value } }) => onChange(idx, name, value),
+      [idx, name, onChange],
     )
 
   return (
-    <TableCell {...tableCellProps}>
-      <TextField
-        value={list[idx][name]}
-        onChange={handleChange}
-        label={name}
-        variant="standard"
-      />
-    </TableCell>
+    <TextField
+      value={list[idx][name]}
+      onChange={handleChange}
+      label={name}
+      variant="standard"
+    />
   )
-}
+})
 
+const KEY = 'TableWithUseState'
 export const TableWithUseState = () => {
-  const [list, setList] = React.useState(dataRows)
+  const [list, setList] = React.useState((): DataList => {
+    const snapshot = localStorage.getItem(KEY)
+    return snapshot ? JSON.parse(snapshot) : getData()
+  })
+
+  React.useEffect(() => {
+    localStorage.setItem(KEY, JSON.stringify(list))
+  }, [list])
+
+  const handleItemChange = React.useCallback(
+    (idx: number, name: keyof Data, value: string) => {
+      setList((list) => {
+        const newList = [...list]
+        const newRecord = { ...list[idx], [name]: value }
+        newList[idx] = newRecord
+        return newList
+      })
+    },
+    [setList],
+  )
 
   return (
     <TableContainer component={Paper}>
@@ -71,34 +81,38 @@ export const TableWithUseState = () => {
               <TableCell component="th" scope="row">
                 {row.name}
               </TableCell>
-              <Cell
-                name="calories"
-                idx={i}
-                list={list}
-                setList={setList}
-                align="right"
-              />
-              <Cell
-                name="fat"
-                idx={i}
-                list={list}
-                setList={setList}
-                align="right"
-              />
-              <Cell
-                name="carbs"
-                idx={i}
-                list={list}
-                setList={setList}
-                align="right"
-              />
-              <Cell
-                name="protein"
-                idx={i}
-                list={list}
-                setList={setList}
-                align="right"
-              />
+              <TableCell align="right">
+                <Field
+                  name="calories"
+                  idx={i}
+                  list={list}
+                  onChange={handleItemChange}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <Field
+                  name="fat"
+                  idx={i}
+                  list={list}
+                  onChange={handleItemChange}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <Field
+                  name="carbs"
+                  idx={i}
+                  list={list}
+                  onChange={handleItemChange}
+                />
+              </TableCell>
+              <TableCell align="right">
+                <Field
+                  name="protein"
+                  idx={i}
+                  list={list}
+                  onChange={handleItemChange}
+                />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

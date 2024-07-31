@@ -7,8 +7,12 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import { zodRows } from './data'
 import { reatomComponent } from '@reatom/npm-react'
+import { reatomZod } from '@reatom/npm-zod'
+import { DataList } from './types'
 
-export const TableWithComponentAtomization = reatomComponent(
+const zodRows = reatomZod(DataList, { initState: dataRows })
+
+export const TableWithZodAtomization = reatomComponent(
   ({ ctx }) => (
     <TableContainer component={Paper}>
       <Table aria-label="simple table">
@@ -48,5 +52,5 @@ export const TableWithComponentAtomization = reatomComponent(
       </Table>
     </TableContainer>
   ),
-  'TableWithComponentAtomization',
+  'TableWithZodAtomization',
 )

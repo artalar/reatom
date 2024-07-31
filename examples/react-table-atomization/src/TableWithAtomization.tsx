@@ -1,5 +1,5 @@
 /* eslint-disable react/display-name */
-import { AtomMut } from '@reatom/core'
+import { atom, AtomMut } from '@reatom/core'
 import Paper from '@mui/material/Paper'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -9,7 +9,15 @@ import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import { reatomComponent } from '@reatom/npm-react'
-import { atomizedRows } from './data'
+import { dataRows } from './data'
+
+export const atomizedRows = dataRows.map((data) => ({
+  name: data.name,
+  calories: atom(data.calories, 'calories'),
+  fat: atom(data.fat, 'fat'),
+  carbs: atom(data.carbs, 'carbs'),
+  protein: atom(data.protein, 'protein'),
+}))
 
 const Cell = reatomComponent<TableCellProps & { model: AtomMut<number> }>(
   ({ ctx, model, ...tableCellProps }) => (

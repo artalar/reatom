@@ -1,5 +1,6 @@
-import { AtomMut } from '@reatom/core'
-import { useAction, useAtom } from '@reatom/npm-react'
+import { atom } from '@reatom/core'
+import { reatomComponent, useAction } from '@reatom/npm-react'
+import { withLocalStorage } from '@reatom/persist-web-storage'
 import Paper from '@mui/material/Paper'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
@@ -8,19 +9,24 @@ import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
-import { Data, rows } from './data'
+import { getData } from './data'
+import { Data } from './types'
+import { isShallowEqual, select } from '@reatom/framework'
 
-const Cell = ({
-  idx,
-  name,
-  listAtom,
-  ...tableCellProps
-}: TableCellProps & {
-  idx: number
-  name: keyof Data
-  listAtom: AtomMut<typeof rows>
-}) => {
-  const [value] = useAtom((ctx) => ctx.spy(listAtom)[idx][name])
+const listAtom = atom(getData(), 'listAtom').pipe(
+  withLocalStorage('TableWithReatom'),
+)
+const namesAtom = atom((ctx, state?: Array<string>) => {
+  const names = ctx.spy(listAtom).map(({ name }) => name)
+  return isShallowEqual(names, state) ? state! : names
+}, 'namesAtom')
+
+const Cell = reatomComponent<
+  TableCellProps & {
+    idx: number
+    name: keyof Data
+  }
+>(({ ctx, idx, name, ...tableCellProps }) => {
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = useAction(
     (ctx, { currentTarget: { value } }) => {
       listAtom(ctx, (list) => {
@@ -35,19 +41,17 @@ const Cell = ({
   return (
     <TableCell {...tableCellProps}>
       <TextField
-        value={value}
+        value={select(ctx, (ctx) => ctx.spy(listAtom)[idx][name])}
         onChange={handleChange}
         label={name}
         variant="standard"
       />
     </TableCell>
   )
-}
+})
 
-export const TableWithReatom = () => {
-  const [list, , listAtom] = useAtom(rows, [], { subscribe: false })
-
-  return (
+export const TableWithReatom = reatomComponent(
+  ({ ctx }) => (
     <TableContainer component={Paper}>
       <Table aria-label="simple table">
         <TableHead>
@@ -60,22 +64,23 @@ export const TableWithReatom = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {list.map((row, i) => (
+          {ctx.spy(namesAtom).map((name, i) => (
             <TableRow
-              key={i}
+              key={name}
               sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
             >
               <TableCell component="th" scope="row">
-                {row.name}
+                {name}
               </TableCell>
-              <Cell name="calories" idx={i} listAtom={listAtom} align="right" />
-              <Cell name="fat" idx={i} listAtom={listAtom} align="right" />
-              <Cell name="carbs" idx={i} listAtom={listAtom} align="right" />
-              <Cell name="protein" idx={i} listAtom={listAtom} align="right" />
+              <Cell name="calories" idx={i} align="right" />
+              <Cell name="fat" idx={i} align="right" />
+              <Cell name="carbs" idx={i} align="right" />
+              <Cell name="protein" idx={i} align="right" />
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </TableContainer>
-  )
-}
+  ),
+  'TableWithReatom',
+)
