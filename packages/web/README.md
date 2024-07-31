@@ -14,7 +14,7 @@ You can pass a callback as the last argument. In this case, the method will retu
 
 Please note that this API handles the abort context from the [onConnect](https://www.reatom.dev/package/hooks/#onconnect) effect and other Reatom APIs. It enables you to describe complex logic in a concise and clear manner with memory safety underneath.
 
-### onEvent WebSocket example 
+### onEvent WebSocket example
 
 Here is a usage example, which was derived from [this observable example](https://github.com/domfarolino/observable/blob/c232b2e585b71a61034fd23ba4337570b537ef27/README.md?plain=1#L86):
 
@@ -91,4 +91,24 @@ const loadPageContent = reatomAsync(async (ctx)=>{
     
     pageContent(ctx, content)
 })
+## reatomEvent
+
+This method allows you to create an event tracker action that will subscribe to the event when the action is connected. If you use `ctx.subscribe`, `ctx.spy`, or other ecosystem methods, such as `take` from [the effects package](https://www.reatom.dev/package/effects/#take), the event will be handled by the action. When the action becomes disconnected, the listener will be removed.
+
+`EventAction` has `promiseAtom`, which could simplify your code.
+
+Here is the basic example.
+
+```ts
+const submitEvent = reatomEvent(formElement, 'submit')
+// This will work only if the action have subscription
+submitEvent.onCall((ctx, event) => {
+  event.preventDefault()
+})
+
+export const submitFlow = reatomAsyncReaction(ctx => {
+  await take(ctx, submitEvent)
+  // process form data...
+})
+
 ```
