@@ -15,11 +15,14 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`
 You need to set up the main context once and wrap your application in a provider at the top level.
 
 ```jsx
-import { createCtx } from '@reatom/core'
+import { createCtx, connectLogger } from '@reatom/framework'
 import { reatomContext } from '@reatom/npm-react'
 import { Main } from './path/to/an/Main'
 
 const ctx = createCtx()
+if (import.meta.env.DEV) {
+  connectLogger(ctx)
+}
 
 export const App = () => (
   <reatomContext.Provider value={ctx}>
