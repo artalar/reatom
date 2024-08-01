@@ -10,6 +10,24 @@ Also, you need to be installed `@reatom/core` or `@reatom/framework` and `react`
 
 > Read [the handbook](https://www.reatom.dev/handbook) first for production usage.
 
+## Setup context
+
+You need to set up the main context once and wrap your application in a provider at the top level.
+
+```jsx
+import { createCtx } from '@reatom/core'
+import { reatomContext } from '@reatom/npm-react'
+import { Main } from './path/to/an/Main'
+
+const ctx = createCtx()
+
+export const App = () => (
+  <reatomContext.Provider value={ctx}>
+    <Main />
+  </reatomContext.Provider>
+)
+```
+
 ## Use atom
 
 ### reatomComponent
@@ -97,21 +115,6 @@ export const Greeting = () => {
     </>
   )
 }
-```
-
-In the app root:
-
-```js
-import { createCtx } from '@reatom/core'
-import { reatomContext } from '@reatom/npm-react'
-
-const ctx = createCtx()
-
-export const App = () => (
-  <reatomContext.Provider value={ctx}>
-    <Main />
-  </reatomContext.Provider>
-)
 ```
 
 We recommend to setup [logger](https://www.reatom.dev/package/logger) here.
