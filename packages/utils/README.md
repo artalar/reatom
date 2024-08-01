@@ -86,6 +86,10 @@ Do the check `value instanceof Error && value.name === 'AbortError'`
 
 Convert string message to abort error, abort a controller if passed, throw the error. Useful for correct type inference.
 
+### setTimeout
+
+A small decorator around `globalThis.setTimeout` which adds `toJSON() { return -1 }` to `NodeJS.Timeout` to prevent `TypeError: Converting circular structure to JSON`.
+
 ## Constants
 
 ### MAX_SAFE_TIMEOUT
