@@ -3,7 +3,8 @@ import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { atom } from '@reatom/core'
 import { parseAtoms } from './parseAtoms'
-import { reatomLinkedList } from '@reatom/primitives'
+import { reatomZod } from '@reatom/npm-zod'
+import { z } from 'zod'
 
 const test = suite('parseAtoms')
 
@@ -12,10 +13,7 @@ test('should return value', () => {
 
   assert.is(parseAtoms(ctx, 'some bare value'), 'some bare value')
   assert.is(parseAtoms(ctx, 10), 10)
-  assert.is(
-    parseAtoms(ctx, Symbol.for('specialSymbol')),
-    Symbol.for('specialSymbol'),
-  )
+  assert.is(parseAtoms(ctx, Symbol.for('specialSymbol')), Symbol.for('specialSymbol'))
   ;`👍` //?
 })
 
@@ -146,21 +144,60 @@ test('should parse mixed values', () => {
 test('should parse deep structures', () => {
   const ctx = createTestCtx()
 
-  assert.equal(parseAtoms(ctx, [[[[[atom('deepStruct')]]]]]), [
-    [[[['deepStruct']]]],
-  ])
+  assert.equal(parseAtoms(ctx, [[[[[atom('deepStruct')]]]]]), [[[[['deepStruct']]]]])
   ;`👍` //?
 })
 
 test('should parse linked list as array', () => {
   const ctx = createTestCtx()
-  const list = reatomLinkedList((ctx, n: number) => ({ n }))
+  const model = reatomZod(
+    z.object({
+      kind: z.literal('TEST'),
+      bool1: z.boolean().optional().nullable(),
+      arr: z.array(
+        z.object({
+          type: z.enum(['A', 'B', 'C']).readonly(),
+          str1: z.string().optional(),
+          bool: z.boolean().optional(),
+        }),
+      ),
+      bool2: z.boolean().nullish(),
+    }),
+  )
 
-  list.create(ctx, 1)
-  list.create(ctx, 2)
-  list.create(ctx, 3)
-  const snapshot = parseAtoms(ctx, list)
-  assert.equal(snapshot, [{ n: 1 }, { n: 2 }, { n: 3 }])
+  model.arr.create(ctx, {
+    type: 'A',
+    str1: 'a',
+    bool: true,
+  })
+  model.arr.create(ctx, {
+    type: 'B',
+    str1: 'b',
+    bool: true,
+  })
+  model.arr.create(ctx, {
+    type: 'C',
+    str1: 'c',
+    bool: false,
+  })
+  const snapshot = parseAtoms(ctx, model)
+  assert.equal(snapshot.arr, [
+    {
+      type: 'A',
+      str1: 'a',
+      bool: true,
+    },
+    {
+      type: 'B',
+      str1: 'b',
+      bool: true,
+    },
+    {
+      type: 'C',
+      str1: 'c',
+      bool: false,
+    },
+  ])
   ;`👍` //?
 })
 
