@@ -9,7 +9,7 @@ import {
   Fn,
 } from '@reatom/core'
 import { MapAtom, reatomMap, withAssign } from '@reatom/primitives'
-import { isDeepEqual, MAX_SAFE_TIMEOUT } from '@reatom/utils'
+import { isDeepEqual, MAX_SAFE_TIMEOUT, setTimeout } from '@reatom/utils'
 import { type WithPersistOptions } from '@reatom/persist'
 
 import {
