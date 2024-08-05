@@ -15,6 +15,7 @@ export interface SetAtom<T> extends AtomMut<Set<T>> {
   isSubsetOf: (ctx: Ctx, set: Set<T>) => boolean
   isSupersetOf: (ctx: Ctx, set: Set<T>) => boolean
   isDisjointFrom: (ctx: Ctx, set: Set<T>) => boolean
+  size: (ctx: Ctx) => number
   /** @deprecated */
   set: Action<[el: T], Set<T>>
 }
@@ -98,5 +99,6 @@ export const reatomSet = <T>(
         (ctx.get(target) as ProposalSet<T>).isSupersetOf(set),
       isDisjointFrom: (ctx: Ctx, set: Set<T>) =>
         (ctx.get(target) as ProposalSet<T>).isDisjointFrom(set),
+      size: (ctx: Ctx) => ctx.get(target).size,
     })),
   )
