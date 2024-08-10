@@ -43,6 +43,7 @@ body:
         - Package @reatom/npm-solid-js
         - Package @reatom/npm-svelte
         - Package @reatom/npm-vue
+        - Package @reatom/npm-zod
         - Package @reatom/persist
         - Package @reatom/persist-web-storage
         - Package @reatom/primitives
