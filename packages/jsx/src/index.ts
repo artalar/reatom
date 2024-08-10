@@ -1,38 +1,17 @@
-import {
-  action,
-  Atom,
-  AtomMut,
-  createCtx,
-  Ctx,
-  Fn,
-  isAtom,
-  Rec,
-  throwReatomError,
-  Unsubscribe,
-} from '@reatom/core'
+import { action, Atom, AtomMut, createCtx, Ctx, Fn, isAtom, Rec, throwReatomError, Unsubscribe } from '@reatom/core'
 import { isObject, random } from '@reatom/utils'
-import {
-  type LinkedList,
-  type LLNode,
-  isLinkedListAtom,
-  LL_NEXT,
-} from '@reatom/primitives'
+import { type LinkedList, type LLNode, isLinkedListAtom, LL_NEXT } from '@reatom/primitives'
 import type { JSX } from './jsx'
 declare type JSXElement = JSX.Element
 export type { JSXElement, JSX }
 
 type DomApis = Pick<
   typeof window,
-  | 'document'
-  | 'Node'
-  | 'Text'
-  | 'Element'
-  | 'MutationObserver'
-  | 'HTMLElement'
-  | 'DocumentFragment'
+  'document' | 'Node' | 'Text' | 'Element' | 'MutationObserver' | 'HTMLElement' | 'DocumentFragment'
 >
 
-const isSkipped = (value: unknown): value is  boolean | '' | null | undefined => typeof value === 'boolean' || value === '' || value == null
+const isSkipped = (value: unknown): value is boolean | '' | null | undefined =>
+  typeof value === 'boolean' || value === '' || value == null
 
 let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
 let unlink = (parent: any, un: Unsubscribe) => {
@@ -42,21 +21,14 @@ let unlink = (parent: any, un: Unsubscribe) => {
   Promise.resolve().then(() => {
     if (!parent.isConnected) un()
     else {
-      while (
-        parent.parentElement &&
-        !unsubscribesMap.get(parent)?.push(() => parent.isConnected || un())
-      ) {
+      while (parent.parentElement && !unsubscribesMap.get(parent)?.push(() => parent.isConnected || un())) {
         parent = parent.parentElement
       }
     }
   })
 }
 
-const walkLinkedList = (
-  ctx: Ctx,
-  el: JSX.Element,
-  list: Atom<LinkedList<LLNode<JSX.Element>>>,
-) => {
+const walkLinkedList = (ctx: Ctx, el: JSX.Element, list: Atom<LinkedList<LLNode<JSX.Element>>>) => {
   let lastVersion = -1
   unlink(
     el,
@@ -177,12 +149,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         if (k.startsWith('model:')) {
           let name = (k = k.slice(6))
           set(element, 'on:input', (ctx: Ctx, event: any) => {
-            ;(prop as AtomMut)(
-              ctx,
-              name === 'valueAsNumber'
-                ? +event.target.value
-                : event.target[name],
-            )
+            ;(prop as AtomMut)(ctx, name === 'valueAsNumber' ? +event.target.value : event.target[name])
           })
           if (k === 'valueAsNumber') k = 'value'
           k = 'prop:' + k
@@ -210,17 +177,11 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         if (isLinkedListAtom(child)) {
           walkLinkedList(ctx, element, child)
         } else if (isAtom(child)) {
-          let innerChild = DOM.document.createTextNode('') as
-            | ChildNode
-            | DocumentFragment
+          let innerChild = DOM.document.createTextNode('') as ChildNode | DocumentFragment
           let error: any
           var un: undefined | Unsubscribe = ctx.subscribe(child, (v): void => {
             try {
-              if (
-                un &&
-                !innerChild.isConnected &&
-                innerChild instanceof DOM.DocumentFragment === false
-              ) {
+              if (un && !innerChild.isConnected && innerChild instanceof DOM.DocumentFragment === false) {
                 un()
               } else {
                 throwReatomError(

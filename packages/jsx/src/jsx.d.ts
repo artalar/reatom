@@ -19,14 +19,7 @@ type ElementsAttributesAtomMaybe<T extends Record<keyof any, any>> = {
 export namespace JSX {
   type Element = HTMLElement | SVGElement
 
-  type ElementPrimitiveChildren =
-    | Node
-    | Element
-    | (string & {})
-    | number
-    | boolean
-    | null
-    | undefined
+  type ElementPrimitiveChildren = Node | Element | (string & {}) | number | boolean | null | undefined
 
   type ElementChildren =
     | Array<ElementChildren | AtomMaybe<ElementPrimitiveChildren>>
@@ -73,12 +66,7 @@ export namespace JSX {
       ctx: Ctx,
       e: E & {
         currentTarget: T
-        target: T extends
-          | HTMLInputElement
-          | HTMLSelectElement
-          | HTMLTextAreaElement
-          ? T
-          : Element
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement ? T : Element
       },
     ): void
   }
@@ -88,12 +76,7 @@ export namespace JSX {
       ctx: Ctx,
       e: E & {
         currentTarget: T
-        target: T extends
-          | HTMLInputElement
-          | HTMLSelectElement
-          | HTMLTextAreaElement
-          ? T
-          : Element
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement ? T : Element
       },
     ): void
   }
@@ -103,12 +86,7 @@ export namespace JSX {
       ctx: Ctx,
       e: E & {
         currentTarget: T
-        target: T extends
-          | HTMLInputElement
-          | HTMLSelectElement
-          | HTMLTextAreaElement
-          ? T
-          : Element
+        target: T extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement ? T : Element
       },
     ): void
   }
@@ -140,9 +118,7 @@ export namespace JSX {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
   }
   type DirectiveFunctionAttributes<T> = {
-    [K in keyof DirectiveFunctions as string extends K
-      ? never
-      : `use:${K}`]?: DirectiveFunctions[K] extends (
+    [K in keyof DirectiveFunctions as string extends K ? never : `use:${K}`]?: DirectiveFunctions[K] extends (
       el: infer E, // will be unknown if not provided
       ...rest: infer R // use rest so that we can check whether it's provided or not
     ) => void
@@ -156,26 +132,16 @@ export namespace JSX {
       : never // it isn't a function
   }
   type PropAttributes = {
-    [Key in keyof ExplicitProperties as `prop:${Key}`]?: AtomMaybe<
-      ExplicitProperties[Key]
-    >
+    [Key in keyof ExplicitProperties as `prop:${Key}`]?: AtomMaybe<ExplicitProperties[Key]>
   }
   type AttrAttributes = {
-    [Key in keyof ExplicitAttributes as `attr:${Key}`]?: AtomMaybe<
-      ExplicitAttributes[Key]
-    >
+    [Key in keyof ExplicitAttributes as `attr:${Key}`]?: AtomMaybe<ExplicitAttributes[Key]>
   }
   type OnAttributes<T> = {
-    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<
-      T,
-      CustomEvents[Key]
-    >
+    [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>
   }
   type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<
-      T,
-      CustomCaptureEvents[Key]
-    >
+    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<T, CustomCaptureEvents[Key]>
   }
   interface DOMAttributes<T>
     extends CustomAttributes<T>,
@@ -295,13 +261,7 @@ export namespace JSX {
   }
 
   /** Controls automatic capitalization in inputted text. */
-  type HTMLAutocapitalize =
-    | 'off'
-    | 'none'
-    | 'on'
-    | 'sentences'
-    | 'words'
-    | 'characters'
+  type HTMLAutocapitalize = 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters'
   // TODO add combinations
   /**
    * The autocomplete attribute provides a hint to the user agent specifying how to, or indeed whether to, prefill a form control.
@@ -375,10 +335,7 @@ export namespace JSX {
     | `section-${string}`
     | (string & {})
   type HTMLDir = 'ltr' | 'rtl' | 'auto'
-  type HTMLFormEncType =
-    | 'application/x-www-form-urlencoded'
-    | 'multipart/form-data'
-    | 'text/plain'
+  type HTMLFormEncType = 'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain'
   type HTMLFormMethod = 'post' | 'get' | 'dialog'
   type HTMLCrossorigin = 'anonymous' | 'use-credentials' | ''
   type HTMLReferrerPolicy =
@@ -459,15 +416,7 @@ export namespace JSX {
      */
     'aria-controls'?: string
     /** Indicates the element that represents the current item within a container or set of related elements. */
-    'aria-current'?:
-      | boolean
-      | 'false'
-      | 'true'
-      | 'page'
-      | 'step'
-      | 'location'
-      | 'date'
-      | 'time'
+    'aria-current'?: boolean | 'false' | 'true' | 'page' | 'step' | 'location' | 'date' | 'time'
     /**
      * Identifies the element (or elements) that describes the object.
      * @see aria-labelledby
@@ -506,15 +455,7 @@ export namespace JSX {
      */
     'aria-grabbed'?: boolean | 'false' | 'true'
     /** Indicates the availability and type of interactive popup element, such as menu or dialog, that can be triggered by an element. */
-    'aria-haspopup'?:
-      | boolean
-      | 'false'
-      | 'true'
-      | 'menu'
-      | 'listbox'
-      | 'tree'
-      | 'grid'
-      | 'dialog'
+    'aria-haspopup'?: boolean | 'false' | 'true' | 'menu' | 'listbox' | 'tree' | 'grid' | 'dialog'
     /**
      * Indicates whether the element is exposed to an accessibility API.
      * @see aria-disabled.
@@ -755,15 +696,7 @@ export namespace JSX {
     itemref?: string
     part?: string
     exportparts?: string
-    inputmode?:
-      | 'none'
-      | 'text'
-      | 'tel'
-      | 'url'
-      | 'email'
-      | 'numeric'
-      | 'decimal'
-      | 'search'
+    inputmode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'
   }
   interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
     download?: any
@@ -896,14 +829,7 @@ export namespace JSX {
     checked?: boolean
     crossorigin?: HTMLCrossorigin
     disabled?: boolean
-    enterkeyhint?:
-      | 'enter'
-      | 'done'
-      | 'go'
-      | 'next'
-      | 'previous'
-      | 'search'
-      | 'send'
+    enterkeyhint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'
     form?: string
     formaction?: string | SerializableAttributeValue
     formenctype?: HTMLFormEncType
@@ -927,9 +853,8 @@ export namespace JSX {
     size?: number | string
     src?: string
     step?: number | string
-    type?:
-      /** A push button with no default behavior displaying the value of the value attribute, empty by default. */
-      | 'button'
+    type?: /** A push button with no default behavior displaying the value of the value attribute, empty by default. */
+    | 'button'
       /** A check box allowing single values to be selected/deselected. */
       | 'checkbox'
       /** A control for specifying a color; opening a color picker when active in supporting browsers. */
@@ -1112,8 +1037,7 @@ export namespace JSX {
     size?: number | string
     value?: string | string[] | number
   }
-  interface HTMLSlotElementAttributes<T = HTMLSlotElement>
-    extends HTMLAttributes<T> {
+  interface HTMLSlotElementAttributes<T = HTMLSlotElement> extends HTMLAttributes<T> {
     name?: string
   }
   interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1134,8 +1058,7 @@ export namespace JSX {
     headers?: string
     rowspan?: number | string
   }
-  interface TemplateHTMLAttributes<T extends HTMLTemplateElement>
-    extends HTMLAttributes<T> {
+  interface TemplateHTMLAttributes<T extends HTMLTemplateElement> extends HTMLAttributes<T> {
     content?: DocumentFragment
   }
   interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
@@ -1144,14 +1067,7 @@ export namespace JSX {
     cols?: number | string
     dirname?: string
     disabled?: boolean
-    enterkeyhint?:
-      | 'enter'
-      | 'done'
-      | 'go'
-      | 'next'
-      | 'previous'
-      | 'search'
-      | 'send'
+    enterkeyhint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'
     form?: string
     maxlength?: number | string
     minlength?: number | string
@@ -1377,53 +1293,24 @@ export namespace JSX {
       | 'all'
       | 'none'
       | 'inherit'
-    'shape-rendering'?:
-      | 'auto'
-      | 'optimizeSpeed'
-      | 'crispEdges'
-      | 'geometricPrecision'
-      | 'inherit'
+    'shape-rendering'?: 'auto' | 'optimizeSpeed' | 'crispEdges' | 'geometricPrecision' | 'inherit'
     'stop-color'?: string
     'stop-opacity'?: number | string | 'inherit'
     stroke?: string
     'stroke-dasharray'?: string
     'stroke-dashoffset'?: number | string
     'stroke-linecap'?: 'butt' | 'round' | 'square' | 'inherit'
-    'stroke-linejoin'?:
-      | 'arcs'
-      | 'bevel'
-      | 'miter'
-      | 'miter-clip'
-      | 'round'
-      | 'inherit'
+    'stroke-linejoin'?: 'arcs' | 'bevel' | 'miter' | 'miter-clip' | 'round' | 'inherit'
     'stroke-miterlimit'?: number | string | 'inherit'
     'stroke-opacity'?: number | string | 'inherit'
     'stroke-width'?: number | string
     'text-anchor'?: 'start' | 'middle' | 'end' | 'inherit'
-    'text-decoration'?:
-      | 'none'
-      | 'underline'
-      | 'overline'
-      | 'line-through'
-      | 'blink'
-      | 'inherit'
-    'text-rendering'?:
-      | 'auto'
-      | 'optimizeSpeed'
-      | 'optimizeLegibility'
-      | 'geometricPrecision'
-      | 'inherit'
+    'text-decoration'?: 'none' | 'underline' | 'overline' | 'line-through' | 'blink' | 'inherit'
+    'text-rendering'?: 'auto' | 'optimizeSpeed' | 'optimizeLegibility' | 'geometricPrecision' | 'inherit'
     'unicode-bidi'?: string
     visibility?: 'visible' | 'hidden' | 'collapse' | 'inherit'
     'word-spacing'?: number | string
-    'writing-mode'?:
-      | 'lr-tb'
-      | 'rl-tb'
-      | 'tb-rl'
-      | 'lr'
-      | 'rl'
-      | 'tb'
-      | 'inherit'
+    'writing-mode'?: 'lr-tb' | 'rl-tb' | 'tb-rl' | 'lr' | 'rl' | 'tb' | 'inherit'
   }
   interface AnimationElementSVGAttributes<T>
     extends CoreSVGAttributes<T>,
@@ -1555,10 +1442,7 @@ export namespace JSX {
       AnimationTimingSVGAttributes,
       AnimationValueSVGAttributes,
       AnimationAdditionSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'color-interpolation' | 'color-rendering'
-      > {}
+      Pick<PresentationSVGAttributes, 'color-interpolation' | 'color-rendering'> {}
   interface AnimateMotionSVGAttributes<T>
     extends AnimationElementSVGAttributes<T>,
       AnimationTimingSVGAttributes,
@@ -1602,9 +1486,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes {}
-  interface DescSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      StylableSVGAttributes {}
+  interface DescSVGAttributes<T> extends CoreSVGAttributes<T>, StylableSVGAttributes {}
   interface EllipseSVGAttributes<T>
     extends GraphicsElementSVGAttributes<T>,
       ShapeElementSVGAttributes<T>,
@@ -1675,8 +1557,7 @@ export namespace JSX {
     xChannelSelector?: 'R' | 'G' | 'B' | 'A'
     yChannelSelector?: 'R' | 'G' | 'B' | 'A'
   }
-  interface FeDistantLightSVGAttributes<T>
-    extends LightSourceElementSVGAttributes<T> {
+  interface FeDistantLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
     azimuth?: number | string
     elevation?: number | string
   }
@@ -1684,10 +1565,7 @@ export namespace JSX {
     extends CoreSVGAttributes<T>,
       FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'color' | 'flood-color' | 'flood-opacity'
-      > {
+      Pick<PresentationSVGAttributes, 'color' | 'flood-color' | 'flood-opacity'> {
     dx?: number | string
     dy?: number | string
     stdDeviation?: number | string
@@ -1695,10 +1573,7 @@ export namespace JSX {
   interface FeFloodSVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       StylableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'color' | 'flood-color' | 'flood-opacity'
-      > {}
+      Pick<PresentationSVGAttributes, 'color' | 'flood-color' | 'flood-opacity'> {}
   interface FeFuncSVGAttributes<T> extends CoreSVGAttributes<T> {
     type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma'
     tableValues?: string
@@ -1721,12 +1596,8 @@ export namespace JSX {
     preserveAspectRatio?: SVGPreserveAspectRatio
     href?: string
   }
-  interface FeMergeSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
-      StylableSVGAttributes {}
-  interface FeMergeNodeSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      SingleInputFilterSVGAttributes {}
+  interface FeMergeSVGAttributes<T> extends FilterPrimitiveElementSVGAttributes<T>, StylableSVGAttributes {}
+  interface FeMergeNodeSVGAttributes<T> extends CoreSVGAttributes<T>, SingleInputFilterSVGAttributes {}
   interface FeMorphologySVGAttributes<T>
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
@@ -1741,8 +1612,7 @@ export namespace JSX {
     dx?: number | string
     dy?: number | string
   }
-  interface FePointLightSVGAttributes<T>
-    extends LightSourceElementSVGAttributes<T> {
+  interface FePointLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
     x?: number | string
     y?: number | string
     z?: number | string
@@ -1757,8 +1627,7 @@ export namespace JSX {
     specularExponent?: string
     kernelUnitLength?: number | string
   }
-  interface FeSpotLightSVGAttributes<T>
-    extends LightSourceElementSVGAttributes<T> {
+  interface FeSpotLightSVGAttributes<T> extends LightSourceElementSVGAttributes<T> {
     x?: number | string
     y?: number | string
     z?: number | string
@@ -1772,19 +1641,14 @@ export namespace JSX {
     extends FilterPrimitiveElementSVGAttributes<T>,
       SingleInputFilterSVGAttributes,
       StylableSVGAttributes {}
-  interface FeTurbulanceSVGAttributes<T>
-    extends FilterPrimitiveElementSVGAttributes<T>,
-      StylableSVGAttributes {
+  interface FeTurbulanceSVGAttributes<T> extends FilterPrimitiveElementSVGAttributes<T>, StylableSVGAttributes {
     baseFrequency?: number | string
     numOctaves?: number | string
     seed?: number | string
     stitchTiles?: 'stitch' | 'noStitch'
     type?: 'fractalNoise' | 'turbulence'
   }
-  interface FilterSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      ExternalResourceSVGAttributes,
-      StylableSVGAttributes {
+  interface FilterSVGAttributes<T> extends CoreSVGAttributes<T>, ExternalResourceSVGAttributes, StylableSVGAttributes {
     filterUnits?: SVGUnits
     primitiveUnits?: SVGUnits
     x?: number | string
@@ -1833,17 +1697,13 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'marker-start' | 'marker-mid' | 'marker-end'
-      > {
+      Pick<PresentationSVGAttributes, 'marker-start' | 'marker-mid' | 'marker-end'> {
     x1?: number | string
     y1?: number | string
     x2?: number | string
     y2?: number | string
   }
-  interface LinearGradientSVGAttributes<T>
-    extends GradientElementSVGAttributes<T> {
+  interface LinearGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
     x1?: number | string
     x2?: number | string
     y1?: number | string
@@ -1883,10 +1743,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'marker-start' | 'marker-mid' | 'marker-end'
-      > {
+      Pick<PresentationSVGAttributes, 'marker-start' | 'marker-mid' | 'marker-end'> {
     d?: string
     pathLength?: number | string
   }
@@ -1913,10 +1770,7 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'marker-start' | 'marker-mid' | 'marker-end'
-      > {
+      Pick<PresentationSVGAttributes, 'marker-start' | 'marker-mid' | 'marker-end'> {
     points?: string
   }
   interface PolylineSVGAttributes<T>
@@ -1926,14 +1780,10 @@ export namespace JSX {
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
       TransformableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'marker-start' | 'marker-mid' | 'marker-end'
-      > {
+      Pick<PresentationSVGAttributes, 'marker-start' | 'marker-mid' | 'marker-end'> {
     points?: string
   }
-  interface RadialGradientSVGAttributes<T>
-    extends GradientElementSVGAttributes<T> {
+  interface RadialGradientSVGAttributes<T> extends GradientElementSVGAttributes<T> {
     cx?: number | string
     cy?: number | string
     r?: number | string
@@ -1954,10 +1804,7 @@ export namespace JSX {
     rx?: number | string
     ry?: number | string
   }
-  interface SetSVGAttributes<T>
-    extends CoreSVGAttributes<T>,
-      StylableSVGAttributes,
-      AnimationTimingSVGAttributes {}
+  interface SetSVGAttributes<T> extends CoreSVGAttributes<T>, StylableSVGAttributes, AnimationTimingSVGAttributes {}
   interface StopSVGAttributes<T>
     extends CoreSVGAttributes<T>,
       StylableSVGAttributes,
@@ -2026,10 +1873,7 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
-      > {
+      Pick<PresentationSVGAttributes, 'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'> {
     startOffset?: number | string
     method?: 'align' | 'stretch'
     spacing?: 'auto' | 'exact'
@@ -2040,10 +1884,7 @@ export namespace JSX {
       ConditionalProcessingSVGAttributes,
       ExternalResourceSVGAttributes,
       StylableSVGAttributes,
-      Pick<
-        PresentationSVGAttributes,
-        'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'
-      > {
+      Pick<PresentationSVGAttributes, 'alignment-baseline' | 'baseline-shift' | 'display' | 'visibility'> {
     x?: number | string
     y?: number | string
     dx?: number | string
