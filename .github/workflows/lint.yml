@@ -7,7 +7,7 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
-      image: node:${{ vars.NODE_VERSION }}-alpine
+      image: node:18.15.0-alpine
     steps:
       - name: Install git
         run: apk add git
@@ -37,4 +37,3 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git commit -am "chore: run prettier"
           git push https://github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.head.ref }}
-

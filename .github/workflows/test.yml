@@ -7,7 +7,7 @@ jobs:
     timeout-minutes: 30
     runs-on: ubuntu-latest
     container:
-      image: node:${{ vars.NODE_VERSION }}-alpine
+      image: node:18.15.0-alpine
     steps:
       - uses: actions/checkout@v3
       - name: Install dependencies
