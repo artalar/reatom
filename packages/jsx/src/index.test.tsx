@@ -7,6 +7,7 @@ import { Fn, atom } from '@reatom/core'
 import { reatomLinkedList } from '@reatom/primitives'
 import { isConnected } from '@reatom/hooks'
 import { reatomJsx } from '.'
+import { sleep } from '@reatom/utils'
 
 const test = suite('reatomJsx')
 
@@ -228,36 +229,29 @@ test('array children', () => {
   assert.is(element.textContent, '12')
 })
 
-test('linked list', () => {
+test('linked list', async () => {
   const { ctx, h, hf, mount, parent } = setup()
 
   const list = reatomLinkedList((ctx, n: number) => atom(n))
-  const jsxList = list.reatomMap((ctx, n) => <li>{n}</li>)
+  const jsxList = list.reatomMap((ctx, n) => <span>{n}</span>)
   const one = list.create(ctx, 1)
   const two = list.create(ctx, 2)
-  const ul = <ul>{jsxList}</ul>
 
-  mount(parent, ul)
+  mount(parent, <div>{jsxList}</div>)
 
-  ctx.get(jsxList).head!.innerHTML += 0
-  assert.is(parent.innerText, '10\n2')
+  assert.is(parent.innerText, '12')
+  assert.ok(isConnected(ctx, one))
+  assert.ok(isConnected(ctx, two))
 
   list.swap(ctx, one, two)
-  assert.is(parent.innerText, '2\n10')
+  assert.is(parent.innerText, '21')
 
-  list.clear(ctx)
-  assert.is(parent.innerText, '')
 
-  // TODO
-  // assert.not.ok(isConnected(ctx, one))
-
-  // assert.is(parent.children.length, 1)
-  // assert.ok(isConnected(ctx, jsxList))
-
-  // ul.remove()
-  // list.create(ctx, 1)
-  // assert.is(parent.children.length, 0)
-  // assert.not.ok(isConnected(ctx, jsxList))
+  list.remove(ctx, two)
+  assert.is(parent.innerText, '1')
+  await sleep()
+  assert.ok(isConnected(ctx, one))
+  assert.not.ok(isConnected(ctx, two))
 })
 
 test('boolean as child', () => {
