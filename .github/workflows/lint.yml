@@ -37,3 +37,4 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git commit -am "chore: run prettier"
           git push https://github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.head.ref }}
+
