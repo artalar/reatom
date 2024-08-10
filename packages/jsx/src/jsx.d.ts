@@ -114,8 +114,6 @@ export namespace JSX {
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
-  // TODO remove separate "capture" events, add relative options
-  interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
   }
@@ -142,9 +140,6 @@ export namespace JSX {
   type OnAttributes<T> = {
     [Key in keyof CustomEvents as `on:${Key}`]?: EventHandler<T, CustomEvents[Key]>
   }
-  type OnCaptureAttributes<T> = {
-    [Key in keyof CustomCaptureEvents as `oncapture:${Key}`]?: EventHandler<T, CustomCaptureEvents[Key]>
-  }
   interface DOMAttributes<T>
     extends CustomAttributes<T>,
       DirectiveAttributes,
@@ -152,7 +147,6 @@ export namespace JSX {
       PropAttributes,
       AttrAttributes,
       OnAttributes<T>,
-      OnCaptureAttributes<T>,
       CustomEventHandlers<T> {
     children?: ElementChildren | LinkedListLikeAtom<LinkedList<LLNode<Element>>>
     innerHTML?: AtomMaybe<string>
