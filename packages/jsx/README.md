@@ -8,6 +8,8 @@ An **EXPERIMENTAL** JSX runtime for describing dynamic DOM UIs with Reatom.
 - Only 1kb runtime script (excluding the tiny core package).
 - Built-in CSS management with a simple API and efficient CSS variables usage.
 
+[![Try it out in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/reatom-jsx)
+
 ## Installation
 
 You can use `@reatom/core` instead of the framework, but we highly recommend using the framework to access the maximum features of Reatom.
@@ -52,7 +54,7 @@ You can use different JSX pragmas in different files. For example, if you have a
 ```tsx
 // @jsxRuntime classic
 // @jsx h
-import { h } from '@reatom/jsx';
+import { h } from '@reatom/jsx'
 ```
 
 ## Example
@@ -65,9 +67,7 @@ Define a component:
 import { atom, action } from '@reatom/core'
 
 export const inputAtom = atom('')
-const onInput = action((ctx, event) =>
-  inputAtom(ctx, event.currentTarget.value),
-)
+const onInput = action((ctx, event) => inputAtom(ctx, event.currentTarget.value))
 export const Input = () => <input value={inputAtom} on:input={onInput} />
 ```
 
@@ -185,11 +185,7 @@ In Reatom, there is no concept of "rerender" like React. Instead, we have a spec
 
 ```tsx
 <div
-  $spread={atom((ctx) =>
-    ctx.spy(valid)
-      ? { disabled: true, readonly: true }
-      : { disabled: false, readonly: false },
-  )}
+  $spread={atom((ctx) => (ctx.spy(valid) ? { disabled: true, readonly: true } : { disabled: false, readonly: false }))}
 />
 ```
 

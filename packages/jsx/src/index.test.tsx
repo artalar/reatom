@@ -3,10 +3,10 @@ import { parseHTML } from 'linkedom'
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
-import { Fn, atom } from '@reatom/core'
+import { Fn, action, atom } from '@reatom/core'
 import { reatomLinkedList } from '@reatom/primitives'
 import { isConnected } from '@reatom/hooks'
-import { reatomJsx } from '.'
+import { reatomJsx, type JSX } from '.'
 import { sleep } from '@reatom/utils'
 
 const test = suite('reatomJsx')
@@ -246,7 +246,6 @@ test('linked list', async () => {
   list.swap(ctx, one, two)
   assert.is(parent.innerText, '21')
 
-
   list.remove(ctx, two)
   assert.is(parent.innerText, '1')
   await sleep()
@@ -362,6 +361,42 @@ test('render SVGElement atom', () => {
   const element = <div>{svgAtom}</div>
 
   assert.is(element.innerHTML, '<svg>svg</svg>')
+})
+
+test('custom component', () => {
+  const { h, hf, window } = setup()
+
+  const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+  assert.instance(<Component />, window.HTMLElement)
+  assert.is(((<Component draggable />) as HTMLElement).draggable, true)
+  assert.equal(((<Component>123</Component>) as HTMLElement).innerText, '123')
+})
+
+test('ref unmount callback', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+  let ref: null | HTMLElement = null
+
+  const component = (
+    <Component
+      ref={(ctx, el) => {
+        ref = el
+        return () => {
+          ref = null
+        }
+      }}
+    />
+  )
+
+  mount(parent, component)
+  assert.instance(ref, window.HTMLElement)
+
+  parent.remove()
+  await sleep()
+  assert.is(ref, null)
 })
 
 test.run()

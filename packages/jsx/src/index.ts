@@ -14,7 +14,7 @@ const isSkipped = (value: unknown): value is boolean | '' | null | undefined =>
   typeof value === 'boolean' || value === '' || value == null
 
 let unsubscribesMap = new WeakMap<Element, Array<Fn>>()
-let unlink = (parent: any, un: Unsubscribe) => {
+let unlink = (parent: JSX.Element, un: Unsubscribe) => {
   // check the connection in the next tick
   // to give the user (programmer) an ability
   // to put the created element in the dom
@@ -127,8 +127,12 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
   let h = (tag: any, props: Rec, ...children: any[]) => {
     if (tag === hf) return children
 
+    props ??= {}
+
     if (typeof tag === 'function') {
-      ;(props ??= {}).children = children
+      if (children.length) {
+        props.children = children
+      }
 
       let _name = tag.name
       try {
@@ -139,34 +143,43 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       }
     }
 
+    if ('children' in props) children = props.children
+
     let element: JSX.Element = tag.startsWith('svg:')
       ? DOM.document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4))
       : DOM.document.createElement(tag)
 
     for (let k in props) {
-      let prop = props[k]
-      if (isAtom(prop) && !prop.__reatom.isAction) {
-        if (k.startsWith('model:')) {
-          let name = (k = k.slice(6))
-          set(element, 'on:input', (ctx: Ctx, event: any) => {
-            ;(prop as AtomMut)(ctx, name === 'valueAsNumber' ? +event.target.value : event.target[name])
+      if (k !== 'children') {
+        let prop = props[k]
+        if (k === 'ref') {
+          ctx.schedule(() => {
+            const cleanup = prop(ctx, element)
+            if (typeof cleanup === 'function') unlink(element, cleanup)
           })
-          if (k === 'valueAsNumber') k = 'value'
-          k = 'prop:' + k
-        }
-        // TODO handle unsubscribe!
-        let un: undefined | Unsubscribe
-        un = ctx.subscribe(prop, (v) =>
-          !un || element.isConnected
-            ? k === '$spread'
-              ? Object.entries(v).forEach(([k, v]) => set(element, k, v))
-              : set(element, k, v)
-            : un(),
-        )
+        } else if (isAtom(prop) && !prop.__reatom.isAction) {
+          if (k.startsWith('model:')) {
+            let name = (k = k.slice(6))
+            set(element, 'on:input', (ctx: Ctx, event: any) => {
+              ;(prop as AtomMut)(ctx, name === 'valueAsNumber' ? +event.target.value : event.target[name])
+            })
+            if (k === 'valueAsNumber') k = 'value'
+            k = 'prop:' + k
+          }
+          // TODO handle unsubscribe!
+          let un: undefined | Unsubscribe
+          un = ctx.subscribe(prop, (v) =>
+            !un || element.isConnected
+              ? k === '$spread'
+                ? Object.entries(v).forEach(([k, v]) => set(element, k, v))
+                : set(element, k, v)
+              : un(),
+          )
 
-        unlink(element, un)
-      } else {
-        set(element, k, prop)
+          unlink(element, un)
+        } else {
+          set(element, k, prop)
+        }
       }
     }
 
@@ -224,7 +237,9 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       }
     }
 
-    children.forEach(walk)
+    for (let i = 0; i < children.length; i++) {
+      walk(children[i])
+    }
 
     return element
   }

@@ -51,7 +51,7 @@ export namespace JSX {
     [css: `css:${string}`]: string | number | false | null | undefined
   }
 
-  interface EventHandler<T, E extends Event> {
+  interface EventHandler<T, E extends Event = Event> {
     (
       ctx: Ctx,
       e: E & {
@@ -61,7 +61,7 @@ export namespace JSX {
     ): void
   }
 
-  interface InputEventHandler<T, E extends InputEvent> {
+  interface InputEventHandler<T = HTMLInputElement, E extends InputEvent = InputEvent> {
     (
       ctx: Ctx,
       e: E & {
@@ -71,7 +71,7 @@ export namespace JSX {
     ): void
   }
 
-  interface ChangeEventHandler<T, E extends Event> {
+  interface ChangeEventHandler<T = HTMLInputElement, E extends Event = Event> {
     (
       ctx: Ctx,
       e: E & {
@@ -81,7 +81,7 @@ export namespace JSX {
     ): void
   }
 
-  interface FocusEventHandler<T, E extends FocusEvent> {
+  interface FocusEventHandler<T = HTMLInputElement, E extends FocusEvent = FocusEvent> {
     (
       ctx: Ctx,
       e: E & {
@@ -91,17 +91,18 @@ export namespace JSX {
     ): void
   }
 
-  const SERIALIZABLE: unique symbol
-  interface SerializableAttributeValue {
-    toString(): string
-    [SERIALIZABLE]: never
-  }
+  // const SERIALIZABLE: unique symbol
+  // interface SerializableAttributeValue {
+  //   toString(): string
+  //   [SERIALIZABLE]: never
+  // }
 
   interface IntrinsicAttributes {
-    ref?: unknown | ((e: unknown) => void)
+    // TODO?
+    // ref?: (ctx: Ctx, e: unknown) => void | (() => any)
   }
   interface CustomAttributes<T> {
-    ref?: T | ((el: T) => void)
+    ref?: (ctx: Ctx, el: T) => void | (() => any)
     // classList?: {
     //   [k: string]: boolean | undefined
     // }
@@ -113,6 +114,7 @@ export namespace JSX {
   interface ExplicitProperties {}
   interface ExplicitAttributes {}
   interface CustomEvents {}
+  // TODO remove separate "capture" events, add relative options
   interface CustomCaptureEvents {}
   type DirectiveAttributes = {
     [Key in keyof Directives as `use:${Key}`]?: Directives[Key]
@@ -654,7 +656,7 @@ export namespace JSX {
   //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
   // };
 
-  interface HTMLAttributes<T>
+  interface HTMLAttributes<T = HTMLElement>
     extends AriaAttributes,
       DOMAttributes<T>,
       CssAttributes,
@@ -698,7 +700,7 @@ export namespace JSX {
     exportparts?: string
     inputmode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'
   }
-  interface AnchorHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface AnchorHTMLAttributes<T = HTMLElementTagNameMap['anchor']> extends HTMLAttributes<T> {
     download?: any
     href?: string
     hreflang?: string
@@ -711,7 +713,7 @@ export namespace JSX {
     referrerPolicy?: HTMLReferrerPolicy
   }
   interface AudioHTMLAttributes<T> extends MediaHTMLAttributes<T> {}
-  interface AreaHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface AreaHTMLAttributes<T = HTMLElementTagNameMap['area']> extends HTMLAttributes<T> {
     alt?: string
     coords?: string
     download?: any
@@ -724,18 +726,18 @@ export namespace JSX {
     target?: string
     referrerPolicy?: HTMLReferrerPolicy
   }
-  interface BaseHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface BaseHTMLAttributes<T = HTMLElementTagNameMap['base']> extends HTMLAttributes<T> {
     href?: string
     target?: string
   }
-  interface BlockquoteHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface BlockquoteHTMLAttributes<T = HTMLElementTagNameMap['blockquote']> extends HTMLAttributes<T> {
     cite?: string
   }
-  interface ButtonHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ButtonHTMLAttributes<T = HTMLElementTagNameMap['button']> extends HTMLAttributes<T> {
     autofocus?: boolean
     disabled?: boolean
     form?: string
-    formaction?: string | SerializableAttributeValue
+    formaction?: string // | SerializableAttributeValue
     formenctype?: HTMLFormEncType
     formmethod?: HTMLFormMethod
     formnovalidate?: boolean
@@ -746,43 +748,43 @@ export namespace JSX {
     type?: 'submit' | 'reset' | 'button'
     value?: string
   }
-  interface CanvasHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface CanvasHTMLAttributes<T = HTMLElementTagNameMap['canvas']> extends HTMLAttributes<T> {
     width?: number | string
     height?: number | string
   }
-  interface ColHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ColHTMLAttributes<T = HTMLElementTagNameMap['col']> extends HTMLAttributes<T> {
     span?: number | string
     width?: number | string
   }
-  interface ColgroupHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ColgroupHTMLAttributes<T = HTMLElementTagNameMap['colgroup']> extends HTMLAttributes<T> {
     span?: number | string
   }
-  interface DataHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface DataHTMLAttributes<T = HTMLElementTagNameMap['data']> extends HTMLAttributes<T> {
     value?: string | string[] | number
   }
-  interface DetailsHtmlAttributes<T> extends HTMLAttributes<T> {
+  interface DetailsHtmlAttributes<T = HTMLElementTagNameMap['details']> extends HTMLAttributes<T> {
     open?: boolean
     ontoggle?: EventHandler<T, Event>
   }
-  interface DialogHtmlAttributes<T> extends HTMLAttributes<T> {
+  interface DialogHtmlAttributes<T = HTMLElementTagNameMap['dialog']> extends HTMLAttributes<T> {
     open?: boolean
     'on:close'?: EventHandler<T, Event>
     'on:cancel'?: EventHandler<T, Event>
   }
-  interface EmbedHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface EmbedHTMLAttributes<T = HTMLElementTagNameMap['embed']> extends HTMLAttributes<T> {
     height?: number | string
     src?: string
     type?: string
     width?: number | string
   }
-  interface FieldsetHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface FieldsetHTMLAttributes<T = HTMLElementTagNameMap['fieldset']> extends HTMLAttributes<T> {
     disabled?: boolean
     form?: string
     name?: string
   }
-  interface FormHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface FormHTMLAttributes<T = HTMLElementTagNameMap['form']> extends HTMLAttributes<T> {
     'accept-charset'?: string
-    action?: string | SerializableAttributeValue
+    action?: string // | SerializableAttributeValue
     autocomplete?: HTMLAutocomplete
     encoding?: HTMLFormEncType
     enctype?: HTMLFormEncType
@@ -791,7 +793,7 @@ export namespace JSX {
     novalidate?: boolean
     target?: string
   }
-  interface IframeHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface IframeHTMLAttributes<T = HTMLElementTagNameMap['iframe']> extends HTMLAttributes<T> {
     allow?: string
     allowfullscreen?: boolean
     height?: number | string
@@ -803,7 +805,7 @@ export namespace JSX {
     srcdoc?: string
     width?: number | string
   }
-  interface ImgHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ImgHTMLAttributes<T = HTMLElementTagNameMap['img']> extends HTMLAttributes<T> {
     alt?: string
     crossorigin?: HTMLCrossorigin
     decoding?: 'sync' | 'async' | 'auto'
@@ -819,7 +821,7 @@ export namespace JSX {
     elementtiming?: string
     fetchpriority?: 'high' | 'low' | 'auto'
   }
-  interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface InputHTMLAttributes<T = HTMLElementTagNameMap['input']> extends HTMLAttributes<T> {
     accept?: string
     alt?: string
     autocomplete?: HTMLAutocomplete
@@ -831,7 +833,7 @@ export namespace JSX {
     disabled?: boolean
     enterkeyhint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'
     form?: string
-    formaction?: string | SerializableAttributeValue
+    formaction?: string // | SerializableAttributeValue
     formenctype?: HTMLFormEncType
     formmethod?: HTMLFormMethod
     formnovalidate?: boolean
@@ -904,11 +906,11 @@ export namespace JSX {
     'model:valueAsNumber'?: AtomMut<number>
     'model:checked'?: AtomMut<boolean>
   }
-  interface InsHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface InsHTMLAttributes<T = HTMLElementTagNameMap['ins']> extends HTMLAttributes<T> {
     cite?: string
     datetime?: string
   }
-  interface KeygenHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface KeygenHTMLAttributes<T = HTMLElementTagNameMap['keygen']> extends HTMLAttributes<T> {
     autofocus?: boolean
     challenge?: string
     disabled?: boolean
@@ -917,14 +919,14 @@ export namespace JSX {
     keyparams?: string
     name?: string
   }
-  interface LabelHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface LabelHTMLAttributes<T = HTMLElementTagNameMap['label']> extends HTMLAttributes<T> {
     for?: string
     form?: string
   }
-  interface LiHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface LiHTMLAttributes<T = HTMLElementTagNameMap['li']> extends HTMLAttributes<T> {
     value?: number | string
   }
-  interface LinkHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface LinkHTMLAttributes<T = HTMLElementTagNameMap['link']> extends HTMLAttributes<T> {
     as?: HTMLLinkAs
     crossorigin?: HTMLCrossorigin
     disabled?: boolean
@@ -940,10 +942,10 @@ export namespace JSX {
     sizes?: string
     type?: string
   }
-  interface MapHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface MapHTMLAttributes<T = HTMLElementTagNameMap['map']> extends HTMLAttributes<T> {
     name?: string
   }
-  interface MediaHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface MediaHTMLAttributes<T = HTMLElementTagNameMap['media']> extends HTMLAttributes<T> {
     autoplay?: boolean
     controls?: boolean
     crossorigin?: HTMLCrossorigin
@@ -953,18 +955,18 @@ export namespace JSX {
     preload?: 'none' | 'metadata' | 'auto' | ''
     src?: string
   }
-  interface MenuHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface MenuHTMLAttributes<T = HTMLElementTagNameMap['menu']> extends HTMLAttributes<T> {
     label?: string
     type?: 'context' | 'toolbar'
   }
-  interface MetaHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface MetaHTMLAttributes<T = HTMLElementTagNameMap['meta']> extends HTMLAttributes<T> {
     charset?: string
     content?: string
     'http-equiv'?: string
     name?: string
     media?: string
   }
-  interface MeterHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface MeterHTMLAttributes<T = HTMLElementTagNameMap['meter']> extends HTMLAttributes<T> {
     form?: string
     high?: number | string
     low?: number | string
@@ -973,10 +975,10 @@ export namespace JSX {
     optimum?: number | string
     value?: string | string[] | number
   }
-  interface QuoteHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface QuoteHTMLAttributes<T = HTMLElementTagNameMap['quote']> extends HTMLAttributes<T> {
     cite?: string
   }
-  interface ObjectHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ObjectHTMLAttributes<T = HTMLElementTagNameMap['object']> extends HTMLAttributes<T> {
     data?: string
     form?: string
     height?: number | string
@@ -986,35 +988,35 @@ export namespace JSX {
     width?: number | string
     useMap?: string
   }
-  interface OlHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface OlHTMLAttributes<T = HTMLElementTagNameMap['ol']> extends HTMLAttributes<T> {
     reversed?: boolean
     start?: number | string
     type?: '1' | 'a' | 'A' | 'i' | 'I'
   }
-  interface OptgroupHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface OptgroupHTMLAttributes<T = HTMLElementTagNameMap['optgroup']> extends HTMLAttributes<T> {
     disabled?: boolean
     label?: string
   }
-  interface OptionHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface OptionHTMLAttributes<T = HTMLElementTagNameMap['option']> extends HTMLAttributes<T> {
     disabled?: boolean
     label?: string
     selected?: boolean
     value?: string | string[] | number
   }
-  interface OutputHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface OutputHTMLAttributes<T = HTMLElementTagNameMap['output']> extends HTMLAttributes<T> {
     form?: string
     for?: string
     name?: string
   }
-  interface ParamHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ParamHTMLAttributes<T = HTMLElementTagNameMap['param']> extends HTMLAttributes<T> {
     name?: string
     value?: string | string[] | number
   }
-  interface ProgressHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ProgressHTMLAttributes<T = HTMLElementTagNameMap['progress']> extends HTMLAttributes<T> {
     max?: number | string
     value?: string | string[] | number
   }
-  interface ScriptHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ScriptHTMLAttributes<T = HTMLElementTagNameMap['script']> extends HTMLAttributes<T> {
     async?: boolean
     charset?: string
     crossorigin?: HTMLCrossorigin
@@ -1026,7 +1028,7 @@ export namespace JSX {
     src?: string
     type?: string
   }
-  interface SelectHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface SelectHTMLAttributes<T = HTMLElementTagNameMap['select']> extends HTMLAttributes<T> {
     autocomplete?: HTMLAutocomplete
     autofocus?: boolean
     disabled?: boolean
@@ -1040,20 +1042,20 @@ export namespace JSX {
   interface HTMLSlotElementAttributes<T = HTMLSlotElement> extends HTMLAttributes<T> {
     name?: string
   }
-  interface SourceHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface SourceHTMLAttributes<T = HTMLElementTagNameMap['source']> extends HTMLAttributes<T> {
     media?: string
     sizes?: string
     src?: string
     srcset?: string
     type?: string
   }
-  interface StyleHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface StyleHTMLAttributes<T = HTMLElementTagNameMap['style']> extends HTMLAttributes<T> {
     media?: string
     nonce?: string
     scoped?: boolean
     type?: string
   }
-  interface TdHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface TdHTMLAttributes<T = HTMLElementTagNameMap['td']> extends HTMLAttributes<T> {
     colspan?: number | string
     headers?: string
     rowspan?: number | string
@@ -1061,7 +1063,7 @@ export namespace JSX {
   interface TemplateHTMLAttributes<T extends HTMLTemplateElement> extends HTMLAttributes<T> {
     content?: DocumentFragment
   }
-  interface TextareaHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface TextareaHTMLAttributes<T = HTMLElementTagNameMap['textarea']> extends HTMLAttributes<T> {
     autocomplete?: HTMLAutocomplete
     autofocus?: boolean
     cols?: number | string
@@ -1079,7 +1081,7 @@ export namespace JSX {
     value?: string | string[] | number
     wrap?: 'hard' | 'soft' | 'off'
   }
-  interface ThHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface ThHTMLAttributes<T = HTMLElementTagNameMap['th']> extends HTMLAttributes<T> {
     colspan?: number | string
     headers?: string
     rowspan?: number | string
@@ -1087,10 +1089,10 @@ export namespace JSX {
     rowSpan?: number | string
     scope?: 'col' | 'row' | 'rowgroup' | 'colgroup'
   }
-  interface TimeHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface TimeHTMLAttributes<T = HTMLElementTagNameMap['time']> extends HTMLAttributes<T> {
     datetime?: string
   }
-  interface TrackHTMLAttributes<T> extends HTMLAttributes<T> {
+  interface TrackHTMLAttributes<T = HTMLElementTagNameMap['track']> extends HTMLAttributes<T> {
     default?: boolean
     kind?: 'subtitles' | 'captions' | 'descriptions' | 'chapters' | 'metadata'
     label?: string
@@ -1989,118 +1991,118 @@ export namespace JSX {
    * @type {HTMLElementTagNameMap}
    */
   interface HTMLElementTags {
-    a: AnchorHTMLAttributes<HTMLAnchorElement>
-    abbr: HTMLAttributes<HTMLElement>
-    address: HTMLAttributes<HTMLElement>
-    area: AreaHTMLAttributes<HTMLAreaElement>
-    article: HTMLAttributes<HTMLElement>
-    aside: HTMLAttributes<HTMLElement>
-    audio: AudioHTMLAttributes<HTMLAudioElement>
-    b: HTMLAttributes<HTMLElement>
-    base: BaseHTMLAttributes<HTMLBaseElement>
-    bdi: HTMLAttributes<HTMLElement>
-    bdo: HTMLAttributes<HTMLElement>
-    blockquote: BlockquoteHTMLAttributes<HTMLElement>
-    body: HTMLAttributes<HTMLBodyElement>
-    br: HTMLAttributes<HTMLBRElement>
-    button: ButtonHTMLAttributes<HTMLButtonElement>
-    canvas: CanvasHTMLAttributes<HTMLCanvasElement>
-    caption: HTMLAttributes<HTMLElement>
-    cite: HTMLAttributes<HTMLElement>
-    code: HTMLAttributes<HTMLElement>
-    col: ColHTMLAttributes<HTMLTableColElement>
-    colgroup: ColgroupHTMLAttributes<HTMLTableColElement>
-    data: DataHTMLAttributes<HTMLElement>
-    datalist: HTMLAttributes<HTMLDataListElement>
-    dd: HTMLAttributes<HTMLElement>
-    del: HTMLAttributes<HTMLElement>
-    details: DetailsHtmlAttributes<HTMLDetailsElement>
-    dfn: HTMLAttributes<HTMLElement>
-    dialog: DialogHtmlAttributes<HTMLDialogElement>
-    div: HTMLAttributes<HTMLDivElement>
-    dl: HTMLAttributes<HTMLDListElement>
-    dt: HTMLAttributes<HTMLElement>
-    em: HTMLAttributes<HTMLElement>
-    embed: EmbedHTMLAttributes<HTMLEmbedElement>
-    fieldset: FieldsetHTMLAttributes<HTMLFieldSetElement>
-    figcaption: HTMLAttributes<HTMLElement>
-    figure: HTMLAttributes<HTMLElement>
-    footer: HTMLAttributes<HTMLElement>
-    form: FormHTMLAttributes<HTMLFormElement>
-    h1: HTMLAttributes<HTMLHeadingElement>
-    h2: HTMLAttributes<HTMLHeadingElement>
-    h3: HTMLAttributes<HTMLHeadingElement>
-    h4: HTMLAttributes<HTMLHeadingElement>
-    h5: HTMLAttributes<HTMLHeadingElement>
-    h6: HTMLAttributes<HTMLHeadingElement>
-    head: HTMLAttributes<HTMLHeadElement>
-    header: HTMLAttributes<HTMLElement>
-    hgroup: HTMLAttributes<HTMLElement>
-    hr: HTMLAttributes<HTMLHRElement>
-    html: HTMLAttributes<HTMLHtmlElement>
-    i: HTMLAttributes<HTMLElement>
-    iframe: IframeHTMLAttributes<HTMLIFrameElement>
-    img: ImgHTMLAttributes<HTMLImageElement>
-    input: InputHTMLAttributes<HTMLInputElement>
-    ins: InsHTMLAttributes<HTMLModElement>
-    kbd: HTMLAttributes<HTMLElement>
-    label: LabelHTMLAttributes<HTMLLabelElement>
-    legend: HTMLAttributes<HTMLLegendElement>
-    li: LiHTMLAttributes<HTMLLIElement>
-    link: LinkHTMLAttributes<HTMLLinkElement>
-    main: HTMLAttributes<HTMLElement>
-    map: MapHTMLAttributes<HTMLMapElement>
-    mark: HTMLAttributes<HTMLElement>
-    menu: MenuHTMLAttributes<HTMLElement>
-    meta: MetaHTMLAttributes<HTMLMetaElement>
-    meter: MeterHTMLAttributes<HTMLElement>
-    nav: HTMLAttributes<HTMLElement>
-    noscript: HTMLAttributes<HTMLElement>
-    object: ObjectHTMLAttributes<HTMLObjectElement>
-    ol: OlHTMLAttributes<HTMLOListElement>
-    optgroup: OptgroupHTMLAttributes<HTMLOptGroupElement>
-    option: OptionHTMLAttributes<HTMLOptionElement>
-    output: OutputHTMLAttributes<HTMLElement>
-    p: HTMLAttributes<HTMLParagraphElement>
-    picture: HTMLAttributes<HTMLElement>
-    pre: HTMLAttributes<HTMLPreElement>
-    progress: ProgressHTMLAttributes<HTMLProgressElement>
-    q: QuoteHTMLAttributes<HTMLQuoteElement>
-    rp: HTMLAttributes<HTMLElement>
-    rt: HTMLAttributes<HTMLElement>
-    ruby: HTMLAttributes<HTMLElement>
-    s: HTMLAttributes<HTMLElement>
-    samp: HTMLAttributes<HTMLElement>
-    script: ScriptHTMLAttributes<HTMLScriptElement>
-    search: HTMLAttributes<HTMLElement>
-    section: HTMLAttributes<HTMLElement>
-    select: SelectHTMLAttributes<HTMLSelectElement>
+    a: AnchorHTMLAttributes<HTMLElementTagNameMap['a']>
+    abbr: HTMLAttributes<HTMLElementTagNameMap['abbr']>
+    address: HTMLAttributes<HTMLElementTagNameMap['address']>
+    area: AreaHTMLAttributes<HTMLElementTagNameMap['area']>
+    article: HTMLAttributes<HTMLElementTagNameMap['article']>
+    aside: HTMLAttributes<HTMLElementTagNameMap['aside']>
+    audio: AudioHTMLAttributes<HTMLElementTagNameMap['audio']>
+    b: HTMLAttributes<HTMLElementTagNameMap['b']>
+    base: BaseHTMLAttributes<HTMLElementTagNameMap['base']>
+    bdi: HTMLAttributes<HTMLElementTagNameMap['bdi']>
+    bdo: HTMLAttributes<HTMLElementTagNameMap['bdo']>
+    blockquote: BlockquoteHTMLAttributes<HTMLElementTagNameMap['blockquote']>
+    body: HTMLAttributes<HTMLElementTagNameMap['body']>
+    br: HTMLAttributes<HTMLElementTagNameMap['br']>
+    button: ButtonHTMLAttributes<HTMLElementTagNameMap['button']>
+    canvas: CanvasHTMLAttributes<HTMLElementTagNameMap['canvas']>
+    caption: HTMLAttributes<HTMLElementTagNameMap['caption']>
+    cite: HTMLAttributes<HTMLElementTagNameMap['cite']>
+    code: HTMLAttributes<HTMLElementTagNameMap['code']>
+    col: ColHTMLAttributes<HTMLElementTagNameMap['col']>
+    colgroup: ColgroupHTMLAttributes<HTMLElementTagNameMap['colgroup']>
+    data: DataHTMLAttributes<HTMLElementTagNameMap['data']>
+    datalist: HTMLAttributes<HTMLElementTagNameMap['datalist']>
+    dd: HTMLAttributes<HTMLElementTagNameMap['dd']>
+    del: HTMLAttributes<HTMLElementTagNameMap['del']>
+    details: DetailsHtmlAttributes<HTMLElementTagNameMap['details']>
+    dfn: HTMLAttributes<HTMLElementTagNameMap['dfn']>
+    dialog: DialogHtmlAttributes<HTMLElementTagNameMap['dialog']>
+    div: HTMLAttributes<HTMLElementTagNameMap['div']>
+    dl: HTMLAttributes<HTMLElementTagNameMap['dl']>
+    dt: HTMLAttributes<HTMLElementTagNameMap['dt']>
+    em: HTMLAttributes<HTMLElementTagNameMap['em']>
+    embed: EmbedHTMLAttributes<HTMLElementTagNameMap['embed']>
+    fieldset: FieldsetHTMLAttributes<HTMLElementTagNameMap['fieldset']>
+    figcaption: HTMLAttributes<HTMLElementTagNameMap['figcaption']>
+    figure: HTMLAttributes<HTMLElementTagNameMap['figure']>
+    footer: HTMLAttributes<HTMLElementTagNameMap['footer']>
+    form: FormHTMLAttributes<HTMLElementTagNameMap['form']>
+    h1: HTMLAttributes<HTMLElementTagNameMap['h1']>
+    h2: HTMLAttributes<HTMLElementTagNameMap['h2']>
+    h3: HTMLAttributes<HTMLElementTagNameMap['h3']>
+    h4: HTMLAttributes<HTMLElementTagNameMap['h4']>
+    h5: HTMLAttributes<HTMLElementTagNameMap['h5']>
+    h6: HTMLAttributes<HTMLElementTagNameMap['h6']>
+    head: HTMLAttributes<HTMLElementTagNameMap['head']>
+    header: HTMLAttributes<HTMLElementTagNameMap['header']>
+    hgroup: HTMLAttributes<HTMLElementTagNameMap['hgroup']>
+    hr: HTMLAttributes<HTMLElementTagNameMap['hr']>
+    html: HTMLAttributes<HTMLElementTagNameMap['html']>
+    i: HTMLAttributes<HTMLElementTagNameMap['i']>
+    iframe: IframeHTMLAttributes<HTMLElementTagNameMap['iframe']>
+    img: ImgHTMLAttributes<HTMLElementTagNameMap['img']>
+    input: InputHTMLAttributes<HTMLElementTagNameMap['input']>
+    ins: InsHTMLAttributes<HTMLElementTagNameMap['ins']>
+    kbd: HTMLAttributes<HTMLElementTagNameMap['kbd']>
+    label: LabelHTMLAttributes<HTMLElementTagNameMap['label']>
+    legend: HTMLAttributes<HTMLElementTagNameMap['legend']>
+    li: LiHTMLAttributes<HTMLElementTagNameMap['li']>
+    link: LinkHTMLAttributes<HTMLElementTagNameMap['link']>
+    main: HTMLAttributes<HTMLElementTagNameMap['main']>
+    map: MapHTMLAttributes<HTMLElementTagNameMap['map']>
+    mark: HTMLAttributes<HTMLElementTagNameMap['mark']>
+    menu: MenuHTMLAttributes<HTMLElementTagNameMap['menu']>
+    meta: MetaHTMLAttributes<HTMLElementTagNameMap['meta']>
+    meter: MeterHTMLAttributes<HTMLElementTagNameMap['meter']>
+    nav: HTMLAttributes<HTMLElementTagNameMap['nav']>
+    noscript: HTMLAttributes<HTMLElementTagNameMap['noscript']>
+    object: ObjectHTMLAttributes<HTMLElementTagNameMap['object']>
+    ol: OlHTMLAttributes<HTMLElementTagNameMap['ol']>
+    optgroup: OptgroupHTMLAttributes<HTMLElementTagNameMap['optgroup']>
+    option: OptionHTMLAttributes<HTMLElementTagNameMap['option']>
+    output: OutputHTMLAttributes<HTMLElementTagNameMap['output']>
+    p: HTMLAttributes<HTMLElementTagNameMap['p']>
+    picture: HTMLAttributes<HTMLElementTagNameMap['picture']>
+    pre: HTMLAttributes<HTMLElementTagNameMap['pre']>
+    progress: ProgressHTMLAttributes<HTMLElementTagNameMap['progress']>
+    q: QuoteHTMLAttributes<HTMLElementTagNameMap['q']>
+    rp: HTMLAttributes<HTMLElementTagNameMap['rp']>
+    rt: HTMLAttributes<HTMLElementTagNameMap['rt']>
+    ruby: HTMLAttributes<HTMLElementTagNameMap['ruby']>
+    s: HTMLAttributes<HTMLElementTagNameMap['s']>
+    samp: HTMLAttributes<HTMLElementTagNameMap['samp']>
+    script: ScriptHTMLAttributes<HTMLElementTagNameMap['script']>
+    search: HTMLAttributes<HTMLElementTagNameMap['search']>
+    section: HTMLAttributes<HTMLElementTagNameMap['section']>
+    select: SelectHTMLAttributes<HTMLElementTagNameMap['select']>
     slot: HTMLSlotElementAttributes
-    small: HTMLAttributes<HTMLElement>
-    source: SourceHTMLAttributes<HTMLSourceElement>
-    span: HTMLAttributes<HTMLSpanElement>
-    strong: HTMLAttributes<HTMLElement>
-    style: StyleHTMLAttributes<HTMLStyleElement>
-    sub: HTMLAttributes<HTMLElement>
-    summary: HTMLAttributes<HTMLElement>
-    sup: HTMLAttributes<HTMLElement>
-    table: HTMLAttributes<HTMLTableElement>
-    tbody: HTMLAttributes<HTMLTableSectionElement>
-    td: TdHTMLAttributes<HTMLTableCellElement>
-    template: TemplateHTMLAttributes<HTMLTemplateElement>
-    textarea: TextareaHTMLAttributes<HTMLTextAreaElement>
-    tfoot: HTMLAttributes<HTMLTableSectionElement>
-    th: ThHTMLAttributes<HTMLTableCellElement>
-    thead: HTMLAttributes<HTMLTableSectionElement>
-    time: TimeHTMLAttributes<HTMLElement>
-    title: HTMLAttributes<HTMLTitleElement>
-    tr: HTMLAttributes<HTMLTableRowElement>
-    track: TrackHTMLAttributes<HTMLTrackElement>
-    u: HTMLAttributes<HTMLElement>
-    ul: HTMLAttributes<HTMLUListElement>
-    var: HTMLAttributes<HTMLElement>
-    video: VideoHTMLAttributes<HTMLVideoElement>
-    wbr: HTMLAttributes<HTMLElement>
+HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
+    source: SourceHTMLAttributes<HTMLElementTagNameMap['source']>
+    span: HTMLAttributes<HTMLElementTagNameMap['span']>
+    strong: HTMLAttributes<HTMLElementTagNameMap['strong']>
+    style: StyleHTMLAttributes<HTMLElementTagNameMap['style']>
+    sub: HTMLAttributes<HTMLElementTagNameMap['sub']>
+    summary: HTMLAttributes<HTMLElementTagNameMap['summary']>
+    sup: HTMLAttributes<HTMLElementTagNameMap['sup']>
+    table: HTMLAttributes<HTMLElementTagNameMap['table']>
+    tbody: HTMLAttributes<HTMLElementTagNameMap['tbody']>
+    td: TdHTMLAttributes<HTMLElementTagNameMap['td']>
+    template: TemplateHTMLAttributes<HTMLElementTagNameMap['template']>
+    textarea: TextareaHTMLAttributes<HTMLElementTagNameMap['textarea']>
+    tfoot: HTMLAttributes<HTMLElementTagNameMap['tfoot']>
+    th: ThHTMLAttributes<HTMLElementTagNameMap['th']>
+    thead: HTMLAttributes<HTMLElementTagNameMap['thead']>
+    time: TimeHTMLAttributes<HTMLElementTagNameMap['time']>
+    title: HTMLAttributes<HTMLElementTagNameMap['title']>
+    tr: HTMLAttributes<HTMLElementTagNameMap['tr']>
+    track: TrackHTMLAttributes<HTMLElementTagNameMap['track']>
+    u: HTMLAttributes<HTMLElementTagNameMap['u']>
+    ul: HTMLAttributes<HTMLElementTagNameMap['ul']>
+    var: HTMLAttributes<HTMLElementTagNameMap['var']>
+    video: VideoHTMLAttributes<HTMLElementTagNameMap['video']>
+    wbr: HTMLAttributes<HTMLElementTagNameMap['wbr']>
   }
   /**
    * @type {HTMLElementDeprecatedTagNameMap}
