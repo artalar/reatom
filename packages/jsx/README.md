@@ -239,6 +239,48 @@ const MyWidget = () => {
 }
 ``` -->
 
+### TypeScript
+
+To type your custom component props accepting general HTML attributes, for example for a `div` element, you should extend `JSX.HTMLAttributes`. However, if you want to define props for a specific HTML element you should use it name in the type name, like in the code below.
+
+```tsx
+import { type JSX } from '@reatom/jsx'
+
+export interface InputProps extends JSX.InputHTMLAttributes {
+  defaultValue?: string
+}
+
+export const Input = ({ defaultValue, ...props }: InputProps) => {
+  props.value ??= defaultValue
+  return <input {...props} />
+}
+```
+
+To type an event handler you have a few options, see below.
+
+```tsx
+export const Form = () => {
+  const handleSubmit = action((ctx, event: Event) => {
+    event.preventDefault()
+  })
+
+  const handleInput: JSX.InputEventHandler = action((ctx, event) => {
+    event.currentTarget.valueAsNumber // HTMLInputElement.valueAsNumber: number
+  })
+
+  const handleSelect: JSX.EventHandler<HTMLSelectElement> = action((ctx, event) => {
+    event.currentTarget.value // HTMLSelectElement.value: string
+  })
+
+  return (
+    <form on:submit={handleSubmit}>
+      <input on:input={handleInput} />
+      <select on:input={handleSelect} />
+    </form>
+  )
+}
+```
+
 ## Limitations
 
 These limitations will be fixed in the feature
