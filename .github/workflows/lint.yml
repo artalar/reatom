@@ -2,6 +2,8 @@ name: Lint
 
 on: workflow_call
 
+permissions: write-all
+
 jobs:
   prettier:
     timeout-minutes: 30
@@ -37,4 +39,4 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git commit -am "chore: run prettier"
-          git push https://github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.head.ref }}
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
