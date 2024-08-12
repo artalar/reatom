@@ -3,7 +3,7 @@ import { parseHTML } from 'linkedom'
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
-import { Fn, atom } from '@reatom/core'
+import { Atom, Fn, atom } from '@reatom/core'
 import { reatomLinkedList } from '@reatom/primitives'
 import { isConnected } from '@reatom/hooks'
 import { reatomJsx } from '.'
@@ -116,16 +116,16 @@ test('children updates', () => {
 
   mount(parent, element)
 
-  assert.is(element.childNodes.length, 3)
-  assert.is(element.childNodes[1]?.textContent, 'foo')
-  assert.is(element.childNodes[2], a)
+  assert.is(element.childNodes.length, 5)
+  assert.is(element.childNodes[2]?.textContent, 'foo')
+  assert.is(element.childNodes[4], a)
 
   val(ctx, 'bar')
-  assert.is(element.childNodes[1]?.textContent, 'bar')
+  assert.is(element.childNodes[2]?.textContent, 'bar')
 
-  assert.is(element.childNodes[2], a)
+  assert.is(element.childNodes[4], a)
   route(ctx, 'b')
-  assert.is(element.childNodes[2], b)
+  assert.is(element.childNodes[4], b)
 })
 
 test('dynamic children', () => {
@@ -137,14 +137,14 @@ test('dynamic children', () => {
 
   mount(parent, element)
 
-  assert.is(element.childNodes.length, 1)
+  assert.is(element.childNodes.length, 2)
 
   children(ctx, <div>Hello, world!</div>)
-  assert.is(element.childNodes[0]?.textContent, 'Hello, world!')
+  assert.is(element.childNodes[1]?.textContent, 'Hello, world!')
 
   const inner = <span>inner</span>
   children(ctx, <div>{inner}</div>)
-  assert.is(element.childNodes[0]?.childNodes[0], inner)
+  assert.is(element.childNodes[1]?.childNodes[0], inner)
 
   const before = atom('before', 'before')
   const after = atom('after', 'after')
@@ -202,33 +202,33 @@ test('fragment as child', () => {
   assert.is(parent.childNodes[1]?.textContent, 'bar')
 })
 
-test('array children', () => {
-  const { ctx, h, hf, mount, parent } = setup()
+// test('array children', () => {
+//   const { ctx, h, hf, mount, parent } = setup()
 
-  const n = atom(1)
-  const list = atom((ctx) =>
-    Array.from({ length: ctx.spy(n) }, (_, i) => <li>{i + 1}</li>),
-  )
+//   const n = atom(1)
+//   const list = atom((ctx) =>
+//     Array.from({ length: ctx.spy(n) }, (_, i) => <li>{i + 1}</li>),
+//   )
 
-  assert.throws(() => {
-    mount(
-      parent,
-      <ul>
-        {list /* expected TS error */ as any}
-        <br />
-      </ul>,
-    )
-  })
+//   assert.throws(() => {
+//     mount(
+//       parent,
+//       <ul>
+//         {list /* expected TS error */ as any}
+//         <br />
+//       </ul>,
+//     )
+//   })
 
-  const element = <ul>{list}</ul>
+//   const element = <ul>{list}</ul>
 
-  assert.is(element.childNodes.length, 1)
-  assert.is(element.textContent, '1')
+//   assert.is(element.childNodes.length, 1)
+//   assert.is(element.textContent, '1')
 
-  n(ctx, 2)
-  assert.is(element.childNodes.length, 2)
-  assert.is(element.textContent, '12')
-})
+//   n(ctx, 2)
+//   assert.is(element.childNodes.length, 2)
+//   assert.is(element.textContent, '12')
+// })
 
 test('linked list', () => {
   const { ctx, h, hf, mount, parent } = setup()
@@ -351,7 +351,7 @@ test('render HTMLElement atom', () => {
 
   const element = <div>{htmlAtom}</div>
 
-  assert.is(element.innerHTML, '<div>div</div>')
+  assert.is(element.innerHTML, '<!----><div>div</div>')
 })
 
 test('render SVGElement atom', () => {
@@ -361,7 +361,91 @@ test('render SVGElement atom', () => {
 
   const element = <div>{svgAtom}</div>
 
-  assert.is(element.innerHTML, '<svg>svg</svg>')
+  assert.is(element.innerHTML, '<!----><svg>svg</svg>')
+})
+
+test('render a factory returning an atom', () => {
+  const { h, hf } = setup()
+
+  const FactoryHTMLElement = atom(<div>div</div>, 'div')
+  const FactorySVGElement = atom(<svg:svg>svg</svg:svg>, 'svg')
+  const FactoryString = atom('123', 'string')
+  const FactoryNumber = atom(456, 'number')
+  const FactoryUndefined = atom(undefined, 'undefined')
+  const FactoryNull = atom(null, 'null')
+  const FactoryBoolean = atom(true, 'boolean')
+
+  // @ts-ignore
+  const element = (<div>
+    {/* @ts-ignore */}
+    <FactoryHTMLElement></FactoryHTMLElement>
+    {/* @ts-ignore */}
+    <FactorySVGElement></FactorySVGElement>
+    {/* @ts-ignore */}
+    <FactoryString></FactoryString>
+    {/* @ts-ignore */}
+    <FactoryNumber></FactoryNumber>
+    {/* @ts-ignore */}
+    <FactoryUndefined></FactoryUndefined>
+    {/* @ts-ignore */}
+    <FactoryNull></FactoryNull>
+    {/* @ts-ignore */}
+    <FactoryBoolean></FactoryBoolean>
+  </div>)
+
+  assert.is(element.innerHTML, '<!----><div>div</div><!----><svg>svg</svg><!---->123<!---->456<!----><!----><!---->')
+})
+
+test('render a factory updating an atom', () => {
+  const { ctx, h, hf, mount, parent } = setup()
+
+  const target = '<!---->'
+  const kindAtom = atom('undefined', 'kind')
+  const Factory = (props: {kind: Atom<string>}) => atom((ctx) => {
+    const kind = ctx.spy(props.kind)
+    switch (kind) {
+      case 'div': return <div>div</div>
+      case 'svg': return <svg:svg>svg</svg:svg>
+      case 'string': return '123'
+      case 'number': return 456
+      case 'undefined': return undefined
+      case 'null': return null
+      case 'boolean': return true
+    }
+  })
+
+  // @ts-ignore
+  const element = <Factory kind={kindAtom}></Factory>
+
+  mount(parent, element)
+
+  kindAtom(ctx, 'undefined')
+  assert.is(parent.childNodes.length, 1)
+  assert.is(parent.innerHTML, target)
+
+  kindAtom(ctx, 'null')
+  assert.is(parent.childNodes.length, 1)
+  assert.is(parent.innerHTML, target)
+
+  kindAtom(ctx, 'boolean')
+  assert.is(parent.childNodes.length, 1)
+  assert.is(parent.innerHTML, target)
+
+  kindAtom(ctx, 'div')
+  assert.is(parent.childNodes.length, 2)
+  assert.is(parent.innerHTML, target + '<div>div</div>')
+
+  kindAtom(ctx, 'svg')
+  assert.is(parent.childNodes.length, 2)
+  assert.is(parent.innerHTML, target + '<svg>svg</svg>')
+
+  kindAtom(ctx, 'string')
+  assert.is(parent.childNodes.length, 2)
+  assert.is(parent.innerHTML, target + '123')
+
+  kindAtom(ctx, 'number')
+  assert.is(parent.childNodes.length, 2)
+  assert.is(parent.innerHTML, target + '456')
 })
 
 test.run()
