@@ -373,7 +373,7 @@ export const withAbort =
           } = new AbortController(),
         ) => {
           ctx.spy(anAsync, ({ payload: promise }) => {
-            if (strategy === 'last-in-win' && state) {
+            if (strategy === 'last-in-win') {
               const controller = state
 
               ctx.schedule(() => {
@@ -383,11 +383,14 @@ export const withAbort =
               })
             }
 
-            if (strategy === 'first-in-win' && state && !state.settled) {
-              promise.controller.abort(
-                toAbortError('concurrent request (first-in-win)'),
-              )
-              return
+            const pending = ctx.get(anAsync.pendingAtom)
+
+            if (strategy === 'first-in-win' && pending > 1) {
+              ctx.schedule(() => {
+                promise.controller.abort(
+                  toAbortError('concurrent request (first-in-win)'),
+                )
+              })
             }
 
             state = promise.controller
