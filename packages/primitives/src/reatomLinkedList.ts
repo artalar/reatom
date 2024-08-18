@@ -322,6 +322,8 @@ export const reatomLinkedList = <Params extends any[], Node extends Rec, Key ext
     return batchFn(ctx, () => {
       throwNotModel(node)
 
+      if (node[LL_PREV] === null && node[LL_NEXT] === null && STATE!.tail !== node) return false
+
       removeLL(STATE!, node)
 
       STATE!.changes.push({ kind: 'remove', node })

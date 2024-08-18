@@ -162,4 +162,21 @@ test('should correctly handle batching and cause tracking', () => {
   })
 })
 
+test('should remove a single node', () => {
+  const ctx = createTestCtx()
+  const list = reatomLinkedList((ctx, n: number) => ({ n }))
+
+  const node = list.create(ctx, 1)
+  assert.equal(ctx.get(list.array), [{ n: 1 }])
+  assert.is(ctx.get(list).size, 1)
+
+  list.remove(ctx, node)
+  assert.equal(ctx.get(list.array), [])
+  assert.is(ctx.get(list).size, 0)
+
+  list.remove(ctx, node)
+  assert.equal(ctx.get(list.array), [])
+  assert.is(ctx.get(list).size, 0)
+})
+
 test.run()
