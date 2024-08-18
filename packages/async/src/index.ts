@@ -383,14 +383,10 @@ export const withAbort =
               })
             }
 
-            const pending = ctx.get(anAsync.pendingAtom)
-
-            if (strategy === 'first-in-win' && pending > 1) {
-              ctx.schedule(() => {
-                promise.controller.abort(
-                  toAbortError('concurrent request (first-in-win)'),
-                )
-              })
+            if (strategy === 'first-in-win' && ctx.get(anAsync.pendingAtom) > 1) {
+              promise.controller.abort(
+                toAbortError('concurrent request (first-in-win)'),
+              )
             }
 
             state = promise.controller
