@@ -48,18 +48,14 @@ export interface LinkedList<Node extends LLNode = LLNode> {
   changes: Array<LLChanges<Node>>
 }
 
-export interface LinkedListLikeAtom<T extends LinkedList = LinkedList>
-  extends Atom<T> {
+export interface LinkedListLikeAtom<T extends LinkedList = LinkedList> extends Atom<T> {
   __reatomLinkedList: true
 
   array: Atom<Array<T extends LinkedList<infer LLNode> ? LLNode : never>>
 }
 
-export interface LinkedListAtom<
-  Params extends any[] = any[],
-  Node extends Rec = Rec,
-  Key extends keyof Node = never,
-> extends LinkedListLikeAtom<LinkedList<LLNode<Node>>> {
+export interface LinkedListAtom<Params extends any[] = any[], Node extends Rec = Rec, Key extends keyof Node = never>
+  extends LinkedListLikeAtom<LinkedList<LLNode<Node>>> {
   batch: Action<[cb: Fn]>
 
   create: Action<Params, LLNode<Node>>
@@ -84,10 +80,7 @@ export interface LinkedListAtom<
           onRemove?: (ctx: Ctx, node: LLNode<T>, origin: LLNode<Node>) => void
           onSwap?: (ctx: Ctx, payload: { a: LLNode<T>; b: LLNode<T> }) => void
           onMove?: (ctx: Ctx, node: LLNode<T>) => void
-          onClear?: (
-            ctx: Ctx,
-            lastState: LinkedListDerivedState<LLNode<Node>, LLNode<T>>,
-          ) => void
+          onClear?: (ctx: Ctx, lastState: LinkedListDerivedState<LLNode<Node>, LLNode<T>>) => void
         },
   ) => LinkedListDerivedAtom<LLNode<Node>, LLNode<T>>
 
@@ -107,8 +100,7 @@ export interface LinkedListAtom<
 }
 
 // TODO rename to `DerivedLinkedList`
-export interface LinkedListDerivedState<Node extends LLNode, T extends LLNode>
-  extends LinkedList<T> {
+export interface LinkedListDerivedState<Node extends LLNode, T extends LLNode> extends LinkedList<T> {
   map: WeakMap<Node, T>
 }
 
@@ -162,11 +154,7 @@ const removeLL = <Node extends LLNode>(state: LinkedList<Node>, node: Node) => {
   state.size--
 }
 
-const swapLL = <Node extends LLNode>(
-  state: LinkedList<Node>,
-  a: Node,
-  b: Node,
-): void => {
+const swapLL = <Node extends LLNode>(state: LinkedList<Node>, a: Node, b: Node): void => {
   if (a === b) return
   if (state.head === b) return swapLL(state, b, a)
 
@@ -179,11 +167,7 @@ const swapLL = <Node extends LLNode>(
   addLL(state, b, prevA)
 }
 
-const moveLL = <Node extends LLNode>(
-  state: LinkedList<Node>,
-  node: Node,
-  after: null | Node,
-) => {
+const moveLL = <Node extends LLNode>(state: LinkedList<Node>, node: Node, after: null | Node) => {
   removeLL(state, node)
   addLL(state, node, after)
 }
@@ -192,10 +176,7 @@ const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
   while (state.tail) removeLL(state, state.tail)
 }
 
-const toArray = <T extends Rec>(
-  head: null | LLNode<T>,
-  prev?: Array<LLNode<T>>,
-): Array<LLNode<T>> => {
+const toArray = <T extends Rec>(head: null | LLNode<T>, prev?: Array<LLNode<T>>): Array<LLNode<T>> => {
   let arr: Array<LLNode<T>> = []
   let i = 0
   while (head) {
@@ -207,11 +188,7 @@ const toArray = <T extends Rec>(
   return arr.length === prev?.length ? prev : arr
 }
 
-export const reatomLinkedList = <
-  Params extends any[],
-  Node extends Rec,
-  Key extends keyof Node = never,
->(
+export const reatomLinkedList = <Params extends any[], Node extends Rec, Key extends keyof Node = never>(
   options:
     | ((ctx: Ctx, ...params: Params) => Node)
     | {
@@ -228,13 +205,10 @@ export const reatomLinkedList = <
   } = typeof options === 'function' ? { create: options } : options
   const _name = name
 
-  const isLL = (node: Node): node is LLNode<Node> =>
-    !!node && LL_NEXT in node && LL_PREV in node
+  const isLL = (node: Node): node is LLNode<Node> => !!node && LL_NEXT in node && LL_PREV in node
 
-  const throwModel = (node: Node) =>
-    throwReatomError(isLL(node), 'The data is already in a linked list.')
-  const throwNotModel = (node: Node) =>
-    throwReatomError(!isLL(node), 'The passed data is not a linked list node.')
+  const throwModel = (node: Node) => throwReatomError(isLL(node), 'The data is already in a linked list.')
+  const throwNotModel = (node: Node) => throwReatomError(!isLL(node), 'The passed data is not a linked list node.')
 
   // for batching
   let STATE: null | LinkedList<LLNode<Node>> = null
@@ -324,18 +298,15 @@ export const reatomLinkedList = <
     })
   }, `${name}.swap`)
 
-  const move = action(
-    (ctx, node: LLNode<Node>, after: null | LLNode<Node>): void => {
-      return batchFn(ctx, () => {
-        throwNotModel(node)
+  const move = action((ctx, node: LLNode<Node>, after: null | LLNode<Node>): void => {
+    return batchFn(ctx, () => {
+      throwNotModel(node)
 
-        moveLL(STATE!, node, after)
+      moveLL(STATE!, node, after)
 
-        STATE!.changes.push({ kind: 'move', node, after })
-      })
-    },
-    `${name}.move`,
-  )
+      STATE!.changes.push({ kind: 'move', node, after })
+    })
+  }, `${name}.move`)
 
   const clear = action((ctx): void => {
     return batchFn(ctx, () => {
@@ -345,10 +316,7 @@ export const reatomLinkedList = <
     })
   }, `${name}.clear`)
 
-  const find = (
-    ctx: Ctx,
-    cb: (node: LLNode<Node>) => boolean,
-  ): null | LLNode<Node> => {
+  const find = (ctx: Ctx, cb: (node: LLNode<Node>) => boolean): null | LLNode<Node> => {
     for (let { head } = ctx.get(linkedList); head; head = head[LL_NEXT]) {
       if (cb(head)) return head
     }
@@ -356,8 +324,7 @@ export const reatomLinkedList = <
   }
 
   const array: LinkedListAtom<Params, Node, Key>['array'] = atom(
-    (ctx, state: Array<LLNode<Node>> = []) =>
-      toArray(ctx.spy(linkedList).head, state),
+    (ctx, state: Array<LLNode<Node>> = []) => toArray(ctx.spy(linkedList).head, state),
     `${name}.array`,
   )
 
@@ -368,10 +335,7 @@ export const reatomLinkedList = <
             // use array as it already memoized and simplifies the order tracking
             ctx.spy(array).map((node) => {
               const keyValue = node[key]
-              return [
-                isAtom(keyValue) ? ctx.spy(keyValue) : keyValue,
-                node,
-              ] as const
+              return [isAtom(keyValue) ? ctx.spy(keyValue) : keyValue, node] as const
             }),
           ),
       ) as LinkedListAtom<Params, Node, Key>['map'])
@@ -387,29 +351,19 @@ export const reatomLinkedList = <
           onRemove?: (ctx: Ctx, node: LLNode<T>, origin: LLNode<Node>) => void
           onSwap?: (ctx: Ctx, payload: { a: LLNode<T>; b: LLNode<T> }) => void
           onMove?: (ctx: Ctx, node: LLNode<T>) => void
-          onClear?: (
-            ctx: Ctx,
-            lastState: LinkedListDerivedState<LLNode<Node>, LLNode<T>>,
-          ) => void
+          onClear?: (ctx: Ctx, lastState: LinkedListDerivedState<LLNode<Node>, LLNode<T>>) => void
         } = {},
   ): LinkedListDerivedAtom<LLNode<Node>, LLNode<T>> => {
-    const { name = __count(`${_name}.reatomMap`), ...hooks } =
-      typeof options === 'string' ? { name: options } : options
+    const { name = __count(`${_name}.reatomMap`), ...hooks } = typeof options === 'string' ? { name: options } : options
 
     type State = LinkedListDerivedState<LLNode<Node>, LLNode<T>>
 
     const mapList = atom((ctx, mapList?: State): State => {
-      throwReatomError(
-        STATE,
-        `Can't compute the map of the linked list inside the batching.`,
-      )
+      throwReatomError(STATE, `Can't compute the map of the linked list inside the batching.`)
 
       const ll = ctx.spy(linkedList)
 
-      if (
-        !mapList ||
-        /* some update was missed */ ll.version - 1 > mapList.version
-      ) {
+      if (!mapList || /* some update was missed */ ll.version - 1 > mapList.version) {
         if (mapList) hooks.onClear?.(ctx, mapList)
 
         mapList = {
@@ -488,17 +442,13 @@ export const reatomLinkedList = <
         }
       }
 
-      throwReatomError(
-        mapList.size !== ll.size,
-        "Inconsistent linked list, is's a bug, please report an issue",
-      )
+      throwReatomError(mapList.size !== ll.size, "Inconsistent linked list, is's a bug, please report an issue")
 
       return mapList
     }, name)
 
     const array: LinkedListDerivedAtom<LLNode<Node>, LLNode<T>>['array'] = atom(
-      (ctx, state: Array<LLNode<T>> = []) =>
-        toArray(ctx.spy(mapList).head, state),
+      (ctx, state: Array<LLNode<T>> = []) => toArray(ctx.spy(mapList).head, state),
       `${name}.array`,
     )
 
@@ -587,5 +537,4 @@ export const reatomLinkedList = <
   }).pipe(readonly)
 }
 
-export const isLinkedListAtom = (thing: any): thing is LinkedListLikeAtom =>
-  thing?.__reatomLinkedList === true
+export const isLinkedListAtom = (thing: any): thing is LinkedListLikeAtom => thing?.__reatomLinkedList === true
