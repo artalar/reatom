@@ -115,6 +115,7 @@ const addLL = <Node extends LLNode>(
   if (node === after) return
 
   if (after) {
+    // updateLL(node as Node, after, after[LL_PREV])
     ;(node as Node)[LL_PREV] = after
     ;(node as Node)[LL_NEXT] = after[LL_NEXT]
     after[LL_NEXT] = node as Node
@@ -156,15 +157,59 @@ const removeLL = <Node extends LLNode>(state: LinkedList<Node>, node: Node) => {
 
 const swapLL = <Node extends LLNode>(state: LinkedList<Node>, a: Node, b: Node): void => {
   if (a === b) return
+
+  // If b is the head, swap a and b to make a the head
   if (state.head === b) return swapLL(state, b, a)
 
-  const prevA = a[LL_PREV] === b ? b[LL_PREV] : a[LL_PREV]
-  const prevB = b[LL_PREV] === a ? a[LL_PREV] : b[LL_PREV]
+  const prevA = a[LL_PREV]
+  const nextA = a[LL_NEXT]
+  const prevB = b[LL_PREV]
+  const nextB = b[LL_NEXT]
 
-  removeLL(state, a)
-  removeLL(state, b)
-  addLL(state, a, prevB)
-  addLL(state, b, prevA)
+  // Check if they are adjacent
+  if (nextA === b) {
+    // a is before b
+    a[LL_NEXT] = nextB
+    b[LL_PREV] = prevA
+    b[LL_NEXT] = a
+    a[LL_PREV] = b
+
+    if (nextB) nextB[LL_PREV] = a
+    if (prevA) prevA[LL_NEXT] = b
+  } else if (nextB === a) {
+    // b is before a
+    b[LL_NEXT] = nextA
+    a[LL_PREV] = prevB
+    a[LL_NEXT] = b
+    b[LL_PREV] = a
+
+    if (nextA) nextA[LL_PREV] = b
+    if (prevB) prevB[LL_NEXT] = a
+  } else {
+    // Non-adjacent nodes, just swap them
+    if (prevA) prevA[LL_NEXT] = b
+    if (nextA) nextA[LL_PREV] = b
+    if (prevB) prevB[LL_NEXT] = a
+    if (nextB) nextB[LL_PREV] = a
+
+    a[LL_PREV] = prevB
+    a[LL_NEXT] = nextB
+    b[LL_PREV] = prevA
+    b[LL_NEXT] = nextA
+  }
+
+  // Update head and tail pointers if necessary
+  if (state.head === a) {
+    state.head = b
+  } else if (state.head === b) {
+    state.head = a
+  }
+
+  if (state.tail === a) {
+    state.tail = b
+  } else if (state.tail === b) {
+    state.tail = a
+  }
 }
 
 const moveLL = <Node extends LLNode>(state: LinkedList<Node>, node: Node, after: null | Node) => {
