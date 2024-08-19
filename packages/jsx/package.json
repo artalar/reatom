@@ -1,6 +1,6 @@
 {
   "name": "@reatom/jsx",
-  "version": "3.11.3",
+  "version": "3.12.0",
   "private": false,
   "sideEffects": false,
   "description": "Reatom for jsx",
