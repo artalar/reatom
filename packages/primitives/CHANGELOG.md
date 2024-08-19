@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.7.3](https://github.com/artalar/reatom/compare/primitives-v3.7.2...primitives-v3.7.3) (2024-08-19)
+
+
+### Bug Fixes
+
+* add the 'size' prop to reatomSet ([#892](https://github.com/artalar/reatom/issues/892)) ([76d9a98](https://github.com/artalar/reatom/commit/76d9a986e2e897119a3708a117cc849ccd65f234))
+* **primitives:** remove in ll ([e78a049](https://github.com/artalar/reatom/commit/e78a049faf52e6924f74acc2907d16701517423c))
+* **primitives:** swap in ll ([315df22](https://github.com/artalar/reatom/commit/315df224f9a17203905e7a10f5f0082812415244))
+
 ## [3.7.2](https://github.com/artalar/reatom/compare/primitives-v3.7.1...primitives-v3.7.2) (2024-06-22)
 
 

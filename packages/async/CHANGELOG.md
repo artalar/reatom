@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.15.3](https://github.com/artalar/reatom/compare/async-v3.15.2...async-v3.15.3) (2024-08-19)
+
+
+### Bug Fixes
+
+* **async:** first-in-win pending ([15c6d75](https://github.com/artalar/reatom/commit/15c6d75d57d8d25a623181e38ac4812bf1cd3d24))
+* **async:** use setTimeout with toJSON ([8c2ed7b](https://github.com/artalar/reatom/commit/8c2ed7b2f5f52da6fbc1993b1253043928961f1d))
+* **async:** withAbort strategy first-in-win ([#898](https://github.com/artalar/reatom/issues/898)) ([0875cbb](https://github.com/artalar/reatom/commit/0875cbb79d64551d09051bbc6e39c41ef4b4af85))
+
 ## [3.15.2](https://github.com/artalar/reatom/compare/async-v3.15.1...async-v3.15.2) (2024-06-22)
 
 
