@@ -227,34 +227,38 @@ test('withAbort and real fetch', async () => {
 })
 
 test('withAbort strategy first-in-win', async () => {
-  const a1 = reatomAsync(async (ctx, v: number) => {
-    await sleep()
+  const anAsync = reatomAsync(async (ctx, v: number) => {
+    await ctx.schedule(() => sleep())
     return v
   }).pipe(withAbort({strategy: 'first-in-win'}))
 
   const ctx = createTestCtx()
 
   const valueTrack = ctx.subscribeTrack(
-    a1.pipe(mapPayloadAwaited((ctx, v) => v)),
+    anAsync.pipe(mapPayloadAwaited((ctx, v) => v)),
   )
-  const errorTrack = ctx.subscribeTrack(a1.onReject)
-  const abortTrack = ctx.subscribeTrack(a1.onAbort)
+  const errorTrack = ctx.subscribeTrack(anAsync.onReject)
+  const abortTrack = ctx.subscribeTrack(anAsync.onAbort)
 
   valueTrack.calls.length = 0
   errorTrack.calls.length = 0
   abortTrack.calls.length = 0
 
-  const promise1 = a1(ctx, 1)
-  assert.equal(abortTrack.calls.length, 0)
-  const promise2 = a1(ctx, 2)
-  assert.equal(abortTrack.calls.length, 1)
+  const promise1 = anAsync(ctx, 1)
+  assert.is(abortTrack.calls.length, 0)
+  assert.is(ctx.get(anAsync.pendingAtom), 1)
+  const promise2 = anAsync(ctx, 2)
+  assert.is(abortTrack.calls.length, 1, 'abortTrack')
+  // wait the promise fail handling
+  await null
+  assert.is(ctx.get(anAsync.pendingAtom), 1, 'pending')
 
   await Promise.any([promise1, promise2])
 
-  assert.equal(valueTrack.calls.length, 1)
-  assert.equal(valueTrack.lastInput().at(-1)?.payload, 1)
-  assert.equal(errorTrack.calls.length, 0)
-  assert.equal(abortTrack.calls.length, 1)
+  assert.is(valueTrack.calls.length, 1)
+  assert.is(valueTrack.lastInput().at(-1)?.payload, 1)
+  assert.is(errorTrack.calls.length, 0)
+  assert.is(abortTrack.calls.length, 1)
   ;`👍` //?
 })
 
