@@ -1,19 +1,8 @@
-import {
-  Atom,
-  AtomProto,
-  Ctx,
-  CtxSpy,
-  __count,
-  atom,
-  throwReatomError,
-} from '@reatom/core'
+import { Atom, AtomProto, Ctx, CtxSpy, __count, atom, throwReatomError } from '@reatom/core'
 
 type FunctionSource = string
 
-const mapAtom = atom(
-  null as any as WeakMap<AtomProto, Map<FunctionSource, Atom>>,
-  'select._map',
-)
+const mapAtom = atom(null as any as WeakMap<AtomProto, Map<FunctionSource, Atom>>, 'select._map')
 mapAtom.__reatom.initState = () => new WeakMap()
 
 const touchedMap = new WeakMap<Ctx, Set<FunctionSource>>()
@@ -41,14 +30,16 @@ export const select = <T>(
   touched.add(selectSource)
 
   let selectAtom = atoms.get(selectSource)
-  let isInit = !selectAtom
-  if (isInit) {
+  if (!selectAtom) {
+    let isInit = true
     atoms.set(
       selectSource,
       (selectAtom = atom(
         (ctx, prevState?: any) => {
           const newState = cb(ctx)
-          return isInit || !equal(prevState, newState) ? newState : prevState
+          const resultState = isInit || !equal(prevState, newState) ? newState : prevState
+          isInit = false
+          return resultState
         },
         __count(`${ctx.cause.proto.name}._select`),
       )),
