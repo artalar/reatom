@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.0](https://github.com/artalar/reatom/compare/jsx-v3.12.0...jsx-v3.13.0) (2024-08-24)
+
+
+### Features
+
+* **jsx:** add automatic input type def for a model ([e906142](https://github.com/artalar/reatom/commit/e90614230ded105812ef9e06cdb3af833852cd33))
+
 ## [3.12.0](https://github.com/artalar/reatom/compare/jsx-v3.11.3...jsx-v3.12.0) (2024-08-19)
 
 
