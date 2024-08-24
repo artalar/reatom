@@ -1,5 +1,7 @@
 // THIS IS UNFINISHED PROTOTYPE, DO NOT TOUCH IT, DO NOT USE IT
 
+// TODO https://github.com/unjs/ofetch
+
 export type UrlSearchParamsInit = ConstructorParameters<
   typeof URLSearchParams
 >[0]
