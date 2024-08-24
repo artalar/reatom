@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.3](https://github.com/artalar/reatom/compare/lens-v3.11.2...lens-v3.11.3) (2024-08-24)
+
+
+### Bug Fixes
+
+* **lens:** select equal callback ([ce87fbf](https://github.com/artalar/reatom/commit/ce87fbfd0e7ef953e6c5156645c0aac77b20a952))
+
 ## [3.11.2](https://github.com/artalar/reatom/compare/lens-v3.11.1...lens-v3.11.2) (2024-06-22)
 
 
