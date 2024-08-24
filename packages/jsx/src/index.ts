@@ -159,11 +159,17 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
           })
         } else if (isAtom(prop) && !prop.__reatom.isAction) {
           if (k.startsWith('model:')) {
-            let name = (k = k.slice(6))
+            let name = (k = k.slice(6)) as 'value' | 'valueAsNumber' | 'checked'
             set(element, 'on:input', (ctx: Ctx, event: any) => {
               ;(prop as AtomMut)(ctx, name === 'valueAsNumber' ? +event.target.value : event.target[name])
             })
-            if (k === 'valueAsNumber') k = 'value'
+            if (k === 'valueAsNumber') {
+              k = 'value'
+              set(element, 'type', 'number')
+            }
+            if (k === 'checked') {
+              set(element, 'type', 'checkbox')
+            }
             k = 'prop:' + k
           }
           // TODO handle unsubscribe!
