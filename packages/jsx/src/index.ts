@@ -155,7 +155,11 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         if (k === 'ref') {
           ctx.schedule(() => {
             const cleanup = prop(ctx, element)
-            if (typeof cleanup === 'function') unlink(element, cleanup)
+            if (typeof cleanup === 'function') {
+              let list = unsubscribesMap.get(element)
+              if (!list) unsubscribesMap.set(element, (list = []))
+              unlink(element, cleanup)
+            }
           })
         } else if (isAtom(prop) && !prop.__reatom.isAction) {
           if (k.startsWith('model:')) {

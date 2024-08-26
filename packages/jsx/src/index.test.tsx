@@ -399,4 +399,31 @@ test('ref unmount callback', async () => {
   assert.is(ref, null)
 })
 
+test('child ref unmount callback', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+  let ref: null | HTMLElement = null
+
+  const component = (
+    <Component
+      ref={(ctx, el) => {
+        ref = el
+        return () => {
+          ref = null
+        }
+      }}
+    />
+  )
+
+  mount(parent, component)
+  assert.instance(ref, window.HTMLElement)
+  await sleep()
+
+  ref!.remove()
+  await sleep()
+  assert.is(ref, null)
+})
+
 test.run()
