@@ -1,18 +1,10 @@
 {
   "name": "@reatom/timer",
   "version": "3.6.2",
-  "private": false,
+  "private": true,
   "sideEffects": false,
   "description": "Reatom for timers",
-  "source": "src/index.ts",
-  "exports": {
-    "types": "./build/index.d.ts",
-    "require": "./build/index.js",
-    "default": "./build/index.mjs"
-  },
-  "main": "build/index.js",
-  "module": "build/index.mjs",
-  "types": "build/index.d.ts",
+  "exports": "./src/index.ts",
   "browserslist": [
     "last 1 year"
   ],
@@ -21,7 +13,7 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle -f esm,cjs",
+    "build": "smartbundle",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
@@ -40,9 +32,5 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://www.reatom.dev/package/timer",
-  "files": [
-    "/build",
-    "/package.json"
-  ]
+  "homepage": "https://www.reatom.dev/package/timer"
 }
