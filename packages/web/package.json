@@ -1,18 +1,10 @@
 {
   "name": "@reatom/web",
   "version": "3.5.3",
-  "private": false,
+  "private": true,
   "sideEffects": false,
   "description": "Reatom for web",
-  "source": "src/index.ts",
-  "exports": {
-    "types": "./build/index.d.ts",
-    "require": "./build/index.js",
-    "default": "./build/index.mjs"
-  },
-  "main": "build/index.js",
-  "module": "build/index.mjs",
-  "types": "build/index.d.ts",
+  "exports": "./src/index.ts",
   "browserslist": [
     "last 1 year"
   ],
@@ -22,7 +14,7 @@
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "smartbundle",
     "test": "ts-node src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
@@ -51,9 +43,5 @@
     "reactivity",
     "state-manager",
     "reatom"
-  ],
-  "files": [
-    "/build",
-    "/package.json"
   ]
 }
