@@ -3,23 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "sideEffects": false,
+  "type": "module",
   "description": "Simple HTTP client for Reatom",
-  "source": "src/index.ts",
-  "exports": {
-    "require": "./build/index.js",
-    "default": "./build/index.mjs"
-  },
-  "main": "build/index.js",
-  "module": "build/index.mjs",
-  "unpkg": "build/index.umd.js",
-  "types": "build/index.d.ts",
+  "exports": "./src/index.ts",
   "browserslist": [
     "last 4 chrome versions"
   ],
   "scripts": {
     "sandbox": "vite",
     "prepublishOnly": "npm run build && npm run test",
-    "build": "microbundle",
+    "build": "smartbundle",
     "test": "tsx src/index.test.ts",
     "test:watch": "tsx watch src/index.test.ts"
   },
@@ -46,9 +39,5 @@
   "bugs": {
     "url": "https://github.com/artalar/reatom/issues"
   },
-  "homepage": "https://github.com/artalar/reatom/packages/web-fetch",
-  "files": [
-    "/build",
-    "/package.json"
-  ]
+  "homepage": "https://github.com/artalar/reatom/packages/web-fetch"
 }
