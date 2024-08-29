@@ -15,3 +15,7 @@
   - `AtomProto.patch` and `AtomProto.actual` isn't safe in new async (auto)batching paradigm
   - `AtomProto.updateHooks`, `AtomProto.connectHooks`, `AtomProto.disconnectHooks` and `AtomProto.initState` could be replaced by the decorators
 - deprecate `AtomCache` in favour of `AtomFrame`
+- deprecate `Action.onCall` method due separate `spy` or `onChange` method
+- deprecate `IsAction` due simple `extends Action` which is now possible with `fake_actionKind` symbol
+- deprecate `AtomReturn` as all atoms are callable now
+- 

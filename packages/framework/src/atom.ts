@@ -151,13 +151,37 @@ export interface AtomFrame<State = any, Update = State> {
   subs: Array<Atom>
 }
 
+export declare const fake_actionKind: unique symbol
 export interface Action<Params extends any[] = any[], Payload = any>
   extends Atom<Array<{ params: Params; payload: Payload }>> {
   (ctx: Ctx, ...params: Params): Payload
 
+  /** Cold(!) subscription to the action calls.
+   * @deprecated use hot `spy` method for describing business flows and separate `onChange` method for utility features.
+   */
   onCall: (
     cb: (ctx: Ctx, payload: Payload, params: Params) => any,
   ) => Unsubscribe
+
+  [fake_actionKind]: true
+}
+
+export interface Queue extends Array<AtomFrame> {}
+
+export interface StoreWeakMap extends WeakMap<Atom, AtomFrame> {
+  get<T>(target: Atom<T>): undefined | AtomFrame<T>
+  set<T>(target: Atom<T>, frame: AtomFrame<T>): this
+}
+
+export interface RootState {
+  queue: Queue
+  store: StoreWeakMap
+}
+
+export interface RootFrame extends AtomFrame<RootState> {}
+
+export interface RootAtom extends Atom<RootState> {
+  // (ctx: Ctx): RootFrame
 }
 
 export type AtomState<T> = T extends Atom<infer State> ? State : never
@@ -169,12 +193,12 @@ export type ActionPayload<T> = T extends Action<any, infer Payload>
   ? Payload
   : never
 
-type DefinitelyReturnType<T> = T extends Fn<any[], infer T> ? T : never
-export type IsAction<T> = T extends Fn &
-  Atom<infer State extends Array<{ payload: DefinitelyReturnType<T> }>>
-  ? true
-  : false
+/** Check if the type is an action
+ * @deprecated use `extends Action` instead
+ */
+export type IsAction<T> = T extends Action ? true : false
 
+/** @deprecated use just `ReturnType<T>` instead */
 export type AtomReturn<T extends Atom> = T extends Fn
   ? ReturnType<T>
   : AtomState<T>
@@ -207,18 +231,24 @@ export function throwReatomError(
 }
 
 export const isAtom = (thing: any): thing is Atom => {
-  return thing?.__reatom !== undefined
+  return Array.isArray(thing?.__reatomMixins)
 }
 
 export const isAction = (thing: any): thing is Action => {
-  return thing?.__reatom?.isAction === true
+  // TODO O(n) -> O(1)
+  return thing?.__reatomMixins?.some((m: () => any) => m.name === 'actionMixin')
 }
 
-// export const getCache = <T>(ctx: Ctx, anAtom: Atom<T>): AtomCache<T> =>
-//   ctx.get((read) => (ctx.get(anAtom), read(anAtom.__reatom)!))
+export let root = ((ctx: Ctx) => {
+  let frame = ctx.cause
+  while (frame.cause !== null) frame = frame.cause
+  return frame.state
+}) as RootAtom
+// TODO is it really needed?
+root.__reatomMixins = []
 
-const isConnected = (cache: AtomFrame): boolean => {
-  return cache.subs.size + cache.listeners.size > 0
+const isConnected = (frame: AtomFrame): boolean => {
+  return frame.subs.length > 0
 }
 
 function assertFunction(thing: any): asserts thing is Fn {
