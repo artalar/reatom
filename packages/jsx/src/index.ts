@@ -101,13 +101,13 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         DOM.document.head.appendChild(stylesheet)
       }
 
-      let className = styles[val]
-      if (!className) {
-        className = styles[val] = 'reatom-' + random()
-
-        stylesheet.innerText += '.' + className + '{' + val + '}\n'
+      let styleId = styles[val]
+      if (!styleId) {
+        styleId = styles[val] = random().toString()
+        stylesheet.innerText += '[data-reatom="' + styleId + '"]{' + val + '}\n'
       }
-      element.classList.add(className)
+      /** @see https://www.measurethat.net/Benchmarks/Show/11819/0/dataset-vs-setattribute */
+      element.setAttribute('data-reatom', styleId)
     } else if (key === 'style' && typeof val === 'object') {
       for (const key in val) {
         if (val[key] == null) element.style.removeProperty(key)

@@ -462,4 +462,62 @@ test('same arguments in ref mount and unmount hooks', async () => {
   assert.is(unmountArgs[1], component)
 })
 
+test('css property and class attribute', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const cls = 'class'
+  const css = 'color: red;'
+
+  const ref1 = (<div css={css} class={cls}></div>)
+  const ref2 = (<div class={cls} css={css}></div>)
+
+  const component = (
+    <div>
+      {ref1}
+      {ref2}
+    </div>
+  )
+
+  mount(parent, component)
+  assert.instance(ref1, window.HTMLElement)
+  assert.instance(ref2, window.HTMLElement)
+  await sleep()
+
+  assert.is(ref1.className, cls)
+  assert.ok(ref1.dataset.reatom)
+
+  assert.is(ref2.className, cls)
+  assert.ok(ref2.dataset.reatom)
+
+  assert.is(ref1.dataset.reatom, ref2.dataset.reatom)
+})
+
+test('ref mount and unmount callbacks order', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const order: number[] = []
+
+  const createRef = (index: number) => {
+    order.push(index)
+    return () => {
+      order.push(index)
+    }
+  }
+
+  const component = (
+    <div ref={createRef(0)}>
+      <div ref={createRef(1)}>
+        <div ref={createRef(2)}>
+        </div>
+      </div>
+    </div>
+  )
+
+  mount(parent, component)
+  parent.remove()
+  await sleep()
+
+  assert.equal(order, [0, 1, 2, 2, 1, 0])
+})
+
 test.run()
