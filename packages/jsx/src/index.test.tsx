@@ -426,4 +426,40 @@ test('child ref unmount callback', async () => {
   assert.is(ref, null)
 })
 
+test('same arguments in ref mount and unmount hooks', async () => {
+  const { ctx, h, hf, parent, mount, window } = setup()
+
+  const mountArgs: unknown[] = []
+  const unmountArgs: unknown[] = []
+
+  let ref: null | HTMLElement = null
+
+  const component = (
+    <div
+      ref={(ctx, el) => {
+        mountArgs.push(ctx, el)
+        ref = el
+        return (ctx, el) => {
+          unmountArgs.push(ctx, el)
+          ref = null
+        }
+      }}
+    />
+  )
+
+  mount(parent, component)
+  assert.instance(ref, window.HTMLElement)
+  await sleep()
+
+  ref!.remove()
+  await sleep()
+  assert.is(ref, null)
+
+  assert.is(mountArgs[0], ctx)
+  assert.is(mountArgs[1], component)
+
+  assert.is(unmountArgs[0], ctx)
+  assert.is(unmountArgs[1], component)
+})
+
 test.run()
