@@ -158,7 +158,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
             if (typeof cleanup === 'function') {
               let list = unsubscribesMap.get(element)
               if (!list) unsubscribesMap.set(element, (list = []))
-              unlink(element, cleanup)
+              unlink(element, () => cleanup(ctx, element))
             }
           })
         } else if (isAtom(prop) && !prop.__reatom.isAction) {

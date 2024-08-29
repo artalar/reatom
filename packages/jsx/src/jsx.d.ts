@@ -102,7 +102,7 @@ export namespace JSX {
     // ref?: (ctx: Ctx, e: unknown) => void | (() => any)
   }
   interface CustomAttributes<T> {
-    ref?: (ctx: Ctx, el: T) => void | (() => any)
+    ref?: (ctx: Ctx, el: T) => void | ((ctx: Ctx, el: T) => any)
     // classList?: {
     //   [k: string]: boolean | undefined
     // }
