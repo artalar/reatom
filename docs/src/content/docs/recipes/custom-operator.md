@@ -34,6 +34,7 @@ declare function withStateHistory<T extends Atom>(
   stateHistoryAtom: Atom<AtomState<T>>
 }
 ```
+
 We use `T extends Atom` instead of the simpler `<T>(length: string): (anAtom: Atom<T>) => Atom<T> & {...}` to preserve all additional properties added by previous operators.
 
 > [Real `historyAtom`](/package/undo)
@@ -48,7 +49,7 @@ import { action, atom, Atom } from '@reatom/core'
 // operator accepts an options by a first argument
 // and returns function witch accepts target atom
 export const delay =
-  <T>(ms: number) =>
+  <T,>(ms: number) =>
   (anAtom: Atom<T>) => {
     // to improve debugability compute name of the new atom
     const name = `${anAtom.__reatom.name}.delay`
@@ -80,3 +81,63 @@ export const delay =
 ```
 
 > [Real `debounce`](https://www.reatom.dev/package/lens#debounce)
+
+## Advanced example
+
+This example demonstrates complexity of **hot**ness and **cold**ness of reactive nodes.
+
+Let's break down the implementation of `withReadyAtom` for [@reatom/async](/package/async/). That'll be cool!
+
+First, take a look to the result, then we will disassemble this code step by step:
+
+```ts
+import { AsyncAction } from '@reatom/async'
+import { Atom, atom } from '@reatom/core'
+
+export const withReadyAtom =
+  <T extends AsyncAction & { dataAtom?: Atom }>(initState = false) =>
+  (anAsync: T): T & { readyAtom: Atom<boolean> } => {
+    // use `spy` to prevent any race conditions
+    const readyAtom = atom((ctx, state?: boolean) => {
+      // trigger connection to start the fetch if `onConnect` used
+      if (anAsync.dataAtom) ctx.spy(anAsync.dataAtom)
+
+      const pending = ctx.spy(anAsync.pendingAtom)
+
+      return state === undefined ? initState : pending === 0
+    }, `${anAsync.__reatom.name}.readyAtom`)
+
+    // grand correct state even for unconnected atom
+    anAsync.pendingAtom.onChange((ctx) => {
+      ctx.get(readyAtom)
+    })
+
+    return Object.assign(anAsync, { readyAtom })
+  }
+```
+
+The logic is simple: the atom represents a flag indicating that the fetching of data has been done (in one way or another). You can find this useful if you are used to code like this:
+
+```jsx
+if (!ctx.spy(fetchSome.readyAtom)) {
+  return <Loading />
+}
+
+if (ctx.spy(fetchSome.errorAtom)) {
+  return <Error />
+}
+
+return <Data />
+```
+
+The native `pendingAtom` is not very useful here because it's 0 by default, and we'll get a flash of empty content instead of a neat loader during the first render.
+
+Let's start by defining a generic variable which should have an optional `dataAtom`. Otherwise, we'll have to use @ts-ignore to access this atom. We need this atom to trigger a connection, with something like `onConnect(fetchSome.dataAtom, fetchSome)` a [resource](/package/async/#reatomresource). Without this, we'll never touch `dataAtom`, thus never trigger fetch and get stuck in a forever-loading state.
+
+Then let's `spy` the `pendingAtom`, but we use its value only on the second and following reads of `readyAtom`. If it's the first read, we just show the initial state.
+
+Now we get to an interesting but tricky part. We set `onChange` on the atom we just have spied on, but we don't do anything with this changed value. This trick is needed because of the way atoms get invalidated and because atoms are lazy by default.
+
+When you spy (read and subscribe) on an atom, reatom guarantees you immediate invalidation of the atom. This means that when you change `pendingAtom`, every atom spying on it will get invalidated and recalculated when you need their value.
+
+Note that if you try to implement similar behavior only using `onChange`, making readyAtom a simple `AtomMut<boolean>` without computed bindings, you may get an intermediate invalid state when `pendingAtom` has already changed but `onChange` has not yet triggered.
