@@ -1,14 +1,17 @@
 import * as estree from 'estree'
 import { Rule } from 'eslint'
-import {
-  ascend,
-  createImportMap,
-  getFunctionNameDeclarations,
-  isReatomFactoryName,
-} from '../shared'
+import { createImportMap } from '../shared'
 
-type AutoDomain = typeof AutoDomain
-const AutoDomain = Symbol('AutoDomain')
+const reatomFactoryList = ['atom', 'action', 'reaction'] as const
+const reatomFactoryPattern = new RegExp(`^(reatom\w+|${reatomFactoryList.join('|')})$`)
+
+type Domain = { is: 'absent' } | { is: 'static'; name: string } | { is: 'dynamic'; vary: string }
+
+interface Name {
+  domain: Domain
+  local: boolean
+  unit: string
+}
 
 export const unitNamingRule: Rule.RuleModule = {
   meta: {
@@ -17,249 +20,135 @@ export const unitNamingRule: Rule.RuleModule = {
       recommended: true,
       description: 'Ensures that all Reatom entities are correctly named.',
     },
-    messages: {
-      nameMissing: 'Unit "{{unit}}" is missing a name',
-      nameIncorrect: 'Unit "{{unit}}" has malformed name',
-      prefixMissing: 'Atom "{{unit}}" name should start with "{{prefix}}"',
-      postfixMissing: 'Atom "{{unit}}" name should end with "{{postfix}}"',
-    },
     fixable: 'code',
   },
 
   create(context) {
-    const importMap = createImportMap('@reatom')
+    const importMap = createImportMap('@reatom/')
 
-    const option = context.options[0] ?? {}
-    const atomPrefix = option.atomPrefix ?? ''
-    const atomPostfix = option.atomPostfix ?? ''
+    const {
+      atomPrefix = '',
+      atomSuffix = '',
+      domainVary = 'name',
+    }: {
+      atomPrefix?: string
+      atomSuffix?: string
+      domainVary?: string
+    } = context.options[0] ?? {}
+
+    const domainScopes: Domain[] = [{ is: 'absent' }]
+    const unitScopes = [] as estree.Identifier[]
 
     return {
-      ImportDeclaration: importMap.onImportNode,
-      VariableDeclarator(node) {
-        if (node.id.type !== 'Identifier') return
-        if (!node.init) return
+      [`CallExpression[callee.name=${reatomFactoryPattern}]`](node: estree.CallExpression) {
+        const args = node.arguments
+        const nameNode =
+          args.length === 2
+            ? args[1]
+            : args.length === 1 && args[0]!.type === 'ObjectExpression'
+            ? args[0].properties.find(({ key }) => key.type === 'Identifier' && key.name === 'name')
+            : undefined
 
-        const unitIdentifier = node.id
-        const unitBody = node.init
+        const unit = unitScopes.at(-1)
+        if (!unit) return
+        const domain = domainScopes.at(-1)!
 
-        checkNaming({
-          imports: importMap.imported,
-          context,
-          atomPrefix,
-          atomPostfix,
-          unitIdentifier,
-          unitBody,
-        })
-      },
-      Property(node) {
-        if (node.key.type !== 'Identifier') return
+        if (!nameNode) {
+          let fix: Rule.ReportFixer | undefined
 
-        const unitIdentifier = node.key
-        const unitBody = node.value
+          if (args.length === 1) {
+            const printedName = printName({
+              domain,
+              local: false,
+              unit: unit.name,
+            })
+            if (args[0]!.type === 'ObjectExpression') {
+              const config = args[0]
+              if (config.properties.length) {
+                const comma = context.sourceCode.getText().endsWith(',') ? '' : ', '
+                fix = (fixer) => fixer.insertTextAfter(config.properties.at(-1)!, `${comma}name: ${printedName}`)
+              } else {
+                fix = (fixer) => fixer.replaceText(config, `{ name: ${printedName} }`)
+              }
+            } else {
+              fix = (fixer) => fixer.insertTextAfter(args[0]!, `, ${printedName}`)
+            }
+          }
 
-        checkNaming({
-          imports: importMap.imported,
-          context,
-          atomPrefix,
-          atomPostfix,
-          unitIdentifier,
-          unitBody,
-        })
+          context.report({
+            node,
+            message: `"${(node.callee as estree.Identifier).name}" call is missing a name`,
+            fix,
+          })
+          return
+        }
+
+        const replaceNameFix = (fixer: Rule.RuleFixer) =>
+          fixer.replaceText(
+            nameNode,
+            printName({
+              domain,
+              local: false,
+              unit: unit.name,
+            }),
+          )
+
+        let parsedName: Name | undefined
+        parseName: {
+          if (nameNode.type === 'Literal' && typeof nameNode.value === 'string') {
+            const matches = nameNode.value.match(/^(?:(\w+)\.)?(_)?(\w+)$/)
+            if (!matches) break parseName
+            const domainName = matches[1]!
+            const local = !!matches[2]
+            const unit = matches[3]!
+            parsedName = { domain: { is: 'static', name: domainName }, local, unit }
+          }
+
+          if (nameNode.type === 'TemplateLiteral') {
+            if (nameNode.expressions.length !== 1) break parseName
+            if (nameNode.expressions[0]!.type !== 'Identifier') break parseName
+            if (nameNode.quasis.length !== 2) break parseName
+            if (nameNode.quasis[0]!.value.raw !== '') break parseName
+            if (!nameNode.quasis[1]!.value.raw.startsWith('.')) break parseName
+            const domainVary = nameNode.expressions[0].name
+            const local = nameNode.quasis[1]!.value.raw[1] === '_'
+            const unit = nameNode.quasis[1]!.value.raw.slice(local ? 2 : 1)
+            parsedName = { domain: { is: 'dynamic', vary: domainVary }, local, unit }
+          }
+        }
+        if (!parsedName) {
+          context.report({
+            node: nameNode,
+            message: 'Unit name is malformed',
+            fix: replaceNameFix,
+          })
+          return
+        }
+
+        const message =
+          parsedName.unit === unit.name
+            ? (
+                parsedName.domain.is === domain.is && parsedName.domain.is === 'static'
+                  ? parsedName.domain.name === (domain as any).name
+                  : parsedName.domain.is === 'dynamic'
+                  ? parsedName.domain.vary !== (domain as any).vary
+                  : false
+              )
+              ? undefined
+              : 'Unit domain is incorrect'
+            : 'Unit name is incorrect'
+
+        if (message) {
+          context.report({ node: nameNode, message, fix: replaceNameFix })
+        }
       },
     }
   },
 }
-function checkNaming({
-  context,
-  imports,
-  atomPrefix,
-  atomPostfix,
-  unitIdentifier,
-  unitBody,
-}: {
-  context: Rule.RuleContext
-  imports: ReadonlyMap<string, string>
-  atomPrefix: any
-  atomPostfix: any
-  unitIdentifier: estree.Identifier
-  unitBody: estree.Node
-}) {
-  if (
-    unitBody.type !== 'CallExpression' ||
-    unitBody.callee.type !== 'Identifier' ||
-    !isReatomFactoryName(
-      imports.get(unitBody.callee.name) || unitBody.callee.name,
-    )
-  ) {
-    return
-  }
 
-  const [initArg, nameArg] = unitBody.arguments
-  if (!initArg) return
-
-  let factory:
-    | estree.FunctionDeclaration
-    | estree.FunctionExpression
-    | estree.ArrowFunctionExpression
-    | undefined
-  let domain: string | null | AutoDomain = null
-
-  setFactory: {
-    const parent = (unitBody as Rule.Node).parent
-    const declaration = ascend(parent, 'FunctionDeclaration')
-    if (declaration?.id?.name) {
-      domain = declaration.id.name
-      factory = declaration
-      break setFactory
-    }
-
-    const declarator = ascend(parent.parent, 'VariableDeclarator')
-    if (declarator?.id.type === 'Identifier') {
-      domain = declarator.id.name
-      factory = declarator.init as any
-      break setFactory
-    }
-  }
-
-  const nameVaryDeclared = factory
-    ? getFunctionNameDeclarations(factory, ['name']).length === 1
-    : false
-  if (nameVaryDeclared) domain = AutoDomain
-
-  if (!nameArg) {
-    context.report({
-      node: unitBody,
-      messageId: 'nameMissing',
-      data: { unit: unitIdentifier.name },
-      fix: (fixer) => {
-        const x = insertUnitName({
-          selfName: unitIdentifier.name,
-          domain,
-        })
-        return fixer.insertTextAfter(initArg, `, ${x}`)
-      },
-    })
-    return
-  }
-
-  let isPrivate = false
-  let valid = false
-
-  if (domain === AutoDomain) {
-    validate: {
-      if (nameArg.type !== 'TemplateLiteral') break validate
-      if (nameArg.expressions.length !== 1) break validate
-
-      const [emptyQuasy, nameSelf] = nameArg.quasis.map(
-        (quasy) => quasy.value.cooked,
-      )
-      const nameDomain = nameArg.expressions[0]!
-
-      if (emptyQuasy !== '') break validate
-      if (nameDomain.type !== 'Identifier' || nameDomain.name !== 'name')
-        break validate
-      if (!nameSelf!.startsWith('.')) break validate
-
-      isPrivate = nameSelf![1] === '_'
-      if (nameSelf!.slice(isPrivate ? 2 : 1) !== unitIdentifier.name)
-        break validate
-
-      valid = true
-    }
-  } else {
-    validate: {
-      if (nameArg.type !== 'Literal') break validate
-      if (typeof nameArg.value !== 'string') break validate
-
-      const name = nameArg.value
-      const [nameDomain, nameSelf] = name.includes('.') //
-        ? name.split('.')
-        : [null, name]
-
-      if (nameDomain !== domain) break validate
-
-      isPrivate = nameSelf![0] === '_'
-      if (nameSelf!.slice(isPrivate ? 1 : 0) !== unitIdentifier.name)
-        break validate
-
-      valid = true
-    }
-  }
-
-  if (!valid) {
-    context.report({
-      node: nameArg,
-      messageId: 'nameIncorrect',
-      data: {
-        unit: unitIdentifier.name,
-        domain: domain as string,
-      },
-      fix: (fixer) => {
-        const x = insertUnitName({
-          selfName: unitIdentifier.name,
-          isPrivate,
-          domain,
-        })
-        return fixer.replaceText(nameArg, x)
-      },
-    })
-    return
-  }
-
-  if ((imports.get(unitBody.callee.name) ?? unitBody.callee.name) === 'atom') {
-    if (!unitIdentifier.name.startsWith(atomPrefix)) {
-      context.report({
-        node: nameArg,
-        messageId: 'prefixMissing',
-        fix: (fixer) => {
-          const x = insertUnitName({
-            selfName: atomPrefix + unitIdentifier.name,
-            isPrivate,
-            domain,
-          })
-          return [
-            fixer.replaceText(nameArg, x),
-            fixer.replaceText(unitIdentifier, atomPrefix + unitIdentifier.name),
-          ]
-        },
-      })
-      return
-    }
-    if (!unitIdentifier.name.endsWith(atomPostfix)) {
-      context.report({
-        node: nameArg,
-        messageId: 'postfixMissing',
-        fix: (fixer) => {
-          const x = insertUnitName({
-            selfName: unitIdentifier.name + atomPostfix,
-            isPrivate,
-            domain,
-          })
-          return [
-            fixer.replaceText(nameArg, x),
-            fixer.replaceText(
-              unitIdentifier,
-              unitIdentifier.name + atomPostfix,
-            ),
-          ]
-        },
-      })
-      return
-    }
-  }
-}
-
-const insertUnitName = ({
-  selfName,
-  domain,
-  isPrivate = false,
-}: {
-  selfName: string
-  domain: AutoDomain | string | null
-  isPrivate?: boolean
-}) => {
-  if (isPrivate) selfName = '_' + selfName
-  if (domain === AutoDomain) return '`${name}.' + selfName + '`'
-  if (typeof domain === 'string') return `'${domain}.${selfName}'`
-  return `'${selfName}'`
+function printName(name: Name) {
+  const base = (name.local ? '_' : '') + name.unit
+  if (name.domain.is === 'dynamic') return '`${' + name.domain.vary + '}.' + base
+  if (name.domain.is === 'static') return `"${name.domain.name}".${base}`
+  return `"${base}"`
 }
