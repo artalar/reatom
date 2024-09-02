@@ -2,7 +2,8 @@ name: Lint
 
 on: workflow_call
 
-permissions: write-all
+permissions:
+  contents: write
 
 jobs:
   prettier:
@@ -30,12 +31,10 @@ jobs:
       - name: Run prettier
         id: prettier_run
         if: steps.prettier_check.outputs.PRETTIER_EXIT_CODE == 1
-        run: npm run prettify
-      - name: Commit and push changes
-        if: ${{ success() && steps.prettier_run.conclusion == 'success' }}
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git commit -am "chore: run prettier"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          json='{"status": "1"}' && echo "$json" > status.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: status
+          path: "status.json"
+      
