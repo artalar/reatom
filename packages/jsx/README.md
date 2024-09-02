@@ -8,6 +8,8 @@ An **EXPERIMENTAL** JSX runtime for describing dynamic DOM UIs with Reatom.
 - Only 1kb runtime script (excluding the tiny core package).
 - Built-in CSS management with a simple API and efficient CSS variables usage.
 
+[![Try it out in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/artalar/reatom/tree/v3/examples/reatom-jsx)
+
 ## Installation
 
 You can use `@reatom/core` instead of the framework, but we highly recommend using the framework to access the maximum features of Reatom.
@@ -52,7 +54,7 @@ You can use different JSX pragmas in different files. For example, if you have a
 ```tsx
 // @jsxRuntime classic
 // @jsx h
-import { h } from '@reatom/jsx';
+import { h } from '@reatom/jsx'
 ```
 
 ## Example
@@ -65,9 +67,7 @@ Define a component:
 import { atom, action } from '@reatom/core'
 
 export const inputAtom = atom('')
-const onInput = action((ctx, event) =>
-  inputAtom(ctx, event.currentTarget.value),
-)
+const onInput = action((ctx, event) => inputAtom(ctx, event.currentTarget.value))
 export const Input = () => <input value={inputAtom} on:input={onInput} />
 ```
 
@@ -185,11 +185,7 @@ In Reatom, there is no concept of "rerender" like React. Instead, we have a spec
 
 ```tsx
 <div
-  $spread={atom((ctx) =>
-    ctx.spy(valid)
-      ? { disabled: true, readonly: true }
-      : { disabled: false, readonly: false },
-  )}
+  $spread={atom((ctx) => (ctx.spy(valid) ? { disabled: true, readonly: true } : { disabled: false, readonly: false }))}
 />
 ```
 
@@ -238,6 +234,48 @@ const MyWidget = () => {
   )
 }
 ``` -->
+
+### TypeScript
+
+To type your custom component props accepting general HTML attributes, for example for a `div` element, you should extend `JSX.HTMLAttributes`. However, if you want to define props for a specific HTML element you should use it name in the type name, like in the code below.
+
+```tsx
+import { type JSX } from '@reatom/jsx'
+
+export interface InputProps extends JSX.InputHTMLAttributes {
+  defaultValue?: string
+}
+
+export const Input = ({ defaultValue, ...props }: InputProps) => {
+  props.value ??= defaultValue
+  return <input {...props} />
+}
+```
+
+To type an event handler you have a few options, see below.
+
+```tsx
+export const Form = () => {
+  const handleSubmit = action((ctx, event: Event) => {
+    event.preventDefault()
+  })
+
+  const handleInput: JSX.InputEventHandler = action((ctx, event) => {
+    event.currentTarget.valueAsNumber // HTMLInputElement.valueAsNumber: number
+  })
+
+  const handleSelect: JSX.EventHandler<HTMLSelectElement> = action((ctx, event) => {
+    event.currentTarget.value // HTMLSelectElement.value: string
+  })
+
+  return (
+    <form on:submit={handleSubmit}>
+      <input on:input={handleInput} />
+      <select on:input={handleSelect} />
+    </form>
+  )
+}
+```
 
 ## Limitations
 

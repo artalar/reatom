@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.13.0](https://github.com/artalar/reatom/compare/jsx-v3.12.0...jsx-v3.13.0) (2024-08-24)
+
+
+### Features
+
+* **jsx:** add automatic input type def for a model ([e906142](https://github.com/artalar/reatom/commit/e90614230ded105812ef9e06cdb3af833852cd33))
+
+## [3.12.0](https://github.com/artalar/reatom/compare/jsx-v3.11.3...jsx-v3.12.0) (2024-08-19)
+
+
+### Features
+
+* **jsx:** add ref cleanup callback ([73111a0](https://github.com/artalar/reatom/commit/73111a0e290ed698eeed0d35e5a9e5bb8eda95c7))
+
+
+### Bug Fixes
+
+* **jsx:** remove wrong capture types ([7cd9984](https://github.com/artalar/reatom/commit/7cd99848e22eb6d307fc4e6ee04cc6cab68585c2))
+
 ## [3.11.3](https://github.com/artalar/reatom/compare/jsx-v3.11.2...jsx-v3.11.3) (2024-06-22)
 
 

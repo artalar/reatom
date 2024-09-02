@@ -123,4 +123,11 @@ test(`reatomSet. isDisjointFrom`, () => {
   )
 })
 
+test(`reatomSet. size`, () => {
+  const ctx = createCtx()
+
+  assert.equal(reatomSet(new Set()).size(ctx), 0)
+  assert.equal(reatomSet(new Set([1, 2, 3])).size(ctx), 3)
+})
+
 test.run()

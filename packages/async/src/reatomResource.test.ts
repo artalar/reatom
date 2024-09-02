@@ -141,7 +141,6 @@ test('withErrorAtom withRetry', async () => {
       throw new Error('test error')
     }
     await ctx.schedule(() => sleep())
-    console.log('ctx.controller.signal.aborted', ctx.controller.signal.aborted);
     return params
   }, 'someResource').pipe(
     withDataAtom(0),

@@ -37,10 +37,7 @@ test(`should respect initState, create and remove elements properly`, () => {
     list.remove(ctx, list.find(ctx, (n) => ctx.get(n) === 2)!)
     assert.ok(false, 'Error expected')
   } catch (error: any) {
-    assert.is(
-      error?.message,
-      'Reatom error: The passed data is not a linked list node.',
-    )
+    assert.is(error?.message, 'Reatom error: The passed data is not a linked list node.')
   }
 })
 
@@ -48,9 +45,7 @@ test(`should swap elements`, () => {
   const ctx = createTestCtx()
   const list = reatomLinkedList((ctx, n: number) => ({ n }))
   const { array } = list.reatomMap((ctx, { n }) => ({ n }))
-  const track = ctx.subscribeTrack(
-    atom((ctx) => ctx.spy(array).map(({ n }) => n)),
-  )
+  const track = ctx.subscribeTrack(atom((ctx) => ctx.spy(array).map(({ n }) => n)))
   const one = list.create(ctx, 1)
   const two = list.create(ctx, 2)
   const three = list.create(ctx, 3)
@@ -68,10 +63,10 @@ test(`should swap elements`, () => {
 
   assert.equal(track.lastInput(), [1, 2, 3, 4])
 
-  list.swap(ctx, one, two)
-  assert.equal(track.lastInput(), [2, 1, 3, 4])
+  list.swap(ctx, four, two)
+  assert.equal(track.lastInput(), [1, 4, 3, 2])
 
-  list.swap(ctx, one, two)
+  list.swap(ctx, two, four)
   assert.equal(track.lastInput(), [1, 2, 3, 4])
 
   list.swap(ctx, three, four)
@@ -165,6 +160,23 @@ test('should correctly handle batching and cause tracking', () => {
     list.create(ctx)
     list.create(ctx)
   })
+})
+
+test('should remove a single node', () => {
+  const ctx = createTestCtx()
+  const list = reatomLinkedList((ctx, n: number) => ({ n }))
+
+  const node = list.create(ctx, 1)
+  assert.equal(ctx.get(list.array), [{ n: 1 }])
+  assert.is(ctx.get(list).size, 1)
+
+  list.remove(ctx, node)
+  assert.equal(ctx.get(list.array), [])
+  assert.is(ctx.get(list).size, 0)
+
+  list.remove(ctx, node)
+  assert.equal(ctx.get(list.array), [])
+  assert.is(ctx.get(list).size, 0)
 })
 
 test.run()

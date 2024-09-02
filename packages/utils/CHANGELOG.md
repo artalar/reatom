@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.0](https://github.com/artalar/reatom/compare/utils-v3.9.2...utils-v3.10.0) (2024-08-19)
+
+
+### Features
+
+* **utils:** add setTimeout ([b979284](https://github.com/artalar/reatom/commit/b9792842c45409da53448272d593a327ab306b0c))
+
 ## [3.9.2](https://github.com/artalar/reatom/compare/utils-v3.9.1...utils-v3.9.2) (2024-06-22)
 
 
