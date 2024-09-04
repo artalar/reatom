@@ -264,10 +264,7 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
 }
 
 export const concurrentControllers = new WeakMap<Fn, Atom<null | AbortController>>()
-export const concurrent: {
-  <T extends Fn<[CtxSpy, ...any[]]>>(fn: T): T
-  <T extends Fn<[Ctx, ...any[]]>>(fn: T): T
-} = (fn: Fn<[Ctx, ...any[]]>) => {
+export const concurrent = <T extends (ctx: CtxSpy, ...a: any[]) => any>(fn: T): T => {
   const abortControllerAtom = atom<null | AbortController>(null, `${__count('_concurrent')}.abortControllerAtom`)
 
   const result = Object.assign(
@@ -287,7 +284,7 @@ export const concurrent: {
       ctx = { ...ctx, cause: { ...ctx.cause } }
       abortCauseContext.set(ctx.cause, controller)
 
-      var res = fn(withAbortableSchedule(ctx), ...a)
+      var res = fn(withAbortableSchedule(ctx) as CtxSpy, ...a)
       if (res instanceof Promise) {
         res = res.finally(() => {
           unabort?.()
@@ -335,7 +332,7 @@ export const reaction = <Params extends any[], Payload>(
   name = __count('reaction'),
 ): Reaction<Params, Payload> =>
   action((ctx, ...params: Params) => {
-    const reducer = concurrent((ctx) => cb(ctx, ...params))
+    const reducer = concurrent((ctx: CtxSpy) => cb(ctx, ...params))
     const reactionAtom = atom(reducer, __count(name))
     const abort = (reason: any) => {
       const controller = concurrentControllers.get(reducer)
