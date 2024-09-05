@@ -3,7 +3,7 @@ import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
 import { atom } from '@reatom/core'
 import { noop, sleep } from '@reatom/utils'
-import { isConnected, onConnect } from '@reatom/hooks'
+import { isConnected, onConnect, onDisconnect } from '@reatom/hooks'
 import { withCache, withDataAtom, withErrorAtom, withRetry } from '.'
 import { reatomResource } from './reatomResource'
 
@@ -34,7 +34,6 @@ test('base', async () => {
   await sleep()
   assert.is(track.lastInput(), 3)
   assert.is(track.calls.length, 2)
-  ;`👍` //?
 })
 
 test('withCache', async () => {
@@ -78,7 +77,6 @@ test('withCache', async () => {
   assert.is(track.lastInput(), 3)
   assert.is(track.calls.length, 2)
   assert.is(sleepTrack.calls.length, 4)
-  ;`👍` //?
 })
 
 test('controller', async () => {
@@ -111,7 +109,6 @@ test('controller', async () => {
   await sleep()
   assert.is(controllerTrack.calls.length, 3)
   assert.not.ok(collision)
-  ;`👍` //?
 })
 
 test('withDataAtom', async () => {
@@ -128,7 +125,6 @@ test('withDataAtom', async () => {
   assert.ok(isConnected(ctx, paramsAtom))
   un()
   assert.not.ok(isConnected(ctx, paramsAtom))
-  ;`👍` //?
 })
 
 test('withErrorAtom withRetry', async () => {
@@ -165,7 +161,6 @@ test('withErrorAtom withRetry', async () => {
   assert.is(ctx.get(someResource.dataAtom), 123)
   assert.is(ctx.get(someResource.errorAtom), undefined)
   assert.is(ctx.get(someResource.pendingAtom), 0)
-  ;`👍` //?
 })
 
 test('abort should not stale', async () => {
@@ -182,7 +177,6 @@ test('abort should not stale', async () => {
 
   await sleep()
   assert.is(ctx.get(someResource.dataAtom), 123)
-  ;`👍` //?
 })
 
 test('direct retry', async () => {
@@ -203,7 +197,6 @@ test('direct retry', async () => {
   assert.is(calls, 2)
   ctx.get(someResource.promiseAtom)
   assert.is(calls, 2)
-  ;`👍` //?
 })
 
 test('withCache stale abort', async () => {
@@ -217,7 +210,6 @@ test('withCache stale abort', async () => {
   ctx.subscribe(someResource.dataAtom, noop)
   await sleep()
   assert.is(ctx.get(someResource.dataAtom), 1)
-  ;`👍` //?
 })
 
 test('do not rerun without deps on read', async () => {
@@ -234,7 +226,6 @@ test('do not rerun without deps on read', async () => {
 
   someResource(ctx)
   assert.is(i, 2)
-  ;`👍` //?
 })
 
 test('sync retry in onConnect', async () => {
@@ -256,7 +247,6 @@ test('sync retry in onConnect', async () => {
   await sleep()
   track.unsubscribe()
   assert.ok(ctx.get(getEventsSoon.dataAtom) > 1)
-  ;`👍` //?
 })
 
 test('do not drop the cache of an error', async () => {
@@ -280,7 +270,30 @@ test('do not drop the cache of an error', async () => {
   shouldThrowAtom(ctx, false)
   ctx.get(someResource.promiseAtom)
   assert.is(calls, 2)
-  ;`👍` //?
+})
+
+test('reset', async () => {
+  let i = 0
+  const someResource = reatomResource(async (ctx) => {
+    ++i
+    await ctx.schedule(() => sleep())
+  }, 'someResource')
+  onDisconnect(someResource, someResource.reset)
+
+  assert.is(typeof someResource.reset, 'function')
+
+  const ctx = createTestCtx()
+
+  const track = ctx.subscribeTrack(someResource.pendingAtom)
+  assert.is(i, 1)
+  await sleep()
+  ctx.get(someResource.promiseAtom)
+  assert.is(i, 1)
+
+  track.unsubscribe()
+  assert.is(i, 1)
+  ctx.get(someResource.promiseAtom)
+  assert.is(i, 2)
 })
 
 test.run()

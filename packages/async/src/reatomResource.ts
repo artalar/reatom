@@ -1,21 +1,5 @@
-import {
-  Atom,
-  AtomCache,
-  Ctx,
-  Fn,
-  __count,
-  atom,
-  throwReatomError,
-  Unsubscribe,
-  AtomProto,
-} from '@reatom/core'
-import {
-  CauseContext,
-  __thenReatomed,
-  abortCauseContext,
-  onCtxAbort,
-  withAbortableSchedule,
-} from '@reatom/effects'
+import { Atom, AtomCache, Ctx, Fn, __count, atom, throwReatomError, Unsubscribe, AtomProto, action } from '@reatom/core'
+import { CauseContext, __thenReatomed, abortCauseContext, onCtxAbort, withAbortableSchedule } from '@reatom/effects'
 import { merge, noop, toAbortError } from '@reatom/utils'
 
 import { reatomAsync, AsyncAction, ControlledPromise, AsyncCtx } from '.'
@@ -25,6 +9,7 @@ import { CacheAtom } from './withCache'
 export interface ResourceAtom<Resp = any> extends AsyncAction<[], Resp> {
   promiseAtom: Atom<ControlledPromise<Resp>>
   init(ctx: Ctx): Unsubscribe
+  reset(ctx: Ctx): void
 }
 
 /**
@@ -70,9 +55,7 @@ export const reatomResource = <T>(
     if (unabort) controller.signal.addEventListener('abort', unabort)
     abortCauseContext.set(ctx.cause, (ctx.controller = controller))
 
-    const computedPromise = asyncComputed(
-      withAbortableSchedule(ctx) as AsyncCtxSpy,
-    )
+    const computedPromise = asyncComputed(withAbortableSchedule(ctx) as AsyncCtxSpy)
     computedPromise.catch(noop)
     promises.set(ctx.cause, computedPromise)
 
@@ -97,10 +80,7 @@ export const reatomResource = <T>(
     const fulfillCalls = ctx.get(theAsync.onFulfill)
     if (cached) controller.abort(toAbortError('cached'))
     if (cached && fulfillCallsBefore !== fulfillCalls) {
-      promise = Object.assign(
-        Promise.resolve(fulfillCalls[fulfillCalls.length - 1]!.payload),
-        { controller },
-      )
+      promise = Object.assign(Promise.resolve(fulfillCalls[fulfillCalls.length - 1]!.payload), { controller })
     }
 
     __thenReatomed(
@@ -119,25 +99,25 @@ export const reatomResource = <T>(
   // So we should activate the promise as long as there are any subscribers to the promise meta.
   onConnect(theAsync, (ctx) => ctx.subscribe(promiseAtom, noop))
   onConnect(promiseAtom, (ctx) => /* disconnect */ () => {
-    const state = ctx.get(promiseAtom)
-    state.controller.abort(ctx.controller.signal.reason)
-    if (!resolved.has(state)) {
-      dropCache(ctx, promiseAtom.__reatom)
-    }
+    ctx.get((read) => {
+      const state = read(promiseAtom.__reatom)?.state
+
+      state?.controller.abort(ctx.controller.signal.reason)
+      if (!resolved.has(state)) {
+        reset(ctx, promiseAtom.__reatom, ctx.controller.signal.reason)
+      }
+    })
   })
 
   const theReaction = Object.assign(
     (ctx: Ctx) =>
       ctx.get((read, actualize) => {
-        dropCache(ctx, promiseAtom.__reatom)
+        reset(ctx, promiseAtom.__reatom, toAbortError('force'))
         // force update (needed if the atom is connected)
         actualize!(ctx, promiseAtom.__reatom, noop)
         const state = ctx.get(theAsync)
         const payload = state[state.length - 1]?.payload
-        throwReatomError(
-          !payload,
-          'unexpectedly failed invalidation. Please, report the issue',
-        )
+        throwReatomError(!payload, 'unexpectedly failed invalidation. Please, report the issue')
         return payload!
       }),
     theAsync,
@@ -146,6 +126,9 @@ export const reatomResource = <T>(
       init(ctx: Ctx) {
         return ctx.subscribe(promiseAtom, noop)
       },
+      reset: action((ctx: Ctx) => {
+        reset(ctx, promiseAtom.__reatom, toAbortError('reset'))
+      }, `${name}.reset`),
     },
   ) as ResourceAtom<T>
 
@@ -159,12 +142,21 @@ export const reatomResource = <T>(
   return theReaction
 }
 
-const dropCache = (ctx: Ctx, proto: AtomProto) =>
+const reset = (ctx: Ctx, proto: AtomProto, reason: any) =>
   ctx.get((read, actualize) => {
-    actualize!(ctx, proto, (patchCtx: Ctx, patch: AtomCache) => {
-      patch.pubs = []
-      patch.state = undefined
-    })
+    if (read(proto)) {
+      const { computer } = proto
+      proto.computer = null
+      try {
+        actualize!(ctx, proto, (patchCtx: Ctx, patch: AtomCache) => {
+          patch.state?.controller.abort(reason)
+          patch.pubs = []
+          patch.state = undefined
+        })
+      } finally {
+        proto.computer = computer
+      }
+    }
   })
 
 /**
