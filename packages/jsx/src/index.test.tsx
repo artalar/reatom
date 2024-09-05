@@ -498,9 +498,11 @@ test('ref mount and unmount callbacks order', async () => {
   const order: number[] = []
 
   const createRef = (index: number) => {
-    order.push(index)
     return () => {
       order.push(index)
+      return () => {
+        order.push(index)
+      }
     }
   }
 
@@ -517,7 +519,33 @@ test('ref mount and unmount callbacks order', async () => {
   parent.remove()
   await sleep()
 
-  assert.equal(order, [0, 1, 2, 2, 1, 0])
+  assert.equal(order, [2, 1, 0, 2, 1, 0])
+})
+
+test('style object update', () => {
+  const { ctx, h, hf, parent, mount, window } = setup()
+
+  const styleAtom = atom({
+    top: '0',
+    right: undefined,
+    bottom: null as unknown as undefined,
+    left: '0',
+  } as JSX.CSSProperties)
+
+  const component = (
+    <div style={styleAtom}></div>
+  )
+
+  mount(parent, component)
+
+  assert.is(component.getAttribute('style'), 'top:0;left:0')
+
+  styleAtom(ctx, {
+    top: undefined,
+    bottom: '0',
+  })
+
+  assert.is(component.getAttribute('style'), 'left:0;bottom:0')
 })
 
 test.run()
