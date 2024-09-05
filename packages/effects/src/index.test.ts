@@ -270,4 +270,36 @@ test('reaction parameters usage', async () => {
   assert.equal(track.inputs(), ['1a', '1c', '2c', '2d'])
 })
 
+test('throttle example', async () => {
+  const ctx = createTestCtx()
+  const n = atom(0)
+  const update = action(
+    concurrent(async (ctx, payload: number) => {
+      n(ctx, payload)
+      await ctx.schedule(() => sleep())
+    }, 'first-in-win'),
+  )
+
+  const track = ctx.subscribeTrack(n)
+  track.calls.length = 0
+
+  update(ctx, 1)
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), 1)
+  update(ctx, 2)
+  update(ctx, 3)
+  await sleep()
+  assert.is(track.calls.length, 1)
+  assert.is(track.lastInput(), 1)
+
+  update(ctx, 4)
+  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput(), 4)
+  update(ctx, 5)
+  update(ctx, 6)
+  await sleep()
+  assert.is(track.calls.length, 2)
+  assert.is(track.lastInput(), 4)
+})
+
 test.run()
