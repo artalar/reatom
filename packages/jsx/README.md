@@ -221,7 +221,7 @@ const anSvgElement = (
 )
 ```
 
-When there is a need to work with SVG as a string, you can use one of the following options.
+If you need to use SVG as a string, you can choose from these options:
 
 Option 1:
 
