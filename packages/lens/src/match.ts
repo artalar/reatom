@@ -26,12 +26,12 @@ export type PartialDeep<T> = T extends BuiltIns
 
 interface Match<Expression = any, State = never, Default = undefined>
   extends Atom<State | Default> {
-  is<T>(
+  is<T, const MatchedExpression extends Expression = Expression>(
     clause:
-      | Expression
-      | Atom<Expression>
+      | MatchedExpression
+      | Atom<MatchedExpression>
       | ((ctx: Ctx, expression: Expression) => boolean),
-    statement: T | Atom<T> | ((ctx: CtxSpy, expression: Expression) => T),
+    statement: T | Atom<T> | ((ctx: CtxSpy, expression: MatchedExpression) => T),
   ): Match<Expression, State | T, Default>
   with<T, Part extends PartialDeep<Expression>>(
     part: Part,
