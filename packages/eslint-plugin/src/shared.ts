@@ -40,10 +40,7 @@ export const createImportMap = (packagePrefix: string) => {
   }
 }
 
-export const ascend = <Type extends estree.Node['type']>(
-  node: estree.Node,
-  ...types: Array<Type>
-) => {
+export const ascend = <Type extends estree.Node['type']>(node: estree.Node, ...types: Array<Type>) => {
   while (node && !types.includes(node.type as any)) {
     node = (node as any).parent
   }
@@ -52,10 +49,7 @@ export const ascend = <Type extends estree.Node['type']>(
 }
 
 export const getFunctionNameDeclarations = (
-  fn:
-    | estree.FunctionExpression
-    | estree.ArrowFunctionExpression
-    | estree.FunctionDeclaration,
+  fn: estree.FunctionExpression | estree.ArrowFunctionExpression | estree.FunctionDeclaration,
   names: string[],
 ) => {
   const stack = [...fn.params] as estree.Node[]

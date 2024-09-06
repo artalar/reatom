@@ -61,23 +61,20 @@ import { reatomAsync } from '@reatom/async'
 
 const listAtom = atom([])
 const errorAtom = atom(null)
-export const fetchList = reatomAsync(
-  (ctx, page: number) => request(`/api/list?page=${page}`, ctx.controller),
-  {
-    name: 'fetchList',
-    onFulfill(ctx, result) {
-      listAtom(ctx, result)
-    },
-    onReject(ctx, error) {
-      errorAtom(ctx, error)
-    },
-    onEffect(ctx, params, promise) {
-      // clear outdated data on request start
-      listAtom(ctx, [])
-      errorAtom(ctx, null)
-    },
+export const fetchList = reatomAsync((ctx, page: number) => request(`/api/list?page=${page}`, ctx.controller), {
+  name: 'fetchList',
+  onFulfill(ctx, result) {
+    listAtom(ctx, result)
   },
-)
+  onReject(ctx, error) {
+    errorAtom(ctx, error)
+  },
+  onEffect(ctx, params, promise) {
+    // clear outdated data on request start
+    listAtom(ctx, [])
+    errorAtom(ctx, null)
+  },
+})
 ```
 
 ### Qualified usage
@@ -97,10 +94,7 @@ type Element = {
 export const listAtom = atom(new Array<Element>(), 'listAtom')
 export const errorAtom = atom<null | Error>(null, 'errorAtom')
 // if number of pending requests are equal or more than 1 - there is a loading state
-export const isLoadingAtom = atom(
-  (ctx) => ctx.spy(fetchList.pendingAtom) > 0,
-  'isLoadingAtom',
-)
+export const isLoadingAtom = atom((ctx) => ctx.spy(fetchList.pendingAtom) > 0, 'isLoadingAtom')
 // store abort controller of last request to prevent race conditions
 const abortControllerAtom = atom(new AbortController())
 const ABORT = 'ABORT'
@@ -121,14 +115,11 @@ fetchList.onReject.onCall((ctx, thing) => {
   }
 })
 
-export const updateElement = reatomAsync(
-  (ctx, id: string, slice: Partial<Element>) => {
-    const { signal } = ctx.controller
-    const data = JSON.stringify(slice)
-    return request(`/api/list/${id}`, { method: 'POST', data, signal })
-  },
-  'updateElement',
-)
+export const updateElement = reatomAsync((ctx, id: string, slice: Partial<Element>) => {
+  const { signal } = ctx.controller
+  const data = JSON.stringify(slice)
+  return request(`/api/list/${id}`, { method: 'POST', data, signal })
+}, 'updateElement')
 // refresh backend data on successful update
 updateElement.onFulfill.onCall((ctx) => fetchList(ctx, 1))
 ```
@@ -151,20 +142,16 @@ type Element = {
 }
 
 export const fetchList = reatomAsync(
-  (ctx, page: number) =>
-    request<Array<Element>>(`/api/list?page=${page}`, ctx.controller),
+  (ctx, page: number) => request<Array<Element>>(`/api/list?page=${page}`, ctx.controller),
   'fetchList',
   // add extra handlers with full type inference
 ).pipe(withDataAtom([]), withErrorAtom(), withAbort(), withStatusesAtom())
 
-export const updateElement = reatomAsync(
-  (ctx, id: string, slice: Partial<Element>) => {
-    const { signal } = ctx.controller
-    const data = JSON.stringify(slice)
-    return request(`/api/list/${id}`, { method: 'POST', data, signal })
-  },
-  'updateElement',
-)
+export const updateElement = reatomAsync((ctx, id: string, slice: Partial<Element>) => {
+  const { signal } = ctx.controller
+  const data = JSON.stringify(slice)
+  return request(`/api/list/${id}`, { method: 'POST', data, signal })
+}, 'updateElement')
 updateElement.onFulfill.onCall((ctx) => fetchList(ctx, 1))
 ```
 
@@ -187,19 +174,15 @@ type Feature = {
   /*...*/
 }
 
-export const fetchFeature = reatomAsync(
-  (ctx) => request<Feature>('/api/feature', ctx.controller),
-  'fetchFeature',
-).pipe(withDataAtom(null))
+export const fetchFeature = reatomAsync((ctx) => request<Feature>('/api/feature', ctx.controller), 'fetchFeature').pipe(
+  withDataAtom(null),
+)
 // use subscription to `fetchFeature.dataAtom` to get the actual data
 
 // mutate data manually in the feature form
-export const changeFeature = action(
-  (ctx, property: keyof Feature, value: any) => {
-    fetchUser.dataAtom(ctx, (user) => ({ ...user, [property]: value }))
-  },
-  'changeFeature',
-)
+export const changeFeature = action((ctx, property: keyof Feature, value: any) => {
+  fetchUser.dataAtom(ctx, (user) => ({ ...user, [property]: value }))
+}, 'changeFeature')
 
 // save new feature data to backend on form submit
 export const syncFeature = reatomAsync((ctx) => {
@@ -223,10 +206,7 @@ Here how you can fetch data declaratively and lazy only when needed. This is a s
 import { reatomAsync, withDataAtom } from '@reatom/async'
 import { onConnect } from '@reatom/hooks'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withDataAtom([]))
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(withDataAtom([]))
 onConnect(fetchList.dataAtom, fetchList)
 ```
 
@@ -249,10 +229,7 @@ import { reatomAsync, withDataAtom } from '@reatom/async'
 const PAGE_SIZE = 10
 
 export const fetchFeed = reatomAsync(async (ctx, page: number) => {
-  const data = await request(
-    `api/feed?page=${page}&limit?${page}`,
-    ctx.controller,
-  )
+  const data = await request(`api/feed?page=${page}&limit?${page}`, ctx.controller)
   return { data, page }
 }, 'fetchFeed').pipe(
   withDataAtom([], (ctx, { data, page }, state) => {
@@ -270,10 +247,7 @@ You could describe optimistic async logic easily with `onEffect` handler, which 
 ```ts
 import { reatomAsync, withDataAtom } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withDataAtom([]))
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(withDataAtom([]))
 
 export const updateList = reatomAsync(
   (ctx, newList) => {
@@ -306,10 +280,7 @@ export type Element = {
   // ...
 }
 
-export const fetchList = reatomAsync(
-  (ctx) => request<Array<Element>>('api/list', ctx.controller),
-  'fetchList',
-)
+export const fetchList = reatomAsync((ctx) => request<Array<Element>>('api/list', ctx.controller), 'fetchList')
 export const listAtom = reatomArray(new Array<Element>(), 'listAtom')
 fetchList.onFulfill.onCall(listAtom)
 ```
@@ -320,9 +291,7 @@ Here the interface of `onFulfill` update hook and `listAtom` update is the same 
 import { reatomMap } from '@reatom/primitives'
 // ....
 export const mapAtom = reatomMap(new Map<string, Element>(), 'mapAtom')
-fetchList.onFulfill.onCall((ctx, payload) =>
-  mapAtom(ctx, new Map(payload.map((el) => [el.id, el]))),
-)
+fetchList.onFulfill.onCall((ctx, payload) => mapAtom(ctx, new Map(payload.map((el) => [el.id, el]))))
 ```
 
 ## withErrorAtom
@@ -334,16 +303,10 @@ You could update the error atom manually as a usual atom: `fetchList.errorAtom(c
 ```ts
 import { reatomAsync, withErrorAtom } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
   withErrorAtom(
     // optional mapper
-    (ctx, error) =>
-      error instanceof Response
-        ? error.status
-        : error?.message || 'unknown error',
+    (ctx, error) => (error instanceof Response ? error.status : error?.message || 'unknown error'),
   ),
 )
 ```
@@ -355,10 +318,7 @@ Adds property `statusesAtom` with additional statuses, which updates by the effe
 ```ts
 import { reatomAsync, withStatusesAtom } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withStatusesAtom())
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(withStatusesAtom())
 
 // ...
 
@@ -388,9 +348,7 @@ onDisconnect(fetchList.dataAtom, (ctx) => {
 You could import special types of statuses of each effect state and use it for typesafe conditional logic.
 
 ```ts
-export type AsyncStatusesPending =
-  | AsyncStatusesFirstPending
-  | AsyncStatusesAnotherPending
+export type AsyncStatusesPending = AsyncStatusesFirstPending | AsyncStatusesAnotherPending
 
 export type AsyncStatuses =
   | AsyncStatusesNeverPending
@@ -425,10 +383,10 @@ You could rule the cache behavior by set of optional parameters.
 ```ts
 import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withDataAtom(), withCache())
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withDataAtom(),
+  withCache(),
+)
 
 // fetch data
 await fetchList(ctx, { query: 'foo', page: 1 }) // call the effect
@@ -450,10 +408,10 @@ You can invalidate the cache by `reset` action on `cacheAtom`. It will clear the
 ```ts
 import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withCache(), withDataAtom())
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withCache(),
+  withDataAtom(),
+)
 
 export const updateList = reatomAction(async () => {
   /*  */
@@ -466,19 +424,17 @@ You can use `withRetry` to retry the effect after cache invalidation or use buil
 ```ts
 import { reatomAsync, withCache, withDataAtom } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withCache(), withDataAtom())
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withCache(),
+  withDataAtom(),
+)
 
 export const updateList = reatomAction(async () => {
   /*  */
 }, 'updateList')
 updateList.onFulfill.onCall(fetchList.cacheAtom.invalidate)
 
-export const listLoadingAtom = atom(
-  (ctx) => ctx.spy(fetchList.pendingAtom) + ctx.spy(updateList.pendingAtom) > 0,
-)
+export const listLoadingAtom = atom((ctx) => ctx.spy(fetchList.pendingAtom) + ctx.spy(updateList.pendingAtom) > 0)
 ```
 
 Use `listLoadingAtom` to show a loader in a UI during the whole process of data updating and invalidation.
@@ -519,10 +475,9 @@ You could persist the cache for a chosen time and sync it across a tabs by `with
 import { reatomAsync, withCache } from '@reatom/async'
 import { withLocalStorage } from '@reatom/persist-web-storage'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withCache({ withPersist: withLocalStorage }))
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withCache({ withPersist: withLocalStorage }),
+)
 ```
 
 `withCache` applies `withPersist` to `cacheAtom` with options for optimal serialization. You could redefine the options by an inline decorator function. It is recommended to set the key explicitly, by default the async action name used.
@@ -531,13 +486,9 @@ export const fetchList = reatomAsync(
 import { reatomAsync, withCache } from '@reatom/async'
 import { withLocalStorage } from '@reatom/persist-web-storage'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
   withCache({
-    withPersist: (options) =>
-      withLocalStorage({ ...options, key: 'LIST_CACHE' }),
+    withPersist: (options) => withLocalStorage({ ...options, key: 'LIST_CACHE' }),
   }),
 )
 ```
@@ -548,10 +499,10 @@ If you want to use persisted cache as an init state of `dataAtom` - just put `wi
 import { reatomAsync, withDataAtom, withCache } from '@reatom/async'
 import { withLocalStorage } from '@reatom/persist-web-storage'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withDataAtom([]), withCache({ withPersist }))
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withDataAtom([]),
+  withCache({ withPersist }),
+)
 ```
 
 ## withRetry
@@ -561,10 +512,11 @@ Adds `retry` action and `paramsAtom` to store last params of the effect call.
 ```ts
 import { reatomAsync, withCache, withDataAtom, withRetry } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withCache(), withDataAtom(), withRetry())
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withCache(),
+  withDataAtom(),
+  withRetry(),
+)
 
 export const updateList = reatomAction(async () => {
   /*  */
@@ -578,10 +530,9 @@ If you will try to call `retry` before first effect call, it will throw an error
 ```ts
 import { reatomAsync, withRetry } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx, page) => request(`api/list?page=${page}`, ctx.controller),
-  'fetchList',
-).pipe(withRetry({ fallbackParams: [1] }))
+export const fetchList = reatomAsync((ctx, page) => request(`api/list?page=${page}`, ctx.controller), 'fetchList').pipe(
+  withRetry({ fallbackParams: [1] }),
+)
 
 // will call fetch(`api/list?page=1`)
 fetchList.retry(ctx)
@@ -615,17 +566,13 @@ Progressive retry: `100 * Math.min(200, retries ** 3)`. Will retry after 100ms, 
 ```ts
 import { atom, reatomAsync, withRetry } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
   withRetry({
     onReject: (ctx, error, retries) => 100 * Math.min(200, retries ** 3),
   }),
   withAssign((target, name) => ({
     loadingAtom: atom(
-      (ctx) =>
-        ctx.spy(target.pendingAtom) > 0 || ctx.spy(target.retriesAtom) > 0,
+      (ctx) => ctx.spy(target.pendingAtom) > 0 || ctx.spy(target.retriesAtom) > 0,
       `${name}.loadingAtom`,
     ),
   })),
@@ -635,18 +582,9 @@ export const fetchList = reatomAsync(
 Note that `retriesAtom` will drop to `0` when any promise resolves successfully or when you return `undefined` or a negative number. So, it is good practice to avoid calling multiple async actions in parallel. If you are using `withRetry`, it is recommended to always use it with [withAbort](#withabort) (with the default 'last-in-win' strategy).
 
 ```ts
-import {
-  atom,
-  reatomAsync,
-  withAbort,
-  withErrorAtom,
-  withRetry,
-} from '@reatom/async'
+import { atom, reatomAsync, withAbort, withErrorAtom, withRetry } from '@reatom/async'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
   withAbort(),
   withRetry({
     onReject: (ctx, error, retries) => {
@@ -660,8 +598,7 @@ export const fetchList = reatomAsync(
   withErrorAtom(),
 )
 export const isFetchListLoading = atom(
-  (ctx) =>
-    ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
+  (ctx) => ctx.spy(fetchList.pendingAtom) > 0 || ctx.spy(fetchList.retriesAtom) > 0,
   'isFetchListLoading',
 )
 ```
@@ -671,13 +608,7 @@ export const isFetchListLoading = atom(
 Do you need to implement a **pooling** pattern to stay your data fresh? Lets use `onConnect` from [@reatom/hooks](/package/hooks) to control the neediness of this.
 
 ```ts
-import {
-  reatomAsync,
-  withDataAtom,
-  withRetry,
-  onConnect,
-  sleep,
-} from '@reatom/framework'
+import { reatomAsync, withDataAtom, withRetry, onConnect, sleep } from '@reatom/framework'
 
 export const fetchList = reatomAsync(
   (ctx, search: string) => request(`/api/list?q=${search}`, ctx.controller),
@@ -715,10 +646,11 @@ To be clear, you don't need to use `retry`, if you have no need to manage parame
 ```ts
 import { reatomAsync, withAbort, withDataAtom, sleep } from '@reatom/framework'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('/api/list', ctx.controller),
-  'fetchList',
-).pipe(withAbort(), withDataAtom([]), withRetry())
+export const fetchList = reatomAsync((ctx) => request('/api/list', ctx.controller), 'fetchList').pipe(
+  withAbort(),
+  withDataAtom([]),
+  withRetry(),
+)
 onConnect(fetchList.dataAtom, async (ctx) => {
   while (true) {
     await fetchList(ctx).catch(() => {})
@@ -788,12 +720,8 @@ onConnect(fetchList.dataAtom, (ctx) => {
   return () => fetchList.abort(ctx)
 })
 // trigger
-pageAtom.onChange((ctx, page) =>
-  fetchSuggestion(ctx, page, ctx.get(searchAtom)),
-)
-searchAtom.onChange((ctx, search) =>
-  fetchSuggestion(ctx, ctx.get(pageAtom), search),
-)
+pageAtom.onChange((ctx, page) => fetchSuggestion(ctx, page, ctx.get(searchAtom)))
+searchAtom.onChange((ctx, search) => fetchSuggestion(ctx, ctx.get(pageAtom), search))
 ```
 
 There are a lot of boilerplates. `reatomResource` is a fabric method that encapsulates all this logic and allows you to use `ctx.spy` just like in the regular `atom`. It is much simpler, more intuitive, and works automatically for both caching and cancelling previous requests.
@@ -804,9 +732,7 @@ import { reatomResource, withDataAtom } from '@reatom/async'
 const listResource = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   const search = ctx.spy(searchAtom)
-  return await ctx.schedule(() =>
-    request(`/api/list?page=${page}&q=${search}`, ctx.controller),
-  )
+  return await ctx.schedule(() => request(`/api/list?page=${page}&q=${search}`, ctx.controller))
 }, 'listResource').pipe(withDataAtom([]))
 ```
 
@@ -823,9 +749,7 @@ import { reatomResource } from '@reatom/async'
 
 const aResource = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
-  return await ctx.schedule(() =>
-    request(`/api/a?page=${page}`, ctx.controller),
-  )
+  return await ctx.schedule(() => request(`/api/a?page=${page}`, ctx.controller))
 }, 'aResource')
 const bResource = reatomResource(async (ctx) => {
   const a = await ctx.spy(aResource.promiseAtom)
@@ -892,18 +816,14 @@ describe('optimistic update', () => {
   const getData = reatomAsync.from(api.getData).pipe(
     // add `dataAtom` and map the effect payload into it
     // try to prevent new reference stream if nothing really changed
-    withDataAtom([], (ctx, payload, state) =>
-      isDeepEqual(payload, state) ? state : payload,
-    ),
+    withDataAtom([], (ctx, payload, state) => (isDeepEqual(payload, state) ? state : payload)),
   )
   const putData = reatomAsync.from(api.putData)
   putData.onCall((ctx, promise, params) => {
     const [id, value] = params
     const oldList = ctx.get(getData.dataAtom)
     // optimistic update
-    const newList = getData.dataAtom(ctx, (state) =>
-      state.map((item) => (item.id === id ? { ...item, value } : item)),
-    )
+    const newList = getData.dataAtom(ctx, (state) => state.map((item) => (item.id === id ? { ...item, value } : item)))
     // rollback on error
     promise.catch((error) => {
       if (ctx.get(getData.dataAtom) === newList) {
@@ -1008,9 +928,7 @@ describe('concurrent pooling', () => {
 
     assert.is(ctx.get(progressAtom), 100)
 
-    const expectedProgress = [
-      0, 10, /* start again */ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
-    ]
+    const expectedProgress = [0, 10, /* start again */ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     // assert.equal(track.inputs(), expectedProgress)
   })

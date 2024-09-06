@@ -9,8 +9,7 @@ const tester = new RuleTester({
 })
 
 const ImportReatomAsync = 'import {reatomAsync} from "@reatom/framework"'
-const ImportReatomAsyncAlias =
-  'import {reatomAsync as createAsync} from "@reatom/framework"'
+const ImportReatomAsyncAlias = 'import {reatomAsync as createAsync} from "@reatom/framework"'
 
 tester.run('async-rule', asyncRule, {
   valid: [

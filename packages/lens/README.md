@@ -11,9 +11,7 @@ import { mapState } from '@reatom/lens'
 
 // this is a typical code which have a problem with extra updates
 // in case when an element of the list changes not `myProp`
-export const filteredListAtom = atom((ctx) =>
-  ctx.spy(listAtom).map((obj) => obj.myProp),
-)
+export const filteredListAtom = atom((ctx) => ctx.spy(listAtom).map((obj) => obj.myProp))
 // `mapState` could help to solve this problem, as it pass previous state as a second argument
 export const bAtom = listAtom.pipe(
   mapState((ctx, list, prevState) => {
@@ -35,9 +33,7 @@ import { isShallowEqual } from '@reatom/utils'
 
 export const listMemoAtom = filteredListAtom.pipe(filter())
 // equals to
-export const listMemoAtom = filteredListAtom.pipe(
-  filter((ctx, next, prev) => !isShallowEqual(next, prev)),
-)
+export const listMemoAtom = filteredListAtom.pipe(filter((ctx, next, prev) => !isShallowEqual(next, prev)))
 ```
 
 This operator could filter actions too!
@@ -45,9 +41,7 @@ This operator could filter actions too!
 ```ts
 import { filter } from '@reatom/lens'
 
-export const linkClicked = onDocumentClick.pipe(
-  filter((ctx, event) => event.target.tagName === 'A'),
-)
+export const linkClicked = onDocumentClick.pipe(filter((ctx, event) => event.target.tagName === 'A'))
 ```
 
 ## `mapPayload`
@@ -57,9 +51,7 @@ Map payload of each action call. Resulted action is not callable.
 ```ts
 import { mapPayload } from '@reatom/lens'
 
-export const changeFullname = changeName.pipe(
-  mapPayload((ctx, { firstName, lastName }) => `${firstName} ${lastName}`),
-)
+export const changeFullname = changeName.pipe(mapPayload((ctx, { firstName, lastName }) => `${firstName} ${lastName}`))
 ```
 
 You could pass initial state by first argument to create an atom.
@@ -69,9 +61,7 @@ import { action } from '@reatom/core'
 import { mapPayload } from '@reatom/lens'
 
 export const onInput = action('onInput')
-export const inputAtom = onInput.pipe(
-  mapPayload('', (ctx, event) => event.currentTarget.value, 'inputAtom'),
-)
+export const inputAtom = onInput.pipe(mapPayload('', (ctx, event) => event.currentTarget.value, 'inputAtom'))
 ```
 
 ## `mapPayloadAwaited`
@@ -83,9 +73,7 @@ import { mapPayloadAwaited } from '@reatom/lens'
 
 export const newData = fetchData.pipe(mapPayloadAwaited())
 // OR pick needed value
-export const newData = fetchData.pipe(
-  mapPayloadAwaited((ctx, response) => response.data),
-)
+export const newData = fetchData.pipe(mapPayloadAwaited((ctx, response) => response.data))
 ```
 
 You could pass initial state by first argument to create an atom.
@@ -109,9 +97,7 @@ import { atom } from '@reatom/core'
 import { mapInput } from '@reatom/lens'
 
 export const inputAtom = atom('', 'inputAtom')
-export const changeInput = inputAtom.pipe(
-  mapInput((ctx, event) => event.currentTarget.value, 'changeInput'),
-)
+export const changeInput = inputAtom.pipe(mapInput((ctx, event) => event.currentTarget.value, 'changeInput'))
 ```
 
 ## `debounce`
@@ -218,8 +204,7 @@ const getField = (id: number, name: string, value: string): Field => {
 export const listAtom = atom<Array<Field>>([], 'listAtom').pipe(
   withLocalStorage({
     toSnapshot: (state) => parseAtoms(state),
-    fromSnapshot: (snapshot: any) =>
-      getField(snapshot.id, snapshot.name, snapshot.value),
+    fromSnapshot: (snapshot: any) => getField(snapshot.id, snapshot.name, snapshot.value),
   }),
 )
 ```
@@ -339,11 +324,7 @@ export const ListSum = reatomComponent(({ ctx }) => {
   // correct optimal way, the component will rerender only on `length` change
   const length = select(ctx, (selectCtx) => selectCtx.spy(listAtom).length)
   // you could call `select` many times
-  const sum = select(ctx, (selectCtx) =>
-    selectCtx
-      .spy(listAtom)
-      .reduce((acc, el) => acc + selectCtx.spy(el.value), 0),
-  )
+  const sum = select(ctx, (selectCtx) => selectCtx.spy(listAtom).reduce((acc, el) => acc + selectCtx.spy(el.value), 0))
 
   return (
     <div>
@@ -358,9 +339,5 @@ Under the hood `select` creates additional atom, so you can perform all regular 
 Note for a rare cases. A created atom is momorized for the each select by the passed function sources from "toString()" method, so every computed callback in different selects of the same atom should contains differen code. This will throw an error, as the select called multiple times in the same atom with the same string represantation of the passed callback:
 
 ```ts
-const sumAtom = atom((ctx) =>
-  ctx
-    .spy(listAtom)
-    .reduce((acc, el) => acc + select(ctx, (ctx) => ctx.spy(el).value), 0),
-)
+const sumAtom = atom((ctx) => ctx.spy(listAtom).reduce((acc, el) => acc + select(ctx, (ctx) => ctx.spy(el).value), 0))
 ```

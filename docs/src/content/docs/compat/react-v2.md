@@ -62,10 +62,7 @@ const [data] = useAtom(dataAtom)
 #### Depended value by selector
 
 ```ts
-const [propAtom] = useMemo(
-  () => createAtom({ dataAtom }, ({ get }) => get('dataAtom')[props.id]),
-  [props.id],
-)
+const [propAtom] = useMemo(() => createAtom({ dataAtom }, ({ get }) => get('dataAtom')[props.id]), [props.id])
 const [propValue] = useAtom(propAtom)
 ```
 
@@ -82,10 +79,7 @@ const handleUpdateData = useAction(dataAtom.update)
 #### Prepare payload for dispatch
 
 ```ts
-const handleUpdateData = useAction(
-  (value) => dataAtom.update({ id: props.id, value }),
-  [props.id],
-)
+const handleUpdateData = useAction((value) => dataAtom.update({ id: props.id, value }), [props.id])
 ```
 
 #### Conditional dispatch

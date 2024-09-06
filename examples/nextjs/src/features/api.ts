@@ -1,13 +1,7 @@
 import { Ctx } from '@reatom/framework'
 
-export async function fetchIssuesApi(
-  query: string,
-  { signal }: { signal: AbortSignal },
-) {
-  const response = await fetch(
-    `https://api.github.com/search/issues?q=${query}&page=${1}&per_page=10`,
-    { signal },
-  )
+export async function fetchIssuesApi(query: string, { signal }: { signal: AbortSignal }) {
+  const response = await fetch(`https://api.github.com/search/issues?q=${query}&page=${1}&per_page=10`, { signal })
 
   if (!response.ok) throw new Error(await response.text())
 
@@ -20,11 +14,6 @@ export async function fetchIssuesApi(
   }))
 }
 
-export const isRateLimitError = (thing: unknown) =>
-  thing instanceof Error && thing.message.includes('rate limit')
+export const isRateLimitError = (thing: unknown) => thing instanceof Error && thing.message.includes('rate limit')
 export const getErrorMessage = (ctx: Ctx, thing: unknown) =>
-  isRateLimitError(thing)
-    ? undefined
-    : thing instanceof Error
-      ? thing.message
-      : String(thing)
+  isRateLimitError(thing) ? undefined : thing instanceof Error ? thing.message : String(thing)

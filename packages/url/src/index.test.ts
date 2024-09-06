@@ -2,12 +2,7 @@ import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
 
-import {
-  searchParamsAtom,
-  setupUrlAtomSettings,
-  updateFromSource,
-  urlAtom,
-} from './'
+import { searchParamsAtom, setupUrlAtomSettings, updateFromSource, urlAtom } from './'
 
 test('direct updateFromSource call should be ignored', async () => {
   const ctx = createTestCtx()

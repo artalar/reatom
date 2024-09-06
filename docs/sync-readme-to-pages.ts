@@ -12,12 +12,7 @@ const packagesPath = path.join(root, 'packages')
 const packages = await fs.readdir(path.join(process.cwd(), '..', 'packages'))
 
 const getStoryTests = async (packageName: string) => {
-  const storyTestsPath = path.join(
-    packagesPath,
-    packageName,
-    'src',
-    'index.story.test.ts',
-  )
+  const storyTestsPath = path.join(packagesPath, packageName, 'src', 'index.story.test.ts')
   const isExist = await fs.access(storyTestsPath).then(
     () => true,
     () => false,
@@ -46,9 +41,7 @@ for (const packageName of packages) {
     'src',
     'content',
     'docs',
-    packageName.endsWith('-v1') || packageName.endsWith('-v2')
-      ? 'compat'
-      : 'package',
+    packageName.endsWith('-v1') || packageName.endsWith('-v2') ? 'compat' : 'package',
     `${packageName}.md`,
   )
   let content = await fs.readFile(readmePath, 'utf8')
@@ -59,10 +52,7 @@ for (const packageName of packages) {
   if (packageJSON.name === '@reatom/form-web') continue
 
   if (!content.trim()) {
-    content = await fs.readFile(
-      path.join(packagesPath, packageName, 'src', 'index.test.ts'),
-      'utf8',
-    )
+    content = await fs.readFile(path.join(packagesPath, packageName, 'src', 'index.test.ts'), 'utf8')
 
     content =
       `
@@ -72,10 +62,7 @@ There is no docs yet, but you could check tests instead:
       content +
       '\n```\n'
   } else {
-    content = content.replaceAll(
-      '\n[Main docs starts here](https://www.reatom.dev).',
-      '',
-    )
+    content = content.replaceAll('\n[Main docs starts here](https://www.reatom.dev).', '')
     content = content.replaceAll('https://www.reatom.dev', '')
     content = content.replaceAll('../../docs/public', '')
   }
@@ -109,14 +96,7 @@ ${GEN_NOTE}
 }
 
 const rootReadmePath = path.join(root, 'README.md')
-const rootPagePath = path.join(
-  root,
-  'docs',
-  'src',
-  'content',
-  'docs',
-  'index.md',
-)
+const rootPagePath = path.join(root, 'docs', 'src', 'content', 'docs', 'index.md')
 let readme = await fs.readFile(rootReadmePath, 'utf8')
 readme =
   `---

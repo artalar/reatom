@@ -28,8 +28,7 @@ function actualizePartsAvailable(
   packageParts: string[],
 ) {
   const block = issueTemplate?.body.find(
-    (bodyBlock: Record<'type' | 'id', string>) =>
-      bodyBlock.type === 'dropdown' && bodyBlock.id === 'reatom-part',
+    (bodyBlock: Record<'type' | 'id', string>) => bodyBlock.type === 'dropdown' && bodyBlock.id === 'reatom-part',
   )
   if (!block) return false
 
@@ -42,36 +41,20 @@ const main = async () => {
   let packageNames = await getPackageNames()
   packageNames.sort()
 
-  const packageParts = packageNames.map(
-    (packageName) => `Package ${packageName}`,
-  )
+  const packageParts = packageNames.map((packageName) => `Package ${packageName}`)
 
   const templateConfig: { nonPackageParts?: string[] } =
-    parse(
-      await fs.readFile(
-        path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE', 'config.yaml'),
-        'utf-8',
-      ),
-    )?.['x-reatom'] ?? {}
+    parse(await fs.readFile(path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE', 'config.yaml'), 'utf-8'))?.[
+      'x-reatom'
+    ] ?? {}
 
-  const issueTemplateFiles = await fs.readdir(
-    path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE'),
-  )
+  const issueTemplateFiles = await fs.readdir(path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE'))
   for (const issueTemplateFile of issueTemplateFiles) {
     if (issueTemplateFile === 'config.yaml') continue
 
-    const issueTemplatePath = path.join(
-      process.cwd(),
-      '.github',
-      'ISSUE_TEMPLATE',
-      issueTemplateFile,
-    )
+    const issueTemplatePath = path.join(process.cwd(), '.github', 'ISSUE_TEMPLATE', issueTemplateFile)
     const issueTemplate = parse(await fs.readFile(issueTemplatePath, 'utf-8'))
-    const changed = actualizePartsAvailable(
-      issueTemplate,
-      templateConfig,
-      packageParts,
-    )
+    const changed = actualizePartsAvailable(issueTemplate, templateConfig, packageParts)
     if (changed) await fs.writeFile(issueTemplatePath, stringify(issueTemplate))
   }
 }

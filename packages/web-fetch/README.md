@@ -33,12 +33,10 @@ To configure the request dynamically, pass a function that returns the configura
 ```ts
 const getUser = reatomFetch<User, string>((ctx, id) => `/api/user/${id}`)
 
-const search = reatomFetch<SearchItem[], string, 'price' | 'orders'>(
-  (ctx, filter, sortBy) => ({
-    url: '/api/search',
-    params: { filter, sortBy },
-  }),
-)
+const search = reatomFetch<SearchItem[], string, 'price' | 'orders'>((ctx, filter, sortBy) => ({
+  url: '/api/search',
+  params: { filter, sortBy },
+}))
 ```
 
 To specify the request method, either use the `method` option or `reatomFetch.<method>` shorthand:

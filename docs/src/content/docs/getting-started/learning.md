@@ -208,9 +208,7 @@ export const todoAtom = atom(null)
 export const isLoadingAtom = atom(false)
 
 export const fetchTodo = action(async (ctx) => {
-  const response = await ctx.schedule(() =>
-    fetch('https://jsonplaceholder.typicode.com/todos/1'),
-  )
+  const response = await ctx.schedule(() => fetch('https://jsonplaceholder.typicode.com/todos/1'))
   return await response.json()
 })
 

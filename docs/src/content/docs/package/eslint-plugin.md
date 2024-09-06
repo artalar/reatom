@@ -93,13 +93,7 @@ const someNamespace = {
 When creating atoms dynamically with factories, you can also specify the "namespace" of the name before the `.` symbol:
 
 ```ts
-const reatomFood = (config: {
-  name: string
-  calories: number
-  fat: number
-  carbs: number
-  protein: number
-}) => {
+const reatomFood = (config: { name: string; calories: number; fat: number; carbs: number; protein: number }) => {
   const { name } = config.name
   const calories = atom(config.calories, `${name}.calories`)
   const fat = atom(config.fat, `${name}.fat`)

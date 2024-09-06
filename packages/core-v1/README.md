@@ -8,12 +8,8 @@ before
 import { declareAction, declareAtom, map, combine } from '@reatom/core-v1'
 
 const add = declareAction()
-const n1Atom = declareAtom(0, (on) => [
-  on(add, (state, value) => state + value),
-])
-const n2Atom = declareAtom(0, (on) => [
-  on(add, (state, value) => state + value),
-])
+const n1Atom = declareAtom(0, (on) => [on(add, (state, value) => state + value)])
+const n2Atom = declareAtom(0, (on) => [on(add, (state, value) => state + value)])
 const sumAtom = map(combine([n1Atom, n2Atom]), ([n1, n2]) => n1 + n2)
 const rootAtom = combine({ sumAtom })
 ```
@@ -25,12 +21,8 @@ import { declareAction, declareAtom, combine, v3toV1 } from '@reatom/core-v1'
 import { atom } from '@reatom/core'
 
 const add = declareAction()
-const n1Atom = declareAtom(0, (on) => [
-  on(add, (state, value) => state + value),
-])
-const n2Atom = declareAtom(0, (on) => [
-  on(add, (state, value) => state + value),
-])
+const n1Atom = declareAtom(0, (on) => [on(add, (state, value) => state + value)])
+const n2Atom = declareAtom(0, (on) => [on(add, (state, value) => state + value)])
 const sumAtom = atom((ctx) => ctx.spy(n1Atom.v3atom) + ctx.spy(n2Atom.v3atom))
 const rootAtom = combine({ sumAtom: v3toV1(sumAtom) })
 ```

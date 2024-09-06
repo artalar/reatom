@@ -76,14 +76,8 @@ Of course, you could describe atoms as a [separate module](/guides/architecture)
 import { atom, action } from '@reatom/core'
 
 export const countAtom = atom(0, 'countAtom')
-export const timesAtom = atom(
-  (ctx) => (ctx.spy(countAtom) === 1 ? 'time' : 'times'),
-  'timesAtom',
-)
-export const increment = action(
-  (ctx) => countAtom(ctx, (s) => ++s),
-  'increment',
-)
+export const timesAtom = atom((ctx) => (ctx.spy(countAtom) === 1 ? 'time' : 'times'), 'timesAtom')
+export const increment = action((ctx) => countAtom(ctx, (s) => ++s), 'increment')
 ```
 
 ### Data fetching and Svelte

@@ -2072,7 +2072,7 @@ export namespace JSX {
     section: HTMLAttributes<HTMLElementTagNameMap['section']>
     select: SelectHTMLAttributes<HTMLElementTagNameMap['select']>
     slot: HTMLSlotElementAttributes
-HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
+    HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
     source: SourceHTMLAttributes<HTMLElementTagNameMap['source']>
     span: HTMLAttributes<HTMLElementTagNameMap['span']>
     strong: HTMLAttributes<HTMLElementTagNameMap['strong']>

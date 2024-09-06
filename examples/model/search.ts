@@ -90,10 +90,9 @@ export const api = {
     perPage?: number
     signal: AbortSignal
   }): Promise<IssuesResponse> {
-    const response = await fetch(
-      `https://api.github.com/search/issues?q=${query}&page=${page}&per_page=${perPage}`,
-      { signal },
-    )
+    const response = await fetch(`https://api.github.com/search/issues?q=${query}&page=${page}&per_page=${perPage}`, {
+      signal,
+    })
 
     if (response.status !== 200) {
       const error = new Error(`HTTP Error: ${response.statusText}`)

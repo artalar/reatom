@@ -1,11 +1,6 @@
 import * as estree from 'estree'
 import { Rule } from 'eslint'
-import {
-  ascend,
-  createImportMap,
-  getFunctionNameDeclarations,
-  isReatomFactoryName,
-} from '../shared'
+import { ascend, createImportMap, getFunctionNameDeclarations, isReatomFactoryName } from '../shared'
 
 type AutoDomain = typeof AutoDomain
 const AutoDomain = Symbol('AutoDomain')
@@ -87,9 +82,7 @@ function checkNaming({
   if (
     unitBody.type !== 'CallExpression' ||
     unitBody.callee.type !== 'Identifier' ||
-    !isReatomFactoryName(
-      imports.get(unitBody.callee.name) || unitBody.callee.name,
-    )
+    !isReatomFactoryName(imports.get(unitBody.callee.name) || unitBody.callee.name)
   ) {
     return
   }
@@ -97,11 +90,7 @@ function checkNaming({
   const [initArg, nameArg] = unitBody.arguments
   if (!initArg) return
 
-  let factory:
-    | estree.FunctionDeclaration
-    | estree.FunctionExpression
-    | estree.ArrowFunctionExpression
-    | undefined
+  let factory: estree.FunctionDeclaration | estree.FunctionExpression | estree.ArrowFunctionExpression | undefined
   let domain: string | null | AutoDomain = null
 
   setFactory: {
@@ -121,9 +110,7 @@ function checkNaming({
     }
   }
 
-  const nameVaryDeclared = factory
-    ? getFunctionNameDeclarations(factory, ['name']).length === 1
-    : false
+  const nameVaryDeclared = factory ? getFunctionNameDeclarations(factory, ['name']).length === 1 : false
   if (nameVaryDeclared) domain = AutoDomain
 
   if (!nameArg) {
@@ -150,19 +137,15 @@ function checkNaming({
       if (nameArg.type !== 'TemplateLiteral') break validate
       if (nameArg.expressions.length !== 1) break validate
 
-      const [emptyQuasy, nameSelf] = nameArg.quasis.map(
-        (quasy) => quasy.value.cooked,
-      )
+      const [emptyQuasy, nameSelf] = nameArg.quasis.map((quasy) => quasy.value.cooked)
       const nameDomain = nameArg.expressions[0]!
 
       if (emptyQuasy !== '') break validate
-      if (nameDomain.type !== 'Identifier' || nameDomain.name !== 'name')
-        break validate
+      if (nameDomain.type !== 'Identifier' || nameDomain.name !== 'name') break validate
       if (!nameSelf!.startsWith('.')) break validate
 
       isPrivate = nameSelf![1] === '_'
-      if (nameSelf!.slice(isPrivate ? 2 : 1) !== unitIdentifier.name)
-        break validate
+      if (nameSelf!.slice(isPrivate ? 2 : 1) !== unitIdentifier.name) break validate
 
       valid = true
     }
@@ -179,8 +162,7 @@ function checkNaming({
       if (nameDomain !== domain) break validate
 
       isPrivate = nameSelf![0] === '_'
-      if (nameSelf!.slice(isPrivate ? 1 : 0) !== unitIdentifier.name)
-        break validate
+      if (nameSelf!.slice(isPrivate ? 1 : 0) !== unitIdentifier.name) break validate
 
       valid = true
     }
@@ -217,10 +199,7 @@ function checkNaming({
             isPrivate,
             domain,
           })
-          return [
-            fixer.replaceText(nameArg, x),
-            fixer.replaceText(unitIdentifier, atomPrefix + unitIdentifier.name),
-          ]
+          return [fixer.replaceText(nameArg, x), fixer.replaceText(unitIdentifier, atomPrefix + unitIdentifier.name)]
         },
       })
       return
@@ -235,13 +214,7 @@ function checkNaming({
             isPrivate,
             domain,
           })
-          return [
-            fixer.replaceText(nameArg, x),
-            fixer.replaceText(
-              unitIdentifier,
-              unitIdentifier.name + atomPostfix,
-            ),
-          ]
+          return [fixer.replaceText(nameArg, x), fixer.replaceText(unitIdentifier, unitIdentifier.name + atomPostfix)]
         },
       })
       return

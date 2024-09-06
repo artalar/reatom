@@ -197,13 +197,10 @@ import { createAtom } from '@reatom/core-v2'
 type TimerCtx = { intervalId?: number | NodeJS.Timer | any }
 
 /** Timer update interval */
-export const intervalAtom = createAtom(
-  { setSeconds: (seconds: number) => seconds },
-  ({ onAction }, state = 1000) => {
-    onAction(`setSeconds`, (seconds) => (state = seconds * 1000))
-    return state
-  },
-)
+export const intervalAtom = createAtom({ setSeconds: (seconds: number) => seconds }, ({ onAction }, state = 1000) => {
+  onAction(`setSeconds`, (seconds) => (state = seconds * 1000))
+  return state
+})
 
 export const timerAtom = createAtom(
   {
@@ -230,10 +227,7 @@ export const timerAtom = createAtom(
 
           if (remains <= interval) {
             clearInterval(ctx.intervalId)
-            ctx.intervalId = setTimeout(
-              () => dispatch(create(`_update`, 0)),
-              remains,
-            )
+            ctx.intervalId = setTimeout(() => dispatch(create(`_update`, 0)), remains)
           }
 
           dispatch(create(`_update`, remains))
@@ -309,10 +303,7 @@ But a better way is use the `createEnumAtom`.
 ```ts
 import { createEnumAtom } from '@reatom/core-v2/primitives'
 
-const githubRepoSortFilterAtom = createEnumAtom(
-  ['full_name', 'created', 'updated', 'pushed'],
-  { format: 'snake_case' },
-)
+const githubRepoSortFilterAtom = createEnumAtom(['full_name', 'created', 'updated', 'pushed'], { format: 'snake_case' })
 
 console.log(sortFilterAtom.getState())
 // -> 'full_name'
@@ -453,11 +444,7 @@ const formAtom = createAtom(
           // you should't call `track.get` async
           // (scheduled callback calls async after all atoms)
           // (use `email` and `password` variables instead)
-          track.create(
-            '_fetch',
-            track.get('emailAtom'),
-            track.get('passwordAtom'),
-          ),
+          track.create('_fetch', track.get('emailAtom'), track.get('passwordAtom')),
         ),
       )
     })
@@ -531,21 +518,18 @@ const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = 0) => {
 Important note. Feel free to mutate **variable**, not a value. Reducer functions should not mutate any input values.
 
 ```ts
-const counterAtom = createAtom(
-  { inc: () => {} },
-  ({ onAction }, state = { count: 0 }) => {
-    // WRONG
-    onAction('inc', () => {
-      state.count++
-    })
-    // Right
-    onAction('inc', () => {
-      state = { count: state.count + 1 }
-    })
+const counterAtom = createAtom({ inc: () => {} }, ({ onAction }, state = { count: 0 }) => {
+  // WRONG
+  onAction('inc', () => {
+    state.count++
+  })
+  // Right
+  onAction('inc', () => {
+    state = { count: state.count + 1 }
+  })
 
-    return state
-  },
-)
+  return state
+})
 ```
 
 ### How to handle one action in a few atoms?

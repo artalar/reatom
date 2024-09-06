@@ -192,10 +192,7 @@ test('reset during pending', async () => {
 })
 
 test('do not reject on abort', async () => {
-  const fetchData = reatomAsync(async () => sleep()).pipe(
-    withAbort(),
-    withStatusesAtom(),
-  )
+  const fetchData = reatomAsync(async () => sleep()).pipe(withAbort(), withStatusesAtom())
   const ctx = createTestCtx()
 
   assert.is(ctx.get(fetchData.statusesAtom), asyncStatusesInitState)
@@ -237,10 +234,7 @@ test('do not reject on resource abort', async () => {
 })
 
 test('restore isFulfilled after abort', async () => {
-  const fetchData = reatomAsync(async (ctx) => {}).pipe(
-    withAbort(),
-    withStatusesAtom(),
-  )
+  const fetchData = reatomAsync(async (ctx) => {}).pipe(withAbort(), withStatusesAtom())
   const ctx = createTestCtx()
 
   await fetchData(ctx)

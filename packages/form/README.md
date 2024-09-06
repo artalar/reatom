@@ -33,8 +33,7 @@ export const passwordField = loginForm.reatomField(
   {
     initState: '',
     validate(ctx, { state }) {
-      if (state.length < 6)
-        throw new Error('The password should have at least six characters.')
+      if (state.length < 6) throw new Error('The password should have at least six characters.')
     },
   },
   'passwordField',

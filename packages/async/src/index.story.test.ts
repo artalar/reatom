@@ -36,18 +36,14 @@ describe('optimistic update', () => {
   const getData = reatomAsync.from(api.getData).pipe(
     // add `dataAtom` and map the effect payload into it
     // try to prevent new reference stream if nothing really changed
-    withDataAtom([], (ctx, payload, state) =>
-      isDeepEqual(payload, state) ? state : payload,
-    ),
+    withDataAtom([], (ctx, payload, state) => (isDeepEqual(payload, state) ? state : payload)),
   )
   const putData = reatomAsync.from(api.putData)
   putData.onCall((ctx, promise, params) => {
     const [id, value] = params
     const oldList = ctx.get(getData.dataAtom)
     // optimistic update
-    const newList = getData.dataAtom(ctx, (state) =>
-      state.map((item) => (item.id === id ? { ...item, value } : item)),
-    )
+    const newList = getData.dataAtom(ctx, (state) => state.map((item) => (item.id === id ? { ...item, value } : item)))
     // rollback on error
     promise.catch((error) => {
       if (ctx.get(getData.dataAtom) === newList) {
@@ -153,9 +149,7 @@ describe('concurrent pooling', () => {
 
     assert.is(ctx.get(progressAtom), 100)
 
-    const expectedProgress = [
-      0, 10, /* start again */ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
-    ]
+    const expectedProgress = [0, 10, /* start again */ 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
     // assert.equal(track.inputs(), expectedProgress)
     ;`👍` //?

@@ -9,12 +9,10 @@ export const asyncRule: Rule.RuleModule = {
     type: 'suggestion',
     docs: {
       recommended: true,
-      description:
-        'Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`.',
+      description: 'Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`.',
     },
     messages: {
-      scheduleMissing:
-        'Asynchronous interactions within Reatom functions should be wrapped with `ctx.schedule`',
+      scheduleMissing: 'Asynchronous interactions within Reatom functions should be wrapped with `ctx.schedule`',
     },
     fixable: 'code',
   },
@@ -54,10 +52,7 @@ const isCtxSchedule = (node: estree.Node) => {
   )
 }
 
-const wrapScheduleFix = (
-  fixer: Rule.RuleFixer,
-  node: estree.AwaitExpression,
-) => [
+const wrapScheduleFix = (fixer: Rule.RuleFixer, node: estree.AwaitExpression) => [
   fixer.insertTextBefore(node.argument, 'ctx.schedule(() => '),
   fixer.insertTextAfter(node.argument, ')'),
 ]

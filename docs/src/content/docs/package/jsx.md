@@ -140,15 +140,13 @@ Object-valued `style` prop applies styles granularly: `style={{top: 0, display: 
 `false`, `null` and `undefined` style values remove the property. Non-string style values are stringified (we don't add `px` to numeric values automatically).
 
 Incorrect:
+
 ```tsx
-<div
-  style={atom((ctx) => ctx.spy(bool)
-    ? ({top: 0})
-    : ({bottom: 0}))}
-></div>
+<div style={atom((ctx) => (ctx.spy(bool) ? { top: 0 } : { bottom: 0 }))}></div>
 ```
 
 Correct:
+
 ```tsx
 <div
   style={atom((ctx) => ctx.spy(bool)
@@ -212,9 +210,7 @@ In Reatom, there is no concept of "rerender" like React. Instead, we have a spec
 
 ```tsx
 <div
-  $spread={atom((ctx) => (ctx.spy(valid)
-    ? { disabled: true, readonly: true }
-    : { disabled: false, readonly: false }))}
+  $spread={atom((ctx) => (ctx.spy(valid) ? { disabled: true, readonly: true } : { disabled: false, readonly: false }))}
 />
 ```
 
@@ -235,11 +231,8 @@ If you need to use SVG as a string, you can choose from these options:
 Option 1:
 
 ```tsx
-const SvgIcon = (props: {svg: string}) => {
-  const svgEl = new DOMParser()
-    .parseFromString(props.svg, 'image/svg+xml')
-    .children
-    .item(0) as SVGElement
+const SvgIcon = (props: { svg: string }) => {
+  const svgEl = new DOMParser().parseFromString(props.svg, 'image/svg+xml').children.item(0) as SVGElement
   return svgEl
 }
 ```
@@ -260,26 +253,30 @@ const SvgIcon = (props: {svg: string}) => {
 
 The `ref` property is used to create and track references to DOM elements, allowing actions to be performed when these elements are mounted and unmounted.
 
-
 ```tsx
-<button ref={(ctx: Ctx, el: HTMLButtonElement) => {
-  el.focus()
-  return (ctx: Ctx, el: HTMLButtonElement) => el.blur()
-}}></button>
+<button
+  ref={(ctx: Ctx, el: HTMLButtonElement) => {
+    el.focus()
+    return (ctx: Ctx, el: HTMLButtonElement) => el.blur()
+  }}
+></button>
 ```
 
 Mounting and unmounting functions are called in order from child to parent.
 
 ```tsx
-<div ref={(ctx: Ctx, el: HTMLDivElement) => {
-  console.log('mount', 'parent')
-  return () => console.log('unmount', 'parent')
-}}>
-  <span ref={(ctx: Ctx, el: HTMLSpanElement) => {
-    console.log('mount', 'child')
-    return () => console.log('unmount', 'child')
-  }}>
-  </span>
+<div
+  ref={(ctx: Ctx, el: HTMLDivElement) => {
+    console.log('mount', 'parent')
+    return () => console.log('unmount', 'parent')
+  }}
+>
+  <span
+    ref={(ctx: Ctx, el: HTMLSpanElement) => {
+      console.log('mount', 'child')
+      return () => console.log('unmount', 'child')
+    }}
+  ></span>
 </div>
 ```
 
@@ -375,6 +372,7 @@ These limitations will be fixed in the feature
 - No DOM-less SSR (requires a DOM API implementation like `linkedom` to be provided)
 - No keyed lists support
 - A component should have no more than one root element. If this interferes with the layout, you can wrap the parent elements in another element with the style `display: "contents"`:
+
 ```tsx
 <div style={'display: "contents";'}>
   <div class="parent-1">
