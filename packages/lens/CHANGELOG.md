@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.4](https://github.com/artalar/reatom/compare/lens-v3.11.3...lens-v3.11.4) (2024-09-06)
+
+
+### Bug Fixes
+
+* **lens:** better matched expression type ([#914](https://github.com/artalar/reatom/issues/914)) ([2ea51cd](https://github.com/artalar/reatom/commit/2ea51cd509760fa8ecb6530dc51c602a93e08a13))
+
 ## [3.11.3](https://github.com/artalar/reatom/compare/lens-v3.11.2...lens-v3.11.3) (2024-08-24)
 
 

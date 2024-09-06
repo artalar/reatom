@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.0](https://github.com/artalar/reatom/compare/async-v3.15.3...async-v3.16.0) (2024-09-06)
+
+
+### Features
+
+* **async:** reset for resource ([852ba1e](https://github.com/artalar/reatom/commit/852ba1e3a327ce7114f7c6f4cb13ae233e82a05b))
+
 ## [3.15.3](https://github.com/artalar/reatom/compare/async-v3.15.2...async-v3.15.3) (2024-08-19)
 
 

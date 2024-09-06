@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/effects-v3.8.3...effects-v3.9.0) (2024-09-06)
+
+
+### Features
+
+* **effects:** concurrent strategies ([426aedc](https://github.com/artalar/reatom/commit/426aedcefb1b22bda21433a3dd04cb235d49af9d))
+
+
+### Bug Fixes
+
+* **effects:** concurrent ctx types ([799485f](https://github.com/artalar/reatom/commit/799485fcf4aa9096b504cc52426cec74424e0515))
+
 ## [3.8.3](https://github.com/artalar/reatom/compare/effects-v3.8.2...effects-v3.8.3) (2024-07-16)
 
 
