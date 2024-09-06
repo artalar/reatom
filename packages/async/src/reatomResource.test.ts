@@ -4,7 +4,7 @@ import { createTestCtx, mockFn } from '@reatom/testing'
 import { atom } from '@reatom/core'
 import { noop, sleep } from '@reatom/utils'
 import { isConnected, onConnect, onDisconnect } from '@reatom/hooks'
-import { withCache, withDataAtom, withErrorAtom, withRetry } from '.'
+import { reatomAsync, withAbort, withCache, withDataAtom, withErrorAtom, withRetry } from '.'
 import { reatomResource } from './reatomResource'
 
 export const test = suite('reatomResource')
@@ -273,6 +273,7 @@ test('do not drop the cache of an error', async () => {
 })
 
 test('reset', async () => {
+  const ctx = createTestCtx()
   let i = 0
   const someResource = reatomResource(async (ctx) => {
     ++i
@@ -281,8 +282,6 @@ test('reset', async () => {
   onDisconnect(someResource, someResource.reset)
 
   assert.is(typeof someResource.reset, 'function')
-
-  const ctx = createTestCtx()
 
   const track = ctx.subscribeTrack(someResource.pendingAtom)
   assert.is(i, 1)
@@ -294,6 +293,25 @@ test('reset', async () => {
   assert.is(i, 1)
   ctx.get(someResource.promiseAtom)
   assert.is(i, 2)
+})
+
+test('ignore abort if a subscribers exists', async () => {
+  const ctx = createTestCtx()
+  const res = reatomResource(async (ctx): Promise<number> => {
+    await ctx.schedule(() => sleep())
+    return ctx.get(res.dataAtom) + 1
+  }).pipe(withDataAtom(0))
+  const call = reatomAsync(res).pipe(withAbort())
+
+  const track = ctx.subscribeTrack(res.dataAtom)
+
+  await sleep()
+  assert.is(track.lastInput(), 1)
+
+  call(ctx)
+  call.abort(ctx)
+  await sleep()
+  assert.is(track.lastInput(), 2)
 })
 
 test.run()
