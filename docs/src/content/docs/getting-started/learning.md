@@ -56,6 +56,8 @@ const cAtom = atom((ctx) => ctx.spy(aAtom) + ctx.spy(bAtom), 'cAtom')
 
 Computed atoms should be pure functions to ensure the correct order of all computations.
 
+> Note: If a computed atom doesn't spy any other atoms, it will update whenever any atom in the context changes.
+
 ### Read Atom
 
 To read the value of an atom, you need to use the previously created context.
