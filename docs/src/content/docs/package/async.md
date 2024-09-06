@@ -837,6 +837,14 @@ In this example, when the `pageAtom` updates, the entire chain of previous reque
 
 Please note that `ctx.get` and `ctx.spy` of a `promiseAtom` return a promise, and you should `await` it to obtain the value.
 
+### reatomResource reset
+
+Sometimes you don't want to persist a result of your resource for all time and expect that it will be reinitialized on eon a new connection. For example, if a user come to a page with a resource, leave it and come again - you want to refetch the resource. It repeat the "onConnect" logic but it will be a mistake to duplicate this code (`onConnect(myResource, myResource)`), because it will be called twice on the first connection. The correct way to handle it is reset the resource on disconnect.
+
+```ts
+onDisconnect(myResource, myResource.reset)
+```
+
 ## reatomAsyncReaction
 
 > Deprecated: use [reatomResource](#reatomresource) instead
