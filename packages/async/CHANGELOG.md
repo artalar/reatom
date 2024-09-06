@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.1](https://github.com/artalar/reatom/compare/async-v3.16.0...async-v3.16.1) (2024-09-06)
+
+
+### Bug Fixes
+
+* **async:** ignore abort in resource if a subscribers exists ([67bfdad](https://github.com/artalar/reatom/commit/67bfdad05ddc7852bb781f811a39107296662154))
+
 ## [3.16.0](https://github.com/artalar/reatom/compare/async-v3.15.3...async-v3.16.0) (2024-09-06)
 
 
