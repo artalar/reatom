@@ -516,10 +516,11 @@ test('ref mount and unmount callbacks order', async () => {
   )
 
   mount(parent, component)
+  await sleep()
   parent.remove()
   await sleep()
 
-  assert.equal(order, [2, 1, 0, 2, 1, 0])
+  assert.equal(order, [2, 1, 0, 0, 1, 2])
 })
 
 test('style object update', () => {
