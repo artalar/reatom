@@ -8,68 +8,71 @@ const tester = new RuleTester({
   },
 })
 
-const ImportAtom = 'import {atom} from "@reatom/framework"'
-
 tester.run('unit-naming-rule', unitNamingRule, {
   valid: [
-    `${ImportAtom}; const some = atom(0, 'some')`,
-    `${ImportAtom}; const some = action(0, 'some')`,
+    `const some = atom(0, 'some')`,
+    `const some = action(0, 'some')`,
     {
-      code: `${ImportAtom}; const $some = atom(0, '$some')`,
+      code: `const $some = atom(0, '$some')`,
       options: [{ atomPrefix: '$' }],
     },
     {
-      code: `${ImportAtom}; const someAtom = atom(0, 'x._someAtom')`,
+      code: `const someAtom = atom(0, '_someAtom')`,
       options: [{ atomSuffix: 'Atom' }],
     },
   ],
   invalid: [
     {
-      code: `${ImportAtom}; const some = atom(0)`,
+      code: `const some = atom(0)`,
       errors: [{ message: /missing/ }],
-      output: `${ImportAtom}; const some = atom(0, 'some')`,
+      output: `const some = atom(0, 'some')`,
     },
     {
-      code: `${ImportAtom}; const some = atom(0, 'unrelated')`,
-      errors: [{ message: /incorrect/ }],
-      output: `${ImportAtom}; const some = atom(0, 'some')`,
+      code: `const some = atom(0, lololo)`,
+      errors: [{ message: /must be a correctly formatted string literal/ }],
+      output: `const some = atom(0, 'some')`,
     },
     {
-      code: `${ImportAtom}; const some = atom(0, 'some')`,
+      code: `const some = atom(0, 'unrelated')`,
+      errors: [{ message: /name must be/ }],
+      output: `const some = atom(0, 'some')`,
+    },
+    {
+      code: `const some = atom(0, 'some')`,
       options: [{ atomPrefix: '$' }],
-      errors: [{ message: /prefix/ }],
-      output: `${ImportAtom}; const $some = atom(0, '$some')`,
+      errors: [{ message: /name must start with/ }],
+      output: `const $some = atom(0, '$some')`,
     },
     {
-      code: `${ImportAtom}; const some = atom(0, 'some')`,
+      code: `const some = atom(0, 'some')`,
       options: [{ atomSuffix: 'Atom' }],
-      errors: [{ message: /suffix/ }],
-      output: `${ImportAtom}; const someAtom = atom(0, 'someAtom')`,
+      errors: [{ message: /name must end with/ }],
+      output: `const someAtom = atom(0, 'someAtom')`,
     },
     {
-      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome._unrelated'); }`,
-      errors: [{ message: /incorrect/ }],
-      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome._field'); }`,
+      code: `function reatomSome() { const field = atom(0, 'reatomSome._unrelated'); }`,
+      errors: [{ message: /name must be/ }],
+      output: `function reatomSome() { const field = atom(0, 'reatomSome._field'); }`,
     },
     {
-      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'field') }`,
-      errors: [{ message: /incorrect/ }],
-      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
+      code: `function reatomSome() { const field = atom(0, 'field') }`,
+      errors: [{ message: /domain must be/ }],
+      output: `function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
     },
     {
-      code: `${ImportAtom}; function reatomSome() { const field = atom(0, 'Some.field') }`,
-      errors: [{ message: /incorrect/ }],
-      output: `${ImportAtom}; function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
+      code: `function reatomSome() { const field = atom(0, 'Some.field') }`,
+      errors: [{ message: /domain must be/ }],
+      output: `function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
     },
     {
-      code: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, 'field'); }`,
-      errors: [{ message: /incorrect/ }],
-      output: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
+      code: `function reatomSome({name}) { const field = atom(0, 'field'); }`,
+      errors: [{ message: /domain must be set to the value of/ }],
+      output: `function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
     },
     {
-      code: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, 'Some.field'); }`,
-      errors: [{ message: /incorrect/ }],
-      output: `${ImportAtom}; function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
+      code: `function reatomSome({name}) { const field = atom(0, 'Some.field'); }`,
+      errors: [{ message: /domain must be set to the value/ }],
+      output: `function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
     },
   ],
 })

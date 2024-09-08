@@ -1,9 +1,6 @@
 import * as estree from 'estree'
 import { Rule } from 'eslint'
-import { createImportMap } from '../shared'
-
-const reatomFactoryList = ['atom', 'action', 'reaction'] as const
-const reatomFactoryPattern = new RegExp(`^(reatom\w+|${reatomFactoryList.join('|')})$`)
+import { patternNames, reatomFactoryPattern } from '../shared'
 
 type Domain = { is: 'absent' } | { is: 'static'; name: string } | { is: 'dynamic'; vary: string }
 
@@ -20,26 +17,65 @@ export const unitNamingRule: Rule.RuleModule = {
       recommended: true,
       description: 'Ensures that all Reatom entities are correctly named.',
     },
+    schema: [
+      {
+        type: 'object',
+        properties: {
+          atomPrefix: {
+            type: 'string',
+          },
+          atomSuffix: {
+            type: 'string',
+          },
+          domainVariable: {
+            type: 'string',
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
     fixable: 'code',
   },
 
   create(context) {
-    const importMap = createImportMap('@reatom/')
-
     const {
       atomPrefix = '',
       atomSuffix = '',
-      domainVary = 'name',
+      domainVariable = 'name',
     }: {
       atomPrefix?: string
       atomSuffix?: string
-      domainVary?: string
+      domainVariable?: string
     } = context.options[0] ?? {}
 
-    const domainScopes: Domain[] = [{ is: 'absent' }]
-    const unitScopes = [] as estree.Identifier[]
+    const domainScopes = [] as (Domain | null)[]
+    const idScopes = [] as (estree.Identifier | null)[]
 
     return {
+      ':matches(VariableDeclarator, Property)'(node: estree.VariableDeclarator | estree.Property) {
+        const id = node.type === 'Property' ? node.key : node.id
+        idScopes.push(id.type === 'Identifier' ? id : null)
+      },
+      ':matches(VariableDeclarator, Property):exit'() {
+        idScopes.pop()
+      },
+      [`:function`](node: estree.Function) {
+        const variDeclarators =
+          node.body.type === 'BlockStatement'
+            ? node.body.body.flatMap((statement) =>
+                statement.type === 'VariableDeclaration' ? statement.declarations : [],
+              )
+            : []
+        const patterns = [...node.params, ...variDeclarators.map((d) => d.id)]
+        const declaresDomain = !!patterns.flatMap(patternNames).find((id) => id.name === domainVariable)
+
+        if (declaresDomain) domainScopes.push({ is: 'dynamic', vary: domainVariable })
+        else if ('id' in node && node.id) domainScopes.push({ is: 'static', name: node.id.name })
+        else domainScopes.push(null)
+      },
+      [`:function:exit`](node: estree.Function) {
+        domainScopes.pop()
+      },
       [`CallExpression[callee.name=${reatomFactoryPattern}]`](node: estree.CallExpression) {
         const args = node.arguments
         const nameNode =
@@ -49,9 +85,9 @@ export const unitNamingRule: Rule.RuleModule = {
             ? args[0].properties.find(({ key }) => key.type === 'Identifier' && key.name === 'name')
             : undefined
 
-        const unit = unitScopes.at(-1)
+        const unit = idScopes.at(-1)
         if (!unit) return
-        const domain = domainScopes.at(-1)!
+        const domain = domainScopes.findLast((scope) => scope !== null) || { is: 'absent' }
 
         if (!nameNode) {
           let fix: Rule.ReportFixer | undefined
@@ -83,12 +119,12 @@ export const unitNamingRule: Rule.RuleModule = {
           return
         }
 
-        const replaceNameFix = (fixer: Rule.RuleFixer) =>
+        const replaceNameFix = (fixer: Rule.RuleFixer, local = false) =>
           fixer.replaceText(
             nameNode,
             printName({
               domain,
-              local: false,
+              local,
               unit: unit.name,
             }),
           )
@@ -96,12 +132,13 @@ export const unitNamingRule: Rule.RuleModule = {
         let parsedName: Name | undefined
         parseName: {
           if (nameNode.type === 'Literal' && typeof nameNode.value === 'string') {
-            const matches = nameNode.value.match(/^(?:(\w+)\.)?(_)?(\w+)$/)
+            const matches = nameNode.value.match(/^(?:([\w$]+)\.)?(_)?([\w$]+)$/)
             if (!matches) break parseName
-            const domainName = matches[1]!
+            const domainName = matches[1]
             const local = !!matches[2]
             const unit = matches[3]!
-            parsedName = { domain: { is: 'static', name: domainName }, local, unit }
+            const domain: Domain = domainName ? { is: 'static', name: domainName } : { is: 'absent' }
+            parsedName = { domain, local, unit }
           }
 
           if (nameNode.type === 'TemplateLiteral') {
@@ -119,27 +156,51 @@ export const unitNamingRule: Rule.RuleModule = {
         if (!parsedName) {
           context.report({
             node: nameNode,
-            message: 'Unit name is malformed',
+            message: 'Unit name must be a correctly formatted string literal',
             fix: replaceNameFix,
           })
           return
         }
 
-        const message =
-          parsedName.unit === unit.name
-            ? (
-                parsedName.domain.is === domain.is && parsedName.domain.is === 'static'
-                  ? parsedName.domain.name === (domain as any).name
-                  : parsedName.domain.is === 'dynamic'
-                  ? parsedName.domain.vary !== (domain as any).vary
-                  : false
-              )
-              ? undefined
-              : 'Unit domain is incorrect'
-            : 'Unit name is incorrect'
-
+        let message: string | undefined
+        checkName: {
+          if (parsedName.unit !== unit.name) {
+            message = `Unit name must be "${unit.name}"`
+            break checkName
+          }
+          if (JSON.stringify(parsedName.domain) !== JSON.stringify(domain)) {
+            if (domain.is === 'absent') message = 'Unit name must have no domain'
+            if (domain.is === 'dynamic') message = `Unit domain must be set to the value of "${domain.vary}" variable`
+            if (domain.is === 'static') message = `Unit domain must be "${domain.name}"`
+            break checkName
+          }
+        }
         if (message) {
-          context.report({ node: nameNode, message, fix: replaceNameFix })
+          context.report({ node: nameNode, message, fix: (fixer) => replaceNameFix(fixer, parsedName.local) })
+        }
+
+        if (!parsedName.unit.startsWith(atomPrefix)) {
+          context.report({
+            node: nameNode,
+            message: `Atom name must start with "${atomPrefix}"`,
+            fix: (fixer) => [
+              fixer.replaceText(
+                nameNode,
+                printName({ ...parsedName, unit: atomPrefix + parsedName.unit + atomSuffix }),
+              ),
+              fixer.replaceText(unit, atomPrefix + unit.name + atomSuffix),
+            ],
+          })
+        }
+        if (!parsedName.unit.endsWith(atomSuffix)) {
+          context.report({
+            node: nameNode,
+            message: `Atom name must end with "${atomPrefix}"`,
+            fix: (fixer) => [
+              fixer.replaceText(nameNode, printName({ ...parsedName, unit: parsedName.unit + atomSuffix })),
+              fixer.replaceText(unit, unit.name + atomSuffix),
+            ],
+          })
         }
       },
     }
@@ -148,7 +209,7 @@ export const unitNamingRule: Rule.RuleModule = {
 
 function printName(name: Name) {
   const base = (name.local ? '_' : '') + name.unit
-  if (name.domain.is === 'dynamic') return '`${' + name.domain.vary + '}.' + base
-  if (name.domain.is === 'static') return `"${name.domain.name}".${base}`
-  return `"${base}"`
+  if (name.domain.is === 'dynamic') return '`${' + name.domain.vary + '}.' + base + '`'
+  if (name.domain.is === 'static') return `'${name.domain.name}.${base}'`
+  return `'${base}'`
 }

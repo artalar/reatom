@@ -60,12 +60,16 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
     "prettier/prettier": "error"
   },
   "settings": {
-    "atomPostfix": "Atom"
+    "atomSuffix": "Atom"
   }
 }
 ```
 
 ## Rules
+
+### `async-rule`
+
+Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`. Read [the docs](https://www.reatom.dev/package/core/#ctx-api) for more info.
 
 ### `unit-naming-rule`
 
@@ -76,7 +80,7 @@ The name must be equal to the name of a variable or a property an entity is assi
 ```ts
 const count = atom(0, 'count')
 
-const someNamespace = {
+const atomsRec = {
   count: atom(0, 'count'),
 }
 ```
@@ -84,13 +88,7 @@ const someNamespace = {
 When creating atoms dynamically with factories, you can also specify the "namespace" of the name before the `.` symbol:
 
 ```ts
-const reatomFood = (config: {
-  name: string
-  calories: number
-  fat: number
-  carbs: number
-  protein: number
-}) => {
+const reatomFood = (config: { name: string; calories: number; fat: number; carbs: number; protein: number }) => {
   const { name } = config.name
   const calories = atom(config.calories, `${name}.calories`)
   const fat = atom(config.fat, `${name}.fat`)
@@ -102,24 +100,20 @@ const reatomFood = (config: {
 
 If there is an identifier `name` defined in the function scope, unit names must use it as namespace. Otherwise, namespace must be equal to the name of the factory function.
 
-For private atoms, `_` prefix can be used:
+You may prefix some atom names with `_` to indicate that they are not exposed from factories that create them (to make Reatom inspector hide them):
 
 ```ts
 const secretState = atom(0, '_secretState')
 ```
 
-You can also ensure that `atom` names have a prefix or a postfix through the configuration, for example:
+You can also ensure prefixes and suffixes for `atom` names through the configuration:
 
 ```ts
-{
+;({
   atomPrefix: '',
-  atomPostfix: 'Atom',
-}
+  atomSuffix: 'Atom',
+})
 ```
-
-### `async-rule`
-
-Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`. Read [the docs](https://www.reatom.dev/package/core/#ctx-api) for more info.
 
 ## Motivation
 
