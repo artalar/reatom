@@ -77,7 +77,7 @@ ctx.get(cAtom) // 3
 It's important to note that an atom's value is retrieved only when read.
 In other words, if no one has read a computed atom, its associated function won't run.
 
-Also, If a computed atom doesn't explicitly track at least one other atom, it will update whenever any atom in the context changes.
+Also, If a computed atom doesn't explicitly track at least one other atom (by `spy`), it will recall on each read (`get` / `spy`).
 
 ### Update Atom
 
