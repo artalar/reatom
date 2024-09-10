@@ -10,7 +10,7 @@ const tester = new RuleTester({
 
 tester.run('unit-naming-rule', unitNamingRule, {
   valid: [
-    `const some = atom(0, 'some')`,
+    `const some = atom(0, '_some')`,
     `const some = action(0, 'some')`,
     {
       code: `const $some = atom(0, '$some')`,
@@ -19,6 +19,15 @@ tester.run('unit-naming-rule', unitNamingRule, {
     {
       code: `const someAtom = atom(0, '_someAtom')`,
       options: [{ atomSuffix: 'Atom' }],
+    },
+    {
+      code: `function reatomSome() { const someAtom = atom(0, 'reatomSome.someAtom') }`,
+    },
+    {
+      code: `const Atoms = { someAtom: atom(0, 'Atoms.someAtom') }`,
+    },
+    {
+      code: `function reatomSome() { const Atoms = { someAtom: atom(0, 'reatomSome.Atoms.someAtom') } }`,
     },
   ],
   invalid: [

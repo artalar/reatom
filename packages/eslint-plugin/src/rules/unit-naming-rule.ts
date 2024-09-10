@@ -7,6 +7,7 @@ type Domain = { is: 'absent' } | { is: 'static'; name: string } | { is: 'dynamic
 interface Name {
   domain: Domain
   local: boolean
+  object: string | null
   unit: string
 }
 
@@ -85,18 +86,21 @@ export const unitNamingRule: Rule.RuleModule = {
             ? args[0].properties.find(({ key }) => key.type === 'Identifier' && key.name === 'name')
             : undefined
 
-        const unit = idScopes.at(-1)
-        if (!unit) return
-        const domain = domainScopes.findLast((scope) => scope !== null) || { is: 'absent' }
+        const expectedUnit = idScopes.at(-1)
+        if (!expectedUnit) return
+        const unitIsProp = (expectedUnit as any).parent.type === 'Property'
+        const expectedObject = unitIsProp ? idScopes.at(-2)?.name ?? null : null
+        const expectedDomain = domainScopes.findLast((scope) => scope !== null) || { is: 'absent' }
 
         if (!nameNode) {
           let fix: Rule.ReportFixer | undefined
 
           if (args.length === 1) {
             const printedName = printName({
-              domain,
+              domain: expectedDomain,
+              object: expectedObject,
               local: false,
-              unit: unit.name,
+              unit: expectedUnit.name,
             })
             if (args[0]!.type === 'ObjectExpression') {
               const config = args[0]
@@ -123,22 +127,28 @@ export const unitNamingRule: Rule.RuleModule = {
           fixer.replaceText(
             nameNode,
             printName({
-              domain,
+              domain: expectedDomain,
+              object: expectedObject,
               local,
-              unit: unit.name,
+              unit: expectedUnit.name,
             }),
           )
 
         let parsedName: Name | undefined
         parseName: {
           if (nameNode.type === 'Literal' && typeof nameNode.value === 'string') {
-            const matches = nameNode.value.match(/^(?:([\w$]+)\.)?(_)?([\w$]+)$/)
+            const matches = nameNode.value.match(/^(?:([\w$]+)\.)?(?:([\w$]+)\.)?(_)?([\w$]+)$/)
             if (!matches) break parseName
-            const domainName = matches[1]
-            const local = !!matches[2]
-            const unit = matches[3]!
+            const domainNameMatch = matches[1]
+            const objectMatch = matches[2]
+            // here we make names like "Atoms.someAtom" where Atoms is expectedObject work
+            const domainIsObject = expectedObject && expectedDomain.is === 'absent' && domainNameMatch && !objectMatch
+            const domainName = domainIsObject ? null : domainNameMatch
+            const object = objectMatch ?? (domainIsObject ? domainNameMatch : null)
+            const local = !!matches[3]
+            const unit = matches[4]!
             const domain: Domain = domainName ? { is: 'static', name: domainName } : { is: 'absent' }
-            parsedName = { domain, local, unit }
+            parsedName = { domain, object, local, unit }
           }
 
           if (nameNode.type === 'TemplateLiteral') {
@@ -148,9 +158,11 @@ export const unitNamingRule: Rule.RuleModule = {
             if (nameNode.quasis[0]!.value.raw !== '') break parseName
             if (!nameNode.quasis[1]!.value.raw.startsWith('.')) break parseName
             const domainVary = nameNode.expressions[0].name
-            const local = nameNode.quasis[1]!.value.raw[1] === '_'
-            const unit = nameNode.quasis[1]!.value.raw.slice(local ? 2 : 1)
-            parsedName = { domain: { is: 'dynamic', vary: domainVary }, local, unit }
+            const afterDomain = nameNode.quasis[1]!.value.raw.slice(1)
+            const [object, self] = afterDomain.includes('.') ? afterDomain.split('.') : [null, afterDomain]
+            const local = self.startsWith('_')
+            const unit = afterDomain.slice(local ? 1 : 0)
+            parsedName = { domain: { is: 'dynamic', vary: domainVary }, object, local, unit }
           }
         }
         if (!parsedName) {
@@ -164,14 +176,15 @@ export const unitNamingRule: Rule.RuleModule = {
 
         let message: string | undefined
         checkName: {
-          if (parsedName.unit !== unit.name) {
-            message = `Unit name must be "${unit.name}"`
+          if (parsedName.unit !== expectedUnit.name) {
+            message = `Unit name must be "${expectedUnit.name}"`
             break checkName
           }
-          if (JSON.stringify(parsedName.domain) !== JSON.stringify(domain)) {
-            if (domain.is === 'absent') message = 'Unit name must have no domain'
-            if (domain.is === 'dynamic') message = `Unit domain must be set to the value of "${domain.vary}" variable`
-            if (domain.is === 'static') message = `Unit domain must be "${domain.name}"`
+          if (JSON.stringify(parsedName.domain) !== JSON.stringify(expectedDomain)) {
+            if (expectedDomain.is === 'absent') message = 'Unit name must have no domain'
+            if (expectedDomain.is === 'dynamic')
+              message = `Unit domain must be set to the value of "${expectedDomain.vary}" variable`
+            if (expectedDomain.is === 'static') message = `Unit domain must be "${expectedDomain.name}"`
             break checkName
           }
         }
@@ -188,7 +201,7 @@ export const unitNamingRule: Rule.RuleModule = {
                 nameNode,
                 printName({ ...parsedName, unit: atomPrefix + parsedName.unit + atomSuffix }),
               ),
-              fixer.replaceText(unit, atomPrefix + unit.name + atomSuffix),
+              fixer.replaceText(expectedUnit, atomPrefix + expectedUnit.name + atomSuffix),
             ],
           })
         }
@@ -198,7 +211,7 @@ export const unitNamingRule: Rule.RuleModule = {
             message: `Atom name must end with "${atomPrefix}"`,
             fix: (fixer) => [
               fixer.replaceText(nameNode, printName({ ...parsedName, unit: parsedName.unit + atomSuffix })),
-              fixer.replaceText(unit, unit.name + atomSuffix),
+              fixer.replaceText(expectedUnit, expectedUnit.name + atomSuffix),
             ],
           })
         }
@@ -208,7 +221,7 @@ export const unitNamingRule: Rule.RuleModule = {
 }
 
 function printName(name: Name) {
-  const base = (name.local ? '_' : '') + name.unit
+  const base = (name.object ? name.object + '.' : '') + (name.local ? '_' : '') + name.unit
   if (name.domain.is === 'dynamic') return '`${' + name.domain.vary + '}.' + base + '`'
   if (name.domain.is === 'static') return `'${name.domain.name}.${base}'`
   return `'${base}'`
