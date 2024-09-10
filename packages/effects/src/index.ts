@@ -265,20 +265,35 @@ export const withAbortableSchedule = <T extends Ctx>(ctx: T): T => {
 
 export const concurrentControllers = new WeakMap<Fn, Atom<null | AbortController>>()
 export const concurrent: {
-  <T extends Fn<[CtxSpy, ...any[]]>>(fn: T): T
-  <T extends Fn<[Ctx, ...any[]]>>(fn: T): T
-} = (fn: Fn<[Ctx, ...any[]]>) => {
+  <T extends (ctx: CtxSpy | Ctx, ...a: any[]) => any>(fn: T, strategy?: 'last-in-win'): T
+  <T extends (ctx: CtxSpy | Ctx, ...a: any[]) => Promise<any>>(fn: T, strategy: 'first-in-win'): T
+} = (fn: Fn, strategy: 'last-in-win' | 'first-in-win' = 'last-in-win'): Fn => {
   const abortControllerAtom = atom<null | AbortController>(null, `${__count('_concurrent')}.abortControllerAtom`)
 
   const result = Object.assign(
     (ctx: Ctx, ...a: any[]) => {
       const prevController = ctx.get(abortControllerAtom)
+      const controller = new AbortController()
       // do it outside of the schedule to save the call stack
       const abort = toAbortError('concurrent')
-      // TODO it is better to do it sync?
-      if (prevController) ctx.schedule(() => prevController.abort(abort))
 
-      const controller = abortControllerAtom(ctx, new AbortController())!
+      if (strategy === 'first-in-win') {
+        if (prevController) {
+          const rej = Promise.reject(abort)
+          rej.catch(noop)
+          return rej
+        } else {
+          abortControllerAtom(ctx, controller)
+        }
+      }
+      if (strategy === 'last-in-win') {
+        abortControllerAtom(ctx, controller)
+        if (prevController) {
+          // TODO is it better to do it sync?
+          ctx.schedule(() => prevController.abort(abort))
+        }
+      }
+
       const unabort = onCtxAbort(ctx, (error) => {
         // prevent unhandled error for abort
         if (res instanceof Promise) res.catch(noop)
@@ -287,9 +302,13 @@ export const concurrent: {
       ctx = { ...ctx, cause: { ...ctx.cause } }
       abortCauseContext.set(ctx.cause, controller)
 
-      var res = fn(withAbortableSchedule(ctx), ...a)
+      var res = fn(withAbortableSchedule(ctx) as CtxSpy, ...a)
       if (res instanceof Promise) {
         res = res.finally(() => {
+          if (strategy === 'first-in-win') {
+            abortControllerAtom(ctx, null)
+          }
+
           unabort?.()
           // prevent uncaught rejection for the abort
           if (controller.signal.aborted) res.catch(noop)
@@ -299,8 +318,8 @@ export const concurrent: {
         controller.signal.addEventListener('abort', () => {
           res.catch(noop)
         })
-
-        return res
+      } else {
+        throwReatomError(strategy === 'first-in-win', 'can\'t apply "first-in-win" strategy for non-async function')
       }
       return res
     },
@@ -312,6 +331,14 @@ export const concurrent: {
 
   return result
 }
+
+export const withConcurrency: {
+  <T extends Action>(strategy?: 'last-in-win'): (target: T) => T
+  <T extends Action<any[], Promise<any>>>(strategy: 'first-in-win'): (target: T) => T
+} =
+  (strategy?: 'last-in-win' | 'first-in-win') =>
+  (target: Action): Action =>
+    concurrent(target, strategy as any)
 
 export const spawn = <Args extends any[], Payload>(
   ctx: Ctx,
@@ -335,12 +362,12 @@ export const reaction = <Params extends any[], Payload>(
   name = __count('reaction'),
 ): Reaction<Params, Payload> =>
   action((ctx, ...params: Params) => {
-    const reducer = concurrent((ctx) => cb(ctx, ...params))
+    const reducer = concurrent((ctx) => cb(ctx as CtxSpy, ...params))
     const reactionAtom = atom(reducer, __count(name))
     const abort = (reason: any) => {
-      const controller = concurrentControllers.get(reducer)
-      if (controller) {
-        ctx.get(controller)?.abort(toAbortError(reason))
+      const controllerAtom = concurrentControllers.get(reducer)
+      if (controllerAtom) {
+        ctx.get(controllerAtom)?.abort(toAbortError(reason))
       }
     }
     const un = ctx.subscribe(reactionAtom, noop)
