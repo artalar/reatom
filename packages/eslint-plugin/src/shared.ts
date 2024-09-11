@@ -1,7 +1,7 @@
 import type * as estree from 'estree'
 
 export const reatomFactoryList = ['atom', 'action', 'reaction'] as const
-export const reatomFactoryPattern = new RegExp(`^(reatom\w+|${reatomFactoryList.join('|')})$`)
+export const reatomFactoryPattern = new RegExp(`^(reatom\\w+|${reatomFactoryList.join('|')})$`)
 
 // export const createImportMap = (packagePrefix: string) => {
 //   const imported = new Map<string, string>()
