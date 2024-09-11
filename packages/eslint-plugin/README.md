@@ -79,13 +79,30 @@ The name must be equal to the name of a variable or a property an entity is assi
 
 ```ts
 const count = atom(0, 'count')
+```
 
+When atom is assigned to a property of an object assigned to a variable, variable name must be specified before a period (`.`):
+
+```ts
 const atomsRec = {
-  count: atom(0, 'count'),
+  count: atom(0, 'atomsRec.count'),
 }
 ```
 
-When creating atoms dynamically with factories, you can also specify the "namespace" of the name before the `.` symbol:
+When creating units within `reatom*`-named factory functions, you can also specify the "namespaces" of unit names before period. The fragment before period is called the domain. Domain value must be equal to the name of the factory function excluding the `reatom` prefix:
+
+```ts
+const reatomFood = (config: { name: string; calories: number; fat: number; carbs: number; protein: number }) => {
+  const { name } = config.name
+  const calories = atom(config.calories, `Food.calories`)
+  const fat = atom(config.fat, `Food.fat`)
+  const carbs = atom(config.carbs, `Food.carbs`)
+  const protein = atom(config.protein, `Food.protein`)
+  return { calories, fat, carbs, protein }
+}
+```
+
+If a factory function defines a parameter or a variable named `name`, names of units created in the function must be template literals that derive their domain fragments from the value of `name`:
 
 ```ts
 const reatomFood = (config: { name: string; calories: number; fat: number; carbs: number; protein: number }) => {
@@ -98,9 +115,14 @@ const reatomFood = (config: { name: string; calories: number; fat: number; carbs
 }
 ```
 
-If there is an identifier `name` defined in the function scope, unit names must use it as namespace. Otherwise, namespace must be equal to the name of the factory function.
+Object and domain fragments in names may be used together:
 
-You may prefix some atom names with `_` to indicate that they are not exposed from factories that create them (to make Reatom inspector hide them):
+```ts
+atom(0, `${name}.atomsRec.field`)
+atom(0, 'Some.atomsRec.field')
+```
+
+You may prefix unit names with `_` to indicate that they are not exposed from factories that create them (this makes Reatom inspector hide them):
 
 ```ts
 const secretState = atom(0, '_secretState')
@@ -111,7 +133,7 @@ You can also ensure prefixes and suffixes for `atom` names through the configura
 ```ts
 ;({
   atomPrefix: '',
-  atomSuffix: 'Atom',
+  atomPostfix: 'Atom',
 })
 ```
 
