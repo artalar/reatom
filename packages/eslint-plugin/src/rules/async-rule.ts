@@ -9,9 +9,6 @@ export const asyncRule: Rule.RuleModule = {
       recommended: true,
       description: 'Ensures that asynchronous interactions within Reatom functions are wrapped with `ctx.schedule`.',
     },
-    messages: {
-      scheduleMissing: 'Asynchronous interactions within Reatom functions should be wrapped with `ctx.schedule`',
-    },
     fixable: 'code',
   },
   create(context: Rule.RuleContext): Rule.RuleListener {
@@ -33,7 +30,7 @@ export const asyncRule: Rule.RuleModule = {
 
         context.report({
           node,
-          messageId: 'scheduleMissing',
+          message: '`ctx.schedule` is missing in an await expression within a Reatom-wrapped function',
           fix: (fixer) => [
             fixer.insertTextBefore(node.argument, 'ctx.schedule(() => '),
             fixer.insertTextAfter(node.argument, ')'),
