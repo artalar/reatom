@@ -1,23 +1,32 @@
-import { atom, type AtomProto, type Ctx, type Rec } from '@reatom/core'
-import { h, mount } from '@reatom/jsx'
-// @ts-expect-error TODO write types
-import { Inspector } from '@observablehq/inspector'
-// @ts-expect-error
-import observablehqStyles from '../../../node_modules/@observablehq/inspector/dist/inspector.css'
+import { action, atom, type AtomProto, type Ctx, type Rec } from '@reatom/core'
+import { h, mount, ctx } from '@reatom/jsx'
+import { ObservableHQ } from './ObservableHQ'
+import { reatomBoolean, withAssign } from '@reatom/primitives'
+import { Graph } from './Graph'
 
 export const connectDevtools = async (
-  ctx: Ctx,
+  clientCtx: Ctx,
   {
     separator = /\.|#/,
     privatePrefix = '_',
   }: { separator?: string | RegExp | ((name: string) => Array<string>); privatePrefix?: string } = {},
 ) => {
+  const name = '_inspect'
+
   const MAX_Z = Math.pow(2, 32) - 1
 
-  const width = atom('0px', 'inspect._width')
-  const height = atom('0px', 'inspect._height')
+  const width = atom('0px', `${name}.width`)
+  const height = atom('0px', `${name}.height`)
   let folded: null | { width: string; height: string } = null
   let moved = false
+
+  const viewSwitch = reatomBoolean(false, `${name}.viewSwitch`)
+
+  const snapshot = atom<Rec>({}, `${name}.snapshot`).pipe(
+    withAssign((target) => ({
+      forceUpdate: (ctx: Ctx) => target(ctx, (state) => ({ ...state })),
+    })),
+  )
 
   const logo = (
     <svg:svg
@@ -90,19 +99,7 @@ export const connectDevtools = async (
     </svg:svg>
   )
 
-  const inspectorEl = (
-    <div
-      css={`
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        z-index: 1;
-      `}
-    />
-  )
-  const inspector = new Inspector(inspectorEl) as { fulfilled(data: any): void }
-
-  const reloadEl = (
+  const viewSwitchEl = (
     <button
       css={`
         position: absolute;
@@ -119,17 +116,15 @@ export const connectDevtools = async (
         cursor: pointer;
         font-size: 1em;
       `}
-      title="Reload"
-      aria-label="Reload"
-      on:click={async () => {
-        inspector.fulfilled(logObject)
-      }}
+      title="Switch view"
+      aria-label="Switch view"
+      on:click={viewSwitch.toggle}
     >
-      ↻
+      {atom((ctx) => (ctx.spy(viewSwitch) ? '🗊' : '⛓'))}
     </button>
   )
 
-  const logEl = (
+  const reloadEl = (
     <button
       css={`
         position: absolute;
@@ -146,31 +141,48 @@ export const connectDevtools = async (
         cursor: pointer;
         font-size: 1em;
       `}
+      title="Reload"
+      aria-label="Reload"
+      on:click={async (ctx) => {
+        snapshot.forceUpdate(ctx)
+      }}
+    >
+      ↻
+    </button>
+  )
+
+  const logEl = (
+    <button
+      css={`
+        position: absolute;
+        top: 1px;
+        left: 100px;
+        width: 30px;
+        height: 30px;
+        border: none;
+        border-radius: 0 0 6px 6px;
+        font-size: 0.8em;
+        z-index: 10;
+        background: transparent;
+        color: #7f7f7f;
+        cursor: pointer;
+        font-size: 1em;
+      `}
       title="Log structured clone"
       aria-label="Log structured clone"
       on:click={() => {
         try {
-          console.log(structuredClone(logObject))
+          console.log(structuredClone(ctx.get(snapshot)))
         } catch {
           console.warn(
             "Reatom: can't make a structured clone to log a snapshot, log live state instead, the values could be changed during a time.",
           )
-          console.log(logObject)
+          console.log(ctx.get(snapshot))
         }
       }}
     >
       log
     </button>
-  )
-
-  const observableContainer = (
-    <div
-      css={`
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-      `}
-    />
   )
 
   const containerEl = (
@@ -189,37 +201,33 @@ export const connectDevtools = async (
       css:height={height}
     >
       {logo}
-      {reloadEl}
-      {logEl}
-      {observableContainer}
+      {viewSwitchEl}
+      <div
+        css={`
+          display: var(--display);
+        `}
+        css:display={atom((ctx) => (ctx.spy(viewSwitch) ? 'none' : 'block'))}
+      >
+        {reloadEl}
+        {logEl}
+        <ObservableHQ snapshot={snapshot} />
+      </div>
+      <div
+        css={`
+          display: var(--display);
+          overflow: auto;
+          height: 100%;
+        `}
+        css:display={atom((ctx) => (ctx.spy(viewSwitch) ? 'block' : 'none'))}
+      >
+        <Graph clientCtx={clientCtx} />
+      </div>
     </div>
   )
 
-  observableContainer.attachShadow({ mode: 'open' }).append(
-    <style>
-      {observablehqStyles.replaceAll(':root', '.observablehq')}
-      {`
-        .observablehq {
-          margin: 1rem;
-          margin-top: 0em;
-        }
-
-        .observablehq--inspect {
-          padding: 0.5rem 0;
-        }
-
-        .observablehq svg {
-          display: inline-block;
-        }
-      `}
-    </style>,
-    inspectorEl,
-  )
-
-  const logObject: Rec = {}
   const touched = new WeakSet<AtomProto>()
 
-  ctx.subscribe(async (logs) => {
+  clientCtx.subscribe(async (logs) => {
     // await null // needed to prevent `Maximum call stack size exceeded` coz `parseAtoms`
 
     for (const { proto, state } of logs) {
@@ -230,7 +238,7 @@ export const connectDevtools = async (
         continue
       }
 
-      let thisLogObject = logObject
+      let thisLogObject = ctx.get(snapshot)
 
       path.forEach((key, i, { length }) => {
         if (i === length - 1) {
@@ -260,8 +268,8 @@ export const connectDevtools = async (
   })
 
   const clearId = setInterval(() => {
-    if (Object.keys(logObject).length > 0) {
-      inspector.fulfilled(logObject)
+    if (Object.keys(ctx.get(snapshot)).length > 0) {
+      snapshot.forceUpdate(ctx)
       clearTimeout(clearId)
     }
   }, 100)

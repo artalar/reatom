@@ -2,9 +2,7 @@ import { reatomComponent } from '@reatom/npm-react'
 import { searchAtom, issuesResource } from './model'
 
 export const App = reatomComponent(({ ctx }) => {
-  const isLoading = Boolean(
-    ctx.spy(issuesResource.pendingAtom) || ctx.spy(issuesResource.retriesAtom),
-  )
+  const isLoading = Boolean(ctx.spy(issuesResource.pendingAtom) || ctx.spy(issuesResource.retriesAtom))
 
   return (
     <main>
@@ -23,4 +21,4 @@ export const App = reatomComponent(({ ctx }) => {
       </ul>
     </main>
   )
-})
+}, 'App')
