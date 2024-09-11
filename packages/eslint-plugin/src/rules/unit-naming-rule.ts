@@ -25,7 +25,7 @@ export const unitNamingRule: Rule.RuleModule = {
           atomPrefix: {
             type: 'string',
           },
-          atomSuffix: {
+          atomPostfix: {
             type: 'string',
           },
           domainVariable: {
@@ -41,11 +41,11 @@ export const unitNamingRule: Rule.RuleModule = {
   create(context) {
     const {
       atomPrefix = '',
-      atomSuffix = '',
+      atomPostfix = '',
       domainVariable = 'name',
     }: {
       atomPrefix?: string
-      atomSuffix?: string
+      atomPostfix?: string
       domainVariable?: string
     } = context.options[0] ?? {}
 
@@ -61,18 +61,19 @@ export const unitNamingRule: Rule.RuleModule = {
         idScopes.pop()
       },
       [`:function`](node: estree.Function) {
-        const variDeclarators =
+        const declarators =
           node.body.type === 'BlockStatement'
-            ? node.body.body.flatMap((statement) =>
-                statement.type === 'VariableDeclaration' ? statement.declarations : [],
-              )
+            ? node.body.body.flatMap((statement) => {
+                return statement.type === 'VariableDeclaration' ? statement.declarations : []
+              })
             : []
-        const patterns = [...node.params, ...variDeclarators.map((d) => d.id)]
+        const patterns = [...node.params, ...declarators.map((d) => d.id)]
         const declaresDomain = !!patterns.flatMap(patternNames).find((id) => id.name === domainVariable)
 
         if (declaresDomain) domainScopes.push({ is: 'dynamic', vary: domainVariable })
-        else if ('id' in node && node.id) domainScopes.push({ is: 'static', name: node.id.name })
-        else domainScopes.push(null)
+        else if ('id' in node && node.id && node.id.name.startsWith('reatom')) {
+          domainScopes.push({ is: 'static', name: node.id.name.replace('reatom', '') })
+        } else domainScopes.push(null)
       },
       [`:function:exit`](node: estree.Function) {
         domainScopes.pop()
@@ -181,9 +182,8 @@ export const unitNamingRule: Rule.RuleModule = {
             break checkName
           }
           if (JSON.stringify(parsedName.domain) !== JSON.stringify(expectedDomain)) {
-            if (expectedDomain.is === 'absent') message = 'Unit name must have no domain'
-            if (expectedDomain.is === 'dynamic')
-              message = `Unit domain must be set to the value of "${expectedDomain.vary}" variable`
+            if (expectedDomain.is === 'absent') message = 'Unit must have no domain'
+            if (expectedDomain.is === 'dynamic') message = `Unit domain must be derived from "${expectedDomain.vary}"`
             if (expectedDomain.is === 'static') message = `Unit domain must be "${expectedDomain.name}"`
             break checkName
           }
@@ -199,19 +199,19 @@ export const unitNamingRule: Rule.RuleModule = {
             fix: (fixer) => [
               fixer.replaceText(
                 nameNode,
-                printName({ ...parsedName, unit: atomPrefix + parsedName.unit + atomSuffix }),
+                printName({ ...parsedName, unit: atomPrefix + parsedName.unit + atomPostfix }),
               ),
-              fixer.replaceText(expectedUnit, atomPrefix + expectedUnit.name + atomSuffix),
+              fixer.replaceText(expectedUnit, atomPrefix + expectedUnit.name + atomPostfix),
             ],
           })
         }
-        if (!parsedName.unit.endsWith(atomSuffix)) {
+        if (!parsedName.unit.endsWith(atomPostfix)) {
           context.report({
             node: nameNode,
             message: `Atom name must end with "${atomPrefix}"`,
             fix: (fixer) => [
-              fixer.replaceText(nameNode, printName({ ...parsedName, unit: parsedName.unit + atomSuffix })),
-              fixer.replaceText(expectedUnit, expectedUnit.name + atomSuffix),
+              fixer.replaceText(nameNode, printName({ ...parsedName, unit: parsedName.unit + atomPostfix })),
+              fixer.replaceText(expectedUnit, expectedUnit.name + atomPostfix),
             ],
           })
         }
