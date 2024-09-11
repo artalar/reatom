@@ -18,16 +18,16 @@ tester.run('unit-naming-rule', unitNamingRule, {
     },
     {
       code: `const someAtom = atom(0, '_someAtom')`,
-      options: [{ atomSuffix: 'Atom' }],
+      options: [{ atomPostfix: 'Atom' }],
     },
     {
-      code: `function reatomSome() { const someAtom = atom(0, 'reatomSome.someAtom') }`,
+      code: `function reatomSome() { const someAtom = atom(0, 'Some.someAtom') }`,
     },
     {
       code: `const Atoms = { someAtom: atom(0, 'Atoms.someAtom') }`,
     },
     {
-      code: `function reatomSome() { const Atoms = { someAtom: atom(0, 'reatomSome.Atoms.someAtom') } }`,
+      code: `function reatomSome() { const Atoms = { someAtom: atom(0, 'Some.Atoms.someAtom') } }`,
     },
   ],
   invalid: [
@@ -54,33 +54,38 @@ tester.run('unit-naming-rule', unitNamingRule, {
     },
     {
       code: `const some = atom(0, 'some')`,
-      options: [{ atomSuffix: 'Atom' }],
+      options: [{ atomPostfix: 'Atom' }],
       errors: [{ message: /name must end with/ }],
       output: `const someAtom = atom(0, 'someAtom')`,
     },
     {
-      code: `function reatomSome() { const field = atom(0, 'reatomSome._unrelated'); }`,
+      code: `function reatomSome() { const field = atom(0, 'Some._unrelated'); }`,
       errors: [{ message: /name must be/ }],
-      output: `function reatomSome() { const field = atom(0, 'reatomSome._field'); }`,
+      output: `function reatomSome() { const field = atom(0, 'Some._field'); }`,
+    },
+    {
+      code: `const some = atom(0, 'Some.some')`,
+      errors: [{ message: /must have no domain/ }],
+      output: `const some = atom(0, 'some')`,
     },
     {
       code: `function reatomSome() { const field = atom(0, 'field') }`,
       errors: [{ message: /domain must be/ }],
-      output: `function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
+      output: `function reatomSome() { const field = atom(0, 'Some.field') }`,
     },
     {
-      code: `function reatomSome() { const field = atom(0, 'Some.field') }`,
+      code: `function reatomSome() { const field = atom(0, 'Lololo.field') }`,
       errors: [{ message: /domain must be/ }],
-      output: `function reatomSome() { const field = atom(0, 'reatomSome.field') }`,
+      output: `function reatomSome() { const field = atom(0, 'Some.field') }`,
     },
     {
       code: `function reatomSome({name}) { const field = atom(0, 'field'); }`,
-      errors: [{ message: /domain must be set to the value of/ }],
+      errors: [{ message: /domain must be derived from/ }],
       output: `function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
     },
     {
       code: `function reatomSome({name}) { const field = atom(0, 'Some.field'); }`,
-      errors: [{ message: /domain must be set to the value/ }],
+      errors: [{ message: /domain must be derived from/ }],
       output: `function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
     },
   ],
