@@ -88,5 +88,10 @@ tester.run('unit-naming-rule', unitNamingRule, {
       errors: [{ message: /domain must be derived from/ }],
       output: `function reatomSome({name}) { const field = atom(0, \`\${name}.field\`); }`,
     },
+    {
+      code: `function reatomSome(config) { const {name} = config; const field = atom(0, 'Some.field'); }`,
+      errors: [{ message: /domain must be derived from/ }],
+      output: `function reatomSome(config) { const {name} = config; const field = atom(0, \`\${name}.field\`); }`,
+    },
   ],
 })

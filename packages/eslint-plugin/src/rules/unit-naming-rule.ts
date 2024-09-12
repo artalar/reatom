@@ -75,7 +75,7 @@ export const unitNamingRule: Rule.RuleModule = {
           domainScopes.push({ is: 'static', name: node.id.name.replace('reatom', '') })
         } else domainScopes.push(null)
       },
-      [`:function:exit`](node: estree.Function) {
+      [`:function:exit`]() {
         domainScopes.pop()
       },
       [`CallExpression[callee.name=${reatomFactoryPattern}]`](node: estree.CallExpression) {

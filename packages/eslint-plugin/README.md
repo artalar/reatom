@@ -60,7 +60,7 @@ Here is an example of React + TypeScript + Prettier config with Reatom.
     "prettier/prettier": "error"
   },
   "settings": {
-    "atomSuffix": "Atom"
+    "atomPostfix": "Atom"
   }
 }
 ```
@@ -93,7 +93,7 @@ When creating units within `reatom*`-named factory functions, you can also speci
 
 ```ts
 const reatomFood = (config: { name: string; calories: number; fat: number; carbs: number; protein: number }) => {
-  const { name } = config.name
+  const { name } = config
   const calories = atom(config.calories, `Food.calories`)
   const fat = atom(config.fat, `Food.fat`)
   const carbs = atom(config.carbs, `Food.carbs`)
@@ -106,7 +106,7 @@ If a factory function defines a parameter or a variable named `name`, names of u
 
 ```ts
 const reatomFood = (config: { name: string; calories: number; fat: number; carbs: number; protein: number }) => {
-  const { name } = config.name
+  const { name } = config
   const calories = atom(config.calories, `${name}.calories`)
   const fat = atom(config.fat, `${name}.fat`)
   const carbs = atom(config.carbs, `${name}.carbs`)
