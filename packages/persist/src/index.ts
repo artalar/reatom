@@ -70,7 +70,12 @@ export interface WithPersistOptions<T> {
 }
 
 export interface WithPersist {
-  <T extends Atom>(...args: [key: string] | [options: WithPersistOptions<AtomState<T>>]): (anAtom: T) => T
+  <T extends Atom>(
+    ...args: [key: string] | [options: WithPersistOptions<AtomState<T>>]
+  ): (anAtom: T) => T & {
+    /** Internal sync atom with `PersistRecord` state. Do not follow it when applying a few persist adapters! */
+    __persistRecordAtom: Atom<PersistRecord | null>
+  }
 }
 
 export const reatomPersist = (
@@ -80,6 +85,7 @@ export const reatomPersist = (
 } => {
   const storageAtom = atom(storage, `storageAtom#${storage.name}`)
 
+  // @ts-expect-error
   const withPersist: WithPersist =
     <T extends Atom>(options: string | WithPersistOptions<AtomState<T>>) =>
     (anAtom: T): T => {
@@ -175,7 +181,7 @@ export const reatomPersist = (
         }
       })
 
-      return anAtom
+      return Object.assign(anAtom, { __persistRecordAtom: persistRecordAtom })
     }
 
   return Object.assign(withPersist, { storageAtom })
