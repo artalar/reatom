@@ -3,6 +3,7 @@ import { h, mount, ctx } from '@reatom/jsx'
 import { ObservableHQ } from './ObservableHQ'
 import { reatomBoolean, withAssign } from '@reatom/primitives'
 import { Graph } from './Graph'
+import { withLocalStorage } from '@reatom/persist-web-storage'
 
 export const connectDevtools = async (
   clientCtx: Ctx,
@@ -11,7 +12,7 @@ export const connectDevtools = async (
     privatePrefix = '_',
   }: { separator?: string | RegExp | ((name: string) => Array<string>); privatePrefix?: string } = {},
 ) => {
-  const name = '_inspect'
+  const name = '_ReatomDevtools'
 
   const MAX_Z = Math.pow(2, 32) - 1
 
@@ -20,7 +21,7 @@ export const connectDevtools = async (
   let folded: null | { width: string; height: string } = null
   let moved = false
 
-  const viewSwitch = reatomBoolean(false, `${name}.viewSwitch`)
+  const viewSwitch = reatomBoolean(false, `${name}.viewSwitch`).pipe(withLocalStorage(`${name}.viewSwitch`))
 
   const snapshot = atom<Rec>({}, `${name}.snapshot`).pipe(
     withAssign((target) => ({
@@ -195,8 +196,9 @@ export const connectDevtools = async (
         width: var(--width);
         height: var(--height);
         z-index: ${MAX_Z};
-        background: hsl(244deg 20% 90%);
+        background: var(--devtools-bg);
       `}
+      css:devtools-bg="hsl(244deg 20% 90%)"
       css:width={width}
       css:height={height}
     >
@@ -216,7 +218,7 @@ export const connectDevtools = async (
         css={`
           display: var(--display);
           overflow: auto;
-          height: 100%;
+          height: calc(100% - 3rem);
         `}
         css:display={atom((ctx) => (ctx.spy(viewSwitch) ? 'block' : 'none'))}
       >
