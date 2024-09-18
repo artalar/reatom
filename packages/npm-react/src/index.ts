@@ -24,7 +24,7 @@ import { toAbortError } from '@reatom/utils'
 // useIsomorphicEffect removes it by replacing useLayoutEffect with useEffect during ssr
 export const useIsomorphicEffect = typeof document !== 'undefined' ? React.useLayoutEffect : React.useEffect
 
-let getName = (type: string): string => {
+export const getComponentDebugName = (type: string): string => {
   let Component =
     // @ts-expect-error do we have another way?
     React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner?.current?.type
@@ -89,7 +89,7 @@ export const useAtom: {
   if (isAtom(anAtom)) deps.push(anAtom)
 
   let ref = React.useMemo(() => {
-    let atomName = getName(name ?? `useAtom#${typeof anAtom}`)
+    let atomName = getComponentDebugName(name ?? `useAtom#${typeof anAtom}`)
     let depsAtom = atom<any[]>([], `${atomName}._depsAtom`)
     let theAtom = anAtom
     if (!isAtom(theAtom)) {
@@ -179,7 +179,7 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   if (isAction(fn)) deps.push(fn)
 
   let ref = React.useMemo(() => {
-    let theAction: Action = isAction(fn) ? fn : action((...a) => ref!.fn(...a), name ?? getName(`useAction`))
+    let theAction: Action = isAction(fn) ? fn : action((...a) => ref!.fn(...a), name ?? getComponentDebugName(`useAction`))
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, cb }
   }, deps)
