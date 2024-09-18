@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.9.0](https://github.com/artalar/reatom/compare/npm-react-v3.8.10...npm-react-v3.9.0) (2024-09-18)
+
+
+### Features
+
+* **npm-react:** add getComponentDebugName export ([e13ea3b](https://github.com/artalar/reatom/commit/e13ea3bab108e60d4575a0054e7355a182f26553))
+* **npm-react:** add suspense support for reatomComponent ([50075bd](https://github.com/artalar/reatom/commit/50075bd38604e378a7200d12abb6efb77c71f525))
+
 ## [3.8.10](https://github.com/artalar/reatom/compare/npm-react-v3.8.9...npm-react-v3.8.10) (2024-06-26)
 
 

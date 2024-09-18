@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://github.com/artalar/reatom/compare/persist-v3.3.4...persist-v3.4.0) (2024-09-18)
+
+
+### Features
+
+* **persist:** add __persistRecordAtom ([89d6e6f](https://github.com/artalar/reatom/commit/89d6e6f98587c45bc5c77f241298ffd16f340489))
+
 ## [3.3.4](https://github.com/artalar/reatom/compare/persist-v3.3.3...persist-v3.3.4) (2024-06-26)
 
 
