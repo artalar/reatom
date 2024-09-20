@@ -135,7 +135,30 @@ export const reatomPersist = (
             state = fromPersistRecord(ctx, rec, state)
           })
 
-          return computer ? computer(ctx, state) : state
+          if (computer) {
+            const { pubs } = ctx.cause
+
+            const isInit = pubs.length === 0
+            const hasOtherDeps = pubs.length > 1
+
+            if (
+              isInit ||
+              (hasOtherDeps &&
+                pubs.some(
+                  (pub, i) =>
+                    i !== 0 &&
+                    !Object.is(
+                      pub.state,
+                      // @ts-expect-error
+                      ctx.get({ __reatom: pub.proto }),
+                    ),
+                ))
+            ) {
+              state = computer(ctx, state) as typeof state
+            }
+          }
+
+          return state
         }
 
         onConnect(
