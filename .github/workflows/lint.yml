@@ -1,0 +1,39 @@
+name: Lint
+
+on: workflow_call
+
+jobs:
+  prettier:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    container:
+      image: node:${{ vars.NODE_VERSION }}-alpine
+    steps:
+      - name: Install git
+        run: apk add git
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Run prettier check
+        id: prettier_check
+        continue-on-error: true
+        run: |
+          trap 'echo "PRETTIER_EXIT_CODE=$?" >> $GITHUB_OUTPUT' EXIT; npm run prettify:check
+      - name: Fail if there no auto fix 
+        if: steps.prettier_check.outputs.PRETTIER_EXIT_CODE == 2
+        run: exit 2
+      - name: Run prettier
+        id: prettier_run
+        if: steps.prettier_check.outputs.PRETTIER_EXIT_CODE == 1
+        run: npm run prettify
+      - name: Commit and push changes
+        if: ${{ success() && steps.prettier_run.conclusion == 'success' }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git commit -am "chore: run prettier"
+          git push https://github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.head.ref }}

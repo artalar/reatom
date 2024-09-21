@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://github.com/artalar/reatom/compare/eslint-plugin-v3.6.2...eslint-plugin-v3.7.0) (2024-09-12)
+
+
+### Features
+
+* **eslint-plugin:** complete unit-naming-rule ([#523](https://github.com/artalar/reatom/issues/523)) ([#920](https://github.com/artalar/reatom/issues/920)) ([590ebbf](https://github.com/artalar/reatom/commit/590ebbf4fe14c649304b77b7815766779c19a078))
+
 ## [3.6.2](https://github.com/artalar/reatom/compare/eslint-plugin-v3.6.1...eslint-plugin-v3.6.2) (2024-06-22)
 
 

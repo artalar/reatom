@@ -48,7 +48,6 @@ Most likely you will need [@reatom/npm-react](/package/npm-react/) adapter packa
 
 > The "npm-" prefix in adapter packages prevents naming collisions with ecosystem packages, as the NPM global namespace is widely used, and many common words are already taken.
 
-
 ```sh
 npm i @reatom/framework @reatom/testing @reatom/eslint-plugin @reatom/npm-react
 ```
@@ -72,6 +71,8 @@ The benefits will get bigger as your real application grows.
 <input id="NAME" />
 <p id="GREETING"></p>
 ```
+
+Note, that all HTML elements with IDs stored in the global namespace with relative names.
 
 ```ts
 export let name = localStorage.getItem('name') ?? ''
@@ -105,16 +106,19 @@ In the code above, the update logic for the greeting is in the name update handl
 While this might seem trivial in a small example, it can lead to confusion in real applications with complex code organization and business requirements.
 You might lose track of why one part of the code changes another.
 
+Once again, we are investigating a super simple example because it's short and obvious. In this particular example there is no much sense to refactor anything, but it needed to illustrate the problems in general. That problems becomes fall your code base to a pit of failure during a time and have a huge влияние in general, so it is important to find a pattern to reduce those problems as much as possible. So, it is **the main reason for reactivity: solve state SSoT and a code coupling**.
+
 Reactive programming can address these issues by accurately describing dependent computations within each domain.
 
 Let's refactor the code using Reatom.
 
 We use the `atom` function to wrap our changeable data:
- - If you pass a primitive value to the atom, it allows the state to change.
- - If you pass a `computer` function to the atom, it creates a read-only atom that automatically recomputes when dependent atoms change, but only if the computed atom has a subscription.
+
+- If you pass a primitive value to the atom, it allows the state to change.
+- If you pass a `computer` function to the atom, it creates a read-only atom that automatically recomputes when dependent atoms change, but only if the computed atom has a subscription.
 
 ```ts
-export const nameAtom = atom(localStorage.getItem('name') ?? '')
+export const nameAtom = atom(localStorage.getItem('name') ?? '', 'nameAtom')
 nameAtom.onChange((ctx, name) => {
   localStorage.setItem('input', name)
 })
@@ -122,7 +126,7 @@ nameAtom.onChange((ctx, name) => {
 export const greetingAtom = atom((ctx) => {
   const name = ctx.spy(nameAtom)
   return `Hello, ${name}!`
-})
+}, 'greetingAtom')
 
 // view bindings
 NAME.value = ctx.get(nameAtom)
@@ -137,10 +141,10 @@ ctx.subscribe(greetingAtom, (greeting) => {
 Now, we have the same amount of code, but it is much better organized and structured.
 Plus, we have `ctx`!
 
-This context object provides powerful capabilities for debugging, testing, and many other useful features.
+This context object provides powerful capabilities for debugging, testing, and many other useful features. Note? that the string names in the second `atom` parameters are optional and used for debugging.
 We'll explore these advantages in more detail later.
 
-### Data consistency
+## Data consistency
 
 Data consistency is a critical challenge that can be difficult to manage and debug.
 
@@ -167,7 +171,7 @@ This scheduler pushes the callback to a separate queue, which is executed only a
 Let's apply a minor refactoring to illustrate these improvements.
 
 ```ts
-export const nameAtom = atom(localStorage.getItem('name') ?? '')
+export const nameAtom = atom(localStorage.getItem('name') ?? '', 'nameAtom')
 nameAtom.onChange((ctx, name) => {
   ctx.schedule(() => {
     localStorage.setItem('input', name)
@@ -197,7 +201,7 @@ Let's enhance our form to create something more valuable, like a login form
 ```
 
 ```ts
-export const nameAtom = atom(localStorage.getItem('name') ?? '')
+export const nameAtom = atom(localStorage.getItem('name') ?? '', 'nameAtom')
 nameAtom.onChange((ctx, name) => {
   ctx.schedule(() => {
     localStorage.setItem('input', name)
@@ -207,7 +211,7 @@ nameAtom.onChange((ctx, name) => {
 export const greetingAtom = atom((ctx) => {
   const name = ctx.spy(nameAtom)
   return `Hello, ${name}!`
-})
+}, 'greetingAtom')
 
 export const submit = action(async (ctx, event) => {
   event.preventDefault()
@@ -215,13 +219,14 @@ export const submit = action(async (ctx, event) => {
   const body = new FormData()
   body.append('name', name)
 
-  const response = await ctx.schedule(() =>
-    fetch('/api/submit', { method: 'POST', body: body }),
-  )
-  if (!response.ok) {
-    alert(`Oups, the API is doesn't exist, this is just a test.`)
+  const response = await ctx.schedule(() => fetch('/api/submit', { method: 'POST', body: body }))
+  if (response.ok) {
+    nameAtom(ctx, '')
+    alert('You are logged in')
+  } else {
+    alert("Oups, the API is doesn't exist, this is just a test.")
   }
-})
+}, 'submit')
 
 // view bindings
 NAME.value = ctx.get(nameAtom)
@@ -261,10 +266,7 @@ export const pageAtom = atom(1, 'pageAtom').pipe(
 export const issuesReaction = reatomResource(async (ctx) => {
   const page = ctx.spy(pageAtom)
   return await ctx.schedule(() =>
-    request<IssuesResponse>(
-      `https://api.github.com/search/issues?q=reatom&page=${page}&per_page=10`,
-      ctx.controller,
-    ),
+    request<IssuesResponse>(`https://api.github.com/search/issues?q=reatom&page=${page}&per_page=10`, ctx.controller),
   )
 }, 'issuesReaction').pipe(withDataAtom({ items: [] }))
 
@@ -314,7 +316,7 @@ To view persisted actions data and explore many more features, try [reatom/logge
 Additionally, you can inspect all atom and action patches by using:
 
 ```javascript
-ctx.subscribe(logs => console.log(logs));
+ctx.subscribe((logs) => console.log(logs))
 ```
 
 ## Lifecycle
@@ -389,13 +391,73 @@ You can find many great examples in the [async package docs](/package/async).
 
 ### Lifecycle scheme
 
-Here is a scheme illustrating the execution order of the built-in queues.
+Reatom operates a few queues to manage mutations and pure computations, effects with different priorities to archive most intuitive and efficient execution order, with batching and transactions. We have a few nested loops, which warks the same way as "tasks" and "microtasks" in a browser: a parent loop tick wait all children loops to complete.
 
 > For more details on how to use the queues, refer to the [ctx.schedule](/package/core#ctxschedule) documentation.
 
-<!-- https://excalidraw.com/#json=NnnwgtZL8Euq_BpC4knMZ,ibz37ULiZzV0YmHPHpJsvQ -->
+- **Mutations**
+  > `anAction(ctx, payload);` `anAtom(ctx, newState);` `bach(ctx, cb);`
+  - **Computations**
+    > `atom((ctx) => ctx.spy(anAtom) + 1);` `reaction((ctx) => console.log(ctx.spy(anAtom)))`
+    - **Updates**
+      > `anAtom.onChange(cb);` `anAction.onCall(cb);` `ctx.schedule(cb, 0);`
+    - **Logs**
+      > `ctx.subscribe(cb);`
+    - **Rollbacks** (on error)
+      > `ctx.schedule(cb, -1);`
+      - **Near effects**
+        > `ctx.schedule(cb);` `ctx.schedule(cb, 1);` `reatomAsync(cb); onConnect(anAtom, cb);`
+        - **Late effects**
+          > `ctx.subscribe(anAtom, cb);` `ctx.schedule(cb, 2);`
 
-<img data-theme="light" src="/assets/queues_light1.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks" loading="lazy" />
-<img data-theme="dark" src="/assets/queues_dark1.png" width="100%" alt="scheme of update propagation flow and lifecycle hooks" loading="lazy" />
+In other words, each next late effect will be processed after all near effects, and each near effect will be processed after all updates (and logs and rollbacks), and each update will be processed after all computations, and each computation will be processed after all mutations. So, if you will run a mutation in updates queue or effects queue the whole flow will be processed from the beginning.
 
-<br>
+Here is a visual diagram:
+
+```mermaid
+flowchart TD
+    subgraph G["Late Effects"]
+        direction TB
+
+        subgraph F["Near Effects"]
+            direction TB
+
+            subgraph Sequence["Updates, Logs, Rollbacks"]
+                direction LR
+
+                subgraph C["Updates"]
+                    direction TB
+
+                    subgraph B["Computations"]
+                        direction TB
+
+                        subgraph A["Mutations"]
+                            direction TB
+
+                            A1["anAction(ctx, payload);"]
+                        end
+
+                        B1["atom((ctx) => ctx.spy(anAtom))"]
+                    end
+
+                    C1["anAtom.onChange(cb);"]
+                end
+
+                subgraph D["Logs"]
+                    direction TB
+                    D1["ctx.subscribe(cb)"]
+                end
+
+                subgraph E["Rollbacks"]
+                    direction TB
+                    E1["ctx.schedule(cb, -1)"]
+                end
+            end
+
+            F1["ctx.schedule(cb);"]
+        end
+
+        G1["ctx.subscribe(anAtom, cb);"]
+    end
+
+```

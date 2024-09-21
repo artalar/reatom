@@ -3,10 +3,11 @@ import { parseHTML } from 'linkedom'
 import { suite } from 'uvu'
 import * as assert from 'uvu/assert'
 import { createTestCtx, mockFn } from '@reatom/testing'
-import { Fn, atom } from '@reatom/core'
+import { Fn, action, atom } from '@reatom/core'
 import { reatomLinkedList } from '@reatom/primitives'
 import { isConnected } from '@reatom/hooks'
-import { reatomJsx } from '.'
+import { reatomJsx, type JSX } from '.'
+import { sleep } from '@reatom/utils'
 
 const test = suite('reatomJsx')
 
@@ -206,9 +207,7 @@ test('array children', () => {
   const { ctx, h, hf, mount, parent } = setup()
 
   const n = atom(1)
-  const list = atom((ctx) =>
-    Array.from({ length: ctx.spy(n) }, (_, i) => <li>{i + 1}</li>),
-  )
+  const list = atom((ctx) => Array.from({ length: ctx.spy(n) }, (_, i) => <li>{i + 1}</li>))
 
   assert.throws(() => {
     mount(
@@ -230,36 +229,28 @@ test('array children', () => {
   assert.is(element.textContent, '12')
 })
 
-test('linked list', () => {
+test('linked list', async () => {
   const { ctx, h, hf, mount, parent } = setup()
 
   const list = reatomLinkedList((ctx, n: number) => atom(n))
-  const jsxList = list.reatomMap((ctx, n) => <li>{n}</li>)
+  const jsxList = list.reatomMap((ctx, n) => <span>{n}</span>)
   const one = list.create(ctx, 1)
   const two = list.create(ctx, 2)
-  const ul = <ul>{jsxList}</ul>
 
-  mount(parent, ul)
+  mount(parent, <div>{jsxList}</div>)
 
-  ctx.get(jsxList).head!.innerHTML += 0
-  assert.is(parent.innerText, '10\n2')
+  assert.is(parent.innerText, '12')
+  assert.ok(isConnected(ctx, one))
+  assert.ok(isConnected(ctx, two))
 
   list.swap(ctx, one, two)
-  assert.is(parent.innerText, '2\n10')
+  assert.is(parent.innerText, '21')
 
-  list.clear(ctx)
-  assert.is(parent.innerText, '')
-
-  // TODO
-  // assert.not.ok(isConnected(ctx, one))
-
-  // assert.is(parent.children.length, 1)
-  // assert.ok(isConnected(ctx, jsxList))
-
-  // ul.remove()
-  // list.create(ctx, 1)
-  // assert.is(parent.children.length, 0)
-  // assert.not.ok(isConnected(ctx, jsxList))
+  list.remove(ctx, two)
+  assert.is(parent.innerText, '1')
+  await sleep()
+  assert.ok(isConnected(ctx, one))
+  assert.not.ok(isConnected(ctx, two))
 })
 
 test('boolean as child', () => {
@@ -270,12 +261,14 @@ test('boolean as child', () => {
   const falseAtom = atom(false, 'false')
   const falseValue = false
 
-  const element = <div>
-    {trueAtom}
-    {trueValue}
-    {falseAtom}
-    {falseValue}
-  </div>
+  const element = (
+    <div>
+      {trueAtom}
+      {trueValue}
+      {falseAtom}
+      {falseValue}
+    </div>
+  )
 
   assert.is(element.childNodes.length, 2)
   assert.is(element.textContent, '')
@@ -287,10 +280,12 @@ test('null as child', () => {
   const nullAtom = atom(null, 'null')
   const nullValue = null
 
-  const element = <div>
-    {nullAtom}
-    {nullValue}
-  </div>
+  const element = (
+    <div>
+      {nullAtom}
+      {nullValue}
+    </div>
+  )
 
   assert.is(element.childNodes.length, 1)
   assert.is(element.textContent, '')
@@ -302,10 +297,12 @@ test('undefined as child', () => {
   const undefinedAtom = atom(undefined, 'undefined')
   const undefinedValue = undefined
 
-  const element = <div>
-    {undefinedAtom}
-    {undefinedValue}
-  </div>
+  const element = (
+    <div>
+      {undefinedAtom}
+      {undefinedValue}
+    </div>
+  )
 
   assert.is(element.childNodes.length, 1)
   assert.is(element.textContent, '')
@@ -317,10 +314,12 @@ test('empty string as child', () => {
   const emptyStringAtom = atom('', 'emptyString')
   const emptyStringValue = ''
 
-  const element = <div>
-    {emptyStringAtom}
-    {emptyStringValue}
-  </div>
+  const element = (
+    <div>
+      {emptyStringAtom}
+      {emptyStringValue}
+    </div>
+  )
 
   assert.is(element.childNodes.length, 1)
   assert.is(element.textContent, '')
@@ -362,6 +361,191 @@ test('render SVGElement atom', () => {
   const element = <div>{svgAtom}</div>
 
   assert.is(element.innerHTML, '<svg>svg</svg>')
+})
+
+test('custom component', () => {
+  const { h, hf, window } = setup()
+
+  const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+  assert.instance(<Component />, window.HTMLElement)
+  assert.is(((<Component draggable />) as HTMLElement).draggable, true)
+  assert.equal(((<Component>123</Component>) as HTMLElement).innerText, '123')
+})
+
+test('ref unmount callback', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+  let ref: null | HTMLElement = null
+
+  const component = (
+    <Component
+      ref={(ctx, el) => {
+        ref = el
+        return () => {
+          ref = null
+        }
+      }}
+    />
+  )
+
+  mount(parent, component)
+  assert.instance(ref, window.HTMLElement)
+
+  parent.remove()
+  await sleep()
+  assert.is(ref, null)
+})
+
+test('child ref unmount callback', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+  let ref: null | HTMLElement = null
+
+  const component = (
+    <Component
+      ref={(ctx, el) => {
+        ref = el
+        return () => {
+          ref = null
+        }
+      }}
+    />
+  )
+
+  mount(parent, component)
+  assert.instance(ref, window.HTMLElement)
+  await sleep()
+
+  ref!.remove()
+  await sleep()
+  assert.is(ref, null)
+})
+
+test('same arguments in ref mount and unmount hooks', async () => {
+  const { ctx, h, hf, parent, mount, window } = setup()
+
+  const mountArgs: unknown[] = []
+  const unmountArgs: unknown[] = []
+
+  let ref: null | HTMLElement = null
+
+  const component = (
+    <div
+      ref={(ctx, el) => {
+        mountArgs.push(ctx, el)
+        ref = el
+        return (ctx, el) => {
+          unmountArgs.push(ctx, el)
+          ref = null
+        }
+      }}
+    />
+  )
+
+  mount(parent, component)
+  assert.instance(ref, window.HTMLElement)
+  await sleep()
+
+  ref!.remove()
+  await sleep()
+  assert.is(ref, null)
+
+  assert.is(mountArgs[0], ctx)
+  assert.is(mountArgs[1], component)
+
+  assert.is(unmountArgs[0], ctx)
+  assert.is(unmountArgs[1], component)
+})
+
+test('css property and class attribute', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const cls = 'class'
+  const css = 'color: red;'
+
+  const ref1 = (<div css={css} class={cls}></div>)
+  const ref2 = (<div class={cls} css={css}></div>)
+
+  const component = (
+    <div>
+      {ref1}
+      {ref2}
+    </div>
+  )
+
+  mount(parent, component)
+  assert.instance(ref1, window.HTMLElement)
+  assert.instance(ref2, window.HTMLElement)
+  await sleep()
+
+  assert.is(ref1.className, cls)
+  assert.ok(ref1.dataset.reatom)
+
+  assert.is(ref2.className, cls)
+  assert.ok(ref2.dataset.reatom)
+
+  assert.is(ref1.dataset.reatom, ref2.dataset.reatom)
+})
+
+test('ref mount and unmount callbacks order', async () => {
+  const { h, hf, parent, mount, window } = setup()
+
+  const order: number[] = []
+
+  const createRef = (index: number) => {
+    return () => {
+      order.push(index)
+      return () => {
+        order.push(index)
+      }
+    }
+  }
+
+  const component = (
+    <div ref={createRef(0)}>
+      <div ref={createRef(1)}>
+        <div ref={createRef(2)}>
+        </div>
+      </div>
+    </div>
+  )
+
+  mount(parent, component)
+  parent.remove()
+  await sleep()
+
+  assert.equal(order, [2, 1, 0, 2, 1, 0])
+})
+
+test('style object update', () => {
+  const { ctx, h, hf, parent, mount, window } = setup()
+
+  const styleAtom = atom({
+    top: '0',
+    right: undefined,
+    bottom: null as unknown as undefined,
+    left: '0',
+  } as JSX.CSSProperties)
+
+  const component = (
+    <div style={styleAtom}></div>
+  )
+
+  mount(parent, component)
+
+  assert.is(component.getAttribute('style'), 'top:0;left:0')
+
+  styleAtom(ctx, {
+    top: undefined,
+    bottom: '0',
+  })
+
+  assert.is(component.getAttribute('style'), 'left:0;bottom:0')
 })
 
 test.run()

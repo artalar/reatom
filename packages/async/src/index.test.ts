@@ -226,6 +226,42 @@ test('withAbort and real fetch', async () => {
   ;`👍` //?
 })
 
+test('withAbort strategy first-in-win', async () => {
+  const anAsync = reatomAsync(async (ctx, v: number) => {
+    await ctx.schedule(() => sleep())
+    return v
+  }).pipe(withAbort({strategy: 'first-in-win'}))
+
+  const ctx = createTestCtx()
+
+  const valueTrack = ctx.subscribeTrack(
+    anAsync.pipe(mapPayloadAwaited((ctx, v) => v)),
+  )
+  const errorTrack = ctx.subscribeTrack(anAsync.onReject)
+  const abortTrack = ctx.subscribeTrack(anAsync.onAbort)
+
+  valueTrack.calls.length = 0
+  errorTrack.calls.length = 0
+  abortTrack.calls.length = 0
+
+  const promise1 = anAsync(ctx, 1)
+  assert.is(abortTrack.calls.length, 0)
+  assert.is(ctx.get(anAsync.pendingAtom), 1)
+  const promise2 = anAsync(ctx, 2)
+  assert.is(abortTrack.calls.length, 1, 'abortTrack')
+  // wait the promise fail handling
+  await null
+  assert.is(ctx.get(anAsync.pendingAtom), 1, 'pending')
+
+  await Promise.any([promise1, promise2])
+
+  assert.is(valueTrack.calls.length, 1)
+  assert.is(valueTrack.lastInput().at(-1)?.payload, 1)
+  assert.is(errorTrack.calls.length, 0)
+  assert.is(abortTrack.calls.length, 1)
+  ;`👍` //?
+})
+
 test('hooks', async () => {
   let onEffect = 0
   let onFulfill = 0

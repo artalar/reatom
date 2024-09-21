@@ -49,10 +49,10 @@ For example, in React you should manage abort strategy by yourself by `useEffect
 import { reatomAsync, withAbort, withDataAtom } from '@reatom/async'
 import { useAtom, useAction } from '@reatom/npm-react'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withAbort(), withDataAtom([]))
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(
+  withAbort(),
+  withDataAtom([]),
+)
 
 export const List = () => {
   const [list] = useAtom(fetchList.dataAtom)
@@ -74,10 +74,7 @@ With Reatom, you can simplify it and make it more readable.
 import { reatomAsync, onConnect, withDataAtom } from '@reatom/framework'
 import { useAtom } from '@reatom/npm-react'
 
-export const fetchList = reatomAsync(
-  (ctx) => request('api/list', ctx.controller),
-  'fetchList',
-).pipe(withDataAtom([]))
+export const fetchList = reatomAsync((ctx) => request('api/list', ctx.controller), 'fetchList').pipe(withDataAtom([]))
 onConnect(fetchList.dataAtom, fetchList)
 
 export const List = () => {
@@ -92,6 +89,53 @@ Isn't it cool, how the size of the code is reduced and how the logic is simplifi
 ## onDisconnect
 
 Shortcut to `onConnect` returned callback.
+
+## withInit
+
+This operator helps you to initialize the state lazily on the first atom read.
+
+```ts
+import { atom } from '@reatom/core'
+import { withInit } from '@reatom/hooks'
+
+export const langAtom = atom('', 'langAtom').pipe(
+  withInit(() => navigator.languages?.[0] ?? (navigator.language || navigator.userLanguage)),
+)
+```
+
+You can use it to depend the init state from an other atom too.
+
+```ts
+import { atom } from '@reatom/core'
+import { withInit } from '@reatom/hooks'
+
+export const pageTitleAtom = atom('', 'pageTitleAtom')
+
+export const searchAtom = atom('', 'searchAtom').pipe(withInit((ctx) => ctx.get(pageTitleAtom)))
+```
+
+Also, you can use it to do a side effects in rare cases.
+
+```ts
+export const pageUptimeAtom = atom(0, 'pageUptimeAtom').pipe(
+  withInit((ctx) => {
+    setTimeout(() => pageUptimeAtom(ctx, performance.now()), 1000)
+    return performance.now()
+  }),
+)
+```
+
+```ts
+export const dataAtom = atom(0, 'dataAtom').pipe(
+  withInit((ctx, init) => {
+    ctx.get(socketServiceAtom).on('data', (data) => dataAtom(ctx, data))
+
+    return init(ctx)
+  }),
+)
+```
+
+Note that the subscription will leave forever. To manage resources more efficiently, you can use should use probably [onConnect](#onconnect).
 
 ## isInit
 

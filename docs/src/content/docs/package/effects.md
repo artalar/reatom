@@ -58,17 +58,24 @@ Another example is how easily you could implement the "debounce" pattern with ad
 
 You can see that each new logic addition forces a lot of changes for code with the simple debounce decorator and takes a really small amount of changes for code with the concurrent decorator.
 
+For that example we will use `withConcurrency` decorator with an action.
+
 Base debounce.
 
 ```ts
-const onChangeDebounce = debounce((ctx, event) => {
-  inputAtom(ctx, event.currentTarget.value)
-}, 500)
+import { withConcurrency } from '@reatom/effects'
 
-const onChangeConcurrent = concurrent(async (ctx, event) => {
+const onChangeDebounce = debounce(
+  action((ctx, event) => {
+    inputAtom(ctx, event.currentTarget.value)
+  }),
+  500,
+)
+
+const onChangeConcurrent = action(async (ctx, event) => {
   await ctx.schedule(() => sleep(500))
   inputAtom(ctx, event.currentTarget.value)
-})
+}).pipe(withConcurrency())
 ```
 
 Debounce after some mappings
@@ -81,11 +88,11 @@ const onChangeDebounce = (ctx, event) => {
   _onChangeDebounce(ctx, event.currentTarget.value)
 }
 
-const onChangeConcurrent = concurrent(async (ctx, event) => {
+const onChangeConcurrent = action(async (ctx, event) => {
   const { value } = event.currentTarget
   await ctx.schedule(() => sleep(500))
   inputAtom(ctx, value)
-})
+}).pipe(withConcurrency())
 ```
 
 Debounce with a condition.
@@ -101,11 +108,29 @@ const onChangeDebounce = (ctx, event) => {
   else handleDebounceChange(ctx, value)
 }
 
-const onChangeConcurrent = concurrent(async (ctx, event) => {
+const onChangeConcurrent = action(async (ctx, event) => {
   const { value } = event.currentTarget
   if (Math.random() > 0.5) await ctx.schedule(() => sleep(500))
   inputAtom(ctx, value)
-})
+}).pipe(withConcurrency())
+```
+
+And even more! You can change the default "last-in-win" concurrency strategy to "first-in-win" and move the delay in the end of operation to archive a **throttle** pattern logic.
+
+```ts
+import { withConcurrency } from '@reatom/effects'
+
+const onChangeThrottle = throttle(
+  action((ctx, event) => {
+    inputAtom(ctx, event.currentTarget.value)
+  }),
+  500,
+)
+
+const onChangeConcurrent = action(async (ctx, event) => {
+  inputAtom(ctx, event.currentTarget.value)
+  await ctx.schedule(() => sleep(500))
+}).pipe(withConcurrency('first-in-win'))
 ```
 
 ### reaction
@@ -274,9 +299,7 @@ const someRequest = reatomRequest<{ data: Data } | { error: string }>()
 
 ```ts
 // type-safe destructuring
-const { data } = await take(ctx, someRequest, (ctx, payload, skip) =>
-  'error' in payload ? skip : payload,
-)
+const { data } = await take(ctx, someRequest, (ctx, payload, skip) => ('error' in payload ? skip : payload))
 ```
 
 ### takeNested

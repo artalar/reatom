@@ -24,7 +24,7 @@ import { toAbortError } from '@reatom/utils'
 // useIsomorphicEffect removes it by replacing useLayoutEffect with useEffect during ssr
 export const useIsomorphicEffect = typeof document !== 'undefined' ? React.useLayoutEffect : React.useEffect
 
-let getName = (type: string): string => {
+export const getComponentDebugName = (type: string): string => {
   let Component =
     // @ts-expect-error do we have another way?
     React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED?.ReactCurrentOwner?.current?.type
@@ -89,7 +89,7 @@ export const useAtom: {
   if (isAtom(anAtom)) deps.push(anAtom)
 
   let ref = React.useMemo(() => {
-    let atomName = getName(name ?? `useAtom#${typeof anAtom}`)
+    let atomName = getComponentDebugName(name ?? `useAtom#${typeof anAtom}`)
     let depsAtom = atom<any[]>([], `${atomName}._depsAtom`)
     let theAtom = anAtom
     if (!isAtom(theAtom)) {
@@ -179,7 +179,9 @@ export const useAction = <T extends Fn<[Ctx, ...Array<any>]>>(
   if (isAction(fn)) deps.push(fn)
 
   let ref = React.useMemo(() => {
-    let theAction: Action = isAction(fn) ? fn : action((...a) => ref!.fn(...a), name ?? getName(`useAction`))
+    let theAction: Action = isAction(fn)
+      ? fn
+      : action((...a) => ref!.fn(...a), name ?? getComponentDebugName(`useAction`))
     let cb = (...a: Array<any>) => batch(() => theAction(ctx, ...a))
     return { fn, cb }
   }, deps)
@@ -203,6 +205,9 @@ export const useCreateCtx = (extension?: Fn<[Ctx]>) => {
 
 type CtxRender = CtxSpy & { bind<T extends Fn>(fn: T): Binded<T> }
 type RenderState = JSX.Element & { REATOM_DEPS_CHANGE?: true }
+
+const isSuspense = (thing: unknown) =>
+  thing instanceof Promise || (thing instanceof Error && thing.message.startsWith('Suspense Exception'))
 
 export const reatomComponent = <T>(
   Component: (props: T & { ctx: CtxRender }) => React.ReactNode,
@@ -243,10 +248,18 @@ export const reatomComponent = <T>(
               bind: bind(initCtx, bindBind),
             }
 
-            const result = Component(props)
-            return typeof result === 'object' && result !== null && !(Symbol.iterator in result)
-              ? result
-              : React.createElement(React.Fragment, null, result)
+            try {
+              const result = Component(props)
+              return typeof result === 'object' && result !== null && !(Symbol.iterator in result)
+                ? result
+                : React.createElement(React.Fragment, null, result)
+            } catch (error) {
+              if (isSuspense(error)) {
+                console.log('suspense')
+                return error as never
+              }
+              throw error
+            }
           }
 
           // do not drop subscriptions from the render
@@ -288,7 +301,7 @@ export const reatomComponent = <T>(
         }
       }, [ctx, renderAtom])
 
-      return ctx.get(() => {
+      const result = ctx.get(() => {
         propsAtom(ctx, { ...props } as T & { ctx: CtxRender })
         try {
           rendering = true
@@ -297,6 +310,8 @@ export const reatomComponent = <T>(
           rendering = false
         }
       })
+      if (isSuspense(result)) throw result
+      return result
     },
     'name',
     {
