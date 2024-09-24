@@ -116,7 +116,7 @@ test('should memoize a computer', () => {
     }),
   )
 
-  const noop = atom(null)
+  const noop = atom({})
   const a = atom(0).pipe(
     withComputed((ctx, state) => {
       ctx.spy(noop)
@@ -141,6 +141,10 @@ test('should memoize a computer', () => {
   })
   assert.is(ctx.get(a), 2)
   assert.is(computedCalls, 1)
+  
+  noop(ctx, {})
+  ctx.get(a)
+  assert.is(computedCalls, 2)
 })
 
 test('should not accept an action', () => {

@@ -102,7 +102,7 @@ export const reatomPersist = (
       const proto = anAtom.__reatom
       const { initState, isAction } = proto
 
-      throwReatomError(isAction, "cannot apply persist to an action")
+      throwReatomError(isAction, 'cannot apply persist to an action')
 
       const getPersistRecord = (ctx: Ctx, state: PersistRecord | null = null) => {
         const rec = ctx.get(storageAtom).get(ctx, key)
@@ -158,6 +158,11 @@ export const reatomPersist = (
                 ))
             ) {
               state = computer(ctx, state) as typeof state
+            } else {
+              for (let index = 1; index < pubs.length; index++) {
+                // @ts-expect-error
+                ctx.spy({ __reatom: pubs[index]!.proto })
+              }
             }
           }
 
