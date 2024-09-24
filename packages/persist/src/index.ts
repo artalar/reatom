@@ -1,5 +1,6 @@
 import {
   __root,
+  Action,
   atom,
   Atom,
   AtomCache,
@@ -99,7 +100,9 @@ export const reatomPersist = (
         version = 0,
       }: WithPersistOptions<AtomState<T>> = typeof options === 'string' ? { key: options } : options
       const proto = anAtom.__reatom
-      const { initState } = proto
+      const { initState, isAction } = proto
+
+      throwReatomError(isAction, "cannot apply persist to an action")
 
       const getPersistRecord = (ctx: Ctx, state: PersistRecord | null = null) => {
         const rec = ctx.get(storageAtom).get(ctx, key)
