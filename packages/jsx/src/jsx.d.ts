@@ -61,6 +61,16 @@ export namespace JSX {
     ): void
   }
 
+  interface MouseEventHandler<T, E extends MouseEvent = MouseEvent> {
+    (
+      ctx: Ctx,
+      e: E & {
+        currentTarget: T
+        target: Element
+      },
+    ): void
+  }
+
   interface InputEventHandler<T = HTMLInputElement, E extends InputEvent = InputEvent> {
     (
       ctx: Ctx,
@@ -2072,7 +2082,7 @@ export namespace JSX {
     section: HTMLAttributes<HTMLElementTagNameMap['section']>
     select: SelectHTMLAttributes<HTMLElementTagNameMap['select']>
     slot: HTMLSlotElementAttributes
-HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
+    HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
     source: SourceHTMLAttributes<HTMLElementTagNameMap['source']>
     span: HTMLAttributes<HTMLElementTagNameMap['span']>
     strong: HTMLAttributes<HTMLElementTagNameMap['strong']>
