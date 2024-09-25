@@ -2,7 +2,11 @@ import { action, Atom, AtomMut, createCtx, Ctx, Fn, isAtom, Rec, throwReatomErro
 import { isObject, random } from '@reatom/utils'
 import { type LinkedList, type LLNode, isLinkedListAtom, LL_NEXT } from '@reatom/primitives'
 import type { JSX } from './jsx'
+
 declare type JSXElement = JSX.Element
+
+export type FC<Props = {}> = (props: Props & { children?: JSXElement }) => JSXElement
+
 export type { JSXElement, JSX }
 
 type DomApis = Pick<
