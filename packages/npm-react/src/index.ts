@@ -255,7 +255,6 @@ export const reatomComponent = <T>(
                 : React.createElement(React.Fragment, null, result)
             } catch (error) {
               if (isSuspense(error)) {
-                console.log('suspense')
                 return error as never
               }
               throw error
