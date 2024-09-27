@@ -41,7 +41,7 @@
     "csstype": "^3.1.2"
   },
   "devDependencies": {
-    "linkedom": "^0.16.4"
+    "linkedom": "^0.18.5"
   },
   "author": "artalar",
   "maintainers": [

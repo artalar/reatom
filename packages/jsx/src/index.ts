@@ -263,14 +263,20 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
     new DOM.MutationObserver((mutationsList) => {
       for (let mutation of mutationsList) {
         for (let removedNode of mutation.removedNodes) {
-          let list = unsubscribesMap.get(removedNode as any)
-          if (list) {
-            list.forEach((fn) => fn())
-            unsubscribesMap.delete(removedNode as any)
-          }
+          /**
+           * @see https://stackoverflow.com/a/64551276
+           * @note A custom NodeFilter function slows down performance by 1.5 times.
+           */
+          const walker = DOM.document.createTreeWalker(removedNode, 1)
+
+          do {
+            const node = walker.currentNode as Element
+            unsubscribesMap.get(node)?.forEach((fn) => fn())
+            unsubscribesMap.delete(node)
+          } while (walker.nextNode())
         }
       }
-    }).observe(target, {
+    }).observe(target.parentElement!, {
       childList: true,
       subtree: true,
     })
