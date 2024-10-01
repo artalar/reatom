@@ -11,6 +11,8 @@ import { withReducers } from '@reatom/primitives'
 import { MAX_SAFE_TIMEOUT, noop, sleep } from '@reatom/utils'
 import { getRootCause, onUpdate } from '@reatom/hooks'
 
+export * from './reatomClock'
+
 /** contains the ms remaining to the end of the timer. */
 export interface TimerAtom extends Atom<number> {
   /** from 0 to 1, `(delay - remains) / delay` */
