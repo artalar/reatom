@@ -200,7 +200,12 @@ export const toStringKey = (thing: any, immutable = true): string => {
   var result = toString.call(thing)
   var unique = `${result.slice(0, -1)}#${random()}]`
   // thing could be a circular or not stringifiable object from a userspace
-  visited.set(thing, unique)
+  try {
+    visited.set(thing, unique)
+  } catch (e) {
+    // `Symbol.for`
+    unique = result
+  }
 
   if (isNominal || (thing.constructor !== Object && Symbol.iterator in thing === false)) {
     return unique
