@@ -1,15 +1,11 @@
 import { test } from 'uvu'
 import * as assert from 'uvu/assert'
 
-import { isDeepEqual, toAbortError } from './'
+import { isDeepEqual, toAbortError, toStringKey, random, mockRandom } from './'
 
 test('isDeepEqual Set', () => {
-  assert.ok(
-    isDeepEqual(new Set([{ a: 1 }, { a: 2 }]), new Set([{ a: 1 }, { a: 2 }])),
-  )
-  assert.not.ok(
-    isDeepEqual(new Set([{ a: 1 }, { a: 2 }]), new Set([{ a: 2 }, { a: 1 }])),
-  )
+  assert.ok(isDeepEqual(new Set([{ a: 1 }, { a: 2 }]), new Set([{ a: 1 }, { a: 2 }])))
+  assert.not.ok(isDeepEqual(new Set([{ a: 1 }, { a: 2 }]), new Set([{ a: 2 }, { a: 1 }])))
   ;('👍') //?
 })
 
@@ -54,6 +50,26 @@ test('toAbortError', () => {
   assert.is(abortErr.message, 'test')
   assert.is(abortErr.cause, err)
   ;('👍') //?
+})
+
+test('toStringKey', () => {
+  const CLASS = new AbortController()
+
+  const obj: Record<string, any> = {}
+  obj.obj = obj
+  obj.one = { two: { CLASS } }
+  obj.list = [1, 2, 3, new Map([['key', 'val']])]
+
+  const target = `[object Object][object Array][string]list[object Array][number]1[number]2[number]3[object Map][object Array][string]key[string]val[object Array][string]obj[object Object#1][object Array][string]one[object Object][object Array][string]two[object Object][object Array][string]CLASS[object AbortController#12]`
+
+  let i = 1
+  const unmock = mockRandom(() => i++)
+
+  assert.is(toStringKey(obj), target)
+  assert.is(toStringKey(obj), toStringKey(obj))
+
+  unmock()
+  assert.is(toStringKey(obj), toStringKey(obj))
 })
 
 test.run()
