@@ -53,7 +53,7 @@ export const Graph = ({ clientCtx, getColor }: Props) => {
       const search = ctx.spy(valuesSearch)
       if (search) {
         stringState ??= toStringKey(patch.state)
-          .replace(/\[.*?\]/g, `\n`)
+          .replace(/\[reatom .*?\]/g, `\n`)
           .toLowerCase()
 
         if (!stringState.includes(search)) return 'none'
