@@ -181,38 +181,45 @@ export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
 }
 
 const { toString } = Object.prototype
+const { toString: toStringArray } = []
 const visited = new WeakMap<{}, string>()
-let toStringKeyIdx = 0
 /** Stringify any kind of data with some sort of stability.
  * Support: an object keys sorting, `Map`, `Set`, circular references, custom classes, functions and symbols.
  * The optional `immutable` could memoize the result for complex objects if you think it will never change
  */
 export const toStringKey = (thing: any, immutable = true): string => {
   var tag = typeof thing
-  var isNominal = tag === 'function' || tag === 'symbol'
 
-  if (!isNominal && (tag !== 'object' || thing === null || thing instanceof Date || thing instanceof RegExp)) {
+  if (tag === 'symbol') return `[reatom Symbol]${thing.description || 'symbol'}`
+
+  if (tag !== 'function' && (tag !== 'object' || thing === null || thing instanceof Date || thing instanceof RegExp)) {
     return `[reatom ${tag}]` + thing
   }
 
   if (visited.has(thing)) return visited.get(thing)!
 
+  var name = Reflect.getPrototypeOf(thing)?.constructor.name || toString.call(thing).slice(8, -1)
   // get a unique prefix for each type to separate same array / map
-  var result = thing.toString()
-  var unique = `[reatom ${result.slice(7, -1)}#${++toStringKeyIdx}]`
   // thing could be a circular or not stringifiable object from a userspace
-  try {
-    visited.set(thing, unique)
-  } catch {
-    return `[reatom ${result}]`
+  var result = `[reatom ${name}#${random()}]`
+  if (tag === 'function') {
+    visited.set(thing, (result += thing.name))
+    return result
+  }
+  visited.set(thing, result)
+
+  var proto = Reflect.getPrototypeOf(thing)
+  if (
+    proto &&
+    Reflect.getPrototypeOf(proto) &&
+    thing.toString !== toStringArray &&
+    Symbol.iterator in thing === false
+  ) {
+    return result
   }
 
-  if (isNominal || (thing.constructor !== Object && Symbol.iterator in thing === false)) {
-    return unique
-  }
-
-  for (let item of Symbol.iterator in thing ? thing : Object.entries(thing).sort(([a], [b]) => a.localeCompare(b)))
-    result += toStringKey(item, immutable)
+  var iterator = Symbol.iterator in thing ? thing : Object.entries(thing).sort(([a], [b]) => a.localeCompare(b))
+  for (let item of iterator) result += toStringKey(item, immutable)
 
   if (immutable) {
     visited.set(thing, result)
