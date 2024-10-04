@@ -78,7 +78,7 @@ test('toStringKey', () => {
     /regexp/,
   ]
 
-  const target = `[reatom·Object#1][reatom·Array#2][reatom·string]class[reatom·Object#3][reatom·Array#4][reatom·string]class[reatom·Object#5][reatom·Array#6][reatom·string]CLASS[reatom·AbortController#7][reatom·Array#8][reatom·string]CLASS[reatom·AbortController#7][reatom·Array#9][reatom·string]list[reatom·Array#10][reatom·Object#11][reatom·undefined]undefined[reatom·boolean]false[reatom·boolean]true[reatom·number]0[reatom·string]0[reatom·Symbol]0[reatom·Symbol]0[reatom·bigint]0[reatom·Function#12][reatom·Map#13][reatom·Array#14][reatom·string]key[reatom·string]val[reatom·object]1970-01-01T00:00:00.000Z[reatom·object]/regexp/[reatom·Array#15][reatom·string]obj[reatom·Object#1]`
+  const target = `[reatom Object#1][reatom Array#2][reatom string]class[reatom Object#3][reatom Array#4][reatom string]class[reatom Object#5][reatom Array#6][reatom string]CLASS[reatom AbortController#7][reatom Array#8][reatom string]CLASS[reatom AbortController#7][reatom Array#9][reatom string]list[reatom Array#10][reatom Object#11][reatom undefined]undefined[reatom boolean]false[reatom boolean]true[reatom number]0[reatom string]0[reatom Symbol]0[reatom Symbol]0[reatom bigint]0[reatom Function#12][reatom Map#13][reatom Array#14][reatom string]key[reatom string]val[reatom object]1970-01-01T00:00:00.000Z[reatom object]/regexp/[reatom Array#15][reatom string]obj[reatom Object#1]`
 
   let i = 1
   const unmock = mockRandom(() => i++)
