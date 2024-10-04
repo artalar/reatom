@@ -1,16 +1,23 @@
-import { action, atom, type AtomProto, type Ctx, type Rec } from '@reatom/core'
+import { atom, type AtomProto, type Ctx, type Rec, reatomBoolean, withAssign } from '@reatom/framework'
 import { h, mount, ctx } from '@reatom/jsx'
-import { ObservableHQ } from './ObservableHQ'
-import { reatomBoolean, withAssign } from '@reatom/primitives'
-import { Graph } from './Graph'
 import { withLocalStorage } from '@reatom/persist-web-storage'
+import { ObservableHQ } from './ObservableHQ'
+import { Graph } from './Graph'
+import { getColor } from './Graph/utils'
+
+export { getColor }
 
 export const connectDevtools = async (
   clientCtx: Ctx,
   {
     separator = /\.|#/,
     privatePrefix = '_',
-  }: { separator?: string | RegExp | ((name: string) => Array<string>); privatePrefix?: string } = {},
+    getColor: _getColor = getColor,
+  }: {
+    separator?: string | RegExp | ((name: string) => Array<string>)
+    privatePrefix?: string
+    getColor?: typeof getColor
+  } = {},
 ) => {
   const name = '_ReatomDevtools'
 
@@ -71,9 +78,9 @@ export const connectDevtools = async (
           folded = null
         } else {
           const { width: w, height: h } = containerEl.getBoundingClientRect()
-          if (w + h < 100) {
-            width(ctx, `${window.innerWidth * 0.7}px`)
-            height(ctx, `${window.innerHeight * 0.7}px`)
+          if (w + h < 400) {
+            width(ctx, `${window.innerWidth / 2}px`)
+            height(ctx, `${window.innerHeight * 0.9}px`)
           } else {
             folded = { width: `${w}px`, height: `${h}px` }
             width(ctx, '0px')
@@ -222,7 +229,7 @@ export const connectDevtools = async (
         `}
         css:display={atom((ctx) => (ctx.spy(viewSwitch) ? 'block' : 'none'))}
       >
-        <Graph clientCtx={clientCtx} />
+        <Graph clientCtx={clientCtx} getColor={_getColor} />
       </div>
     </div>
   )

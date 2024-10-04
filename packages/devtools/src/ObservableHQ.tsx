@@ -1,20 +1,20 @@
-import { Atom, type Rec } from '@reatom/core'
-import { h, mount } from '@reatom/jsx'
+import { Atom, isAction, isAtom, type Rec } from '@reatom/core'
+import { FC, h, mount } from '@reatom/jsx'
 // @ts-expect-error TODO write types
 import { Inspector } from '@observablehq/inspector'
 // @ts-expect-error
 import observablehqStyles from '../../../node_modules/@observablehq/inspector/dist/inspector.css'
 
-export const ObservableHQ = ({ snapshot }: { snapshot: Atom<Rec> }) => {
+export const ObservableHQ: FC<{ snapshot: any }> = ({ snapshot }) => {
   return (
     <div
       css={`
         width: 100%;
-        height: 100%;
         overflow: auto;
       `}
       ref={(ctx, observableContainer) => {
-        observableContainer.attachShadow({ mode: 'open' }).append(
+        const shadowRoot = observableContainer.attachShadow({ mode: 'open' })
+        shadowRoot.append(
           <style>
             {observablehqStyles.replaceAll(':root', '.observablehq')}
             {`
@@ -42,7 +42,11 @@ export const ObservableHQ = ({ snapshot }: { snapshot: Atom<Rec> }) => {
             ref={(ctx, inspectorEl) => {
               const inspector = new Inspector(inspectorEl) as { fulfilled(data: any): void }
 
-              return snapshot.onChange((ctx, payload) => inspector.fulfilled(payload))
+              if (isAtom(snapshot)) {
+                return ctx.subscribe(snapshot, (payload) => inspector.fulfilled(payload))
+              } else {
+                inspector.fulfilled(snapshot)
+              }
             }}
           />,
         )

@@ -54,8 +54,8 @@
   ],
   "devDependencies": {
     "@observablehq/inspector": "^5.0.0",
-    "@reatom/core": ">=3.8.1",
-    "@reatom/jsx": "^3.11.0",
+    "@reatom/framework": "latest",
+    "@reatom/jsx": "latest",
     "zod": "^3.23.8"
   }
 }

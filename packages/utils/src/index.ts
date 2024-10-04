@@ -182,6 +182,7 @@ export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
 
 const { toString } = Object.prototype
 const visited = new WeakMap<{}, string>()
+let toStringKeyIdx = 0
 /** Stringify any kind of data with some sort of stability.
  * Support: an object keys sorting, `Map`, `Set`, circular references, custom classes, functions and symbols.
  * The optional `immutable` could memoize the result for complex objects if you think it will never change
@@ -191,20 +192,19 @@ export const toStringKey = (thing: any, immutable = true): string => {
   var isNominal = tag === 'function' || tag === 'symbol'
 
   if (!isNominal && (tag !== 'object' || thing === null || thing instanceof Date || thing instanceof RegExp)) {
-    return `[${tag}]` + thing
+    return `[reatom ${tag}]` + thing
   }
 
   if (visited.has(thing)) return visited.get(thing)!
 
   // get a unique prefix for each type to separate same array / map
-  var result = toString.call(thing)
-  var unique = `${result.slice(0, -1)}#${random()}]`
+  var result = thing.toString()
+  var unique = `[reatom ${result.slice(7, -1)}#${++toStringKeyIdx}]`
   // thing could be a circular or not stringifiable object from a userspace
   try {
     visited.set(thing, unique)
-  } catch (e) {
-    // `Symbol.for`
-    unique = result
+  } catch {
+    return `[reatom ${result}]`
   }
 
   if (isNominal || (thing.constructor !== Object && Symbol.iterator in thing === false)) {

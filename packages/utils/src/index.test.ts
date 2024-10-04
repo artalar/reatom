@@ -58,7 +58,7 @@ test('toStringKey', () => {
   const obj: Record<string, any> = {}
   obj.obj = obj
   obj.one = { two: { CLASS } }
-  obj.list = [1, 2, 3, new Map([['key', 'val']])]
+  obj.list = [undefined, false, true, 0, '0', Symbol('0'), Symbol.for('0'), 0n, () => 0, new Map([['key', 'val']])]
 
   const target = `[object Object][object Array][string]list[object Array][number]1[number]2[number]3[object Map][object Array][string]key[string]val[object Array][string]obj[object Object#1][object Array][string]one[object Object][object Array][string]two[object Object][object Array][string]CLASS[object AbortController#12]`
 
