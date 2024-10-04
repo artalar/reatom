@@ -51,7 +51,7 @@ export namespace JSX {
     [css: `css:${string}`]: string | number | false | null | undefined
   }
 
-  interface EventHandler<T, E extends Event = Event> {
+  interface EventHandler<T extends Element = Element, E extends Event = Event> {
     (
       ctx: Ctx,
       e: E & {
@@ -61,7 +61,7 @@ export namespace JSX {
     ): void
   }
 
-  interface MouseEventHandler<T, E extends MouseEvent = MouseEvent> {
+  interface MouseEventHandler<T extends Element = Element, E extends MouseEvent = MouseEvent> {
     (
       ctx: Ctx,
       e: E & {
