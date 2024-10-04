@@ -18,3 +18,8 @@ export const patternNames = (pattern: estree.Pattern): estree.Identifier[] => {
   }
   return []
 }
+
+export const checkCallExpressionNode = (node: estree.CallExpression) =>
+  node.callee.type === 'MemberExpression' &&
+  node.callee.object.type === 'Identifier' &&
+  node.callee.property.type === 'Identifier'
