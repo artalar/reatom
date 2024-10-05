@@ -1,11 +1,11 @@
-import { parseAtoms, Ctx, assign, LinkedListAtom, reatomString } from '@reatom/framework'
+import { parseAtoms, assign, LinkedListAtom, reatomString, Action } from '@reatom/framework'
 import { h, hf } from '@reatom/jsx'
 import { reatomZod } from '@reatom/npm-zod'
 import { z } from 'zod'
-import { highlighted } from './utils'
 
 const Filters = z.object({
   hoverPreview: z.boolean(),
+  inlinePreview: z.boolean(),
   valuesSearch: z.string(),
   list: z.array(
     z.object({
@@ -18,16 +18,24 @@ const Filters = z.object({
 })
 type Filters = z.infer<typeof Filters>
 
-const initState = {
+const initState: Filters = {
   hoverPreview: true,
+  inlinePreview: false,
   valuesSearch: '',
   list: [{ name: 'no private', search: `^(?!_)(?!.*\\._).+$`, active: true, readonly: true }],
 }
 
 const initSnapshot = JSON.stringify(initState)
-const version = 'v8'
+const version = 'v9'
 
-export const reatomFilters = ({ lines, list }: { lines: LinkedListAtom; list: LinkedListAtom }, name: string) => {
+export const reatomFilters = (
+  {
+    list,
+    clearLines,
+    redrawLines,
+  }: { list: LinkedListAtom; clearLines: Action<[], void>; redrawLines: Action<[], void> },
+  name: string,
+) => {
   const KEY = name + version
 
   try {
@@ -37,8 +45,7 @@ export const reatomFilters = ({ lines, list }: { lines: LinkedListAtom; list: Li
   const filters = reatomZod(Filters, {
     initState: snapshot || initState,
     sync: (ctx) => {
-      lines.clear(ctx)
-      highlighted.clear()
+      redrawLines(ctx)
       ctx.schedule(() => {
         localStorage.setItem(KEY, JSON.stringify(parseAtoms(ctx, filters)))
       })
@@ -47,12 +54,6 @@ export const reatomFilters = ({ lines, list }: { lines: LinkedListAtom; list: Li
   })
 
   const newFilter = reatomString('', `${name}.newFilter`)
-
-  const handleClear = (ctx: Ctx) => {
-    list.clear(ctx)
-    lines.clear(ctx)
-    highlighted.clear()
-  }
 
   return assign(filters, {
     element: (
@@ -149,11 +150,11 @@ export const reatomFilters = ({ lines, list }: { lines: LinkedListAtom; list: Li
               width: 150px;
               display: flex;
               align-items: flex-start;
-              gap: 10px;
+              gap: 14px;
             `}
           >
             <button
-              on:click={handleClear}
+              on:click={clearLines}
               css={`
                 background: none;
                 border: none;
@@ -161,8 +162,29 @@ export const reatomFilters = ({ lines, list }: { lines: LinkedListAtom; list: Li
                 flex-shrink: 0;
               `}
             >
-              clear all logs
+              clear lines
             </button>
+            <button
+              on:click={list.clear}
+              css={`
+                background: none;
+                border: none;
+                cursor: pointer;
+                flex-shrink: 0;
+              `}
+            >
+              clear logs
+            </button>
+            <label
+              css={`
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+              `}
+            >
+              <input model:checked={filters.inlinePreview} />
+              inline preview
+            </label>
             <label
               css={`
                 flex-shrink: 0;

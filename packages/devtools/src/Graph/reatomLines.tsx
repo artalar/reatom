@@ -1,5 +1,16 @@
-import { action, Action, atom, AtomCache, Ctx, type Rec } from '@reatom/framework'
-import { h, hf } from '@reatom/jsx'
+import {
+  action,
+  Action,
+  atom,
+  AtomCache,
+  Ctx,
+  type Rec,
+  type LinkedListAtom,
+  AtomMut,
+  sleep,
+  batch,
+} from '@reatom/framework'
+import { h, hf, JSX } from '@reatom/jsx'
 import { followingsMap, getId, getStartCause, highlighted } from './utils'
 import { reatomLinkedList } from '@reatom/primitives'
 
@@ -8,16 +19,24 @@ interface Params {
   svg: SVGElement
 }
 
-export const reatomLines = (name: string) => {
+export interface Lines extends LinkedListAtom<[Params], JSX.Element, never> {
+  highlight: Action<[Params], void>
+  redraw: Action<[svg: SVGElement]>
+}
+
+export const reatomLines = (name: string): Lines => {
+  const highlightedTargets = atom<Array<AtomCache>>([], `${name}:highlightedTargets`)
+
   const lines = reatomLinkedList(
     {
       // key: 'id',
       create(ctx, { svg, patch }: Params) {
-        const n = svg.childElementCount
         const containerRec = svg.getBoundingClientRect()
         let points = ''
 
         const calc = (to: AtomCache, from: AtomCache): null | AtomCache => {
+          if (highlighted.has(to)) return null
+
           const toRec = document.getElementById(getId(to))?.getBoundingClientRect()
           const fromEl = document.getElementById(getId(from))
           const fromRec = fromEl?.getBoundingClientRect()
@@ -27,15 +46,15 @@ export const reatomLines = (name: string) => {
           }
 
           // @ts-expect-error
-          if (highlighted.has(to) || fromEl?.computedStyleMap().get('display')?.value === 'none') {
+          if (fromEl?.computedStyleMap().get('display')?.value === 'none') {
             return from.cause && calc(to, from.cause)
           }
 
-          const toX = 60 + toRec.x + -containerRec.x
-          const toY = toRec.y + toRec.height / 2 - containerRec.y
+          const toX = 70 + toRec.x + -containerRec.x
+          const toY = toRec.y + 27 - containerRec.y
 
-          const fromX = 60 + fromRec.x + -containerRec.x
-          const fromY = fromRec.y + fromRec.height / 2 - containerRec.y
+          const fromX = 70 + fromRec.x + -containerRec.x
+          const fromY = fromRec.y + 27 - containerRec.y
 
           const middleX = toX + (toY - fromY) / 10
           const middleY = fromY + (toY - fromY) / 2
@@ -43,7 +62,6 @@ export const reatomLines = (name: string) => {
           points += `${toX},${toY} ${middleX},${middleY} ${fromX},${fromY} `
 
           highlighted.add(to)
-          highlighted.add(from)
 
           return from
         }
@@ -55,22 +73,17 @@ export const reatomLines = (name: string) => {
           if (!target?.cause?.cause) break
         }
 
-        const followings = followingsMap.get(patch) ?? []
-
-        // for (const target of [patch, ...followings]) {
-        //   calc(target, patch)
-        // }
-
         return (
           <svg:polyline
-            stroke={`hsla(${200 + 50 * n}deg 20% 40% / 0.5)`}
             points={points}
+            stroke={`hsla(${200 /* + 40 * ctx.get(highlightedTargets).length */}deg 20% 40%)`}
             fill="none"
-            stroke-width={3}
             css={`
+              stroke-width: 4;
+              opacity: 0.7;
               &:hover {
-                /* TODO doesn't work coz the svg pointer-event */
-                stroke-width: 6;
+                stroke-width: 8;
+                opacity: 1;
               }
             `}
           />
@@ -79,11 +92,48 @@ export const reatomLines = (name: string) => {
     },
     name,
   )
-
-  const highlight = action((ctx, { svg, patch }: Params) => {
-    // const patch = getStartCause(patch)
-    if (!highlighted.has(patch)) lines.create(ctx, { svg, patch })
+  lines.clear.onCall((ctx) => {
+    highlightedTargets(ctx, [])
+    highlighted.clear()
   })
 
-  return Object.assign(lines, { highlight })
+  const highlight = action((ctx, { svg, patch }: Params) => {
+    let touched = new Set()
+    const calcFollowing = (target: AtomCache) => {
+      const followings = followingsMap.get(target)
+
+      if (!touched.has(target) && followings?.length) {
+        touched.add(target)
+        for (const following of followings) {
+          calcFollowing(following)
+        }
+      } else if (!highlighted.has(target)) {
+        // TODO
+        // let qqq = target
+        // while (qqq && qqq.cause) {
+        //   calcFollowing((qqq = qqq.cause))
+        // }
+
+        lines.create(ctx, { svg, patch: target })
+      }
+    }
+
+    lines.batch(ctx, () => {
+      calcFollowing(patch)
+    })
+    highlightedTargets(ctx, (state) => [...state, patch])
+  })
+
+  const redraw = action(async (ctx, svg: SVGElement) => {
+    const targets = ctx.get(highlightedTargets)
+    lines.clear(ctx)
+    await ctx.schedule(() => sleep(0))
+    batch(ctx, () => {
+      for (const target of targets) {
+        highlight(ctx, { svg, patch: target })
+      }
+    })
+  }, `${name}:redraw`)
+
+  return Object.assign(lines, { highlight, redraw })
 }

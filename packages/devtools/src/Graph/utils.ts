@@ -1,6 +1,6 @@
 import { __root, AtomCache, AtomProto } from '@reatom/framework'
 
-export const getColor = ({ proto }: AtomCache) =>
+export const getColor = ({ proto }: AtomCache): string =>
   proto.isAction
     ? proto.name!.endsWith('.onFulfill')
       ? '#e6ab73'
@@ -24,11 +24,12 @@ export const getId = (node: AtomCache) => {
 
 export const followingsMap = new (class extends WeakMap<AtomCache, Array<AtomCache>> {
   add(patch: AtomCache) {
-    const startCause = getStartCause(patch)
-    if (startCause !== patch) {
-      const list = this.get(startCause) ?? []
-      list.push(patch)
-      this.set(startCause, list)
+    if (patch.cause?.cause) {
+      let followings = this.get(patch.cause)
+      if (!followings) {
+        this.set(patch.cause, (followings = []))
+      }
+      followings.push(patch)
     }
   }
 })()
@@ -43,6 +44,8 @@ export const history = new (class extends WeakMap<AtomProto, Array<AtomCache>> {
     if (!list) {
       list = []
       this.set(patch.proto, list)
+    } else {
+      if (list.length > 6) list.pop()
     }
     list.unshift(patch)
   }

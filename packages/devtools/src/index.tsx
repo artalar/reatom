@@ -229,7 +229,7 @@ export const connectDevtools = async (
         `}
         css:display={atom((ctx) => (ctx.spy(viewSwitch) ? 'block' : 'none'))}
       >
-        <Graph clientCtx={clientCtx} getColor={_getColor} />
+        <Graph clientCtx={clientCtx} getColor={_getColor} width={width} height={height} />
       </div>
     </div>
   )
