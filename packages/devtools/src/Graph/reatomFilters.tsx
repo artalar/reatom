@@ -11,6 +11,7 @@ const Filters = z.object({
     z.object({
       name: z.string().readonly(),
       search: z.string(),
+      include: z.boolean().readonly(),
       active: z.boolean(),
       readonly: z.boolean().readonly(),
     }),
@@ -22,11 +23,11 @@ const initState: Filters = {
   hoverPreview: true,
   inlinePreview: false,
   valuesSearch: '',
-  list: [{ name: 'no private', search: `^(?!_)(?!.*\\._).+$`, active: true, readonly: true }],
+  list: [{ name: 'private', search: `(^_)|(\._)`, include: false, active: true, readonly: true }],
 }
 
 const initSnapshot = JSON.stringify(initState)
-const version = 'v9'
+const version = 'v12'
 
 export const reatomFilters = (
   {
@@ -53,7 +54,8 @@ export const reatomFilters = (
     name: `${name}.filters`,
   })
 
-  const newFilter = reatomString('', `${name}.newFilter`)
+  const include = reatomString('', `${name}.include`)
+  const exclude = reatomString('', `${name}.exclude`)
 
   return assign(filters, {
     element: (
@@ -71,9 +73,15 @@ export const reatomFilters = (
           <form
             on:submit={(ctx, e) => {
               e.preventDefault()
-              const name = ctx.get(newFilter)
-              filters.list.create(ctx, { name, search: name.toLocaleLowerCase(), active: true, readonly: false })
-              newFilter.reset(ctx)
+              const name = ctx.get(include)
+              filters.list.create(ctx, {
+                name,
+                search: name.toLocaleLowerCase(),
+                include: true,
+                active: true,
+                readonly: false,
+              })
+              include.reset(ctx)
             }}
             css={`
               display: inline-flex;
@@ -81,7 +89,7 @@ export const reatomFilters = (
             `}
           >
             <input
-              model:value={newFilter}
+              model:value={include}
               placeholder="New filter"
               css={`
                 width: 142px;
@@ -89,10 +97,43 @@ export const reatomFilters = (
             />
             <button
               css={`
-                width: 50px;
+                width: 70px;
               `}
             >
-              add
+              include
+            </button>
+          </form>
+          <form
+            on:submit={(ctx, e) => {
+              e.preventDefault()
+              const name = ctx.get(exclude)
+              filters.list.create(ctx, {
+                name,
+                search: name.toLocaleLowerCase(),
+                include: false,
+                active: true,
+                readonly: false,
+              })
+              exclude.reset(ctx)
+            }}
+            css={`
+              display: inline-flex;
+              align-items: center;
+            `}
+          >
+            <input
+              model:value={exclude}
+              placeholder="New filter"
+              css={`
+                width: 142px;
+              `}
+            />
+            <button
+              css={`
+                width: 70px;
+              `}
+            >
+              exclude
             </button>
           </form>
           <div
@@ -118,7 +159,7 @@ export const reatomFilters = (
                   `}
                 >
                   <input model:checked={filter.active} />
-                  {filter.name}:
+                  {filter.name} ({filter.include ? 'include' : 'exclude'}):
                 </label>
                 <input placeholder="RegExp" model:value={filter.search} readonly={filter.readonly} />
                 <button disabled={filter.readonly} on:click={(ctx) => filters.list.remove(ctx, filter)}>

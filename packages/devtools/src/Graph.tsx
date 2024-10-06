@@ -47,12 +47,14 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
 
         let stringState: string
 
+        // TODO: reatomFilter
         const display = atom((ctx) => {
-          const isVisible = ctx.spy(filters.list.array).every(({ search, active }) => {
+          const isVisible = ctx.spy(filters.list.array).every(({ search, active, include }) => {
             if (!ctx.spy(active)) return true
 
             try {
-              return new RegExp(`.*${ctx.spy(search)}.*`).test(name!)
+              const result = new RegExp(`.*${ctx.spy(search)}.*`).test(name!)
+              return include ? result : !result
             } catch (error) {
               return true
             }
