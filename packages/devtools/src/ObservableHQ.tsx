@@ -51,7 +51,7 @@ export const ObservableHQ: FC<{ snapshot: any; actions?: Element }> = ({ snapsho
       >
         <ObservableHQActionButton
           title="Plain JSON"
-          aria-details="Convert to plain JSON"
+          aria-label="Convert to plain JSON"
           on:click={(ctx) => {
             update((snapshot = parseAtoms(ctx, snapshot)))
           }}
@@ -60,7 +60,7 @@ export const ObservableHQ: FC<{ snapshot: any; actions?: Element }> = ({ snapsho
         </ObservableHQActionButton>
         <ObservableHQActionButton
           title="Log"
-          aria-details="Log to the console"
+          aria-label="Log to the console"
           on:click={(ctx) => {
             console.log(isAtom(snapshot) ? ctx.get(snapshot) : snapshot)
           }}
@@ -69,7 +69,7 @@ export const ObservableHQ: FC<{ snapshot: any; actions?: Element }> = ({ snapsho
         </ObservableHQActionButton>
         <ObservableHQActionButton
           title="Copy"
-          aria-details="Copy inspected value"
+          aria-label="Copy inspected value"
           on:click={(ctx) => {
             const text = JSON.stringify(parseAtoms(ctx, snapshot), null, 2)
             navigator.clipboard.writeText(text)

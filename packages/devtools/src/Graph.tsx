@@ -49,12 +49,17 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
 
         // TODO: reatomFilter
         const display = atom((ctx) => {
-          const isVisible = ctx.spy(filters.list.array).every(({ search, active, include }) => {
-            if (!ctx.spy(active)) return true
+          const isVisible = ctx.spy(filters.list.array).every(({ search, type }) => {
+            const _type = ctx.spy(type)
+
+            if (_type === 'off') return true
 
             try {
-              const result = new RegExp(`.*${ctx.spy(search)}.*`).test(name!)
-              return include ? result : !result
+              const result = new RegExp(`.*${ctx.spy(search)}.*`, 'i').test(name!)
+
+              if (_type === 'match') return result
+
+              return !result
             } catch (error) {
               return true
             }
@@ -97,7 +102,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
           >
             <button
               title="Cause lines"
-              aria-details="Draw a cause lines"
+              aria-label="Draw a cause lines"
               on:click={handleClick}
               css:type={color}
               css={`
@@ -113,7 +118,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
             </button>
             <button
               title="Inspector"
-              aria-details="Open inspector"
+              aria-label="Open inspector"
               on:mouseenter={(ctx: Ctx) => {
                 if (ctx.get(filters.hoverPreview)) {
                   inspector.open(ctx, patch)
@@ -191,16 +196,23 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
 
       await null
 
+      const exludes = ctx
+        .get(filters.list.array)
+        .filter(({ type }) => ctx.get(type) === 'exclude')
+        .map(({ search }) => ctx.get(search))
+      const isPass = (patch: AtomCache) =>
+        exludes.every((search) => !new RegExp(`.*${search}.*`, 'i').test(patch.proto.name!))
+
       // fix the case when "cause" appears in the logs after it patch
       const insert = (patch: AtomCache) => {
         const cause = patch.cause!
         if (insertStates.get(cause) === 0) {
           if (cause.cause) insert(cause.cause)
-          list.create(ctx, cause)
+          if (isPass(cause)) list.create(ctx, cause)
           insertStates.set(cause, 1)
         }
         if (insertStates.get(patch) === 0) {
-          list.create(ctx, patch)
+          if (isPass(patch)) list.create(ctx, patch)
           insertStates.set(patch, 1)
         }
       }

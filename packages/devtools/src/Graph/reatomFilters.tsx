@@ -1,5 +1,5 @@
-import { parseAtoms, assign, LinkedListAtom, reatomString, Action } from '@reatom/framework'
-import { h, hf } from '@reatom/jsx'
+import { parseAtoms, assign, LinkedListAtom, reatomString, Action, atom } from '@reatom/framework'
+import { h, hf, JSX } from '@reatom/jsx'
 import { reatomZod } from '@reatom/npm-zod'
 import { z } from 'zod'
 
@@ -11,8 +11,7 @@ const Filters = z.object({
     z.object({
       name: z.string().readonly(),
       search: z.string(),
-      include: z.boolean().readonly(),
-      active: z.boolean(),
+      type: z.enum(['match', 'mismatch', 'exclude', 'highlight', 'off']),
       readonly: z.boolean().readonly(),
     }),
   ),
@@ -23,11 +22,28 @@ const initState: Filters = {
   hoverPreview: true,
   inlinePreview: false,
   valuesSearch: '',
-  list: [{ name: 'private', search: `(^_)|(\._)`, include: false, active: true, readonly: true }],
+  list: [{ name: 'private', search: `(^_)|(\._)`, type: 'mismatch', readonly: true }],
 }
-
 const initSnapshot = JSON.stringify(initState)
-const version = 'v12'
+const version = 'v13'
+
+const FilterButton = (props: JSX.IntrinsicElements['button']) => (
+  <button
+    css={`
+      width: 25px;
+      height: 20px;
+      padding: 0;
+      margin-right: 5px;
+      border: 2px solid transparent;
+      border-radius: 2px;
+      font-size: 14px;
+      &[disabled] {
+        border: 2px solid rgb(21 19 50 / 20%);
+      }
+    `}
+    {...props}
+  />
+)
 
 export const reatomFilters = (
   {
@@ -54,8 +70,7 @@ export const reatomFilters = (
     name: `${name}.filters`,
   })
 
-  const include = reatomString('', `${name}.include`)
-  const exclude = reatomString('', `${name}.exclude`)
+  const newFilter = reatomString('', `${name}.include`)
 
   return assign(filters, {
     element: (
@@ -73,15 +88,14 @@ export const reatomFilters = (
           <form
             on:submit={(ctx, e) => {
               e.preventDefault()
-              const name = ctx.get(include)
+              const name = ctx.get(newFilter)
               filters.list.create(ctx, {
                 name,
                 search: name.toLocaleLowerCase(),
-                include: true,
-                active: true,
+                type: 'off',
                 readonly: false,
               })
-              include.reset(ctx)
+              newFilter.reset(ctx)
             }}
             css={`
               display: inline-flex;
@@ -89,7 +103,7 @@ export const reatomFilters = (
             `}
           >
             <input
-              model:value={include}
+              model:value={newFilter}
               placeholder="New filter"
               css={`
                 width: 142px;
@@ -100,77 +114,83 @@ export const reatomFilters = (
                 width: 70px;
               `}
             >
-              include
+              create
             </button>
           </form>
-          <form
-            on:submit={(ctx, e) => {
-              e.preventDefault()
-              const name = ctx.get(exclude)
-              filters.list.create(ctx, {
-                name,
-                search: name.toLocaleLowerCase(),
-                include: false,
-                active: true,
-                readonly: false,
-              })
-              exclude.reset(ctx)
-            }}
+          <table
             css={`
-              display: inline-flex;
-              align-items: center;
+              width: fit-content;
             `}
           >
-            <input
-              model:value={exclude}
-              placeholder="New filter"
-              css={`
-                width: 142px;
-              `}
-            />
-            <button
-              css={`
-                width: 70px;
-              `}
-            >
-              exclude
-            </button>
-          </form>
-          <div
-            css={`
-              display: flex;
-              flex-direction: column;
-              gap: 5px;
-            `}
-          >
-            {filters.list.reatomMap((ctx, filter) => (
-              <div
-                css={`
-                  display: flex;
-                  align-items: center;
-                  gap: 5px;
-                `}
-              >
-                <label
-                  css={`
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                  `}
-                >
-                  <input model:checked={filter.active} />
-                  {filter.name} ({filter.include ? 'include' : 'exclude'}):
-                </label>
-                <input placeholder="RegExp" model:value={filter.search} readonly={filter.readonly} />
-                <button disabled={filter.readonly} on:click={(ctx) => filters.list.remove(ctx, filter)}>
-                  x
-                </button>
-              </div>
-            ))}
-          </div>
+            {filters.list.reatomMap((ctx, filter) => {
+              const id = `${filters.list.__reatom.name}-${filter.name}`
+              return (
+                <tr>
+                  <th
+                    scope="row"
+                    css={`
+                      font-weight: normal;
+                      text-align: start;
+                      padding-right: 10px;
+                    `}
+                  >
+                    {filter.name}
+                  </th>
+                  <td>
+                    <FilterButton
+                      title="match"
+                      aria-label="match"
+                      disabled={atom((ctx) => ctx.spy(filter.type) === 'match')}
+                      on:click={filter.type.setMatch}
+                    >
+                      =
+                    </FilterButton>
+                    <FilterButton
+                      title="not match"
+                      aria-label="not match"
+                      disabled={atom((ctx) => ctx.spy(filter.type) === 'mismatch')}
+                      on:click={filter.type.setMismatch}
+                    >
+                      ≠
+                    </FilterButton>
+                    <FilterButton
+                      title="exclude"
+                      aria-label="exclude"
+                      disabled={atom((ctx) => ctx.spy(filter.type) === 'exclude')}
+                      style={{ 'font-size': '10px' }}
+                      on:click={filter.type.setExclude}
+                    >
+                      🗑️
+                    </FilterButton>
+                    <FilterButton
+                      title="disable"
+                      aria-label="disable"
+                      disabled={atom((ctx) => ctx.spy(filter.type) === 'off')}
+                      on:click={filter.type.setOff}
+                    >
+                      ⊘
+                    </FilterButton>
+                  </td>
+                  <td>
+                    <input id={id} placeholder="RegExp" model:value={filter.search} readonly={filter.readonly} />
+                    <button
+                      title="Remove"
+                      aria-label="Remove filter"
+                      disabled={filter.readonly}
+                      on:click={(ctx) => filters.list.remove(ctx, filter)}
+                    >
+                      x
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </table>
           <input
+            title="Search in states"
+            aria-label="Search in states"
             model:value={filters.valuesSearch}
-            placeholder={'Search in states'}
+            placeholder="Search in states"
             type="search"
             css={`
               width: 200px;

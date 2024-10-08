@@ -158,7 +158,7 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
         <ObservableHQ
           snapshot={patchState}
           actions={
-            <ObservableHQActionButton on:click={close} title="Close" aria-details="Close this inspector">
+            <ObservableHQActionButton on:click={close} title="Close" aria-label="Close this inspector">
               x
             </ObservableHQActionButton>
           }
@@ -182,7 +182,7 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
         <ObservableHQ
           snapshot={patchHistory}
           actions={
-            <ObservableHQActionButton on:click={patchHistory.reset} title="Clear" aria-details="Clear history">
+            <ObservableHQActionButton on:click={patchHistory.reset} title="Clear" aria-label="Clear history">
               🗑️
             </ObservableHQActionButton>
           }
