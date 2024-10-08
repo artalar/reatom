@@ -1,4 +1,4 @@
-import { atom, type AtomProto, type Ctx, type Rec, reatomBoolean, withAssign } from '@reatom/framework'
+import { atom, type AtomProto, type Ctx, type Rec, reatomBoolean, withAssign, action } from '@reatom/framework'
 import { h, mount, ctx } from '@reatom/jsx'
 import { withLocalStorage } from '@reatom/persist-web-storage'
 import { ObservableHQ } from './ObservableHQ'
@@ -7,7 +7,7 @@ import { getColor } from './Graph/utils'
 
 export { getColor }
 
-export const connectDevtools = async (
+export const _connectDevtools = async (
   clientCtx: Ctx,
   {
     separator = /\.|#/,
@@ -284,4 +284,13 @@ export const connectDevtools = async (
   }, 100)
 
   mount(document.body, containerEl)
+}
+
+export const connectDevtools = (...[ctx, options]: Parameters<typeof _connectDevtools>) => {
+  _connectDevtools(ctx, options)
+
+  return <T,>(name: string, payload: T): T => {
+    const logAction = action((ctx, payload: T) => payload, name)
+    return logAction(ctx, payload)
+  }
 }
