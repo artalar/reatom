@@ -51,7 +51,17 @@ export namespace JSX {
     [css: `css:${string}`]: string | number | false | null | undefined
   }
 
-  interface EventHandler<T, E extends Event = Event> {
+  interface EventHandler<T extends Element = Element, E extends Event = Event> {
+    (
+      ctx: Ctx,
+      e: E & {
+        currentTarget: T
+        target: Element
+      },
+    ): void
+  }
+
+  interface MouseEventHandler<T extends Element = Element, E extends MouseEvent = MouseEvent> {
     (
       ctx: Ctx,
       e: E & {
@@ -2072,7 +2082,7 @@ export namespace JSX {
     section: HTMLAttributes<HTMLElementTagNameMap['section']>
     select: SelectHTMLAttributes<HTMLElementTagNameMap['select']>
     slot: HTMLSlotElementAttributes
-HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
+    HTMLElementTagNameMap: HTMLAttributes<HTMLElementTagNameMap['HTMLElementTagNameMap']>
     source: SourceHTMLAttributes<HTMLElementTagNameMap['source']>
     span: HTMLAttributes<HTMLElementTagNameMap['span']>
     strong: HTMLAttributes<HTMLElementTagNameMap['strong']>

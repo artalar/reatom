@@ -2,7 +2,11 @@ import { action, Atom, AtomMut, createCtx, Ctx, Fn, isAtom, Rec, throwReatomErro
 import { isObject, random } from '@reatom/utils'
 import { type LinkedList, type LLNode, isLinkedListAtom, LL_NEXT } from '@reatom/primitives'
 import type { JSX } from './jsx'
+
 declare type JSXElement = JSX.Element
+
+export type FC<Props = {}> = (props: Props & { children?: JSXElement }) => JSXElement
+
 export type { JSXElement, JSX }
 
 type DomApis = Pick<
@@ -114,12 +118,14 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         else element.style.setProperty(key, val[key])
       }
     } else if (key.startsWith('prop:')) {
-      ;(element as any)[key.slice(5)] = val
+      // @ts-expect-error
+      element[key.slice(5)] = val
     } else {
       if (key.startsWith('attr:')) {
         key = key.slice(5)
       }
-      if (val == null) element.removeAttribute(key)
+      if (val == null || val === false) element.removeAttribute(key)
+      else if (val === true) element.setAttribute(key, '')
       else element.setAttribute(key, String(val))
     }
   }

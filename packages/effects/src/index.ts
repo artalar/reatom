@@ -10,6 +10,7 @@ import {
   Ctx,
   CtxSpy,
   Fn,
+  isAtom,
   throwReatomError,
   Unsubscribe,
 } from '@reatom/core'
@@ -270,8 +271,8 @@ export const concurrent: {
 } = (fn: Fn, strategy: 'last-in-win' | 'first-in-win' = 'last-in-win'): Fn => {
   const abortControllerAtom = atom<null | AbortController>(null, `${__count('_concurrent')}.abortControllerAtom`)
 
-  const result = Object.assign(
-    (ctx: Ctx, ...a: any[]) => {
+  const target = action(
+    (ctx: Ctx, topCtx: Ctx, ...a: any[]) => {
       const prevController = ctx.get(abortControllerAtom)
       const controller = new AbortController()
       // do it outside of the schedule to save the call stack
@@ -294,15 +295,15 @@ export const concurrent: {
         }
       }
 
-      const unabort = onCtxAbort(ctx, (error) => {
+      const unabort = onCtxAbort(topCtx, (error) => {
         // prevent unhandled error for abort
         if (res instanceof Promise) res.catch(noop)
         controller.abort(error)
       })
-      ctx = { ...ctx, cause: { ...ctx.cause } }
+
       abortCauseContext.set(ctx.cause, controller)
 
-      var res = fn(withAbortableSchedule(ctx) as CtxSpy, ...a)
+      var res = fn(withAbortableSchedule({ ...ctx, spy: topCtx.spy }) as CtxSpy, ...a)
       if (res instanceof Promise) {
         res = res.finally(() => {
           if (strategy === 'first-in-win') {
@@ -323,6 +324,12 @@ export const concurrent: {
       }
       return res
     },
+    isAtom(fn) ? `${fn.__reatom.name}._concurrent` : '_concurrent',
+  )
+
+  const result = Object.assign(
+    (ctx: Ctx, ...a: any[]) => target(ctx, ctx, ...a),
+    target,
     // if the `fn` is an atom we need to assign all related properties
     fn,
   )
@@ -340,15 +347,18 @@ export const withConcurrency: {
   (target: Action): Action =>
     concurrent(target, strategy as any)
 
+export const _spawn = action((ctx, fn: Fn, controller: AbortController, ...args: any[]) => {  
+  abortCauseContext.set(ctx.cause, controller)
+  return fn(ctx, ...args)
+}, '_spawn')
+
 export const spawn = <Args extends any[], Payload>(
   ctx: Ctx,
   fn: Fn<[Ctx, ...Args], Payload>,
   args: Args = [] as any[] as Args,
   controller = new AbortController(),
 ): Payload => {
-  ctx = { ...ctx, cause: { ...ctx.cause } }
-  abortCauseContext.set(ctx.cause, controller)
-  return fn(ctx, ...args)
+  return _spawn(ctx, fn, controller, ...args)
 }
 
 export interface ReactionAtom<Payload> extends Atom<Payload> {
