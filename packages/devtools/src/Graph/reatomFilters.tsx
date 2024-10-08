@@ -37,6 +37,7 @@ const FilterButton = (props: JSX.IntrinsicElements['button']) => (
       border: 2px solid transparent;
       border-radius: 2px;
       font-size: 14px;
+      filter: grayscale(1);
       &[disabled] {
         border: 2px solid rgb(21 19 50 / 20%);
       }
@@ -152,6 +153,15 @@ export const reatomFilters = (
                       on:click={filter.type.setMismatch}
                     >
                       ≠
+                    </FilterButton>
+                    <FilterButton
+                      title="highlight"
+                      aria-label="highlight"
+                      disabled={atom((ctx) => ctx.spy(filter.type) === 'highlight')}
+                      style={{ 'font-size': '10px' }}
+                      on:click={filter.type.setHighlight}
+                    >
+                      💡
                     </FilterButton>
                     <FilterButton
                       title="exclude"

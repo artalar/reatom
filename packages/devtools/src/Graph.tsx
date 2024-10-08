@@ -47,25 +47,30 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
 
         let stringState: string
 
-        // TODO: reatomFilter
-        const display = atom((ctx) => {
-          const isVisible = ctx.spy(filters.list.array).every(({ search, type }) => {
+        const style = atom((ctx) => {
+          let display = 'list-item'
+          let background = 'none'
+
+          for (const { search, type } of ctx.spy(filters.list.array)) {
             const _type = ctx.spy(type)
 
-            if (_type === 'off') return true
+            if (_type === 'off') continue
 
             try {
               const result = new RegExp(`.*${ctx.spy(search)}.*`, 'i').test(name!)
 
-              if (_type === 'match') return result
+              if (_type === 'match' && !result) {
+                display = 'none'
+              }
+              if ((_type === 'mismatch' || _type === 'exclude') && result) {
+                display = 'none'
+              }
 
-              return !result
-            } catch (error) {
-              return true
-            }
-          })
-
-          if (!isVisible) return 'none'
+              if (_type === 'highlight' && result) {
+                background = 'rgb(255 255 255 / 50%)'
+              }
+            } catch {}
+          }
 
           const search = ctx.spy(valuesSearch)
           if (search) {
@@ -73,11 +78,16 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
               .replace(/\[reatom .*?\]/g, `\n`)
               .toLowerCase()
 
-            if (!stringState.includes(search)) return 'none'
+            if (!stringState.includes(search)) {
+              display = 'none'
+            }
           }
 
-          return 'list-item'
-        }, `${name}._display`)
+          return {
+            display,
+            background,
+          }
+        }, `${name}._style`)
 
         const handleClick = (ctx: Ctx) => {
           lines.highlight(ctx, { svg, patch })
@@ -90,10 +100,9 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
             on:mouseleave={(ctx, e) => {
               inspector.hide(ctx, e.relatedTarget)
             }}
-            css:display={display}
+            style={style}
             css={`
               padding: 5px;
-              display: var(--display);
               font-size: 16px;
               &::marker {
                 content: '';
