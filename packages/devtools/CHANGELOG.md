@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.0](https://github.com/artalar/reatom/compare/devtools-v0.3.0...devtools-v0.4.0) (2024-10-08)
+
+
+### Features
+
+* **devtools:** add graph view ([3b5a3d7](https://github.com/artalar/reatom/commit/3b5a3d71f8e98ea0760399935deae1f93c6fa973))
+* **devtools:** connectDevtools returns log function ([ea8194b](https://github.com/artalar/reatom/commit/ea8194b0d865677357272b9273434be490dce039))
+* **devtools:** exclude filters ([873df31](https://github.com/artalar/reatom/commit/873df31389050a2f160733a42b87bf31988c78a0))
+* **devtools:** graph view ([95b55f8](https://github.com/artalar/reatom/commit/95b55f8133c14d68c43707361caa0c5c0174b564))
+
+
+### Bug Fixes
+
+* **devtools:** another huge refactoring ([308a70b](https://github.com/artalar/reatom/commit/308a70bcf5e8c038acfb5c85083a5f1480a85b2a))
+* **devtools:** filters enum ([0604a16](https://github.com/artalar/reatom/commit/0604a166c8cc0905a1c0538606784f3660692878))
+* **devtools:** filters highlight ([9968f31](https://github.com/artalar/reatom/commit/9968f31fdf85154d87858ef39310428dc03340c8))
+* **devtools:** graph view filters ([1149751](https://github.com/artalar/reatom/commit/114975115687f355b96eef35308e2c799050f2c6))
+* **devtools:** search matching ([eedb14d](https://github.com/artalar/reatom/commit/eedb14dd1404a60c38aeae5e7a1ca1a5e1f038dd))
+
 ## [0.3.0](https://github.com/artalar/reatom/compare/devtools-v0.2.2...devtools-v0.3.0) (2024-06-26)
 
 

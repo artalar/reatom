@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.4](https://github.com/artalar/reatom/compare/url-v3.7.3...url-v3.7.4) (2024-10-08)
+
+
+### Bug Fixes
+
+* **url:** computed handling ([80bb777](https://github.com/artalar/reatom/commit/80bb777215842684cefbf0cc5bbbd5bd2ab791e0))
+
 ## [3.7.3](https://github.com/artalar/reatom/compare/url-v3.7.2...url-v3.7.3) (2024-06-22)
 
 

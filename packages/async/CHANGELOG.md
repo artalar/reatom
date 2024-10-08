@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.2](https://github.com/artalar/reatom/compare/async-v3.16.1...async-v3.16.2) (2024-10-08)
+
+
+### Bug Fixes
+
+* **async:** cache cause handling ([be96aa1](https://github.com/artalar/reatom/commit/be96aa1c64f5596163537bd5c8524f8cb9674490))
+
 ## [3.16.1](https://github.com/artalar/reatom/compare/async-v3.16.0...async-v3.16.1) (2024-09-06)
 
 
