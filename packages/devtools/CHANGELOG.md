@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/artalar/reatom/compare/devtools-v0.4.0...devtools-v0.4.1) (2024-10-09)
+
+
+### Bug Fixes
+
+* **devtools:** timestamps and sticky scroll ([631d096](https://github.com/artalar/reatom/commit/631d096a6740acc8ce5958a5ccf8dcb445ef8cdd))
+
 ## [0.4.0](https://github.com/artalar/reatom/compare/devtools-v0.3.0...devtools-v0.4.0) (2024-10-08)
 
 
