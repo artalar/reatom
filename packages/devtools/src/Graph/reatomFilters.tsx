@@ -6,6 +6,7 @@ import { z } from 'zod'
 const Filters = z.object({
   hoverPreview: z.boolean(),
   inlinePreview: z.boolean(),
+  timestamps: z.boolean(),
   valuesSearch: z.string(),
   list: z.array(
     z.object({
@@ -21,11 +22,12 @@ type Filters = z.infer<typeof Filters>
 const initState: Filters = {
   hoverPreview: true,
   inlinePreview: false,
+  timestamps: true,
   valuesSearch: '',
   list: [{ name: 'private', search: `(^_)|(\._)`, type: 'mismatch', readonly: true }],
 }
 const initSnapshot = JSON.stringify(initState)
-const version = 'v13'
+const version = 'v14'
 
 const FilterButton = (props: JSX.IntrinsicElements['button']) => (
   <button
@@ -213,6 +215,7 @@ export const reatomFilters = (
             gap: 10px;
             margin: 0 20px;
             top: 0;
+            overflow: auto;
           `}
         >
           <legend>actions</legend>
@@ -265,6 +268,16 @@ export const reatomFilters = (
             >
               <input model:checked={filters.hoverPreview} />
               hover preview
+            </label>
+            <label
+              css={`
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+              `}
+            >
+              <input model:checked={filters.timestamps} />
+              timestamps
             </label>
           </div>
         </fieldset>

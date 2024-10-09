@@ -32,7 +32,34 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
   const list = reatomLinkedList(
     {
       key: 'id',
-      create(ctx, patch: AtomCache) {
+      create(ctx, patch: null | AtomCache) {
+        if (!patch) {
+          let ms: number | string = new Date().getMilliseconds()
+          ms = ms.toString().padStart(3, '0')
+
+          return (
+            <li
+              css={`
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                &:before {
+                  content: '';
+                  flex-grow: 1;
+                  height: 2px;
+                  background: gray;
+                }
+                &:after {
+                  content: '';
+                  flex-grow: 1;
+                  height: 2px;
+                  background: gray;
+                }
+              `}
+            >{`${new Date().toLocaleTimeString()} ${ms}ms`}</li>
+          )
+        }
+
         followingsMap.add(patch)
         const { isAction, name } = patch.proto
         let { state } = patch
@@ -205,12 +232,31 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
 
       await null
 
+      let isTimeStampWritten = !ctx.get(filters.timestamps)
+
       const exludes = ctx
         .get(filters.list.array)
         .filter(({ type }) => ctx.get(type) === 'exclude')
         .map(({ search }) => ctx.get(search))
-      const isPass = (patch: AtomCache) =>
-        exludes.every((search) => !new RegExp(`.*${search}.*`, 'i').test(patch.proto.name!))
+      const isPass = (patch: AtomCache) => {
+        const [prev] = history.get(patch.proto) ?? []
+
+        const isConnection =
+          !prev && patch.cause!.proto.name === 'root' && (!patch.proto.isAction || patch.state.length === 0)
+
+        const result =
+          !isConnection &&
+          prev !== patch &&
+          (!prev || !Object.is(patch.state, prev.state)) &&
+          exludes.every((search) => !new RegExp(`.*${search}.*`, 'i').test(patch.proto.name!))
+
+        if (result && !isTimeStampWritten) {
+          isTimeStampWritten = true
+          list.create(ctx, null)
+        }
+
+        return result
+      }
 
       // fix the case when "cause" appears in the logs after it patch
       const insert = (patch: AtomCache) => {
@@ -229,6 +275,14 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
         for (const patch of logs) {
           insert(patch)
         }
+
+        const isBottom =
+          listEl.parentElement!.scrollHeight - listEl.parentElement!.scrollTop < listEl.parentElement!.clientHeight + 10
+        if (isBottom) {
+          requestAnimationFrame(() => {
+            listEl.parentElement!.scrollTop = listEl.parentElement!.scrollHeight
+          })
+        }
       })
     })
 
@@ -241,7 +295,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
         width: calc(100% - 70px);
         height: var(--height);
         top: 0;
-        left: 70px;
+        left: 68px;
         pointer-events: var(--pe);
       `}
     >
