@@ -196,6 +196,7 @@ export const _connectDevtools = async (
   const containerEl = (
     <div
       css={`
+        all: initial;
         position: fixed;
         bottom: calc(5rem / -2);
         right: 0;
