@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/artalar/reatom/compare/devtools-v0.4.1...devtools-v0.5.0) (2024-10-10)
+
+
+### Features
+
+* **devtools:** highlight color selector ([eacdb02](https://github.com/artalar/reatom/commit/eacdb020f7fbd2b37ebdfe6606ff4d4d6166090f))
+
+
+### Bug Fixes
+
+* **devtools:** improve styles and small other fixes ([eea2edb](https://github.com/artalar/reatom/commit/eea2edb64e1e50dfc73ba950f0bca8ef38fb135e))
+* **devtools:** lines drawing ([d5a6283](https://github.com/artalar/reatom/commit/d5a62838ee7861a07c2a3554e37c0fe5b58a416e))
+* **devtools:** reset styles on root ([1c36410](https://github.com/artalar/reatom/commit/1c36410962bcc075927319e6f5e3cffcca591f4c))
+
 ## [0.4.1](https://github.com/artalar/reatom/compare/devtools-v0.4.0...devtools-v0.4.1) (2024-10-09)
 
 
