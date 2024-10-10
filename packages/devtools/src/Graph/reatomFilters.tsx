@@ -20,7 +20,7 @@ const Filters = z.object({
 })
 type Filters = z.infer<typeof Filters>
 
-const DEFAULT_COLOR = 'rgba(255 255 255 / 50%)'
+const DEFAULT_COLOR = '#BABACF'
 
 const initState: Filters = {
   hoverPreview: true,
@@ -30,7 +30,7 @@ const initState: Filters = {
   list: [{ name: 'private', search: `(^_)|(\._)`, type: 'mismatch', color: DEFAULT_COLOR, readonly: true }],
 }
 const initSnapshot = JSON.stringify(initState)
-const version = 'v15'
+const version = 'v17'
 
 const FilterButton = ({
   isInput,
@@ -40,6 +40,7 @@ const FilterButton = ({
   return (
     // @ts-expect-error
     <Component
+      {...props}
       css={`
         width: 25px;
         height: 20px;
@@ -52,8 +53,8 @@ const FilterButton = ({
         &[disabled] {
           border: 2px solid rgb(21 19 50 / 20%);
         }
+        ${props.css || ''}
       `}
-      {...props}
     />
   )
 }
@@ -149,7 +150,13 @@ export const reatomFilters = (
                   >
                     {filter.name}
                   </th>
-                  <td>
+                  <td
+                    css={`
+                      display: flex;
+                      justify-content: center;
+                      align-items: center;
+                    `}
+                  >
                     <FilterButton
                       title="match"
                       aria-label="match"
@@ -171,28 +178,42 @@ export const reatomFilters = (
                       title="highlight"
                       aria-label="highlight"
                       type="color"
-                      style={{ 'font-size': '10px', filter: 'unset' }}
-                      on:click={filter.type.setHighlight}
+                      on:click={(ctx, e) => {
+                        if (ctx.get(filter.type) !== 'highlight') {
+                          filter.type.setHighlight(ctx)
+                          e.preventDefault()
+                        }
+                      }}
                       model:value={filter.color}
-                    >
-                      💡
-                    </FilterButton>
+                      css:border={atom((ctx) => {
+                        const border =
+                          ctx.spy(filter.type) === 'highlight'
+                            ? '2px solid rgb(21 19 50 / 20%)'
+                            : '2px solid transparent'
+
+                        return border
+                      })}
+                      css={`
+                        font-size: 10px;
+                        filter: unset;
+                        border: var(--border);
+                      `}
+                    />
                     <FilterButton
                       title="exclude"
                       aria-label="exclude"
                       disabled={atom((ctx) => ctx.spy(filter.type) === 'exclude')}
-                      style={{ 'font-size': '10px' }}
                       on:click={filter.type.setExclude}
                     >
-                      🗑️
+                      ⊘
                     </FilterButton>
                     <FilterButton
-                      title="disable"
-                      aria-label="disable"
+                      title={atom((ctx) => (ctx.spy(filter.type) === 'off' ? 'enable' : 'disable'))}
+                      aria-label={atom((ctx) => (ctx.spy(filter.type) === 'off' ? 'enable' : 'disable'))}
                       disabled={atom((ctx) => ctx.spy(filter.type) === 'off')}
                       on:click={filter.type.setOff}
                     >
-                      ⊘
+                      {atom((ctx) => (ctx.spy(filter.type) === 'off' ? '▶' : '◼'))}
                     </FilterButton>
                   </td>
                   <td>

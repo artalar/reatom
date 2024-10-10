@@ -56,7 +56,7 @@ export const ObservableHQ: FC<{ snapshot: any; actions?: Element }> = ({ snapsho
             update((snapshot = parseAtoms(ctx, snapshot)))
           }}
         >
-          ✈
+          {'{}'}
         </ObservableHQActionButton>
         <ObservableHQActionButton
           title="Log"
@@ -65,7 +65,7 @@ export const ObservableHQ: FC<{ snapshot: any; actions?: Element }> = ({ snapsho
             console.log(isAtom(snapshot) ? ctx.get(snapshot) : snapshot)
           }}
         >
-          ✎
+          📝
         </ObservableHQActionButton>
         <ObservableHQActionButton
           title="Copy"

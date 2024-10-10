@@ -94,7 +94,8 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
               }
 
               if (_type === 'highlight' && result) {
-                background = `${ctx.spy(color)}a0`              }
+                background = `${ctx.spy(color)}a0`
+              }
             } catch {}
           }
 
@@ -222,10 +223,11 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
 
   const subscribe = () =>
     clientCtx.subscribe(async (logs) => {
-      const insertStates = new Map<AtomCache, 0 | 1>()
+      // sort causes and insert only from this transaction
+      const insertTargets = new Set<AtomCache>()
       for (let i = 0; i < logs.length; i++) {
         const patch = logs[i]!
-        insertStates.set(patch, 0)
+        insertTargets.add(patch)
         if (patch.proto.isAction) actionsStates.set(patch, patch.state.slice(0))
       }
 
@@ -260,14 +262,14 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
       // fix the case when "cause" appears in the logs after it patch
       const insert = (patch: AtomCache) => {
         const cause = patch.cause!
-        if (insertStates.get(cause) === 0) {
+        if (insertTargets.has(cause)) {
           if (cause.cause) insert(cause.cause)
           if (isPass(cause)) list.create(ctx, cause)
-          insertStates.set(cause, 1)
+          insertTargets.delete(cause)
         }
-        if (insertStates.get(patch) === 0) {
+        if (insertTargets.has(patch)) {
           if (isPass(patch)) list.create(ctx, patch)
-          insertStates.set(patch, 1)
+          insertTargets.delete(patch)
         }
       }
       list.batch(ctx, () => {
@@ -316,6 +318,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
   const container = (
     <section
       css={`
+        height: 100%;
         max-height: 100%;
         display: flex;
         flex-direction: column;

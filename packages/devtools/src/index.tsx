@@ -28,7 +28,7 @@ export const _connectDevtools = async (
   let folded: null | { width: string; height: string } = null
   let moved = false
 
-  const viewSwitch = reatomBoolean(false, `${name}.viewSwitch`).pipe(withLocalStorage(`${name}.viewSwitch`))
+  const viewSwitch = reatomBoolean(true, `${name}.viewSwitch`).pipe(withLocalStorage(`${name}.viewSwitch`))
 
   const snapshot = atom<Rec>({}, `${name}.snapshot`).pipe(
     withAssign((target) => ({
