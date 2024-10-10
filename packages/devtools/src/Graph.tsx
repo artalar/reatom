@@ -78,7 +78,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
           let display = 'list-item'
           let background = 'none'
 
-          for (const { search, type } of ctx.spy(filters.list.array)) {
+          for (const { search, type, color } of ctx.spy(filters.list.array)) {
             const _type = ctx.spy(type)
 
             if (_type === 'off') continue
@@ -94,8 +94,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
               }
 
               if (_type === 'highlight' && result) {
-                background = 'rgb(255 255 255 / 50%)'
-              }
+                background = `${ctx.spy(color)}a0`              }
             } catch {}
           }
 

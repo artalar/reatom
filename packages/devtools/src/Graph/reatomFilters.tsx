@@ -13,40 +13,50 @@ const Filters = z.object({
       name: z.string().readonly(),
       search: z.string(),
       type: z.enum(['match', 'mismatch', 'exclude', 'highlight', 'off']),
+      color: z.string(),
       readonly: z.boolean().readonly(),
     }),
   ),
 })
 type Filters = z.infer<typeof Filters>
 
+const DEFAULT_COLOR = 'rgba(255 255 255 / 50%)'
+
 const initState: Filters = {
   hoverPreview: true,
   inlinePreview: false,
   timestamps: true,
   valuesSearch: '',
-  list: [{ name: 'private', search: `(^_)|(\._)`, type: 'mismatch', readonly: true }],
+  list: [{ name: 'private', search: `(^_)|(\._)`, type: 'mismatch', color: DEFAULT_COLOR, readonly: true }],
 }
 const initSnapshot = JSON.stringify(initState)
-const version = 'v14'
+const version = 'v15'
 
-const FilterButton = (props: JSX.IntrinsicElements['button']) => (
-  <button
-    css={`
-      width: 25px;
-      height: 20px;
-      padding: 0;
-      margin-right: 5px;
-      border: 2px solid transparent;
-      border-radius: 2px;
-      font-size: 14px;
-      filter: grayscale(1);
-      &[disabled] {
-        border: 2px solid rgb(21 19 50 / 20%);
-      }
-    `}
-    {...props}
-  />
-)
+const FilterButton = ({
+  isInput,
+  ...props
+}: (JSX.IntrinsicElements['button'] & { isInput?: false }) | (JSX.IntrinsicElements['input'] & { isInput: true })) => {
+  const Component = isInput ? 'input' : 'button'
+  return (
+    // @ts-expect-error
+    <Component
+      css={`
+        width: 25px;
+        height: 20px;
+        padding: 0;
+        margin-right: 5px;
+        border: 2px solid transparent;
+        border-radius: 2px;
+        font-size: 14px;
+        filter: grayscale(1);
+        &[disabled] {
+          border: 2px solid rgb(21 19 50 / 20%);
+        }
+      `}
+      {...props}
+    />
+  )
+}
 
 export const reatomFilters = (
   {
@@ -157,11 +167,13 @@ export const reatomFilters = (
                       ≠
                     </FilterButton>
                     <FilterButton
+                      isInput
                       title="highlight"
                       aria-label="highlight"
-                      disabled={atom((ctx) => ctx.spy(filter.type) === 'highlight')}
-                      style={{ 'font-size': '10px' }}
+                      type="color"
+                      style={{ 'font-size': '10px', filter: 'unset' }}
                       on:click={filter.type.setHighlight}
+                      model:value={filter.color}
                     >
                       💡
                     </FilterButton>
