@@ -1,37 +1,29 @@
 import * as estree from 'estree'
 import { Rule } from 'eslint'
-import { checkCallExpressionNode } from '../shared'
+import { checkCallExpressionNodeValid } from '../shared'
 
 const importsMap = {
   wrap: 'import { wrap } from "@reatom/framework";\n',
   schedule: 'import { schedule } from "@reatom/framework";\n',
 }
 
-const getTextToReplace = (nText: string, callbackText: string) => {
-  if (Boolean(nText)) {
-    return `schedule(ctx, ${callbackText}, ${nText})`
+type TImport = keyof typeof importsMap
+
+const getTextToReplace = (numberArgumentText: string, callbackArgumentText: string) => {
+  if (Boolean(numberArgumentText)) {
+    return `schedule(ctx, ${callbackArgumentText}, ${numberArgumentText})`
   }
-  return `wrap(ctx, ${callbackText})`
+  return `wrap(ctx, ${callbackArgumentText})`
 }
 
 const getMessage = (n?: estree.Expression | estree.SpreadElement) => {
   if (Boolean(n)) {
     return "Use 'schedule(ctx, cb, n)' instead of deprecated 'ctx.schedule(cb, n)'."
   }
-
-  return "Use 'wrap(ctx, cb)' instead of deprecated 'ctx.schedule(cb, n)'."
+  return "Use 'wrap(ctx, cb)' instead of deprecated 'ctx.schedule(cb)'."
 }
 
-const isImportICareAbout = (node: estree.ImportDeclaration) => {
-  return node.specifiers.some(
-    (specifier) =>
-      specifier.type === 'ImportSpecifier' &&
-      (specifier.imported.name === 'wrap' || specifier.imported.name === 'schedule') &&
-      node.source.value === '@reatom/framework',
-  )
-}
-
-export const deprecateCtxScheduleRule: Rule.RuleModule = {
+export const wrapScheduleInsteadOfCtxScheduleRule: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
     docs: {
@@ -44,39 +36,66 @@ export const deprecateCtxScheduleRule: Rule.RuleModule = {
   create(context) {
     let hasImport = false
     let lastImport: estree.ImportDeclaration | null = null
+    let exsistsImportSpecifiers = new Set()
 
     return {
       ImportDeclaration(node: estree.ImportDeclaration) {
-        lastImport = node
-        if (isImportICareAbout(node)) {
-          hasImport = true
+        if (node.source.value === '@reatom/framework') {
+          lastImport = node
+
+          node.specifiers.forEach((specifier) => {
+            if (
+              specifier.type === 'ImportSpecifier' &&
+              specifier.imported &&
+              specifier.imported.type === 'Identifier' &&
+              importsMap[specifier.imported.name as TImport]
+            ) {
+              hasImport = true
+              exsistsImportSpecifiers.add(specifier.imported.name)
+            }
+          })
         }
       },
 
       CallExpression(node: estree.CallExpression) {
-        if (checkCallExpressionNode(node)) {
-          let cb = node.arguments[0]
-          let n = node.arguments[1]
+        if (checkCallExpressionNodeValid(node)) {
+          let callbackArgument = node.arguments[0]
+          let numberArgument = node.arguments[1]
 
           context.report({
             node,
-            message: getMessage(n),
+            message: getMessage(numberArgument),
             fix(fixer) {
-              const fixes = []
+              const fixes = [] as Rule.Fix[]
               const sourceCode = context.sourceCode
+              const callbackArgumentText = callbackArgument ? sourceCode.getText(callbackArgument) : '() => {}'
+              const numberArgumentText = numberArgument ? sourceCode.getText(numberArgument) : ''
 
-              const callbackText = cb ? sourceCode.getText(cb) : '() => {}'
-              const nText = n ? sourceCode.getText(n) : ''
+              fixes.push(fixer.replaceText(node, getTextToReplace(numberArgumentText, callbackArgumentText)))
 
-              fixes.push(fixer.replaceText(node, getTextToReplace(nText, callbackText)))
+              const neededImport = numberArgument ? 'schedule' : 'wrap'
 
-              if (!hasImport) {
-                const newImport = importsMap[n ? 'schedule' : 'wrap']
-                fixes.push(
-                  lastImport
-                    ? fixer.insertTextBefore(lastImport, newImport)
-                    : fixer.insertTextAfterRange([0, 0], newImport),
-                )
+              if (!exsistsImportSpecifiers.has(neededImport)) {
+                if (hasImport && lastImport) {
+                  const exsistedSpecifier = lastImport.specifiers.find(
+                    (specifier) =>
+                      specifier.type == 'ImportSpecifier' &&
+                      specifier.imported &&
+                      specifier.imported.type === 'Identifier' &&
+                      Object.keys(importsMap).includes(specifier.imported.name),
+                  )
+
+                  if (exsistedSpecifier) {
+                    fixes.push(fixer.insertTextAfter(exsistedSpecifier, `, ${neededImport}`))
+                  }
+                } else {
+                  const importToAdd = importsMap[neededImport]
+                  fixes.push(
+                    lastImport
+                      ? fixer.insertTextBefore(lastImport, importToAdd)
+                      : fixer.insertTextAfterRange([0, 0], importToAdd),
+                  )
+                }
               }
 
               return fixes
