@@ -34,20 +34,20 @@ export const reatomLines = (name: string): Lines => {
         const containerRec = svg.getBoundingClientRect()
         let points = ''
 
-        const calc = (to: AtomCache, from: AtomCache): null | AtomCache => {
-          if (highlighted.has(to)) return null
+        const calc = (target: AtomCache, cause: AtomCache): undefined | null | AtomCache => {
+          if (highlighted.has(target)) return null
 
-          const toRec = document.getElementById(getId(to))?.getBoundingClientRect()
-          const fromEl = document.getElementById(getId(from))
+          const toRec = document.getElementById(getId(target))?.getBoundingClientRect()
+          const fromEl = document.getElementById(getId(cause))
           const fromRec = fromEl?.getBoundingClientRect()
 
           if (!toRec || !fromRec) {
-            return from
+            return cause.cause?.cause && calc(target, cause.cause)
           }
 
           // @ts-expect-error
           if (fromEl?.computedStyleMap().get('display')?.value === 'none') {
-            return from.cause && calc(to, from.cause)
+            return cause.cause?.cause && calc(target, cause.cause)
           }
 
           const toX = 70 + toRec.x + -containerRec.x
@@ -61,16 +61,14 @@ export const reatomLines = (name: string): Lines => {
 
           points += `${toX},${toY} ${middleX},${middleY} ${fromX},${fromY} `
 
-          highlighted.add(to)
+          highlighted.add(target)
 
-          return from
+          return cause
         }
 
-        let target: null | AtomCache = patch
-        while (target && target.cause) {
-          target = calc(target, target.cause!)
-
-          if (!target?.cause?.cause) break
+        let target: undefined | null | AtomCache = patch
+        while (target && target.cause?.cause) {
+          target = calc(target, target.cause)
         }
 
         return (
