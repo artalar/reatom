@@ -56,7 +56,7 @@ export const reatomLines = (name: string): Lines => {
           const fromX = 70 + fromRec.x + -containerRec.x
           const fromY = fromRec.y + 27 - containerRec.y
 
-          const middleX = toX + (toY - fromY) / 10
+          const middleX = toX + (toY - fromY) / 6
           const middleY = fromY + (toY - fromY) / 2
 
           points += `${toX},${toY} ${middleX},${middleY} ${fromX},${fromY} `
