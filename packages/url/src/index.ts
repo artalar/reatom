@@ -1,10 +1,10 @@
 import { Action, Atom, AtomMut, AtomState, Ctx, Fn, Rec, action, atom } from '@reatom/core'
 import { abortCauseContext } from '@reatom/effects'
 import { getRootCause, withInit } from '@reatom/hooks'
-import { noop } from '@reatom/utils'
+import { noop, toAbortError } from '@reatom/utils'
 
 export interface AtomUrlSettings {
-  init: (ctx: Ctx) => URL
+  init: (ctx: Ctx, options?: { signal?: AbortSignal }) => URL
   sync: (ctx: Ctx, url: URL, replace?: boolean) => void
 }
 
@@ -46,7 +46,7 @@ const browserSync = (url: URL, replace?: boolean) => {
 }
 /**Browser settings allow handling of the "popstate" event and a link click. */
 const createBrowserUrlAtomSettings = (shouldCatchLinkClick = true): AtomUrlSettings => ({
-  init: (ctx: Ctx) => {
+  init: (ctx: Ctx, { signal } = {}) => {
     // do not store causes for IO events
     ctx = { ...ctx, cause: getRootCause(ctx.cause) }
     // copied from https://github.com/nanostores/router
@@ -92,8 +92,8 @@ const createBrowserUrlAtomSettings = (shouldCatchLinkClick = true): AtomUrlSetti
         }
       })
 
-    globalThis.addEventListener('popstate', (event) => updateFromSource(ctx, new URL(location.href)))
-    if (shouldCatchLinkClick) document.body.addEventListener('click', click)
+    globalThis.addEventListener('popstate', (event) => updateFromSource(ctx, new URL(location.href)), { signal })
+    if (shouldCatchLinkClick) document.body.addEventListener('click', click, { signal })
 
     return new URL(location.href)
   },
@@ -134,7 +134,17 @@ export const urlAtom: UrlAtom = Object.assign(
     go: action((ctx, path, replace?: boolean) => urlAtom(ctx, (url) => new URL(path, url), replace), 'urlAtom.go'),
     match: (path: string) => atom((ctx) => ctx.spy(urlAtom).pathname.startsWith(path), `urlAtom.match#${path}`),
   },
-).pipe(withInit((ctx) => ctx.get(settingsAtom).init(ctx)))
+).pipe(
+  withInit((ctx) => {
+    const controller = new AbortController()
+    const url = ctx.get(settingsAtom).init(ctx, { signal: controller.signal })
+    const un = settingsAtom.onChange(() => {
+      un()
+      controller.abort(toAbortError('urlAtom settings change'))
+    })
+    return url
+  }),
+)
 
 export const searchParamsAtom: SearchParamsAtom = Object.assign(
   atom((ctx) => Object.fromEntries(ctx.spy(urlAtom).searchParams), 'searchParamsAtom'),
