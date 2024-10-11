@@ -100,8 +100,6 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
     fixed: '1',
   }
 
-  ;['filtersHeight', 'opacity']
-
   const filtersHeight = atom((ctx) => filters.element.clientHeight + 'px', `${name}.filtersHeight`).pipe(
     withComputed((ctx, s) => {
       ctx.spy(state)
@@ -122,6 +120,12 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
         width: calc(100% - 160px);
         height: calc(100% - var(--filtersHeight) - 40px);
         max-height: 100%;
+        overflow: auto;
+        background: var(--devtools-bg);
+        padding: 0;
+        margin: 0;
+        border: none;
+        border-radius: 2px;
         box-shadow:
           0 0 0 1px rgba(0, 0, 0, 0.1),
           0 4px 11px rgba(0, 0, 0, 0.1);
