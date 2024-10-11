@@ -207,14 +207,11 @@ export const reatomFilters = (
                         }
                       }}
                       model:value={filter.color}
-                      css:border={atom((ctx) => {
-                        const border =
-                          ctx.spy(filter.type) === 'highlight'
-                            ? '2px solid rgb(21 19 50 / 20%)'
-                            : '2px solid transparent'
-
-                        return border
-                      })}
+                      css:border={atom((ctx) =>
+                        ctx.spy(filter.type) === 'highlight'
+                          ? '2px solid rgb(21 19 50 / 20%)'
+                          : '2px solid transparent',
+                      )}
                       css={`
                         font-size: 10px;
                         filter: unset;
