@@ -94,6 +94,14 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
     })
   }, `${name}.close`)
 
+  const OPACITY = {
+    hidden: '0',
+    open: '0.8',
+    fixed: '1',
+  }
+
+  ;['filtersHeight', 'opacity']
+
   const filtersHeight = atom((ctx) => filters.element.clientHeight + 'px', `${name}.filtersHeight`).pipe(
     withComputed((ctx, s) => {
       ctx.spy(state)
@@ -102,17 +110,10 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
     }),
   )
 
-  const OPACITY = {
-    hidden: '0',
-    open: '0.8',
-    fixed: '1',
-  }
-
   const element = (
     <dialog
       open={atom((ctx) => ctx.spy(state).kind !== 'hidden')}
       css:filtersHeight={filtersHeight}
-      css:pe={atom((ctx) => (ctx.spy(state).kind === 'hidden' ? 'none' : 'all'))}
       css:opacity={atom((ctx) => OPACITY[ctx.spy(state).kind])}
       css={`
         position: absolute;
@@ -121,17 +122,10 @@ export const reatomInspector = ({ filters }: { filters: ReturnType<typeof reatom
         width: calc(100% - 160px);
         height: calc(100% - var(--filtersHeight) - 40px);
         max-height: 100%;
-        overflow: auto;
-        background: var(--devtools-bg);
-        padding: 0;
-        margin: 0;
-        border: none;
-        border-radius: 2px;
         box-shadow:
           0 0 0 1px rgba(0, 0, 0, 0.1),
           0 4px 11px rgba(0, 0, 0, 0.1);
         z-index: 1;
-        /* pointer-events: var(--pe); */
         opacity: var(--opacity);
         transition: opacity 0.2s;
         &:hover {

@@ -1,4 +1,4 @@
-import { parseAtoms, assign, LinkedListAtom, reatomString, Action, atom } from '@reatom/framework'
+import { parseAtoms, assign, LinkedListAtom, reatomString, Action, atom, reatomBoolean } from '@reatom/framework'
 import { h, hf, JSX } from '@reatom/jsx'
 import { reatomZod } from '@reatom/npm-zod'
 import { z } from 'zod'
@@ -7,6 +7,8 @@ const Filters = z.object({
   hoverPreview: z.boolean(),
   inlinePreview: z.boolean(),
   timestamps: z.boolean(),
+  filtersFolded: z.boolean(),
+  actionsFolded: z.boolean(),
   valuesSearch: z.string(),
   list: z.array(
     z.object({
@@ -26,11 +28,13 @@ const initState: Filters = {
   hoverPreview: true,
   inlinePreview: false,
   timestamps: true,
+  filtersFolded: false,
+  actionsFolded: false,
   valuesSearch: '',
   list: [{ name: 'private', search: `(^_)|(\._)`, type: 'mismatch', color: DEFAULT_COLOR, readonly: true }],
 }
 const initSnapshot = JSON.stringify(initState)
-const version = 'v17'
+const version = 'v20'
 
 const FilterButton = ({
   isInput,
@@ -90,15 +94,33 @@ export const reatomFilters = (
     element: (
       <div>
         <fieldset
+          data-folded={filters.filtersFolded}
           css={`
             display: flex;
             flex-direction: column;
             gap: 10px;
-            padding-top: 10px;
             margin: 0 20px;
+
+            &[data-folded] {
+              max-height: 0px;
+              overflow: hidden;
+              padding-bottom: 0;
+            }
           `}
         >
-          <legend>filters</legend>
+          <legend
+            css={`
+              cursor: pointer;
+            `}
+            aria-label="Show/hide filters"
+            title="Show/hide filters"
+            tabindex={0}
+            role="button"
+            aria-expanded={filters.filtersFolded}
+            on:click={filters.filtersFolded.toggle}
+          >
+            filters
+          </legend>
           <form
             on:submit={(ctx, e) => {
               e.preventDefault()
@@ -243,15 +265,34 @@ export const reatomFilters = (
           />
         </fieldset>
         <fieldset
+          data-folded={filters.actionsFolded}
           css={`
             display: flex;
             gap: 10px;
             margin: 0 20px;
             top: 0;
             overflow: auto;
+
+            &[data-folded] {
+              max-height: 0px;
+              overflow: hidden;
+              padding-bottom: 0;
+            }
           `}
         >
-          <legend>actions</legend>
+          <legend
+            css={`
+              cursor: pointer;
+            `}
+            aria-label="Show/hide actions"
+            title="Show/hide actions"
+            tabindex={0}
+            role="button"
+            aria-expanded={filters.filtersFolded}
+            on:click={filters.actionsFolded.toggle}
+          >
+            actions
+          </legend>
           <div
             css={`
               width: 150px;
