@@ -100,6 +100,8 @@ export const reatomLines = (name: string): Lines => {
     const calcFollowing = (target: AtomCache) => {
       const followings = followingsMap.get(target)
 
+      console.log(target.proto.name, followings)
+
       if (!touched.has(target) && followings?.length) {
         touched.add(target)
         for (const following of followings) {

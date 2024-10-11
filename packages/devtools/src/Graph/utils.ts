@@ -22,14 +22,15 @@ export const getId = (node: AtomCache) => {
   return id
 }
 
-export const followingsMap = new (class extends WeakMap<AtomCache, Array<AtomCache>> {
+export const followingsMap = new (class extends Map<AtomCache, Array<AtomCache>> {
   add(patch: AtomCache) {
-    if (patch.cause?.cause) {
+    while (patch.cause?.cause) {
       let followings = this.get(patch.cause)
       if (!followings) {
         this.set(patch.cause, (followings = []))
       }
       followings.push(patch)
+      patch = patch.cause
     }
   }
 })()

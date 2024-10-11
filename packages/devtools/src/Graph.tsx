@@ -196,7 +196,10 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
   )
 
   const lines = reatomLines(`${name}.lines`)
-  list.clear.onCall(lines.clear)
+  list.clear.onCall(() => {
+    followingsMap.clear()
+    lines.clear(ctx)
+  })
 
   const redrawLines = action((ctx) => lines.redraw(ctx, svg), `${name}.redrawLines`)
 
