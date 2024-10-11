@@ -29,8 +29,8 @@
   "packages/testing": "3.4.7",
   "packages/timer": "3.6.2",
   "packages/undo": "3.4.2",
-  "packages/url": "3.7.4",
+  "packages/url": "3.7.5",
   "packages/utils": "3.11.0",
   "packages/web": "3.5.3",
-  "packages/devtools": "0.5.0"
+  "packages/devtools": "0.6.0"
 }

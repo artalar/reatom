@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.5](https://github.com/artalar/reatom/compare/url-v3.7.4...url-v3.7.5) (2024-10-11)
+
+
+### Bug Fixes
+
+* **url:** setting reinitialization ([742b303](https://github.com/artalar/reatom/commit/742b30370ba86bed048ecbd9fddf4c02242cd2fe))
+
 ## [3.7.4](https://github.com/artalar/reatom/compare/url-v3.7.3...url-v3.7.4) (2024-10-08)
 
 
