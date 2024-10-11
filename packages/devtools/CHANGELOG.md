@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/artalar/reatom/compare/devtools-v0.5.0...devtools-v0.6.0) (2024-10-11)
+
+
+### Features
+
+* **devtools:** foldable actions and filters ([9442e27](https://github.com/artalar/reatom/commit/9442e27b73bc6e50919b019d5bf9abca4e7986fb))
+* **devtools:** foldable actions and filters ([fc76711](https://github.com/artalar/reatom/commit/fc76711714f6a8e729712fdb81b9fbf5f844842d))
+
+
+### Bug Fixes
+
+* **devtools:** cause lines dependencies ([0d46dd0](https://github.com/artalar/reatom/commit/0d46dd07491bd724900322811eb58c0f2c179bd2))
+* **devtools:** increase lines gap ([dc8407d](https://github.com/artalar/reatom/commit/dc8407d85c464ec845b5d25fdfdbfaa013a29bc1))
+
 ## [0.5.0](https://github.com/artalar/reatom/compare/devtools-v0.4.1...devtools-v0.5.0) (2024-10-10)
 
 
