@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/artalar/reatom/compare/devtools-v0.6.0...devtools-v0.6.1) (2024-10-11)
+
+
+### Bug Fixes
+
+* **devtools:** restore missed styles ([4e81a31](https://github.com/artalar/reatom/commit/4e81a318d7cea0fd01c1d770edd720db4c2c5ace))
+
 ## [0.6.0](https://github.com/artalar/reatom/compare/devtools-v0.5.0...devtools-v0.6.0) (2024-10-11)
 
 
