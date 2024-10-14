@@ -239,10 +239,9 @@ export const isAction = (thing: any): thing is Action => {
   return thing?.__reatomMixins?.some((m: () => any) => m.name === 'actionMixin')
 }
 
-export let root = ((ctx: Ctx) => {
-  let frame = ctx.cause
-  while (frame.cause !== null) frame = frame.cause
-  return frame.state
+export let root = (({ cause }: Ctx) => {
+  while (cause.cause !== null) cause = cause.cause
+  return cause.state
 }) as RootAtom
 // TODO is it really needed?
 root.__reatomMixins = []
@@ -269,6 +268,71 @@ export interface CtxOptions {
 
 const getRootCause = (cause: AtomFrame): AtomFrame =>
   cause.cause === null ? cause : getRootCause(cause.cause)
+
+let copy = (frame: AtomFrame, cause: AtomFrame, store: StoreWeakMap) => {
+  frame = {
+    error: frame.error,
+    state: frame.state,
+    atom: frame.atom,
+    cause,
+    pubs: frame.pubs,
+    subs: frame.subs,
+  }
+  store.set(frame.atom, frame)
+  return frame
+}
+
+let enqueue = (frame: AtomFrame, store: StoreWeakMap, rootFrame: RootFrame) => {
+  for (let i = 0; i < frame.subs.length; i++) {
+    let sub = frame.subs[i]!
+    let subFrame = store.get(sub)!
+
+    if (subFrame.subs.length !== 0) {
+      subFrame = copy(subFrame, frame, store)
+      if (sub.__reatom === 'effect') {
+        if (rootFrame.state.queue.push(subFrame) === 1) {
+          Promise.resolve().then(wrap(notify, rootFrame))
+        }
+
+        subFrame.subs.length = 0
+      } else {
+        enqueue(subFrame, store, rootFrame)
+      }
+    }
+  }
+  // frame.subs = []
+  frame.subs.length = 0
+}
+
+let unlink = (anAtom: Atom, oldPubs: AtomFrame['pubs'], store: StoreWeakMap) => {
+  for (let i = 0; i < oldPubs.length; i++) {
+    // TODO do not unlink pub if it was updated?
+    let pub = oldPubs[i]!
+
+    let idx = pub.subs.indexOf(anAtom)
+
+    // looks like the pub was enqueued
+    if (idx === -1) continue
+
+    if (idx === 0) {
+      pub.subs.length = 0
+      unlink(pub.atom, pub.pubs, store)
+    } else {
+      // This algorithm might look sub-optimal and have extra complexity,
+      // but in the real data, it is in the best case quite often,
+      // like `pub.subs[idx] = pub.subs.pop()`
+
+      // search the suitable element from the end to reduce the shift (`splice`) complexity
+      let shiftIdx = pub.subs.findLastIndex((el) => el.__reatom !== 'effect')
+      // if all other elements are an effects (which order shouldn't be changed)
+      // we will shift the whole list starting from that element.
+      if (shiftIdx === -1) shiftIdx = idx
+      if (shiftIdx !== idx) pub.subs[idx] = pub.subs[shiftIdx]!
+      pub.subs.splice(shiftIdx, 1)
+    }
+  }
+}
+
 
 let CTX: undefined | Ctx
 
