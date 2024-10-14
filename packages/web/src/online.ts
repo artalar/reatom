@@ -16,8 +16,8 @@ type OnlineAtom = Atom<boolean> & {
 export const createOnlineAtom = (): OnlineAtom => {
   const onlineAtom = atom(navigator.onLine, 'onLine')
     .pipe(withAssign(() => ({
-      offlineAtAtom: atom<number | undefined>(undefined),
-      onlineAtAtom: atom<number | undefined>(undefined),
+      offlineAtAtom: atom<number | undefined>(undefined, 'onLine.offlineAtAtom'),
+      onlineAtAtom: atom<number | undefined>(undefined, 'onLine.onlineAtAtom'),
     })))
 
   onConnect(onlineAtom, (ctx) => {
