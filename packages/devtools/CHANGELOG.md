@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2](https://github.com/artalar/reatom/compare/devtools-v0.6.1...devtools-v0.6.2) (2024-10-14)
+
+
+### Bug Fixes
+
+* **devtools:** perf optimizations ([042a77c](https://github.com/artalar/reatom/commit/042a77cc1399bf0abc32489371c1ee2cd7ca5027))
+* **devtools:** remove log ([24d6146](https://github.com/artalar/reatom/commit/24d61463a329e343ab467dc20f92539933853a66))
+
 ## [0.6.1](https://github.com/artalar/reatom/compare/devtools-v0.6.0...devtools-v0.6.1) (2024-10-11)
 
 
