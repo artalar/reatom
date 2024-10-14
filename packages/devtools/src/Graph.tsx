@@ -280,13 +280,15 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
           insert(patch)
         }
 
-        const isBottom =
-          listEl.parentElement!.scrollHeight - listEl.parentElement!.scrollTop < listEl.parentElement!.clientHeight + 10
-        if (isBottom) {
-          requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const isBottom =
+            listEl.parentElement!.scrollHeight - listEl.parentElement!.scrollTop <
+            listEl.parentElement!.clientHeight + 10
+
+          if (isBottom) {
             listEl.parentElement!.scrollTop = listEl.parentElement!.scrollHeight
-          })
-        }
+          }
+        })
       })
     })
 
@@ -301,6 +303,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
         top: 0;
         left: 68px;
         pointer-events: var(--pe);
+        will-change: height;
       `}
     >
       {lines}
@@ -312,6 +315,7 @@ export const Graph = ({ clientCtx, getColor, width, height }: Props) => {
       ref={subscribe}
       css={`
         padding: 0;
+        content-visibility: auto;
       `}
     >
       {list}

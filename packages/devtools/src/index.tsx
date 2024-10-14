@@ -205,6 +205,7 @@ export const _connectDevtools = async (
         height: var(--height);
         z-index: ${MAX_Z};
         background: var(--devtools-bg);
+        will-change: width, height;
       `}
       css:devtools-bg="hsl(244deg 20% 90%)"
       css:width={width}
