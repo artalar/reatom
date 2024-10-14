@@ -303,7 +303,7 @@ it('custom component', setup((ctx, h, hf, mount, parent) => {
   const Component = (props: JSX.HTMLAttributes) => <div {...props} />
 
   assert.instance(<Component />, window.HTMLElement)
-  assert.is(((<Component draggable />) as HTMLElement).draggable, true)
+  assert.is(((<Component draggable="true" />) as HTMLElement).draggable, true)
   assert.equal(((<Component>123</Component>) as HTMLElement).innerText, '123')
 }))
 
@@ -469,4 +469,25 @@ it('style object update', setup((ctx, h, hf, mount, parent) => {
   })
 
   assert.is(component.getAttribute('style'), 'left: 0px; bottom: 0px;')
+}))
+
+it('complex class attribute', setup(async (ctx, h, hf, mount, parent) => {
+  const boolAtom = atom(false)
+  const classAtom = atom((ctx) => [
+    ctx.spy(boolAtom) ? '' : 'a',
+    ['b'],
+    {c: true, d: ctx.spy(boolAtom)},
+  ])
+
+  const component = (
+    <div class={classAtom}></div>
+  )
+
+  mount(parent, component)
+
+  assert.is(component.className, 'a b c')
+
+  boolAtom(ctx, true)
+
+  assert.is(component.className, 'b c d')
 }))

@@ -2,6 +2,7 @@ import { action, Atom, AtomMut, createCtx, Ctx, Fn, isAtom, Rec, throwReatomErro
 import { isObject, random } from '@reatom/utils'
 import { type LinkedList, type LLNode, isLinkedListAtom, LL_NEXT } from '@reatom/primitives'
 import type { JSX } from './jsx'
+import { normalizeClass } from './utils'
 
 declare type JSXElement = JSX.Element
 
@@ -110,8 +111,16 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         styleId = styles[val] = random().toString()
         stylesheet.innerText += '[data-reatom="' + styleId + '"]{' + val + '}\n'
       }
-      /** @see https://www.measurethat.net/Benchmarks/Show/11819/0/dataset-vs-setattribute */
+      /** @see https://www.measurethat.net/Benchmarks/Show/11819 */
       element.setAttribute('data-reatom', styleId)
+    } else if (key === 'class') {
+      const className = normalizeClass(val)
+      if (element instanceof HTMLElement) {
+        /** @see https://measurethat.net/Benchmarks/Show/54 */
+        element.className = className
+      } else {
+        element.setAttribute('class', className)
+      }
     } else if (key === 'style' && typeof val === 'object') {
       for (const key in val) {
         if (val[key] == null) element.style.removeProperty(key)
