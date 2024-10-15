@@ -480,7 +480,10 @@ it('complex class attribute', setup(async (ctx, h, hf, mount, parent) => {
   ])
 
   const component = (
-    <div class={classAtom}></div>
+    <div class={[
+      classAtom,
+      {e: boolAtom},
+    ]}></div>
   )
 
   mount(parent, component)
@@ -489,5 +492,5 @@ it('complex class attribute', setup(async (ctx, h, hf, mount, parent) => {
 
   boolAtom(ctx, true)
 
-  assert.is(component.className, 'b c d')
+  assert.is(component.className, 'b c d e')
 }))

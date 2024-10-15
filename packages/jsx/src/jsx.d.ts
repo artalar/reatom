@@ -660,7 +660,7 @@ export namespace JSX {
   //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
   // };
 
-  type ClassValue = string | undefined | Record<string, null | undefined | string | number | boolean> | Array<ClassValue>
+  type ClassValue = string | false | null | undefined | Record<string, AtomMaybe<string | number | boolean | null | undefined>> | Array<AtomMaybe<ClassValue>>
 
   interface HTMLAttributes<T = HTMLElement>
     extends AriaAttributes,
@@ -675,7 +675,7 @@ export namespace JSX {
     contenteditable?: boolean | 'plaintext-only' | 'inherit'
     contextmenu?: string
     dir?: HTMLDir
-    draggable?: boolean | 'false' | 'true'
+    draggable?: 'false' | 'true'
     hidden?: boolean | 'hidden' | 'until-found'
     id?: string
     inert?: boolean
