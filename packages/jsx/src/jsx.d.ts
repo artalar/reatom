@@ -660,6 +660,8 @@ export namespace JSX {
   //   [key in CSSKeys as `style:${key}`]: csstype.PropertiesHyphen[key];
   // };
 
+  type ClassValue = string | false | null | undefined | Record<string, AtomMaybe<string | number | boolean | null | undefined>> | Array<AtomMaybe<ClassValue>>
+
   interface HTMLAttributes<T = HTMLElement>
     extends AriaAttributes,
       DOMAttributes<T>,
@@ -669,11 +671,11 @@ export namespace JSX {
       $Spread<T> {
     // [key: ClassKeys]: boolean;
     accessKey?: string
-    class?: string | undefined
+    class?: ClassValue
     contenteditable?: boolean | 'plaintext-only' | 'inherit'
     contextmenu?: string
     dir?: HTMLDir
-    draggable?: boolean | 'false' | 'true'
+    draggable?: 'false' | 'true'
     hidden?: boolean | 'hidden' | 'until-found'
     id?: string
     inert?: boolean
@@ -1178,7 +1180,7 @@ export namespace JSX {
     tabindex?: number | string
   }
   interface StylableSVGAttributes extends CssAttributes {
-    class?: string | undefined
+    class?: ClassValue
     style?: CSSProperties | string
   }
   interface TransformableSVGAttributes {

@@ -31,11 +31,12 @@
   "scripts": {
     "prepublishOnly": "npm run build && npm run test",
     "build": "microbundle -f esm,cjs && cp src/jsx.d.ts build/ && cp -r build/ jsx-runtime/build && cp -r build/ jsx-dev-runtime/build",
-    "test": "tsc && wtr src/index.test.tsx",
-    "test:watch": "wtr src/index.test.tsx --watch"
+    "test": "tsc && wtr src/*.test.{ts,tsx}",
+    "test:watch": "wtr src/*.test.{ts,tsx} --watch"
   },
   "dependencies": {
     "@reatom/core": ">=3.6.0",
+    "@reatom/lens": "^3.1.0",
     "@reatom/primitives": "^3.5.0",
     "@reatom/utils": "^3.5.0",
     "csstype": "^3.1.2"
