@@ -3,13 +3,14 @@ import { isObject } from '@reatom/utils'
 /**
  * @see https://github.com/vuejs/core/blob/main/packages/shared/src/normalizeProp.ts
  */
-export const normalizeClass = (value: unknown): string => {
+export const buildClassName = (value: unknown): string => {
   let className = ''
   if (typeof value === 'string') {
     className = value
   } else if (Array.isArray(value)) {
-    for (let i = 0; i < value.length; i++) {
-      const normalized = normalizeClass(value[i])
+    const length = value.length
+    for (let i = 0; i < length; i++) {
+      const normalized = buildClassName(value[i])
       if (normalized) {
         className += normalized + ' '
       }
@@ -21,5 +22,5 @@ export const normalizeClass = (value: unknown): string => {
       }
     }
   }
-  return className.trim()
+  return className
 }

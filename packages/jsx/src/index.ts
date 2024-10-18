@@ -3,7 +3,7 @@ import { parseAtoms } from '@reatom/lens'
 import { isObject, random } from '@reatom/utils'
 import { type LinkedList, type LLNode, isLinkedListAtom, LL_NEXT } from '@reatom/primitives'
 import type { JSX } from './jsx'
-import { normalizeClass } from './utils'
+import { buildClassName } from './utils'
 
 declare type JSXElement = JSX.Element
 
@@ -138,7 +138,7 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       /** @see https://www.measurethat.net/Benchmarks/Show/11819 */
       element.setAttribute('data-reatom', styleId)
     } else if (key === 'class') {
-      const className = normalizeClass(val)
+      const className = buildClassName(val)
       if (element instanceof HTMLElement) {
         /** @see https://measurethat.net/Benchmarks/Show/54 */
         element.className = className

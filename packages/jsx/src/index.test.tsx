@@ -488,9 +488,9 @@ it('complex class attribute', setup(async (ctx, h, hf, mount, parent) => {
 
   mount(parent, component)
 
-  assert.is(component.className, 'a b c')
+  assert.is(component.className, 'a b  c   ')
 
   boolAtom(ctx, true)
 
-  assert.is(component.className, 'b c d e')
+  assert.is(component.className, 'b  c d   e  ')
 }))
