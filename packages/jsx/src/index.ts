@@ -1,7 +1,9 @@
-import { action, Atom, AtomMut, createCtx, Ctx, Fn, isAtom, Rec, throwReatomError, Unsubscribe } from '@reatom/core'
+import { action, atom, Atom, AtomMut, createCtx, Ctx, Fn, isAtom, Rec, throwReatomError, Unsubscribe } from '@reatom/core'
+import { parseAtoms } from '@reatom/lens'
 import { isObject, random } from '@reatom/utils'
 import { type LinkedList, type LLNode, isLinkedListAtom, LL_NEXT } from '@reatom/primitives'
 import type { JSX } from './jsx'
+import { buildClassName } from './utils'
 
 declare type JSXElement = JSX.Element
 
@@ -30,6 +32,29 @@ let unlink = (parent: JSX.Element, un: Unsubscribe) => {
       }
     }
   })
+}
+const subscribe = <T>(ctx: Ctx, element: JSX.Element, value: Atom<T>, cb: Fn<[T]>) => {
+  let un: undefined | Unsubscribe
+  un = ctx.subscribe(value, (v) =>
+    !un || element.isConnected
+      ? cb(v)
+      : un(),
+  )
+  unlink(element, un)
+}
+
+const containsAtom = (target: unknown): boolean => {
+  if (isAtom(target)) return true
+
+  if (Array.isArray(target)) {
+    return target.some(containsAtom)
+  }
+
+  if (isObject(target)) {
+    return Object.values(target).some(containsAtom)
+  }
+
+  return false
 }
 
 const walkLinkedList = (ctx: Ctx, el: JSX.Element, list: Atom<LinkedList<LLNode<JSX.Element>>>) => {
@@ -110,8 +135,16 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
         styleId = styles[val] = random().toString()
         stylesheet.innerText += '[data-reatom="' + styleId + '"]{' + val + '}\n'
       }
-      /** @see https://www.measurethat.net/Benchmarks/Show/11819/0/dataset-vs-setattribute */
+      /** @see https://www.measurethat.net/Benchmarks/Show/11819 */
       element.setAttribute('data-reatom', styleId)
+    } else if (key === 'class') {
+      const className = buildClassName(val)
+      if (element instanceof HTMLElement) {
+        /** @see https://measurethat.net/Benchmarks/Show/54 */
+        element.className = className
+      } else {
+        element.setAttribute('class', className)
+      }
     } else if (key === 'style' && typeof val === 'object') {
       for (const key in val) {
         if (val[key] == null) element.style.removeProperty(key)
@@ -156,46 +189,47 @@ export const reatomJsx = (ctx: Ctx, DOM: DomApis = globalThis.window) => {
       : DOM.document.createElement(tag)
 
     for (let k in props) {
-      if (k !== 'children') {
-        let prop = props[k]
-        if (k === 'ref') {
-          ctx.schedule(() => {
-            const cleanup = prop(ctx, element)
-            if (typeof cleanup === 'function') {
-              let list = unsubscribesMap.get(element)
-              if (!list) unsubscribesMap.set(element, (list = []))
-              unlink(element, () => cleanup(ctx, element))
-            }
-          })
-        } else if (isAtom(prop) && !prop.__reatom.isAction) {
-          if (k.startsWith('model:')) {
-            let name = (k = k.slice(6)) as 'value' | 'valueAsNumber' | 'checked'
-            set(element, 'on:input', (ctx: Ctx, event: any) => {
-              ;(prop as AtomMut)(ctx, name === 'valueAsNumber' ? +event.target.value : event.target[name])
-            })
-            if (k === 'valueAsNumber') {
-              k = 'value'
-              set(element, 'type', 'number')
-            }
-            if (k === 'checked') {
-              set(element, 'type', 'checkbox')
-            }
-            k = 'prop:' + k
-          }
-          // TODO handle unsubscribe!
-          let un: undefined | Unsubscribe
-          un = ctx.subscribe(prop, (v) =>
-            !un || element.isConnected
-              ? k === '$spread'
-                ? Object.entries(v).forEach(([k, v]) => set(element, k, v))
-                : set(element, k, v)
-              : un(),
-          )
+      const prop = props[k]
 
-          unlink(element, un)
-        } else {
-          set(element, k, prop)
+      if (k === 'children') {
+        continue
+      } else if (k === 'ref') {
+        ctx.schedule(() => {
+          const cleanup = prop(ctx, element)
+          if (typeof cleanup === 'function') {
+            let list = unsubscribesMap.get(element)
+            if (!list) unsubscribesMap.set(element, (list = []))
+            unlink(element, () => cleanup(ctx, element))
+          }
+        })
+      } else if (k === 'class' && containsAtom(prop)) {
+        const classAtom = atom((ctx) => parseAtoms(ctx, prop))
+        // TODO handle unsubscribe!
+        subscribe(ctx, element, classAtom, (v) => set(element, k, v))
+      } else if (k.startsWith('model:')) {
+        let name = (k = k.slice(6)) as 'value' | 'valueAsNumber' | 'checked'
+        set(element, 'on:input', (ctx: Ctx, event: any) => {
+          ;(prop as AtomMut)(ctx, name === 'valueAsNumber' ? +event.target.value : event.target[name])
+        })
+        if (k === 'valueAsNumber') {
+          k = 'value'
+          set(element, 'type', 'number')
         }
+        if (k === 'checked') {
+          set(element, 'type', 'checkbox')
+        }
+        k = 'prop:' + k
+        // TODO handle unsubscribe!
+        subscribe(ctx, element, prop, (v) => set(element, k, v))
+      } else if (k === '$spread') {
+        // TODO handle unsubscribe!
+        subscribe(ctx, element, prop, (v) => Object.entries(v as object)
+          .forEach(([k, v]) => set(element, k, v)))
+      } else if (isAtom(prop) && !prop.__reatom.isAction) {
+        // TODO handle unsubscribe!
+        subscribe(ctx, element, prop, (v) => set(element, k, v))
+      } else {
+        set(element, k, prop)
       }
     }
 
