@@ -1,11 +1,4 @@
-import {
-  action,
-  atom,
-  effect,
-  withComputed,
-  withConnectHook,
-  wrap,
-} from '@reatom/core'
+import { action, atom, effect, peek, withConnectHook, wrap } from '@reatom/core'
 import { reatomFactoryComponent } from '@reatom/react'
 import {
   AmbientLight,
@@ -20,37 +13,37 @@ import {
 } from 'three'
 
 import { reatomInstance, withInstance } from '../reatomInstance'
-import { reatomPaneFolder, withBinding } from '../tweakpane'
+import { reatomPaneFolder, withBinding, withEffect } from '../tweakpane'
 
 export const ThreeDemo = reatomFactoryComponent(() => {
   const threeFolder = reatomPaneFolder({ title: 'Three.js' })
 
   const containerAtom = atom<HTMLElement | null>(null, 'container').extend((target) => {
-		const size = atom({ width: 0, height: 0 }, `${target.name}._size`).extend(
-			withConnectHook((sizeTarget) => {
-				const container = target()
-				let observer: ResizeObserver
-				if (container) {
-					observer = new ResizeObserver(
-						wrap(() => {
-							sizeTarget.set({
-								width: container.clientWidth,
-								height: container.clientHeight,
-							})
-						}),
-					)
-					observer.observe(container)
-				}
+    const size = atom({ width: 0, height: 0 }, `${target.name}._size`).extend(
+      withConnectHook((sizeTarget) => {
+        const container = target()
+        let observer: ResizeObserver | null = null
+        if (container) {
+          observer = new ResizeObserver(
+            wrap(() => {
+              sizeTarget.set({
+                width: container.clientWidth,
+                height: container.clientHeight,
+              })
+            }),
+          )
+          observer.observe(container)
+        }
 
-				return () => observer.disconnect()
-			}),
-		)
+        return () => observer?.disconnect()
+      }),
+    )
 
-		return {
-			size,
-			ref: action((node: HTMLElement | null) => void target.set(node)),
-		}
-	})
+    return {
+      size,
+      ref: action((node: HTMLElement | null) => void target.set(node)),
+    }
+  })
 
   const sceneAtom = reatomInstance(
     () => new Scene(),
@@ -61,9 +54,8 @@ export const ThreeDemo = reatomFactoryComponent(() => {
         withBinding({ label: 'Background Color' }, threeFolder),
       ),
     }),
-    withComputed((scene) => {
-      scene.background = new Color(sceneAtom.bgColor())
-      return scene
+    withEffect((scene) => {
+      peek(scene).background = new Color(sceneAtom.bgColor())
     }),
   )
 
@@ -79,9 +71,8 @@ export const ThreeDemo = reatomFactoryComponent(() => {
         ),
       ),
     }),
-    withComputed((light) => {
-      light.intensity = ambientLightAtom.intensity()
-      return light
+    withEffect((light) => {
+      peek(light).intensity = ambientLightAtom.intensity()
     }),
   )
 
@@ -100,14 +91,11 @@ export const ThreeDemo = reatomFactoryComponent(() => {
         withBinding({ label: 'Light Position' }, threeFolder),
       ),
     }),
-    withComputed((light) => {
-      light.intensity = directionalLightAtom.intensity()
-      return light
-    }),
-    withComputed((light) => {
+    withEffect((lightAtom) => {
+      const light = peek(lightAtom)
       const { x, y, z } = directionalLightAtom.position()
+      light.intensity = directionalLightAtom.intensity()
       light.position.set(x, y, z)
-      return light
     }),
   )
 
@@ -120,16 +108,16 @@ export const ThreeDemo = reatomFactoryComponent(() => {
         withBinding({ label: 'Camera Position' }, threeFolder),
       ),
     }),
-    withComputed((camera) => {
+    withEffect((cameraAtom) => {
+      const camera = peek(cameraAtom)
       const pos = cameraAtom.position()
       camera.position.set(pos.x, pos.y, pos.z)
-      return camera
     }),
-    withComputed((camera) => {
+    withEffect((cameraAtom) => {
+      const camera = peek(cameraAtom)
       const { width, height } = containerAtom.size()
       camera.aspect = width / height
       camera.updateProjectionMatrix()
-      return camera
     }),
   )
 
@@ -152,19 +140,18 @@ export const ThreeDemo = reatomFactoryComponent(() => {
       renderer.domElement.remove()
     },
   ).extend(
-    withComputed((renderer) => {
+    withEffect((rendererAtom) => {
+      const renderer = peek(rendererAtom)
       const { width, height } = containerAtom.size()
       renderer.setSize(width, height)
       renderer.render(sceneAtom(), cameraAtom())
-      return renderer
     }),
-    withComputed((renderer) => {
+    withEffect((rendererAtom) => {
       const container = containerAtom()
-      const element = renderer.domElement
+      const element = peek(rendererAtom).domElement
       if (container && element.parentElement !== container) {
         container.appendChild(element)
       }
-      return renderer
     }),
   )
 
@@ -207,10 +194,10 @@ export const ThreeDemo = reatomFactoryComponent(() => {
         withBinding({ label: 'Box Rotation' }, threeFolder),
       ),
     }),
-    withComputed((box) => {
+    withEffect((boxAtom) => {
+      const box = peek(boxAtom)
       const { x, y, z } = boxMeshAtom.rotation()
       box.rotation.set(x, y, z)
-      return box
     }),
   )
 

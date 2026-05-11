@@ -21,6 +21,8 @@ export const UIComponentsDemo = reatomFactoryComponent(() => {
   const doAction2 = action(() => void alert('Action 2 triggered!'), 'doAction2') //
     .extend(withButton({ title: 'Do Action 2', index: 2 }, buttonFolder))
 
+  const separator = reatomPaneSeparator({ index: 1 }, buttonFolder)
+
   const tab = reatomPaneTab(['Parameters', 'Advanced'], folder)
 
   // Page 1: Parameters
@@ -50,7 +52,7 @@ export const UIComponentsDemo = reatomFactoryComponent(() => {
     getCalls(doAction1)
     getCalls(doAction2)
     getCalls(muteAction)
-    reatomPaneSeparator({ index: 1 }, buttonFolder)()
+    separator()
   }, 'buttonFolder.subscribe')
 
   return () => {
