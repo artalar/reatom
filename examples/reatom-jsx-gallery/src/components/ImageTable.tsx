@@ -1,5 +1,9 @@
+import type { JSX } from '@reatom/jsx'
+
 import {
-  imagesList,
+  folderModelTree,
+  type GalleryFolderModel,
+  isFolderImagesInCurrentScope,
   tableMinWidth,
   tablePreviewWidth,
   visibleExifColumnNames,
@@ -17,6 +21,26 @@ const formatColumnWidth = 94
 const exifThumbColumnWidth = 116
 const exifColumnWidth = 160
 const favoriteColumnWidth = 82
+
+function renderFolderRows(
+  folder: GalleryFolderModel,
+  exifColumns: string[],
+): JSX.Element[] {
+  return [
+    ...folder
+      .sortedImages()
+      .map((imageNode) => (
+        <ImageTableRow
+          image={imageNode}
+          exifColumns={exifColumns}
+          visible={() =>
+            isFolderImagesInCurrentScope(folder) && imageNode.visible()
+          }
+        />
+      )),
+    ...folder.children.flatMap((child) => renderFolderRows(child, exifColumns)),
+  ]
+}
 
 const tableHeaderCellCss = `
   position: sticky;
@@ -154,14 +178,9 @@ export const ImageTable = () => (
         </thead>
         <tbody>
           {() => {
+            const tree = folderModelTree()
             const exifColumns = visibleExifColumnNames()
-            return imagesList
-              .array()
-              .map((imageNode) =>
-                imageNode.visible() ? (
-                  <ImageTableRow image={imageNode} exifColumns={exifColumns} />
-                ) : null,
-              )
+            return tree ? renderFolderRows(tree, exifColumns) : null
           }}
         </tbody>
       </table>

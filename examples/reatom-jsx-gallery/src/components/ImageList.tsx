@@ -1,7 +1,10 @@
 import { focusableCardAttrs } from '../a11y'
-import type { ImageModel } from '../model'
 import {
-  imagesList,
+  folderModelTree,
+  isFolderBranchInCurrentScope,
+  isFolderImagesInCurrentScope,
+  type GalleryFolderModel,
+  type ImageModel,
   listPreviewHeight,
   listPreviewWidth,
   openLightbox,
@@ -181,15 +184,40 @@ const ListImage = ({ image }: { image: ImageModel }) => {
   )
 }
 
-const listImagesView = imagesList.reatomMap(
-  (imageNode) => (
-    <div css="display: contents;">
-      {() => imageNode.visible() && <ListImage image={imageNode} />}
+const ListImageEntry = ({ image }: { image: ImageModel }) => (
+  <div style:display={() => (image.visible() ? 'contents' : 'none')}>
+    <ListImage image={image} />
+  </div>
+)
+
+const ListFolder = ({ folder }: { folder: GalleryFolderModel }) => (
+  <div
+    style:display={() =>
+      isFolderBranchInCurrentScope(folder) ? 'contents' : 'none'
+    }
+  >
+    <div
+      style:display={() =>
+        isFolderImagesInCurrentScope(folder) ? 'contents' : 'none'
+      }
+    >
+      {() =>
+        folder
+          .sortedImages()
+          .map((image) => <ListImageEntry image={image} />)
+      }
     </div>
-  ),
-  'imagesList.listView',
+    {folder.children.map((child) => (
+      <ListFolder folder={child} />
+    ))}
+  </div>
 )
 
 export const ImageList = () => (
-  <div css="display: contents;">{listImagesView}</div>
+  <div css="display: contents;">
+    {() => {
+      const tree = folderModelTree()
+      return tree ? <ListFolder folder={tree} /> : null
+    }}
+  </div>
 )

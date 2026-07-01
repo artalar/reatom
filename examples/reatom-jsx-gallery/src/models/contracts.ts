@@ -7,7 +7,6 @@ export type RawDisplayStage = 'thumbnail' | 'embedded' | 'developed'
 
 export type FolderScanResult = {
   tree: FolderNode
-  images: ImageFile[]
 }
 
 export type ParsingProgressSnapshot = {

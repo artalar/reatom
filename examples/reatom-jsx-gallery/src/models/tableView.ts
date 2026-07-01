@@ -1,6 +1,6 @@
 import { action, atom, computed } from '@reatom/core'
 
-import { imagesList } from './collection'
+import { currentImages } from './collection'
 import { tablePreviewWidth } from './view'
 
 export const hiddenExifColumns = atom(
@@ -11,7 +11,7 @@ export const hiddenExifColumns = atom(
 export const exifColumnNames = computed(() => {
   const columnNames = new Set<string>()
 
-  for (const image of imagesList.array()) {
+  for (const image of currentImages()) {
     if (!image.visible()) continue
 
     const exif = image.meta.data()?.exif

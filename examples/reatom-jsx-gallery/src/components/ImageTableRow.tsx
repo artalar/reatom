@@ -25,9 +25,11 @@ export const tableCellCss = `
 export const ImageTableRow = ({
   image,
   exifColumns,
+  visible,
 }: {
   image: ImageModel
   exifColumns: string[]
+  visible: () => boolean
 }) => {
   const isSelected = () => image.selected()
   const isFavorite = () => image.favorite()
@@ -56,6 +58,7 @@ export const ImageTableRow = ({
     <tr
       {...focusableRowAttrs(openLabel, () => openLightbox(image))}
       attr:data-selected={isSelected}
+      style:display={() => (visible() ? 'table-row' : 'none')}
       css:preview-width={() => `${tablePreviewWidth()}px`}
       css:preview-height={() => `${tablePreviewHeight()}px`}
       on:click={() => openLightbox(image)}

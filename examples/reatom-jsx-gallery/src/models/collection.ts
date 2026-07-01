@@ -1,79 +1,48 @@
-import type { LL_NEXT, LL_PREV, LLNode } from '@reatom/core'
-import {
-  action,
-  computed,
-  effect,
-  peek,
-  reatomLinkedList,
-  withConnectHook,
-} from '@reatom/core'
+import type { Computed } from '@reatom/core'
+import { action, computed } from '@reatom/core'
 
 import { shutdownRawDevelopPool } from '../image-engine/formats/rawDevelop'
 import { shutdownRawPreviewScanPool } from '../image-engine/formats/rawPreviewScanPool'
-import type { ImageFile } from '../types'
+import type { FolderNode, ImageFile } from '../types'
 import type { GalleryImageModel } from './contracts'
-import { sortField, sortOrder } from './filters'
-import { flatImages, folderTree } from './folder'
+import { includeSubfolders, sortField, sortOrder } from './filters'
+import { currentFolder, folderTree } from './folder'
 import { isGalleryImageModel, reatomGalleryImage } from './image'
 
-type LLNodeModel = LLNode<GalleryImageModel>
-
-export const imagesList = reatomLinkedList<
-  [ImageFile | GalleryImageModel],
-  GalleryImageModel,
-  'id'
->(
-  {
-    create: (item: ImageFile | GalleryImageModel) =>
-      isGalleryImageModel(item) ? item : reatomGalleryImage(item),
-    key: 'id',
-  },
-  'imagesList',
-).extend(
-  withConnectHook(() => bindImagesListSync()),
-)
-
-export function bindImagesListSync(): () => void {
-  const syncEffect = effect(() => {
-    syncImagesList()
-  }, 'syncImagesList')
-
-  const unsubscribeFolderTree = folderTree.subscribe(() => syncImagesList())
-  const unsubscribeFlatImages = flatImages.subscribe(() => syncImagesList())
-  const unsubscribeSortField = sortField.subscribe(() => syncImagesList())
-  const unsubscribeSortOrder = sortOrder.subscribe(() => syncImagesList())
-
-  return () => {
-    syncEffect.unsubscribe()
-    unsubscribeFolderTree()
-    unsubscribeFlatImages()
-    unsubscribeSortField()
-    unsubscribeSortOrder()
-  }
+export type GalleryFolderModel = {
+  source: FolderNode
+  images: GalleryImageModel[]
+  children: GalleryFolderModel[]
+  sortedImages: Computed<GalleryImageModel[]>
 }
 
+const imageModelById = new Map<string, GalleryImageModel>()
+const folderModelByPath = new Map<string, GalleryFolderModel>()
+
 export const refreshImagesList = action(
-  () => syncImagesList(),
+  () => {
+    folderModelTree()
+    currentImages()
+  },
   'imagesList.refresh',
 )
 
-function syncImagesList() {
-  const tree = folderTree()
-  if (!tree) {
-    imagesList.batch(() => imagesList.clear())
-    return
-  }
+function getImageModel(image: ImageFile | GalleryImageModel): GalleryImageModel {
+  if (isGalleryImageModel(image)) return image
 
-  const images = flatImages()
+  const cached = imageModelById.get(image.id)
+  if (cached) return cached
+
+  const model = reatomGalleryImage(image)
+  imageModelById.set(image.id, model)
+  return model
+}
+
+function sortImages(images: GalleryImageModel[]): GalleryImageModel[] {
   const field = sortField()
   const order = sortOrder()
-  const currentMap = peek(imagesList.map)
 
-  const models = images.map(
-    (image) => currentMap.get(image.id) ?? reatomGalleryImage(image),
-  )
-
-  const sorted = [...models].sort((left, right) => {
+  return [...images].sort((left, right) => {
     let comparison = 0
     switch (field) {
       case 'name':
@@ -81,8 +50,7 @@ function syncImagesList() {
         break
       case 'size':
         comparison =
-          (left.fileInfo.data()?.size ?? 0) -
-          (right.fileInfo.data()?.size ?? 0)
+          (left.fileInfo.data()?.size ?? 0) - (right.fileInfo.data()?.size ?? 0)
         break
       case 'date':
         comparison =
@@ -101,30 +69,87 @@ function syncImagesList() {
     }
     return order === 'asc' ? comparison : -comparison
   })
+}
 
-  const currentArray = peek(imagesList.array)
-  const currentIds = currentArray.map((model) => model.id)
+function createFolderModel(folder: FolderNode): GalleryFolderModel {
+  const cached = folderModelByPath.get(folder.path)
+  if (cached && cached.source === folder) return cached
 
-  const orderMatch =
-    currentIds.length === sorted.length &&
-    currentIds.every((id, index) => id === sorted[index]!.id)
+  const images = folder.images.map(getImageModel)
+  const model: GalleryFolderModel = {
+    source: folder,
+    images,
+    children: folder.children.map(createFolderModel),
+    sortedImages: computed(
+      () => sortImages(images),
+      `galleryFolder.${folder.path}.sortedImages`,
+    ),
+  }
+  folderModelByPath.set(folder.path, model)
+  return model
+}
 
-  if (orderMatch) return
+export const folderModelTree = computed(() => {
+  const tree = folderTree()
+  return tree ? createFolderModel(tree) : null
+}, 'folderModelTree')
 
-  imagesList.batch(() => {
-    imagesList.clear()
-    imagesList.createMany(sorted.map((model) => [model]))
-  })
+function findFolderModel(
+  folder: GalleryFolderModel,
+  path: string,
+): GalleryFolderModel | null {
+  if (folder.source.path === path) return folder
+
+  for (const child of folder.children) {
+    const found = findFolderModel(child, path)
+    if (found) return found
+  }
+
+  return null
+}
+
+function collectImages(
+  folder: GalleryFolderModel,
+  withSubfolders: boolean,
+): GalleryImageModel[] {
+  const images = folder.sortedImages()
+  if (!withSubfolders) return images
+
+  return [
+    ...images,
+    ...folder.children.flatMap((child) => collectImages(child, true)),
+  ]
 }
 
 export const resetGallerySession = action(() => {
   shutdownRawPreviewScanPool()
   shutdownRawDevelopPool()
-  imagesList.batch(() => imagesList.clear())
+  imageModelById.clear()
+  folderModelByPath.clear()
 }, 'collection.resetGallerySession')
 
+export const currentImages = computed(() => {
+  const root = folderModelTree()
+  if (!root) return []
+
+  const selectedFolder = currentFolder()
+  if (!selectedFolder) return collectImages(root, true)
+
+  const selectedFolderModel = findFolderModel(root, selectedFolder.path)
+  if (!selectedFolderModel) return []
+
+  return collectImages(selectedFolderModel, includeSubfolders())
+}, 'currentImages')
+
+export const imagesList = {
+  array: currentImages,
+  find: (predicate: (model: GalleryImageModel) => boolean) =>
+    currentImages().find(predicate),
+  subscribe: currentImages.subscribe,
+}
+
 export const visibleImages = computed(
-  () => imagesList.array().filter((node) => node.visible()),
+  () => currentImages().filter((node) => node.visible()),
   'visibleImages',
 )
 
@@ -137,7 +162,7 @@ export const visibleIndexMap = computed(() => {
 }, 'visibleIndexMap')
 
 export const selectedImages = computed(
-  () => imagesList.array().filter((node) => node.selected()),
+  () => currentImages().filter((node) => node.selected()),
   'selectedImages',
 )
 
@@ -146,23 +171,19 @@ export const primarySelectedImage = computed(
   'primarySelectedImage',
 )
 
-export const selectedCount = computed(() => {
-  let count = 0
-  for (const node of imagesList.array()) {
-    if (node.selected()) count++
-  }
-  return count
-}, 'selectedCount')
+export const selectedCount = computed(
+  () => selectedImages().length,
+  'selectedCount',
+)
 
 export const favoriteImages = computed(() => {
-  return imagesList
-    .array()
+  return currentImages()
     .filter((model) => model.favorite())
     .map((model) => model.source)
 }, 'favoriteImages')
 
 export const favoritesCount = computed(
-  () => imagesList.array().filter((model) => model.favorite()).length,
+  () => currentImages().filter((model) => model.favorite()).length,
   'favoritesCount',
 )
 
@@ -178,42 +199,62 @@ export const selectAllImages = action(() => {
 }, 'selectAllImages')
 
 export const clearSelection = action(() => {
-  for (const node of imagesList.array()) {
+  for (const node of currentImages()) {
     node.selected.set(false)
   }
 }, 'clearSelection')
 
-const listLLPrev: LL_PREV = imagesList.LL_PREV
-const listLLNext: LL_NEXT = imagesList.LL_NEXT
-
 export const findVisibleNeighbor = (
-  source: LLNodeModel,
+  source: GalleryImageModel,
   direction: 1 | -1,
   wrapNavigation: boolean,
 ) => {
-  const getNeighbor =
-    direction === 1
-      ? (node: LLNodeModel) => node[listLLNext] ?? null
-      : (node: LLNodeModel) => node[listLLPrev] ?? null
+  const images = visibleImages()
+  const currentIndex = images.indexOf(source)
+  if (currentIndex === -1) return null
 
-  let node = getNeighbor(source)
-  while (node && !node.visible()) {
-    node = getNeighbor(node)
+  const nextIndex = currentIndex + direction
+  if (nextIndex >= 0 && nextIndex < images.length) {
+    return images[nextIndex] ?? null
   }
 
-  if (!node && wrapNavigation) {
-    const listState = imagesList()
-    const start = direction === 1 ? listState.head : listState.tail
-    let cursor = start
-    while (cursor && cursor !== source) {
-      if (cursor.visible()) {
-        node = cursor
-        break
-      }
-      cursor = getNeighbor(cursor)
-    }
-    if (node === source) node = null
-  }
+  if (!wrapNavigation || images.length <= 1) return null
+  return direction === 1 ? (images[0] ?? null) : (images.at(-1) ?? null)
+}
 
-  return node
+function isSameOrDescendant(folderPath: string, rootPath: string): boolean {
+  return (
+    rootPath === '' ||
+    folderPath === rootPath ||
+    folderPath.startsWith(rootPath + '/')
+  )
+}
+
+function isAncestor(folderPath: string, childPath: string): boolean {
+  return (
+    folderPath === '' ||
+    folderPath === childPath ||
+    childPath.startsWith(folderPath + '/')
+  )
+}
+
+export function isFolderImagesInCurrentScope(
+  folder: GalleryFolderModel,
+): boolean {
+  const selectedFolder = currentFolder()
+  if (!selectedFolder) return true
+  if (folder.source.path === selectedFolder.path) return true
+  return (
+    includeSubfolders() &&
+    isSameOrDescendant(folder.source.path, selectedFolder.path)
+  )
+}
+
+export function isFolderBranchInCurrentScope(
+  folder: GalleryFolderModel,
+): boolean {
+  const selectedFolder = currentFolder()
+  if (!selectedFolder) return true
+  if (isFolderImagesInCurrentScope(folder)) return true
+  return isAncestor(folder.source.path, selectedFolder.path)
 }

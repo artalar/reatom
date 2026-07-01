@@ -6,7 +6,7 @@ import {
   wrap,
 } from '@reatom/core'
 
-import type { ThumbnailOptions } from './image-engine'
+import type { ThumbnailOptions, ThumbnailResult } from './image-engine'
 import {
   loadThumbnailWithMeta,
   parseImageMeta,
@@ -57,15 +57,28 @@ function getBlobFileInfo(blob: Blob, fallbackName: string): ImageFileInfo {
   }
 }
 
+function isImageDecodeError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'EncodingError'
+}
+
 async function decodeImageFromUrl(
   url: string,
   meta: ImageMeta | null,
   ignoreExifOrientation: boolean,
-): Promise<HTMLImageElement> {
+): Promise<HTMLImageElement | null> {
+  const signal = abortVar.require().signal
+  if (signal.aborted) throwAbort()
+
   const image = new Image()
   image.decoding = 'async'
   image.src = url
-  await wrap(image.decode())
+  try {
+    await wrap(image.decode())
+  } catch (error) {
+    if (signal.aborted) throwAbort('image decode aborted')
+    if (isImageDecodeError(error)) return null
+    throw error
+  }
   const orientationStyle = resolveImageOrientationStyle(
     meta?.exif,
     ignoreExifOrientation,
@@ -99,7 +112,9 @@ export function reatomImage(
 
   const thumbnailMeta = computed(async () => {
     const blob = await wrap(file())
-    return await wrap(parseImagePreviewMeta(blob, { filename: options?.filename }))
+    return await wrap(
+      parseImagePreviewMeta(blob, { filename: options?.filename }),
+    )
   }, `${name}.thumbnailMeta`).extend(withAsyncData())
 
   const meta = computed(async () => {
@@ -118,10 +133,23 @@ export function reatomImage(
       const thumbnailOptions = {
         ...options?.thumbnailOptions,
         ignoreExifOrientation: ignoreExifOrientation(),
+        signal,
       }
-      const thumbnailResult = await wrap(
-        loadThumbnailWithMeta(fileState, metaState, thumbnailOptions),
+      const thumbnailPromise = loadThumbnailWithMeta(
+        fileState,
+        metaState,
+        thumbnailOptions,
       )
+      let thumbnailResult: ThumbnailResult
+      try {
+        thumbnailResult = await wrap(thumbnailPromise)
+      } catch (error) {
+        if (!signal.aborted) throw error
+
+        const lateThumbnailResult = await thumbnailPromise.catch(() => null)
+        if (lateThumbnailResult) revokeThumbnail(lateThumbnailResult)
+        throw error
+      }
       if (signal.aborted) {
         revokeThumbnail(thumbnailResult)
         throwAbort('thumbnail request aborted')
@@ -204,7 +232,12 @@ export function reatomImage(
   }, `${name}.fullUrl`).extend(withAsyncData())
 
   const fullImage = computed(async () => {
-    const metaState = await wrap(meta())
+    // Gate on the lightweight preview meta (same as `fullImageUrl`) instead of
+    // the full `meta()`: the heavy EXIF parse can reject or disagree on the raw
+    // format for edge-case files, which would silently leave the lightbox stuck
+    // on the thumbnail. Display orientation is re-applied from `meta` at the
+    // render layer, so decoding does not need the full parse to finish.
+    const metaState = await wrap(thumbnailMeta())
     if (isRawImageMeta(metaState)) return null
 
     const url = await wrap(fullImageUrl())

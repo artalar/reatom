@@ -8,6 +8,7 @@ export const maxParallelThumbnails = Math.max(
 export const activeThumbnailRequests = atom(0, 'thumbnail.activeRequests')
 
 type ThumbnailQueueEntry = {
+  cancelled: boolean
   grant: () => void
   reject: (error: Error) => void
 }
@@ -34,6 +35,7 @@ function runNextThumbnailJob() {
   ) {
     const entry = thumbnailQueue.shift()
     if (!entry) return
+    if (entry.cancelled) continue
 
     activeThumbnailJobs += 1
     syncActiveThumbnailRequests()
@@ -59,6 +61,7 @@ export function acquireThumbnailSlot(signal: AbortSignal): Promise<() => void> {
     }
 
     const entry: ThumbnailQueueEntry = {
+      cancelled: false,
       grant: () => {
         granted = true
         resolve(release)
@@ -72,8 +75,7 @@ export function acquireThumbnailSlot(signal: AbortSignal): Promise<() => void> {
         return
       }
 
-      const index = thumbnailQueue.indexOf(entry)
-      if (index >= 0) thumbnailQueue.splice(index, 1)
+      entry.cancelled = true
       entry.reject(createThumbnailAbortError(signal))
     }
 

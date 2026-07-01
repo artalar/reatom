@@ -107,4 +107,61 @@ describe('loadThumbnailWithMeta generated path', () => {
 
     revokeThumbnail(result)
   })
+
+  test('does not create an object URL after aborting generated thumbnails', async () => {
+    const controller = new AbortController()
+    const createObjectURL = vi.fn(() => 'blob:thumbnail-test')
+    const close = vi.fn()
+
+    vi.stubGlobal(
+      'OffscreenCanvas',
+      class {
+        width: number
+        height: number
+        constructor(width: number, height: number) {
+          this.width = width
+          this.height = height
+        }
+        getContext() {
+          return {
+            fillStyle: '',
+            fillRect: () => undefined,
+            drawImage: () => undefined,
+          }
+        }
+        convertToBlob() {
+          controller.abort()
+          return Promise.resolve(new Blob(['jpeg'], { type: 'image/jpeg' }))
+        }
+      },
+    )
+    vi.stubGlobal('URL', {
+      createObjectURL,
+      revokeObjectURL: () => undefined,
+    })
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({
+        width: 200,
+        height: 100,
+        close,
+      })),
+    )
+
+    const meta: ImageMeta = {
+      width: 200,
+      height: 100,
+      format: 'bmp',
+      isProgressive: false,
+      hasExifThumbnail: false,
+    }
+
+    await expect(
+      loadThumbnailWithMeta(new Blob(['bmp']), meta, {
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(close).toHaveBeenCalledOnce()
+    expect(createObjectURL).not.toHaveBeenCalled()
+  })
 })

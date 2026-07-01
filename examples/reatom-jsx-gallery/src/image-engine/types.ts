@@ -57,6 +57,7 @@ export type ImageMeta = {
 export type ThumbnailOptions = {
   maxSize?: number
   quality?: number
+  signal?: AbortSignal
 }
 
 export type ThumbnailSource = 'exif' | 'generated'

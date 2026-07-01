@@ -1,9 +1,8 @@
-import type { LL_NEXT, LL_PREV, LLNode } from '@reatom/core'
 import { action, computed, withAsync, wrap } from '@reatom/core'
 
 import { copyImageAsJpegToClipboard } from '../copyImage'
 import { downloadPreparedGalleryImage } from '../download'
-import { imagesList, visibleIndexMap } from './collection'
+import { visibleImages, visibleIndexMap } from './collection'
 import type { GalleryImageModel } from './contracts'
 import { navigateLightbox, resetLightboxPan } from './lightboxNavigation'
 import {
@@ -60,27 +59,17 @@ export const lightboxCounter = computed(() => {
 }, 'lightboxCounter')
 
 export const thumbnailWindow = computed(() => {
-  const current = lightboxImage() as LLNode<GalleryImageModel> | null
+  const current = lightboxImage()
   if (!current || !current.visible()) return []
 
-  const listLLPrev: LL_PREV = imagesList.LL_PREV
-  const listLLNext: LL_NEXT = imagesList.LL_NEXT
+  const images = visibleImages()
+  const currentIndex = images.indexOf(current)
+  if (currentIndex === -1) return []
 
-  const before: GalleryImageModel[] = []
-  let node = current[listLLPrev] ?? null
-  while (node && before.length < 5) {
-    if (node.visible()) before.unshift(node)
-    node = node[listLLPrev] ?? null
-  }
-
-  const after: GalleryImageModel[] = []
-  node = current[listLLNext] ?? null
-  while (node && after.length < 5) {
-    if (node.visible()) after.push(node)
-    node = node[listLLNext] ?? null
-  }
-
-  return [...before, current, ...after]
+  return images.slice(
+    Math.max(currentIndex - 5, 0),
+    Math.min(currentIndex + 6, images.length),
+  )
 }, 'thumbnailWindow')
 
 export const openLightbox = action((model: GalleryImageModel) => {

@@ -1,9 +1,7 @@
 import { filterPanelOpen, settingsPanelOpen } from '../components/panelState'
 import {
-  bindImagesListSync,
   clearSelection,
   currentFolder,
-  flatImages,
   folderTree,
   imagesList,
   keepLightboxView,
@@ -13,19 +11,14 @@ import {
   lightboxPanY,
   lightboxZoom,
   parsingProgress,
+  refreshImagesList,
+  resetGallerySession,
   showLightboxScrubber,
   slideshowPlaying,
   viewMode,
   wrapFolderNavigation,
 } from '../model'
 import type { FolderNode, ImageFile } from '../types'
-
-let stopImagesListSync: (() => void) | null = null
-
-function connectImagesListSync(): void {
-  stopImagesListSync?.()
-  stopImagesListSync = bindImagesListSync()
-}
 
 function cloneImage(img: ImageFile): ImageFile {
   return { ...img }
@@ -39,11 +32,15 @@ function cloneFolder(folder: FolderNode): FolderNode {
   }
 }
 
-function collectImages(folder: FolderNode): ImageFile[] {
-  return [
-    ...folder.images,
-    ...folder.children.flatMap((child) => collectImages(child)),
-  ]
+function findFolderByPath(folder: FolderNode, path: string): FolderNode | null {
+  if (folder.path === path) return folder
+
+  for (const child of folder.children) {
+    const found = findFolderByPath(child, path)
+    if (found) return found
+  }
+
+  return null
 }
 
 export type LoadGalleryStateOptions = {
@@ -52,18 +49,18 @@ export type LoadGalleryStateOptions = {
 }
 
 export function loadGalleryState(options: LoadGalleryStateOptions): void {
+  resetGallerySession()
   const tree = cloneFolder(options.tree)
   const currentFolderNode = options.currentFolderNode
-    ? cloneFolder(options.currentFolderNode)
+    ? findFolderByPath(tree, options.currentFolderNode.path)
     : undefined
-  flatImages.set(collectImages(tree))
   folderTree.set(tree)
   currentFolder.set(currentFolderNode ?? tree)
   parsingProgress.set({
     total: tree.imageCount,
     current: tree.imageCount,
   })
-  connectImagesListSync()
+  refreshImagesList()
   imagesList.array()
   clearSelection()
   lightboxOpen.setFalse()
@@ -87,7 +84,7 @@ export function loadGalleryStateWithImageModels(
 }
 
 export function loadEmptyState(): void {
-  flatImages.set([])
+  resetGallerySession()
   folderTree.set(null)
   currentFolder.set(null)
   parsingProgress.set({

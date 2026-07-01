@@ -80,7 +80,7 @@ export const NoImageSelected: Story = {
 export const WithLightboxImage: Story = {
   render: () => {
     loadGalleryStateWithImageModels({ tree: mockFolderTree })
-    const model = imagesList.array()[0]
+    const model = imagesList.find((node) => node.source.name === 'photo1.jpg')
     if (model) {
       lightboxImage.set(() => model)
       lightboxOpen.setTrue()

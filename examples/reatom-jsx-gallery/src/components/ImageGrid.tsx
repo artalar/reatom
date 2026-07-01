@@ -1,8 +1,11 @@
 import {
+  folderModelTree,
   gridColumns,
   gridGap,
   imageGrid,
-  imagesList,
+  isFolderBranchInCurrentScope,
+  isFolderImagesInCurrentScope,
+  type GalleryFolderModel,
   viewMode,
   visibleIndexMap,
 } from '../model'
@@ -12,15 +15,42 @@ import { SearchIcon } from './Icons'
 import { ImageList } from './ImageList'
 import { ImageTable } from './ImageTable'
 
-const gridImagesView = imagesList.reatomMap(
-  (imageNode) => (
-    <div css="display: contents;">
+const GridImageEntry = ({ image }: { image: GalleryFolderModel['images'][number] }) => (
+  <div style:display={() => (image.visible() ? 'contents' : 'none')}>
+    <GridImage image={image} />
+  </div>
+)
+
+const GridFolder = ({ folder }: { folder: GalleryFolderModel }) => (
+  <div
+    style:display={() =>
+      isFolderBranchInCurrentScope(folder) ? 'contents' : 'none'
+    }
+  >
+    <div
+      style:display={() =>
+        isFolderImagesInCurrentScope(folder) ? 'contents' : 'none'
+      }
+    >
       {() =>
-        imageNode.visible() && <GridImage image={imageNode} />
+        folder
+          .sortedImages()
+          .map((image) => <GridImageEntry image={image} />)
       }
     </div>
-  ),
-  'imagesList.gridView',
+    {folder.children.map((child) => (
+      <GridFolder folder={child} />
+    ))}
+  </div>
+)
+
+const GridFolderTree = () => (
+  <div css="display: contents;">
+    {() => {
+      const tree = folderModelTree()
+      return tree ? <GridFolder folder={tree} /> : null
+    }}
+  </div>
 )
 
 const NoImagesMessage = () => (
@@ -88,7 +118,7 @@ export const ImageGrid = () => (
 
       return (
         <div css="display: contents;">
-          {mode === 'list' ? <ImageList /> : gridImagesView}
+          {mode === 'list' ? <ImageList /> : <GridFolderTree />}
         </div>
       )
     }}

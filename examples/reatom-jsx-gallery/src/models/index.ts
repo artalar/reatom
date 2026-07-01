@@ -1,9 +1,12 @@
 export { setViewMode } from './appActions'
 export {
-  bindImagesListSync,
   clearSelection,
+  currentImages,
   favoriteImages,
   favoritesCount,
+  folderModelTree,
+  isFolderBranchInCurrentScope,
+  isFolderImagesInCurrentScope,
   imagesList,
   primarySelectedImage,
   refreshImagesList,
@@ -15,6 +18,7 @@ export {
   visibleImages,
   visibleIndexMap,
 } from './collection'
+export type { GalleryFolderModel } from './collection'
 export type {
   GalleryImageModel,
   ImageModel,
@@ -40,7 +44,6 @@ export {
 } from './filters'
 export {
   currentFolder,
-  flatImages,
   folderTree,
   parsingProgress,
   publishFolderScan,

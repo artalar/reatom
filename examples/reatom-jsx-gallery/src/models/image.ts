@@ -9,10 +9,8 @@ import {
   filterSizeMax,
   filterSizeMin,
   filterTypes,
-  includeSubfolders,
   searchQuery,
 } from './filters'
-import { currentFolder } from './folder'
 import { developRawFullSize, ignoreExifOrientation } from './preferences'
 
 function matchesVisibleFilters(
@@ -23,8 +21,6 @@ function matchesVisibleFilters(
   const query = searchQuery().toLowerCase()
   const sizeMin = filterSizeMin()
   const sizeMax = filterSizeMax()
-  const folder = currentFolder()
-  const withSubfolders = includeSubfolders()
 
   if (activeFilterTypes.size > 0) {
     const dotIndex = imageSource.name.lastIndexOf('.')
@@ -40,21 +36,6 @@ function matchesVisibleFilters(
     const fileInfo = readFileInfo()
     if (fileInfo === null) return false
     if (fileInfo.size < sizeMin || fileInfo.size > sizeMax) return false
-  }
-
-  if (folder) {
-    const folderPath = folder.path
-    if (withSubfolders) {
-      if (
-        folderPath !== '' &&
-        imageSource.path !== folderPath &&
-        !imageSource.path.startsWith(folderPath + '/')
-      ) {
-        return false
-      }
-    } else if (imageSource.path !== folderPath) {
-      return false
-    }
   }
 
   return true
@@ -134,13 +115,13 @@ export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
   const preloadUrl = computed(() => {
     if (isRawPipeline()) {
       return (
-        imageModel.embeddedPreviewUrl.data() ??
+        imageModel.rawEmbeddedPreviewImage.data()?.src ??
         imageModel.thumbnail.data()?.url ??
         ''
       )
     }
     return (
-      imageModel.fullImageUrl.data() ?? imageModel.thumbnail.data()?.url ?? ''
+      imageModel.fullImage.data()?.src ?? imageModel.thumbnail.data()?.url ?? ''
     )
   }, `${name}.display.preloadUrl`)
 

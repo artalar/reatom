@@ -3,6 +3,9 @@ import { abortVar, throwAbort, wrap } from '@reatom/core'
 import type { ParsingProgressSnapshot } from './models/contracts'
 import type { FolderNode, ImageFile } from './types'
 import { IMAGE_EXTENSIONS } from './types'
+import { yieldToBrowser } from './yieldToBrowser'
+
+const DIRECTORY_SCAN_YIELD_INTERVAL = 250
 
 export function isFileSystemAccessSupported(): boolean {
   return 'showDirectoryPicker' in globalThis
@@ -22,10 +25,14 @@ function getFileExtension(filename: string): string {
   return filename.slice(dotIndex).toLowerCase()
 }
 
-type FlatEntry = {
-  fileHandle: FileSystemFileHandle
-  folder: FolderNode
-  name: string
+function isFileHandle(entry: FileSystemHandle): entry is FileSystemFileHandle {
+  return entry.kind === 'file'
+}
+
+function isDirectoryHandle(
+  entry: FileSystemHandle,
+): entry is FileSystemDirectoryHandle {
+  return entry.kind === 'directory'
 }
 
 export type ScanDirectoryOptions = {
@@ -35,8 +42,9 @@ export type ScanDirectoryOptions = {
 export async function scanDirectoryRecursive(
   rootHandle: FileSystemDirectoryHandle,
   options?: ScanDirectoryOptions,
-): Promise<{ tree: FolderNode; images: ImageFile[] }> {
+): Promise<{ tree: FolderNode }> {
   let progress: ParsingProgressSnapshot = { total: 0, current: 0 }
+  let indexedImages = 0
 
   const reportProgress = (
     next:
@@ -49,8 +57,6 @@ export async function scanDirectoryRecursive(
 
   reportProgress({ total: 0, current: 0 })
   abortVar.subscribe(() => reportProgress({ total: 0, current: 0 }))
-
-  const flatEntries: FlatEntry[] = []
 
   async function walkTree(
     dirHandle: FileSystemDirectoryHandle,
@@ -66,21 +72,33 @@ export async function scanDirectoryRecursive(
     }
     let imageCount = 0
     const subdirectoryHandles: FileSystemDirectoryHandle[] = []
+    let scannedEntries = 0
 
     const iterator = dirHandle.values()
     while (true) {
       if (abortVar.require().signal.aborted) throwAbort()
       const { value: entry, done } = await wrap(iterator.next())
       if (done) break
-      if (entry.kind === 'file') {
+      scannedEntries++
+      if (isFileHandle(entry)) {
         const extension = getFileExtension(entry.name)
         if (IMAGE_EXTENSIONS.includes(extension)) {
-          const fileHandle = entry as FileSystemFileHandle
+          const image: ImageFile = {
+            id: `${currentPath}/${entry.name}#${folderNode.images.length}`,
+            name: entry.name,
+            path: currentPath,
+            relativePath: currentPath ? `${currentPath}/${entry.name}` : entry.name,
+            fileHandle: entry,
+          }
+          folderNode.images.push(image)
           imageCount++
-          flatEntries.push({ fileHandle, folder: folderNode, name: entry.name })
         }
-      } else if (entry.kind === 'directory') {
-        subdirectoryHandles.push(entry as FileSystemDirectoryHandle)
+      } else if (isDirectoryHandle(entry)) {
+        subdirectoryHandles.push(entry)
+      }
+
+      if (scannedEntries % DIRECTORY_SCAN_YIELD_INTERVAL === 0) {
+        await wrap(yieldToBrowser())
       }
     }
 
@@ -94,42 +112,20 @@ export async function scanDirectoryRecursive(
     }
 
     folderNode.imageCount = imageCount
+    indexedImages += folderNode.images.length
 
-    reportProgress((state) => ({
-      ...state,
-      total: Math.max(state.total, imageCount),
-    }))
+    reportProgress({
+      total: Math.max(progress.total, indexedImages, 1),
+      current: indexedImages,
+    })
 
     return folderNode
   }
 
   const walkRoot = await wrap(walkTree(rootHandle, ''))
+  reportProgress({ total: walkRoot.imageCount, current: walkRoot.imageCount })
 
-  function createImageEntries(items: FlatEntry[]): ImageFile[] {
-    return items.map(({ fileHandle, folder, name }, index) => {
-      if (abortVar.require().signal.aborted) throwAbort()
-
-      const image = {
-        id: `${folder.path}/${name}#${index}`,
-        name,
-        path: folder.path,
-        relativePath: folder.path ? `${folder.path}/${name}` : name,
-        fileHandle,
-      } satisfies ImageFile
-
-      folder.images.push(image)
-      reportProgress((state) => ({
-        ...state,
-        current: index + 1,
-      }))
-
-      return image
-    })
-  }
-
-  const images = createImageEntries(flatEntries)
-
-  return { tree: walkRoot, images }
+  return { tree: walkRoot }
 }
 
 export const parseDirectoryRecursive = scanDirectoryRecursive

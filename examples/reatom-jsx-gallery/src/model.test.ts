@@ -1,10 +1,13 @@
-import { clearStack, context } from '@reatom/core'
-import { expect, test } from 'vitest'
+import { action, clearStack, context, withAbort, wrap } from '@reatom/core'
+import { expect, test, vi } from 'vitest'
 
-import { mockFolderTree } from './__fixtures__/mockData'
+import { createMockDirHandle } from './__fixtures__/fixtureLoader'
+import { createMockImage, mockFolderTree } from './__fixtures__/mockData'
+import { scanDirectoryRecursive } from './filesystem'
 import {
   clearSelection,
   closeLightbox,
+  currentFolder,
   filterSizeMax,
   filterSizeMin,
   filterTypes,
@@ -31,12 +34,27 @@ import {
   wrapFolderNavigation,
 } from './model'
 import { loadGalleryState } from './shared/testSetup'
+import type { FolderNode, ImageFile } from './types'
+
+function collectTreeImages(
+  folder: FolderNode,
+  compare: (left: ImageFile, right: ImageFile) => number,
+): ImageFile[] {
+  return [
+    ...folder.images.toSorted(compare),
+    ...folder.children.flatMap((child) => collectTreeImages(child, compare)),
+  ]
+}
 
 test.beforeEach(() => {
   clearStack()
 })
 
-test('imagesList sorts by name ascending', () =>
+test.afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+test('imagesList sorts each folder by name ascending', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('name')
@@ -44,15 +62,13 @@ test('imagesList sorts by name ascending', () =>
     refreshImagesList()
     const images = imagesList.array()
     const names = images.map((i) => i.source.name)
-    expect(names).toEqual(
-      mockFolderTree.images
-        .concat(mockFolderTree.children.flatMap((folder) => folder.images))
-        .map((i) => i.name)
-        .sort((a, b) => a.localeCompare(b)),
-    )
+    const expectedNames = collectTreeImages(mockFolderTree, (left, right) =>
+      left.name.localeCompare(right.name),
+    ).map((image) => image.name)
+    expect(names).toEqual(expectedNames)
   }))
 
-test('imagesList sorts by name descending', () =>
+test('imagesList sorts each folder by name descending', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('name')
@@ -60,15 +76,13 @@ test('imagesList sorts by name descending', () =>
     refreshImagesList()
     const images = imagesList.array()
     const names = images.map((i) => i.source.name)
-    expect(names).toEqual(
-      mockFolderTree.images
-        .concat(mockFolderTree.children.flatMap((folder) => folder.images))
-        .map((i) => i.name)
-        .sort((a, b) => b.localeCompare(a)),
-    )
+    const expectedNames = collectTreeImages(mockFolderTree, (left, right) =>
+      right.name.localeCompare(left.name),
+    ).map((image) => image.name)
+    expect(names).toEqual(expectedNames)
   }))
 
-test('imagesList sorts by size ascending', () =>
+test('imagesList sorts each folder by size ascending', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('size')
@@ -76,10 +90,15 @@ test('imagesList sorts by size ascending', () =>
     refreshImagesList()
     const images = imagesList.array()
     const sizes = images.map((i) => i.fileInfo.data()?.size)
-    expect(sizes).toEqual([1024, 2048, 4096, 5120, 8192, 15360])
+    const expectedSizes = collectTreeImages(
+      mockFolderTree,
+      (left, right) =>
+        (left.fileInfo?.size ?? 0) - (right.fileInfo?.size ?? 0),
+    ).map((image) => image.fileInfo?.size)
+    expect(sizes).toEqual(expectedSizes)
   }))
 
-test('imagesList sorts by size descending', () =>
+test('imagesList sorts each folder by size descending', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('size')
@@ -87,10 +106,15 @@ test('imagesList sorts by size descending', () =>
     refreshImagesList()
     const images = imagesList.array()
     const sizes = images.map((i) => i.fileInfo.data()?.size)
-    expect(sizes).toEqual([15360, 8192, 5120, 4096, 2048, 1024])
+    const expectedSizes = collectTreeImages(
+      mockFolderTree,
+      (left, right) =>
+        (right.fileInfo?.size ?? 0) - (left.fileInfo?.size ?? 0),
+    ).map((image) => image.fileInfo?.size)
+    expect(sizes).toEqual(expectedSizes)
   }))
 
-test('imagesList sorts by date ascending', () =>
+test('imagesList sorts each folder by date ascending', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('date')
@@ -98,13 +122,16 @@ test('imagesList sorts by date ascending', () =>
     refreshImagesList()
     const images = imagesList.array()
     const dates = images.map((i) => i.fileInfo.data()?.lastModified)
-    expect(dates).toEqual([
-      1700000000000, 1700001000000, 1700002000000, 1700003000000, 1700004000000,
-      1700005000000,
-    ])
+    const expectedDates = collectTreeImages(
+      mockFolderTree,
+      (left, right) =>
+        (left.fileInfo?.lastModified ?? 0) -
+        (right.fileInfo?.lastModified ?? 0),
+    ).map((image) => image.fileInfo?.lastModified)
+    expect(dates).toEqual(expectedDates)
   }))
 
-test('imagesList sorts by type', () =>
+test('imagesList sorts each folder by type', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('type')
@@ -112,14 +139,10 @@ test('imagesList sorts by type', () =>
     refreshImagesList()
     const images = imagesList.array()
     const types = images.map((i) => i.fileInfo.data()?.type)
-    expect(types).toEqual([
-      'image/gif',
-      'image/jpeg',
-      'image/jpeg',
-      'image/png',
-      'image/png',
-      'image/webp',
-    ])
+    const expectedTypes = collectTreeImages(mockFolderTree, (left, right) =>
+      (left.fileInfo?.type ?? '').localeCompare(right.fileInfo?.type ?? ''),
+    ).map((image) => image.fileInfo?.type)
+    expect(types).toEqual(expectedTypes)
   }))
 
 test('imagesList sorts by dimensions', () =>
@@ -159,17 +182,15 @@ test('visibleIndexMap filters by size range', () =>
     filterSizeMax.set(10000)
     const map = visibleIndexMap()
     expect(
-      [...map.keys()].every(
-        (i) => {
-          const size = i.fileInfo.data()?.size
-          return size !== undefined && size >= 5000 && size <= 10000
-        },
-      ),
+      [...map.keys()].every((i) => {
+        const size = i.fileInfo.data()?.size
+        return size !== undefined && size >= 5000 && size <= 10000
+      }),
     ).toBe(true)
   }))
 
-test('visibleIndexMap respects includeSubfolders', () =>
-  context.start(() => {
+test('visibleIndexMap respects includeSubfolders', async () =>
+  context.start(async () => {
     loadGalleryState({
       tree: mockFolderTree,
       currentFolderNode: mockFolderTree,
@@ -177,9 +198,55 @@ test('visibleIndexMap respects includeSubfolders', () =>
     includeSubfolders.setTrue()
     const withSub = visibleIndexMap().size
     includeSubfolders.setFalse()
+    await wrap(Promise.resolve())
     const withoutSub = visibleIndexMap().size
     expect(withSub).toBeGreaterThan(withoutSub)
   }))
+
+test('imagesList is scoped to the selected folder', async () =>
+  context.start(async () => {
+    loadGalleryState({ tree: mockFolderTree })
+    currentFolder.set(mockFolderTree.children[0]!)
+    await wrap(Promise.resolve())
+
+    const paths = imagesList.array().map((image) => image.source.path)
+
+    expect(paths).toEqual(['subfolder', 'subfolder'])
+  }))
+
+test('scanDirectoryRecursive yields while indexing large folders', async () => {
+  const requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+    callback(performance.now())
+    return 1
+  })
+  vi.stubGlobal('requestAnimationFrame', requestAnimationFrame)
+
+  const fileHandles = Array.from(
+    { length: 401 },
+    (_, index) =>
+      createMockImage({
+        id: `scan-${index}`,
+        name: `image-${index}.jpg`,
+        path: '',
+      }).fileHandle,
+  )
+  const rootHandle = Object.assign(createMockDirHandle('Root'), {
+    values: async function* () {
+      for (const fileHandle of fileHandles) {
+        yield fileHandle
+      }
+    },
+  })
+  const scan = action(
+    async () => await wrap(scanDirectoryRecursive(rootHandle)),
+    'test.scanDirectoryRecursive',
+  ).extend(withAbort())
+
+  const result = await context.start(() => scan())
+
+  expect(result.tree.images).toHaveLength(fileHandles.length)
+  expect(requestAnimationFrame).toHaveBeenCalled()
+})
 
 test('selectImage toggles selection', () =>
   context.start(() => {

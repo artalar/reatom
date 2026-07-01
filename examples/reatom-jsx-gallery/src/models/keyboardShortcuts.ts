@@ -1,6 +1,6 @@
 import { action, effect, onEvent } from '@reatom/core'
 
-import { clearSelection, imagesList, selectAllImages } from './collection'
+import { clearSelection, currentImages, selectAllImages } from './collection'
 import { closeLightbox, lightboxOpen, navigateLightbox } from './lightbox'
 import { filterPanelOpen, settingsPanelOpen } from './panels'
 import { toggleResolvedThemeMode } from './preferences'
@@ -15,7 +15,7 @@ import {
 } from './view'
 
 export const toggleFavoriteOnSelectedImages = action(() => {
-  for (const model of imagesList.array()) {
+  for (const model of currentImages()) {
     if (model.selected()) model.favorite.toggle()
   }
 }, 'keyboardShortcuts.toggleFavoriteOnSelected')
