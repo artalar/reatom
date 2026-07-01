@@ -1,6 +1,5 @@
 import {
   atom,
-  context,
   effect,
   onEvent,
   reatomBoolean,
@@ -59,7 +58,7 @@ export const bindSlideshowPauseOnPageHidden = () => {
   const pauseOnHidden = effect(() => {
     onEvent(document, 'visibilitychange', () => {
       if (document.hidden) {
-        context.start(() => slideshowPlaying.setFalse())
+        slideshowPlaying.setFalse()
       }
     })
   }, 'slideshow.pauseOnPageHidden')

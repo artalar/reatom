@@ -22,6 +22,8 @@ export const GridImage = ({
   const imageName = () => image.source.name
 
   const displayImage = () => {
+    if (image.previewLoadPriority() === 'off') return null
+
     const thumbnail = image.thumbnail.data()
     if (!thumbnail) return null
 

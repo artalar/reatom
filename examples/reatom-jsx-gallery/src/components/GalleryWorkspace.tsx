@@ -1,4 +1,8 @@
-import { folderTreeSidebarVisible, galleryContentMode } from '../model'
+import {
+  bindBackgroundPreviewLoader,
+  folderTreeSidebarVisible,
+  galleryContentMode,
+} from '../model'
 import { BreadcrumbNav } from './BreadcrumbNav'
 import { EmptyState } from './EmptyState'
 import { FolderTree } from './FolderTree'
@@ -8,6 +12,16 @@ import { SortPanel } from './SortPanel'
 
 export const GalleryWorkspace = () => (
   <div css="flex: 1; overflow: hidden; display: flex;">
+    {() => {
+      if (galleryContentMode() !== 'gallery') return null
+
+      return (
+        <div
+          style={{ display: 'none' }}
+          ref={() => bindBackgroundPreviewLoader()}
+        />
+      )
+    }}
     {() => (galleryContentMode() !== 'empty' ? <FolderTree /> : null)}
 
     <div css="flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;">

@@ -1,4 +1,4 @@
-import { computed, reatomBoolean, withLocalStorage } from '@reatom/core'
+import { atom, computed, reatomBoolean, withLocalStorage } from '@reatom/core'
 
 import { isRawImageFormat } from '../image-engine/types'
 import { formatBytes, formatDate, formatDimensions } from '../imageFormat'
@@ -42,12 +42,17 @@ function matchesVisibleFilters(
 }
 
 export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
-  const name = `image#${imageSource.name}`
+  const name = `image#${imageSource.relativePath}`
+  const previewLoadPriority = atom<'off' | 'high' | 'background'>(
+    'off',
+    `${name}.previewLoadPriority`,
+  )
   const imageModel = reatomImage(imageSource.fileHandle, name, {
     filename: imageSource.name,
     initialFileInfo: imageSource.fileInfo,
     readIgnoreExifOrientation: () => ignoreExifOrientation(),
     readDevelopRaw: () => developRawFullSize(),
+    previewLoadPriority,
   })
   const selected = reatomBoolean(false, `${name}.selected`)
   const favorite = reatomBoolean(false, `${name}.favorite`).extend(
@@ -171,6 +176,7 @@ export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
     source: imageSource,
     selected,
     favorite,
+    previewLoadPriority,
     visible,
     width,
     height,
@@ -198,6 +204,7 @@ export function isGalleryImageModel(
     'source' in value &&
     'selected' in value &&
     'favorite' in value &&
+    'previewLoadPriority' in value &&
     'visible' in value &&
     'width' in value &&
     'height' in value

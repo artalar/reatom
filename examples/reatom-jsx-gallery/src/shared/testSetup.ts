@@ -2,8 +2,8 @@ import { filterPanelOpen, settingsPanelOpen } from '../components/panelState'
 import {
   clearSelection,
   currentFolder,
+  currentImages,
   folderTree,
-  imagesList,
   keepLightboxView,
   lightboxImage,
   lightboxOpen,
@@ -11,7 +11,6 @@ import {
   lightboxPanY,
   lightboxZoom,
   parsingProgress,
-  refreshImagesList,
   resetGallerySession,
   showLightboxScrubber,
   slideshowPlaying,
@@ -60,8 +59,7 @@ export function loadGalleryState(options: LoadGalleryStateOptions): void {
     total: tree.imageCount,
     current: tree.imageCount,
   })
-  refreshImagesList()
-  imagesList.array()
+  currentImages()
   clearSelection()
   lightboxOpen.setFalse()
   lightboxImage.set(null)
@@ -91,7 +89,7 @@ export function loadEmptyState(): void {
     total: 0,
     current: 0,
   })
-  imagesList.array()
+  currentImages()
   clearSelection()
   lightboxOpen.setFalse()
   lightboxImage.set(null)

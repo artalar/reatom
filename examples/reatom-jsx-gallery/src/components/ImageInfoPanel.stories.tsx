@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html'
 
 import { mockFolderTree } from '../__fixtures__/mockData'
-import { imagesList, lightboxImage, lightboxOpen } from '../model'
+import { currentImages, lightboxImage, lightboxOpen } from '../model'
 import { StoryWrapper } from '../shared/StoryWrapper'
 import {
   type Canvas,
@@ -80,7 +80,7 @@ export const NoImageSelected: Story = {
 export const WithLightboxImage: Story = {
   render: () => {
     loadGalleryStateWithImageModels({ tree: mockFolderTree })
-    const model = imagesList.find((node) => node.source.name === 'photo1.jpg')
+    const model = currentImages().find((node) => node.source.name === 'photo1.jpg')
     if (model) {
       lightboxImage.set(() => model)
       lightboxOpen.setTrue()

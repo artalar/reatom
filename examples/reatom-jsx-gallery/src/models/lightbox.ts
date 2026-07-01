@@ -4,7 +4,7 @@ import { copyImageAsJpegToClipboard } from '../copyImage'
 import { downloadPreparedGalleryImage } from '../download'
 import { visibleImages, visibleIndexMap } from './collection'
 import type { GalleryImageModel } from './contracts'
-import { navigateLightbox, resetLightboxPan } from './lightboxNavigation'
+import { navigateLightbox, primeLightboxPreload, resetLightboxPan } from './lightboxNavigation'
 import {
   lightboxImage,
   lightboxNavigationDirection,
@@ -12,6 +12,7 @@ import {
   lightboxZoom,
 } from './lightboxState'
 import { imageInfoPanelOpen } from './panels'
+import { ensureGalleryImagePreviewHigh } from './previewLoad'
 import { slideshowPlaying } from './slideshow'
 
 export {
@@ -73,11 +74,13 @@ export const thumbnailWindow = computed(() => {
 }, 'thumbnailWindow')
 
 export const openLightbox = action((model: GalleryImageModel) => {
+  ensureGalleryImagePreviewHigh(model)
   lightboxImage.set(() => model)
   lightboxNavigationDirection.set(1)
   lightboxZoom.set(1)
   resetLightboxPan()
   lightboxOpen.setTrue()
+  primeLightboxPreload()
 }, 'openLightbox')
 
 export const closeLightbox = action(() => {
@@ -146,6 +149,12 @@ export const handleLightboxKeyDown = action((event: KeyboardEvent) => {
       event.preventDefault()
       event.stopPropagation()
       slideshowPlaying.toggle()
+      break
+    case 'f':
+    case 'F':
+      event.preventDefault()
+      event.stopPropagation()
+      toggleLightboxImageFavorite()
       break
   }
 }, 'lightbox.handleKeyDown')

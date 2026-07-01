@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html'
 
 import { mockFolderTree } from '../__fixtures__/mockData'
-import { imagesList, openLightbox } from '../model'
+import { currentImages, openLightbox } from '../model'
 import { StoryWrapper } from '../shared/StoryWrapper'
 import { createMyself, type Locator } from '../shared/test'
 import { loadGalleryStateWithImageModels } from '../shared/testSetup'
@@ -35,7 +35,7 @@ type Story = StoryObj
 export const OpenWithImages: Story = {
   render: () => {
     loadGalleryStateWithImageModels({ tree: mockFolderTree })
-    const first = imagesList.array()[0]
+    const first = currentImages()[0]
     if (first) openLightbox(first)
     return (
       <StoryWrapper>

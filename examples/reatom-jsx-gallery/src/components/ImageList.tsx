@@ -1,5 +1,6 @@
 import { focusableCardAttrs } from '../a11y'
 import {
+  bindGalleryImagePreview,
   folderModelTree,
   isFolderBranchInCurrentScope,
   isFolderImagesInCurrentScope,
@@ -16,6 +17,8 @@ const ListImage = ({ image }: { image: ImageModel }) => {
   const isSelected = () => image.selected()
   const isFavorite = () => image.favorite()
   const displayThumbnail = () => {
+    if (image.previewLoadPriority() === 'off') return null
+
     const thumbnail = image.thumbnail.data()
     return thumbnail ? (
       <img src={thumbnail.url} alt={image.name} loading="lazy" />
@@ -184,8 +187,17 @@ const ListImage = ({ image }: { image: ImageModel }) => {
   )
 }
 
-const ListImageEntry = ({ image }: { image: ImageModel }) => (
-  <div style:display={() => (image.visible() ? 'contents' : 'none')}>
+const ListImageEntry = ({
+  image,
+  folder,
+}: {
+  image: ImageModel
+  folder: GalleryFolderModel
+}) => (
+  <div
+    style:display={() => (image.visible() ? 'contents' : 'none')}
+    ref={() => bindGalleryImagePreview(image, folder)}
+  >
     <ListImage image={image} />
   </div>
 )
@@ -204,7 +216,7 @@ const ListFolder = ({ folder }: { folder: GalleryFolderModel }) => (
       {() =>
         folder
           .sortedImages()
-          .map((image) => <ListImageEntry image={image} />)
+          .map((image) => <ListImageEntry image={image} folder={folder} />)
       }
     </div>
     {folder.children.map((child) => (

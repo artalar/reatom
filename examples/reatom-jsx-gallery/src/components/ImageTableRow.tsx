@@ -3,6 +3,7 @@ import { formatExifDisplayValue } from '../image-engine/exifDisplay'
 import { resolveImageOrientationStyle } from '../image-engine/orientation'
 import type { ImageModel } from '../model'
 import {
+  bindGalleryImagePreviewWhen,
   ignoreExifOrientation,
   openLightbox,
   selectImage,
@@ -34,6 +35,8 @@ export const ImageTableRow = ({
   const isSelected = () => image.selected()
   const isFavorite = () => image.favorite()
   const displayThumbnail = () => {
+    if (image.previewLoadPriority() === 'off') return null
+
     const thumbnail = image.thumbnail.data()
     if (!thumbnail) return null
 
@@ -57,6 +60,7 @@ export const ImageTableRow = ({
   return (
     <tr
       {...focusableRowAttrs(openLabel, () => openLightbox(image))}
+      ref={() => bindGalleryImagePreviewWhen(image, visible)}
       attr:data-selected={isSelected}
       style:display={() => (visible() ? 'table-row' : 'none')}
       css:preview-width={() => `${tablePreviewWidth()}px`}

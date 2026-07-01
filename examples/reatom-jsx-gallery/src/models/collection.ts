@@ -3,6 +3,7 @@ import { action, computed } from '@reatom/core'
 
 import { shutdownRawDevelopPool } from '../image-engine/formats/rawDevelop'
 import { shutdownRawPreviewScanPool } from '../image-engine/formats/rawPreviewScanPool'
+import { shutdownThumbnailQueue } from './thumbnailConcurrency'
 import type { FolderNode, ImageFile } from '../types'
 import type { GalleryImageModel } from './contracts'
 import { includeSubfolders, sortField, sortOrder } from './filters'
@@ -18,14 +19,6 @@ export type GalleryFolderModel = {
 
 const imageModelById = new Map<string, GalleryImageModel>()
 const folderModelByPath = new Map<string, GalleryFolderModel>()
-
-export const refreshImagesList = action(
-  () => {
-    folderModelTree()
-    currentImages()
-  },
-  'imagesList.refresh',
-)
 
 function getImageModel(image: ImageFile | GalleryImageModel): GalleryImageModel {
   if (isGalleryImageModel(image)) return image
@@ -94,6 +87,15 @@ export const folderModelTree = computed(() => {
   return tree ? createFolderModel(tree) : null
 }, 'folderModelTree')
 
+export function collectAllGalleryImages(
+  folder: GalleryFolderModel,
+): GalleryImageModel[] {
+  return [
+    ...folder.images,
+    ...folder.children.flatMap(collectAllGalleryImages),
+  ]
+}
+
 function findFolderModel(
   folder: GalleryFolderModel,
   path: string,
@@ -124,6 +126,7 @@ function collectImages(
 export const resetGallerySession = action(() => {
   shutdownRawPreviewScanPool()
   shutdownRawDevelopPool()
+  shutdownThumbnailQueue()
   imageModelById.clear()
   folderModelByPath.clear()
 }, 'collection.resetGallerySession')
@@ -140,13 +143,6 @@ export const currentImages = computed(() => {
 
   return collectImages(selectedFolderModel, includeSubfolders())
 }, 'currentImages')
-
-export const imagesList = {
-  array: currentImages,
-  find: (predicate: (model: GalleryImageModel) => boolean) =>
-    currentImages().find(predicate),
-  subscribe: currentImages.subscribe,
-}
 
 export const visibleImages = computed(
   () => currentImages().filter((node) => node.visible()),

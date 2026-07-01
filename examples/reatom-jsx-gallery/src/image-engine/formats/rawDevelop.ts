@@ -37,12 +37,21 @@ type DevelopSlot = {
   abort: AbortController | null
 }
 
+type DevelopJob = {
+  source: Blob
+  orientation: DevelopOrientation
+  externalSignal: AbortSignal | undefined
+  resolve: (result: RawDevelopResult | null) => void
+  reject: (error: Error) => void
+}
+
 const JPEG_DEVELOP_QUALITY = 0.92
 const DEVELOP_POOL_SIZE = 3
 
 let libRawModulePromise: Promise<LibRawModule> | null = null
 let developPool: DevelopSlot[] | null = null
-let poolCursor = 0
+
+const pendingDevelopJobs: DevelopJob[] = []
 
 function loadLibRawModule(): Promise<LibRawModule> {
   if (!libRawModulePromise) {
@@ -121,6 +130,15 @@ function getEncodeWorker(): Worker {
     encodeWorker = worker
   }
   return encodeWorker
+}
+
+function shutdownEncodeWorker(): void {
+  for (const pending of pendingEncodes.values()) {
+    pending.reject(createAbortError())
+  }
+  pendingEncodes.clear()
+  encodeWorker?.terminate()
+  encodeWorker = null
 }
 
 function encodeRgbToJpeg(
@@ -205,84 +223,128 @@ function resolveDevelopOrientation(
   }
 }
 
+async function developInSlot(
+  slot: DevelopSlot,
+  signal: AbortSignal,
+  job: DevelopJob,
+): Promise<RawDevelopResult | null> {
+  const { default: LibRaw } = await loadLibRawModule()
+  const instance = new LibRaw()
+  slot.instance = instance
+
+  const fileBytes = new Uint8Array(
+    await raceAbort(job.source.arrayBuffer(), signal),
+  )
+
+  await raceAbort(
+    instance.open(fileBytes, {
+      useCameraWb: true,
+      useCameraMatrix: 1,
+      outputColor: 1,
+      outputBps: 8,
+      userQual: 3,
+      halfSize: false,
+      userFlip: 0,
+    }),
+    signal,
+  )
+
+  const image = await raceAbort(instance.imageData(), signal)
+  if (!isLibRawImageData(image)) return null
+
+  const rgb = copyRgbBuffer(image)
+  if (!rgb) return null
+
+  const blob = await encodeRgbToJpeg(
+    rgb,
+    image.width,
+    image.height,
+    job.orientation,
+    signal,
+  )
+
+  const swapDimensions =
+    job.orientation.degrees === 90 || job.orientation.degrees === 270
+  return {
+    blob,
+    width: swapDimensions ? image.height : image.width,
+    height: swapDimensions ? image.width : image.height,
+  }
+}
+
+function scheduleDevelopJobs(): void {
+  if (!developPool) return
+
+  for (const [slotIndex, slot] of developPool.entries()) {
+    if (slot.abort !== null) continue
+    if (pendingDevelopJobs.length === 0) return
+
+    const job = pendingDevelopJobs.shift()
+    if (!job) return
+
+    void runDevelopJob(slotIndex, job)
+  }
+}
+
+async function runDevelopJob(slotIndex: number, job: DevelopJob): Promise<void> {
+  const pool = developPool
+  if (!pool) {
+    job.reject(new Error('Raw develop pool is not available'))
+    return
+  }
+
+  const slot = pool[slotIndex]!
+  const abort = new AbortController()
+  slot.abort = abort
+
+  const onExternalAbort = () => {
+    if (slot.abort === abort) {
+      abort.abort()
+    }
+  }
+  job.externalSignal?.addEventListener('abort', onExternalAbort, { once: true })
+
+  try {
+    const result = await developInSlot(slot, abort.signal, job)
+    job.resolve(result)
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      job.reject(error)
+      return
+    }
+    job.reject(error instanceof Error ? error : new Error(String(error)))
+  } finally {
+    job.externalSignal?.removeEventListener('abort', onExternalAbort)
+    if (slot.abort === abort) {
+      slot.abort = null
+      disposeSlotInstance(slot)
+    }
+    scheduleDevelopJobs()
+  }
+}
+
+function enqueueDevelopJob(job: DevelopJob): void {
+  pendingDevelopJobs.push(job)
+  scheduleDevelopJobs()
+}
+
 async function developWithPool(
   source: Blob,
   orientation: DevelopOrientation,
   externalSignal: AbortSignal | undefined,
 ): Promise<RawDevelopResult | null> {
   const { default: LibRaw } = await loadLibRawModule()
-  const pool = ensurePool(LibRaw)
+  ensurePool(LibRaw)
 
-  const slot = pool[poolCursor]!
-  poolCursor = (poolCursor + 1) % DEVELOP_POOL_SIZE
-
-  if (slot.abort) {
-    slot.abort.abort()
-    disposeSlotInstance(slot)
-    slot.abort = null
-  }
-
-  const abort = new AbortController()
-  slot.abort = abort
-  const instance = new LibRaw()
-  slot.instance = instance
-  const signal = abort.signal
-
-  const onExternalAbort = () => {
-    if (slot.abort === abort) {
-      abort.abort()
-      disposeSlotInstance(slot)
-      slot.abort = null
-    }
-  }
-  externalSignal?.addEventListener('abort', onExternalAbort, { once: true })
-
-  try {
-    const fileBytes = new Uint8Array(
-      await raceAbort(source.arrayBuffer(), signal),
-    )
-
-    await raceAbort(
-      instance.open(fileBytes, {
-        useCameraWb: true,
-        useCameraMatrix: 1,
-        outputColor: 1,
-        outputBps: 8,
-        userQual: 3,
-        halfSize: false,
-        userFlip: 0,
-      }),
-      signal,
-    )
-
-    const image = await raceAbort(instance.imageData(), signal)
-    if (!isLibRawImageData(image)) return null
-
-    const rgb = copyRgbBuffer(image)
-    if (!rgb) return null
-
-    const blob = await encodeRgbToJpeg(
-      rgb,
-      image.width,
-      image.height,
+  return new Promise<RawDevelopResult | null>((resolve, reject) => {
+    enqueueDevelopJob({
+      source,
       orientation,
-      signal,
-    )
-
-    const swapDimensions =
-      orientation.degrees === 90 || orientation.degrees === 270
-    return {
-      blob,
-      width: swapDimensions ? image.height : image.width,
-      height: swapDimensions ? image.width : image.height,
-    }
-  } finally {
-    externalSignal?.removeEventListener('abort', onExternalAbort)
-    if (slot.abort === abort) {
-      slot.abort = null
-      disposeSlotInstance(slot)
-    }
-  }
+      externalSignal,
+      resolve,
+      reject,
+    })
+  })
 }
 
 export function isRawDevelopSupported(): boolean {
@@ -294,17 +356,24 @@ export function isRawDevelopSupported(): boolean {
   )
 }
 
-export function shutdownRawDevelopPool(): void {
-  if (!developPool) return
+const shutdownError = new Error('Raw develop pool shut down')
 
-  for (const slot of developPool) {
-    slot.abort?.abort()
-    slot.abort = null
-    disposeSlotInstance(slot)
+export function shutdownRawDevelopPool(): void {
+  while (pendingDevelopJobs.length > 0) {
+    const job = pendingDevelopJobs.shift()
+    job?.reject(shutdownError)
   }
 
-  developPool = null
-  poolCursor = 0
+  if (developPool) {
+    for (const slot of developPool) {
+      slot.abort?.abort()
+      slot.abort = null
+      disposeSlotInstance(slot)
+    }
+    developPool = null
+  }
+
+  shutdownEncodeWorker()
 }
 
 export async function developRawToJpegBlob(
@@ -327,7 +396,7 @@ export async function developRawToJpegBlob(
     return await developWithPool(source, orientation, options?.signal)
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return null
+      throw error
     }
     console.error('RAW develop failed:', error)
     return null

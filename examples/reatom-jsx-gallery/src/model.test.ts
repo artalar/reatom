@@ -11,7 +11,7 @@ import {
   filterSizeMax,
   filterSizeMin,
   filterTypes,
-  imagesList,
+  currentImages,
   includeSubfolders,
   keepLightboxView,
   lightboxImage,
@@ -22,7 +22,6 @@ import {
   navigateLightbox,
   openFolder,
   openLightbox,
-  refreshImagesList,
   searchQuery,
   selectAllImages,
   selectedCount,
@@ -59,8 +58,8 @@ test('imagesList sorts each folder by name ascending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('name')
     sortOrder.set('asc')
-    refreshImagesList()
-    const images = imagesList.array()
+    currentImages()
+    const images = currentImages()
     const names = images.map((i) => i.source.name)
     const expectedNames = collectTreeImages(mockFolderTree, (left, right) =>
       left.name.localeCompare(right.name),
@@ -73,8 +72,8 @@ test('imagesList sorts each folder by name descending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('name')
     sortOrder.set('desc')
-    refreshImagesList()
-    const images = imagesList.array()
+    currentImages()
+    const images = currentImages()
     const names = images.map((i) => i.source.name)
     const expectedNames = collectTreeImages(mockFolderTree, (left, right) =>
       right.name.localeCompare(left.name),
@@ -87,8 +86,8 @@ test('imagesList sorts each folder by size ascending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('size')
     sortOrder.set('asc')
-    refreshImagesList()
-    const images = imagesList.array()
+    currentImages()
+    const images = currentImages()
     const sizes = images.map((i) => i.fileInfo.data()?.size)
     const expectedSizes = collectTreeImages(
       mockFolderTree,
@@ -103,8 +102,8 @@ test('imagesList sorts each folder by size descending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('size')
     sortOrder.set('desc')
-    refreshImagesList()
-    const images = imagesList.array()
+    currentImages()
+    const images = currentImages()
     const sizes = images.map((i) => i.fileInfo.data()?.size)
     const expectedSizes = collectTreeImages(
       mockFolderTree,
@@ -119,8 +118,8 @@ test('imagesList sorts each folder by date ascending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('date')
     sortOrder.set('asc')
-    refreshImagesList()
-    const images = imagesList.array()
+    currentImages()
+    const images = currentImages()
     const dates = images.map((i) => i.fileInfo.data()?.lastModified)
     const expectedDates = collectTreeImages(
       mockFolderTree,
@@ -136,8 +135,8 @@ test('imagesList sorts each folder by type', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('type')
     sortOrder.set('asc')
-    refreshImagesList()
-    const images = imagesList.array()
+    currentImages()
+    const images = currentImages()
     const types = images.map((i) => i.fileInfo.data()?.type)
     const expectedTypes = collectTreeImages(mockFolderTree, (left, right) =>
       (left.fileInfo?.type ?? '').localeCompare(right.fileInfo?.type ?? ''),
@@ -150,7 +149,7 @@ test('imagesList sorts by dimensions', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('dimensions')
     sortOrder.set('asc')
-    const images = imagesList.array()
+    const images = currentImages()
     const areas = images.map((i) => i.width() * i.height())
     expect(areas).toEqual([...areas].sort((a, b) => a - b))
   }))
@@ -209,7 +208,7 @@ test('imagesList is scoped to the selected folder', async () =>
     currentFolder.set(mockFolderTree.children[0]!)
     await wrap(Promise.resolve())
 
-    const paths = imagesList.array().map((image) => image.source.path)
+    const paths = currentImages().map((image) => image.source.path)
 
     expect(paths).toEqual(['subfolder', 'subfolder'])
   }))

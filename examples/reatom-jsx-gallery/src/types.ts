@@ -68,3 +68,16 @@ export const GRID_GAP_VALUES: Record<GridGap, number> = {
   large: 16,
   xl: 24,
 }
+
+declare global {
+  interface FileSystemDirectoryHandle {
+    queryPermission?(descriptor: {
+      mode: 'read' | 'readwrite'
+    }): Promise<PermissionState>
+    requestPermission?(descriptor: {
+      mode: 'read' | 'readwrite'
+    }): Promise<PermissionState>
+  }
+}
+
+export {}

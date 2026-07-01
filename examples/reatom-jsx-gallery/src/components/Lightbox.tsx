@@ -33,7 +33,6 @@ import {
   lightboxZoomReset,
   moveLightboxPan,
   navigateLightbox,
-  openLightbox,
   openLightboxAtVisibleIndex,
   resetLightboxSession,
   showLightboxScrubber,
@@ -41,6 +40,7 @@ import {
   thumbnailWindow,
   toggleLightboxImageFavorite,
   visibleImages,
+  visibleIndexMap,
 } from '../model'
 import {
   ChevronLeftIcon,
@@ -583,7 +583,11 @@ const LightboxContent = () => {
         {() =>
           thumbnailWindow().map((imageNode) => (
             <button
-              {...pressLightboxControl(() => openLightbox(imageNode))}
+              {...pressLightboxControl(() => {
+                const index = visibleIndexMap().get(imageNode)
+                if (index === undefined) return
+                openLightboxAtVisibleIndex(index)
+              })}
               type="button"
               title={() => `View ${imageNode.source.name}`}
               aria-label={() => `View ${imageNode.source.name}`}

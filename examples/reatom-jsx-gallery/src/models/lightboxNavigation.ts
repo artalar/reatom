@@ -2,10 +2,11 @@ import { action, computed } from '@reatom/core'
 
 import {
   findVisibleNeighbor,
-  imagesList,
+  currentImages,
   visibleImages,
   visibleIndexMap,
 } from './collection'
+import { ensureGalleryImagePreviewHigh } from './previewLoad'
 import {
   keepLightboxView,
   lightboxImage,
@@ -31,7 +32,7 @@ const resolvePreloadTarget = () => {
   const currentImage = lightboxImage()
   if (!currentImage) return null
 
-  const current = imagesList.find((node) => node.id === currentImage.id)
+  const current = currentImages().find((node) => node.id === currentImage.id)
   if (!current) return null
 
   return findVisibleNeighbor(
@@ -54,10 +55,17 @@ export const lightboxPreloadImageElement = computed(() => {
   return preloadTarget.display.element() ?? preloadTarget.fullImage.data()
 }, 'lightbox.preloadImageElement')
 
+const primeLightboxPreload = action(() => {
+  const preloadTarget = resolvePreloadTarget()
+  if (preloadTarget) ensureGalleryImagePreviewHigh(preloadTarget)
+}, 'lightbox.primePreload')
+
+export { primeLightboxPreload }
+
 export const navigateLightbox = action((direction: 1 | -1) => {
   const currentImage = lightboxImage()
   if (!currentImage) return
-  const current = imagesList.find((node) => node.id === currentImage.id)
+  const current = currentImages().find((node) => node.id === currentImage.id)
   if (!current) return
 
   lightboxNavigationDirection.set(direction)
@@ -68,8 +76,10 @@ export const navigateLightbox = action((direction: 1 | -1) => {
     wrapFolderNavigation(),
   )
   if (neighbor) {
+    ensureGalleryImagePreviewHigh(neighbor)
     lightboxImage.set(() => neighbor)
     resetLightboxViewAfterNavigation()
+    primeLightboxPreload()
   }
 }, 'navigateLightbox')
 
@@ -77,8 +87,10 @@ export const openLightboxAtVisibleIndex = action((index: number) => {
   const image = visibleImages()[index]
   if (!image) return
 
+  ensureGalleryImagePreviewHigh(image)
   lightboxImage.set(() => image)
   resetLightboxViewAfterNavigation()
+  primeLightboxPreload()
 }, 'openLightboxAtVisibleIndex')
 
 export const lightboxScrubberValue = computed(() => {

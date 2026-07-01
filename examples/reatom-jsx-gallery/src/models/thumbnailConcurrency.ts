@@ -1,13 +1,12 @@
-import { atom } from '@reatom/core'
+export type ThumbnailSlotPriority = 'high' | 'background'
 
 export const maxParallelThumbnails = Math.max(
   2,
   (globalThis.navigator?.hardwareConcurrency ?? 4) * 2,
 )
 
-export const activeThumbnailRequests = atom(0, 'thumbnail.activeRequests')
-
 type ThumbnailQueueEntry = {
+  priority: ThumbnailSlotPriority
   cancelled: boolean
   grant: () => void
   reject: (error: Error) => void
@@ -15,6 +14,11 @@ type ThumbnailQueueEntry = {
 
 const thumbnailQueue: ThumbnailQueueEntry[] = []
 let activeThumbnailJobs = 0
+
+const priorityRank: Record<ThumbnailSlotPriority, number> = {
+  high: 0,
+  background: 1,
+}
 
 function createThumbnailAbortError(signal: AbortSignal): Error {
   if (signal.reason instanceof Error) return signal.reason
@@ -24,8 +28,15 @@ function createThumbnailAbortError(signal: AbortSignal): Error {
   return error
 }
 
-function syncActiveThumbnailRequests() {
-  activeThumbnailRequests.set(activeThumbnailJobs)
+function enqueueThumbnailJob(entry: ThumbnailQueueEntry) {
+  const insertIndex = thumbnailQueue.findIndex(
+    (queued) => priorityRank[queued.priority] > priorityRank[entry.priority],
+  )
+  if (insertIndex === -1) {
+    thumbnailQueue.push(entry)
+    return
+  }
+  thumbnailQueue.splice(insertIndex, 0, entry)
 }
 
 function runNextThumbnailJob() {
@@ -38,12 +49,14 @@ function runNextThumbnailJob() {
     if (entry.cancelled) continue
 
     activeThumbnailJobs += 1
-    syncActiveThumbnailRequests()
     entry.grant()
   }
 }
 
-export function acquireThumbnailSlot(signal: AbortSignal): Promise<() => void> {
+export function acquireThumbnailSlot(
+  signal: AbortSignal,
+  priority: ThumbnailSlotPriority = 'high',
+): Promise<() => void> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(createThumbnailAbortError(signal))
@@ -61,6 +74,7 @@ export function acquireThumbnailSlot(signal: AbortSignal): Promise<() => void> {
     }
 
     const entry: ThumbnailQueueEntry = {
+      priority,
       cancelled: false,
       grant: () => {
         granted = true
@@ -80,13 +94,25 @@ export function acquireThumbnailSlot(signal: AbortSignal): Promise<() => void> {
     }
 
     signal.addEventListener('abort', abort, { once: true })
-    thumbnailQueue.push(entry)
+    enqueueThumbnailJob(entry)
     runNextThumbnailJob()
   })
 }
 
 function releaseThumbnailSlot() {
   activeThumbnailJobs = Math.max(0, activeThumbnailJobs - 1)
-  syncActiveThumbnailRequests()
   runNextThumbnailJob()
+}
+
+const shutdownError = new Error('Thumbnail queue shut down')
+
+export function shutdownThumbnailQueue(): void {
+  while (thumbnailQueue.length > 0) {
+    const entry = thumbnailQueue.shift()
+    if (!entry || entry.cancelled) continue
+    entry.cancelled = true
+    entry.reject(shutdownError)
+  }
+
+  activeThumbnailJobs = 0
 }

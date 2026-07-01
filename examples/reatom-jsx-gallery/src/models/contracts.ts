@@ -1,9 +1,11 @@
-import type { BooleanAtom, Computed } from '@reatom/core'
+import type { Atom, BooleanAtom, Computed } from '@reatom/core'
 
 import type { ReatomImage } from '../reatomImage'
 import type { FolderNode, ImageFile } from '../types'
 
 export type RawDisplayStage = 'thumbnail' | 'embedded' | 'developed'
+
+export type PreviewLoadPriority = 'off' | 'high' | 'background'
 
 export type FolderScanResult = {
   tree: FolderNode
@@ -33,6 +35,7 @@ export type GalleryImageModel = ReatomImage & {
   source: ImageFile
   selected: BooleanAtom
   favorite: BooleanAtom
+  previewLoadPriority: Atom<PreviewLoadPriority>
   visible: Computed<boolean>
   width: Computed<number>
   height: Computed<number>

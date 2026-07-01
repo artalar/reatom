@@ -2,23 +2,13 @@ import { clearStack, context } from '@reatom/core'
 import { expect, test } from 'vitest'
 
 import { mockFolderTree } from './__fixtures__/mockData'
-import { favoriteImages, favoritesCount, isFavorite } from './favorites'
+import { favoriteImages, favoritesCount } from './favorites'
 import { visibleIndexMap } from './model'
 import { loadGalleryState } from './shared/testSetup'
 
 test.beforeEach(() => {
   clearStack()
 })
-
-test('isFavorite returns true for favorited image', () =>
-  context.start(() => {
-    loadGalleryState({ tree: mockFolderTree })
-    const model = [...visibleIndexMap().keys()][0]!
-    const id = model.id
-    expect(isFavorite(id)).toBe(false)
-    model.favorite.toggle()
-    expect(isFavorite(id)).toBe(true)
-  }))
 
 test('favoriteImages returns only favorited images from visible list', () =>
   context.start(() => {

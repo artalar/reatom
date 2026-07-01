@@ -1,4 +1,5 @@
 import {
+  bindGalleryImagePreview,
   folderModelTree,
   gridColumns,
   gridGap,
@@ -15,8 +16,17 @@ import { SearchIcon } from './Icons'
 import { ImageList } from './ImageList'
 import { ImageTable } from './ImageTable'
 
-const GridImageEntry = ({ image }: { image: GalleryFolderModel['images'][number] }) => (
-  <div style:display={() => (image.visible() ? 'contents' : 'none')}>
+const GridImageEntry = ({
+  image,
+  folder,
+}: {
+  image: GalleryFolderModel['images'][number]
+  folder: GalleryFolderModel
+}) => (
+  <div
+    style:display={() => (image.visible() ? 'contents' : 'none')}
+    ref={() => bindGalleryImagePreview(image, folder)}
+  >
     <GridImage image={image} />
   </div>
 )
@@ -35,7 +45,7 @@ const GridFolder = ({ folder }: { folder: GalleryFolderModel }) => (
       {() =>
         folder
           .sortedImages()
-          .map((image) => <GridImageEntry image={image} />)
+          .map((image) => <GridImageEntry image={image} folder={folder} />)
       }
     </div>
     {folder.children.map((child) => (

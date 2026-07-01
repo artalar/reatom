@@ -1,6 +1,8 @@
+import type { Atom } from '@reatom/core'
 import {
   abortVar,
   computed,
+  take,
   throwAbort,
   withAsyncData,
   wrap,
@@ -23,6 +25,7 @@ import {
   type RawImageFormat,
 } from './image-engine/types'
 import { acquireThumbnailSlot } from './models/thumbnailConcurrency'
+import type { PreviewLoadPriority } from './models/contracts'
 import type { ImageFileInfo } from './types'
 
 export type ReatomImageOptions = {
@@ -31,6 +34,7 @@ export type ReatomImageOptions = {
   initialFileInfo?: ImageFileInfo
   readIgnoreExifOrientation?: () => boolean
   readDevelopRaw?: () => boolean
+  previewLoadPriority?: Atom<PreviewLoadPriority>
 }
 
 function isRawImageMeta(meta: ImageMeta | null): meta is ImageMeta & {
@@ -123,8 +127,21 @@ export function reatomImage(
   }, `${name}.meta`).extend(withAsyncData())
 
   const thumbnail = computed(async () => {
+    const previewLoadPriority = options?.previewLoadPriority
+    if (previewLoadPriority) {
+      let priority = previewLoadPriority()
+      while (priority === 'off') {
+        await wrap(take(previewLoadPriority, (next) => next !== 'off'))
+        priority = previewLoadPriority()
+      }
+    }
+
     const signal = abortVar.require().signal
-    const releaseThumbnailSlot = await wrap(acquireThumbnailSlot(signal))
+    const slotPriority =
+      previewLoadPriority?.() === 'background' ? 'background' : 'high'
+    const releaseThumbnailSlot = await wrap(
+      acquireThumbnailSlot(signal, slotPriority),
+    )
 
     try {
       const [fileState, metaState] = await wrap(

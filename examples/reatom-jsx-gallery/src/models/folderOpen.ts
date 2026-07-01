@@ -1,4 +1,4 @@
-import { action, withAbort, withAsync, wrap } from '@reatom/core'
+import { action, atom, withAbort, withAsync, wrap } from '@reatom/core'
 
 import {
   isFileSystemAccessSupported,
@@ -13,36 +13,32 @@ import {
 } from './folder'
 import { resetLightboxOnFolderChange } from './lightbox'
 
-async function ensureDirectoryPermission(
+export const pendingFolderRestore = atom<FileSystemDirectoryHandle | null>(
+  null,
+  'pendingFolderRestore',
+)
+
+export async function queryDirectoryPermission(
   handle: FileSystemDirectoryHandle,
   mode: 'read' | 'readwrite' = 'read',
-): Promise<boolean> {
-  const permissionedHandle = handle as FileSystemDirectoryHandle & {
-    queryPermission?: (descriptor: {
-      mode: 'read' | 'readwrite'
-    }) => Promise<PermissionState>
-    requestPermission?: (descriptor: {
-      mode: 'read' | 'readwrite'
-    }) => Promise<PermissionState>
-  }
-
-  if (
-    typeof permissionedHandle.queryPermission !== 'function' ||
-    typeof permissionedHandle.requestPermission !== 'function'
-  ) {
+): Promise<PermissionState | true> {
+  if (typeof handle.queryPermission !== 'function') {
     return true
   }
 
-  const permissionDescriptor = { mode }
-  const currentPermission = await wrap(
-    permissionedHandle.queryPermission(permissionDescriptor),
-  )
-  if (currentPermission === 'granted') return true
+  return handle.queryPermission({ mode })
+}
 
-  const requestedPermission = await wrap(
-    permissionedHandle.requestPermission(permissionDescriptor),
-  )
-  return requestedPermission === 'granted'
+async function requestDirectoryPermission(
+  handle: FileSystemDirectoryHandle,
+  mode: 'read' | 'readwrite' = 'read',
+): Promise<boolean> {
+  if (typeof handle.requestPermission !== 'function') {
+    return true
+  }
+
+  const permission = await handle.requestPermission({ mode })
+  return permission === 'granted'
 }
 
 export const openFolder = action(
@@ -55,12 +51,16 @@ export const openFolder = action(
     } else {
       try {
         handle = await wrap(pickDirectory())
-      } catch {
-        return
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
+        throw error
       }
     }
 
     selectedFolderHandle.set(handle)
+    pendingFolderRestore.set(null)
 
     resetGallerySession()
     resetLightboxOnFolderChange()
@@ -91,8 +91,25 @@ export const restoreSelectedFolder = action(async () => {
   const handle = selectedFolderHandle()
   if (handle === null) return
 
-  const hasPermission = await ensureDirectoryPermission(handle)
+  const permission = await wrap(queryDirectoryPermission(handle))
+  if (permission === true || permission === 'granted') {
+    pendingFolderRestore.set(null)
+    await wrap(openFolder(handle))
+    return
+  }
+
+  pendingFolderRestore.set(handle)
+}, 'restoreSelectedFolder').extend(withAsync(), withAbort())
+
+export const requestFolderRestore = action(async () => {
+  if (!isFileSystemAccessSupported()) return
+
+  const handle = pendingFolderRestore() ?? selectedFolderHandle()
+  if (handle === null) return
+
+  const hasPermission = await wrap(requestDirectoryPermission(handle))
   if (!hasPermission) return
 
+  pendingFolderRestore.set(null)
   await wrap(openFolder(handle))
-}, 'restoreSelectedFolder').extend(withAsync(), withAbort())
+}, 'requestFolderRestore').extend(withAsync(), withAbort())

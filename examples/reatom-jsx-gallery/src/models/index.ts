@@ -1,15 +1,14 @@
 export { setViewMode } from './appActions'
 export {
   clearSelection,
+  collectAllGalleryImages,
   currentImages,
   favoriteImages,
   favoritesCount,
   folderModelTree,
   isFolderBranchInCurrentScope,
   isFolderImagesInCurrentScope,
-  imagesList,
   primarySelectedImage,
-  refreshImagesList,
   resetGallerySession,
   selectAllImages,
   selectedCount,
@@ -50,8 +49,20 @@ export {
   resetFolderState,
   selectedFolderHandle,
 } from './folder'
-export { openFolder, restoreSelectedFolder } from './folderOpen'
+export {
+  openFolder,
+  pendingFolderRestore,
+  queryDirectoryPermission,
+  requestFolderRestore,
+  restoreSelectedFolder,
+} from './folderOpen'
 export { imageGrid } from './gridLayout'
+export {
+  bindBackgroundPreviewLoader,
+  bindGalleryImagePreview,
+  bindGalleryImagePreviewWhen,
+  ensureGalleryImagePreviewHigh,
+} from './previewLoad'
 export { isGalleryImageModel, reatomGalleryImage } from './image'
 export {
   imageInfoPanelExpanded,
