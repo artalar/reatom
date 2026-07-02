@@ -52,7 +52,11 @@ export const lightboxPreloadImageElement = computed(() => {
   const preloadTarget = resolvePreloadTarget()
   if (!preloadTarget) return null
 
-  return preloadTarget.display.element() ?? preloadTarget.fullImage.data()
+  return (
+    preloadTarget.sizedImage.data() ??
+    preloadTarget.fullImage.data() ??
+    preloadTarget.display.element()
+  )
 }, 'lightbox.preloadImageElement')
 
 const primeLightboxPreload = action(() => {

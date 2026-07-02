@@ -30,9 +30,38 @@ function rasterizeRgb(rgb: ArrayBuffer, width: number, height: number) {
   return source
 }
 
+function downscaleSourceIfNeeded(
+  source: OffscreenCanvas,
+  width: number,
+  height: number,
+  maxDimension?: number,
+): OffscreenCanvas {
+  if (!maxDimension) return source
+
+  const longEdge = Math.max(width, height)
+  if (longEdge <= maxDimension) return source
+
+  const scale = maxDimension / longEdge
+  const targetWidth = Math.max(1, Math.round(width * scale))
+  const targetHeight = Math.max(1, Math.round(height * scale))
+  const output = new OffscreenCanvas(targetWidth, targetHeight)
+  const context = output.getContext('2d')
+  if (!context) return source
+  context.drawImage(source, 0, 0, targetWidth, targetHeight)
+  return output
+}
+
 async function encodeOrientedJpeg(request: RawEncodeRequest): Promise<Blob> {
-  const { rgb, width, height, quality, degrees, mirrored } = request
-  const source = rasterizeRgb(rgb, width, height)
+  const { rgb, width, height, quality, degrees, mirrored, maxDimension } =
+    request
+  const source = downscaleSourceIfNeeded(
+    rasterizeRgb(rgb, width, height),
+    width,
+    height,
+    maxDimension,
+  )
+  const sourceWidth = source.width
+  const sourceHeight = source.height
 
   const needsOrientation = degrees !== 0 || mirrored
   if (!needsOrientation) {
@@ -40,8 +69,8 @@ async function encodeOrientedJpeg(request: RawEncodeRequest): Promise<Blob> {
   }
 
   const swapDimensions = degrees === 90 || degrees === 270
-  const canvasWidth = swapDimensions ? height : width
-  const canvasHeight = swapDimensions ? width : height
+  const canvasWidth = swapDimensions ? sourceHeight : sourceWidth
+  const canvasHeight = swapDimensions ? sourceWidth : sourceHeight
 
   const output = new OffscreenCanvas(canvasWidth, canvasHeight)
   const context = output.getContext('2d')
@@ -50,7 +79,7 @@ async function encodeOrientedJpeg(request: RawEncodeRequest): Promise<Blob> {
   context.translate(canvasWidth / 2, canvasHeight / 2)
   if (degrees !== 0) context.rotate((degrees * Math.PI) / 180)
   if (mirrored) context.scale(-1, 1)
-  context.drawImage(source, -width / 2, -height / 2)
+  context.drawImage(source, -sourceWidth / 2, -sourceHeight / 2)
 
   return output.convertToBlob({ type: 'image/jpeg', quality })
 }

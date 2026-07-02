@@ -16,6 +16,14 @@ import { ensureGalleryImagePreviewHigh } from './previewLoad'
 import { slideshowPlaying } from './slideshow'
 
 export {
+  bindLightboxDisplayTargetDebouncer,
+  bindLightboxSizedImageWindowSync,
+  lightboxDisplayTarget,
+  lightboxFitDisplayTarget,
+  lightboxSizedImageWindow,
+  resetLightboxDisplayTargetDebouncer,
+} from './lightboxDisplay'
+export {
   lightboxPreloadImageElement,
   lightboxPreloadImageUrl,
   lightboxScrubberMax,

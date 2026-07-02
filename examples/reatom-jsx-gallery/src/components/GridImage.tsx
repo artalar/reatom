@@ -30,7 +30,7 @@ export const GridImage = ({
     const orientationStyle = resolveImageOrientationStyle(
       image.thumbnailMeta.data()?.exif,
       ignoreExifOrientation(),
-      thumbnail.orientationBaked,
+      thumbnail.orientationBaked || image.display.isRawPipeline(),
     )
 
     return (

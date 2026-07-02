@@ -41,6 +41,7 @@ type DevelopJob = {
   source: Blob
   orientation: DevelopOrientation
   externalSignal: AbortSignal | undefined
+  maxDimension?: number
   resolve: (result: RawDevelopResult | null) => void
   reject: (error: Error) => void
   releaseQueueAbort?: () => void
@@ -148,6 +149,7 @@ function encodeRgbToJpeg(
   height: number,
   orientation: DevelopOrientation,
   signal: AbortSignal,
+  maxDimension?: number,
 ): Promise<Blob> {
   const worker = getEncodeWorker()
   const id = nextEncodeId++
@@ -184,6 +186,7 @@ function encodeRgbToJpeg(
       quality: JPEG_DEVELOP_QUALITY,
       degrees: orientation.degrees,
       mirrored: orientation.mirrored,
+      maxDimension,
     }
     worker.postMessage(request, [buffer])
   })
@@ -262,14 +265,24 @@ async function developInSlot(
     image.height,
     job.orientation,
     signal,
+    job.maxDimension,
   )
 
   const swapDimensions =
     job.orientation.degrees === 90 || job.orientation.degrees === 270
+  const developedWidth = swapDimensions ? image.height : image.width
+  const developedHeight = swapDimensions ? image.width : image.height
+  const outputLongEdge = Math.max(developedWidth, developedHeight)
+  const cappedLongEdge = job.maxDimension
+    ? Math.min(outputLongEdge, job.maxDimension)
+    : outputLongEdge
+  const outputScale =
+    outputLongEdge > 0 ? cappedLongEdge / outputLongEdge : 1
+
   return {
     blob,
-    width: swapDimensions ? image.height : image.width,
-    height: swapDimensions ? image.width : image.height,
+    width: Math.max(1, Math.round(developedWidth * outputScale)),
+    height: Math.max(1, Math.round(developedHeight * outputScale)),
   }
 }
 
@@ -368,6 +381,7 @@ async function developWithPool(
   source: Blob,
   orientation: DevelopOrientation,
   externalSignal: AbortSignal | undefined,
+  maxDimension?: number,
 ): Promise<RawDevelopResult | null> {
   const { default: LibRaw } = await loadLibRawModule()
   ensurePool(LibRaw)
@@ -377,6 +391,7 @@ async function developWithPool(
       source,
       orientation,
       externalSignal,
+      maxDimension,
       resolve,
       reject,
     })
@@ -417,6 +432,7 @@ export async function developRawToJpegBlob(
     format?: RawImageFormat
     exif?: ExifData
     ignoreOrientation?: boolean
+    maxDimension?: number
     signal?: AbortSignal
   },
 ): Promise<RawDevelopResult | null> {
@@ -428,7 +444,12 @@ export async function developRawToJpegBlob(
   )
 
   try {
-    return await developWithPool(source, orientation, options?.signal)
+    return await developWithPool(
+      source,
+      orientation,
+      options?.signal,
+      options?.maxDimension,
+    )
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error

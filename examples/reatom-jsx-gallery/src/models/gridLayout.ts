@@ -1,7 +1,9 @@
-import { atom, computed, context, reatomObservable } from '@reatom/core'
+import { atom, bind, computed, reatomObservable } from '@reatom/core'
 
+import { quantizeThumbnailBucket } from '../image-engine/decodePolicy'
 import { GRID_GAP_VALUES } from '../types'
 import { gridColumns, gridGap } from './view'
+import { devicePixelRatio } from './viewport'
 
 const AUTO_COLUMN_MIN_SIZE = 200
 
@@ -24,6 +26,9 @@ export const imageGrid = atom<HTMLElement | null>(null, 'imageGrid').extend(
               : 0
           }
 
+          // ResizeObserver fires outside any Reatom frame; bind restores it.
+          const notifyWidth = bind(() => notify(readWidth()))
+
           const observeElement = () => {
             observer?.disconnect()
             observer = undefined
@@ -31,8 +36,8 @@ export const imageGrid = atom<HTMLElement | null>(null, 'imageGrid').extend(
             const element = target()
             if (!element) return
 
-            notify(readWidth())
-            observer = new ResizeObserver(() => notify(readWidth()))
+            notifyWidth()
+            observer = new ResizeObserver(notifyWidth)
             observer.observe(element)
           }
 
@@ -63,12 +68,21 @@ export const imageGrid = atom<HTMLElement | null>(null, 'imageGrid').extend(
       return Math.max(0, Math.ceil((gridWidth - gap * (columns - 1)) / columns))
     }, `${target.name}._itemSize`)
 
+    // 0 means "grid not measured yet" — the thumbnail pipeline waits for a
+    // real target instead of wasting a decode on the smallest bucket.
+    const thumbnailTarget = computed(() => {
+      const size = itemSize()
+      if (size === 0) return 0
+      return quantizeThumbnailBucket(Math.ceil(size * devicePixelRatio()))
+    }, `${target.name}._thumbnailTarget`)
+
     return {
       width,
       itemSize,
+      thumbnailTarget,
       ref: (element: HTMLElement) => {
-        context.start(() => target.set(element))
-        return () => context.start(() => target.set(null))
+        target.set(element)
+        return () => target.set(null)
       },
     }
   },

@@ -7,6 +7,10 @@ export const lightboxImage = atom<GalleryImageModel | null>(
   null,
   'lightboxImage',
 )
+export const lightboxSizedImageWindowIds = atom<ReadonlySet<string>>(
+  new Set(),
+  'lightbox.sizedImageWindowIds',
+)
 export const lightboxNavigationDirection = atom<1 | -1>(
   1,
   'lightbox.navigationDirection',

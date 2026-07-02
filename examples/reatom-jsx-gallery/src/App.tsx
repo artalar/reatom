@@ -1,5 +1,6 @@
 import { AppShell } from './components/AppShell'
 import { FilterPanel } from './components/FilterPanel'
+import { GalleryBootstrap } from './components/GalleryBootstrap'
 import { GalleryWorkspace } from './components/GalleryWorkspace'
 import { ImageInfoPanel } from './components/ImageInfoPanel'
 import { Lightbox } from './components/Lightbox'
@@ -10,6 +11,7 @@ import { KeyboardShortcuts } from './shortcuts'
 
 export const App = () => (
   <AppShell>
+    <GalleryBootstrap />
     <RestoreSelectedFolder />
     <KeyboardShortcuts />
     <Toolbar />

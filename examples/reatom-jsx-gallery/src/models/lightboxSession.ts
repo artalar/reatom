@@ -1,13 +1,8 @@
 import { action, atom, computed, effect, peek, sleep, wrap } from '@reatom/core'
 
 import { resolveImageOrientationStyle } from '../image-engine/orientation'
-import {
-  lightboxImage,
-  lightboxOpen,
-  lightboxPanX,
-  lightboxPanY,
-  lightboxZoom,
-} from './lightboxState'
+import { resetLightboxDisplayTargetDebouncer } from './lightboxDisplayTarget'
+import { lightboxImage, lightboxOpen, lightboxPanX, lightboxPanY, lightboxZoom } from './lightboxState'
 import { imageInfoPanelOpen } from './panels'
 import { ignoreExifOrientation } from './preferences'
 
@@ -87,14 +82,19 @@ export const lightboxDisplayOrientationStyle = computed(() => {
   const model = lightboxImage()
   if (!model) return undefined
 
-  const rawElement = model.display.element()
+  const sizedCanvas = model.sizedImage.data()
+  const rawElement = model.rawDevelopedImage.data()
   const orientationBaked =
-    rawElement !== null && rawElement === model.rawDevelopedImage.data()
+    sizedCanvas !== null ||
+    (rawElement !== null && rawElement === model.rawDevelopedImage.data())
 
   return resolveImageOrientationStyle(
     model.meta.data()?.exif,
     ignoreExifOrientation(),
-    rawElement ? orientationBaked : model.thumbnail.data()?.orientationBaked,
+    orientationBaked
+      ? true
+      : model.thumbnail.data()?.orientationBaked ||
+        model.display.isRawPipeline(),
   )
 }, 'lightbox.displayOrientationStyle')
 
@@ -118,6 +118,7 @@ export const resetLightboxSession = action(() => {
   lightboxControlsActivity.set(0)
   lightboxPanStartX.set(0)
   lightboxPanStartY.set(0)
+  resetLightboxDisplayTargetDebouncer()
 }, 'lightbox.resetSession')
 
 export const bindLightboxResetSessionOnClose = () => {

@@ -4,6 +4,7 @@ import { action, computed } from '@reatom/core'
 import { shutdownRawDevelopPool } from '../image-engine/formats/rawDevelop'
 import { shutdownRawPreviewScanPool } from '../image-engine/formats/rawPreviewScanPool'
 import type { FolderNode, ImageFile } from '../types'
+import { shutdownBitmapDecodeQueue } from './bitmapDecodeLane'
 import type { GalleryImageModel } from './contracts'
 import { includeSubfolders, sortField, sortOrder } from './filters'
 import { currentFolder, folderTree } from './folder'
@@ -129,6 +130,7 @@ export const resetGallerySession = action(() => {
   shutdownRawDevelopPool()
   shutdownThumbnailQueue()
   shutdownImageDecodeQueue()
+  shutdownBitmapDecodeQueue()
   imageModelById.clear()
   folderModelByPath.clear()
 }, 'collection.resetGallerySession')

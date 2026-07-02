@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "pretest-storybook": "pnpm --filter @reatom/jsx run build",
     "test-storybook": "vitest --project=storybook",
     "test-storybook:smoke": "vitest --project=storybook --run src/App.stories.tsx",

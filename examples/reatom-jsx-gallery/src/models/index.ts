@@ -56,6 +56,11 @@ export {
   requestFolderRestore,
   restoreSelectedFolder,
 } from './folderOpen'
+export {
+  browserCanDecodeHeic,
+  ensureHeicDecodeSupportProbed,
+  heicDecodeSupported,
+} from './formatCapability'
 export { imageGrid } from './gridLayout'
 export { isGalleryImageModel, reatomGalleryImage } from './image'
 export {
@@ -100,6 +105,18 @@ export {
   toggleLightboxImageFavorite,
   wrapFolderNavigation,
 } from './lightbox'
+export {
+  bindLightboxDisplayTargetDebouncer,
+  bindLightboxSizedImageWindowSync,
+  lightboxDisplayTarget,
+  lightboxFitDisplayTarget,
+  lightboxSizedImageWindow,
+  resetLightboxDisplayTargetDebouncer,
+} from './lightboxDisplay'
+export {
+  lightboxDebouncedDisplayTarget,
+  lightboxDisplayPreloadCount,
+} from './lightboxDisplayTarget'
 export {
   bindLightboxHideControlsAfterInactivity,
   bindLightboxResetSessionOnClose,
@@ -167,6 +184,7 @@ export {
   visibleExifColumnNames,
 } from './tableView'
 export {
+  activeThumbnailTarget,
   cycleGridColumnPreset,
   decreaseGridColumns,
   decreaseImagePreviewSize,
@@ -183,3 +201,10 @@ export {
   tablePreviewWidth,
   viewMode,
 } from './view'
+export {
+  devicePixelRatio,
+  panelLongEdge,
+  viewportDeviceLongEdge,
+  viewportLongEdge,
+  viewportSize,
+} from './viewport'

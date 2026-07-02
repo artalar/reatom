@@ -136,6 +136,7 @@ async function tryEmbeddedJpegPreviewPath(
   ignoreExifOrientation: boolean,
   acceptSmallPreview = false,
   signal?: AbortSignal,
+  skipOrientationBake = false,
 ): Promise<ThumbnailResult | null> {
   if (!previewBlob) return null
 
@@ -149,7 +150,7 @@ async function tryEmbeddedJpegPreviewPath(
     const { width, height } = bitmap
 
     const enoughSize =
-      acceptSmallPreview || width >= maxSize / 2 || height >= maxSize / 2
+      acceptSmallPreview || width >= maxSize || height >= maxSize
 
     if (!enoughSize) {
       bitmap.close()
@@ -157,7 +158,7 @@ async function tryEmbeddedJpegPreviewPath(
     }
 
     let orientationBaked = false
-    if (!ignoreExifOrientation) {
+    if (!ignoreExifOrientation && !skipOrientationBake) {
       const orientation = getOrientationFromExif(meta?.exif)
       const needsTransform =
         orientation.state === 'valid' &&
@@ -230,6 +231,7 @@ async function tryRawPreviewPath(
     ignoreExifOrientation,
     true,
     signal,
+    true,
   )
 }
 

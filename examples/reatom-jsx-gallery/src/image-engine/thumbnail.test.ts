@@ -108,6 +108,38 @@ describe('loadThumbnailWithMeta generated path', () => {
     revokeThumbnail(result)
   })
 
+  test('does not bake RAW parent EXIF orientation into embedded previews', async () => {
+    stubThumbnailCanvas()
+
+    const bitmap = {
+      width: 3264,
+      height: 4912,
+      close: () => undefined,
+    }
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => bitmap),
+    )
+
+    const applySpy = vi.spyOn(orientation, 'applyOrientationToImageBitmap')
+
+    const meta: ImageMeta = {
+      width: 4912,
+      height: 3264,
+      format: 'arw',
+      isProgressive: false,
+      hasExifThumbnail: true,
+      exif: { Orientation: '8' },
+      embeddedPreview: { blob: new Blob(['preview'], { type: 'image/jpeg' }) },
+    }
+
+    const result = await loadThumbnailWithMeta(new Blob(['raw']), meta)
+    expect(applySpy).not.toHaveBeenCalled()
+    expect(result.orientationBaked).toBeFalsy()
+
+    revokeThumbnail(result)
+  })
+
   test('does not create an object URL after aborting generated thumbnails', async () => {
     const controller = new AbortController()
     const createObjectURL = vi.fn(() => 'blob:thumbnail-test')

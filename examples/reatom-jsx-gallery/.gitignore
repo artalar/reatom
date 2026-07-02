@@ -23,5 +23,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.vercel
 .cache
+
+.vercel
+.vitest-attachments
+__screenshots__

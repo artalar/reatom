@@ -6,6 +6,7 @@ export type RawEncodeRequest = {
   quality: number
   degrees: number
   mirrored: boolean
+  maxDimension?: number
 }
 
 export type RawEncodeResponse =

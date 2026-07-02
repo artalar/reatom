@@ -2,7 +2,7 @@ import { atom, computed, reatomBoolean, withLocalStorage } from '@reatom/core'
 
 import { isRawImageFormat } from '../image-engine/types'
 import { formatBytes, formatDate, formatDimensions } from '../imageFormat'
-import { reatomImage } from '../reatomImage'
+import { type ReatomImage,reatomImage } from '../reatomImage'
 import type { ImageFile, ImageFileInfo } from '../types'
 import type { GalleryImageModel } from './contracts'
 import {
@@ -11,7 +11,22 @@ import {
   filterTypes,
   searchQuery,
 } from './filters'
+import { heicDecodeSupported } from './formatCapability'
+import {
+  computeDisplayTarget,
+  lightboxDebouncedDisplayTarget,
+  lightboxDisplayPreloadCount,
+  resolveLightboxDisplayTargetForImage,
+  resolveOrientedMetaDimensions,
+} from './lightboxDisplayTarget'
+import {
+  lightboxImage,
+  lightboxOpen,
+  lightboxSizedImageWindowIds,
+  lightboxZoom,
+} from './lightboxState'
 import { developRawFullSize, ignoreExifOrientation } from './preferences'
+import { activeThumbnailTarget } from './view'
 
 function matchesVisibleFilters(
   imageSource: ImageFile,
@@ -41,19 +56,90 @@ function matchesVisibleFilters(
   return true
 }
 
+function readImageDimensions(imageModel: ReatomImage): {
+  width: number
+  height: number
+} {
+  const developed = imageModel.rawDeveloped.data()
+  if (developed?.width && developed.height) {
+    return { width: developed.width, height: developed.height }
+  }
+
+  const sizedCanvas = imageModel.sizedImage.data()
+  if (sizedCanvas && sizedCanvas.width > 0 && sizedCanvas.height > 0) {
+    return { width: sizedCanvas.width, height: sizedCanvas.height }
+  }
+
+  const fullImage = imageModel.fullImage.data()
+  if (fullImage && fullImage.naturalWidth > 0 && fullImage.naturalHeight > 0) {
+    return {
+      width: fullImage.naturalWidth,
+      height: fullImage.naturalHeight,
+    }
+  }
+
+  const meta =
+    imageModel.thumbnailMeta.data() ?? imageModel.meta.data()
+  if (!meta) return { width: 0, height: 0 }
+
+  return resolveOrientedMetaDimensions(meta.width, meta.height, meta.exif)
+}
+
 export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
   const name = `image#${imageSource.relativePath}`
   const previewLoadPriority = atom<'off' | 'high' | 'background'>(
     'off',
     `${name}.previewLoadPriority`,
   )
-  const imageModel = reatomImage(imageSource.fileHandle, name, {
+
+  const sizedImageActive = computed(() => {
+    if (!lightboxOpen()) return false
+    return lightboxSizedImageWindowIds().has(imageSource.id)
+  }, `${name}.sizedImageActive`)
+
+  let imageModel!: ReatomImage
+
+  const displayTargetSize = computed(() => {
+    if (!sizedImageActive()) return null
+
+    const { width, height } = readImageDimensions(imageModel)
+    const isCurrent = lightboxImage()?.id === imageSource.id
+    if (isCurrent) {
+      return (
+        lightboxDebouncedDisplayTarget() ??
+        computeDisplayTarget(width, height, lightboxZoom())
+      )
+    }
+
+    return resolveLightboxDisplayTargetForImage(width, height, false)
+  }, `${name}.displayTargetSize`)
+
+  const bitmapDecodePriority = computed(() => {
+    if (lightboxImage()?.id === imageSource.id) return 'current' as const
+    return 'preload' as const
+  }, `${name}.bitmapDecodePriority`)
+
+  const developMaxDimension = computed(() => {
+    const target = displayTargetSize()
+    if (!target) return undefined
+    return Math.max(target.width, target.height)
+  }, `${name}.developMaxDimension`)
+
+  imageModel = reatomImage(imageSource.fileHandle, name, {
     filename: imageSource.name,
     initialFileInfo: imageSource.fileInfo,
     readIgnoreExifOrientation: () => ignoreExifOrientation(),
     readDevelopRaw: () => developRawFullSize(),
     previewLoadPriority,
+    thumbnailTargetSize: activeThumbnailTarget,
+    readDisplayTarget: () => displayTargetSize(),
+    readSizedImageActive: () => sizedImageActive(),
+    readBitmapDecodePriority: () => bitmapDecodePriority(),
+    readPreloadCount: () => lightboxDisplayPreloadCount(),
+    readDevelopMaxDimension: () => developMaxDimension(),
+    readHeicDecodeSupported: () => heicDecodeSupported(),
   })
+
   const selected = reatomBoolean(false, `${name}.selected`)
   const favorite = reatomBoolean(false, `${name}.favorite`).extend(
     withLocalStorage(`gallery.favorite.${imageSource.relativePath}`),
@@ -65,26 +151,17 @@ export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
   )
 
   const width = computed(
-    () =>
-      imageModel.thumbnailMeta.data()?.width ??
-      imageModel.meta.data()?.width ??
-      imageModel.rawDeveloped.data()?.width ??
-      imageModel.fullImage.data()?.naturalWidth ??
-      0,
+    () => readImageDimensions(imageModel).width,
     `${name}.width`,
   )
 
   const height = computed(
-    () =>
-      imageModel.thumbnailMeta.data()?.height ??
-      imageModel.meta.data()?.height ??
-      imageModel.rawDeveloped.data()?.height ??
-      imageModel.fullImage.data()?.naturalHeight ??
-      0,
+    () => readImageDimensions(imageModel).height,
     `${name}.height`,
   )
 
   const displayStage = computed(() => {
+    if (imageModel.sizedImage.data()) return 'developed'
     if (imageModel.rawDevelopedImage.data()) return 'developed'
     if (imageModel.rawEmbeddedPreviewImage.data()) return 'embedded'
     return 'thumbnail'
@@ -102,6 +179,7 @@ export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
 
   const displayElement = computed(
     () =>
+      imageModel.sizedImage.data() ??
       imageModel.rawDevelopedImage.data() ??
       imageModel.rawEmbeddedPreviewImage.data() ??
       null,

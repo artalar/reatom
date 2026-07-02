@@ -6,7 +6,10 @@ import {
   withLocalStorage,
 } from '@reatom/core'
 
+import { quantizeThumbnailBucket } from '../image-engine/decodePolicy'
 import { type GridGap, VIEW_MODES, type ViewMode } from '../types'
+import { imageGrid } from './gridLayout'
+import { devicePixelRatio } from './viewport'
 
 const normalizeViewMode = (snapshot: unknown): ViewMode => {
   switch (snapshot) {
@@ -126,6 +129,21 @@ export const decreaseImagePreviewSize = action(() => {
     )
   }
 }, 'decreaseImagePreviewSize')
+
+export const activeThumbnailTarget = computed(() => {
+  const mode = viewMode()
+  const pixelRatio = devicePixelRatio()
+
+  if (mode === 'grid') {
+    return imageGrid.thumbnailTarget()
+  }
+
+  if (mode === 'list') {
+    return quantizeThumbnailBucket(Math.ceil(listPreviewWidth() * pixelRatio))
+  }
+
+  return quantizeThumbnailBucket(Math.ceil(tablePreviewWidth() * pixelRatio))
+}, 'view.activeThumbnailTarget')
 
 export const increaseImagePreviewSize = action(() => {
   const mode = viewMode()

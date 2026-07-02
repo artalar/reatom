@@ -1,6 +1,7 @@
-import { clearStack, context, wrap } from '@reatom/core'
+import { atom, clearStack, context, peek, wrap } from '@reatom/core'
 import { expect, test, vi } from 'vitest'
 
+import * as imageEngine from './image-engine'
 import { reatomImage } from './reatomImage'
 
 class DecodeRejectingImage {
@@ -94,10 +95,6 @@ test('full image decodes are serialized to avoid decoder cache pressure', async 
 })
 
 test('fullImage keeps a loaded image when full-size decode fails under cache pressure', async () => {
-  // Bytes loaded fine (naturalWidth > 0), but the eager full-size `decode()`
-  // rejects — Chrome does this when the decoded frame does not fit the image
-  // cache. The element must still be returned so the renderer can decode it
-  // at paint size.
   class CachePressureImage {
     decoding: HTMLImageElement['decoding'] = 'auto'
     src = ''
@@ -125,5 +122,102 @@ test('fullImage keeps a loaded image when full-size decode fails under cache pre
     const image = reatomImage(makeJpegBlob(), 'pressured-image')
 
     await expect(image.fullImage()).resolves.not.toBeNull()
+  })
+})
+
+test('sizedImage returns null when policy chooses original decode path', async () => {
+  await context.start(async () => {
+    const image = reatomImage(makeJpegBlob(), 'small-image', {
+      readDisplayTarget: () => ({ width: 800, height: 600, zoom: 1 }),
+      readSizedImageActive: () => true,
+    })
+
+    await expect(image.sizedImage()).resolves.toBeNull()
+  })
+})
+
+test('sizedImage upgrades monotonically and clears on deactivation', async () => {
+  class FakeCanvas {
+    width = 0
+    height = 0
+    tabIndex = -1
+    setAttribute() {}
+    style = {}
+  }
+
+  class FakeBitmapRenderer {
+    transferFromImageBitmap() {}
+  }
+
+  vi.stubGlobal(
+    'createImageBitmap',
+    vi.fn(
+      async (
+        _source: unknown,
+        options?: { resizeWidth?: number; resizeHeight?: number },
+      ) => ({
+        width: options?.resizeWidth ?? 1200,
+        height: options?.resizeHeight ?? 800,
+        close() {},
+      }),
+    ),
+  )
+
+  vi.stubGlobal('document', {
+    createElement: () => {
+      const canvas = new FakeCanvas()
+      canvas.getContext = (type: string) =>
+        type === 'bitmaprenderer' ? new FakeBitmapRenderer() : null
+      return canvas
+    },
+  })
+
+  vi.spyOn(imageEngine, 'parseImagePreviewMeta').mockResolvedValue({
+    width: 6000,
+    height: 4000,
+    format: 'jpeg',
+    isProgressive: false,
+    hasExifThumbnail: false,
+  })
+
+  vi.stubGlobal('window', {
+    innerWidth: 1920,
+    innerHeight: 1080,
+    devicePixelRatio: 1,
+    screen: { width: 1920 },
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    matchMedia: vi.fn(() => ({
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  })
+
+  await context.start(async () => {
+    const active = atom(true, 'test.sizedImageActive')
+    const target = atom(
+      { width: 1200, height: 800, zoom: 1 },
+      'test.sizedImageTarget',
+    )
+
+    const image = reatomImage(makeJpegBlob(), 'sized-image', {
+      readDisplayTarget: () => target(),
+      readSizedImageActive: () => active(),
+      readBitmapDecodePriority: () => 'current',
+    })
+
+    const firstCanvas = await wrap(image.sizedImage())
+    expect(firstCanvas).toBeTruthy()
+
+    const firstLongEdge = peek(image.sizedImageLongEdge)
+    expect(firstLongEdge).toBeGreaterThan(0)
+
+    target.set({ width: 2400, height: 1600, zoom: 2 })
+    const upgradedCanvas = await wrap(image.sizedImage())
+    expect(upgradedCanvas).toBeTruthy()
+    expect(peek(image.sizedImageLongEdge)).toBeGreaterThanOrEqual(firstLongEdge)
+
+    active.set(false)
+    await expect(wrap(image.sizedImage())).resolves.toBeNull()
   })
 })

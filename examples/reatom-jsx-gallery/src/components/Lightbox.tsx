@@ -2,8 +2,10 @@ import { onEvent, wrap } from '@reatom/core'
 
 import { resolveImageOrientationStyle } from '../image-engine/orientation'
 import {
+  bindLightboxDisplayTargetDebouncer,
   bindLightboxHideControlsAfterInactivity,
   bindLightboxResetSessionOnClose,
+  bindLightboxSizedImageWindowSync,
   closeLightbox,
   copyLightboxImageAsJpeg,
   downloadLightboxImage,
@@ -105,7 +107,8 @@ const fullscreenExitGuardMs = 500
 const lightboxImageFrameCss = `
   display: flex;
   pointer-events: auto;
-  > img {
+  > img,
+  > canvas {
     display: block;
     width: 100%;
     height: 100%;
@@ -117,7 +120,7 @@ const lightboxImageFrameCss = `
 
 const LightboxContent = () => {
   let lightboxElement: HTMLDivElement | null = null
-  let lightboxImageElement: HTMLImageElement | null = null
+  let lightboxImageElement: HTMLElement | null = null
   let focusFrame: number | null = null
   let fullscreenTransition: Promise<void> | null = null
   let fullscreenEnteredAt = 0
@@ -130,7 +133,7 @@ const LightboxContent = () => {
     })
   }
 
-  const setLightboxImageElement = (element: HTMLImageElement) => {
+  const setLightboxImageElement = (element: HTMLElement) => {
     lightboxImageElement = element
     element.tabIndex = -1
     focusLightboxImage()
@@ -140,18 +143,13 @@ const LightboxContent = () => {
     const model = lightboxImage()
     if (!model) return null
 
-    const rawPipelineImage = model.display.element()
-    if (rawPipelineImage) {
-      rawPipelineImage.alt = model.source.name
-      rawPipelineImage.draggable = false
-      const orientationStyle = lightboxDisplayOrientationStyle()
-      if (orientationStyle) {
-        rawPipelineImage.style.imageOrientation = orientationStyle
-      } else {
-        rawPipelineImage.style.removeProperty('image-orientation')
-      }
-      setLightboxImageElement(rawPipelineImage)
-      return rawPipelineImage
+    const sizedCanvas = model.sizedImage.data()
+    if (sizedCanvas) {
+      sizedCanvas.setAttribute('role', 'img')
+      sizedCanvas.setAttribute('aria-label', model.source.name)
+      sizedCanvas.style.pointerEvents = 'auto'
+      setLightboxImageElement(sizedCanvas)
+      return sizedCanvas
     }
 
     const fullImage = model.fullImage.data()
@@ -169,6 +167,20 @@ const LightboxContent = () => {
       }
       setLightboxImageElement(fullImage)
       return fullImage
+    }
+
+    const rawDevelopedImage = model.rawDevelopedImage.data()
+    if (rawDevelopedImage) {
+      rawDevelopedImage.alt = model.source.name
+      rawDevelopedImage.draggable = false
+      const orientationStyle = lightboxDisplayOrientationStyle()
+      if (orientationStyle) {
+        rawDevelopedImage.style.imageOrientation = orientationStyle
+      } else {
+        rawDevelopedImage.style.removeProperty('image-orientation')
+      }
+      setLightboxImageElement(rawDevelopedImage)
+      return rawDevelopedImage
     }
 
     const thumbnailUrl = model.thumbnail.data()?.url
@@ -239,6 +251,8 @@ const LightboxContent = () => {
         lightboxElement = el
         const stopHideControls = bindLightboxHideControlsAfterInactivity()
         const stopSessionReset = bindLightboxResetSessionOnClose()
+        const stopDisplayTargetDebouncer = bindLightboxDisplayTargetDebouncer()
+        const stopSizedImageWindowSync = bindLightboxSizedImageWindowSync()
         const updateFullscreenState = wrap(() => {
           const fullscreenOpened = document.fullscreenElement === el
           lightboxIsFullscreen.set(fullscreenOpened)
@@ -260,6 +274,8 @@ const LightboxContent = () => {
         return () => {
           stopHideControls()
           stopSessionReset()
+          stopDisplayTargetDebouncer()
+          stopSizedImageWindowSync()
           stopFullscreenListener()
           if (focusFrame !== null) cancelAnimationFrame(focusFrame)
           resetLightboxSession()

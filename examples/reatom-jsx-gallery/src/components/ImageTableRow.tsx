@@ -43,7 +43,7 @@ export const ImageTableRow = ({
     const orientationStyle = resolveImageOrientationStyle(
       image.meta.data()?.exif,
       ignoreExifOrientation(),
-      thumbnail.orientationBaked,
+      thumbnail.orientationBaked || image.display.isRawPipeline(),
     )
     return (
       <img

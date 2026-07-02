@@ -1,6 +1,7 @@
 import type { Atom } from '@reatom/core'
 import {
   abortVar,
+  atom,
   computed,
   peek,
   take,
@@ -16,19 +17,42 @@ import {
   parseImagePreviewMeta,
   revokeThumbnail,
 } from './image-engine'
+import {
+  longEdge,
+  megapixels,
+} from './image-engine/decodePolicy'
 import { extractRawPreview } from './image-engine/formats/raw'
 import type { RawDevelopResult } from './image-engine/formats/rawDevelop'
 import { developRawToJpegBlob } from './image-engine/formats/rawDevelop'
 import { resolveImageOrientationStyle } from './image-engine/orientation'
 import {
+  clearCanvasElement,
+  decodeBlobToCanvas,
+} from './image-engine/resizeBitmap'
+import {
+  DEFAULT_MAX_SIZE,
   type ImageMeta,
   isRawImageFormat,
   type RawImageFormat,
 } from './image-engine/types'
+import type { BitmapDecodePriority } from './models/bitmapDecodeLane'
+import { acquireBitmapDecodeSlot } from './models/bitmapDecodeLane'
 import type { PreviewLoadPriority } from './models/contracts'
+import { canBrowserDecodeImageType } from './models/formatCapability'
 import { acquireImageDecodeSlot } from './models/imageDecodeConcurrency'
+import {
+  resolveOrientedMetaDimensions,
+  resolveSizedDecodeTarget,
+  shouldUpgradeSizedImage,
+} from './models/lightboxDisplayTarget'
 import { acquireThumbnailSlot } from './models/thumbnailConcurrency'
 import type { ImageFileInfo } from './types'
+
+export type DisplayTargetSize = {
+  width: number
+  height: number
+  zoom: number
+}
 
 export type ReatomImageOptions = {
   thumbnailOptions?: ThumbnailOptions
@@ -37,6 +61,13 @@ export type ReatomImageOptions = {
   readIgnoreExifOrientation?: () => boolean
   readDevelopRaw?: () => boolean
   previewLoadPriority?: Atom<PreviewLoadPriority>
+  thumbnailTargetSize?: Atom<number>
+  readDisplayTarget?: () => DisplayTargetSize | null
+  readSizedImageActive?: () => boolean
+  readBitmapDecodePriority?: () => BitmapDecodePriority
+  readPreloadCount?: () => number
+  readDevelopMaxDimension?: () => number | undefined
+  readHeicDecodeSupported?: () => boolean | null
 }
 
 function isRawImageMeta(meta: ImageMeta | null): meta is ImageMeta & {
@@ -97,11 +128,6 @@ async function decodeImageFromUrl(
     } catch (error) {
       if (signal.aborted) throwAbort('image decode aborted')
       if (!isImageDecodeError(error)) throw error
-      // `decode()` rejects with EncodingError both for broken files and for
-      // decoder cache pressure (e.g. another 50-megapixel frame is pinned by
-      // the currently displayed photo). If the bytes loaded fine the file is
-      // not broken: return the element undecoded and let the renderer decode
-      // it at paint size, which succeeds where the full-size decode failed.
       image = (await wrap(waitForImageLoad(candidate))) ? candidate : null
     }
   } finally {
@@ -117,6 +143,47 @@ async function decodeImageFromUrl(
     image.style.imageOrientation = orientationStyle
   }
   return image
+}
+
+function previewLongEdge(meta: ImageMeta | null): number {
+  if (!meta?.embeddedPreview) return 0
+  const previewWidth = meta.embeddedPreview.width ?? 0
+  const previewHeight = meta.embeddedPreview.height ?? 0
+  return Math.max(previewWidth, previewHeight)
+}
+
+async function resolveSizedImageSourceBlob(
+  fileBlob: Blob,
+  metaState: ImageMeta,
+  developRawEnabled: boolean,
+  developMaxDimension: number | undefined,
+  targetLongEdge: number,
+  signal: AbortSignal,
+): Promise<Blob> {
+  if (!isRawImageMeta(metaState)) return fileBlob
+
+  const embeddedPreview =
+    metaState.embeddedPreview?.blob ??
+    (await extractRawPreview(fileBlob, metaState.format).catch(() => null))
+  if (!embeddedPreview) return fileBlob
+
+  const embeddedLongEdge = previewLongEdge(metaState)
+  const needsDevelopedSource =
+    developRawEnabled &&
+    developMaxDimension !== undefined &&
+    (embeddedLongEdge <= 0 || targetLongEdge > embeddedLongEdge * 1.1)
+
+  if (!needsDevelopedSource) return embeddedPreview
+
+  const developed = await developRawToJpegBlob(fileBlob, {
+    format: metaState.format,
+    exif: metaState.exif,
+    ignoreOrientation: false,
+    maxDimension: developMaxDimension,
+    signal,
+  })
+
+  return developed?.blob ?? embeddedPreview
 }
 
 export function reatomImage(
@@ -152,15 +219,41 @@ export function reatomImage(
     return await wrap(parseImageMeta(blob, { filename: options?.filename }))
   }, `${name}.meta`).extend(withAsyncData())
 
+  const thumbnailLongEdge = atom(0, `${name}.thumbnail.longEdge`)
+  const sizedImageLongEdge = atom(0, `${name}.sizedImage.longEdge`)
+  const sizedImageArtifact = atom<HTMLCanvasElement | null>(
+    null,
+    `${name}.sizedImage.artifact`,
+  )
+
   const thumbnail = computed(async () => {
+    // Dependency tracking only covers reads before the first await, so every
+    // reactive input must be captured synchronously here. Otherwise a late
+    // thumbnail-target upgrade (e.g. the grid getting measured after mount)
+    // would never re-decode the thumbnail.
+    const thumbnailTargetSize = options?.thumbnailTargetSize
+    let requestedMaxSize = thumbnailTargetSize?.() ?? DEFAULT_MAX_SIZE
+    const ignoreOrientation = ignoreExifOrientation()
+    const filePromise = file()
+    const thumbnailMetaPromise = thumbnailMeta()
+
     const previewLoadPriority = options?.previewLoadPriority
     if (previewLoadPriority) {
-      // `peek` keeps the priority out of the dependency list: priority
-      // transitions must gate the start of the work, not invalidate (and
-      // revoke) an already loaded thumbnail.
       while (peek(previewLoadPriority) === 'off') {
-        await wrap(take(previewLoadPriority, (next) => next !== 'off'))
+        await wrap(
+          take(previewLoadPriority, (next) => next === 'off' && throwAbort()),
+        )
       }
+    }
+
+    if (requestedMaxSize === 0 && thumbnailTargetSize) {
+      requestedMaxSize = await wrap(
+        take(
+          thumbnailTargetSize,
+          (next) => next || throwAbort(),
+          'thumbnail.targetMeasured',
+        ),
+      )
     }
 
     const signal = abortVar.require().signal
@@ -174,11 +267,13 @@ export function reatomImage(
 
     try {
       const [fileState, metaState] = await wrap(
-        Promise.all([file(), thumbnailMeta()]),
+        Promise.all([filePromise, thumbnailMetaPromise]),
       )
+      const maxSize = Math.max(peek(thumbnailLongEdge), requestedMaxSize)
       const thumbnailOptions = {
         ...options?.thumbnailOptions,
-        ignoreExifOrientation: ignoreExifOrientation(),
+        maxSize,
+        ignoreExifOrientation: ignoreOrientation,
         signal,
       }
       const thumbnailPromise = loadThumbnailWithMeta(
@@ -199,6 +294,9 @@ export function reatomImage(
       if (signal.aborted) {
         revokeThumbnail(thumbnailResult)
         throwAbort('thumbnail request aborted')
+      }
+      if (maxSize > peek(thumbnailLongEdge)) {
+        thumbnailLongEdge.set(maxSize)
       }
       abortVar.subscribe(() => revokeThumbnail(thumbnailResult))
       return thumbnailResult
@@ -232,6 +330,7 @@ export function reatomImage(
         format: metaState.format,
         exif: metaState.exif,
         ignoreOrientation: ignoreExifOrientation(),
+        maxDimension: options?.readDevelopMaxDimension?.(),
         signal: abortVar.require().signal,
       }),
     )
@@ -252,7 +351,7 @@ export function reatomImage(
     const url = await wrap(embeddedPreviewUrl())
     if (!url) return null
 
-    return decodeImageFromUrl(url, metaState, ignoreExifOrientation())
+    return decodeImageFromUrl(url, metaState, true)
   }, `${name}.rawEmbeddedPreviewImage`).extend(withAsyncData())
 
   const rawDevelopedImage = computed(async () => {
@@ -278,11 +377,6 @@ export function reatomImage(
   }, `${name}.fullUrl`).extend(withAsyncData())
 
   const fullImage = computed(async () => {
-    // Gate on the lightweight preview meta (same as `fullImageUrl`) instead of
-    // the full `meta()`: the heavy EXIF parse can reject or disagree on the raw
-    // format for edge-case files, which would silently leave the lightbox stuck
-    // on the thumbnail. Display orientation is re-applied from `meta` at the
-    // render layer, so decoding does not need the full parse to finish.
     const metaState = await wrap(thumbnailMeta())
     if (isRawImageMeta(metaState)) return null
 
@@ -291,6 +385,120 @@ export function reatomImage(
 
     return decodeImageFromUrl(url, metaState, ignoreExifOrientation())
   }, `${name}.fullImage`).extend(withAsyncData())
+
+  const sizedImage = computed(async () => {
+    if (!options?.readDisplayTarget || !options.readSizedImageActive) {
+      return null
+    }
+
+    if (!options.readSizedImageActive()) {
+      const artifact = peek(sizedImageArtifact)
+      if (artifact) clearCanvasElement(artifact)
+      sizedImageArtifact.set(null)
+      sizedImageLongEdge.set(0)
+      return null
+    }
+
+    const displayTarget = options.readDisplayTarget()
+    if (!displayTarget) return null
+
+    const metaState = await wrap(thumbnailMeta())
+    if (!metaState) return null
+
+    const fileInfoState = fileInfo.data()
+    const heicSupported = options.readHeicDecodeSupported?.() ?? null
+    if (
+      fileInfoState &&
+      !canBrowserDecodeImageType(fileInfoState.type, heicSupported)
+    ) {
+      return null
+    }
+
+    const oriented = resolveOrientedMetaDimensions(
+      metaState.width,
+      metaState.height,
+      metaState.exif,
+    )
+    const preloadCount = options.readPreloadCount?.() ?? 0
+    const decodeTarget = resolveSizedDecodeTarget(
+      oriented.width,
+      oriented.height,
+      displayTarget,
+      displayTarget.zoom,
+      preloadCount,
+    )
+
+    if (decodeTarget === 'original') return null
+
+    const nextLongEdge = longEdge(decodeTarget)
+    const currentLongEdge = peek(sizedImageLongEdge)
+    const existingArtifact = peek(sizedImageArtifact)
+    if (
+      existingArtifact &&
+      !shouldUpgradeSizedImage(currentLongEdge, decodeTarget)
+    ) {
+      return existingArtifact
+    }
+
+    const signal = abortVar.require().signal
+    if (signal.aborted) throwAbort()
+
+    const priority = options.readBitmapDecodePriority?.() ?? 'current'
+    const outputMegapixels = megapixels(decodeTarget.width, decodeTarget.height)
+    const releaseBitmapSlot = await wrap(
+      acquireBitmapDecodeSlot(signal, priority, outputMegapixels),
+    )
+
+    try {
+      const fileBlob = await wrap(file())
+      const sourceBlob = await wrap(
+        resolveSizedImageSourceBlob(
+          fileBlob,
+          metaState,
+          developRawEnabled(),
+          options.readDevelopMaxDimension?.(),
+          nextLongEdge,
+          signal,
+        ),
+      )
+
+      const sourceFromRawPipeline =
+        isRawImageMeta(metaState) && sourceBlob !== fileBlob
+
+      const canvas = await wrap(
+        decodeBlobToCanvas(
+          sourceBlob,
+          decodeTarget,
+          metaState,
+          ignoreExifOrientation() || sourceFromRawPipeline,
+        ),
+      )
+
+      if (signal.aborted) {
+        clearCanvasElement(canvas)
+        throwAbort('sized image decode aborted')
+      }
+
+      const previousArtifact = peek(sizedImageArtifact)
+      if (previousArtifact && previousArtifact !== canvas) {
+        clearCanvasElement(previousArtifact)
+      }
+
+      sizedImageLongEdge.set(nextLongEdge)
+      sizedImageArtifact.set(canvas)
+      abortVar.subscribe(() => {
+        clearCanvasElement(canvas)
+        if (peek(sizedImageArtifact) === canvas) {
+          sizedImageArtifact.set(null)
+          sizedImageLongEdge.set(0)
+        }
+      })
+
+      return canvas
+    } finally {
+      releaseBitmapSlot()
+    }
+  }, `${name}.sizedImage`).extend(withAsyncData())
 
   return file.extend(() => ({
     fileInfo,
@@ -304,6 +512,10 @@ export function reatomImage(
     rawDevelopedImage,
     fullImageUrl,
     fullImage,
+    sizedImage,
+    sizedImageLongEdge,
+    sizedImageArtifact,
+    thumbnailLongEdge,
   }))
 }
 
