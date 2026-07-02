@@ -88,8 +88,7 @@ test('imagesList sorts each folder by size ascending', () =>
     const sizes = images.map((i) => i.fileInfo.data()?.size)
     const expectedSizes = collectTreeImages(
       mockFolderTree,
-      (left, right) =>
-        (left.fileInfo?.size ?? 0) - (right.fileInfo?.size ?? 0),
+      (left, right) => (left.fileInfo?.size ?? 0) - (right.fileInfo?.size ?? 0),
     ).map((image) => image.fileInfo?.size)
     expect(sizes).toEqual(expectedSizes)
   }))
@@ -103,8 +102,7 @@ test('imagesList sorts each folder by size descending', () =>
     const sizes = images.map((i) => i.fileInfo.data()?.size)
     const expectedSizes = collectTreeImages(
       mockFolderTree,
-      (left, right) =>
-        (right.fileInfo?.size ?? 0) - (left.fileInfo?.size ?? 0),
+      (left, right) => (right.fileInfo?.size ?? 0) - (left.fileInfo?.size ?? 0),
     ).map((image) => image.fileInfo?.size)
     expect(sizes).toEqual(expectedSizes)
   }))

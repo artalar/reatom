@@ -12,12 +12,12 @@ Open a folder of large JPGs (50+ MP), view the first image at full resolution, n
 
 Documented defaults in Chromium source:
 
-| Budget | Size |
-| --- | --- |
+| Budget                              | Size   |
+| ----------------------------------- | ------ |
 | Decoded-image working set (default) | 128 MB |
-| Same budget on low-end devices | 32 MB |
-| Same budget when system RAM ≥ 4 GB | 256 MB |
-| Blink shared decode cache (locked) | 64 MB |
+| Same budget on low-end devices      | 32 MB  |
+| Same budget when system RAM ≥ 4 GB  | 256 MB |
+| Blink shared decode cache (locked)  | 64 MB  |
 
 A single 54 MP frame at RGBA is roughly `9504 × 6336 × 4 ≈ 241 MB` — **one photo can exceed the default working set by itself**. The lightbox also preloads the next image, so two full-size decodes can run together and compete for the same budget.
 
@@ -43,10 +43,10 @@ flowchart LR
 
 The public tracker requires sign-in; these IDs come from redirects and third-party reports:
 
-| Issue | Notes |
-| --- | --- |
-| [40676514](https://issues.chromium.org/issues/40676514) (was [crbug/1055828](https://crbug.com/1055828)) | Parallel `img.decode()` hitting memory limit — cited by [WeatherLayers](https://docs.weatherlayers.com/weatherlayers-gl/changelog) and manga-reader reports |
-| [40261318](https://issues.chromium.org/issues/40261318) | Batch / large-dimension `img.decode()` on valid images — cited by [Odoo](https://github.com/odoo/odoo/pull/243133) and [Nuxt Image #2130](https://github.com/nuxt/image/issues/2130) |
+| Issue                                                                                                    | Notes                                                                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [40676514](https://issues.chromium.org/issues/40676514) (was [crbug/1055828](https://crbug.com/1055828)) | Parallel `img.decode()` hitting memory limit — cited by [WeatherLayers](https://docs.weatherlayers.com/weatherlayers-gl/changelog) and manga-reader reports                          |
+| [40261318](https://issues.chromium.org/issues/40261318)                                                  | Batch / large-dimension `img.decode()` on valid images — cited by [Odoo](https://github.com/odoo/odoo/pull/243133) and [Nuxt Image #2130](https://github.com/nuxt/image/issues/2130) |
 
 Chrome engineers discussed pin-memory limits when designing the API ([WHATWG html#2037](https://github.com/whatwg/html/issues/2037)). Treating `EncodingError` as permanent image corruption in app code is a common mistake.
 

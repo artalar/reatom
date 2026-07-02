@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
-import { listFixtures, readFixtureBlob } from '../__fixtures__/fixtureLoader.node'
+import {
+  listFixtures,
+  readFixtureBlob,
+} from '../__fixtures__/fixtureLoader.node'
 import { parseImageMeta } from '../image-engine/header'
 
 describe('tier-b fixtures', () => {

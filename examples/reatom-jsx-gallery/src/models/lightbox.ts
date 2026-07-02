@@ -4,7 +4,11 @@ import { copyImageAsJpegToClipboard } from '../copyImage'
 import { downloadPreparedGalleryImage } from '../download'
 import { visibleImages, visibleIndexMap } from './collection'
 import type { GalleryImageModel } from './contracts'
-import { navigateLightbox, primeLightboxPreload, resetLightboxPan } from './lightboxNavigation'
+import {
+  navigateLightbox,
+  primeLightboxPreload,
+  resetLightboxPan,
+} from './lightboxNavigation'
 import {
   lightboxImage,
   lightboxNavigationDirection,

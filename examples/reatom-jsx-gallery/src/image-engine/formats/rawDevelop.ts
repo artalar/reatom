@@ -276,8 +276,7 @@ async function developInSlot(
   const cappedLongEdge = job.maxDimension
     ? Math.min(outputLongEdge, job.maxDimension)
     : outputLongEdge
-  const outputScale =
-    outputLongEdge > 0 ? cappedLongEdge / outputLongEdge : 1
+  const outputScale = outputLongEdge > 0 ? cappedLongEdge / outputLongEdge : 1
 
   return {
     blob,
@@ -316,7 +315,10 @@ function scheduleDevelopJobs(): void {
   }
 }
 
-async function runDevelopJob(slotIndex: number, job: DevelopJob): Promise<void> {
+async function runDevelopJob(
+  slotIndex: number,
+  job: DevelopJob,
+): Promise<void> {
   const pool = developPool
   if (!pool) {
     job.reject(new Error('Raw develop pool is not available'))

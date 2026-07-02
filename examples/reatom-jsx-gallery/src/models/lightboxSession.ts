@@ -2,7 +2,13 @@ import { action, atom, computed, effect, peek, sleep, wrap } from '@reatom/core'
 
 import { resolveImageOrientationStyle } from '../image-engine/orientation'
 import { resetLightboxDisplayTargetDebouncer } from './lightboxDisplayTarget'
-import { lightboxImage, lightboxOpen, lightboxPanX, lightboxPanY, lightboxZoom } from './lightboxState'
+import {
+  lightboxImage,
+  lightboxOpen,
+  lightboxPanX,
+  lightboxPanY,
+  lightboxZoom,
+} from './lightboxState'
 import { imageInfoPanelOpen } from './panels'
 import { ignoreExifOrientation } from './preferences'
 
@@ -94,7 +100,7 @@ export const lightboxDisplayOrientationStyle = computed(() => {
     orientationBaked
       ? true
       : model.thumbnail.data()?.orientationBaked ||
-        model.display.isRawPipeline(),
+          model.display.isRawPipeline(),
   )
 }, 'lightbox.displayOrientationStyle')
 

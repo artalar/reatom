@@ -1,7 +1,4 @@
-import {
-  longEdge,
-  type Size,
-} from './decodePolicy'
+import { longEdge, type Size } from './decodePolicy'
 import {
   applyOrientationToImageBitmap,
   getOrientationFromExif,
@@ -18,7 +15,8 @@ async function resizeBitmapTowardTarget(
   let iterations = 0
 
   while (
-    longEdge({ width: current.width, height: current.height }) / longEdge(target) >
+    longEdge({ width: current.width, height: current.height }) /
+      longEdge(target) >
       MAX_ITERATIVE_HALVING_RATIO &&
     iterations < 8
   ) {

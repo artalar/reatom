@@ -22,7 +22,9 @@ export type GalleryFolderModel = {
 const imageModelById = new Map<string, GalleryImageModel>()
 const folderModelByPath = new Map<string, GalleryFolderModel>()
 
-function getImageModel(image: ImageFile | GalleryImageModel): GalleryImageModel {
+function getImageModel(
+  image: ImageFile | GalleryImageModel,
+): GalleryImageModel {
   if (isGalleryImageModel(image)) return image
 
   const cached = imageModelById.get(image.id)
@@ -92,10 +94,7 @@ export const folderModelTree = computed(() => {
 export function collectAllGalleryImages(
   folder: GalleryFolderModel,
 ): GalleryImageModel[] {
-  return [
-    ...folder.images,
-    ...folder.children.flatMap(collectAllGalleryImages),
-  ]
+  return [...folder.images, ...folder.children.flatMap(collectAllGalleryImages)]
 }
 
 function findFolderModel(

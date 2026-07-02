@@ -78,7 +78,8 @@ export function bindGalleryImagePreview(
 
 function isHighPriorityPreviewBusy(images: GalleryImageModel[]): boolean {
   return images.some(
-    (image) => image.previewLoadPriority() === 'high' && image.thumbnail.pending(),
+    (image) =>
+      image.previewLoadPriority() === 'high' && image.thumbnail.pending(),
   )
 }
 

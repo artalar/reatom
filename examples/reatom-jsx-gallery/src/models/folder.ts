@@ -26,15 +26,12 @@ export const resetFolderState = action(() => {
   parsingProgress.set({ total: 0, current: 0 })
 }, 'folder.resetState')
 
-export const publishFolderScan = action(
-  (result: { tree: FolderNode }) => {
-    resetFolderTreeUi()
-    folderTree.set(result.tree)
-    currentFolder.set(result.tree)
-    parsingProgress.set({
-      total: result.tree.imageCount,
-      current: result.tree.imageCount,
-    })
-  },
-  'folder.publishScan',
-)
+export const publishFolderScan = action((result: { tree: FolderNode }) => {
+  resetFolderTreeUi()
+  folderTree.set(result.tree)
+  currentFolder.set(result.tree)
+  parsingProgress.set({
+    total: result.tree.imageCount,
+    current: result.tree.imageCount,
+  })
+}, 'folder.publishScan')

@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'vitest'
 
 import { parseImageMeta } from '../image-engine/header'
-import { listFixtures, readFixtureBlob, tierCAvailable } from './fixtureLoader.node'
+import {
+  listFixtures,
+  readFixtureBlob,
+  tierCAvailable,
+} from './fixtureLoader.node'
 
 const tierCAvailablePromise = tierCAvailable()
 

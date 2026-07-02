@@ -6,7 +6,9 @@ export const MAX_CANVAS_AXIS = 16384
 export const RESIZE_HYSTERESIS_RATIO = 1.15
 export const MIN_RESIZE_SAVINGS_RATIO = 0.7
 
-export const THUMB_BUCKETS = [192, 256, 384, 512, 768, 1024, 1536, 2048] as const
+export const THUMB_BUCKETS = [
+  192, 256, 384, 512, 768, 1024, 1536, 2048,
+] as const
 
 export type Size = { width: number; height: number }
 export type SlotKind = 'lightbox' | 'thumbnail'
@@ -53,14 +55,22 @@ export function quantizeThumbnailBucket(targetLongEdge: number): number {
   return THUMB_BUCKETS[THUMB_BUCKETS.length - 1]
 }
 
-function fitScale(original: Size, slot: Size, objectFit: ObjectFitMode): number {
+function fitScale(
+  original: Size,
+  slot: Size,
+  objectFit: ObjectFitMode,
+): number {
   if (objectFit === 'cover') {
     return Math.max(slot.width / original.width, slot.height / original.height)
   }
   return Math.min(slot.width / original.width, slot.height / original.height)
 }
 
-function computeNeeded(original: Size, slot: Size, objectFit: ObjectFitMode): Size {
+function computeNeeded(
+  original: Size,
+  slot: Size,
+  objectFit: ObjectFitMode,
+): Size {
   const scale = Math.min(fitScale(original, slot, objectFit), 1)
   return {
     width: Math.max(1, Math.round(original.width * scale)),
@@ -68,10 +78,7 @@ function computeNeeded(original: Size, slot: Size, objectFit: ObjectFitMode): Si
   }
 }
 
-function fitsPinBudget(
-  original: Size,
-  preloadCount: number,
-): boolean {
+function fitsPinBudget(original: Size, preloadCount: number): boolean {
   const bytes = rgbaBytes(original.width, original.height)
   return bytes * (1 + preloadCount) <= PIN_BUDGET_BYTES
 }
@@ -103,7 +110,10 @@ function clampResizeTarget(
   }
 }
 
-export function snapToIdctRung(sourceLongEdge: number, targetLongEdge: number): number {
+export function snapToIdctRung(
+  sourceLongEdge: number,
+  targetLongEdge: number,
+): number {
   const source = Math.max(1, sourceLongEdge)
   const target = Math.max(1, Math.ceil(targetLongEdge))
 
@@ -158,7 +168,10 @@ export function resolveZoomTierTarget(
   target = capMegapixels(target, MAX_DECODE_MEGAPIXELS)
   target = clampResizeTarget(target, original, options.panelLongEdge)
 
-  if (longEdge(target) >= originalLong && fitsPinBudget(original, preloadCount)) {
+  if (
+    longEdge(target) >= originalLong &&
+    fitsPinBudget(original, preloadCount)
+  ) {
     return 'original'
   }
 

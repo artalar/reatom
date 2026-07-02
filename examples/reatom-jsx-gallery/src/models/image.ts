@@ -2,7 +2,7 @@ import { atom, computed, reatomBoolean, withLocalStorage } from '@reatom/core'
 
 import { isRawImageFormat } from '../image-engine/types'
 import { formatBytes, formatDate, formatDimensions } from '../imageFormat'
-import { type ReatomImage,reatomImage } from '../reatomImage'
+import { type ReatomImage, reatomImage } from '../reatomImage'
 import type { ImageFile, ImageFileInfo } from '../types'
 import type { GalleryImageModel } from './contracts'
 import {
@@ -78,8 +78,7 @@ function readImageDimensions(imageModel: ReatomImage): {
     }
   }
 
-  const meta =
-    imageModel.thumbnailMeta.data() ?? imageModel.meta.data()
+  const meta = imageModel.thumbnailMeta.data() ?? imageModel.meta.data()
   if (!meta) return { width: 0, height: 0 }
 
   return resolveOrientedMetaDimensions(meta.width, meta.height, meta.exif)

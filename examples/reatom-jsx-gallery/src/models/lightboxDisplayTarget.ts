@@ -7,11 +7,7 @@ import {
 } from '../image-engine/decodePolicy'
 import { getOrientationFromExif } from '../image-engine/orientation'
 import { lightboxZoom } from './lightboxState'
-import {
-  devicePixelRatio,
-  panelLongEdge,
-  viewportSize,
-} from './viewport'
+import { devicePixelRatio, panelLongEdge, viewportSize } from './viewport'
 
 const LIGHTBOX_HORIZONTAL_CHROME = 160
 const LIGHTBOX_VERTICAL_CHROME = 180
@@ -123,9 +119,10 @@ export function shouldUpgradeSizedImage(
   return shouldUpgradeDecodeTarget(currentLongEdge, longEdge(nextTarget))
 }
 
-const debouncedDisplayTarget = atom<
-  ReturnType<typeof computeDisplayTarget>
->(null, 'lightbox._debouncedDisplayTarget')
+const debouncedDisplayTarget = atom<ReturnType<typeof computeDisplayTarget>>(
+  null,
+  'lightbox._debouncedDisplayTarget',
+)
 
 export const lightboxDebouncedDisplayTarget = debouncedDisplayTarget
 
@@ -155,7 +152,10 @@ export function readDebouncedDisplayTarget(
   return debouncedDisplayTarget() ?? immediate
 }
 
-export const lightboxDisplayPreloadCount = atom(0, 'lightbox.displayPreloadCount')
+export const lightboxDisplayPreloadCount = atom(
+  0,
+  'lightbox.displayPreloadCount',
+)
 
 export function setLightboxDisplayPreloadCount(count: number) {
   lightboxDisplayPreloadCount.set(count)

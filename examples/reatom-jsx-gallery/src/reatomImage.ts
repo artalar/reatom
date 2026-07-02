@@ -17,10 +17,7 @@ import {
   parseImagePreviewMeta,
   revokeThumbnail,
 } from './image-engine'
-import {
-  longEdge,
-  megapixels,
-} from './image-engine/decodePolicy'
+import { longEdge, megapixels } from './image-engine/decodePolicy'
 import { extractRawPreview } from './image-engine/formats/raw'
 import type { RawDevelopResult } from './image-engine/formats/rawDevelop'
 import { developRawToJpegBlob } from './image-engine/formats/rawDevelop'
