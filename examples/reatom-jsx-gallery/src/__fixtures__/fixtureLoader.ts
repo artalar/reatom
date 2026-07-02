@@ -17,6 +17,41 @@ const fixtureAssetUrls = import.meta.glob('./images/**/*', {
   eager: true,
 }) as Record<string, string>
 
+const personalFixtureAssetUrls = import.meta.glob('./personal/*', {
+  query: '?url',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
+
+export const personalFixtureEntries = [
+  {
+    name: 'DSC08224.jpg',
+    width: 9183,
+    height: 5859,
+    size: 23_522_946,
+  },
+  {
+    name: 'DSC08225.jpg',
+    width: 9183,
+    height: 5859,
+    size: 20_397_162,
+  },
+  {
+    name: 'DSC08226.jpg',
+    width: 9183,
+    height: 5859,
+    size: 22_687_547,
+  },
+  {
+    name: 'DSC08249.jpg',
+    width: 9183,
+    height: 5859,
+    size: 17_503_162,
+  },
+] as const
+
+export type PersonalFixtureEntry = (typeof personalFixtureEntries)[number]
+
 function fixtureAssetUrl(tier: FixtureTier, relativePath: string): string {
   const normalizedPath = relativePath.replace(/\\/g, '/')
   const key = `./images/${tier}/${normalizedPath}`
@@ -123,6 +158,65 @@ function getOrCreateFolder(
   }
 
   return parent
+}
+
+function personalFixtureAssetUrl(name: string): string {
+  const url = personalFixtureAssetUrls[`./personal/${name}`]
+  if (!url) {
+    throw new Error(`Missing personal fixture asset URL for ${name}`)
+  }
+  return url
+}
+
+export function createPersonalFixtureFileHandle(
+  entry: PersonalFixtureEntry,
+): FileSystemFileHandle {
+  const assetUrl = personalFixtureAssetUrl(entry.name)
+  const mime = mimeFromFilename(entry.name)
+
+  return {
+    kind: 'file',
+    name: entry.name,
+    getFile: async () => {
+      const response = await fetch(assetUrl)
+      const blob = await response.blob()
+      return new File([await blob.arrayBuffer()], entry.name, {
+        type: mime,
+        lastModified: 1700000000000,
+      })
+    },
+    isSameEntry: () => Promise.resolve(false),
+  } as unknown as FileSystemFileHandle
+}
+
+function createImageFromPersonalFixture(
+  entry: PersonalFixtureEntry,
+): ImageFile {
+  return {
+    id: `personal-${entry.name}`,
+    name: entry.name,
+    path: '',
+    relativePath: entry.name,
+    fileInfo: {
+      name: entry.name,
+      size: entry.size,
+      type: mimeFromFilename(entry.name),
+      lastModified: 1700000000000,
+    },
+    fileHandle: createPersonalFixtureFileHandle(entry),
+  }
+}
+
+export function buildPersonalFixtureFolderTree(): FolderNode {
+  const images = personalFixtureEntries.map(createImageFromPersonalFixture)
+  return {
+    name: 'PersonalFixtures',
+    path: '',
+    handle: createMockDirHandle('PersonalFixtures'),
+    images,
+    children: [],
+    imageCount: images.length,
+  }
 }
 
 export function buildFixtureFolderTree(tier: FixtureTier): FolderNode {

@@ -1,12 +1,12 @@
 import {
   bindGalleryImagePreview,
   folderModelTree,
+  type GalleryFolderModel,
   gridColumns,
   gridGap,
   imageGrid,
   isFolderBranchInCurrentScope,
   isFolderImagesInCurrentScope,
-  type GalleryFolderModel,
   viewMode,
   visibleIndexMap,
 } from '../model'

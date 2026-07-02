@@ -1,12 +1,11 @@
 import { action, computed } from '@reatom/core'
 
 import {
-  findVisibleNeighbor,
   currentImages,
+  findVisibleNeighbor,
   visibleImages,
   visibleIndexMap,
 } from './collection'
-import { ensureGalleryImagePreviewHigh } from './previewLoad'
 import {
   keepLightboxView,
   lightboxImage,
@@ -16,6 +15,7 @@ import {
   lightboxZoom,
   wrapFolderNavigation,
 } from './lightboxState'
+import { ensureGalleryImagePreviewHigh } from './previewLoad'
 
 export const resetLightboxPan = action(() => {
   lightboxPanX.set(0)

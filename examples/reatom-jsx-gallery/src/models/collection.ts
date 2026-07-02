@@ -3,12 +3,13 @@ import { action, computed } from '@reatom/core'
 
 import { shutdownRawDevelopPool } from '../image-engine/formats/rawDevelop'
 import { shutdownRawPreviewScanPool } from '../image-engine/formats/rawPreviewScanPool'
-import { shutdownThumbnailQueue } from './thumbnailConcurrency'
 import type { FolderNode, ImageFile } from '../types'
 import type { GalleryImageModel } from './contracts'
 import { includeSubfolders, sortField, sortOrder } from './filters'
 import { currentFolder, folderTree } from './folder'
 import { isGalleryImageModel, reatomGalleryImage } from './image'
+import { shutdownImageDecodeQueue } from './imageDecodeConcurrency'
+import { shutdownThumbnailQueue } from './thumbnailConcurrency'
 
 export type GalleryFolderModel = {
   source: FolderNode
@@ -127,6 +128,7 @@ export const resetGallerySession = action(() => {
   shutdownRawPreviewScanPool()
   shutdownRawDevelopPool()
   shutdownThumbnailQueue()
+  shutdownImageDecodeQueue()
   imageModelById.clear()
   folderModelByPath.clear()
 }, 'collection.resetGallerySession')

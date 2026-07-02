@@ -1,31 +1,52 @@
 import { effect, isAbort, sleep, wrap } from '@reatom/core'
 
-import type { GalleryFolderModel, GalleryImageModel, PreviewLoadPriority } from './contracts'
 import {
   collectAllGalleryImages,
   folderModelTree,
+  type GalleryFolderModel,
   isFolderImagesInCurrentScope,
 } from './collection'
-import { currentFolder } from './folder'
+import type { GalleryImageModel } from './contracts'
 import { includeSubfolders } from './filters'
+import { currentFolder } from './folder'
 
-export function setGalleryImagePreviewPriority(
-  image: GalleryImageModel,
-  next: PreviewLoadPriority,
-) {
-  if (image.previewLoadPriority() === next) return
-  image.previewLoadPriority.set(next)
+/**
+ * Several bindings (grid, list, table entries) can demand the same image at
+ * once, and on view-mode switches the new binding mounts before the old one
+ * unmounts. A per-image counter keeps the priority owned by "how many live
+ * bindings want it" instead of by whichever callback ran last.
+ */
+const highDemandCounts = new WeakMap<GalleryImageModel, number>()
+
+function changeHighDemand(image: GalleryImageModel, delta: 1 | -1): void {
+  const next = Math.max(0, (highDemandCounts.get(image) ?? 0) + delta)
+  highDemandCounts.set(image, next)
+}
+
+function applyHighDemand(image: GalleryImageModel): void {
+  const demanded = (highDemandCounts.get(image) ?? 0) > 0
+  const priority = image.previewLoadPriority()
+
+  if (demanded) {
+    if (priority !== 'high') image.previewLoadPriority.set('high')
+  } else if (priority === 'high') {
+    image.previewLoadPriority.set('off')
+  }
 }
 
 export function bindGalleryImagePreviewWhen(
   image: GalleryImageModel,
   readShouldConnect: () => boolean,
 ): () => void {
+  let wantsHigh = false
+
   const sync = () => {
-    setGalleryImagePreviewPriority(
-      image,
-      readShouldConnect() ? 'high' : 'off',
-    )
+    const shouldConnect = readShouldConnect()
+    if (shouldConnect !== wantsHigh) {
+      wantsHigh = shouldConnect
+      changeHighDemand(image, shouldConnect ? 1 : -1)
+    }
+    applyHighDemand(image)
   }
 
   sync()
@@ -37,8 +58,10 @@ export function bindGalleryImagePreviewWhen(
     stopVisible()
     stopFolder()
     stopSubfolders()
-    if (image.previewLoadPriority() === 'high') {
-      image.previewLoadPriority.set('off')
+    if (wantsHigh) {
+      wantsHigh = false
+      changeHighDemand(image, -1)
+      applyHighDemand(image)
     }
   }
 }
@@ -64,7 +87,9 @@ function findBackgroundPreviewCandidate(
 ): GalleryImageModel | null {
   for (const image of images) {
     if (image.previewLoadPriority() !== 'off') continue
-    if (image.thumbnail.ready() || image.thumbnail.pending()) continue
+    if (image.thumbnail.data() !== undefined) continue
+    if (image.thumbnail.pending() > 0) continue
+    if (image.thumbnail.error() != null) continue
     return image
   }
   return null
@@ -73,6 +98,7 @@ function findBackgroundPreviewCandidate(
 export const bindBackgroundPreviewLoader = () => {
   const loader = effect(async () => {
     while (true) {
+      // Aborting the effect (unmount) rejects this wrapped sleep and exits.
       await wrap(sleep(250))
 
       const tree = folderModelTree()
@@ -88,7 +114,11 @@ export const bindBackgroundPreviewLoader = () => {
       try {
         await wrap(candidate.thumbnail())
       } catch (error) {
-        if (!isAbort(error)) throw error
+        // A single broken file must not stop the loop; the errored thumbnail
+        // is skipped by the candidate check on the next pass.
+        if (!isAbort(error)) {
+          console.error('Background preview load failed:', error)
+        }
       } finally {
         if (candidate.previewLoadPriority() === 'background') {
           candidate.previewLoadPriority.set('off')

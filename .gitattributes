@@ -1,1 +1,2 @@
 examples/reatom-jsx-gallery/src/__fixtures__/images/tier-c/** filter=lfs diff=lfs merge=lfs -text
+examples/reatom-jsx-gallery/src/__fixtures__/personal/** filter=lfs diff=lfs merge=lfs -text

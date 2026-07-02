@@ -104,14 +104,14 @@ function releaseThumbnailSlot() {
   runNextThumbnailJob()
 }
 
-const shutdownError = new Error('Thumbnail queue shut down')
-
 export function shutdownThumbnailQueue(): void {
   while (thumbnailQueue.length > 0) {
     const entry = thumbnailQueue.shift()
     if (!entry || entry.cancelled) continue
     entry.cancelled = true
-    entry.reject(shutdownError)
+    const error = new Error('Thumbnail queue shut down')
+    error.name = 'AbortError'
+    entry.reject(error)
   }
 
   activeThumbnailJobs = 0

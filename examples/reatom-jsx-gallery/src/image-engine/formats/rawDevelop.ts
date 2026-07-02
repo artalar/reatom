@@ -43,6 +43,7 @@ type DevelopJob = {
   externalSignal: AbortSignal | undefined
   resolve: (result: RawDevelopResult | null) => void
   reject: (error: Error) => void
+  releaseQueueAbort?: () => void
 }
 
 const JPEG_DEVELOP_QUALITY = 0.92
@@ -272,14 +273,30 @@ async function developInSlot(
   }
 }
 
+function takeNextDevelopJob(): DevelopJob | null {
+  while (pendingDevelopJobs.length > 0) {
+    const job = pendingDevelopJobs.shift()!
+    job.releaseQueueAbort?.()
+
+    // An `abort` listener added to an already-aborted signal never fires, so
+    // stale jobs must be rejected here instead of occupying a develop slot.
+    if (job.externalSignal?.aborted) {
+      job.reject(createAbortError())
+      continue
+    }
+
+    return job
+  }
+  return null
+}
+
 function scheduleDevelopJobs(): void {
   if (!developPool) return
 
   for (const [slotIndex, slot] of developPool.entries()) {
     if (slot.abort !== null) continue
-    if (pendingDevelopJobs.length === 0) return
 
-    const job = pendingDevelopJobs.shift()
+    const job = takeNextDevelopJob()
     if (!job) return
 
     void runDevelopJob(slotIndex, job)
@@ -324,6 +341,25 @@ async function runDevelopJob(slotIndex: number, job: DevelopJob): Promise<void> 
 }
 
 function enqueueDevelopJob(job: DevelopJob): void {
+  if (job.externalSignal?.aborted) {
+    job.reject(createAbortError())
+    return
+  }
+
+  const { externalSignal } = job
+  if (externalSignal) {
+    const dropFromQueue = () => {
+      const index = pendingDevelopJobs.indexOf(job)
+      if (index !== -1) {
+        pendingDevelopJobs.splice(index, 1)
+        job.reject(createAbortError())
+      }
+    }
+    externalSignal.addEventListener('abort', dropFromQueue, { once: true })
+    job.releaseQueueAbort = () =>
+      externalSignal.removeEventListener('abort', dropFromQueue)
+  }
+
   pendingDevelopJobs.push(job)
   scheduleDevelopJobs()
 }
@@ -356,12 +392,11 @@ export function isRawDevelopSupported(): boolean {
   )
 }
 
-const shutdownError = new Error('Raw develop pool shut down')
-
 export function shutdownRawDevelopPool(): void {
   while (pendingDevelopJobs.length > 0) {
     const job = pendingDevelopJobs.shift()
-    job?.reject(shutdownError)
+    job?.releaseQueueAbort?.()
+    job?.reject(createAbortError())
   }
 
   if (developPool) {

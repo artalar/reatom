@@ -2,10 +2,10 @@ import { focusableCardAttrs } from '../a11y'
 import {
   bindGalleryImagePreview,
   folderModelTree,
-  isFolderBranchInCurrentScope,
-  isFolderImagesInCurrentScope,
   type GalleryFolderModel,
   type ImageModel,
+  isFolderBranchInCurrentScope,
+  isFolderImagesInCurrentScope,
   listPreviewHeight,
   listPreviewWidth,
   openLightbox,

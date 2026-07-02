@@ -93,9 +93,7 @@ export const handleKeyboardShortcut = action((event: KeyboardEvent) => {
     return
   }
 
-  if (lightboxOpen()) return
-
-  if (event.key === 'f' || event.key === 'F') {
+  if (!lightboxOpen() && (event.key === 'f' || event.key === 'F')) {
     toggleFavoriteOnSelectedImages()
     return
   }

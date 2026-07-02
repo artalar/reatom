@@ -8,10 +8,10 @@ import {
   clearSelection,
   closeLightbox,
   currentFolder,
+  currentImages,
   filterSizeMax,
   filterSizeMin,
   filterTypes,
-  currentImages,
   includeSubfolders,
   keepLightboxView,
   lightboxImage,
@@ -58,7 +58,6 @@ test('imagesList sorts each folder by name ascending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('name')
     sortOrder.set('asc')
-    currentImages()
     const images = currentImages()
     const names = images.map((i) => i.source.name)
     const expectedNames = collectTreeImages(mockFolderTree, (left, right) =>
@@ -72,7 +71,6 @@ test('imagesList sorts each folder by name descending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('name')
     sortOrder.set('desc')
-    currentImages()
     const images = currentImages()
     const names = images.map((i) => i.source.name)
     const expectedNames = collectTreeImages(mockFolderTree, (left, right) =>
@@ -86,7 +84,6 @@ test('imagesList sorts each folder by size ascending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('size')
     sortOrder.set('asc')
-    currentImages()
     const images = currentImages()
     const sizes = images.map((i) => i.fileInfo.data()?.size)
     const expectedSizes = collectTreeImages(
@@ -102,7 +99,6 @@ test('imagesList sorts each folder by size descending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('size')
     sortOrder.set('desc')
-    currentImages()
     const images = currentImages()
     const sizes = images.map((i) => i.fileInfo.data()?.size)
     const expectedSizes = collectTreeImages(
@@ -118,7 +114,6 @@ test('imagesList sorts each folder by date ascending', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('date')
     sortOrder.set('asc')
-    currentImages()
     const images = currentImages()
     const dates = images.map((i) => i.fileInfo.data()?.lastModified)
     const expectedDates = collectTreeImages(
@@ -135,7 +130,6 @@ test('imagesList sorts each folder by type', () =>
     loadGalleryState({ tree: mockFolderTree })
     sortField.set('type')
     sortOrder.set('asc')
-    currentImages()
     const images = currentImages()
     const types = images.map((i) => i.fileInfo.data()?.type)
     const expectedTypes = collectTreeImages(mockFolderTree, (left, right) =>

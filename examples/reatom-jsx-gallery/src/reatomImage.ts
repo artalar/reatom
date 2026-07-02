@@ -2,6 +2,7 @@ import type { Atom } from '@reatom/core'
 import {
   abortVar,
   computed,
+  peek,
   take,
   throwAbort,
   withAsyncData,
@@ -24,8 +25,9 @@ import {
   isRawImageFormat,
   type RawImageFormat,
 } from './image-engine/types'
-import { acquireThumbnailSlot } from './models/thumbnailConcurrency'
 import type { PreviewLoadPriority } from './models/contracts'
+import { acquireImageDecodeSlot } from './models/imageDecodeConcurrency'
+import { acquireThumbnailSlot } from './models/thumbnailConcurrency'
 import type { ImageFileInfo } from './types'
 
 export type ReatomImageOptions = {
@@ -65,6 +67,16 @@ function isImageDecodeError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'EncodingError'
 }
 
+function waitForImageLoad(image: HTMLImageElement): Promise<boolean> {
+  if (image.complete) return Promise.resolve(image.naturalWidth > 0)
+  return new Promise((resolve) => {
+    image.addEventListener('load', () => resolve(image.naturalWidth > 0), {
+      once: true,
+    })
+    image.addEventListener('error', () => resolve(false), { once: true })
+  })
+}
+
 async function decodeImageFromUrl(
   url: string,
   meta: ImageMeta | null,
@@ -73,16 +85,30 @@ async function decodeImageFromUrl(
   const signal = abortVar.require().signal
   if (signal.aborted) throwAbort()
 
-  const image = new Image()
-  image.decoding = 'async'
-  image.src = url
+  const releaseDecodeSlot = await wrap(acquireImageDecodeSlot(signal))
+  let image: HTMLImageElement | null = null
   try {
-    await wrap(image.decode())
-  } catch (error) {
-    if (signal.aborted) throwAbort('image decode aborted')
-    if (isImageDecodeError(error)) return null
-    throw error
+    const candidate = new Image()
+    candidate.decoding = 'async'
+    candidate.src = url
+    try {
+      await wrap(candidate.decode())
+      image = candidate
+    } catch (error) {
+      if (signal.aborted) throwAbort('image decode aborted')
+      if (!isImageDecodeError(error)) throw error
+      // `decode()` rejects with EncodingError both for broken files and for
+      // decoder cache pressure (e.g. another 50-megapixel frame is pinned by
+      // the currently displayed photo). If the bytes loaded fine the file is
+      // not broken: return the element undecoded and let the renderer decode
+      // it at paint size, which succeeds where the full-size decode failed.
+      image = (await wrap(waitForImageLoad(candidate))) ? candidate : null
+    }
+  } finally {
+    releaseDecodeSlot()
   }
+  if (!image) return null
+
   const orientationStyle = resolveImageOrientationStyle(
     meta?.exif,
     ignoreExifOrientation,
@@ -129,16 +155,19 @@ export function reatomImage(
   const thumbnail = computed(async () => {
     const previewLoadPriority = options?.previewLoadPriority
     if (previewLoadPriority) {
-      let priority = previewLoadPriority()
-      while (priority === 'off') {
+      // `peek` keeps the priority out of the dependency list: priority
+      // transitions must gate the start of the work, not invalidate (and
+      // revoke) an already loaded thumbnail.
+      while (peek(previewLoadPriority) === 'off') {
         await wrap(take(previewLoadPriority, (next) => next !== 'off'))
-        priority = previewLoadPriority()
       }
     }
 
     const signal = abortVar.require().signal
     const slotPriority =
-      previewLoadPriority?.() === 'background' ? 'background' : 'high'
+      previewLoadPriority && peek(previewLoadPriority) === 'background'
+        ? 'background'
+        : 'high'
     const releaseThumbnailSlot = await wrap(
       acquireThumbnailSlot(signal, slotPriority),
     )

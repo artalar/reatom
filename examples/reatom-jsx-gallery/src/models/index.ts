@@ -1,4 +1,5 @@
 export { setViewMode } from './appActions'
+export type { GalleryFolderModel } from './collection'
 export {
   clearSelection,
   collectAllGalleryImages,
@@ -17,7 +18,6 @@ export {
   visibleImages,
   visibleIndexMap,
 } from './collection'
-export type { GalleryFolderModel } from './collection'
 export type {
   GalleryImageModel,
   ImageModel,
@@ -57,12 +57,6 @@ export {
   restoreSelectedFolder,
 } from './folderOpen'
 export { imageGrid } from './gridLayout'
-export {
-  bindBackgroundPreviewLoader,
-  bindGalleryImagePreview,
-  bindGalleryImagePreviewWhen,
-  ensureGalleryImagePreviewHigh,
-} from './previewLoad'
 export { isGalleryImageModel, reatomGalleryImage } from './image'
 export {
   imageInfoPanelExpanded,
@@ -150,6 +144,12 @@ export {
   themePack,
   toggleResolvedThemeMode,
 } from './preferences'
+export {
+  bindBackgroundPreviewLoader,
+  bindGalleryImagePreview,
+  bindGalleryImagePreviewWhen,
+  ensureGalleryImagePreviewHigh,
+} from './previewLoad'
 export {
   bindSlideshowAutoAdvance,
   bindSlideshowPauseOnPageHidden,

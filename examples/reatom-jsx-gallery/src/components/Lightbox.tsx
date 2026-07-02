@@ -617,12 +617,11 @@ const LightboxContent = () => {
                 }
               `}
             >
+              {/* Thumbnail only: falling back to `fullImage.data()` would
+                  subscribe it and trigger a full-resolution decode for every
+                  strip entry whose thumbnail is still loading. */}
               <img
-                src={() =>
-                  imageNode.thumbnail.data()?.url ??
-                  imageNode.fullImage.data()?.src ??
-                  ''
-                }
+                src={() => imageNode.thumbnail.data()?.url ?? ''}
                 alt=""
                 css={`
                   width: 60px;
