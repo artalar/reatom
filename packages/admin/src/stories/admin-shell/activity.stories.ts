@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html'
 import { expect, waitFor } from 'storybook/test'
 
 import { button, createActor, heading, text } from '../../../.storybook/helpers'
-import { renderAdminHarness } from './boot'
+import { renderAdminHarness, waitForAdminHarnessReady } from './boot'
 import { mountCounterApplication } from './counter-ui'
 import {
   getAdminText,
@@ -35,6 +35,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   name: 'Counter activity smoke',
   play: async () => {
+    await waitForAdminHarnessReady()
     await I.see(heading('Counter demo').wait())
     await waitFor(() => {
       expect(getAdminText()).toContain('Reatom Admin')
@@ -72,6 +73,7 @@ export const ActivityVisualReference: Story = {
   name: 'Counter activity visual reference',
   tags: ['@visual'],
   play: async () => {
+    await waitForAdminHarnessReady()
     await I.see(heading('Counter demo').wait())
     await startFreshAdminSession()
 

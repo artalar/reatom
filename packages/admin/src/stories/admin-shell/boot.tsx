@@ -19,6 +19,11 @@ export interface AdminHarnessOptions {
 }
 
 let persistentDevtools: PersistentDevtools | null = null
+let harnessReady: Promise<void> = Promise.resolve()
+
+export function waitForAdminHarnessReady(): Promise<void> {
+  return harnessReady
+}
 
 function getPersistentDevtools(
   options: AdminHarnessOptions,
@@ -67,7 +72,7 @@ export function renderAdminHarness(
   applicationRoot.id = applicationRootId
   storyRoot.append(applicationRoot)
 
-  void (async () => {
+  harnessReady = (async () => {
     const devtools = getPersistentDevtools(options)
     resetPersistentAdminState(devtools)
     setCurrentDevtools(devtools)

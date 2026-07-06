@@ -3,7 +3,7 @@ import { mswLoader } from 'msw-storybook-addon'
 import { expect, waitFor } from 'storybook/test'
 
 import { button, createActor, heading, role } from '../../../.storybook/helpers'
-import { refreshGithubStarsRequest, renderXoHarness } from './boot'
+import { refreshGithubStarsRequest, renderXoHarness, waitForXoHarnessReady } from './boot'
 import { githubStars } from './mocks/handlers'
 import {
   clickAdminButton,
@@ -59,6 +59,7 @@ export const WinningDebuggingJourney: Story = {
   name: 'Winning debugging journey',
   tags: ['@smoke', '@visual'],
   play: async () => {
+    await waitForXoHarnessReady()
     await I.see(heading(/Tic-Tac-Toe/i).wait())
     await I.see(role('group', 'Tic-tac-toe board'))
     await waitFor(() => {
@@ -162,6 +163,7 @@ export const GithubStarsFetchFailure: Story = {
     },
   },
   play: async () => {
+    await waitForXoHarnessReady()
     await I.see(heading(/Tic-Tac-Toe/i).wait())
     await I.see(role('group', 'Tic-tac-toe board'))
     await waitFor(() => {

@@ -45,6 +45,11 @@ async function bootXoApplication(target: HTMLElement): Promise<() => void> {
 }
 
 let persistentDevtools: PersistentDevtools | null = null
+let harnessReady: Promise<void> = Promise.resolve()
+
+export function waitForXoHarnessReady(): Promise<void> {
+  return harnessReady
+}
 
 function getPersistentDevtools(): PersistentDevtools {
   if (persistentDevtools) return persistentDevtools
@@ -95,7 +100,7 @@ export function renderXoHarness(): HTMLDivElement {
   applicationRoot.id = 'app'
   storyRoot.append(applicationRoot)
 
-  void (async () => {
+  harnessReady = (async () => {
     const restoreEnvironment = installEnvironmentMocks()
     const devtools = getPersistentDevtools()
     resetPersistentAdminState(devtools)

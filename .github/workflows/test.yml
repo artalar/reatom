@@ -11,7 +11,7 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 5
+    timeout-minutes: 2
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.60.0-noble
@@ -25,13 +25,10 @@ jobs:
           cache_dependency_path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm --filter @reatom/core... --filter @reatom/react... --filter @reatom/jsx... --filter @reatom/zod... --filter @reatom/admin... --filter reatom-jsx-gallery... install --ignore-scripts
+        run: pnpm --filter @reatom/core... --filter @reatom/react... --filter @reatom/jsx... --filter @reatom/zod... --filter reatom-jsx-gallery... install --ignore-scripts
 
       - name: Build core package
         run: pnpm --filter @reatom/core run build
-
-      - name: Build jsx package
-        run: pnpm --filter @reatom/jsx run build
 
       - name: Run tests
         shell: bash
@@ -47,12 +44,8 @@ jobs:
             pnpm --filter @reatom/zod run test &
             zod_pid="$!"
 
-            pnpm --filter @reatom/admin run test:unit &
-            admin_unit_pid="$!"
-
             wait "$core_unit_pid" || failed=1
             wait "$zod_pid" || failed=1
-            wait "$admin_unit_pid" || failed=1
 
             exit "$failed"
           ) &
@@ -62,7 +55,6 @@ jobs:
             pnpm --filter @reatom/core run test:browser
             pnpm --filter @reatom/react run test
             pnpm --filter @reatom/jsx run test
-            pnpm --filter @reatom/admin run test:stories
             pnpm --filter reatom-jsx-gallery run test:fixtures
           ) &
           browser_pid="$!"

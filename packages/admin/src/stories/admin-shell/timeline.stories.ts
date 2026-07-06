@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html'
 import { expect, waitFor } from 'storybook/test'
 
 import { button, createActor, heading } from '../../../.storybook/helpers'
-import { renderAdminHarness } from './boot'
+import { renderAdminHarness, waitForAdminHarnessReady } from './boot'
 import { mountCounterApplication } from './counter-ui'
 import {
   getAdminText,
@@ -36,6 +36,7 @@ export const TimelineJourney: Story = {
   name: 'Counter timeline journey',
   tags: ['@smoke'],
   play: async () => {
+    await waitForAdminHarnessReady()
     await I.see(heading('Counter demo').wait())
     await startFreshAdminSession()
 
@@ -62,6 +63,7 @@ export const TimelineVisualReference: Story = {
   name: 'Timeline visual reference',
   tags: ['@visual'],
   play: async () => {
+    await waitForAdminHarnessReady()
     await I.see(heading('Counter demo').wait())
     await startFreshAdminSession()
 
