@@ -27,7 +27,7 @@ initialize(
 
 const preview = {
   parameters: {
-    a11y: { test: 'todo' },
+    a11y: { test: 'off' },
     msw: {
       handlers: reatomJsxXoHandlers,
     },

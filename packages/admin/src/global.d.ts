@@ -5,6 +5,9 @@ declare module '@reatom/core' {
 declare global {
   interface ImportMetaEnv {
     readonly BASE_URL: string
+    readonly DEV: boolean
+    readonly MODE: string
+    readonly PROD: boolean
     readonly RECORD_VIDEO: boolean
     readonly VITEST?: boolean
   }

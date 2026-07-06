@@ -175,5 +175,13 @@ The package is designed to be tested with realistic user scenarios:
 pnpm --filter @reatom/admin storybook
 pnpm --filter @reatom/admin test:unit
 pnpm --filter @reatom/admin test:stories
+pnpm --filter @reatom/admin test:stories:smoke
+pnpm --filter @reatom/admin test:stories:visual
 pnpm --filter @reatom/admin test
 ```
+
+## Multi-agent workflow
+
+Parallel agent sessions coordinate through [`workflow/README.md`](workflow/README.md)
+and [`workflow/backlog.yaml`](workflow/backlog.yaml). Every feature follows
+Storybook e2e TDD with programmatic assertions and visual screenshot baselines.
