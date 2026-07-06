@@ -4,7 +4,9 @@ export function isActionFrame(frame: AdminFrame): boolean {
   return frame.params !== undefined
 }
 
-export function getFrameExportPayload(frame: AdminFrame): Record<string, unknown> {
+export function getFrameExportPayload(
+  frame: AdminFrame,
+): Record<string, unknown> {
   const payload: Record<string, unknown> = {
     state: frame.state,
   }
