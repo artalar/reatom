@@ -103,9 +103,9 @@ test('chartBuckets hide empty buckets and auto-fit keeps short sessions readable
     expect(timeline.sessionSummary().frameCount).toBe(5)
     expect(timeline.sessionSummary().burstCount).toBe(5)
     expect(timeline.chartBuckets().length).toBeLessThanOrEqual(10)
-    expect(timeline.chartBuckets().every((bucket) => bucket.entries.length > 0)).toBe(
-      true,
-    )
+    expect(
+      timeline.chartBuckets().every((bucket) => bucket.entries.length > 0),
+    ).toBe(true)
   })
 })
 
