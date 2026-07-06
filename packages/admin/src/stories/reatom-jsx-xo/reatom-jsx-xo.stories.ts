@@ -21,6 +21,7 @@ import {
   showOnlyAdminErrors,
   startFreshAdminSession,
 } from './testing'
+import { navigateAdminRoute } from '../../testing/admin-navigation'
 import { matchAdminScreenshot } from '../../testing/visual'
 const I = createActor()
 
@@ -152,6 +153,37 @@ export const WinningDebuggingJourney: Story = {
     })
 
     await matchAdminScreenshot('xo-winning-debug-reference')
+    await pauseAdminCapture()
+  },
+}
+
+export const TimelineAfterWinningGame: Story = {
+  name: 'XO timeline after winning game',
+  tags: ['@smoke'],
+  play: async () => {
+    await waitForXoHarnessReady()
+    await I.see(heading(/Tic-Tac-Toe/i).wait())
+    await startFreshAdminSession()
+
+    for (const cellLabel of winningMoveLabels) {
+      await I.click(button(cellLabel))
+    }
+
+    await waitFor(() => {
+      expect(getVisibleLogs().length).toBeGreaterThan(0)
+    })
+
+    await navigateAdminRoute('Timeline')
+
+    await waitFor(() => {
+      const adminText = getAdminText()
+      expect(adminText).toContain('Session activity')
+      expect(adminText).toContain('frames')
+      expect(adminText).toContain('Event list')
+      expect(adminText).not.toContain('No timeline yet')
+    })
+
+    await matchAdminScreenshot('xo-timeline-reference')
     await pauseAdminCapture()
   },
 }

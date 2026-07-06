@@ -1,5 +1,7 @@
+import { atom } from '@reatom/core'
+
 import type { Admin } from '../../index'
-import type { TimeBucket } from '../../timeline'
+import type { AdminFrame } from '../../types'
 import { formatPreview, formatTimestamp } from '../format'
 import {
   buttonGhost,
@@ -14,14 +16,18 @@ import {
 
 export interface TimelineSelectionPanelProps {
   admin: Admin
-  bucket: TimeBucket | null
+  frames: Array<AdminFrame>
+  title: string
+  timeLabel: string | null
 }
 
 export const TimelineSelectionPanel = ({
   admin,
-  bucket,
+  frames,
+  title,
+  timeLabel,
 }: TimelineSelectionPanelProps) => {
-  if (!bucket) {
+  if (frames.length === 0) {
     return (
       <div
         css={`
@@ -29,7 +35,8 @@ export const TimelineSelectionPanel = ({
           font-size: 0.8rem;
         `}
       >
-        Click a bucket to focus the frames captured during that time window.
+        Select a burst in the chart or event list to inspect the frames captured
+        during that moment.
       </div>
     )
   }
@@ -47,7 +54,7 @@ export const TimelineSelectionPanel = ({
           ${panelTitle}
         `}
       >
-        Bucket focus
+        {title}
       </h3>
       <div
         css={`
@@ -56,10 +63,8 @@ export const TimelineSelectionPanel = ({
           line-height: 1.5;
         `}
       >
-        <div>
-          {formatTimestamp(bucket.start)} → {formatTimestamp(bucket.end)}
-        </div>
-        <div>{bucket.entries.length} frame(s) captured</div>
+        {timeLabel && <div>{timeLabel}</div>}
+        <div>{frames.length} frame(s) captured</div>
       </div>
 
       <div
@@ -72,7 +77,7 @@ export const TimelineSelectionPanel = ({
           padding-right: 0.15rem;
         `}
       >
-        {bucket.entries.map((frame) => {
+        {frames.map((frame) => {
           const atomName =
             admin.store.getAtoms().get(frame.atomId)?.name ?? frame.atomId
 
@@ -126,4 +131,15 @@ export const TimelineSelectionPanel = ({
       </div>
     </div>
   )
+}
+
+export function formatTimelineSelectionTime(
+  start: number,
+  end: number,
+): string {
+  if (start === end) {
+    return formatTimestamp(start)
+  }
+
+  return `${formatTimestamp(start)} → ${formatTimestamp(end)}`
 }
