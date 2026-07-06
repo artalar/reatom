@@ -1,9 +1,8 @@
 import { currentDevtools } from './storybook-runtime'
 
 async function stabilizeAdminShell(): Promise<void> {
-  const { getAdminText, pauseAdminCapture } = await import(
-    '../stories/reatom-jsx-xo/testing'
-  )
+  const { getAdminText, pauseAdminCapture } =
+    await import('../stories/reatom-jsx-xo/testing')
 
   if (!getAdminText().includes('Recording paused')) {
     await pauseAdminCapture()
@@ -66,10 +65,7 @@ export async function matchAdminScreenshot(
   screenshotName: string,
 ): Promise<void> {
   await stabilizeAdminShell()
-  await matchElementScreenshot(
-    getAdminVisualSnapshotTarget(),
-    screenshotName,
-  )
+  await matchElementScreenshot(getAdminVisualSnapshotTarget(), screenshotName)
 }
 
 export async function matchStoryRootScreenshot(

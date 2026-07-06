@@ -36,14 +36,14 @@ flowchart TD
 
 ## Agent roles
 
-| Role | Owns | Delivers | Must not |
-|------|------|----------|----------|
-| **Orchestrator** | backlog priority, session assignment, cancellation | updated `backlog.yaml`, unblock decisions | implement features directly |
-| **Explorer** | codebase + product gap research | findings, story proposals | large refactors |
-| **Test Author** | Storybook journeys (red phase) | failing `play` / `.test()` + `@visual` story stub | hide domain logic in shared helpers |
-| **Implementer** | admin runtime + UI (green phase) | minimal fix to pass stories | skip visual validation |
-| **Visual QA** | screenshot baselines + flake control | stable `@visual` baselines, viewport notes | change product behavior without test author |
-| **Reviewer** | Reatom conventions + scope | review notes, merge recommendation | rewrite unrelated code |
+| Role             | Owns                                               | Delivers                                          | Must not                                    |
+| ---------------- | -------------------------------------------------- | ------------------------------------------------- | ------------------------------------------- |
+| **Orchestrator** | backlog priority, session assignment, cancellation | updated `backlog.yaml`, unblock decisions         | implement features directly                 |
+| **Explorer**     | codebase + product gap research                    | findings, story proposals                         | large refactors                             |
+| **Test Author**  | Storybook journeys (red phase)                     | failing `play` / `.test()` + `@visual` story stub | hide domain logic in shared helpers         |
+| **Implementer**  | admin runtime + UI (green phase)                   | minimal fix to pass stories                       | skip visual validation                      |
+| **Visual QA**    | screenshot baselines + flake control               | stable `@visual` baselines, viewport notes        | change product behavior without test author |
+| **Reviewer**     | Reatom conventions + scope                         | review notes, merge recommendation                | rewrite unrelated code                      |
 
 Role briefs: [`workflow/roles/`](roles/).
 
@@ -67,12 +67,12 @@ Every task follows **Storybook e2e TDD**:
 
 ## Test tiers
 
-| Tier | Command | Gate |
-|------|---------|------|
-| Unit | `pnpm test:unit` | every PR |
-| Smoke stories | `pnpm test:stories:smoke` | every PR |
-| Full stories | `pnpm test:stories` | main / labeled PRs |
-| Visual | `pnpm test:stories:visual` | main + before release |
+| Tier          | Command                    | Gate                  |
+| ------------- | -------------------------- | --------------------- |
+| Unit          | `pnpm test:unit`           | every PR              |
+| Smoke stories | `pnpm test:stories:smoke`  | every PR              |
+| Full stories  | `pnpm test:stories`        | main / labeled PRs    |
+| Visual        | `pnpm test:stories:visual` | main + before release |
 
 Tags:
 
@@ -107,13 +107,13 @@ Before ending a session, leave:
 
 ### 4. Anti-stuck rules
 
-| Signal | Action |
-|--------|--------|
-| Same task `in_progress` > 2 iterations with no new failing test | **Cancel** implementation attempt; Test Author narrows story |
-| Flaky screenshot 3 times | Visual QA stabilizes viewport/timing; do not weaken assertions |
-| Blocked dependency | Orchestrator spawns Explorer on blocker or splits task |
-| Scope explosion | Orchestrator splits task; mark original `cancelled` with reason |
-| Infra failure (vite, playwright, CI) | Tag `infra`, priority **P0**, all feature work pauses |
+| Signal                                                          | Action                                                          |
+| --------------------------------------------------------------- | --------------------------------------------------------------- |
+| Same task `in_progress` > 2 iterations with no new failing test | **Cancel** implementation attempt; Test Author narrows story    |
+| Flaky screenshot 3 times                                        | Visual QA stabilizes viewport/timing; do not weaken assertions  |
+| Blocked dependency                                              | Orchestrator spawns Explorer on blocker or splits task          |
+| Scope explosion                                                 | Orchestrator splits task; mark original `cancelled` with reason |
+| Infra failure (vite, playwright, CI)                            | Tag `infra`, priority **P0**, all feature work pauses           |
 
 ### 5. Cancellation policy
 
@@ -127,26 +127,26 @@ Always record `cancel_reason` in backlog.
 
 ## Priority model
 
-| Priority | Meaning | Examples |
-|----------|---------|----------|
-| **P0** | Blocks all testing / CI | missing deps, storybook won't start |
-| **P1** | Core product journeys | Activity, Timeline, Replay |
-| **P2** | Secondary workspaces | Graph, Filters studio |
-| **P3** | Polish | mobile variants, a11y enforcement |
+| Priority | Meaning                 | Examples                            |
+| -------- | ----------------------- | ----------------------------------- |
+| **P0**   | Blocks all testing / CI | missing deps, storybook won't start |
+| **P1**   | Core product journeys   | Activity, Timeline, Replay          |
+| **P2**   | Secondary workspaces    | Graph, Filters studio               |
+| **P3**   | Polish                  | mobile variants, a11y enforcement   |
 
 Orchestrator may promote/demote based on release goals.
 
 ## File map
 
-| Path | Purpose |
-|------|---------|
-| `workflow/backlog.yaml` | Single source of truth for tasks |
-| `workflow/roles/*.md` | Role instructions for agent sessions |
-| `src/testing/visual.ts` | Screenshot helpers |
-| `src/testing/admin-navigation.ts` | Shadow-DOM route navigation |
-| `src/stories/admin-shell/` | Minimal fixture journeys |
-| `src/stories/reatom-jsx-xo/` | Full integration app |
-| `.storybook/README.md` | Actor + locator conventions |
+| Path                              | Purpose                              |
+| --------------------------------- | ------------------------------------ |
+| `workflow/backlog.yaml`           | Single source of truth for tasks     |
+| `workflow/roles/*.md`             | Role instructions for agent sessions |
+| `src/testing/visual.ts`           | Screenshot helpers                   |
+| `src/testing/admin-navigation.ts` | Shadow-DOM route navigation          |
+| `src/stories/admin-shell/`        | Minimal fixture journeys             |
+| `src/stories/reatom-jsx-xo/`      | Full integration app                 |
+| `.storybook/README.md`            | Actor + locator conventions          |
 
 ## CI expectations
 
@@ -177,13 +177,13 @@ pnpm test:stories:watch # TDD loop
 
 ## Current baseline coverage
 
-| Area | Unit | Smoke story | Visual |
-|------|------|-------------|--------|
-| Reporter / store / filters | yes | partial (XO) | no |
-| Activity / Log | yes | counter + XO | counter activity |
-| Timeline | yes | counter journey | counter timeline |
-| Cause graph | yes | no | no |
-| Filter studio | yes | no | no |
-| Replay import/export | yes | no | no |
+| Area                       | Unit | Smoke story     | Visual           |
+| -------------------------- | ---- | --------------- | ---------------- |
+| Reporter / store / filters | yes  | partial (XO)    | no               |
+| Activity / Log             | yes  | counter + XO    | counter activity |
+| Timeline                   | yes  | counter journey | counter timeline |
+| Cause graph                | yes  | no              | no               |
+| Filter studio              | yes  | no              | no               |
+| Replay import/export       | yes  | no              | no               |
 
 See `workflow/backlog.yaml` for the full remaining queue.

@@ -1,6 +1,11 @@
 import { expect, waitFor } from 'storybook/test'
 
-import { clickAdminButton, getAdminButton, getAdminShadowRoot, getAdminText } from '../stories/reatom-jsx-xo/testing'
+import {
+  clickAdminButton,
+  getAdminButton,
+  getAdminShadowRoot,
+  getAdminText,
+} from '../stories/reatom-jsx-xo/testing'
 
 export type AdminRouteLabel = 'Activity' | 'Timeline' | 'Graph' | 'Filters'
 
