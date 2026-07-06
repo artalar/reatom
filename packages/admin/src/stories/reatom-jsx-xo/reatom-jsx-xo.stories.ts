@@ -3,7 +3,11 @@ import { mswLoader } from 'msw-storybook-addon'
 import { expect, waitFor } from 'storybook/test'
 
 import { button, createActor, heading, role } from '../../../.storybook/helpers'
-import { refreshGithubStarsRequest, renderXoHarness, waitForXoHarnessReady } from './boot'
+import {
+  refreshGithubStarsRequest,
+  renderXoHarness,
+  waitForXoHarnessReady,
+} from './boot'
 import { githubStars } from './mocks/handlers'
 import {
   clickAdminButton,
