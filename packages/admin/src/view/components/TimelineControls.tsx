@@ -1,5 +1,5 @@
 import type { Admin } from '../../index'
-import { buttonGhost, colors, flex, flexWrap, gap, inputLike } from '../styles'
+import { buttonGhost, colors, flex, flexWrap, gap, hideInCompactShell, inputLike } from '../styles'
 
 export interface TimelineControlsProps {
   admin: Admin
@@ -13,6 +13,12 @@ export const TimelineControls = ({ admin }: TimelineControlsProps) => {
         ${gap(2)}
         ${flexWrap}
         align-items: end;
+
+        @container admin-shell (max-width: 680px) {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.65rem;
+        }
       `}
     >
       <label
@@ -72,6 +78,11 @@ export const TimelineControls = ({ admin }: TimelineControlsProps) => {
           color: ${colors.textMuted};
           font-size: 0.76rem;
           min-width: 14rem;
+
+          @container admin-shell (max-width: 680px) {
+            min-width: 0;
+            width: 100%;
+          }
         `}
       >
         Offset
@@ -93,7 +104,14 @@ export const TimelineControls = ({ admin }: TimelineControlsProps) => {
 
       <button
         type="button"
-        css={buttonGhost}
+        css={`
+          ${buttonGhost}
+
+          @container admin-shell (max-width: 680px) {
+            grid-column: 1 / -1;
+            justify-self: start;
+          }
+        `}
         on:click={() => {
           admin.timeline.bucketSize.set(100)
           admin.timeline.zoom.set(1)

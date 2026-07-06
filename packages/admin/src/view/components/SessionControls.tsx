@@ -1,6 +1,6 @@
 import type { Admin } from '../../index'
 import type { AdminAtom, AdminFrame, AdminSession } from '../../types'
-import { buttonBase, buttonGhost, colors } from '../styles'
+import { buttonBase, buttonGhost } from '../styles'
 
 export interface SessionControlsProps {
   admin: Admin
@@ -72,18 +72,10 @@ export const SessionControls = ({ admin }: SessionControlsProps) => {
     <div
       css={`
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, max-content));
+        grid-template-columns: repeat(auto-fit, minmax(8.5rem, max-content));
         gap: 0.5rem;
         align-items: center;
         justify-content: start;
-
-        @media (max-width: 520px) {
-          grid-template-columns: repeat(2, minmax(0, max-content));
-        }
-
-        @media (max-width: 420px) {
-          grid-template-columns: minmax(0, max-content);
-        }
       `}
     >
       <button
@@ -134,28 +126,32 @@ export const SessionControls = ({ admin }: SessionControlsProps) => {
         Export session
       </button>
 
-      <label
-        for={inputId}
-        css={`
-          ${secondaryControlButton}
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          color: ${colors.text};
-        `}
+      <button
+        type="button"
+        css={secondaryControlButton}
+        on:click={() => {
+          const fileInput = document.getElementById(inputId)
+          if (fileInput instanceof HTMLInputElement) {
+            fileInput.click()
+          }
+        }}
       >
         Import replay
-      </label>
+      </button>
       <input
         id={inputId}
         type="file"
         accept="application/json"
         css={`
           position: absolute;
-          opacity: 0;
-          pointer-events: none;
           width: 1px;
           height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
         `}
         on:change={(event: Event) => {
           const target = event.currentTarget

@@ -11,7 +11,6 @@ import {
   gap,
   p,
   panelTitle,
-  scrollable,
 } from '../styles'
 
 export interface LogScreenProps {
@@ -35,11 +34,18 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
     <div
       css={`
         display: grid;
-        gap: 1rem;
+        gap: 0.85rem;
         min-height: 0;
       `}
     >
-      <FilterBar admin={admin} />
+      <section
+        css={`
+          ${card}
+          overflow: hidden;
+        `}
+      >
+        <FilterBar admin={admin} />
+      </section>
       <div
         css={`
           display: grid;
@@ -48,8 +54,9 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
           min-height: 0;
           align-items: start;
 
-          @media (max-width: 1100px) {
+          @container admin-shell (max-width: 680px) {
             grid-template-columns: minmax(0, 1fr);
+            gap: 0.85rem;
           }
         `}
       >
@@ -60,15 +67,8 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
             ${p(2)}
             display: grid;
             gap: 0.85rem;
-            ${scrollable}
             min-width: 0;
-            min-height: 15rem;
-            max-height: 30rem;
             align-self: start;
-
-            @media (max-width: 1100px) {
-              max-height: 24rem;
-            }
           `}
         >
           <div

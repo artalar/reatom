@@ -4,9 +4,11 @@ import {
   badge,
   card,
   colors,
+  compactPanelPadding,
   flex,
   flexWrap,
   gap,
+  hideInCompactShell,
   p,
   panelTitle,
 } from '../styles'
@@ -27,8 +29,13 @@ export const HeaderBar = ({ admin }: HeaderBarProps) => {
       css={`
         ${card}
         ${p(3)}
+        ${compactPanelPadding}
         display: grid;
         gap: 1rem;
+
+        @container admin-shell (max-width: 680px) {
+          gap: 0.65rem;
+        }
       `}
     >
       <div
@@ -65,12 +72,18 @@ export const HeaderBar = ({ admin }: HeaderBarProps) => {
               ${panelTitle}
               margin-top: 0.75rem;
               font-size: 1.25rem;
+
+              @container admin-shell (max-width: 680px) {
+                margin-top: 0.45rem;
+                font-size: 1.05rem;
+              }
             `}
           >
             Reatom Admin
           </h1>
           <p
             css={`
+              ${hideInCompactShell}
               margin: 0.4rem 0 0;
               color: ${colors.textMuted};
               line-height: 1.5;
@@ -88,6 +101,11 @@ export const HeaderBar = ({ admin }: HeaderBarProps) => {
             display: grid;
             gap: 0.6rem;
             justify-items: end;
+
+            @container admin-shell (max-width: 680px) {
+              justify-items: start;
+              gap: 0.35rem;
+            }
           `}
         >
           {() => {
@@ -110,6 +128,7 @@ export const HeaderBar = ({ admin }: HeaderBarProps) => {
           <div
             data-testid="header-session-meta"
             css={`
+              ${hideInCompactShell}
               color: ${colors.textMuted};
               font-size: 0.72rem;
               text-align: right;

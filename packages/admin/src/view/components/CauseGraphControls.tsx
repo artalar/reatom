@@ -17,6 +17,12 @@ export const CauseGraphControls = ({ admin }: CauseGraphControlsProps) => {
         ${gap(2)}
         ${flexWrap}
         align-items: end;
+
+        @container admin-shell (max-width: 680px) {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: 0.65rem;
+        }
       `}
     >
       <label
@@ -56,6 +62,11 @@ export const CauseGraphControls = ({ admin }: CauseGraphControlsProps) => {
           color: ${colors.textMuted};
           font-size: 0.76rem;
           min-width: 16rem;
+
+          @container admin-shell (max-width: 680px) {
+            min-width: 0;
+            width: 100%;
+          }
         `}
       >
         Find path from

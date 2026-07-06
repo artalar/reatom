@@ -7,6 +7,7 @@ import {
   flex,
   flexWrap,
   gap,
+  hideInCompactShell,
   p,
   rounded,
 } from '../styles'
@@ -94,9 +95,20 @@ export const SummaryCards = ({ admin }: SummaryCardsProps) => {
   return (
     <div
       css={`
-        ${flex}
-        ${gap(2)}
-        ${flexWrap}
+        display: flex;
+        gap: 0.65rem;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        padding-bottom: 0.15rem;
+        scrollbar-width: thin;
+
+        @container admin-shell (min-width: 681px) {
+          ${flex}
+          ${gap(2)}
+          ${flexWrap}
+          overflow-x: visible;
+          padding-bottom: 0;
+        }
       `}
     >
       {() =>
@@ -109,6 +121,12 @@ export const SummaryCards = ({ admin }: SummaryCardsProps) => {
                 ${p(2)}
                 min-width: 9rem;
                 flex: 1 1 10rem;
+
+                @container admin-shell (max-width: 680px) {
+                  min-width: 5.75rem;
+                  flex: 0 0 auto;
+                  padding: 0.55rem 0.65rem;
+                }
               `}
             >
               <div
@@ -118,6 +136,12 @@ export const SummaryCards = ({ admin }: SummaryCardsProps) => {
                   background: ${toneColors.background};
                   border-color: ${toneColors.borderColor};
                   color: ${toneColors.textColor};
+
+                  @container admin-shell (max-width: 680px) {
+                    font-size: 0.62rem;
+                    padding-inline: 0.35rem;
+                    padding-block: 0.25rem;
+                  }
                 `}
               >
                 {item.label}
@@ -128,12 +152,18 @@ export const SummaryCards = ({ admin }: SummaryCardsProps) => {
                   font-size: 1.2rem;
                   font-weight: 700;
                   color: ${colors.text};
+
+                  @container admin-shell (max-width: 680px) {
+                    margin-top: 0.35rem;
+                    font-size: 0.95rem;
+                  }
                 `}
               >
                 {item.value}
               </div>
               <div
                 css={`
+                  ${hideInCompactShell}
                   margin-top: 0.4rem;
                   ${rounded}
                   color: ${colors.textSubtle};

@@ -68,6 +68,11 @@ export const TimelineScreen = ({ admin }: TimelineScreenProps) => {
           grid-template-columns: minmax(0, 1.3fr) minmax(18rem, 24rem);
           gap: 1rem;
           align-items: start;
+
+          @container admin-shell (max-width: 680px) {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 0.85rem;
+          }
         `}
       >
         <section
@@ -100,6 +105,15 @@ export const TimelineScreen = ({ admin }: TimelineScreenProps) => {
             ${p(3)}
             display: grid;
             gap: 1rem;
+            min-width: 0;
+            max-height: 24rem;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+
+            @container admin-shell (min-width: 681px) {
+              max-height: none;
+              overflow-y: visible;
+            }
           `}
         >
           {() => <TimelineSelectionPanel admin={admin} bucket={selectedBucket()} />}

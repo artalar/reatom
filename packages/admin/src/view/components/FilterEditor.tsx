@@ -8,6 +8,7 @@ import {
   flex,
   flexWrap,
   gap,
+  hideInCompactShell,
   p,
   panelTitle,
 } from '../styles'
@@ -70,6 +71,7 @@ export const FilterEditor = ({ admin }: FilterEditorProps) => {
             </h3>
             <p
               css={`
+                ${hideInCompactShell}
                 margin: 0.4rem 0 0;
                 color: ${colors.textMuted};
                 line-height: 1.5;
@@ -85,6 +87,11 @@ export const FilterEditor = ({ admin }: FilterEditorProps) => {
               ${flex}
               ${gap(1)}
               ${flexWrap}
+              justify-content: flex-end;
+
+              @container admin-shell (max-width: 680px) {
+                justify-content: flex-start;
+              }
             `}
           >
             <div

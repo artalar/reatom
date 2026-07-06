@@ -114,3 +114,28 @@ export const panelTitle = `
   font-weight: 700;
   color: ${colors.text};
 `
+
+export const adminShellContainer = `
+  container-type: inline-size;
+  container-name: admin-shell;
+`
+
+export const compactPanelPadding = `
+  @container admin-shell (max-width: 680px) {
+    padding: 0.75rem;
+  }
+`
+
+export const hideInCompactShell = `
+  @container admin-shell (max-width: 680px) {
+    display: none;
+  }
+`
+
+export const compactOnlyShell = `
+  display: none;
+
+  @container admin-shell (max-width: 680px) {
+    display: inline-flex;
+  }
+`
