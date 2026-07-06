@@ -1,0 +1,172 @@
+version: 1
+product: '@reatom/admin'
+updated_at: '2026-07-06'
+
+# Status values: open | in_progress | blocked | done | cancelled
+# Priority: P0 (infra) | P1 (core journeys) | P2 (secondary) | P3 (polish)
+
+tasks:
+  - id: infra-deps
+    title: Restore vite + playwright devDependencies
+    priority: P0
+    role: implementer
+    status: done
+    blocked_by: []
+    acceptance:
+      - pnpm test:unit exits 0
+      - pnpm storybook starts
+    files:
+      - packages/admin/package.json
+
+  - id: infra-visual-harness
+    title: Add visual screenshot helpers and failure capture
+    priority: P0
+    role: implementer
+    status: done
+    blocked_by: []
+    acceptance:
+      - src/testing/visual.ts exports matchAdminScreenshot
+      - vitest setup captures screenshot on failure
+    files:
+      - packages/admin/src/testing/visual.ts
+      - packages/admin/.storybook/vitest.setup.ts
+
+  - id: infra-ci-admin
+    title: Wire @reatom/admin into GitHub Actions test workflow
+    priority: P0
+    role: implementer
+    status: done
+    blocked_by: []
+    acceptance:
+      - test.yml builds jsx and runs admin test suite
+    files:
+      - .github/workflows/test.yml
+
+  - id: story-counter-smoke
+    title: Counter fixture smoke journey on Activity workspace
+    priority: P1
+    role: test-author
+    status: done
+    blocked_by: [infra-deps]
+    tags: ['@smoke']
+    acceptance:
+      - Integration/Admin Shell/Counter Activity passes programmatic test
+    files:
+      - packages/admin/src/stories/admin-shell/activity.stories.ts
+
+  - id: story-counter-visual
+    title: Counter activity visual baseline
+    priority: P1
+    role: visual-qa
+    status: done
+    blocked_by: [story-counter-smoke]
+    tags: ['@visual']
+    acceptance:
+      - counter-activity-reference screenshot committed
+    files:
+      - packages/admin/src/stories/admin-shell/activity.stories.ts
+
+  - id: story-timeline-journey
+    title: Navigate to Timeline after generating frames
+    priority: P1
+    role: test-author
+    status: done
+    blocked_by: [story-counter-smoke]
+    tags: ['@smoke']
+    acceptance:
+      - Timeline journey story passes
+    files:
+      - packages/admin/src/stories/admin-shell/timeline.stories.ts
+
+  - id: story-timeline-visual
+    title: Timeline workspace visual baseline
+    priority: P1
+    role: visual-qa
+    status: done
+    blocked_by: [story-timeline-journey]
+    tags: ['@visual']
+    acceptance:
+      - counter-timeline-reference screenshot committed
+    files:
+      - packages/admin/src/stories/admin-shell/timeline.stories.ts
+
+  - id: story-xo-visual
+    title: Add visual baseline to XO winning debugging journey
+    priority: P2
+    role: visual-qa
+    status: done
+    notes: Visual capture merged into Winning debugging journey story
+    blocked_by: [infra-visual-harness]
+    tags: ['@visual']
+    acceptance:
+      - XO story captures admin shell after winning game
+    files:
+      - packages/admin/src/stories/reatom-jsx-xo/reatom-jsx-xo.stories.ts
+
+  - id: story-graph-journey
+    title: Cause graph workspace journey from selected frame
+    priority: P2
+    role: test-author
+    status: open
+    blocked_by: [story-counter-smoke]
+    acceptance:
+      - Navigate to Graph, change depth, select node
+    files:
+      - packages/admin/src/stories/admin-shell/graph.stories.ts
+
+  - id: story-filters-journey
+    title: Filter studio saved rule journey
+    priority: P2
+    role: test-author
+    status: open
+    blocked_by: [story-counter-smoke]
+    acceptance:
+      - Create predicate, save rule, verify feed filtering
+    files:
+      - packages/admin/src/stories/admin-shell/filters.stories.ts
+
+  - id: story-replay-journey
+    title: Export session and re-import as replay
+    priority: P1
+    role: test-author
+    status: open
+    blocked_by: [story-counter-smoke]
+    acceptance:
+      - Replay badge visible after import
+      - Activity feed remains inspectable
+    files:
+      - packages/admin/src/stories/admin-shell/replay.stories.ts
+
+  - id: story-mobile-matrix
+    title: Mobile viewport variants for smoke journeys
+    priority: P3
+    role: test-author
+    status: open
+    blocked_by: [story-counter-smoke, story-timeline-journey]
+    tags: ['@smoke']
+    acceptance:
+      - Default (Mobile) variants exist for counter + timeline
+    files:
+      - packages/admin/src/stories/admin-shell/
+
+  - id: a11y-enforcement
+    title: Enable Storybook a11y addon tests in CI
+    priority: P3
+    role: implementer
+    status: open
+    blocked_by: [infra-ci-admin]
+    acceptance:
+      - a11y test mode enabled for smoke stories
+    files:
+      - packages/admin/.storybook/preview.ts
+
+  - id: actor-nav-extend
+    title: Extend admin actor with route helpers (no domain logic)
+    priority: P2
+    role: implementer
+    status: done
+    blocked_by: []
+    acceptance:
+      - navigateAdminRoute helper exported
+    files:
+      - packages/admin/src/testing/admin-navigation.ts

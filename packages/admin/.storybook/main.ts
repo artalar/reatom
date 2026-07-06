@@ -7,9 +7,9 @@ import type { InlineConfig } from 'vite'
 const dir = dirname(fileURLToPath(import.meta.url))
 
 const config: StorybookConfig = {
-  stories: ['../src/stories/**/*.stories.ts'],
+  stories: ['../src/stories/**/*.stories.@(ts|tsx)'],
   staticDirs: ['../public'],
-  addons: ['@storybook/addon-vitest'],
+  addons: ['@storybook/addon-vitest', '@storybook/addon-a11y'],
   framework: '@storybook/html-vite',
   async viteFinal(config: InlineConfig) {
     const { mergeConfig } = await import('vite')

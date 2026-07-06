@@ -23,6 +23,10 @@
     "test": "pnpm test:unit && pnpm test:stories",
     "test:unit": "vitest run --project=@reatom/admin",
     "test:stories": "vitest run --project=storybook",
+    "test:stories:smoke": "vitest run --project=storybook --grep @smoke",
+    "test:stories:visual": "vitest run --project=storybook --grep @visual",
+    "test:stories:watch": "vitest --project=storybook",
+    "typecheck": "tsc --noEmit",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -75,19 +79,22 @@
     "/dist"
   ],
   "devDependencies": {
-    "@storybook/addon-vitest": "^10.4.1",
-    "@storybook/html": "^10.4.1",
-    "@storybook/html-vite": "^10.4.1",
+    "@storybook/addon-a11y": "^10.4.6",
+    "@storybook/addon-vitest": "^10.4.6",
+    "@storybook/html": "^10.4.6",
+    "@storybook/html-vite": "^10.4.6",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "@vitest/browser": "catalog:",
     "@vitest/browser-playwright": "catalog:",
     "@vitest/ui": "catalog:",
     "eslint-plugin-simple-import-sort": "catalog:",
+    "playwright": "catalog:",
     "msw": "^2.12.13",
     "msw-storybook-addon": "^2.0.7",
-    "storybook": "^10.4.1",
+    "storybook": "^10.4.6",
     "tsdown": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:"
   }
 }

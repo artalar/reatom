@@ -12,6 +12,7 @@ export const AppShell = ({ admin }: AppShellProps) => {
   return (
     <div
       data-reatom-name="AppShell"
+      data-testid="admin-visual-snapshot"
       css={`
         height: 100%;
         min-height: 0;

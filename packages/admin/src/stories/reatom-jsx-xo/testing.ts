@@ -122,14 +122,34 @@ export function getAdminFrameDetail(): ParsedFrameDetail | null {
   return parseFrameDetail(getAdminShadowRoot())
 }
 
-export async function startFreshAdminSession(): Promise<void> {
-  await clickAdminButton(/Start fresh session/i)
+export async function resumeAdminCapture(): Promise<void> {
+  await clickAdminButton(/Resume capture/i)
   await waitFor(() => {
-    expect(getLogItems(getAdminShadowRoot())).toHaveLength(0)
+    expect(getAdminText()).not.toContain('Recording paused')
   })
 }
 
+export async function startFreshAdminSession(): Promise<void> {
+  const capturePaused = getAdminText().includes('Recording paused')
+
+  if (!capturePaused) {
+    await pauseAdminCapture()
+  }
+
+  await clickAdminButton(/Start fresh session/i)
+
+  await waitFor(() => {
+    expect(getLogItems(getAdminShadowRoot())).toHaveLength(0)
+  })
+
+  await resumeAdminCapture()
+}
+
 export async function pauseAdminCapture(): Promise<void> {
+  if (getAdminText().includes('Recording paused')) {
+    return
+  }
+
   await clickAdminButton(/Pause capture/i)
   await waitFor(() => {
     expect(getAdminText()).toContain('Recording paused')
