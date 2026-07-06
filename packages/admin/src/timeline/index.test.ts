@@ -58,6 +58,30 @@ test('zoom changes bucket granularity', () => {
   })
 })
 
+test('offset filters visible buckets to the panned time window', () => {
+  const framesAtom = atom([
+    makeFrame({ id: 1, timestamp: 0 }),
+    makeFrame({ id: 2, timestamp: 100 }),
+    makeFrame({ id: 3, timestamp: 200 }),
+    makeFrame({ id: 4, timestamp: 300 }),
+  ])
+  const timeline = ADMIN_FRAME.run(() =>
+    createTimelineManager({ frames: () => framesAtom() }),
+  )
+
+  ADMIN_FRAME.run(() => {
+    timeline.bucketSize.set(100)
+    timeline.zoom.set(1)
+    timeline.offset.set(0)
+    expect(timeline.visibleBuckets().length).toBe(timeline.buckets().length)
+
+    timeline.offset.set(0.5)
+    expect(timeline.visibleBuckets().length).toBeLessThan(
+      timeline.buckets().length,
+    )
+  })
+})
+
 test('frameGroups clusters by timestamp', () => {
   const framesAtom = atom([
     makeFrame({ id: 1, timestamp: 100 }),

@@ -1,7 +1,16 @@
 import type { Admin } from '../../index'
 import type { TimeBucket } from '../../timeline'
 import { formatPreview, formatTimestamp } from '../format'
-import { buttonGhost, colors, flex, gap, mono, panelTitle, rounded } from '../styles'
+import {
+  buttonGhost,
+  colors,
+  flex,
+  gap,
+  mono,
+  panelTitle,
+  rounded,
+  scrollable,
+} from '../styles'
 
 export interface TimelineSelectionPanelProps {
   admin: Admin
@@ -30,6 +39,7 @@ export const TimelineSelectionPanel = ({
       css={`
         display: grid;
         gap: 0.75rem;
+        min-height: 0;
       `}
     >
       <h3
@@ -52,55 +62,68 @@ export const TimelineSelectionPanel = ({
         <div>{bucket.entries.length} frame(s) captured</div>
       </div>
 
-      {bucket.entries.map((frame) => {
-        const atomName =
-          admin.store.getAtoms().get(frame.atomId)?.name ?? frame.atomId
+      <div
+        css={`
+          ${scrollable}
+          display: grid;
+          gap: 0.55rem;
+          max-height: min(18rem, 42vh);
+          overscroll-behavior: contain;
+          padding-right: 0.15rem;
+        `}
+      >
+        {bucket.entries.map((frame) => {
+          const atomName =
+            admin.store.getAtoms().get(frame.atomId)?.name ?? frame.atomId
 
-        return (
-          <button
-            type="button"
-            css={buttonGhost}
-            on:click={() => {
-              admin.store.selectFrame(frame.id)
-              admin.causeGraph.selectedRootId.set(frame.id)
-            }}
-          >
-            <div
-              css={`
-                ${flex}
-                ${gap(1)}
-                justify-content: space-between;
-                align-items: center;
-              `}
+          return (
+            <button
+              type="button"
+              css={buttonGhost}
+              on:click={() => {
+                admin.store.selectFrame(frame.id)
+                admin.causeGraph.selectedRootId.set(frame.id)
+              }}
             >
-              <strong>{atomName}</strong>
-              <span
+              <div
                 css={`
-                  color: ${colors.textSubtle};
-                  font-size: 0.7rem;
+                  ${flex}
+                  ${gap(1)}
+                  justify-content: space-between;
+                  align-items: center;
                 `}
               >
-                #{frame.id}
-              </span>
-            </div>
-            <div
-              css={`
-                ${mono}
-                ${rounded}
-                margin-top: 0.45rem;
-                padding: 0.4rem 0.5rem;
-                background: ${colors.bgElevated};
-                border: 1px solid ${colors.border};
-                color: ${colors.textMuted};
-                white-space: pre-wrap;
-                word-break: break-word;
-              `}
-            >
-              {formatPreview(frame.state)}
-            </div>
-          </button>
-        )
-      })}
+                <strong>{atomName}</strong>
+                <span
+                  css={`
+                    color: ${colors.textSubtle};
+                    font-size: 0.7rem;
+                  `}
+                >
+                  #{frame.id}
+                </span>
+              </div>
+              <div
+                css={`
+                  ${mono}
+                  ${rounded}
+                  margin-top: 0.45rem;
+                  padding: 0.4rem 0.5rem;
+                  background: ${colors.bgElevated};
+                  border: 1px solid ${colors.border};
+                  color: ${colors.textMuted};
+                  white-space: pre-wrap;
+                  word-break: break-word;
+                `}
+              >
+                {formatPreview(
+                  frame.params !== undefined ? frame.params : frame.state,
+                )}
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }

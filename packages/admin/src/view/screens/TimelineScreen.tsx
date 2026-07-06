@@ -16,7 +16,7 @@ export const TimelineScreen = ({ admin }: TimelineScreenProps) => {
   const selectedBucket = () => {
     const index = selectedBucketIndex()
     if (index === null) return null
-    return admin.timeline.buckets()[index] ?? null
+    return admin.timeline.visibleBuckets()[index] ?? null
   }
 
   return (
@@ -106,14 +106,6 @@ export const TimelineScreen = ({ admin }: TimelineScreenProps) => {
             display: grid;
             gap: 1rem;
             min-width: 0;
-            max-height: 24rem;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-
-            @container admin-shell (min-width: 681px) {
-              max-height: none;
-              overflow-y: visible;
-            }
           `}
         >
           {() => <TimelineSelectionPanel admin={admin} bucket={selectedBucket()} />}

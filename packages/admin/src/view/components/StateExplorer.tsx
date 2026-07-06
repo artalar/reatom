@@ -138,7 +138,7 @@ export const StateExplorer = ({ admin }: StateExplorerProps) => {
             font-size: 0.72rem;
           `}
         >
-          latest values per atom
+          reactive atoms only
         </span>
       </div>
 

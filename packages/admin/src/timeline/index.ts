@@ -67,6 +67,18 @@ export function createTimeline(deps: TimelineDeps) {
     return [min + off * range, max + off * range]
   }, `${PREFIX}.visibleRange`)
 
+  const visibleBuckets = computed((): TimeBucket[] => {
+    const allBuckets = buckets()
+    if (allBuckets.length === 0) return []
+
+    const [rangeStart, rangeEnd] = visibleRange()
+    if (rangeStart === rangeEnd) return allBuckets
+
+    return allBuckets.filter(
+      (bucket) => bucket.end > rangeStart && bucket.start < rangeEnd,
+    )
+  }, `${PREFIX}.visibleBuckets`)
+
   const frameGroups = computed((): FrameGroup[] => {
     const frames = deps.frames()
     const byTs = new Map<number, AdminFrame[]>()
@@ -85,6 +97,7 @@ export function createTimeline(deps: TimelineDeps) {
     zoom,
     offset,
     buckets,
+    visibleBuckets,
     visibleRange,
     frameGroups,
   }
