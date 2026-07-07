@@ -20,6 +20,7 @@ export default defineConfig({
       runtime: 'classic',
       pragma: 'h',
       pragmaFrag: 'hf',
+      throwIfNamespace: false,
     },
     jsxInject: `import { h, hf } from "@reatom/jsx"`,
   },
