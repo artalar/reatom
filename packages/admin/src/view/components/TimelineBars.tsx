@@ -1,7 +1,8 @@
 import type { Admin } from '../../index'
 import type { TimeBucket } from '../../timeline'
 import { formatTimestamp } from '../format'
-import { colors, flex, flexCol, gap, rounded } from '../styles'
+import { formatSessionDuration } from '../../timeline'
+import { colors, flex, flexCol, gap, rounded, scrollable } from '../styles'
 
 export interface TimelineBarsProps {
   admin: Admin
@@ -9,65 +10,116 @@ export interface TimelineBarsProps {
   onSelectBucket: (bucket: TimeBucket, index: number) => void
 }
 
+const CHART_HEIGHT_REM = 9
+
 export const TimelineBars = ({
   admin,
   selectedBucketIndex,
   onSelectBucket,
 }: TimelineBarsProps) => {
-  const buckets = () => admin.timeline.buckets()
-  const timeRange = () => admin.store.timeRange()
-  const maxCount = () => Math.max(1, ...buckets().map((b) => b.entries.length))
+  const buckets = () => admin.timeline.chartBuckets()
+  const visibleRange = () => admin.timeline.visibleRange()
+  const summary = () => admin.timeline.sessionSummary()
+  const maxCount = () => Math.max(1, ...buckets().map((bucket) => bucket.entries.length))
 
   return (
     <div
+      data-reatom-name="TimelineBars"
       css={`
         ${flex}
         ${flexCol}
         ${gap(1)}
         width: 100%;
-        height: 12rem;
       `}
     >
       <div
         css={`
           ${flex}
-          ${gap(1)}
-          flex: 1;
-          align-items: flex-end;
-          min-height: 0;
+          ${gap(2)}
+          flex-wrap: wrap;
+          color: ${colors.textSubtle};
+          font-size: 0.72rem;
         `}
       >
-        {() =>
-          buckets().map((bucket, i) => {
-            const height = (bucket.entries.length / maxCount()) * 100
-            const hasError = bucket.errorCount > 0
-            return (
-              <button
-                type="button"
-                title={`${bucket.entries.length} frames, ${bucket.errorCount} errors`}
-                css={`
-                  flex: 1;
-                  min-width: 4px;
-                  background: ${selectedBucketIndex === i
-                    ? colors.warning
-                    : hasError
-                      ? colors.error
-                      : colors.accent};
-                  opacity: ${0.3 + (bucket.entries.length / maxCount()) * 0.7};
-                  border-radius: 8px 8px 0 0;
-                  transition: height 0.15s, transform 0.15s;
-                  border: 1px solid ${selectedBucketIndex === i
-                    ? colors.warning
-                    : 'transparent'};
-                  cursor: pointer;
-                `}
-                style={{ height: `${Math.max(2, height)}%` }}
-                on:click={() => onSelectBucket(bucket, i)}
-              />
-            )
-          })
-        }
+        <span>■ <span css={`color: ${colors.accent};`}>Frames</span></span>
+        <span>■ <span css={`color: ${colors.error};`}>Errors</span></span>
+        <span>■ <span css={`color: ${colors.warning};`}>Selected</span></span>
+        <span>Taller bars = more frames in that time window</span>
       </div>
+
+      <div
+        css={`
+          ${scrollable}
+          overscroll-behavior: contain;
+        `}
+      >
+        <div
+          css={`
+            ${flex}
+            ${gap(1)}
+            align-items: flex-end;
+            height: ${CHART_HEIGHT_REM}rem;
+            min-width: ${() => `${Math.max(buckets().length * 2.4, 100)}%`};
+            padding-bottom: 0.15rem;
+          `}
+        >
+          {() =>
+            buckets().map((bucket, index) => {
+              const heightRatio = bucket.entries.length / maxCount()
+              const barHeightRem = Math.max(0.35, heightRatio * CHART_HEIGHT_REM)
+              const hasError = bucket.errorCount > 0
+              const isSelected = selectedBucketIndex === index
+
+              return (
+                <button
+                  type="button"
+                  aria-label={`${bucket.entries.length} frames between ${formatTimestamp(bucket.start)} and ${formatTimestamp(bucket.end)}`}
+                  css={`
+                    flex: 1 0 1.75rem;
+                    width: 1.75rem;
+                    background: ${isSelected
+                      ? colors.warning
+                      : hasError
+                        ? colors.error
+                        : colors.accent};
+                    opacity: ${0.45 + heightRatio * 0.55};
+                    border-radius: 8px 8px 0 0;
+                    border: 1px solid ${isSelected
+                      ? colors.warning
+                      : 'transparent'};
+                    cursor: pointer;
+                    align-self: flex-end;
+                    position: relative;
+                  `}
+                  style={{ height: `${barHeightRem}rem` }}
+                  on:click={() => onSelectBucket(bucket, index)}
+                >
+                  {isSelected && (
+                    <span
+                      css={`
+                        position: absolute;
+                        top: -1.1rem;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        ${rounded}
+                        padding: 0.1rem 0.3rem;
+                        background: ${colors.bgElevated};
+                        border: 1px solid ${colors.borderStrong};
+                        color: ${colors.text};
+                        font-size: 0.62rem;
+                        white-space: nowrap;
+                      `}
+                    >
+                      {bucket.entries.length}
+                    </span>
+                  )}
+                </button>
+              )
+            })
+          }
+        </div>
+      </div>
+
       <div
         css={`
           font-size: 0.65rem;
@@ -75,13 +127,16 @@ export const TimelineBars = ({
           display: flex;
           justify-content: space-between;
           gap: 1rem;
+          flex-wrap: wrap;
         `}
       >
         {() => {
-          const [min, max] = timeRange()
+          const [rangeStart, rangeEnd] = visibleRange()
+          const currentSummary = summary()
+
           return (
             <>
-              <span>{formatTimestamp(min)}</span>
+              <span>{formatTimestamp(rangeStart)}</span>
               <span
                 css={`
                   ${rounded}
@@ -90,9 +145,11 @@ export const TimelineBars = ({
                   background: ${colors.bgElevated};
                 `}
               >
-                {buckets().length} bucket{buckets().length === 1 ? '' : 's'}
+                {buckets().length} burst{buckets().length === 1 ? '' : 's'} ·{' '}
+                {currentSummary.frameCount} frames ·{' '}
+                {formatSessionDuration(currentSummary.durationMs)}
               </span>
-              <span>{formatTimestamp(max)}</span>
+              <span>{formatTimestamp(rangeEnd)}</span>
             </>
           )
         }}

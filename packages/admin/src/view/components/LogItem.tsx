@@ -55,6 +55,11 @@ export const LogItem = ({
           : highlightStyle?.background ?? colors.surface};
         color: ${hasError ? colors.error : colors.text};
         align-items: flex-start;
+
+        @container admin-shell (max-width: 680px) {
+          flex-direction: column;
+          gap: 0.55rem;
+        }
       `}
       on:click={onSelect}
       on:keydown={(e: KeyboardEvent) => {
@@ -71,6 +76,10 @@ export const LogItem = ({
           width: 4.5rem;
           font-size: 0.65rem;
           color: ${colors.textMuted};
+
+          @container admin-shell (max-width: 680px) {
+            width: auto;
+          }
         `}
       >
         {formatTimestamp(frame.timestamp)}
@@ -83,6 +92,10 @@ export const LogItem = ({
           min-width: 0;
           width: 9rem;
           flex-shrink: 0;
+
+          @container admin-shell (max-width: 680px) {
+            width: 100%;
+          }
         `}
       >
         <span

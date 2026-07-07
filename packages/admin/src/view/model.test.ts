@@ -65,12 +65,48 @@ test('view model builds summary and state trees from current frames', () => {
     expect(view.summary().uniqueAtoms).toBe(2)
 
     const stateTree = view.stateTree()
-    expect(stateTree.length).toBeGreaterThanOrEqual(2)
+    expect(stateTree.length).toBe(1)
     const todoGroup = stateTree.find((node) => node.label === 'todo')
     expect(todoGroup?.kind).toBe('group')
     expect(todoGroup?.children[0]?.label).toBe('items')
+    expect(todoGroup?.children[0]?.value).toBe(2)
 
     const visibleStateTree = view.visibleStateTree()
     expect(visibleStateTree.length).toBe(1)
+  })
+})
+
+test('state tree ignores action frames and non-reactive atoms', () => {
+  const framesAtom = atom<AdminFrame[]>([
+    makeFrame({ id: 1, atomId: 'a1', state: 1 }),
+    makeFrame({
+      id: 2,
+      atomId: 'a2',
+      state: undefined,
+      params: [{ step: 1 }],
+    }),
+    makeFrame({ id: 3, atomId: 'a1', state: 2 }),
+  ])
+  const atoms = new Map<string, AdminAtom>([
+    ['a1', { id: 'a1', name: 'count', isReactive: true }],
+    ['a2', { id: 'a2', name: 'increment', isReactive: false }],
+  ])
+
+  const view = ADMIN_FRAME.run(() =>
+    createAdminViewModelManager({
+      frames: () => framesAtom(),
+      visibleFrames: () => framesAtom(),
+      highlightedFrames: () => new Map(),
+      atoms: () => atoms,
+      selectedFrameId: () => null,
+      source: () => 'live',
+    }),
+  )
+
+  ADMIN_FRAME.run(() => {
+    const stateTree = view.stateTree()
+    expect(stateTree).toHaveLength(1)
+    expect(stateTree[0]?.label).toBe('count')
+    expect(stateTree[0]?.value).toBe(2)
   })
 })

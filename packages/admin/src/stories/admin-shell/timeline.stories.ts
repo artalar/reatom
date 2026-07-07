@@ -52,9 +52,9 @@ export const TimelineJourney: Story = {
 
     await waitFor(() => {
       const adminText = getAdminText()
-      expect(adminText).toContain('Timeline')
-      expect(adminText).toContain('Bucket size')
-      expect(adminText).toContain('Zoom')
+      expect(adminText).toContain('Session activity')
+      expect(adminText).toContain('Window (ms)')
+      expect(adminText).toContain('Event list')
     })
   },
 }
@@ -78,7 +78,7 @@ export const TimelineVisualReference: Story = {
     await navigateAdminRoute('Timeline')
 
     await waitFor(() => {
-      expect(getAdminText()).toContain('Bucket size')
+      expect(getAdminText()).toContain('Window (ms)')
     })
 
     await matchAdminScreenshot('counter-timeline-reference')

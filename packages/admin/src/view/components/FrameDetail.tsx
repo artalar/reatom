@@ -4,6 +4,11 @@ import type { Admin } from '../../index'
 import type { AdminFrame } from '../../types'
 import { formatDateTime, formatJson } from '../format'
 import {
+  getFrameExportPayload,
+  getFrameInspectorPayload,
+  isActionFrame,
+} from '../frame-inspector'
+import {
   badge,
   buttonBase,
   buttonGhost,
@@ -33,12 +38,9 @@ export const FrameDetail = ({
 }: FrameDetailProps) => {
   const atoms = admin.store.getAtoms()
   const frameIndex = admin.store.frameIndex()
-  const framePayload = {
-    state: frame.state,
-    params: frame.params,
-    payload: frame.payload,
-    error: frame.error,
-  }
+  const exportPayload = getFrameExportPayload(frame)
+  const inspectorPayload = getFrameInspectorPayload(frame)
+  const isAction = isActionFrame(frame)
 
   return (
     <div
@@ -85,7 +87,7 @@ export const FrameDetail = ({
                 color: ${frame.error !== null ? colors.error : colors.accent};
               `}
             >
-              {frame.error !== null ? 'Error frame' : 'Frame'}
+              {frame.error !== null ? 'Error frame' : isAction ? 'Action' : 'State'}
             </span>
             <span
               css={`
@@ -129,7 +131,7 @@ export const FrameDetail = ({
             type="button"
             css={buttonGhost}
             on:click={() => {
-              navigator.clipboard.writeText(formatJson(framePayload))
+              navigator.clipboard.writeText(formatJson(exportPayload))
             }}
           >
             Copy JSON
@@ -138,7 +140,7 @@ export const FrameDetail = ({
             type="button"
             css={buttonGhost}
             on:click={() => {
-              const blob = new Blob([formatJson(framePayload)], {
+              const blob = new Blob([formatJson(exportPayload)], {
                 type: 'application/json',
               })
               const url = URL.createObjectURL(blob)
@@ -192,9 +194,9 @@ export const FrameDetail = ({
             font-size: 0.9rem;
           `}
         >
-          Structured payload
+          {isAction ? 'Action payload' : 'Current state'}
         </h4>
-        <JsonInspector value={framePayload} />
+        <JsonInspector value={inspectorPayload} />
       </section>
 
       {frame.pubIds.length > 0 && (

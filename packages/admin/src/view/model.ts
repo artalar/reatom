@@ -69,14 +69,19 @@ function buildStateTree(
   frames: Array<AdminFrame>,
   atoms: Map<string, AdminAtom>,
 ): Array<StateTreeNode> {
-  const latestFrameByAtom = new Map<string, AdminFrame>()
+  const latestStateFrameByAtom = new Map<string, AdminFrame>()
   for (const frame of frames) {
-    latestFrameByAtom.set(frame.atomId, frame)
+    if (frame.params !== undefined) continue
+
+    const atom = atoms.get(frame.atomId)
+    if (!atom?.isReactive) continue
+
+    latestStateFrameByAtom.set(frame.atomId, frame)
   }
 
   const rootGroups = new Map<string, StateTreeGroupNode>()
 
-  for (const [atomId, frame] of latestFrameByAtom) {
+  for (const [atomId, frame] of latestStateFrameByAtom) {
     const atom = atoms.get(atomId)
     if (!atom) continue
 

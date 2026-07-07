@@ -30,6 +30,7 @@ test('buckets group frames by time intervals', () => {
     createTimelineManager({ frames: () => framesAtom() }),
   )
   ADMIN_FRAME.run(() => {
+    timeline.useAutoFit.setFalse()
     timeline.bucketSize.set(100)
     timeline.zoom.set(1)
     const buckets = timeline.buckets()
@@ -49,12 +50,81 @@ test('zoom changes bucket granularity', () => {
     createTimelineManager({ frames: () => framesAtom() }),
   )
   ADMIN_FRAME.run(() => {
+    timeline.useAutoFit.setFalse()
     timeline.bucketSize.set(50)
     timeline.zoom.set(1)
     const buckets1 = timeline.buckets()
     timeline.zoom.set(2)
     const buckets2 = timeline.buckets()
     expect(buckets2.length).not.toBe(buckets1.length)
+  })
+})
+
+test('offset filters visible buckets to the panned time window', () => {
+  const framesAtom = atom([
+    makeFrame({ id: 1, timestamp: 0 }),
+    makeFrame({ id: 2, timestamp: 100 }),
+    makeFrame({ id: 3, timestamp: 200 }),
+    makeFrame({ id: 4, timestamp: 300 }),
+  ])
+  const timeline = ADMIN_FRAME.run(() =>
+    createTimelineManager({ frames: () => framesAtom() }),
+  )
+
+  ADMIN_FRAME.run(() => {
+    timeline.useAutoFit.setFalse()
+    timeline.bucketSize.set(100)
+    timeline.zoom.set(1)
+    timeline.offset.set(0)
+    expect(timeline.visibleBuckets().length).toBe(timeline.buckets().length)
+
+    timeline.offset.set(0.5)
+    expect(timeline.visibleBuckets().length).toBeLessThan(
+      timeline.buckets().length,
+    )
+  })
+})
+
+test('chartBuckets hide empty buckets and auto-fit keeps short sessions readable', () => {
+  const framesAtom = atom([
+    makeFrame({ id: 1, timestamp: 0 }),
+    makeFrame({ id: 2, timestamp: 20 }),
+    makeFrame({ id: 3, timestamp: 900 }),
+    makeFrame({ id: 4, timestamp: 920 }),
+    makeFrame({ id: 5, timestamp: 1800 }),
+  ])
+  const timeline = ADMIN_FRAME.run(() =>
+    createTimelineManager({ frames: () => framesAtom() }),
+  )
+
+  ADMIN_FRAME.run(() => {
+    timeline.applyAutoFit()
+
+    expect(timeline.sessionSummary().frameCount).toBe(5)
+    expect(timeline.sessionSummary().burstCount).toBe(5)
+    expect(timeline.chartBuckets().length).toBeLessThanOrEqual(10)
+    expect(
+      timeline.chartBuckets().every((bucket) => bucket.entries.length > 0),
+    ).toBe(true)
+  })
+})
+
+test('isPannedOutsideRange detects empty visible window', () => {
+  const framesAtom = atom([
+    makeFrame({ id: 1, timestamp: 0 }),
+    makeFrame({ id: 2, timestamp: 100 }),
+  ])
+  const timeline = ADMIN_FRAME.run(() =>
+    createTimelineManager({ frames: () => framesAtom() }),
+  )
+
+  ADMIN_FRAME.run(() => {
+    timeline.useAutoFit.setFalse()
+    timeline.bucketSize.set(100)
+    timeline.offset.set(-1)
+    expect(timeline.buckets().length).toBeGreaterThan(0)
+    expect(timeline.visibleBuckets().length).toBe(0)
+    expect(timeline.isPannedOutsideRange()).toBe(true)
   })
 })
 

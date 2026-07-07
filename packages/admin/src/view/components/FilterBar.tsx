@@ -68,8 +68,12 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
         gap: 0.75rem;
         ${px(2)}
         padding-block: 0.875rem;
-        background: ${colors.surface};
-        border-bottom: 1px solid ${colors.border};
+
+        @container admin-shell (max-width: 680px) {
+          padding-inline: 0.75rem;
+          padding-block: 0.65rem;
+          gap: 0.55rem;
+        }
       `}
     >
       <div
