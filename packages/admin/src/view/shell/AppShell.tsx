@@ -20,8 +20,17 @@ export const AppShell = ({ admin, onMinimize }: AppShellProps) => {
         min-height: 0;
         overflow: hidden;
         background:
-          radial-gradient(circle at top, rgba(139, 183, 255, 0.12), transparent 32%),
-          linear-gradient(180deg, ${colors.bgElevated} 0%, ${colors.bg} 28%, ${colors.bg} 100%);
+          radial-gradient(
+            circle at top,
+            rgba(139, 183, 255, 0.12),
+            transparent 32%
+          ),
+          linear-gradient(
+            180deg,
+            ${colors.bgElevated} 0%,
+            ${colors.bg} 28%,
+            ${colors.bg} 100%
+          );
         font-family:
           Inter,
           ui-sans-serif,

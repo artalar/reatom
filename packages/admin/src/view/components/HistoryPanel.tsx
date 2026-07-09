@@ -1,15 +1,7 @@
 import type { Admin } from '../../index'
 import type { AdminFrame } from '../../types'
 import { formatPreview, formatTimestamp } from '../format'
-import {
-  badge,
-  buttonGhost,
-  colors,
-  flex,
-  gap,
-  mono,
-  rounded,
-} from '../styles'
+import { badge, buttonGhost, colors, flex, gap, mono, rounded } from '../styles'
 
 export interface HistoryPanelProps {
   admin: Admin
@@ -20,9 +12,7 @@ export const HistoryPanel = ({ admin, frame }: HistoryPanelProps) => {
   const history = () =>
     admin.store
       .frames()
-      .filter(
-        (entry) => entry.atomId === frame.atomId && entry.id !== frame.id,
-      )
+      .filter((entry) => entry.atomId === frame.atomId && entry.id !== frame.id)
       .slice(-8)
       .reverse()
 

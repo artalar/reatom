@@ -20,7 +20,8 @@ export const InspectorPanel = ({ admin, frame }: InspectorPanelProps) => {
     )
   }
 
-  const atomName = admin.store.getAtoms().get(frame.atomId)?.name ?? frame.atomId
+  const atomName =
+    admin.store.getAtoms().get(frame.atomId)?.name ?? frame.atomId
 
   return (
     <div

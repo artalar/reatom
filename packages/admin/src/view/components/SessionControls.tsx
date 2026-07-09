@@ -2,13 +2,7 @@ import { atom } from '@reatom/core'
 
 import type { Admin } from '../../index'
 import type { AdminAtom, AdminFrame, AdminSession } from '../../types'
-import {
-  buttonBase,
-  buttonGhost,
-  colors,
-  flex,
-  flexWrap,
-} from '../styles'
+import { buttonBase, buttonGhost, colors, flex, flexWrap } from '../styles'
 
 export interface SessionControlsProps {
   admin: Admin
@@ -158,9 +152,7 @@ export const SessionControls = ({ admin }: SessionControlsProps) => {
           border-color: ${() =>
             admin.reporter.paused() ? colors.warning : colors.success};
           background: ${() =>
-            admin.reporter.paused()
-              ? colors.warningSoft
-              : colors.successSoft};
+            admin.reporter.paused() ? colors.warningSoft : colors.successSoft};
           color: ${() =>
             admin.reporter.paused() ? colors.warning : colors.success};
         `}
@@ -175,11 +167,7 @@ export const SessionControls = ({ admin }: SessionControlsProps) => {
           admin.reporter.paused.setTrue()
         }}
       >
-        {() =>
-          admin.reporter.paused()
-            ? 'Resume capture'
-            : 'Pause capture'
-        }
+        {() => (admin.reporter.paused() ? 'Resume capture' : 'Pause capture')}
       </button>
       {() =>
         admin.reporter.paused() ? (
@@ -216,156 +204,159 @@ export const SessionControls = ({ admin }: SessionControlsProps) => {
           }
         `}
       >
-      <button
-        type="button"
-        title="Export session"
-        css={secondaryControlButton}
-        on:click={() => {
-          confirmAction.set(null)
-          clearConfirmTimer()
-          importFeedback.set(null)
-          const session = admin.store.exportSession()
-          downloadJson(
-            `reatom-admin-session-${session.session.id}.json`,
-            session,
+        <button
+          type="button"
+          title="Export session"
+          css={secondaryControlButton}
+          on:click={() => {
+            confirmAction.set(null)
+            clearConfirmTimer()
+            importFeedback.set(null)
+            const session = admin.store.exportSession()
+            downloadJson(
+              `reatom-admin-session-${session.session.id}.json`,
+              session,
+            )
+          }}
+        >
+          Export
+        </button>
+
+        <button
+          type="button"
+          title="Import replay"
+          css={secondaryControlButton}
+          on:click={() => {
+            confirmAction.set(null)
+            clearConfirmTimer()
+            const fileInput = document.getElementById(inputId)
+            if (fileInput instanceof HTMLInputElement) {
+              fileInput.click()
+            }
+          }}
+        >
+          Import
+        </button>
+        <input
+          id={inputId}
+          type="file"
+          accept="application/json"
+          css={`
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+          `}
+          on:change={(event: Event) => {
+            const target = event.currentTarget
+            if (!(target instanceof HTMLInputElement)) return
+            const file = target.files?.[0]
+            if (!file) return
+
+            const reader = new FileReader()
+            reader.onload = () => {
+              try {
+                if (typeof reader.result !== 'string') {
+                  showFeedback('Import failed: empty file', 'error')
+                  return
+                }
+                const parsed: unknown = JSON.parse(reader.result)
+                if (!isImportedSessionPayload(parsed)) {
+                  showFeedback(
+                    'Import failed: invalid session payload',
+                    'error',
+                  )
+                  return
+                }
+                admin.store.importSession(parsed)
+                showFeedback('Replay loaded', 'success')
+              } catch {
+                showFeedback('Import failed: could not parse JSON', 'error')
+              }
+            }
+            reader.onerror = () => {
+              showFeedback('Import failed: could not read file', 'error')
+            }
+            reader.readAsText(file)
+            target.value = ''
+          }}
+        />
+
+        <button
+          type="button"
+          title="Clear workspace"
+          css={`
+            ${secondaryControlButton}
+            border-color: ${() =>
+              confirmAction() === 'clear' ? colors.error : colors.border};
+            color: ${() =>
+              confirmAction() === 'clear' ? colors.error : colors.textMuted};
+            background: ${() =>
+              confirmAction() === 'clear' ? colors.errorSoft : 'transparent'};
+          `}
+          on:click={() => {
+            if (confirmAction() === 'clear') {
+              clearConfirmTimer()
+              confirmAction.set(null)
+              importFeedback.set(null)
+              clearWorkspace()
+              return
+            }
+            confirmAction.set('clear')
+            scheduleConfirmRevert()
+          }}
+        >
+          {() => (confirmAction() === 'clear' ? 'Confirm clear' : 'Clear')}
+        </button>
+
+        <button
+          type="button"
+          title="Start fresh session"
+          css={`
+            ${secondaryControlButton}
+            border-color: ${() =>
+              confirmAction() === 'fresh' ? colors.error : colors.border};
+            color: ${() =>
+              confirmAction() === 'fresh' ? colors.error : colors.textMuted};
+            background: ${() =>
+              confirmAction() === 'fresh' ? colors.errorSoft : 'transparent'};
+          `}
+          on:click={() => {
+            if (confirmAction() === 'fresh') {
+              clearConfirmTimer()
+              confirmAction.set(null)
+              importFeedback.set(null)
+              startFreshSession()
+              return
+            }
+            confirmAction.set('fresh')
+            scheduleConfirmRevert()
+          }}
+        >
+          {() => (confirmAction() === 'fresh' ? 'Confirm fresh' : 'Fresh')}
+        </button>
+
+        {() => {
+          const message = importFeedback()
+          if (!message) return null
+          const tone = importFeedbackTone()
+          return (
+            <span
+              role="status"
+              css={`
+                font-size: 0.68rem;
+                color: ${tone === 'error' ? colors.error : colors.success};
+              `}
+            >
+              {message}
+            </span>
           )
         }}
-      >
-        Export
-      </button>
-
-      <button
-        type="button"
-        title="Import replay"
-        css={secondaryControlButton}
-        on:click={() => {
-          confirmAction.set(null)
-          clearConfirmTimer()
-          const fileInput = document.getElementById(inputId)
-          if (fileInput instanceof HTMLInputElement) {
-            fileInput.click()
-          }
-        }}
-      >
-        Import
-      </button>
-      <input
-        id={inputId}
-        type="file"
-        accept="application/json"
-        css={`
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          white-space: nowrap;
-          border: 0;
-        `}
-        on:change={(event: Event) => {
-          const target = event.currentTarget
-          if (!(target instanceof HTMLInputElement)) return
-          const file = target.files?.[0]
-          if (!file) return
-
-          const reader = new FileReader()
-          reader.onload = () => {
-            try {
-              if (typeof reader.result !== 'string') {
-                showFeedback('Import failed: empty file', 'error')
-                return
-              }
-              const parsed: unknown = JSON.parse(reader.result)
-              if (!isImportedSessionPayload(parsed)) {
-                showFeedback('Import failed: invalid session payload', 'error')
-                return
-              }
-              admin.store.importSession(parsed)
-              showFeedback('Replay loaded', 'success')
-            } catch {
-              showFeedback('Import failed: could not parse JSON', 'error')
-            }
-          }
-          reader.onerror = () => {
-            showFeedback('Import failed: could not read file', 'error')
-          }
-          reader.readAsText(file)
-          target.value = ''
-        }}
-      />
-
-      <button
-        type="button"
-        title="Clear workspace"
-        css={`
-          ${secondaryControlButton}
-          border-color: ${() =>
-            confirmAction() === 'clear' ? colors.error : colors.border};
-          color: ${() =>
-            confirmAction() === 'clear' ? colors.error : colors.textMuted};
-          background: ${() =>
-            confirmAction() === 'clear' ? colors.errorSoft : 'transparent'};
-        `}
-        on:click={() => {
-          if (confirmAction() === 'clear') {
-            clearConfirmTimer()
-            confirmAction.set(null)
-            importFeedback.set(null)
-            clearWorkspace()
-            return
-          }
-          confirmAction.set('clear')
-          scheduleConfirmRevert()
-        }}
-      >
-        {() => (confirmAction() === 'clear' ? 'Confirm clear' : 'Clear')}
-      </button>
-
-      <button
-        type="button"
-        title="Start fresh session"
-        css={`
-          ${secondaryControlButton}
-          border-color: ${() =>
-            confirmAction() === 'fresh' ? colors.error : colors.border};
-          color: ${() =>
-            confirmAction() === 'fresh' ? colors.error : colors.textMuted};
-          background: ${() =>
-            confirmAction() === 'fresh' ? colors.errorSoft : 'transparent'};
-        `}
-        on:click={() => {
-          if (confirmAction() === 'fresh') {
-            clearConfirmTimer()
-            confirmAction.set(null)
-            importFeedback.set(null)
-            startFreshSession()
-            return
-          }
-          confirmAction.set('fresh')
-          scheduleConfirmRevert()
-        }}
-      >
-        {() => (confirmAction() === 'fresh' ? 'Confirm fresh' : 'Fresh')}
-      </button>
-
-      {() => {
-        const message = importFeedback()
-        if (!message) return null
-        const tone = importFeedbackTone()
-        return (
-          <span
-            role="status"
-            css={`
-              font-size: 0.68rem;
-              color: ${tone === 'error' ? colors.error : colors.success};
-            `}
-          >
-            {message}
-          </span>
-        )
-      }}
       </div>
     </div>
   )

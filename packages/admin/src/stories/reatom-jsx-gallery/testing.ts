@@ -48,9 +48,7 @@ export function getAdminStoreLogsByName(name: string | RegExp) {
       name: getAdminStoreAtomName(frame.atomId),
     }))
     .filter((entry) =>
-      typeof name === 'string'
-        ? entry.name === name
-        : name.test(entry.name),
+      typeof name === 'string' ? entry.name === name : name.test(entry.name),
     )
 }
 
@@ -320,9 +318,7 @@ export async function fillGalleryFilterSearch(value: string): Promise<void> {
     expect(dialog?.hasAttribute('inert')).toBe(false)
   })
 
-  const dialog = document.querySelector(
-    '[role="dialog"][aria-label="Filters"]',
-  )
+  const dialog = document.querySelector('[role="dialog"][aria-label="Filters"]')
   if (!(dialog instanceof HTMLElement)) {
     throw new Error('Gallery filter dialog is missing')
   }
@@ -362,4 +358,3 @@ export function getAdminActiveRuleCountLabel(): string {
   const match = getAdminFilterBarText().match(/(\d+)\s+active rule/)
   return match?.[0] ?? ''
 }
-

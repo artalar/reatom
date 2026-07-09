@@ -51,19 +51,17 @@ export const LogItem = ({
         ${focusVisible}
         border: 1px solid ${isSelected
           ? colors.accent
-          : highlightStyle?.borderColor ?? colors.border};
+          : (highlightStyle?.borderColor ?? colors.border)};
         cursor: pointer;
         background: ${isSelected
           ? colors.highlight
-          : highlightStyle?.background ?? colors.surface};
+          : (highlightStyle?.background ?? colors.surface)};
         color: ${hasError ? colors.error : colors.text};
         align-items: flex-start;
         box-sizing: border-box;
         overflow: visible;
         flex-shrink: 0;
-        box-shadow: ${isSelected
-          ? `inset 3px 0 0 ${colors.accent}`
-          : 'none'};
+        box-shadow: ${isSelected ? `inset 3px 0 0 ${colors.accent}` : 'none'};
 
         @container admin-shell (max-width: 680px) {
           flex-direction: column;

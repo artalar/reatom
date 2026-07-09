@@ -127,8 +127,20 @@ export function createAdminDevtools(
           width: 14px;
           height: 14px;
           background:
-            linear-gradient(135deg, transparent 35%, ${colors.accent} 35%, ${colors.accent} 55%, transparent 55%),
-            linear-gradient(135deg, transparent 55%, ${colors.textMuted} 55%, ${colors.textMuted} 70%, transparent 70%);
+            linear-gradient(
+              135deg,
+              transparent 35%,
+              ${colors.accent} 35%,
+              ${colors.accent} 55%,
+              transparent 55%
+            ),
+            linear-gradient(
+              135deg,
+              transparent 55%,
+              ${colors.textMuted} 55%,
+              ${colors.textMuted} 70%,
+              transparent 70%
+            );
           border-radius: 4px;
           cursor: nwse-resize;
           touch-action: none;
@@ -150,9 +162,7 @@ export function createAdminDevtools(
 
           if (event.currentTarget.hasPointerCapture(pointerEvent.pointerId)) {
             width.set(
-              clampPanelWidth(
-                `${window.innerWidth - pointerEvent.clientX}px`,
-              ),
+              clampPanelWidth(`${window.innerWidth - pointerEvent.clientX}px`),
             )
             height.set(
               clampPanelHeight(
@@ -179,7 +189,11 @@ export function createAdminDevtools(
           border-radius: 999px;
           border: 1px solid ${colors.borderStrong};
           background:
-            radial-gradient(circle at 30% 25%, ${colors.accentSoft}, transparent 55%),
+            radial-gradient(
+              circle at 30% 25%,
+              ${colors.accentSoft},
+              transparent 55%
+            ),
             ${colors.surfaceRaised};
           color: ${colors.accent};
           font-family: ui-sans-serif, system-ui, sans-serif;
@@ -215,9 +229,7 @@ export function createAdminDevtools(
             minimized() ? 'none' : `1px solid ${colors.borderStrong}`};
           border-radius: ${() => (minimized() ? '999px' : '16px')};
           box-shadow: ${() =>
-            minimized()
-              ? 'none'
-              : `0 24px 48px -28px ${colors.shadow}`};
+            minimized() ? 'none' : `0 24px 48px -28px ${colors.shadow}`};
           font-family: system-ui, sans-serif;
           font-size: 12px;
           box-sizing: border-box;

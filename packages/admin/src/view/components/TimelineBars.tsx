@@ -45,13 +45,34 @@ export const TimelineBars = ({
         `}
       >
         <span>
-          ■ <span css={`color: ${colors.accent};`}>Frames</span>
+          ■{' '}
+          <span
+            css={`
+              color: ${colors.accent};
+            `}
+          >
+            Frames
+          </span>
         </span>
         <span>
-          ■ <span css={`color: ${colors.error};`}>Errors</span>
+          ■{' '}
+          <span
+            css={`
+              color: ${colors.error};
+            `}
+          >
+            Errors
+          </span>
         </span>
         <span>
-          ■ <span css={`color: ${colors.warning};`}>Selected</span>
+          ■{' '}
+          <span
+            css={`
+              color: ${colors.warning};
+            `}
+          >
+            Selected
+          </span>
         </span>
         <span>Taller bars = more frames in that time window</span>
       </div>
@@ -101,9 +122,8 @@ export const TimelineBars = ({
                         : colors.accent};
                     opacity: ${0.45 + heightRatio * 0.55};
                     border-radius: 8px 8px 0 0;
-                    border: 1px solid ${isSelected
-                      ? colors.warning
-                      : 'transparent'};
+                    border: 1px solid
+                      ${isSelected ? colors.warning : 'transparent'};
                     cursor: pointer;
                     align-self: flex-end;
                     position: relative;

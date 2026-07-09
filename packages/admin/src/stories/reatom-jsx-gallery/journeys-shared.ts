@@ -2,10 +2,7 @@ import type { Meta, StoryObj } from '@storybook/html'
 import { expect, waitFor } from 'storybook/test'
 
 import { createActor, text } from '../../../.storybook/helpers'
-import {
-  renderGalleryHarness,
-  waitForGalleryHarnessReady,
-} from './boot'
+import { renderGalleryHarness, waitForGalleryHarnessReady } from './boot'
 import { getAdminText, searchAdminLogs, getVisibleLogs } from './testing'
 
 export const I = createActor()

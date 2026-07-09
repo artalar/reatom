@@ -144,9 +144,8 @@ export const GraphNodes = ({ admin, graph }: GraphNodesProps) => {
                     css={`
                       ${rounded}
                       padding: 0.2rem 0.4rem;
-                      border: 1px solid ${isRoot
-                        ? colors.accent
-                        : colors.borderStrong};
+                      border: 1px solid
+                        ${isRoot ? colors.accent : colors.borderStrong};
                       background: ${isRoot
                         ? colors.accentSoft
                         : colors.bgElevated};

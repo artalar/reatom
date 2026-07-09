@@ -93,7 +93,11 @@ export const FrameDetail = ({
                 color: ${frame.error !== null ? colors.error : colors.accent};
               `}
             >
-              {frame.error !== null ? 'Error frame' : isAction ? 'Action' : 'State'}
+              {frame.error !== null
+                ? 'Error frame'
+                : isAction
+                  ? 'Action'
+                  : 'State'}
             </span>
             <span
               css={`

@@ -1,13 +1,6 @@
 import type { Admin } from '../../index'
 import { formatDateTime } from '../format'
-import {
-  badge,
-  buttonGhost,
-  colors,
-  flex,
-  focusVisible,
-  gap,
-} from '../styles'
+import { badge, buttonGhost, colors, flex, focusVisible, gap } from '../styles'
 import { SessionControls } from './SessionControls'
 import { SummaryCards } from './SummaryCards'
 

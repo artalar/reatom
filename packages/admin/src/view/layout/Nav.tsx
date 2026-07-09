@@ -1,15 +1,7 @@
 import { urlAtom } from '@reatom/core'
 
 import type { Admin } from '../../index'
-import {
-  badge,
-  buttonGhost,
-  colors,
-  flex,
-  gap,
-  px,
-  py,
-} from '../styles'
+import { badge, buttonGhost, colors, flex, gap, px, py } from '../styles'
 
 export interface NavProps {
   admin: Admin

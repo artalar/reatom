@@ -127,9 +127,7 @@ export const FilterEditor = ({ admin }: FilterEditorProps) => {
               scheduleConfirmRevert()
             }}
           >
-            {() =>
-              confirmClear() ? 'Confirm clear' : 'Clear saved rules'
-            }
+            {() => (confirmClear() ? 'Confirm clear' : 'Clear saved rules')}
           </button>
         </div>
       </section>

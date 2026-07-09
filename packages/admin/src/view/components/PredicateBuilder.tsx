@@ -34,7 +34,12 @@ const FILTER_TYPES: Array<FilterPredicate['type']> = [
   'kind',
 ]
 
-const FILTER_TARGETS: Array<FilterTarget> = ['name', 'state', 'params', 'payload']
+const FILTER_TARGETS: Array<FilterTarget> = [
+  'name',
+  'state',
+  'params',
+  'payload',
+]
 const FILTER_KINDS: Array<FilterKind> = [
   'reactive',
   'action',
@@ -47,7 +52,9 @@ function createPredicateId(): string {
   return `predicate-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-function createDraftPredicate(type: FilterPredicate['type'] = 'text'): FilterPredicate {
+function createDraftPredicate(
+  type: FilterPredicate['type'] = 'text',
+): FilterPredicate {
   if (type === 'cause') {
     const causePredicate: CausePredicate = {
       id: createPredicateId(),
@@ -276,9 +283,15 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
           draftPredicates().map((predicate) => {
             const type = predicate.type
             const timeRange = getTimeRangeValue(predicate.value)
-            const target = isTargetValue(predicate.target) ? predicate.target : 'name'
-            const kind = isKindValue(predicate.value) ? predicate.value : 'action'
-            const causePredicate = isCausePredicate(predicate) ? predicate : null
+            const target = isTargetValue(predicate.target)
+              ? predicate.target
+              : 'name'
+            const kind = isKindValue(predicate.value)
+              ? predicate.value
+              : 'action'
+            const causePredicate = isCausePredicate(predicate)
+              ? predicate
+              : null
 
             return (
               <div
@@ -311,8 +324,9 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                         const target = event.currentTarget
                         if (!(target instanceof HTMLSelectElement)) return
                         const nextType =
-                          FILTER_TYPES.find((value) => value === target.value) ??
-                          'text'
+                          FILTER_TYPES.find(
+                            (value) => value === target.value,
+                          ) ?? 'text'
                         updatePredicate(predicate.id, () =>
                           createDraftPredicate(nextType),
                         )
@@ -339,7 +353,8 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                         value={target}
                         on:change={(event: Event) => {
                           const targetElement = event.currentTarget
-                          if (!(targetElement instanceof HTMLSelectElement)) return
+                          if (!(targetElement instanceof HTMLSelectElement))
+                            return
                           const nextTarget = isTargetValue(targetElement.value)
                             ? targetElement.value
                             : 'name'
@@ -357,7 +372,9 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                     </label>
                   )}
 
-                  {(type === 'text' || type === 'regex' || type === 'session') && (
+                  {(type === 'text' ||
+                    type === 'regex' ||
+                    type === 'session') && (
                     <label
                       css={`
                         display: grid;
@@ -372,7 +389,8 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                         value={getTextValue(predicate.value)}
                         on:input={(event: Event) => {
                           const targetElement = event.currentTarget
-                          if (!(targetElement instanceof HTMLInputElement)) return
+                          if (!(targetElement instanceof HTMLInputElement))
+                            return
                           updatePredicate(predicate.id, (currentPredicate) => ({
                             ...currentPredicate,
                             value: targetElement.value,
@@ -397,7 +415,8 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                         value={kind}
                         on:change={(event: Event) => {
                           const targetElement = event.currentTarget
-                          if (!(targetElement instanceof HTMLSelectElement)) return
+                          if (!(targetElement instanceof HTMLSelectElement))
+                            return
                           const nextKind = isKindValue(targetElement.value)
                             ? targetElement.value
                             : 'action'
@@ -431,13 +450,23 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                           value={timeRange[0]}
                           on:input={(event: Event) => {
                             const targetElement = event.currentTarget
-                            if (!(targetElement instanceof HTMLInputElement)) return
-                            const nextValue = Number.parseInt(targetElement.value, 10)
+                            if (!(targetElement instanceof HTMLInputElement))
+                              return
+                            const nextValue = Number.parseInt(
+                              targetElement.value,
+                              10,
+                            )
                             if (Number.isNaN(nextValue)) return
-                            updatePredicate(predicate.id, (currentPredicate) => ({
-                              ...currentPredicate,
-                              value: [nextValue, getTimeRangeValue(currentPredicate.value)[1]],
-                            }))
+                            updatePredicate(
+                              predicate.id,
+                              (currentPredicate) => ({
+                                ...currentPredicate,
+                                value: [
+                                  nextValue,
+                                  getTimeRangeValue(currentPredicate.value)[1],
+                                ],
+                              }),
+                            )
                           }}
                           css={inputLike}
                         />
@@ -456,13 +485,23 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                           value={timeRange[1]}
                           on:input={(event: Event) => {
                             const targetElement = event.currentTarget
-                            if (!(targetElement instanceof HTMLInputElement)) return
-                            const nextValue = Number.parseInt(targetElement.value, 10)
+                            if (!(targetElement instanceof HTMLInputElement))
+                              return
+                            const nextValue = Number.parseInt(
+                              targetElement.value,
+                              10,
+                            )
                             if (Number.isNaN(nextValue)) return
-                            updatePredicate(predicate.id, (currentPredicate) => ({
-                              ...currentPredicate,
-                              value: [getTimeRangeValue(currentPredicate.value)[0], nextValue],
-                            }))
+                            updatePredicate(
+                              predicate.id,
+                              (currentPredicate) => ({
+                                ...currentPredicate,
+                                value: [
+                                  getTimeRangeValue(currentPredicate.value)[0],
+                                  nextValue,
+                                ],
+                              }),
+                            )
                           }}
                           css={inputLike}
                         />
@@ -485,14 +524,19 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                           value={causePredicate?.direction ?? '>'}
                           on:change={(event: Event) => {
                             const targetElement = event.currentTarget
-                            if (!(targetElement instanceof HTMLSelectElement)) return
-                            const nextDirection = targetElement.value === '<' ? '<' : '>'
-                            updatePredicate(predicate.id, (currentPredicate) => ({
-                              ...currentPredicate,
-                              ...(isCausePredicate(currentPredicate)
-                                ? { direction: nextDirection }
-                                : {}),
-                            }))
+                            if (!(targetElement instanceof HTMLSelectElement))
+                              return
+                            const nextDirection =
+                              targetElement.value === '<' ? '<' : '>'
+                            updatePredicate(
+                              predicate.id,
+                              (currentPredicate) => ({
+                                ...currentPredicate,
+                                ...(isCausePredicate(currentPredicate)
+                                  ? { direction: nextDirection }
+                                  : {}),
+                              }),
+                            )
                           }}
                           css={inputLike}
                         >
@@ -514,18 +558,22 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                           value={causePredicate?.referencePattern ?? ''}
                           on:input={(event: Event) => {
                             const targetElement = event.currentTarget
-                            if (!(targetElement instanceof HTMLInputElement)) return
-                            updatePredicate(predicate.id, (currentPredicate) => {
-                              if (!isCausePredicate(currentPredicate)) {
-                                return currentPredicate
-                              }
+                            if (!(targetElement instanceof HTMLInputElement))
+                              return
+                            updatePredicate(
+                              predicate.id,
+                              (currentPredicate) => {
+                                if (!isCausePredicate(currentPredicate)) {
+                                  return currentPredicate
+                                }
 
-                              return {
-                                ...currentPredicate,
-                                referencePattern: targetElement.value,
-                                value: targetElement.value,
-                              }
-                            })
+                                return {
+                                  ...currentPredicate,
+                                  referencePattern: targetElement.value,
+                                  value: targetElement.value,
+                                }
+                              },
+                            )
                           }}
                           css={inputLike}
                         />
@@ -547,7 +595,8 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
                     on:click={() =>
                       draftPredicates.set(
                         draftPredicates().filter(
-                          (currentPredicate) => currentPredicate.id !== predicate.id,
+                          (currentPredicate) =>
+                            currentPredicate.id !== predicate.id,
                         ),
                       )
                     }
@@ -572,7 +621,10 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
           type="button"
           css={buttonGhost}
           on:click={() =>
-            draftPredicates.set([...draftPredicates(), createDraftPredicate('text')])
+            draftPredicates.set([
+              ...draftPredicates(),
+              createDraftPredicate('text'),
+            ])
           }
         >
           Add text predicate
@@ -581,7 +633,10 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
           type="button"
           css={buttonGhost}
           on:click={() =>
-            draftPredicates.set([...draftPredicates(), createDraftPredicate('kind')])
+            draftPredicates.set([
+              ...draftPredicates(),
+              createDraftPredicate('kind'),
+            ])
           }
         >
           Add kind predicate
@@ -590,7 +645,10 @@ export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
           type="button"
           css={buttonGhost}
           on:click={() =>
-            draftPredicates.set([...draftPredicates(), createDraftPredicate('cause')])
+            draftPredicates.set([
+              ...draftPredicates(),
+              createDraftPredicate('cause'),
+            ])
           }
         >
           Add cause predicate

@@ -29,7 +29,8 @@ const TARGETS: Array<{
 export const FilterBar = ({ admin }: FilterBarProps) => {
   const search = admin.filters.search
   const builtInTagId = (name: string) =>
-    admin.filters.tags.tags().find((tag) => tag.builtIn && tag.name === name)?.id
+    admin.filters.tags.tags().find((tag) => tag.builtIn && tag.name === name)
+      ?.id
 
   const toggleQuickRule = (tagName: string, mode: 'show' | 'hide') => {
     const tagId = builtInTagId(tagName)

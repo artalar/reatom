@@ -1,12 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/html'
 import { expect, userEvent, waitFor } from 'storybook/test'
 
-import {
-  button,
-  heading,
-  role,
-  text,
-} from '../../../.storybook/helpers'
+import { button, heading, role, text } from '../../../.storybook/helpers'
 import { navigateAdminRoute } from '../../testing/admin-navigation'
 import {
   expectVisibleLogCount,

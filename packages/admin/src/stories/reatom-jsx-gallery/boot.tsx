@@ -35,7 +35,10 @@ type PatchableFolder = {
   children: PatchableFolder[]
 }
 
-/** Mutate handles so mock images decode as tiny PNGs (fast, no empty-blob storms). */
+/**
+ * Mutate handles so mock images decode as tiny PNGs (fast, no empty-blob
+ * storms).
+ */
 const patchTreeFiles = <T extends PatchableFolder>(node: T): T => {
   for (const image of node.images) {
     const name = image.name
@@ -138,9 +141,9 @@ function applyGalleryFixtureSync(
 }
 
 /**
- * Persistent admin + per-story gallery remount (XO-style).
- * Gallery modules load only after createAdminDevtools so the reporter
- * extension is on EXTENSIONS when app atoms are created.
+ * Persistent admin + per-story gallery remount (XO-style). Gallery modules load
+ * only after createAdminDevtools so the reporter extension is on EXTENSIONS
+ * when app atoms are created.
  *
  * Journeys live in separate story files for browser-process isolation —
  * remounting the gallery after heavy abort traffic in the same document
@@ -167,9 +170,7 @@ async function bootGalleryApplication(
   return mounted.unmount
 }
 
-/**
- * Persistent admin + per-story gallery remount with clearStack isolation.
- */
+/** Persistent admin + per-story gallery remount with clearStack isolation. */
 export function renderGalleryHarness(
   fixture: GalleryHarnessFixture = {},
 ): HTMLDivElement {
@@ -211,10 +212,7 @@ export function renderGalleryHarness(
       clearCurrentDevtools()
     })
 
-    unmountApplication = await bootGalleryApplication(
-      applicationRoot,
-      fixture,
-    )
+    unmountApplication = await bootGalleryApplication(applicationRoot, fixture)
   })()
 
   return storyRoot

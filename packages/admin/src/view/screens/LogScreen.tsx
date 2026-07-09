@@ -120,9 +120,7 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                       ? colors.highlight
                       : 'transparent'};
                   color: ${() =>
-                    workspaceTab() === tab.id
-                      ? colors.text
-                      : colors.textMuted};
+                    workspaceTab() === tab.id ? colors.text : colors.textMuted};
                   border-color: ${() =>
                     workspaceTab() === tab.id
                       ? colors.accent
