@@ -4,10 +4,10 @@ import {
   badge,
   colors,
   flex,
+  focusVisible,
   gap,
   mono,
   px,
-  py,
   rounded,
   truncate,
 } from '../styles'
@@ -40,25 +40,33 @@ export const LogItem = ({
       data-frame-id={frame.id}
       role="button"
       tabindex={0}
+      aria-pressed={isSelected}
+      aria-selected={isSelected}
       css={`
         ${flex}
         ${gap(2)}
         ${px(2)}
-        ${py(1)}
+        padding-block: 0.45rem;
         ${rounded}
+        ${focusVisible}
         border: 1px solid ${isSelected
           ? colors.accent
-          : highlightStyle?.borderColor ?? colors.border};
+          : (highlightStyle?.borderColor ?? colors.border)};
         cursor: pointer;
         background: ${isSelected
           ? colors.highlight
-          : highlightStyle?.background ?? colors.surface};
+          : (highlightStyle?.background ?? colors.surface)};
         color: ${hasError ? colors.error : colors.text};
         align-items: flex-start;
+        box-sizing: border-box;
+        overflow: visible;
+        flex-shrink: 0;
+        box-shadow: ${isSelected ? `inset 3px 0 0 ${colors.accent}` : 'none'};
 
         @container admin-shell (max-width: 680px) {
           flex-direction: column;
-          gap: 0.55rem;
+          gap: 0.35rem;
+          padding-block: 0.5rem;
         }
       `}
       on:click={onSelect}
@@ -89,34 +97,41 @@ export const LogItem = ({
         css={`
           display: grid;
           gap: 0.35rem;
-          min-width: 0;
-          width: 9rem;
-          flex-shrink: 0;
+          min-width: 5rem;
+          max-width: 12rem;
+          flex: 0 1 9rem;
 
           @container admin-shell (max-width: 680px) {
+            min-width: 0;
+            max-width: none;
+            flex: 1 1 auto;
             width: 100%;
           }
         `}
       >
-        <span
+        <strong
           css={`
             ${truncate}
             font-weight: 600;
+            display: block;
           `}
         >
           {atomName}
-        </span>
+        </strong>
         <div
           css={`
             ${flex}
             ${gap(1)}
             flex-wrap: wrap;
+            align-items: center;
+            line-height: 1.2;
           `}
         >
           {frame.params !== undefined && (
             <span
               css={`
                 ${badge}
+                padding-block: 0.15rem;
                 background: ${colors.bgElevated};
                 color: ${colors.textSubtle};
               `}
@@ -128,6 +143,7 @@ export const LogItem = ({
             <span
               css={`
                 ${badge}
+                padding-block: 0.15rem;
                 background: ${colors.errorSoft};
                 color: ${colors.error};
                 border-color: ${colors.error};

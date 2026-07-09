@@ -2,7 +2,6 @@ import { atom } from '@reatom/core'
 
 import type { Admin } from '../../index'
 import { formatSessionDuration } from '../../timeline'
-import { formatTimestamp } from '../format'
 import { EmptyStateCard } from '../components/EmptyStateCard'
 import { TimelineBars } from '../components/TimelineBars'
 import { TimelineControls } from '../components/TimelineControls'
@@ -11,6 +10,7 @@ import {
   formatTimelineSelectionTime,
   TimelineSelectionPanel,
 } from '../components/TimelineSelectionPanel'
+import { formatTimestamp } from '../format'
 import {
   badge,
   buttonGhost,
@@ -130,10 +130,16 @@ export const TimelineScreen = ({ admin }: TimelineScreenProps) => {
 
   return (
     <div
+      data-reatom-name="TimelineScreen"
       css={`
         display: grid;
         gap: 1rem;
         color: ${colors.text};
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        align-content: start;
       `}
     >
       <section

@@ -9,5 +9,6 @@
     "types": ["vitest", "@vitest/browser-playwright", "@storybook/html"],
     "paths": { "test": ["./src/test.ts"] }
   },
-  "include": ["src", ".storybook/**/*"]
+  "include": ["src", ".storybook/**/*"],
+  "exclude": ["src/stories/reatom-jsx-gallery/src/**"]
 }

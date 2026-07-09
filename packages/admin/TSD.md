@@ -103,7 +103,7 @@ The store is now responsible for more than simple frame retention.
 
 These derivations support:
 
-- summary cards
+- metrics strip
 - state explorer construction
 - inspector history navigation
 - source badges and replay state
@@ -189,7 +189,7 @@ The UI is now organized as a multi-workspace product shell.
 
 ```mermaid
 flowchart LR
-  A[Header] --> B[Summary cards]
+  A[Dense toolbar] --> B[Metrics strip]
   A --> C[Session controls]
   D[Navigation] --> E[Activity]
   D --> F[Timeline]
@@ -199,16 +199,22 @@ flowchart LR
 
 ### Header
 
-- live vs replay badge
-- session metadata
-- recording status
-- summary cards
-- session controls
+- compact brand + Live/Replay source pill
+- recording status beside the Pause/Resume capture toggle
+- session metadata as muted text
+- inline metrics strip (captured, visible, hidden, errors, atoms)
+- compact session actions (export, import, clear, fresh)
+
+### Devtools dock
+
+- corner grip resizes only (`nwse-resize`); toolbar left-pads to clear it
+- minimize lives in the HeaderBar toolbar (rightmost) and collapses to a floating expand pill
+- `show()` / `hide()` API unchanged
 
 ### Activity workspace
 
 - search and quick built-in filters
-- styled feed with colored highlights
+- master–detail feed + inspector with independent scroll
 - structured frame inspector
 - recent atom history
 - state explorer
@@ -225,14 +231,14 @@ flowchart LR
 - direction switching
 - depth limit control
 - path-from control
-- synchronized node selection
+- node select vs Focus (re-root)
 
 ### Filter studio
 
-- saved rule cards
-- nested expression editor
-- reusable predicate builder
-- quick apply section
+- saved rule cards first
+- nested expression editor + predicate builder
+- save-as actions below the draft (disabled when empty)
+- two-step confirm for clearing saved rules
 
 ## Testing strategy
 

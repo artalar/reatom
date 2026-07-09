@@ -1,5 +1,5 @@
-export { createEngineManager } from './engine'
 export type { FilterConfigInput } from './engine'
+export { createEngineManager } from './engine'
 export { createExpressionManager, evaluateExpression } from './expression'
 export type { AtomRegistry, FrameIndex } from './predicates'
 export {

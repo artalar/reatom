@@ -1,5 +1,4 @@
 import { urlAtom } from '@reatom/core'
-import { mount } from '@reatom/jsx'
 
 import { ADMIN_FRAME } from '../../root'
 import {
@@ -59,7 +58,9 @@ function resetPersistentAdminState(devtools: PersistentDevtools): void {
 }
 
 export function renderAdminHarness(
-  renderApplication: (target: HTMLElement) => Promise<() => void> | (() => void),
+  renderApplication: (
+    target: HTMLElement,
+  ) => Promise<() => void> | (() => void),
   options: AdminHarnessOptions = {},
 ): HTMLDivElement {
   const applicationRootId = options.applicationRootId ?? 'admin-shell-app'

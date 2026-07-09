@@ -1,8 +1,8 @@
 import { atom } from '@reatom/core'
 
 import type { Admin } from '../../index'
-import { FilterBar } from '../components/FilterBar'
 import { EmptyStateCard } from '../components/EmptyStateCard'
+import { FilterBar } from '../components/FilterBar'
 import { InspectorPanel } from '../components/InspectorPanel'
 import { LogItem } from '../components/LogItem'
 import { StateExplorer } from '../components/StateExplorer'
@@ -18,6 +18,8 @@ import {
 } from '../styles'
 
 type ActivityWorkspaceTab = 'feed' | 'state'
+
+const FEED_RENDER_LIMIT = 200
 
 export interface LogScreenProps {
   admin: Admin
@@ -40,18 +42,29 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
   const selectedFrameId = () => admin.store.selectedFrameId()
   const selectedFrame = () => admin.store.selectedFrame()
 
+  const renderedFrames = () => {
+    const allFrames = frames()
+    if (allFrames.length <= FEED_RENDER_LIMIT) return allFrames
+    return allFrames.slice(-FEED_RENDER_LIMIT)
+  }
+
   return (
     <div
+      data-reatom-name="LogScreen"
       css={`
         display: grid;
-        gap: 0.85rem;
+        gap: 0.65rem;
+        height: 100%;
         min-height: 0;
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
       `}
     >
       <section
         css={`
           ${card}
           overflow: hidden;
+          flex-shrink: 0;
         `}
       >
         <FilterBar admin={admin} />
@@ -59,14 +72,15 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
       <div
         css={`
           display: grid;
-          grid-template-columns: minmax(0, 1.08fr) minmax(19rem, 24rem);
-          gap: 1rem;
+          grid-template-columns: minmax(0, 1.08fr) minmax(17rem, 22rem);
+          gap: 0.75rem;
           min-height: 0;
-          align-items: start;
+          overflow: hidden;
 
           @container admin-shell (max-width: 680px) {
             grid-template-columns: minmax(0, 1fr);
-            gap: 0.85rem;
+            grid-template-rows: minmax(0, 1.35fr) minmax(0, 1fr);
+            gap: 0.65rem;
           }
         `}
       >
@@ -75,8 +89,9 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
           css={`
             ${card}
             display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
             min-width: 0;
-            align-self: start;
+            min-height: 0;
             overflow: hidden;
           `}
         >
@@ -85,8 +100,9 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
               ${flex}
               ${gap(1)}
               ${p(2)}
-              padding-bottom: 0.65rem;
+              padding-bottom: 0.55rem;
               border-bottom: 1px solid ${colors.border};
+              flex-shrink: 0;
             `}
           >
             {(
@@ -104,9 +120,7 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                       ? colors.highlight
                       : 'transparent'};
                   color: ${() =>
-                    workspaceTab() === tab.id
-                      ? colors.text
-                      : colors.textMuted};
+                    workspaceTab() === tab.id ? colors.text : colors.textMuted};
                   border-color: ${() =>
                     workspaceTab() === tab.id
                       ? colors.accent
@@ -125,7 +139,15 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                 css={`
                   ${p(2)}
                   display: grid;
-                  gap: 0.85rem;
+                  grid-template-rows: auto minmax(0, 1fr);
+                  gap: 0.5rem;
+                  min-height: 0;
+                  overflow: hidden;
+
+                  @container admin-shell (max-width: 680px) {
+                    padding: 0.55rem;
+                    gap: 0.4rem;
+                  }
                 `}
               >
                 <div
@@ -134,11 +156,13 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                     ${gap(1)}
                     justify-content: space-between;
                     align-items: center;
+                    flex-shrink: 0;
                   `}
                 >
                   <h2
                     css={`
                       ${panelTitle}
+                      font-size: 0.9rem;
                     `}
                   >
                     Activity feed
@@ -146,7 +170,7 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                   <div
                     css={`
                       color: ${colors.textSubtle};
-                      font-size: 0.74rem;
+                      font-size: 0.72rem;
                     `}
                   >
                     {`${frames().length} visible · ${admin.store.frameCount()} captured`}
@@ -160,26 +184,66 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                   />
                 ) : (
                   <div
-                    data-reatom-name="ActivityFeedList"
                     css={`
                       display: grid;
-                      gap: 0.55rem;
+                      grid-template-rows: ${() =>
+                        frames().length > FEED_RENDER_LIMIT
+                          ? 'auto minmax(0, 1fr)'
+                          : 'minmax(0, 1fr)'};
+                      gap: 0.45rem;
+                      min-height: 0;
+                      overflow: hidden;
                     `}
                   >
-                    {frames().map((frame) => (
-                      <LogItem
-                        frame={frame}
-                        atomName={
-                          atoms().get(frame.atomId)?.name ?? frame.atomId
+                    {() =>
+                      frames().length > FEED_RENDER_LIMIT ? (
+                        <div
+                          css={`
+                            color: ${colors.textSubtle};
+                            font-size: 0.7rem;
+                            flex-shrink: 0;
+                          `}
+                        >
+                          {`Showing latest ${FEED_RENDER_LIMIT} of ${frames().length}`}
+                        </div>
+                      ) : null
+                    }
+                    <div
+                      data-reatom-name="ActivityFeedList"
+                      css={`
+                        ${scrollable}
+                        min-height: 0;
+                        overscroll-behavior: contain;
+                        scroll-padding-block: 0.35rem;
+                      `}
+                    >
+                      <div
+                        css={`
+                          display: flex;
+                          flex-direction: column;
+                          gap: 0.45rem;
+                          padding: 0.55rem 0.2rem 0.65rem;
+                          box-sizing: border-box;
+                        `}
+                      >
+                        {() =>
+                          renderedFrames().map((frame) => (
+                            <LogItem
+                              frame={frame}
+                              atomName={
+                                atoms().get(frame.atomId)?.name ?? frame.atomId
+                              }
+                              highlightStyle={highlightStyles().get(frame.id)}
+                              isSelected={selectedFrameId() === frame.id}
+                              onSelect={() => {
+                                admin.store.selectFrame(frame.id)
+                                admin.causeGraph.selectedRootId.set(frame.id)
+                              }}
+                            />
+                          ))
                         }
-                        highlightStyle={highlightStyles().get(frame.id)}
-                        isSelected={selectedFrameId() === frame.id}
-                        onSelect={() => {
-                          admin.store.selectFrame(frame.id)
-                          admin.causeGraph.selectedRootId.set(frame.id)
-                        }}
-                      />
-                    ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -188,7 +252,7 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
                 css={`
                   ${p(2)}
                   ${scrollable}
-                  max-height: min(28rem, 52vh);
+                  min-height: 0;
                   overscroll-behavior: contain;
                 `}
               >
@@ -201,9 +265,12 @@ export const LogScreen = ({ admin }: LogScreenProps) => {
         <aside
           css={`
             display: grid;
-            gap: 1rem;
+            gap: 0.75rem;
             align-content: start;
             min-height: 0;
+            min-width: 0;
+            ${scrollable}
+            overscroll-behavior: contain;
           `}
         >
           {() => <InspectorPanel admin={admin} frame={selectedFrame()} />}

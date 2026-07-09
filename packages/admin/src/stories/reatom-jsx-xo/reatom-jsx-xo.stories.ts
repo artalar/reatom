@@ -3,6 +3,8 @@ import { mswLoader } from 'msw-storybook-addon'
 import { expect, waitFor } from 'storybook/test'
 
 import { button, createActor, heading, role } from '../../../.storybook/helpers'
+import { navigateAdminRoute } from '../../testing/admin-navigation'
+import { matchAdminScreenshot } from '../../testing/visual'
 import {
   refreshGithubStarsRequest,
   renderXoHarness,
@@ -21,8 +23,6 @@ import {
   showOnlyAdminErrors,
   startFreshAdminSession,
 } from './testing'
-import { navigateAdminRoute } from '../../testing/admin-navigation'
-import { matchAdminScreenshot } from '../../testing/visual'
 const I = createActor()
 
 const winningMoveLabels = [
@@ -69,7 +69,7 @@ export const WinningDebuggingJourney: Story = {
     await I.see(role('group', 'Tic-tac-toe board'))
     await waitFor(() => {
       expect(getAdminText()).toContain('Reatom Admin')
-      expect(getAdminText()).toContain('Start fresh session')
+      expect(getAdminText()).toContain('Fresh')
     })
 
     await startFreshAdminSession()
@@ -204,7 +204,7 @@ export const GithubStarsFetchFailure: Story = {
     await I.see(role('group', 'Tic-tac-toe board'))
     await waitFor(() => {
       expect(getAdminText()).toContain('Reatom Admin')
-      expect(getAdminText()).toContain('Start fresh session')
+      expect(getAdminText()).toContain('Fresh')
     })
 
     await refreshGithubStarsRequest().catch(() => undefined)

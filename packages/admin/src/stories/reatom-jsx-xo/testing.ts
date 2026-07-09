@@ -129,6 +129,17 @@ export async function resumeAdminCapture(): Promise<void> {
   })
 }
 
+export async function confirmAdminDestructiveAction(
+  armMatcher: RegExp | string,
+  confirmMatcher: RegExp | string,
+): Promise<void> {
+  await clickAdminButton(armMatcher)
+  await waitFor(() => {
+    expect(getAdminButton(confirmMatcher)).not.toBeNull()
+  })
+  await clickAdminButton(confirmMatcher)
+}
+
 export async function startFreshAdminSession(): Promise<void> {
   const capturePaused = getAdminText().includes('Recording paused')
 
@@ -136,7 +147,7 @@ export async function startFreshAdminSession(): Promise<void> {
     await pauseAdminCapture()
   }
 
-  await clickAdminButton(/Start fresh session/i)
+  await confirmAdminDestructiveAction(/^Fresh$/, /^Confirm fresh$/)
 
   await waitFor(() => {
     expect(getLogItems(getAdminShadowRoot())).toHaveLength(0)

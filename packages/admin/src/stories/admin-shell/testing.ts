@@ -1,4 +1,14 @@
 export {
+  getAdminRouteButton,
+  navigateAdminRoute,
+  queryAdminMainRegion,
+} from '../../testing/admin-navigation'
+export {
+  getAdminDevtoolsHost,
+  matchAdminScreenshot,
+  matchStoryRootScreenshot,
+} from '../../testing/visual'
+export {
   clickAdminButton,
   getAdminFrameDetail,
   getAdminText,
@@ -9,15 +19,3 @@ export {
   searchAdminLogs,
   startFreshAdminSession,
 } from '../reatom-jsx-xo/testing'
-
-export {
-  getAdminRouteButton,
-  navigateAdminRoute,
-  queryAdminMainRegion,
-} from '../../testing/admin-navigation'
-
-export {
-  getAdminDevtoolsHost,
-  matchAdminScreenshot,
-  matchStoryRootScreenshot,
-} from '../../testing/visual'

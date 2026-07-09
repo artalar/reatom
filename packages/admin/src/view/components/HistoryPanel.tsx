@@ -1,16 +1,7 @@
 import type { Admin } from '../../index'
 import type { AdminFrame } from '../../types'
 import { formatPreview, formatTimestamp } from '../format'
-import {
-  badge,
-  buttonGhost,
-  colors,
-  flex,
-  gap,
-  mono,
-  panelTitle,
-  rounded,
-} from '../styles'
+import { badge, buttonGhost, colors, flex, gap, mono, rounded } from '../styles'
 
 export interface HistoryPanelProps {
   admin: Admin
@@ -21,9 +12,7 @@ export const HistoryPanel = ({ admin, frame }: HistoryPanelProps) => {
   const history = () =>
     admin.store
       .frames()
-      .filter(
-        (entry) => entry.atomId === frame.atomId && entry.id !== frame.id,
-      )
+      .filter((entry) => entry.atomId === frame.atomId && entry.id !== frame.id)
       .slice(-8)
       .reverse()
 
@@ -47,14 +36,6 @@ export const HistoryPanel = ({ admin, frame }: HistoryPanelProps) => {
         gap: 0.65rem;
       `}
     >
-      <h4
-        css={`
-          ${panelTitle}
-          font-size: 0.9rem;
-        `}
-      >
-        Recent history
-      </h4>
       {() =>
         history().map((entry) => (
           <button
@@ -83,6 +64,7 @@ export const HistoryPanel = ({ admin, frame }: HistoryPanelProps) => {
                   ${badge}
                   background: ${colors.bgElevated};
                   color: ${colors.textMuted};
+                  pointer-events: none;
                 `}
               >
                 #{entry.id}

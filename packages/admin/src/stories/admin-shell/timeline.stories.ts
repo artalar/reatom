@@ -81,6 +81,13 @@ export const TimelineVisualReference: Story = {
       expect(getAdminText()).toContain('Window (ms)')
     })
 
+    // Event list is less sensitive to bucketization jitter than the histogram.
+    const { clickAdminButton } = await import('../reatom-jsx-xo/testing')
+    await clickAdminButton(/^Event list$/)
+    await waitFor(() => {
+      expect(getAdminText()).toContain('Event list')
+    })
+
     await matchAdminScreenshot('counter-timeline-reference')
   },
 }

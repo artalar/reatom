@@ -1,5 +1,15 @@
 import type { Admin } from '../../index'
-import { buttonGhost, colors, flex, flexWrap, gap, inputLike, px, py } from '../styles'
+import {
+  buttonGhost,
+  colors,
+  flex,
+  flexWrap,
+  focusVisible,
+  gap,
+  inputLike,
+  px,
+  py,
+} from '../styles'
 
 export interface FilterBarProps {
   admin: Admin
@@ -19,7 +29,8 @@ const TARGETS: Array<{
 export const FilterBar = ({ admin }: FilterBarProps) => {
   const search = admin.filters.search
   const builtInTagId = (name: string) =>
-    admin.filters.tags.tags().find((tag) => tag.builtIn && tag.name === name)?.id
+    admin.filters.tags.tags().find((tag) => tag.builtIn && tag.name === name)
+      ?.id
 
   const toggleQuickRule = (tagName: string, mode: 'show' | 'hide') => {
     const tagId = builtInTagId(tagName)
@@ -65,30 +76,27 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
       data-reatom-name="FilterBar"
       css={`
         display: grid;
-        gap: 0.75rem;
+        gap: 0.4rem;
         ${px(2)}
-        padding-block: 0.875rem;
+        padding-block: 0.5rem;
 
         @container admin-shell (max-width: 680px) {
-          padding-inline: 0.75rem;
-          padding-block: 0.65rem;
-          gap: 0.55rem;
+          padding-inline: 0.55rem;
+          padding-block: 0.4rem;
+          gap: 0.35rem;
         }
       `}
     >
       <div
         css={`
-          display: grid;
-          grid-template-columns: minmax(18rem, 1fr) minmax(8rem, auto) auto;
-          gap: 0.75rem;
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 0.4rem;
           align-items: center;
+          min-width: 0;
 
-          @media (max-width: 880px) {
-            grid-template-columns: minmax(14rem, 1fr) minmax(8rem, auto);
-          }
-
-          @media (max-width: 640px) {
-            grid-template-columns: minmax(0, 1fr);
+          @container admin-shell (max-width: 420px) {
+            flex-wrap: wrap;
           }
         `}
       >
@@ -98,20 +106,34 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
           model:value={search.searchQuery}
           data-testid="filter-search-input"
           css={`
-            width: 100%;
+            flex: 1 1 10rem;
             min-width: 0;
-            min-height: 2.5rem;
             ${px(2)} ${py(1)}
             ${inputLike}
+            min-height: 1.85rem;
+            font-size: 0.78rem;
+            ${focusVisible}
+
+            @container admin-shell (max-width: 420px) {
+              flex: 1 1 100%;
+            }
           `}
         />
         <select
           model:value={search.searchTarget}
           css={`
-            width: 100%;
-            min-height: 2.5rem;
-            ${px(2)} ${py(1)}
+            flex: 0 0 auto;
+            width: auto;
+            min-width: 4.5rem;
+            ${px(1)} ${py(1)}
             ${inputLike}
+            min-height: 1.85rem;
+            font-size: 0.78rem;
+            ${focusVisible}
+
+            @container admin-shell (max-width: 420px) {
+              flex: 1 1 auto;
+            }
           `}
         >
           {TARGETS.map((t) => (
@@ -122,13 +144,12 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
           type="button"
           css={`
             ${buttonGhost}
-            min-height: 2.5rem;
+            flex: 0 0 auto;
+            min-height: 1.85rem;
+            padding-inline: 0.55rem;
+            padding-block: 0.25rem;
+            font-size: 0.72rem;
             white-space: nowrap;
-
-            @media (max-width: 880px) {
-              grid-column: 1 / -1;
-              justify-self: start;
-            }
           `}
           on:click={() => {
             admin.filters.search.searchQuery.set('')
@@ -141,14 +162,12 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
 
       <div
         css={`
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          gap: 0.75rem 1rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem 0.65rem;
           align-items: center;
-
-          @media (max-width: 760px) {
-            grid-template-columns: minmax(0, 1fr);
-          }
+          justify-content: space-between;
+          min-width: 0;
         `}
       >
         <div
@@ -156,6 +175,7 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
             ${flex}
             ${gap(1)}
             ${flexWrap}
+            min-width: 0;
           `}
         >
           {[
@@ -168,6 +188,10 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
               aria-pressed={() => hasQuickRule(quickRule.tagName)}
               css={`
                 ${buttonGhost}
+                min-height: 1.55rem;
+                padding-inline: 0.45rem;
+                padding-block: 0.2rem;
+                font-size: 0.7rem;
                 border-color: ${() =>
                   hasQuickRule(quickRule.tagName)
                     ? colors.accent
@@ -193,14 +217,9 @@ export const FilterBar = ({ admin }: FilterBarProps) => {
         <div
           css={`
             color: ${colors.textSubtle};
-            font-size: 0.72rem;
-            justify-self: end;
-            text-align: right;
-
-            @media (max-width: 760px) {
-              justify-self: start;
-              text-align: left;
-            }
+            font-size: 0.68rem;
+            white-space: nowrap;
+            flex-shrink: 0;
           `}
         >
           {() =>
