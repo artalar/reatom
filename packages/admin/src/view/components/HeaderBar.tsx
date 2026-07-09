@@ -2,60 +2,80 @@ import type { Admin } from '../../index'
 import { formatDateTime } from '../format'
 import {
   badge,
-  card,
+  buttonGhost,
   colors,
-  compactPanelPadding,
   flex,
-  flexWrap,
+  focusVisible,
   gap,
-  hideInCompactShell,
-  p,
-  panelTitle,
 } from '../styles'
 import { SessionControls } from './SessionControls'
 import { SummaryCards } from './SummaryCards'
 
+/** Clears the fixed corner resize grip painted over the docked shell. */
+const RESIZE_GRIP_CLEARANCE = '2rem'
+
 export interface HeaderBarProps {
   admin: Admin
+  onMinimize?: () => void
 }
 
-export const HeaderBar = ({ admin }: HeaderBarProps) => {
+export const HeaderBar = ({ admin, onMinimize }: HeaderBarProps) => {
   const session = () => admin.store.currentSession()
   const source = () => admin.store.source()
-  const paused = () => admin.reporter.paused()
 
   return (
     <header
+      data-reatom-name="HeaderBar"
       css={`
-        ${card}
-        ${p(3)}
-        ${compactPanelPadding}
         display: grid;
-        gap: 1rem;
-
-        @container admin-shell (max-width: 680px) {
-          gap: 0.65rem;
-        }
+        gap: 0.3rem;
+        padding-block: 0.3rem;
+        padding-inline: ${RESIZE_GRIP_CLEARANCE} 0.4rem;
+        background: ${colors.bgElevated};
+        border-radius: 8px;
+        border: 1px solid ${colors.border};
       `}
     >
       <div
         css={`
           ${flex}
-          ${gap(2)}
-          ${flexWrap}
+          ${gap(1)}
+          align-items: center;
           justify-content: space-between;
-          align-items: flex-start;
+          min-width: 0;
         `}
       >
-        <div>
+        <div
+          css={`
+            ${flex}
+            ${gap(1)}
+            align-items: center;
+            min-width: 0;
+            flex: 1 1 auto;
+            overflow: hidden;
+          `}
+        >
+          <span
+            css={`
+              font-size: 0.74rem;
+              font-weight: 700;
+              letter-spacing: 0.01em;
+              color: ${colors.text};
+              white-space: nowrap;
+              flex-shrink: 0;
+            `}
+          >
+            Reatom Admin
+          </span>
+
           {() => {
             const currentSource = source()
             const isReplay = currentSource === 'replay'
             return (
-              <div
+              <span
                 css={`
                   ${badge}
-                  width: fit-content;
+                  flex-shrink: 0;
                   background: ${isReplay
                     ? colors.warningSoft
                     : colors.accentSoft};
@@ -63,92 +83,69 @@ export const HeaderBar = ({ admin }: HeaderBarProps) => {
                   color: ${isReplay ? colors.warning : colors.accent};
                 `}
               >
-                {isReplay ? 'Replay analysis' : 'Live devtools'}
-              </div>
+                {isReplay ? 'Replay' : 'Live'}
+              </span>
             )
           }}
-          <h1
-            css={`
-              ${panelTitle}
-              margin-top: 0.75rem;
-              font-size: 1.25rem;
 
-              @container admin-shell (max-width: 680px) {
-                margin-top: 0.45rem;
-                font-size: 1.05rem;
-              }
-            `}
-          >
-            Reatom Admin
-          </h1>
-          <p
-            css={`
-              ${hideInCompactShell}
-              margin: 0.4rem 0 0;
-              color: ${colors.textMuted};
-              line-height: 1.5;
-              max-width: 48rem;
-            `}
-          >
-            Inspect activity streams, isolate noisy transitions, understand
-            causal chains, and preserve complex debugging sessions without a
-            backend.
-          </p>
-        </div>
-
-        <div
-          css={`
-            display: grid;
-            gap: 0.6rem;
-            justify-items: end;
-
-            @container admin-shell (max-width: 680px) {
-              justify-items: start;
-              gap: 0.35rem;
-            }
-          `}
-        >
-          {() => {
-            const isPaused = paused()
-            return (
-              <div
-                css={`
-                  ${badge}
-                  background: ${isPaused
-                    ? colors.warningSoft
-                    : colors.successSoft};
-                  border-color: ${isPaused ? colors.warning : colors.success};
-                  color: ${isPaused ? colors.warning : colors.success};
-                `}
-              >
-                {isPaused ? 'Recording paused' : 'Recording active'}
-              </div>
-            )
-          }}
-          <div
+          <span
             data-testid="header-session-meta"
             css={`
-              ${hideInCompactShell}
-              color: ${colors.textMuted};
-              font-size: 0.72rem;
-              text-align: right;
+              color: ${colors.textSubtle};
+              font-size: 0.64rem;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              min-width: 0;
             `}
           >
             {() => {
               const currentSession = session()
-              return (
-                <>
-                  <div>Session {currentSession.id}</div>
-                  <div>Started {formatDateTime(currentSession.startedAt)}</div>
-                </>
-              )
+              return `Session ${currentSession.id} · ${formatDateTime(currentSession.startedAt)}`
             }}
-          </div>
+          </span>
         </div>
+
+        {onMinimize ? (
+          <button
+            type="button"
+            aria-label="Minimize devtools"
+            css={`
+              ${buttonGhost}
+              width: 1.6rem;
+              height: 1.6rem;
+              min-height: 1.6rem;
+              padding: 0;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              flex-shrink: 0;
+              color: ${colors.textMuted};
+              ${focusVisible}
+            `}
+            on:click={() => onMinimize()}
+          >
+            <svg:svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              aria-hidden="true"
+            >
+              <svg:path
+                d="M2.5 6h7"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg:svg>
+          </button>
+        ) : null}
       </div>
 
-      <SummaryCards admin={admin} />
       <SessionControls admin={admin} />
+
+      <SummaryCards admin={admin} />
     </header>
   )
 }

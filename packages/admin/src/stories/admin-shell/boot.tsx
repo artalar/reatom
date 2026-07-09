@@ -1,5 +1,4 @@
 import { urlAtom } from '@reatom/core'
-import { mount } from '@reatom/jsx'
 
 import { ADMIN_FRAME } from '../../root'
 import {

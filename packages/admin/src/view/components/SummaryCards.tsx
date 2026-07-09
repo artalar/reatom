@@ -1,16 +1,6 @@
 import type { Admin } from '../../index'
 import { formatRelativeCount } from '../format'
-import {
-  badge,
-  cardRaised,
-  colors,
-  flex,
-  flexWrap,
-  gap,
-  hideInCompactShell,
-  p,
-  rounded,
-} from '../styles'
+import { colors, flex, flexWrap, gap, statChip } from '../styles'
 
 export interface SummaryCardsProps {
   admin: Admin
@@ -19,46 +9,7 @@ export interface SummaryCardsProps {
 interface SummaryItem {
   label: string
   value: string
-  tone: 'default' | 'accent' | 'success' | 'warning' | 'error'
-}
-
-function getToneColors(tone: SummaryItem['tone']): {
-  background: string
-  borderColor: string
-  textColor: string
-} {
-  switch (tone) {
-    case 'accent':
-      return {
-        background: colors.accentSoft,
-        borderColor: colors.accent,
-        textColor: colors.accent,
-      }
-    case 'success':
-      return {
-        background: colors.successSoft,
-        borderColor: colors.success,
-        textColor: colors.success,
-      }
-    case 'warning':
-      return {
-        background: colors.warningSoft,
-        borderColor: colors.warning,
-        textColor: colors.warning,
-      }
-    case 'error':
-      return {
-        background: colors.errorSoft,
-        borderColor: colors.error,
-        textColor: colors.error,
-      }
-    default:
-      return {
-        background: colors.surface,
-        borderColor: colors.borderStrong,
-        textColor: colors.text,
-      }
-  }
+  tone: 'default' | 'error'
 }
 
 export const SummaryCards = ({ admin }: SummaryCardsProps) => {
@@ -68,17 +19,17 @@ export const SummaryCards = ({ admin }: SummaryCardsProps) => {
     {
       label: 'Captured',
       value: formatRelativeCount(summary().totalFrames, 'frame'),
-      tone: 'accent',
+      tone: 'default',
     },
     {
       label: 'Visible',
       value: formatRelativeCount(summary().visibleFrames, 'frame'),
-      tone: 'success',
+      tone: 'default',
     },
     {
       label: 'Hidden',
       value: formatRelativeCount(summary().hiddenFrames, 'frame'),
-      tone: 'warning',
+      tone: 'default',
     },
     {
       label: 'Errors',
@@ -94,93 +45,48 @@ export const SummaryCards = ({ admin }: SummaryCardsProps) => {
 
   return (
     <div
+      data-testid="summary-metrics"
       css={`
-        display: flex;
-        gap: 0.65rem;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        padding-bottom: 0.15rem;
-        scrollbar-width: thin;
-
-        @container admin-shell (min-width: 681px) {
-          ${flex}
-          ${gap(2)}
-          ${flexWrap}
-          overflow-x: visible;
-          padding-bottom: 0;
-        }
+        ${flex}
+        ${gap(1)}
+        ${flexWrap}
+        align-items: center;
+        min-width: 0;
       `}
     >
       {() =>
         items().map((item) => {
-          const toneColors = getToneColors(item.tone)
+          const isError = item.tone === 'error'
           return (
-            <section
+            <span
               css={`
-                ${cardRaised}
-                ${p(2)}
-                min-width: 9rem;
-                flex: 1 1 10rem;
-
-                @container admin-shell (max-width: 680px) {
-                  min-width: 5.75rem;
-                  flex: 0 0 auto;
-                  padding: 0.55rem 0.65rem;
-                }
+                ${statChip}
+                border-color: ${isError ? colors.error : colors.border};
+                background: ${isError ? colors.errorSoft : colors.bg};
+                color: ${isError ? colors.error : colors.textMuted};
               `}
             >
-              <div
+              <span
                 css={`
-                  ${badge}
-                  width: fit-content;
-                  background: ${toneColors.background};
-                  border-color: ${toneColors.borderColor};
-                  color: ${toneColors.textColor};
-
-                  @container admin-shell (max-width: 680px) {
-                    font-size: 0.62rem;
-                    padding-inline: 0.35rem;
-                    padding-block: 0.25rem;
-                  }
+                  text-transform: uppercase;
+                  letter-spacing: 0.02em;
+                  font-size: 0.62rem;
+                  color: ${isError ? colors.error : colors.textSubtle};
                 `}
               >
                 {item.label}
-              </div>
-              <div
+              </span>
+              <strong
                 css={`
-                  margin-top: 0.75rem;
-                  font-size: 1.2rem;
-                  font-weight: 700;
-                  color: ${colors.text};
-
-                  @container admin-shell (max-width: 680px) {
-                    margin-top: 0.35rem;
-                    font-size: 0.95rem;
-                  }
+                  font-size: 0.74rem;
+                  font-weight: 650;
+                  color: ${isError ? colors.error : colors.text};
+                  font-variant-numeric: tabular-nums;
                 `}
               >
                 {item.value}
-              </div>
-              <div
-                css={`
-                  ${hideInCompactShell}
-                  margin-top: 0.4rem;
-                  ${rounded}
-                  color: ${colors.textSubtle};
-                  font-size: 0.72rem;
-                `}
-              >
-                {item.label === 'Visible'
-                  ? 'after all current filters'
-                  : item.label === 'Hidden'
-                    ? 'filtered from the main activity feed'
-                    : item.label === 'Captured'
-                      ? 'current session data source'
-                      : item.label === 'Errors'
-                        ? 'frames with a captured error'
-                        : 'distinct atoms in the workspace'}
-              </div>
-            </section>
+              </strong>
+            </span>
           )
         })
       }

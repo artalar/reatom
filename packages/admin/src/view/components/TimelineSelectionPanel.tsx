@@ -1,5 +1,3 @@
-import { atom } from '@reatom/core'
-
 import type { Admin } from '../../index'
 import type { AdminFrame } from '../../types'
 import { formatPreview, formatTimestamp } from '../format'

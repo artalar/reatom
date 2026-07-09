@@ -19,6 +19,11 @@ export const CauseGraphScreen = ({ admin }: CauseGraphScreenProps) => {
         display: grid;
         gap: 1rem;
         color: ${colors.text};
+        height: 100%;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        align-content: start;
       `}
     >
       <section

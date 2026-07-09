@@ -153,8 +153,11 @@ Mounts the product shell into a specific DOM element.
 
 ### `createAdminDevtools(options?)`
 
-Creates the docked in-page devtools shell with resize, show, and hide
-capabilities.
+Creates the docked in-page devtools shell with a corner resize grip, minimize
+in the toolbar (collapses to a floating pill), and show/hide capabilities. The
+product chrome is a dense toolbar (brand, Live/Replay source, recording toggle,
+session actions) with an inline metrics strip rather than oversized summary
+cards.
 
 ## Built-in test strategy
 

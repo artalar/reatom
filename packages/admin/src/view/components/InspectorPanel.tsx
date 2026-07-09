@@ -1,6 +1,6 @@
 import type { Admin } from '../../index'
 import type { AdminFrame } from '../../types'
-import { card, colors, p, panelTitle } from '../styles'
+import { card, colors, p, panelTitle, scrollable } from '../styles'
 import { EmptyStateCard } from './EmptyStateCard'
 import { FrameDetail } from './FrameDetail'
 import { HistoryPanel } from './HistoryPanel'
@@ -27,8 +27,9 @@ export const InspectorPanel = ({ admin, frame }: InspectorPanelProps) => {
       data-reatom-name="InspectorPanel"
       css={`
         display: grid;
-        gap: 1rem;
+        gap: 0.85rem;
         align-content: start;
+        min-height: 0;
       `}
     >
       <FrameDetail
@@ -42,7 +43,8 @@ export const InspectorPanel = ({ admin, frame }: InspectorPanelProps) => {
           ${card}
           ${p(3)}
           display: grid;
-          gap: 0.85rem;
+          gap: 0.75rem;
+          min-height: 0;
         `}
       >
         <h3
@@ -50,23 +52,25 @@ export const InspectorPanel = ({ admin, frame }: InspectorPanelProps) => {
             ${panelTitle}
           `}
         >
-          Atom timeline
+          Recent history
         </h3>
         <p
           css={`
             margin: 0;
             color: ${colors.textMuted};
-            font-size: 0.8rem;
-            line-height: 1.5;
+            font-size: 0.78rem;
+            line-height: 1.45;
           `}
         >
-          Jump across previous frames for the same atom to understand how its
-          state evolved during this debugging session.
+          Jump across previous frames for the same atom.
         </p>
         <div
           css={`
             display: grid;
             gap: 0.5rem;
+            ${scrollable}
+            max-height: 16rem;
+            overscroll-behavior: contain;
           `}
         >
           <HistoryPanel admin={admin} frame={frame} />

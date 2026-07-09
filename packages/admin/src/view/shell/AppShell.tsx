@@ -4,10 +4,11 @@ import { adminShellContainer, colors } from '../styles'
 
 export interface AppShellProps {
   admin: Admin
+  onMinimize?: () => void
 }
 
-export const AppShell = ({ admin }: AppShellProps) => {
-  const routes = createAdminRoutes(admin)
+export const AppShell = ({ admin, onMinimize }: AppShellProps) => {
+  const routes = createAdminRoutes(admin, { onMinimize })
 
   return (
     <div

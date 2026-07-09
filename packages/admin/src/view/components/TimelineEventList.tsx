@@ -8,7 +8,6 @@ import {
   flex,
   gap,
   mono,
-  panelTitle,
   rounded,
   scrollable,
 } from '../styles'

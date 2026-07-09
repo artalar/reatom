@@ -45,15 +45,45 @@ export const gap = (n: Size) => `gap: ${space[n]}rem;`
 
 export const border = `border: 1px solid ${colors.border};`
 export const borderStrong = `border: 1px solid ${colors.borderStrong};`
-export const card = `${bg(colors.surface)} ${roundedLg} ${border}; box-shadow: 0 18px 40px -24px ${colors.shadow};`
-export const cardRaised = `${bg(colors.surfaceRaised)} ${roundedLg} ${borderStrong}; box-shadow: 0 24px 48px -28px ${colors.shadow};`
+export const card = `${bg(colors.surface)} ${rounded} ${border};`
+export const cardRaised = `${bg(colors.surfaceRaised)} ${rounded} ${borderStrong};`
 export const scrollable = 'overflow-y: auto; -webkit-overflow-scrolling: touch;'
 export const truncate =
   'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
 export const mono =
   'font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Consolas, Liberation Mono, Menlo, monospace;'
 export const focusRing = `outline: 2px solid ${colors.accent}; outline-offset: 2px;`
-export const softShadow = `box-shadow: 0 18px 40px -28px ${colors.shadow};`
+export const focusVisible = `
+  &:focus {
+    outline: none;
+  }
+  &:focus-visible {
+    ${focusRing}
+  }
+`
+export const softShadow = `box-shadow: 0 8px 20px -16px ${colors.shadow};`
+
+export const toolbar = `
+  ${bg(colors.bgElevated)}
+  ${rounded}
+  ${border}
+  ${px(2)}
+  ${py(1)}
+`
+
+export const statChip = `
+  display: inline-flex;
+  align-items: baseline;
+  ${gap(1)}
+  ${px(1)}
+  ${py(1)}
+  ${roundedSm}
+  border: 1px solid ${colors.border};
+  background: ${colors.bg};
+  font-size: 0.68rem;
+  line-height: 1.2;
+  white-space: nowrap;
+`
 
 export const inputLike = `
   ${rounded}
@@ -62,6 +92,7 @@ export const inputLike = `
   color: ${colors.text};
   box-sizing: border-box;
   min-height: 2.25rem;
+  ${focusVisible}
 `
 
 export const buttonBase = `
@@ -69,14 +100,13 @@ export const buttonBase = `
   ${border}
   ${px(2)}
   ${py(1)}
-  ${softShadow}
   background: ${colors.surfaceInteractive};
   color: ${colors.text};
   cursor: pointer;
   transition:
     background 120ms ease,
-    border-color 120ms ease,
-    transform 120ms ease;
+    border-color 120ms ease;
+  ${focusVisible}
 `
 
 export const buttonGhost = `
@@ -87,6 +117,19 @@ export const buttonGhost = `
   background: transparent;
   color: ${colors.textMuted};
   cursor: pointer;
+  ${focusVisible}
+`
+
+export const buttonDanger = `
+  ${rounded}
+  ${border}
+  ${px(2)}
+  ${py(1)}
+  background: transparent;
+  border-color: ${colors.error};
+  color: ${colors.error};
+  cursor: pointer;
+  ${focusVisible}
 `
 
 export const badge = `
@@ -95,10 +138,12 @@ export const badge = `
   ${gap(1)}
   ${px(1)}
   ${py(1)}
-  ${rounded}
+  ${roundedSm}
   font-size: 0.7rem;
   line-height: 1;
   border: 1px solid ${colors.borderStrong};
+  cursor: default;
+  pointer-events: none;
 `
 
 export const sectionTitle = `
@@ -139,3 +184,13 @@ export const compactOnlyShell = `
     display: inline-flex;
   }
 `
+
+export const screenRoot = `
+  height: 100%;
+  min-height: 0;
+  ${scrollable}
+`
+
+export const shellCompactMax = '680px'
+export const shellMediumMax = '760px'
+export const shellWideMax = '880px'

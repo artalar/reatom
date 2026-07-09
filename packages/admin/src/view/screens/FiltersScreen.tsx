@@ -1,6 +1,6 @@
 import type { Admin } from '../../index'
 import { FilterEditor } from '../components/FilterEditor'
-import { colors, scrollable } from '../styles'
+import { colors, screenRoot } from '../styles'
 
 export interface FiltersScreenProps {
   admin: Admin
@@ -11,12 +11,13 @@ export const FiltersScreen = ({ admin }: FiltersScreenProps) => {
     <div
       data-reatom-name="FiltersScreen"
       css={`
-        ${scrollable}
+        ${screenRoot}
         display: grid;
         gap: 1rem;
         align-content: start;
         align-items: start;
         color: ${colors.text};
+        overscroll-behavior: contain;
       `}
     >
       <FilterEditor admin={admin} />

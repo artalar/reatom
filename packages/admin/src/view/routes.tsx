@@ -16,11 +16,21 @@ export interface AdminRoutes {
   filtersRoute: RouteAtom
 }
 
-export function createAdminRoutes(admin: Admin): AdminRoutes {
+export interface CreateAdminRoutesOptions {
+  onMinimize?: () => void
+}
+
+export function createAdminRoutes(
+  admin: Admin,
+  options: CreateAdminRoutesOptions = {},
+): AdminRoutes {
+  const { onMinimize } = options
   const layoutRoute = reatomRoute(
     {
       render(self) {
-        return <Layout admin={admin} outlet={self.outlet} />
+        return (
+          <Layout admin={admin} outlet={self.outlet} onMinimize={onMinimize} />
+        )
       },
     },
     '_Admin.layoutRoute',

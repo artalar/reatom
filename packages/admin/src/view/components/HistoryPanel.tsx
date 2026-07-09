@@ -8,7 +8,6 @@ import {
   flex,
   gap,
   mono,
-  panelTitle,
   rounded,
 } from '../styles'
 
@@ -47,14 +46,6 @@ export const HistoryPanel = ({ admin, frame }: HistoryPanelProps) => {
         gap: 0.65rem;
       `}
     >
-      <h4
-        css={`
-          ${panelTitle}
-          font-size: 0.9rem;
-        `}
-      >
-        Recent history
-      </h4>
       {() =>
         history().map((entry) => (
           <button
@@ -83,6 +74,7 @@ export const HistoryPanel = ({ admin, frame }: HistoryPanelProps) => {
                   ${badge}
                   background: ${colors.bgElevated};
                   color: ${colors.textMuted};
+                  pointer-events: none;
                 `}
               >
                 #{entry.id}

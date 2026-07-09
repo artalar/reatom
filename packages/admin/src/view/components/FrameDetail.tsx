@@ -1,4 +1,4 @@
-import { urlAtom } from '@reatom/core'
+import { atom, urlAtom } from '@reatom/core'
 
 import type { Admin } from '../../index'
 import type { AdminFrame } from '../../types'
@@ -41,6 +41,12 @@ export const FrameDetail = ({
   const exportPayload = getFrameExportPayload(frame)
   const inspectorPayload = getFrameInspectorPayload(frame)
   const isAction = isActionFrame(frame)
+  const copyState = atom<'idle' | 'copied'>(
+    'idle',
+    `_Admin.view.frameDetail.copy.${frame.id}`,
+  )
+
+  let copyTimer: ReturnType<typeof setTimeout> | null = null
 
   return (
     <div
@@ -131,10 +137,16 @@ export const FrameDetail = ({
             type="button"
             css={buttonGhost}
             on:click={() => {
-              navigator.clipboard.writeText(formatJson(exportPayload))
+              void navigator.clipboard.writeText(formatJson(exportPayload))
+              copyState.set('copied')
+              if (copyTimer !== null) clearTimeout(copyTimer)
+              copyTimer = setTimeout(() => {
+                copyState.set('idle')
+                copyTimer = null
+              }, 1500)
             }}
           >
-            Copy JSON
+            {() => (copyState() === 'copied' ? 'Copied' : 'Copy JSON')}
           </button>
           <button
             type="button"
@@ -175,6 +187,7 @@ export const FrameDetail = ({
             color: ${colors.error};
             white-space: pre-wrap;
             word-break: break-word;
+            pointer-events: auto;
           `}
         >
           <strong>Captured error</strong>
