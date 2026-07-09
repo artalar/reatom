@@ -171,6 +171,10 @@ The package is designed to be tested with realistic user scenarios:
   - captured action and atom activity
   - replayable inspection flows
   - user-visible debugging workflows
+- long-form gallery integration journeys (`Integration/Reatom JSX Gallery`) that
+  mix app curation (view modes, search, selection, favorites, lightbox) with
+  admin Activity / Timeline / Graph / Filter studio inspection across 25–50
+  sequential steps per story
 
 ## Development scripts
 

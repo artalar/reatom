@@ -125,6 +125,25 @@ tasks:
     files:
       - packages/admin/src/stories/admin-shell/filters.stories.ts
 
+  - id: story-gallery-journeys
+    title: Gallery long-form integration journeys (curation, lightbox graph, filter studio)
+    priority: P1
+    role: test-author
+    status: done
+    blocked_by: [infra-visual-harness, actor-nav-extend]
+    tags: ['@smoke', '@visual']
+    acceptance:
+      - Three gallery journeys pass under pnpm test:stories
+      - Visual baseline gallery-lightbox-graph-reference committed
+      - Journeys mix app interaction with Activity/Timeline/Graph/Filters inspection
+    files:
+      - packages/admin/src/stories/reatom-jsx-gallery/boot.tsx
+      - packages/admin/src/stories/reatom-jsx-gallery/testing.ts
+      - packages/admin/src/stories/reatom-jsx-gallery/journeys-shared.ts
+      - packages/admin/src/stories/reatom-jsx-gallery/gallery-curation.stories.ts
+      - packages/admin/src/stories/reatom-jsx-gallery/gallery-journeys.stories.ts
+      - packages/admin/src/stories/reatom-jsx-gallery/gallery-filter-studio.stories.ts
+
   - id: story-replay-journey
     title: Export session and re-import as replay
     priority: P1

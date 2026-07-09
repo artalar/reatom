@@ -137,44 +137,48 @@ function getTextValue(value: unknown): string {
   return typeof value === 'string' ? value : ''
 }
 
-export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
-  const editingTagId = atom<string | null>(null, '_Admin.view.predicateBuilder.tagId')
-  const draftName = atom('', '_Admin.view.predicateBuilder.name')
-  const draftPredicates = atom<Array<FilterPredicate>>(
-    [],
-    '_Admin.view.predicateBuilder.predicates',
-  )
+// Module-scoped draft state — creating/writing atoms during render causes
+// "Stuck in recursion" when the Filters route mounts.
+const editingTagId = atom<string | null>(
+  null,
+  '_Admin.view.predicateBuilder.tagId',
+)
+const draftName = atom('', '_Admin.view.predicateBuilder.name')
+const draftPredicates = atom<Array<FilterPredicate>>(
+  [createDraftPredicate('text')],
+  '_Admin.view.predicateBuilder.predicates',
+)
 
-  const setDraft = action((name: string, predicates: Array<FilterPredicate>, tagId?: string) => {
+const setDraft = action(
+  (name: string, predicates: Array<FilterPredicate>, tagId?: string) => {
     editingTagId.set(tagId ?? null)
     draftName.set(name)
     draftPredicates.set(predicates.map((predicate) => ({ ...predicate })))
-  }, '_Admin.view.predicateBuilder.setDraft')
+  },
+  '_Admin.view.predicateBuilder.setDraft',
+)
 
-  const resetDraft = action(() => {
-    editingTagId.set(null)
-    draftName.set('')
-    draftPredicates.set([createDraftPredicate('text')])
-  }, '_Admin.view.predicateBuilder.resetDraft')
+const resetDraft = action(() => {
+  editingTagId.set(null)
+  draftName.set('')
+  draftPredicates.set([createDraftPredicate('text')])
+}, '_Admin.view.predicateBuilder.resetDraft')
 
-  const updatePredicate = action(
-    (
-      predicateId: string,
-      updater: (predicate: FilterPredicate) => FilterPredicate,
-    ) => {
-      draftPredicates.set(
-        draftPredicates().map((predicate) =>
-          predicate.id === predicateId ? updater(predicate) : predicate,
-        ),
-      )
-    },
-    '_Admin.view.predicateBuilder.updatePredicate',
-  )
+const updatePredicate = action(
+  (
+    predicateId: string,
+    updater: (predicate: FilterPredicate) => FilterPredicate,
+  ) => {
+    draftPredicates.set(
+      draftPredicates().map((predicate) =>
+        predicate.id === predicateId ? updater(predicate) : predicate,
+      ),
+    )
+  },
+  '_Admin.view.predicateBuilder.updatePredicate',
+)
 
-  if (draftPredicates().length === 0) {
-    draftPredicates.set([createDraftPredicate('text')])
-  }
-
+export const PredicateBuilder = ({ admin }: PredicateBuilderProps) => {
   return (
     <section
       data-reatom-name="PredicateBuilder"

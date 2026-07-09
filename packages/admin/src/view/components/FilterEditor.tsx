@@ -28,23 +28,24 @@ const MODES: Array<{ value: FilterMode; label: string }> = [
   { value: 'exclude', label: 'Exclude' },
 ]
 
+const confirmClear = atom(false, '_Admin.view.filterEditor.confirmClear')
+
+let confirmTimer: ReturnType<typeof setTimeout> | null = null
+
+const scheduleConfirmRevert = () => {
+  if (confirmTimer !== null) clearTimeout(confirmTimer)
+  confirmTimer = setTimeout(() => {
+    confirmClear.set(false)
+    confirmTimer = null
+  }, 3000)
+}
+
 export const FilterEditor = ({ admin }: FilterEditorProps) => {
   const engine = admin.filters.engine
   const tags = admin.filters.tags
   const configs = () => engine.configs()
   const draftExpression = () => admin.filters.expression.expression()
   const draftNodeCount = () => draftExpression().children.length
-  const confirmClear = atom(false, '_Admin.view.filterEditor.confirmClear')
-
-  let confirmTimer: ReturnType<typeof setTimeout> | null = null
-
-  const scheduleConfirmRevert = () => {
-    if (confirmTimer !== null) clearTimeout(confirmTimer)
-    confirmTimer = setTimeout(() => {
-      confirmClear.set(false)
-      confirmTimer = null
-    }, 3000)
-  }
 
   const appendTagReference = (tagId: string) => {
     const expression = draftExpression()
