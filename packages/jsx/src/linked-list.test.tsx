@@ -12,14 +12,14 @@ import {
 import { expect, test } from 'vitest'
 
 // eslint-disable-next-line unused-imports/no-unused-imports
-import { DEBUG, h, hf, mount } from '.'
+import { DEBUG, h, hf, instance, mount } from '.'
 
 clearStack()
 
 DEBUG.extend(withInit(() => false))
 
 const parent = atom(() => {
-  const main = (<main />) as HTMLElement
+  const main = instance(HTMLElement, <main />)
   window.document.body.appendChild(main)
 
   return main
@@ -201,4 +201,3 @@ test('linked list createMany and removeMany with reatomMap', () =>
     expect(parent().innerText).toBe('2')
     expect(list.array()).toEqual([nodes[1]])
   }))
-

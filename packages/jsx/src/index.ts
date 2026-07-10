@@ -5,6 +5,7 @@ import {
   assert,
   atom,
   type AtomLike,
+  bind,
   computed,
   type Fn,
   isAction,
@@ -38,6 +39,7 @@ export type FC<Props = {}> = (
 
 export type { JSX, JSXElement }
 
+export { instance } from '@reatom/core'
 export { reatomClassName } from './utils'
 
 type DomApis = Pick<
@@ -803,11 +805,11 @@ export let mount = (
   target.append(child)
 
   return {
-    unmount: () => {
+    unmount: bind(() => {
       observer.disconnect()
       cleanupNode(child)
       child.remove()
-    },
+    }),
   }
 }
 

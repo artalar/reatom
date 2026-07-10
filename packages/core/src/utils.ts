@@ -580,6 +580,29 @@ export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
   return value
 }
 
+/**
+ * Asserts that a value is an instance of the given constructor. Throws a
+ * TypeError if the check fails. Also serves as a type guard to narrow the
+ * value to the expected instance type.
+ *
+ * @example
+ *   const main = instance(HTMLElement, <main />)
+ *   const input = instance(HTMLInputElement, <input />)
+ *
+ * @template T - The expected instance type
+ * @param prototype - Constructor to check against
+ * @param element - The value to check
+ * @returns The input value if it is an instance of the constructor
+ * @throws {TypeError} If the value is not an instance of the constructor
+ */
+export const instance = <T>(prototype: new () => T, element: unknown): T => {
+  if (element instanceof prototype) return element
+
+  const received = element == null ? String(element) : element.constructor.name
+
+  throw TypeError(`Expected ${prototype.name} but got ${received}`)
+}
+
 const toString = /* @__PURE__ */ Object.prototype.toString
 const toStringArray = /* @__PURE__ */ [].toString
 const visited = _createGlobal(

@@ -2,10 +2,10 @@ import { atom, context, isConnected, sleep, wrap } from '@reatom/core'
 import { expect, test } from 'vitest'
 
 // eslint-disable-next-line unused-imports/no-unused-imports
-import { h, mount } from '.'
+import { h, instance, mount } from '.'
 
 const parent = atom(() => {
-  const main = (<main />) as HTMLElement
+  const main = instance(HTMLElement, <main />)
   window.document.body.appendChild(main)
 
   return main

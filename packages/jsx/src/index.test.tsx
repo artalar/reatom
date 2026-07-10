@@ -15,14 +15,14 @@ import {
 import { expect, test, vi } from 'vitest'
 
 // eslint-disable-next-line unused-imports/no-unused-imports
-import { Bind, DEBUG, h, hf, type JSX, mount, stylesheet } from '.'
+import { Bind, DEBUG, h, hf, instance, type JSX, mount, stylesheet } from '.'
 
 clearStack()
 
 DEBUG.extend(withInit(() => false))
 
 const parent = atom(() => {
-  const main = (<main />) as HTMLElement
+  const main = instance(HTMLElement, <main />)
   window.document.body.appendChild(main)
 
   return main
@@ -147,7 +147,9 @@ test('dynamic children', () =>
     )
     before.set('before...')
     await wrap(sleep())
-    expect((element as HTMLDivElement).innerText).toBe('before...innerafter')
+    expect(instance(HTMLDivElement, element).innerText).toBe(
+      'before...innerafter',
+    )
   }))
 
 test('on: handler action name uses function name', () =>
@@ -174,7 +176,7 @@ test('on: handler action name uses function name', () =>
       </button>
     )
 
-    const element = (<Button />) as HTMLButtonElement
+    const element = instance(HTMLButtonElement, <Button />)
 
     mount(parent(), element)
     await wrap(sleep())
@@ -229,7 +231,7 @@ test('spreads', () =>
       },
     })
 
-    const element = (<div $spread={props} />) as HTMLDivElement
+    const element = instance(HTMLDivElement, <div $spread={props} />)
 
     mount(parent(), element)
     await wrap(sleep())
@@ -248,7 +250,7 @@ test.skip('spreads difference', () =>
     const props = atom<Partial<Record<'class' | 'id', string>>>({
       class: 'class',
     })
-    const element = (<div $spread={props} />) as HTMLDivElement
+    const element = instance(HTMLDivElement, <div $spread={props} />)
 
     mount(parent(), element)
     await wrap(sleep())
@@ -480,8 +482,10 @@ test('custom component', () =>
 
     await wrap(sleep())
     expect(<Component />).toBeInstanceOf(window.HTMLElement)
-    expect(((<Component draggable />) as HTMLElement).draggable).toBe(true)
-    expect(((<Component>123</Component>) as HTMLElement).innerText).toBe('123')
+    expect(instance(HTMLElement, <Component draggable />).draggable).toBe(true)
+    expect(instance(HTMLElement, <Component>123</Component>).innerText).toBe(
+      '123',
+    )
   }))
 
 test('ref unmount callback', () =>
@@ -873,17 +877,13 @@ test('render atom fragments', () =>
 
 test('Bind', () =>
   context.start(async () => {
-    const div = (<div />) as HTMLDivElement
-    const input = (<input />) as HTMLInputElement
-    const svg = (<svg:svg />) as SVGSVGElement
+    const div = instance(HTMLDivElement, <div />)
+    const input = instance(HTMLInputElement, <input />)
+    const svg = instance(SVGSVGElement, <svg:svg />)
 
     const inputState = atom('42')
 
-    const testDiv = (
-      <Bind
-        element={div}
-      />
-    )
+    const testDiv = <Bind element={div} />
     const testInput = (
       <Bind
         element={input}
@@ -953,7 +953,7 @@ const expectHtmlElementProperty = <
   hasAttr: boolean,
   getAttr: null | string,
 ) => {
-  const element = h(tag, { [prop]: value }) as HTMLElement
+  const element = instance(HTMLElement, h(tag, { [prop]: value }))
   expect((element as any)[prop]).toBe(expected)
   expect(element.hasAttribute(prop.toLowerCase())).toBe(hasAttr)
   expect(element.getAttribute(prop.toLowerCase())).toBe(getAttr)
@@ -1007,8 +1007,8 @@ test('role property', () =>
 
 test('list property', () =>
   context.start(async () => {
-    const element = (<input list="list"></input>) as HTMLInputElement
-    const list = (<datalist id="list"></datalist>) as HTMLDataListElement
+    const element = instance(HTMLInputElement, <input list="list"></input>)
+    const list = instance(HTMLDataListElement, <datalist id="list"></datalist>)
     mount(
       parent(),
       <div>
@@ -1027,8 +1027,8 @@ test('list property', () =>
 
 test('form property', () =>
   context.start(async () => {
-    const element = (<input form="form"></input>) as HTMLInputElement
-    const form = (<form id="form"></form>) as HTMLFormElement
+    const element = instance(HTMLInputElement, <input form="form"></input>)
+    const form = instance(HTMLFormElement, <form id="form"></form>)
     mount(
       parent(),
       <div>
@@ -1159,9 +1159,10 @@ test('model:field uses change and focus', () =>
       validate: ({ value }) => (value.length < 3 ? 'too short' : undefined),
     })
 
-    const input = (
-      <input model:field={field} attr:type="text" />
-    ) as HTMLInputElement
+    const input = instance(
+      HTMLInputElement,
+      <input model:field={field} attr:type="text" />,
+    )
 
     mount(parent(), input)
     await wrap(sleep())
@@ -1189,9 +1190,10 @@ test('model:field binds checkbox checked', () =>
   context.start(async () => {
     const field = reatomField(false, 'agreeField')
 
-    const input = (
-      <input model:field={field} attr:type="checkbox" />
-    ) as HTMLInputElement
+    const input = instance(
+      HTMLInputElement,
+      <input model:field={field} attr:type="checkbox" />,
+    )
 
     mount(parent(), input)
     await wrap(sleep())
@@ -1211,7 +1213,8 @@ test('model:field composes with ref when ref comes after', () =>
     const field = reatomField('', 'nameField')
     let userRef: HTMLInputElement | null = null
 
-    const input = (
+    const input = instance(
+      HTMLInputElement,
       <input
         model:field={field}
         ref={(el) => {
@@ -1221,8 +1224,8 @@ test('model:field composes with ref when ref comes after', () =>
           }
         }}
         attr:type="text"
-      />
-    ) as HTMLInputElement
+      />,
+    )
 
     mount(parent(), input)
     await wrap(sleep())
@@ -1241,7 +1244,7 @@ test('model:field sets number type and uses valueAsNumber', () =>
   context.start(async () => {
     const field = reatomField(0, 'countField')
 
-    const input = (<input model:field={field} />) as HTMLInputElement
+    const input = instance(HTMLInputElement, <input model:field={field} />)
 
     mount(parent(), input)
     await wrap(sleep())
@@ -1266,7 +1269,7 @@ test('model:field keeps text type for string field value', () =>
       fromState: (state) => state.toFixed(2),
     })
 
-    const input = (<input model:field={field} />) as HTMLInputElement
+    const input = instance(HTMLInputElement, <input model:field={field} />)
 
     mount(parent(), input)
     await wrap(sleep())
@@ -1294,12 +1297,13 @@ test('form model submits with preventDefault and state attrs', () =>
       },
     )
 
-    const formElement = (
+    const formElement = instance(
+      HTMLFormElement,
       <form model={form}>
         <input model:field={form.fields.email} attr:type="email" />
         <button type="submit">Send</button>
-      </form>
-    ) as HTMLFormElement
+      </form>,
+    )
 
     mount(parent(), formElement)
     await wrap(sleep())
@@ -1336,7 +1340,7 @@ test('form model sets submit error attrs', () =>
       },
     )
 
-    const formElement = (<form model={form} />) as HTMLFormElement
+    const formElement = instance(HTMLFormElement, <form model={form} />)
 
     mount(parent(), formElement)
     await wrap(sleep())
