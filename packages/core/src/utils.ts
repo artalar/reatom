@@ -582,8 +582,8 @@ export const nonNullable = <T>(value: T, message?: string): NonNullable<T> => {
 
 /**
  * Asserts that a value is an instance of the given constructor. Throws a
- * TypeError if the check fails. Also serves as a type guard to narrow the
- * value to the expected instance type.
+ * TypeError if the check fails. Also serves as a type guard to narrow the value
+ * to the expected instance type.
  *
  * @example
  *   const main = instance(HTMLElement, <main />)
