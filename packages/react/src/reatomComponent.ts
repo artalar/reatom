@@ -133,7 +133,18 @@ export let reatomComponent = <Props extends Rec = {}>(
       [frame, ...deps.map((dep) => props[dep])],
     )
 
-    React.useEffect(mount, [mount, ...deps.map((dep) => props[dep])])
+    // useLayoutEffect (not useEffect): it runs synchronously during React's
+    // commit phase, before the call stack unwinds and the JS engine drains
+    // the microtask queue. A dependency with no real async I/O (e.g. a route
+    // loader or a `computed(async () => ...)` with nothing to await) resolves
+    // via pure microtasks and can finish -- updating the whole reactive graph
+    // -- before a `useEffect`-scheduled `mount()` ever gets to subscribe.
+    // `_render`'s own staleness flag is only set on a reactive recompute,
+    // which requires an active subscriber, so a change that completes before
+    // subscribing is missed forever and the component is stuck on its
+    // pre-resolution render permanently. useLayoutEffect closes that race
+    // window instead of narrowing it.
+    React.useLayoutEffect(mount, [mount, ...deps.map((dep) => props[dep])])
 
     let { result } = render(props)
     if (isSuspense(result)) {
