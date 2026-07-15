@@ -90,6 +90,8 @@ export let isSuspense = (thing: unknown) =>
 // https://github.com/mobxjs/mobx/blob/main/packages/mobx-react-lite/src/observer.ts
 let REACT_FORWARD_REF_TYPE = Symbol.for('react.forward_ref')
 
+let REACT_MEMO_TYPE = Symbol.for('react.memo')
+
 let isForwardRefComponent = (
   thing: unknown,
 ): thing is { render: React.ForwardRefRenderFunction<unknown, Rec> } =>
@@ -97,6 +99,12 @@ let isForwardRefComponent = (
   thing !== null &&
   '$$typeof' in thing &&
   thing.$$typeof === REACT_FORWARD_REF_TYPE
+
+let isMemoComponent = (thing: unknown): boolean =>
+  typeof thing === 'object' &&
+  thing !== null &&
+  '$$typeof' in thing &&
+  thing.$$typeof === REACT_MEMO_TYPE
 
 // A `forwardRef(...)` exotic object is not callable — the reactive render
 // calls components as plain functions, so it needs the `render` field.
@@ -158,6 +166,15 @@ export function reatomComponent(
     name = options
   }
   name ||= named('Component', Component.name)
+
+  // A `React.memo(...)` object holds its render in `.type`, not `.render`, so
+  // the unwrap below cannot reach it. Wrap the result instead:
+  // `React.memo(reatomComponent(...))`.
+  assert(
+    !isMemoComponent(Component),
+    'reatomComponent does not accept a React.memo component; apply memo to the result instead: React.memo(reatomComponent(...))',
+    ReatomError,
+  )
 
   // The unwrapped component is wrapped back into `forwardRef` at the bottom
   // to keep the ref contract for React versions without ref-as-prop. Same

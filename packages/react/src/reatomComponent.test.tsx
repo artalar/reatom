@@ -550,4 +550,10 @@ describe('reatomComponent', () => {
         expect(inputRef.current?.placeholder).toBe('type here')
       }))
   })
+
+  test('throws a clear error for a React.memo(...) input', () => {
+    expect(() => reatomComponent(React.memo(() => <div />))).toThrow(
+      /React\.memo/,
+    )
+  })
 })
