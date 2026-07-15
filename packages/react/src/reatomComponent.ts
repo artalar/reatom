@@ -115,8 +115,8 @@ interface ReatomComponentOptions {
  * during its render change.
  *
  * To forward a ref, pass a `React.forwardRef(...)` component. This form stays
- * correct across React versions and is the recommended way to expose a ref
- * from a Reatom component.
+ * correct across React versions and is the recommended way to expose a ref from
+ * a Reatom component.
  *
  * @example
  *   const Counter = reatomComponent(() => {
@@ -222,9 +222,9 @@ export function reatomComponent(
 
 /**
  * Creates a component with a per-instance init phase: `init` runs once per
- * mount (and again when a `deps` prop changes) to set up local atoms,
- * effects, and subscriptions, and returns the render function used for every
- * subsequent render.
+ * mount (and again when a `deps` prop changes) to set up local atoms, effects,
+ * and subscriptions, and returns the render function used for every subsequent
+ * render.
  *
  * `init` receives `initProps` — the props captured at init time — while the
  * render function it returns receives `props`, the current props of every

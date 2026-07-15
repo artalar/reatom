@@ -3,6 +3,7 @@
   "trailingComma": "all",
   "semi": false,
   "printWidth": 80,
+  "jsdocKeepUnParseAbleExampleIndent": true,
   "plugins": [
     "./node_modules/prettier-plugin-jsdoc/dist/index.js",
     "prettier-plugin-astro"
