@@ -343,6 +343,8 @@ export let withAsync: {
       const isPromiseFresh =
         promiseToTrack !== undefined && !touched.has(promiseToTrack)
 
+      if (isCacheHit) touched.add(promise)
+
       if (cacheState?.payload) {
         pending.set((state) => state + 1)
         onFulfill(cacheState.payload.value, params)

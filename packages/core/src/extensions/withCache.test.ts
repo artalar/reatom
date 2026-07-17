@@ -421,3 +421,76 @@ test('SSR example', async () => {
 
   await wrap(client(snapshot))
 })
+
+test('pending stays correct after a persist-hydrated cache hit under a computed view', async () => {
+  // Repro conditions (all three required — drop any one and it behaves):
+  // 1. withCache({ withPersist }) hydrated from a snapshot (SSR handoff);
+  // 2. the hydration delivers a cache HIT on the very first computation after mount;
+  // 3. `pending` is connected only THROUGH a parent computed (how view bindings read it),
+  //    not via a direct `pending.subscribe`.
+  // Then the hit leaves `pending` at -1: the +1 of the hydration delivery pair is lost while
+  // the -1 of onSettle lands. Every later REAL fetch then runs with `pending === 0` (a view
+  // showing skeletons by `pending > 0` shows none) and settles back to -1.
+  const name = 'withCache.hydratedPending'
+  const storage = createMemStorage({ name, subscribe: false })
+  const withSSR = reatomPersist(storage)
+
+  const make = () => {
+    const cursor = atom<string | null>(null, `${name}.cursor`)
+    const pageSize = computed(
+      () => (cursor() === null ? 7 : 20),
+      `${name}.pageSize`,
+    )
+    const query = computed(async () => {
+      const cur = cursor()
+      const limit = pageSize()
+      return await wrap(
+        schedule(async () => {
+          await sleep(10)
+          return `${cur}:${limit}`
+        }),
+      )
+    }, `${name}.query`).extend(
+      withAsyncData({ initState: 'INIT' }),
+      withCache({ withPersist: withSSR }),
+    )
+    return { cursor, query }
+  }
+
+  // server: fill the cache for the initial params, snapshot
+  const snapshot = await wrap(
+    context.start(async () => {
+      const { query } = make()
+      await wrap(query())
+      await wrap(sleep(20))
+      return storage.snapshotAtom()
+    }),
+  )
+
+  // client: hydrate, mount a view (a computed reading data + pending), then paginate
+  await wrap(
+    context.start(async () => {
+      const { cursor, query } = make()
+      storage.snapshotAtom.set(snapshot)
+
+      const un = computed(() => {
+        query.data()
+        return query.pending()
+      }, `${name}.view`).subscribe(noop)
+
+      await wrap(sleep(20))
+      expect(query.data()).toBe('null:7') // hydrated, no refetch
+      expect(query.pending()).toBe(0)
+
+      cursor.set('c2') // paginate → a REAL fetch is in flight
+      await wrap(sleep(1))
+      expect(query.pending()).toBe(1) // ← currently 0: the skeletons-never-show symptom
+
+      await wrap(sleep(40))
+      expect(query.data()).toBe('c2:20')
+      expect(query.pending()).toBe(0) // ← currently -1: the negative-pending symptom
+
+      un()
+    }),
+  )
+})
