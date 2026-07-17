@@ -359,3 +359,48 @@ describe(`reactivity of validate function`, () => {
     expect(fieldArray.validation.errors()).toHaveLength(0)
   })
 })
+
+describe(`reset after element removal (#1309)`, () => {
+  const setup = (name: string) => {
+    const fieldArray = reatomFieldArray(['first', 'second', 'third'], { name })
+    const values = () => fieldArray.array().map((element) => element())
+    return { fieldArray, values }
+  }
+
+  const cases = [
+    { position: 'head', index: 0, afterRemove: ['second', 'third'] },
+    { position: 'middle', index: 1, afterRemove: ['first', 'third'] },
+    { position: 'tail', index: 2, afterRemove: ['first', 'second'] },
+  ]
+
+  for (const { position, index, afterRemove } of cases) {
+    test(`restores ${position} element`, () => {
+      const { fieldArray, values } = setup(`resetAfterRemoval.${position}`)
+
+      fieldArray.remove(fieldArray.array()[index]!)
+      notify()
+      expect(fieldArray().size).toBe(2)
+      expect(values()).toEqual(afterRemove)
+
+      fieldArray.reset()
+      notify()
+      expect(fieldArray().size).toBe(3)
+      expect(values()).toEqual(['first', 'second', 'third'])
+    })
+  }
+
+  test(`restores all elements after multiple removals`, () => {
+    const { fieldArray, values } = setup('resetAfterRemoval.multiple')
+
+    fieldArray.remove(fieldArray.array()[2]!)
+    fieldArray.remove(fieldArray.array()[0]!)
+    notify()
+    expect(fieldArray().size).toBe(1)
+    expect(values()).toEqual(['second'])
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray().size).toBe(3)
+    expect(values()).toEqual(['first', 'second', 'third'])
+  })
+})

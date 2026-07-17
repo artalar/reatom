@@ -343,11 +343,14 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
     `${name}.onFieldCreated`,
   )
 
+  let currentInitSnapshot = initState as FieldArrayInitState<Param>[]
+
   const initStateAtom: This['initState'] = atom(
     () => fieldArrayAtom(),
     `${name}.initState`,
   ).extend(
     withParams((initState: FieldArrayInitState<Param>[]) => {
+      currentInitSnapshot = initState
       return fieldArrayAtom.initiateFromSnapshot(initState.map((v) => [v]))
     }),
   )
@@ -389,8 +392,15 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
     }),
   )
 
+  const baseReset = fieldArrayAtom.reset
+
   return Object.assign(fieldArrayAtom, {
     experimental_onFieldCreated: onFieldCreated,
+    reset: action(
+      (...args: [] | [initState: FieldArrayInitState<Param>[]]) =>
+        baseReset(...(args.length ? args : [currentInitSnapshot])),
+      `${name}._reset`,
+    ),
   })
 }
 
