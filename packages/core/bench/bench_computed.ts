@@ -402,12 +402,9 @@ const testComputers = setupComputersTest({
   //   return (i) => store.dispatch(a.entry(i))
   // },
   async reatom({ listener, startCreation, endCreation }) {
-    const { atom, computed, context, wrap, notify, clearStack } =
-      await import('./dist')
+    const { atom, computed, notify } = await import('../dist')
 
     startCreation()
-
-    clearStack()
 
     const entry = atom(0, 'entry')
     const a = computed(() => entry(), 'a')
@@ -419,16 +416,14 @@ const testComputers = setupComputersTest({
     const g = computed(() => d() + e(), 'g')
     const h = computed(() => f() + g(), 'h')
 
-    return context.start(() => {
-      h.subscribe(listener)
+    h.subscribe(listener)
 
-      endCreation()
+    endCreation()
 
-      return wrap((v: number) => {
-        entry.set(v)
-        notify()
-      })
-    })
+    return (v: number) => {
+      entry.set(v)
+      notify()
+    }
   },
   async reatomV3({ listener, startCreation, endCreation }) {
     const { atom, createCtx } = await import('reatomV3')

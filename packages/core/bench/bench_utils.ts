@@ -22,10 +22,14 @@ type ChartData = Array<{
 
 const DOWNLOAD_LIMIT = 500
 
+const DIR = import.meta.dirname
 const CPU = cpus()[0]?.model?.replace(/ /g, '_') ?? 'unknown_cpu'
-const POPULAR_CHART_PATH = `./popular_chart_${CPU}.svg`
-const ALL_CHART_PATH = `./all_chart_${CPU}.svg`
-const CHART_TEMPLATE = './chart_template.svg'
+const POPULAR_CHART_FILE = `popular_chart_${CPU}.svg`
+const ALL_CHART_FILE = `all_chart_${CPU}.svg`
+const POPULAR_CHART_PATH = path.join(DIR, POPULAR_CHART_FILE)
+const ALL_CHART_PATH = path.join(DIR, ALL_CHART_FILE)
+const CHART_TEMPLATE = path.join(DIR, 'chart_template.svg')
+const README_PATH = path.join(DIR, 'README.md')
 const START_MARK = '<!--CONTENT_START-->'
 const END_MARK = '<!--CONTENT_END-->'
 const REGEX = new RegExp(`${START_MARK}(.*)${END_MARK}`, 'gms')
@@ -95,18 +99,18 @@ export async function genChart(allResults: BenchResults) {
     template.replace(REGEX, START_MARK + svgPopular + END_MARK),
   )
 
-  let readme = await readFile('./README.md', 'utf8')
+  let readme = await readFile(README_PATH, 'utf8')
   if (readme.includes(CPU)) {
     readme = readme.replace(
       new RegExp(`### ${CPU}(.|\n)*<!-- ### ${CPU} -->`),
       `### ${CPU}
 
-![](${POPULAR_CHART_PATH})
+![](./${POPULAR_CHART_FILE})
 
 <details>
 <summary>all results</summary>
 
-![](${ALL_CHART_PATH})
+![](./${ALL_CHART_FILE})
 
 </details>
 
@@ -114,17 +118,17 @@ export async function genChart(allResults: BenchResults) {
     )
   } else {
     readme = readme.replace(
-      '## Results',
-      `## Results
+      '## Results (`bench_computed`)',
+      `## Results (\`bench_computed\`)
 
 ### ${CPU}
 
-![](${POPULAR_CHART_PATH})
+![](./${POPULAR_CHART_FILE})
 
 <details>
 <summary>all results</summary>
 
-![](${ALL_CHART_PATH})
+![](./${ALL_CHART_FILE})
 
 </details>
 
@@ -132,7 +136,7 @@ export async function genChart(allResults: BenchResults) {
     )
   }
 
-  await writeFile('./README.md', readme)
+  await writeFile(README_PATH, readme)
 }
 
 async function getChartData(results: BenchResults): Promise<ChartData> {

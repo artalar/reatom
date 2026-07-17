@@ -1,5 +1,5 @@
 import type { Action, AssignerExt, Frame } from '../core'
-import { _enqueue, action, top, withMiddleware } from '../core'
+import { _enqueue, _read, action, top, withMiddleware } from '../core'
 import { memoKey, ReatomAbortController } from '../methods'
 import { abortVar } from '../methods'
 import { _getPrevFrame } from '../methods/context'
@@ -240,7 +240,7 @@ export let withAbort =
 
     return {
       abort: action((reason?: any) => {
-        let targetFrame = top().root.store.get(target)
+        let targetFrame = _read(target)
         let abortState = targetFrame?.run(getAbortState)
         let activeControllers = abortState?.activeControllers
 

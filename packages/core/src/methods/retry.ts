@@ -1,6 +1,5 @@
 import type { Action, AtomLike } from '../core'
-import { _mark, ReatomError } from '../core'
-import { context } from '../core'
+import { _mark, _read, ReatomError } from '../core'
 import { _copy } from '../core'
 
 /**
@@ -18,9 +17,9 @@ export const reset = <T extends AtomLike>(target: T) => {
     throw new ReatomError('Only reactive atoms can be reset')
   }
 
-  let { store } = context().state
-  let targetFrame = store.get(target)
+  let targetFrame = _read(target)
   if (targetFrame) {
+    // FIXME: `splice` only new frame, do not brake immutability!
     _copy(targetFrame).pubs.splice(1)
     if (targetFrame.subs.length > 0) {
       _mark(targetFrame)

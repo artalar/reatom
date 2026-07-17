@@ -2,7 +2,7 @@ import type { AbortExt } from '../extensions'
 import type { ReatomAbortController } from '../methods'
 import { type Fn, isAbort, type Rec, type Unsubscribe } from '../utils'
 import type { Action, ActionState, Ext } from './'
-import { _enqueue, type Extend, extend, isAction } from './'
+import { _enqueue, type Extend, extend, isAction, notify } from './'
 import { _createGlobal, ensureReatomGlobal, VERSION } from './globalStore'
 
 /*
@@ -37,14 +37,25 @@ export interface AtomMeta {
   readonly reactive: boolean
 
   /**
-   * Middleware chain: `[setup.computed ?? identity, ...middlewares]`.
-   * Subsequent elements are middleware wrapping from inner to outer. DO NOT
-   * change this array directly, use `extend` instead.
+   * Middleware chain: `[setup.computed ?? identity, computedMiddleware (or
+   * actionMiddleware), cacheMiddleware, ...custom]`. Subsequent elements are
+   * middleware wrapping from inner to outer. DO NOT change this array
+   * directly, use `extend` instead.
    */
   readonly middlewares: Array<Fn>
 
-  /** @internal precompiled middleware chain, rebuilt by `_recompile` on each extend */
-  pipeline: Fn
+  /**
+   * @internal precompiled middleware chain, rebuilt by `_recompile` on each
+   *   extend. Stays `null` for untouched default atoms, enabling the
+   *   monomorphic kernel fast path.
+   */
+  pipeline: null | Fn
+
+  /**
+   * Whether the atom accepts write parameters. `false` only for readonly
+   * computed atoms (see `computed` and `withParams`).
+   */
+  writable: boolean
 
   /**
    * @internal
@@ -65,6 +76,14 @@ export interface AtomMeta {
    * called when the atom loses its last subscriber.
    */
   onConnect: undefined | (Action & AbortExt)
+
+  /**
+   * @internal
+   * Frame cache used while only the default context exists (see `context.count`),
+   * which skips store WeakMap lookups entirely.
+   * DO NOT USE outside atom.ts
+   */
+  _frame: undefined | Frame
 }
 
 /**
@@ -280,6 +299,12 @@ export interface RootState {
 
   // Queues
 
+  /** @internal Whether a `notify` microtask is already scheduled. */
+  scheduled: boolean
+
+  /** @internal Cached bound `notify` for scheduling. */
+  notify: () => void
+
   /** Queue for hook callbacks to be executed. */
   hook: Queue
 
@@ -316,6 +341,13 @@ export interface RootFrame extends Frame<RootState, []> {}
  * contexts.
  */
 export interface ContextAtom extends AtomLike<RootState, [], RootFrame> {
+  /**
+   * @internal
+   * Number of `context.start` calls in this runtime. While it stays at `1`
+   * (only the default context exists) the kernel may bypass store WeakMap
+   * lookups for frame access.
+   */
+  count: number
   /**
    * Start a new isolated context and run a callback within it.
    *
@@ -407,8 +439,52 @@ export function run<I extends any[], O>(
   }
 }
 
+/**
+ * @private Reads The frame of the atom for the passed root. While only the
+ *   default context exists (`context.count === 1`) frames live exclusively on
+ *   the atom meta and the store WeakMap is bypassed entirely. Once a second
+ *   context is started the store becomes the source of truth; frames written
+ *   during the fast mode are lazily backfilled from the meta cache.
+ *
+ *   Hot code paths inline the `context.count === 1 ? meta._frame :
+ *   _getFrame(...)` check to avoid the function call in the common case.
+ */
+export function _getFrame<State, Params extends any[], Payload>(
+  target: AtomLike<State, Params, Payload>,
+  root: RootState,
+): undefined | Frame<State, Params, Payload> {
+  let meta = target.__reatom
+  if (context.count === 1) return meta._frame as Frame<State, Params, Payload>
+
+  let frame = root.store.get(target)
+  // In case a new context was started, while the old one still used
+  if (frame === undefined && meta._frame?.root === root) {
+    frame = meta._frame as Frame<State, Params, Payload>
+    root.store.set(target, frame as Frame)
+    meta._frame = undefined
+  }
+  return frame
+}
+
+/** @private write A frame to the atom meta cache and, if needed, the store */
+export function _setFrame(frame: Frame): void {
+  let meta = frame.atom.__reatom
+  if (context.count === 1) {
+    meta._frame = frame
+  } else {
+    // a frame written during the fast mode exists only in the meta cache -
+    // backfill its store before evicting it for a different root
+    let prev = meta._frame
+    if (prev !== undefined && prev.root !== frame.root) {
+      prev.root.store.set(prev.atom, prev)
+      meta._frame = undefined
+    }
+    frame.root.store.set(frame.atom, frame)
+  }
+}
+
 /** @private */
-export let _copy = (frame: Frame) => {
+export function _copy(frame: Frame) {
   let pubs = frame.pubs.slice() as typeof frame.pubs
 
   pubs[0] = null
@@ -424,7 +500,7 @@ export let _copy = (frame: Frame) => {
     root: frame.root,
   }
 
-  frame.root.store.set(frame.atom, frame)
+  _setFrame(frame)
 
   return frame
 }
@@ -437,17 +513,19 @@ export let isWritableAtom = (value: any): value is Atom => {
   return isAtom(value) && value.set !== undefined
 }
 
-export let _mark = (frame: Frame) => {
+export function _mark(frame: Frame) {
   for (let i = 0; i < frame.subs.length; i++) {
     let sub = frame.subs[i]!
 
     if ('__reatom' in sub) {
-      let subFrame = frame.root.store.get(sub)!
+      let subFrame = (
+        context.count === 1 ? sub.__reatom._frame : _getFrame(sub, frame.root)
+      )!
 
       if (sub.__reatom.processing > 0) {
         if (subFrame.subs.length > 0) {
           _enqueue(() => {
-            _copy(frame.root.store.get(sub)!)
+            _copy(_getFrame(sub, frame.root)!)
           }, 'compute')
           sub.__reatom.processing++
         }
@@ -464,11 +542,11 @@ export let _mark = (frame: Frame) => {
   }
 }
 
-let frameDependsOn = (
+function frameDependsOn(
   frame: Frame,
   changedAtom: AtomLike,
   visited: Set<Frame>,
-): boolean => {
+): boolean {
   if (visited.has(frame)) return false
   visited.add(frame)
 
@@ -487,13 +565,13 @@ let frameDependsOn = (
   return false
 }
 
-let markComputingReaders = (changedAtom: AtomLike) => {
+function markComputingReaders(changedAtom: AtomLike) {
   for (let i = STACK.length - 2; i >= 0; i--) {
     let activeFrame = STACK[i]!
 
     if (
       activeFrame.atom.__reatom.reactive &&
-      !activeFrame.atom.__reatom.processing
+      activeFrame.atom.__reatom.processing === 0
     ) {
       break
     }
@@ -505,7 +583,7 @@ let markComputingReaders = (changedAtom: AtomLike) => {
   }
 }
 
-let link = (frame: Frame) => {
+function link(frame: Frame) {
   let { pubs, atom } = frame
 
   for (let i = 1; i < pubs.length; i++) {
@@ -523,7 +601,7 @@ let link = (frame: Frame) => {
 // but in the real data, it is in the best case quite often (pub.subs.pop()).
 // For example, as we run `link` before `unlink` during deps invalidation,
 // for deps duplication we want to find just added dep.
-let unlink = (sub: AtomLike, oldPubs: Frame['pubs']) => {
+function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
   // Start from the end to try to revet the link sequence with just "pop" complexity.
   // Do not unlink the zero pub, as it is just an actualization flag.
   for (let i = oldPubs.length - 1; i > 0; i--) {
@@ -534,16 +612,14 @@ let unlink = (sub: AtomLike, oldPubs: Frame['pubs']) => {
     // looks like the pub was dirty
     if (idx === -1) continue
 
-    if (pub.subs.length === 1) {
+    if (idx === pub.subs.length - 1) {
       pub.subs.pop()
-      if (pub.atom.__reatom.onConnect !== undefined) {
-        _enqueue(pub.atom.__reatom.onConnect.abort, 'effect')
+      if (pub.subs.length === 0) {
+        if (pub.atom.__reatom.onConnect !== undefined) {
+          _enqueue(pub.atom.__reatom.onConnect.abort, 'effect')
+        }
+        unlink(pub.atom, pub.pubs)
       }
-      unlink(pub.atom, pub.pubs)
-    }
-    // This should be the most common case
-    else if (idx === pub.subs.length - 1) {
-      pub.subs.pop()
     } else {
       // Search the suitable element (not effect) from the end to reduce the shift (`splice`) complexity.
       let shiftIdx = pub.subs.findLastIndex((el) => el !== sub)
@@ -557,18 +633,14 @@ let unlink = (sub: AtomLike, oldPubs: Frame['pubs']) => {
   }
 }
 
-let relink = (frame: Frame, oldPubs: Frame['pubs']) => {
-  if (oldPubs.length !== frame.pubs.length) {
+function relink(frame: Frame, oldPubs: Frame['pubs']) {
+  let changed = oldPubs.length !== frame.pubs.length
+  for (let i = 1; !changed && i < oldPubs.length; i++) {
+    changed = oldPubs[i]!.atom !== frame.pubs[i]!.atom
+  }
+  if (changed) {
     link(frame)
     unlink(frame.atom, oldPubs)
-  } else {
-    for (let i = 1; i < oldPubs.length; i++) {
-      if (oldPubs[i]!.atom !== frame.pubs[i]!.atom) {
-        link(frame)
-        unlink(frame.atom, oldPubs)
-        break
-      }
-    }
   }
 }
 
@@ -584,7 +656,7 @@ let relink = (frame: Frame, oldPubs: Frame['pubs']) => {
  * @returns `true` if the atom has subscribers, `false` otherwise
  */
 export let isConnected = (anAtom: AtomLike): boolean =>
-  !!top().root.store.get(anAtom)?.subs.length
+  !!_getFrame(anAtom, top().root)?.subs.length
 
 export function assertFn(fn: unknown): asserts fn is Fn {
   if (typeof fn !== 'function') {
@@ -593,7 +665,7 @@ export function assertFn(fn: unknown): asserts fn is Fn {
 }
 
 export let _trackAction = (target: Action, parentFrame: Frame): Frame => {
-  let targetFrame = parentFrame.root.store.get(target)
+  let targetFrame = _getFrame(target, parentFrame.root)
 
   if (targetFrame === undefined) {
     targetFrame = {
@@ -606,7 +678,7 @@ export let _trackAction = (target: Action, parentFrame: Frame): Frame => {
       run,
       root: parentFrame.root,
     }
-    parentFrame.root.store.set(target, targetFrame)
+    _setFrame(targetFrame)
   }
 
   if (parentFrame.atom.__reatom.linking) parentFrame.pubs.push(targetFrame)
@@ -633,7 +705,7 @@ function subscribe(this: AtomLike, userCb?: Fn) {
     if (!(error instanceof Promise) && !isAbort(error)) throw error
   }
 
-  let frame = parentFrame.root.store.get(this)!
+  let frame = _getFrame(this, parentFrame.root)!
 
   let listener = () => {
     if (frame.subs.length === 0) return
@@ -641,7 +713,7 @@ function subscribe(this: AtomLike, userCb?: Fn) {
     // `this()` call is required for invalidation,
     // put it to the condition to reduce codesize
     if ((isActionSubscription || !Object.is(frame.state, this())) && userCb) {
-      let frameSnapshot = (frame = parentFrame.root.store.get(this)!)
+      let frameSnapshot = (frame = _getFrame(this, parentFrame.root)!)
       let state = frame.state
 
       _enqueue(() => {
@@ -678,7 +750,7 @@ function subscribe(this: AtomLike, userCb?: Fn) {
       if (frame.atom.__reatom.onConnect !== undefined) {
         _enqueue(frame.atom.__reatom.onConnect.abort, 'effect')
       }
-      unlink(this, parentFrame.root.store.get(this)!.pubs)
+      unlink(this, _getFrame(this, parentFrame.root)!.pubs)
     }
   }, parentFrame.root.frame)
 }
@@ -733,7 +805,11 @@ export function _isPubsChanged(
     let pubFreshError = pubError
 
     // try to reduce extra atom calls
-    let pubFreshFrame = frame.root.store.get(pubAtom)!
+    let pubFreshFrame = (
+      context.count === 1
+        ? pubAtom.__reatom._frame
+        : _getFrame(pubAtom, frame.root)
+    )!
 
     if (
       pubFreshFrame.atom.__reatom.processing > 0 &&
@@ -753,10 +829,13 @@ export function _isPubsChanged(
       try {
         pubFreshState = pubAtom()
       } catch (error) {
-        // we should give an ability to handle errors in computer by a user himself
         pubFreshError = error as Frame['error']
       }
-      pubFreshFrame = frame.root.store.get(pubAtom)!
+      pubFreshFrame = (
+        context.count === 1
+          ? pubAtom.__reatom._frame
+          : _getFrame(pubAtom, frame.root)
+      )!
       pubFreshError = pubFreshFrame.error
     }
 
@@ -770,22 +849,25 @@ export function _isPubsChanged(
         // the outer computation resolve the cycle first.
         frame.pubs.push(pubFreshFrame)
         continue
-      } else {
-        for (let j = i + 1; j < pubs.length; j++) {
-          let pubFrameJ = pubs[j]!
+      }
+      for (let j = i + 1; j < pubs.length; j++) {
+        let pubFrameJ = pubs[j]!
 
-          // try to reduce extra atom calls
-          let pubFreshFrameJ = frame.root.store.get(pubFrameJ.atom)!
+        // try to reduce extra atom calls
+        let pubFreshFrameJ = (
+          context.count === 1
+            ? pubFrameJ.atom.__reatom._frame
+            : _getFrame(pubFrameJ.atom, frame.root)
+        )!
 
-          if (
-            pubFreshFrameJ.atom.__reatom.processing > 0 &&
-            Object.is(pubFreshFrameJ.state, pubFrameJ.state)
-          ) {
-            // Cycle. Cache self last state, do not fall to recompute on pub old state
-            hasCycleDep = true
-            frame.pubs.push(pubFreshFrame)
-            continue pubLoop
-          }
+        if (
+          pubFreshFrameJ.atom.__reatom.processing > 0 &&
+          Object.is(pubFreshFrameJ.state, pubFrameJ.state)
+        ) {
+          // Cycle. Cache self last state, do not fall to recompute on pub old state
+          hasCycleDep = true
+          frame.pubs.push(pubFreshFrame)
+          continue pubLoop
         }
       }
 
@@ -796,9 +878,9 @@ export function _isPubsChanged(
       }
 
       return true
-    } else {
-      frame.pubs.push(pubFreshFrame)
     }
+
+    frame.pubs.push(pubFreshFrame)
   }
 
   return false
@@ -838,7 +920,7 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
         // TODO
         // Object.freeze(frame.pubs)
 
-        if (frame.subs.length) {
+        if (frame.subs.length !== 0) {
           // TODO may be a bug with resubscribing
           relink(frame, pubs)
         }
@@ -864,7 +946,21 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
   return newState
 }
 
-/** @internal apply new middlewares to the atom */
+/** Kernel middleware of actions, the non-reactive counterpart of `computedMiddleware` */
+export function actionMiddleware(next: Fn, ...params: any[]) {
+  let frame = STACK[STACK.length - 1]!
+
+  frame.pubs = [STACK[STACK.length - 2]!]
+
+  _enqueue(() => (frame.state = []), 'cleanup')
+
+  return (frame.state = [
+    ...frame.state,
+    { params, payload: next(...params) },
+  ])
+}
+
+/** @internal recompile the middleware chain after middlewares change */
 export let _recompile = (target: AtomLike) => {
   let { middlewares } = target.__reatom
   let fn: Fn = middlewares[0]!
@@ -874,13 +970,19 @@ export let _recompile = (target: AtomLike) => {
   target.__reatom.pipeline = fn
 }
 
-/** Cache checking middleware, placed in every atom's middlewares */
-export function cacheMiddleware(next: Fn, ...args: any[]) {
+/**
+ * @private The Shared body of `cacheMiddleware`. When `direct` is true, `next`
+ *   is the user function (`middlewares[0]`) and is invoked through
+ *   `computedMiddleware` / `actionMiddleware` without the bound pipeline,
+ *   keeping the hot path monomorphic. `args === null` means a read.
+ */
+export function _cacheImpl(next: Fn, args: null | any[], direct: boolean): any {
   let topFrame = STACK[STACK.length - 2]!
   let frame = STACK[STACK.length - 1]!
   let target = frame.atom
-  let { reactive } = target.__reatom
-  let push = !reactive || args.length > 0
+  let meta = target.__reatom
+  let { reactive } = meta
+  let push = !reactive || args !== null
 
   let { error, state } = frame
   let dirty = frame.pubs[0] === null
@@ -889,8 +991,7 @@ export function cacheMiddleware(next: Fn, ...args: any[]) {
   let isInit = frame.state instanceof AtomInitState
 
   if (
-    (target.__reatom.processing === 0 &&
-      (push || dirty || (dependent && !subscribed))) ||
+    (meta.processing === 0 && (push || dirty || (dependent && !subscribed))) ||
     (!error && isInit)
   ) {
     let recursionTries = 10
@@ -899,14 +1000,21 @@ export function cacheMiddleware(next: Fn, ...args: any[]) {
         STACK[STACK.length - 1] = frame = _copy(frame)
       }
 
-      if (reactive) target.__reatom.processing++
+      if (reactive) meta.processing++
 
       try {
         if (isInit) {
           frame.state = frame.state.initState()
         }
         isInit = false
-        frame.state = next(...args)
+        frame.state = direct
+          ? (reactive ? computedMiddleware : actionMiddleware)(
+              next,
+              ...(args ?? []),
+            )
+          : args === null
+            ? next()
+            : next.apply(null, args)
         frame.error = null
       } catch (error) {
         frame.error = error ?? new ReatomError('Unknown error')
@@ -931,9 +1039,9 @@ export function cacheMiddleware(next: Fn, ...args: any[]) {
       }
 
       if (reactive) {
-        target.__reatom.processing--
-        if (target.__reatom.processing > 0) {
-          target.__reatom.processing = 0
+        meta.processing--
+        if (meta.processing > 0) {
+          meta.processing = 0
           if (!push) {
             if (recursionTries === 0) {
               throw new ReatomError('Stuck in recursion')
@@ -964,15 +1072,14 @@ export function cacheMiddleware(next: Fn, ...args: any[]) {
   return frame.state
 }
 
-/** @internal default pipeline for atoms */
-let _defaultPipeline = cacheMiddleware.bind(
-  null,
-  computedMiddleware.bind(null, identity),
-)
+/** Cache checking middleware, placed in every atom's middlewares */
+export function cacheMiddleware(next: Fn, ...args: any[]) {
+  return _cacheImpl(next, args.length > 0 ? args : null, false)
+}
 
 let castAtom = <T extends AtomLike>(
   target: Fn,
-  meta: Omit<AtomMeta, 'processing' | 'linking' | 'onConnect'>,
+  meta: Pick<AtomMeta, 'reactive' | 'middlewares'>,
 ): T =>
   Object.assign(target, {
     extend,
@@ -990,10 +1097,12 @@ let castAtom = <T extends AtomLike>(
     __reatom: {
       reactive: meta.reactive,
       middlewares: meta.middlewares,
-      pipeline: meta.pipeline,
+      pipeline: null,
+      writable: true,
       processing: 0,
       linking: false,
       onConnect: undefined,
+      _frame: undefined,
     } satisfies AtomMeta,
 
     toString: () => `[Atom ${target.name}]`,
@@ -1028,6 +1137,8 @@ export let createAtom: {
       initState: State | (() => State)
       computed: (prev: State) => State
       middlewares?: Fn[]
+      /** @internal `false` for actions */
+      reactive?: boolean
     },
     name?: string,
   ): Atom<State>
@@ -1036,6 +1147,8 @@ export let createAtom: {
       initState?: State | (() => State)
       computed?: (() => State) | ((state?: State) => State)
       middlewares?: Fn[]
+      /** @internal `false` for actions */
+      reactive?: boolean
     },
     name?: string,
   ): Atom<State>
@@ -1044,6 +1157,7 @@ export let createAtom: {
     initState?: State | (() => State)
     computed?: (prev: State | undefined) => State
     middlewares?: Fn[]
+    reactive?: boolean
   },
   name: string = named('atom', setup?.computed?.name),
 ): Atom<State> => {
@@ -1053,7 +1167,8 @@ export let createAtom: {
 
   let target = castAtom<Atom<State>>(
     function (): State {
-      let { reactive, pipeline } = target.__reatom
+      let meta = target.__reatom
+      let { reactive } = meta
       if (reactive && !setParamsSlot.current && arguments.length) {
         throw new ReatomError(
           `Can't call atom "${name}" with arguments, use .set instead`,
@@ -1063,11 +1178,17 @@ export let createAtom: {
       let write = args != undefined
       setParamsSlot.current = null
 
+      if (write && !meta.writable) {
+        throw new ReatomError("Computed can't accept parameters")
+      }
+
       let topFrame = top()
-      let frame = topFrame.root.store.get(target)
+      let frame = (
+        context.count === 1 ? meta._frame : _getFrame(target, topFrame.root)
+      ) as undefined | Frame<State>
 
       if (frame === undefined) {
-        if (reactive && target.__reatom.processing > 0) {
+        if (reactive && meta.processing > 0) {
           throw new ReatomError('Cyclic initialization')
         }
         frame = {
@@ -1085,16 +1206,27 @@ export let createAtom: {
           frame.state = new AtomInitState(frame.state as Fn) as any
         }
 
-        topFrame.root.store.set(target, frame)
+        _setFrame(frame)
       }
 
       try {
         STACK.push(frame)
 
         let state
-        if (!write) state = pipeline()
-        else if (args!.length === 1) state = pipeline(args![0])
-        else state = pipeline.apply(null, args as Parameters<typeof pipeline>)
+        if (meta.pipeline === null) {
+          state = _cacheImpl(
+            meta.middlewares[0]!,
+            write ? (args as any[]) : null,
+            true,
+          )
+        } else if (!write) state = meta.pipeline()
+        else if (args!.length === 1) state = meta.pipeline(args![0])
+        else {
+          state = meta.pipeline.apply(
+            null,
+            args as Parameters<typeof meta.pipeline>,
+          )
+        }
 
         return reactive ? state : state.at(-1)!.payload
       } finally {
@@ -1102,26 +1234,18 @@ export let createAtom: {
       }
     },
     {
-      reactive: true,
+      reactive: setup.reactive ?? true,
       middlewares: [
         setup.computed ?? identity,
-        computedMiddleware,
+        setup.reactive === false ? actionMiddleware : computedMiddleware,
         cacheMiddleware,
       ],
-      pipeline: setup.computed
-        ? cacheMiddleware.bind(
-            null,
-            computedMiddleware.bind(null, setup.computed),
-          )
-        : _defaultPipeline,
     },
   )
 
   // TODO configure
   Object.defineProperty(target, 'name', {
     value: name,
-    writable: false,
-    enumerable: false,
     configurable: true,
   })
 
@@ -1168,13 +1292,6 @@ export let atom: {
   <T>(initState: T, name?: string): Atom<T>
 } = (initState?: any, name?: string) => createAtom({ initState }, name)
 
-export function computedParamsMiddleware(next: Fn, ...args: any[]) {
-  if (args.length > 0) {
-    throw new ReatomError("Computed can't accept parameters")
-  }
-  return next()
-}
-
 /**
  * Creates a derived state container that lazily recalculates only when read.
  *
@@ -1202,8 +1319,7 @@ export let computed = <State>(
   assertFn(computed)
 
   return createAtom({ computed }, name).extend((target) => {
-    target.__reatom.middlewares.push(computedParamsMiddleware)
-    _recompile(target)
+    target.__reatom.writable = false
     // @ts-expect-error
     target.set = undefined
     return target
@@ -1217,7 +1333,7 @@ export let computed = <State>(
  * @returns Boolean
  */
 export let isComputed = (target: AtomLike): boolean =>
-  target.__reatom.middlewares.includes(computedParamsMiddleware)
+  target.__reatom.reactive && !target.__reatom.writable
 
 /**
  * Core context object that manages the reactive state context in Reatom.
@@ -1230,60 +1346,70 @@ export let isComputed = (target: AtomLike): boolean =>
  * @returns The current context frame
  * @throws {ReatomError} If called outside a valid context (broken async stack)
  */
-export let context = castAtom<ContextAtom>(
-  function context() {
-    return top().root.frame
-  },
-  {
-    reactive: false,
-    middlewares: [identity],
-    pipeline: identity,
-  },
-)
+export let context = _createGlobal('context', (): ContextAtom => {
+  let result = castAtom<ContextAtom>(
+    function context() {
+      return top().root.frame
+    },
+    {
+      reactive: false,
+      middlewares: [identity],
+    },
+  )
 
-context.start = (cb = top) => {
-  let frame: RootFrame = {
-    error: null,
-    state: {
-      store: new WeakMap() as Store,
+  result.count = 0
 
-      // meta
-      frames: new WeakMap(),
-      inits: new WeakMap(),
-      memoKey: new WeakMap(),
+  result.start = (cb = top) => {
+    result.count++
 
-      // queues
-      hook: [],
-      compute: [],
-      cleanup: [],
-      effect: [],
+    let frame: RootFrame = {
+      error: null,
+      state: {
+        store: new WeakMap() as Store,
 
-      pushQueue(cb: Fn, queue: 'hook' | 'compute' | 'effect') {
-        this[queue].push(cb)
-      },
+        // meta
+        frames: new WeakMap(),
+        inits: new WeakMap(),
+        memoKey: new WeakMap(),
 
-      frame: undefined as any,
-    } satisfies RootState,
-    'var#abort': undefined,
-    atom: context as any,
-    pubs: [null],
-    subs: [],
-    run,
-    root: undefined as any,
+        // queues
+        scheduled: false,
+        notify,
+        hook: [],
+        compute: [],
+        cleanup: [],
+        effect: [],
+
+        pushQueue(cb: Fn, queue: 'hook' | 'compute' | 'effect') {
+          this[queue].push(cb)
+        },
+
+        frame: undefined as any,
+      } satisfies RootState,
+      'var#abort': undefined,
+      atom: result as any,
+      pubs: [null],
+      subs: [],
+      run,
+      root: undefined as any,
+    }
+
+    // @ts-expect-error
+    frame.root = frame.state
+    frame.state.frame = frame
+    frame.state.notify = bind(notify, frame)
+
+    return frame.run(cb)
   }
 
-  // @ts-expect-error
-  frame.root = frame.state
-  frame.state.frame = frame
+  result.reset = () => {
+    let rootFrame = result()
+    // @ts-expect-error
+    ;(rootFrame.root = rootFrame.state = result.start().state).frame = rootFrame
+  }
 
-  return frame.run(cb)
-}
-
-context.reset = () => {
-  let rootFrame = context()
-  // @ts-expect-error
-  ;(rootFrame.root = rootFrame.state = context.start().state).frame = rootFrame
-}
+  return result
+})
 
 /**
  * Reads the current frame for an atom from the context store.
@@ -1302,7 +1428,7 @@ context.reset = () => {
  */
 export let _read = <State = any, Params extends any[] = [], Payload = State>(
   target: AtomLike<State, Params, Payload>,
-): undefined | Frame<State, Params, Payload> => top().root.store.get(target)
+): undefined | Frame<State, Params, Payload> => _getFrame(target, top().root)
 
 /**
  * Gets the current top frame in the Reatom context stack.
@@ -1319,8 +1445,6 @@ export let top = (): Frame => {
   }
   return STACK[STACK.length - 1]!
 }
-
-STACK.push(context.start())
 
 /**
  * Clears the current Reatom context stack.
@@ -1396,3 +1520,5 @@ export let mock = <Params extends any[], Payload>(
     _recompile(target)
   }
 }
+
+STACK.push(context.start())

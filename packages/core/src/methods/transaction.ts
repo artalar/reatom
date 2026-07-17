@@ -1,9 +1,9 @@
 import type { AsyncExt } from '../async'
 import type { Action, Atom, AtomState, Ext, Frame } from '../core'
 import {
+  _read,
   action,
   bind,
-  context,
   isAction,
   top,
   withActionMiddleware,
@@ -483,17 +483,13 @@ export let reatomTransaction = ({
 
           let actionRollback = action<[error?: any], void>(
             (/* just for debug: */ error) => {
-              context()
-                .root.store.get(target)
-                ?.run(transactionVar.rollback, error)
+              _read(target)?.run(transactionVar.rollback, error)
             },
             `${target.name}.rollback`,
           )
 
           let actionStop = action<[], void>(() => {
-            context()
-              .root.store.get(target)
-              ?.run(() => findRollbacks()?.splice(0))
+            _read(target)?.run(() => findRollbacks()?.splice(0))
           }, `${target.name}.stop`)
 
           return { rollback: actionRollback, stop: actionStop }

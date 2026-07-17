@@ -2,9 +2,9 @@ import type { Fn, OverloadParameters, Rec } from '../utils'
 import type { Action, Atom, AtomLike, AtomState } from '.'
 import {
   _recompile,
+  actionMiddleware,
   cacheMiddleware,
   computedMiddleware,
-  computedParamsMiddleware,
   isAtom,
   ReatomError,
   top,
@@ -223,21 +223,17 @@ export let withMiddleware: {
       throw new ReatomError('function expected')
     }
 
-    if (place === 'read') {
-      target.__reatom.middlewares.push(middleware)
-    } else if (place === 'computed') {
-      const computedMiddlewareIdx =
-        target.__reatom.middlewares.indexOf(computedMiddleware)
-      target.__reatom.middlewares.splice(computedMiddlewareIdx, 0, middleware)
-    } else {
-      const cacheMiddlewareIdx =
-        target.__reatom.middlewares.indexOf(cacheMiddleware)
-      if (cacheMiddlewareIdx !== -1) {
-        target.__reatom.middlewares.splice(cacheMiddlewareIdx, 0, middleware)
-      } else {
-        target.__reatom.middlewares.push(middleware)
-      }
-    }
+    let { middlewares, reactive } = target.__reatom
+    let idx =
+      place === 'read'
+        ? middlewares.length
+        : place === 'computed'
+          ? middlewares.indexOf(
+              reactive ? computedMiddleware : actionMiddleware,
+            )
+          : middlewares.indexOf(cacheMiddleware)
+
+    middlewares.splice(idx === -1 ? middlewares.length : idx, 0, middleware)
 
     _recompile(target)
 
@@ -360,10 +356,7 @@ export let withParams: {
   }
 
   return withMiddleware((target) => {
-    let idx = target.__reatom.middlewares.indexOf(computedParamsMiddleware)
-    if (idx !== -1) {
-      target.__reatom.middlewares.splice(idx, 1)
-    }
+    target.__reatom.writable = true
     return (next: Fn, ...params) =>
       target.__reatom.reactive && params.length === 0
         ? next()

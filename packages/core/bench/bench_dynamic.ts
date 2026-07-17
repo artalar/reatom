@@ -8,7 +8,7 @@ async function testAggregateGrowing(
   const mol_wire_lib = await import('mol_wire_lib')
   const { $mol_wire_atom } = mol_wire_lib.default
 
-  const Reatom = await import('./dist')
+  const Reatom = await import('../dist')
 
   const { observable, computed, autorun, configure } = await import('mobx')
   configure({ enforceActions: 'never' })
@@ -54,14 +54,13 @@ async function testAggregateGrowing(
     jotaiAtoms.reduce((sum, a) => sum + get(a), 0),
   )
 
-  Reatom.clearStack()
-  const ReatomRoot = Reatom.context.start(() => Reatom.context())
-
-  ReatomRoot.run(ReatomAtom.subscribe)
+  ReatomAtom.subscribe()
   molAtom.sync()
   autorun(() => mobxAtom.get())
   actAtom.subscribe(() => {})
-  effect(() => alienAtom())
+  effect(() => {
+    alienAtom()
+  })
   const jotaiUnsub = jotaiStore.sub(jotaiAtom, () => {})
 
   const ReatomLogs = new Array<number>()
@@ -71,6 +70,8 @@ async function testAggregateGrowing(
   const alienLogs = new Array<number>()
   const jotaiLogs = new Array<number>()
   let i = 1
+  const growingWriteTarget = <T>(list: T[]) =>
+    method === 'unshift' ? list[1]! : list.at(-2)!
   while (i < count) {
     // Process batchSize elements at once
     const batchEnd = Math.min(i + batchSize, count)
@@ -78,7 +79,7 @@ async function testAggregateGrowing(
     const startMol = performance.now()
     for (let j = i; j < batchEnd; j++) {
       molAtoms[method](new $mol_wire_atom(`${j}`, (next: number = j) => next))
-      molAtoms.at(-2)!.put(j)
+      growingWriteTarget(molAtoms).put(j)
     }
     molAtom.sync()
     molLogs.push(performance.now() - startMol)
@@ -86,24 +87,22 @@ async function testAggregateGrowing(
     const startMobx = performance.now()
     for (let j = i; j < batchEnd; j++) {
       mobxAtoms[method](observable.box(j, { name: `${j}` }))
-      mobxAtoms.at(-2)!.set(j)
+      growingWriteTarget(mobxAtoms).set(j)
     }
     mobxLogs.push(performance.now() - startMobx)
 
     const startReatom = performance.now()
-    ReatomRoot.run(() => {
-      for (let j = i; j < batchEnd; j++) {
-        ReatomAtoms[method](Reatom.atom(j))
-        ReatomAtoms.at(-2)!.set(j)
-      }
-      Reatom.notify()
-    })
+    for (let j = i; j < batchEnd; j++) {
+      ReatomAtoms[method](Reatom.atom(j))
+      growingWriteTarget(ReatomAtoms).set(j)
+    }
+    Reatom.notify()
     ReatomLogs.push(performance.now() - startReatom)
 
     const startAct = performance.now()
     for (let j = i; j < batchEnd; j++) {
       actAtoms[method](act(j))
-      actAtoms.at(-2)!(j)
+      growingWriteTarget(actAtoms)(j)
     }
     act.notify()
     actLogs.push(performance.now() - startAct)
@@ -111,14 +110,14 @@ async function testAggregateGrowing(
     const startAlien = performance.now()
     for (let j = i; j < batchEnd; j++) {
       alienAtoms[method](signal(j))
-      alienAtoms.at(-2)!(j)
+      growingWriteTarget(alienAtoms)(j)
     }
     alienLogs.push(performance.now() - startAlien)
 
     const startJotai = performance.now()
     for (let j = i; j < batchEnd; j++) {
       jotaiAtoms[method](atom(j))
-      jotaiStore.set(jotaiAtoms.at(-2)!, j)
+      jotaiStore.set(growingWriteTarget(jotaiAtoms), j)
     }
     jotaiLogs.push(performance.now() - startJotai)
 
@@ -133,7 +132,7 @@ async function testAggregateGrowing(
       molAtom.sync(),
       mobxAtom.get(),
       actAtom(),
-      ReatomRoot.run(ReatomAtom),
+      ReatomAtom(),
       alienAtom(),
       jotaiStore.get(jotaiAtom),
     ]).size > 1
@@ -144,7 +143,7 @@ async function testAggregateGrowing(
           mol: molAtom.sync(),
           mobx: mobxAtom.get(),
           act: actAtom(),
-          Reatom: ReatomRoot.run(ReatomAtom),
+          Reatom: ReatomAtom(),
           alien: alienAtom(),
           jotai: jotaiStore.get(jotaiAtom),
         }),
@@ -175,7 +174,7 @@ async function testAggregateShrinking(
   const mol_wire_lib = await import('mol_wire_lib')
   const { $mol_wire_atom } = mol_wire_lib.default
 
-  const Reatom = await import('./dist')
+  const Reatom = await import('../dist')
 
   const { observable, computed, autorun, configure } = await import('mobx')
   configure({ enforceActions: 'never' })
@@ -227,14 +226,13 @@ async function testAggregateShrinking(
     jotaiAtoms.reduce((sum, a) => sum + get(a), 0),
   )
 
-  Reatom.clearStack()
-  const ReatomRoot = Reatom.context.start(() => Reatom.context())
-
-  ReatomRoot.run(ReatomAtom.subscribe)
+  ReatomAtom.subscribe()
   molAtom.sync()
   autorun(() => mobxAtom.get())
   actAtom.subscribe(() => {})
-  effect(() => alienAtom())
+  effect(() => {
+    alienAtom()
+  })
   const jotaiUnsub = jotaiStore.sub(jotaiAtom, () => {})
 
   const ReatomLogs = new Array<number>()
@@ -250,12 +248,10 @@ async function testAggregateShrinking(
     const batchEnd = Math.min(i + batchSize, count)
 
     const startReatom = performance.now()
-    ReatomRoot.run(() => {
-      for (let j = i; j < batchEnd; j++) {
-        ReatomAtoms[method]()!.set(j)
-      }
-      Reatom.notify()
-    })
+    for (let j = i; j < batchEnd; j++) {
+      ReatomAtoms[method]()!.set(j)
+    }
+    Reatom.notify()
     ReatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
@@ -299,7 +295,7 @@ async function testAggregateShrinking(
   if (
     new Set([
       molAtom.sync(),
-      ReatomRoot.run(ReatomAtom),
+      ReatomAtom(),
       mobxAtom.get(),
       actAtom(),
       alienAtom(),
@@ -310,7 +306,7 @@ async function testAggregateShrinking(
       'Mismatch: ' +
         JSON.stringify({
           mol: molAtom.sync(),
-          Reatom: ReatomRoot.run(ReatomAtom),
+          Reatom: ReatomAtom(),
           mobx: mobxAtom.get(),
           act: actAtom(),
           alien: alienAtom(),
@@ -340,7 +336,7 @@ async function testParent(count: number, batchSize: number = 1) {
   const mol_wire_lib = await import('mol_wire_lib')
   const { $mol_wire_atom } = mol_wire_lib.default
 
-  const Reatom = await import('./dist')
+  const Reatom = await import('../dist')
 
   const { observable, computed, autorun, configure } = await import('mobx')
   configure({ enforceActions: 'never' })
@@ -368,9 +364,6 @@ async function testParent(count: number, batchSize: number = 1) {
   const jotaiAtom = atom(0)
   const jotaiAtoms = []
 
-  Reatom.clearStack()
-  const ReatomRoot = Reatom.context.start(() => Reatom.context())
-
   {
     let i = count
     while (i--) {
@@ -379,7 +372,7 @@ async function testParent(count: number, batchSize: number = 1) {
       molAtoms.push(molPubAtom)
 
       const ReatomDepAtom = Reatom.computed(() => ReatomAtom())
-      ReatomRoot.run(ReatomDepAtom.subscribe)
+      ReatomDepAtom.subscribe()
 
       const mobxDepAtom = computed(() => mobxAtom.get())
       autorun(() => mobxDepAtom.get())
@@ -389,7 +382,9 @@ async function testParent(count: number, batchSize: number = 1) {
       actAtoms.push(actDepAtom)
 
       const alienDepAtom = alienComputed(() => alienAtom())
-      effect(() => alienDepAtom())
+      effect(() => {
+        alienDepAtom()
+      })
       alienAtoms.push(alienDepAtom)
 
       const jotaiDepAtom = atom((get) => get(jotaiAtom))
@@ -410,12 +405,10 @@ async function testParent(count: number, batchSize: number = 1) {
     const batchStart = Math.max(i - batchSize, 0)
 
     const startReatom = performance.now()
-    ReatomRoot.run(() => {
-      for (let j = i - 1; j >= batchStart; j--) {
-        ReatomAtom.set(j)
-      }
-      Reatom.notify()
-    })
+    for (let j = i - 1; j >= batchStart; j--) {
+      ReatomAtom.set(j)
+    }
+    Reatom.notify()
     ReatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
@@ -459,7 +452,7 @@ async function testParent(count: number, batchSize: number = 1) {
   if (
     new Set([
       molAtom.sync(),
-      ReatomRoot.run(ReatomAtom),
+      ReatomAtom(),
       mobxAtom.get(),
       actAtom(),
       alienAtom(),
@@ -470,7 +463,7 @@ async function testParent(count: number, batchSize: number = 1) {
       'Mismatch: ' +
         JSON.stringify({
           mol: molAtom.sync(),
-          Reatom: ReatomRoot.run(ReatomAtom),
+          Reatom: ReatomAtom(),
           mobx: mobxAtom.get(),
           act: actAtom(),
           alien: alienAtom(),
@@ -499,7 +492,7 @@ async function testAggregateShuffle(count: number, batchSize: number = 1) {
   const mol_wire_lib = await import('mol_wire_lib')
   const { $mol_wire_atom } = mol_wire_lib.default
 
-  const Reatom = await import('./dist')
+  const Reatom = await import('../dist')
 
   const { observable, computed, autorun, configure } = await import('mobx')
   configure({ enforceActions: 'never' })
@@ -551,14 +544,13 @@ async function testAggregateShuffle(count: number, batchSize: number = 1) {
     jotaiAtoms.reduce((sum, a) => sum + get(a), 0),
   )
 
-  Reatom.clearStack()
-  const ReatomRoot = Reatom.context.start(() => Reatom.context())
-
-  ReatomRoot.run(ReatomAtom.subscribe)
+  ReatomAtom.subscribe()
   molAtom.sync()
   autorun(() => mobxAtom.get())
   actAtom.subscribe(() => {})
-  effect(() => alienAtom())
+  effect(() => {
+    alienAtom()
+  })
   const jotaiUnsub = jotaiStore.sub(jotaiAtom, () => {})
 
   const ReatomLogs = new Array<number>()
@@ -575,15 +567,13 @@ async function testAggregateShuffle(count: number, batchSize: number = 1) {
     const elementsToProcess = Math.min(batchSize, molAtoms.length, count - i)
 
     const startReatom = performance.now()
-    ReatomRoot.run(() => {
-      for (let j = 0; j < elementsToProcess; j++) {
-        // Get a random index for each removal
-        const randomIndex = Math.floor(Math.random() * ReatomAtoms.length)
-        const removed = ReatomAtoms.splice(randomIndex, 1)[0]
-        if (removed) removed.set(i + j)
-      }
-      Reatom.notify()
-    })
+    for (let j = 0; j < elementsToProcess; j++) {
+      // Get a random index for each removal
+      const randomIndex = Math.floor(Math.random() * ReatomAtoms.length)
+      const removed = ReatomAtoms.splice(randomIndex, 1)[0]
+      if (removed) removed.set(i + j)
+    }
+    Reatom.notify()
     ReatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
@@ -642,7 +632,7 @@ async function testAggregateShuffle(count: number, batchSize: number = 1) {
   if (
     new Set([
       molAtom.sync(),
-      ReatomRoot.run(ReatomAtom),
+      ReatomAtom(),
       mobxAtom.get(),
       actAtom(),
       alienAtom(),
@@ -653,7 +643,7 @@ async function testAggregateShuffle(count: number, batchSize: number = 1) {
       'Mismatch: ' +
         JSON.stringify({
           mol: molAtom.sync(),
-          Reatom: ReatomRoot.run(ReatomAtom),
+          Reatom: ReatomAtom(),
           mobx: mobxAtom.get(),
           act: actAtom(),
           alien: alienAtom(),
@@ -682,7 +672,7 @@ async function testAggregateMiddle(count: number, batchSize: number = 1) {
   const mol_wire_lib = await import('mol_wire_lib')
   const { $mol_wire_atom } = mol_wire_lib.default
 
-  const Reatom = await import('./dist')
+  const Reatom = await import('../dist')
 
   const { observable, computed, autorun, configure } = await import('mobx')
   configure({ enforceActions: 'never' })
@@ -734,14 +724,13 @@ async function testAggregateMiddle(count: number, batchSize: number = 1) {
     jotaiAtoms.reduce((sum, a) => sum + get(a), 0),
   )
 
-  Reatom.clearStack()
-  const ReatomRoot = Reatom.context.start(() => Reatom.context())
-
-  ReatomRoot.run(ReatomAtom.subscribe)
+  ReatomAtom.subscribe()
   molAtom.sync()
   autorun(() => mobxAtom.get())
   actAtom.subscribe(() => {})
-  effect(() => alienAtom())
+  effect(() => {
+    alienAtom()
+  })
   const jotaiUnsub = jotaiStore.sub(jotaiAtom, () => {})
 
   const ReatomLogs = new Array<number>()
@@ -758,16 +747,14 @@ async function testAggregateMiddle(count: number, batchSize: number = 1) {
     const elementsToProcess = Math.min(batchSize, molAtoms.length, count - i)
 
     const startReatom = performance.now()
-    ReatomRoot.run(() => {
-      for (let j = 0; j < elementsToProcess; j++) {
-        if (ReatomAtoms.length === 0) break
-        // Get the middle index
-        const middleIndex = Math.floor(ReatomAtoms.length / 2)
-        const removed = ReatomAtoms.splice(middleIndex, 1)[0]
-        if (removed) removed.set(i + j)
-      }
-      Reatom.notify()
-    })
+    for (let j = 0; j < elementsToProcess; j++) {
+      if (ReatomAtoms.length === 0) break
+      // Get the middle index
+      const middleIndex = Math.floor(ReatomAtoms.length / 2)
+      const removed = ReatomAtoms.splice(middleIndex, 1)[0]
+      if (removed) removed.set(i + j)
+    }
+    Reatom.notify()
     ReatomLogs.push(performance.now() - startReatom)
 
     const startMol = performance.now()
@@ -826,7 +813,7 @@ async function testAggregateMiddle(count: number, batchSize: number = 1) {
   if (
     new Set([
       molAtom.sync(),
-      ReatomRoot.run(ReatomAtom),
+      ReatomAtom(),
       mobxAtom.get(),
       actAtom(),
       alienAtom(),
@@ -837,7 +824,7 @@ async function testAggregateMiddle(count: number, batchSize: number = 1) {
       'Mismatch: ' +
         JSON.stringify({
           mol: molAtom.sync(),
-          Reatom: ReatomRoot.run(ReatomAtom),
+          Reatom: ReatomAtom(),
           mobx: mobxAtom.get(),
           act: actAtom(),
           alien: alienAtom(),

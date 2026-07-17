@@ -1,15 +1,12 @@
 import type { Fn, Unsubscribe } from '../utils'
-import type { AtomLike, AtomMeta, Ext } from './'
+import type { AtomLike, Ext } from './'
 import {
-  _enqueue,
   _recompile,
-  cacheMiddleware,
+  actionMiddleware,
   createAtom,
-  EXTENSIONS,
   isAtom,
   named,
   ReatomError,
-  STACK,
 } from './'
 
 export interface ActionCall<Params extends any[] = any[], Payload = any> {
@@ -33,16 +30,6 @@ export interface Action<
 
 /** Action type that supports all overloads of the original function */
 export type GAction<T extends Fn> = T & Action<Parameters<T>, ReturnType<T>>
-
-function actionMiddleware(next: Fn, ...params: any[]) {
-  let frame = STACK[STACK.length - 1]!
-
-  frame.pubs = [STACK[STACK.length - 2]!]
-
-  _enqueue(() => (frame.state = []), 'cleanup')
-
-  return (frame.state = [...frame.state, { params, payload: next(...params) }])
-}
 
 /**
  * Type guard to check if a value is a Reatom action.
@@ -159,20 +146,8 @@ export function action<Params extends any[] = any[], Payload = any>(
   name?: string,
 ): Action<Params, Payload>
 export function action(cb: Fn, name = named('action', cb.name)): Action {
-  let target = createAtom(
-    {
-      initState: [],
-      computed: cb as any,
-      middlewares: [cb, actionMiddleware, cacheMiddleware],
-    },
+  return createAtom(
+    { initState: [], computed: cb as any, reactive: false },
     name,
-  ) as Action
-
-  Object.assign(target.__reatom, {
-    reactive: false,
-  } satisfies Partial<AtomMeta>)
-
-  if (EXTENSIONS.length !== 0) target.extend(...EXTENSIONS)
-
-  return target
+  ) as unknown as Action
 }
