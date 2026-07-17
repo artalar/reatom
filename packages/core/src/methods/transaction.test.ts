@@ -272,3 +272,22 @@ test('rollback survives an action invoked through a subscriber-created wrap', as
 
   unsubscribe()
 })
+
+test('a repeated rollback() must be a no-op, not an un-rollback', () => {
+  const counter = atom(0, 'counter').extend(withRollback())
+  const increment = action(() => {
+    counter.set((n) => n + 1)
+  }, 'increment').extend(withTransaction())
+
+  increment()
+  expect(counter()).toBe(1)
+
+  increment.rollback()
+  expect(counter()).toBe(0)
+
+  // Without the flush guard in withRollback, the rollback's own write would
+  // re-register an "undo of the undo" into the same (already drained) queue —
+  // and a repeated rollback() would re-apply the optimistic state.
+  increment.rollback()
+  expect(counter()).toBe(0)
+})
