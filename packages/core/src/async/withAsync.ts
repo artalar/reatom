@@ -343,12 +343,6 @@ export let withAsync: {
       const isPromiseFresh =
         promiseToTrack !== undefined && !touched.has(promiseToTrack)
 
-      // A cache hit's returned promise is already accounted for: its payload is delivered
-      // right here through the `pending.set(+1)` / `onFulfill` (→ `onSettle` -1) pair below.
-      // Mark it touched, or a later actualization of the target — happening on a frame that
-      // has no cacheVar (e.g. a re-read after the hit aborted its own computation) — would
-      // mistake this very promise for a fresh in-flight one and track it, and its settle
-      // would decrement `pending` with no paired increment, driving the counter negative.
       if (isCacheHit) touched.add(promise)
 
       if (cacheState?.payload) {
