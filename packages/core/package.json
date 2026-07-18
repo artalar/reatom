@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "type": "module",
-  "version": "1001.1.0",
+  "version": "1001.2.0",
   "description": "The ultimate state manager",
   "exports": {
     "types": "./dist/index.d.ts",

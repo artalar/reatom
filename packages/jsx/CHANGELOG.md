@@ -1,3 +1,15 @@
+## 1001.2.0 (2026-07-19)
+
+[Changes since `v1001.1`](https://github.com/reatom/reatom/compare/1001.1.0...1001.2.0).
+
+Requires `@reatom/core@1001.2`.
+
+### JSX
+
+- feat(jsx): `model:field` ([b91a0a0](https://github.com/reatom/reatom/commit/b91a0a0d123a60fd76bc9eb96203815ad51357c6))
+- fix(jsx): dispose stale `$spread` bindings and drain pending mutations on unmount ([dfca155](https://github.com/reatom/reatom/commit/dfca155e1828c39546151719043d810735456ed0))
+- fix(jsx): corner cases ([199b212](https://github.com/reatom/reatom/commit/199b212e6c9bb65d6e2e646e52262bb2c266c8bd))
+
 ## 1001.1.0 (2026-06-03)
 
 [Changes since `v1001`](https://github.com/reatom/reatom/compare/v1001...v1001.1).

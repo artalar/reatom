@@ -468,6 +468,22 @@ importers:
         specifier: ^4.1.7
         version: 4.1.7(@types/node@25.5.0)(@vitest/browser-playwright@4.1.7)(@vitest/ui@4.1.7)(msw@2.12.13(@types/node@25.5.0)(typescript@5.9.3))(vite@8.0.14(@types/node@25.5.0)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0))
 
+  examples/reatom-jsx-tree:
+    dependencies:
+      '@reatom/core':
+        specifier: 1001.*.*
+        version: link:../../packages/core
+      '@reatom/jsx':
+        specifier: 1001.*.*
+        version: link:../../packages/jsx
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.14
+        version: 8.0.14(@types/node@25.5.0)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0)
+
   examples/reatom-jsx-winamp:
     dependencies:
       '@reatom/core':
@@ -9950,7 +9966,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.1.0
-      vitest: 4.1.7(@types/node@25.5.0)(@vitest/browser-playwright@4.1.7)(@vitest/ui@4.1.7)(msw@2.12.13(@types/node@25.5.0)(typescript@5.9.3))(vite@8.0.14(@types/node@25.5.0)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0))
+      vitest: 4.1.7(@types/node@22.19.19)(@vitest/browser-playwright@4.1.7)(@vitest/ui@4.1.7)(msw@2.12.13(@types/node@22.19.19)(typescript@5.9.3))(vite@8.0.14(@types/node@22.19.19)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0))
 
   '@vitest/utils@3.2.4':
     dependencies:
