@@ -266,12 +266,29 @@ export let abortVar = /* @__PURE__ */ initAbortVar()
  */
 export let race = <Payload>(
   ...promises: Array<ControlledPromise<Payload>>
-): Promise<Payload> =>
-  Promise.race(promises).finally(
+): Promise<Payload> => {
+  let settled: undefined | ControlledPromise<Payload>
+  return Promise.race(
+    promises.map((fork) =>
+      fork.then(
+        (value) => {
+          settled ??= fork
+          return value
+        },
+        (error) => {
+          settled ??= fork
+          throw error
+        },
+      ),
+    ),
+  ).finally(
     wrap(() => {
-      promises.forEach((fork) => fork.controller.abort('race'))
+      for (let fork of promises) {
+        if (fork !== settled) fork.controller.abort('race')
+      }
     }),
   )
+}
 
 // TODO
 // export let disableAbort = () => abortVar.set()
