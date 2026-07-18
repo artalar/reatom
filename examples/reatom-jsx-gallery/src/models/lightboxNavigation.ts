@@ -52,8 +52,13 @@ export const lightboxPreloadImageElement = computed(() => {
   const preloadTarget = resolvePreloadTarget()
   if (!preloadTarget) return null
 
+  preloadTarget.sizedImage.data()
+  const sizedCanvas = preloadTarget.sizedImageArtifact()
+  if (sizedCanvas && sizedCanvas.width > 0 && sizedCanvas.height > 0) {
+    return sizedCanvas
+  }
+
   return (
-    preloadTarget.sizedImage.data() ??
     preloadTarget.fullImage.data() ??
     preloadTarget.display.element()
   )
@@ -68,9 +73,9 @@ export { primeLightboxPreload }
 
 export const navigateLightbox = action((direction: 1 | -1) => {
   const currentImage = lightboxImage()
-  if (!currentImage) return
+  if (!currentImage) return false
   const current = currentImages().find((node) => node.id === currentImage.id)
-  if (!current) return
+  if (!current) return false
 
   lightboxNavigationDirection.set(direction)
 
@@ -79,12 +84,13 @@ export const navigateLightbox = action((direction: 1 | -1) => {
     direction,
     wrapFolderNavigation(),
   )
-  if (neighbor) {
-    ensureGalleryImagePreviewHigh(neighbor)
-    lightboxImage.set(() => neighbor)
-    resetLightboxViewAfterNavigation()
-    primeLightboxPreload()
-  }
+  if (!neighbor) return false
+
+  ensureGalleryImagePreviewHigh(neighbor)
+  lightboxImage.set(() => neighbor)
+  resetLightboxViewAfterNavigation()
+  primeLightboxPreload()
+  return true
 }, 'navigateLightbox')
 
 export const openLightboxAtVisibleIndex = action((index: number) => {

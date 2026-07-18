@@ -59,7 +59,6 @@ export const openFolder = action(
       }
     }
 
-    selectedFolderHandle.set(handle)
     pendingFolderRestore.set(null)
 
     resetGallerySession()
@@ -74,6 +73,7 @@ export const openFolder = action(
         }),
       )
       publishFolderScan(result)
+      selectedFolderHandle.set(handle)
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         parsingProgress.set({ total: 0, current: 0 })

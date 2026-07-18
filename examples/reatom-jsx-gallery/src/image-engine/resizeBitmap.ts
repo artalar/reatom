@@ -7,9 +7,19 @@ import type { ImageMeta } from './types'
 
 const MAX_ITERATIVE_HALVING_RATIO = 2
 
+function throwIfBitmapDecodeAborted(
+  signal: AbortSignal,
+  bitmaps: ImageBitmap[],
+): void {
+  if (!signal.aborted) return
+  for (const bitmap of bitmaps) bitmap.close()
+  throw signal.reason ?? new DOMException('Bitmap decode aborted', 'AbortError')
+}
+
 async function resizeBitmapTowardTarget(
   bitmap: ImageBitmap,
   target: Size,
+  signal: AbortSignal,
 ): Promise<ImageBitmap> {
   let current = bitmap
   let iterations = 0
@@ -34,6 +44,7 @@ async function resizeBitmapTowardTarget(
       resizeHeight: nextHeight,
       resizeQuality: 'medium',
     })
+    throwIfBitmapDecodeAborted(signal, [current, next])
     current.close()
     current = next
   }
@@ -47,6 +58,7 @@ async function resizeBitmapTowardTarget(
     resizeHeight: target.height,
     resizeQuality: 'medium',
   })
+  throwIfBitmapDecodeAborted(signal, [current, resized])
   current.close()
   return resized
 }
@@ -56,6 +68,7 @@ export async function decodeBlobToCanvas(
   target: Size,
   meta: ImageMeta | null,
   ignoreExifOrientation: boolean,
+  signal: AbortSignal,
 ): Promise<HTMLCanvasElement> {
   let bitmap = await createImageBitmap(source, {
     resizeWidth: target.width,
@@ -63,8 +76,9 @@ export async function decodeBlobToCanvas(
     resizeQuality: 'medium',
     imageOrientation: 'none',
   })
+  throwIfBitmapDecodeAborted(signal, [bitmap])
 
-  bitmap = await resizeBitmapTowardTarget(bitmap, target)
+  bitmap = await resizeBitmapTowardTarget(bitmap, target, signal)
 
   if (!ignoreExifOrientation) {
     const orientation = getOrientationFromExif(meta?.exif)
@@ -73,6 +87,7 @@ export async function decodeBlobToCanvas(
       (orientation.degrees !== 0 || orientation.mirrored)
     if (needsTransform) {
       bitmap = await applyOrientationToImageBitmap(bitmap, orientation)
+      throwIfBitmapDecodeAborted(signal, [bitmap])
     }
   }
 

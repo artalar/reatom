@@ -143,8 +143,12 @@ const LightboxContent = () => {
     const model = lightboxImage()
     if (!model) return null
 
-    const sizedCanvas = model.sizedImage.data()
-    if (sizedCanvas) {
+    // Subscribe to async data to keep the decode pipeline alive, but paint from
+    // the artifact: disconnect wipes the canvas in place while `.data()` can
+    // still hold that blank node until the next fulfill.
+    model.sizedImage.data()
+    const sizedCanvas = model.sizedImageArtifact()
+    if (sizedCanvas && sizedCanvas.width > 0 && sizedCanvas.height > 0) {
       sizedCanvas.setAttribute('role', 'img')
       sizedCanvas.setAttribute('aria-label', model.source.name)
       sizedCanvas.style.pointerEvents = 'auto'
@@ -181,6 +185,20 @@ const LightboxContent = () => {
       }
       setLightboxImageElement(rawDevelopedImage)
       return rawDevelopedImage
+    }
+
+    const rawEmbeddedPreview = model.rawEmbeddedPreviewImage.data()
+    if (rawEmbeddedPreview) {
+      rawEmbeddedPreview.alt = model.source.name
+      rawEmbeddedPreview.draggable = false
+      const orientationStyle = lightboxDisplayOrientationStyle()
+      if (orientationStyle) {
+        rawEmbeddedPreview.style.imageOrientation = orientationStyle
+      } else {
+        rawEmbeddedPreview.style.removeProperty('image-orientation')
+      }
+      setLightboxImageElement(rawEmbeddedPreview)
+      return rawEmbeddedPreview
     }
 
     const thumbnailUrl = model.thumbnail.data()?.url

@@ -1,4 +1,4 @@
-import { action, atom, effect, sleep, wrap } from '@reatom/core'
+import { action, atom, effect, peek, sleep, wrap } from '@reatom/core'
 
 import {
   longEdge,
@@ -134,13 +134,14 @@ export function createLightboxDisplayTargetDebouncer(
   readImmediateTarget: () => ReturnType<typeof computeDisplayTarget>,
 ) {
   const syncDebouncedDisplayTarget = effect(async () => {
-    readImmediateTarget()
     const immediate = readImmediateTarget()
-    debouncedDisplayTarget.set(immediate)
+    if (peek(debouncedDisplayTarget) === null) {
+      debouncedDisplayTarget.set(immediate)
+    }
 
     await wrap(sleep(DISPLAY_TARGET_DEBOUNCE_MS))
 
-    debouncedDisplayTarget.set(readImmediateTarget())
+    debouncedDisplayTarget.set(immediate)
   }, 'lightbox._syncDebouncedDisplayTarget')
 
   return () => syncDebouncedDisplayTarget.unsubscribe()

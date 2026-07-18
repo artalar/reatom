@@ -1,12 +1,14 @@
 import type { Atom } from '@reatom/core'
 import {
   abortVar,
+  action,
   atom,
   computed,
   peek,
   take,
   throwAbort,
   withAsyncData,
+  withDisconnectHook,
   wrap,
 } from '@reatom/core'
 
@@ -113,7 +115,8 @@ async function decodeImageFromUrl(
   const signal = abortVar.require().signal
   if (signal.aborted) throwAbort()
 
-  const releaseDecodeSlot = await wrap(acquireImageDecodeSlot(signal))
+  const decodeSlot = await wrap(acquireImageDecodeSlot(signal))
+  decodeSlot.start()
   let image: HTMLImageElement | null = null
   try {
     const candidate = new Image()
@@ -128,7 +131,7 @@ async function decodeImageFromUrl(
       image = (await wrap(waitForImageLoad(candidate))) ? candidate : null
     }
   } finally {
-    releaseDecodeSlot()
+    decodeSlot.release()
   }
   if (!image) return null
 
@@ -217,11 +220,50 @@ export function reatomImage(
   }, `${name}.meta`).extend(withAsyncData())
 
   const thumbnailLongEdge = atom(0, `${name}.thumbnail.longEdge`)
+  const thumbnailArtifact = atom<ThumbnailResult | null>(
+    null,
+    `${name}.thumbnail.artifact`,
+  )
+  const thumbnailIgnoreOrientation = atom(
+    false,
+    `${name}.thumbnail.ignoreOrientation`,
+  )
   const sizedImageLongEdge = atom(0, `${name}.sizedImage.longEdge`)
   const sizedImageArtifact = atom<HTMLCanvasElement | null>(
     null,
     `${name}.sizedImage.artifact`,
   )
+
+  const clearSizedImage = () => {
+    const artifact = peek(sizedImageArtifact)
+    if (artifact) clearCanvasElement(artifact)
+    sizedImageArtifact.set(null)
+    sizedImageLongEdge.set(0)
+  }
+
+  const clearThumbnail = () => {
+    const artifact = peek(thumbnailArtifact)
+    if (artifact) revokeThumbnail(artifact)
+    thumbnailArtifact.set(null)
+    thumbnailLongEdge.set(0)
+    thumbnailIgnoreOrientation.set(false)
+  }
+
+  const readReusableThumbnail = (
+    requestedMaxSize: number,
+    ignoreOrientation: boolean,
+  ) => {
+    const existing = peek(thumbnailArtifact)
+    if (
+      existing !== null &&
+      requestedMaxSize > 0 &&
+      peek(thumbnailLongEdge) >= requestedMaxSize &&
+      peek(thumbnailIgnoreOrientation) === ignoreOrientation
+    ) {
+      return existing
+    }
+    return null
+  }
 
   const thumbnail = computed(async () => {
     // Dependency tracking only covers reads before the first await, so every
@@ -233,8 +275,15 @@ export function reatomImage(
     const ignoreOrientation = ignoreExifOrientation()
     const filePromise = file()
     const thumbnailMetaPromise = thumbnailMeta()
-
     const previewLoadPriority = options?.previewLoadPriority
+
+    // Shrink / same-bucket resize: keep the already-decoded thumbnail.
+    // Lifetime is session-scoped (dispose on folder reset), not connect-scoped:
+    // GridImage stops reading `.data()` when priority is off, which would
+    // otherwise disconnect and wipe the cache.
+    const reusable = readReusableThumbnail(requestedMaxSize, ignoreOrientation)
+    if (reusable) return reusable
+
     if (previewLoadPriority) {
       while (peek(previewLoadPriority) === 'off') {
         await wrap(
@@ -253,19 +302,26 @@ export function reatomImage(
       )
     }
 
+    const reusableAfterMeasure = readReusableThumbnail(
+      requestedMaxSize,
+      ignoreOrientation,
+    )
+    if (reusableAfterMeasure) return reusableAfterMeasure
+
     const signal = abortVar.require().signal
     const slotPriority =
       previewLoadPriority && peek(previewLoadPriority) === 'background'
         ? 'background'
         : 'high'
-    const releaseThumbnailSlot = await wrap(
-      acquireThumbnailSlot(signal, slotPriority),
-    )
+    const thumbnailSlot = await wrap(acquireThumbnailSlot(signal, slotPriority))
+    thumbnailSlot.start()
 
     try {
       const [fileState, metaState] = await wrap(
         Promise.all([filePromise, thumbnailMetaPromise]),
       )
+      // Monotonic decode size: never regenerate a smaller thumbnail than we
+      // already produced; upgrades only go larger.
       const maxSize = Math.max(peek(thumbnailLongEdge), requestedMaxSize)
       const thumbnailOptions = {
         ...options?.thumbnailOptions,
@@ -292,13 +348,26 @@ export function reatomImage(
         revokeThumbnail(thumbnailResult)
         throwAbort('thumbnail request aborted')
       }
+
+      const previousThumbnail = peek(thumbnailArtifact)
+      if (previousThumbnail && previousThumbnail !== thumbnailResult) {
+        revokeThumbnail(previousThumbnail)
+      }
+      thumbnailArtifact.set(thumbnailResult)
+      thumbnailIgnoreOrientation.set(ignoreOrientation)
       if (maxSize > peek(thumbnailLongEdge)) {
         thumbnailLongEdge.set(maxSize)
       }
-      abortVar.subscribe(() => revokeThumbnail(thumbnailResult))
+      // Keep the current URL alive across recompute/abort; only revoke this
+      // result once a newer thumbnail replaces it (or dispose() on session end).
+      abortVar.subscribe(() => {
+        if (peek(thumbnailArtifact) !== thumbnailResult) {
+          revokeThumbnail(thumbnailResult)
+        }
+      })
       return thumbnailResult
     } finally {
-      releaseThumbnailSlot()
+      thumbnailSlot.release()
     }
   }, `${name}.thumbnail`).extend(withAsyncData())
 
@@ -389,21 +458,18 @@ export function reatomImage(
     }
 
     if (!options.readSizedImageActive()) {
-      const artifact = peek(sizedImageArtifact)
-      if (artifact) clearCanvasElement(artifact)
-      sizedImageArtifact.set(null)
-      sizedImageLongEdge.set(0)
+      clearSizedImage()
       return null
     }
 
     const displayTarget = options.readDisplayTarget()
     if (!displayTarget) return null
 
+    const fileInfoState = fileInfo.data()
+    const heicSupported = options.readHeicDecodeSupported?.() ?? null
     const metaState = await wrap(thumbnailMeta())
     if (!metaState) return null
 
-    const fileInfoState = fileInfo.data()
-    const heicSupported = options.readHeicDecodeSupported?.() ?? null
     if (
       fileInfoState &&
       !canBrowserDecodeImageType(fileInfoState.type, heicSupported)
@@ -442,9 +508,10 @@ export function reatomImage(
 
     const priority = options.readBitmapDecodePriority?.() ?? 'current'
     const outputMegapixels = megapixels(decodeTarget.width, decodeTarget.height)
-    const releaseBitmapSlot = await wrap(
+    const bitmapSlot = await wrap(
       acquireBitmapDecodeSlot(signal, priority, outputMegapixels),
     )
+    bitmapSlot.start()
 
     try {
       const fileBlob = await wrap(file())
@@ -468,6 +535,7 @@ export function reatomImage(
           decodeTarget,
           metaState,
           ignoreExifOrientation() || sourceFromRawPipeline,
+          signal,
         ),
       )
 
@@ -484,18 +552,26 @@ export function reatomImage(
       sizedImageLongEdge.set(nextLongEdge)
       sizedImageArtifact.set(canvas)
       abortVar.subscribe(() => {
-        clearCanvasElement(canvas)
-        if (peek(sizedImageArtifact) === canvas) {
-          sizedImageArtifact.set(null)
-          sizedImageLongEdge.set(0)
+        if (peek(sizedImageArtifact) !== canvas) {
+          clearCanvasElement(canvas)
         }
       })
 
       return canvas
     } finally {
-      releaseBitmapSlot()
+      bitmapSlot.release()
     }
-  }, `${name}.sizedImage`).extend(withAsyncData())
+  }, `${name}.sizedImage`).extend(
+    withAsyncData(),
+    withDisconnectHook(clearSizedImage),
+  )
+
+  const dispose = action(() => {
+    clearThumbnail()
+    clearSizedImage()
+    thumbnail.data.reset()
+    sizedImage.data.reset()
+  }, `${name}.dispose`)
 
   return file.extend(() => ({
     fileInfo,
@@ -513,6 +589,7 @@ export function reatomImage(
     sizedImageLongEdge,
     sizedImageArtifact,
     thumbnailLongEdge,
+    dispose,
   }))
 }
 

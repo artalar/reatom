@@ -60,25 +60,7 @@ function readImageDimensions(imageModel: ReatomImage): {
   width: number
   height: number
 } {
-  const developed = imageModel.rawDeveloped.data()
-  if (developed?.width && developed.height) {
-    return { width: developed.width, height: developed.height }
-  }
-
-  const sizedCanvas = imageModel.sizedImage.data()
-  if (sizedCanvas && sizedCanvas.width > 0 && sizedCanvas.height > 0) {
-    return { width: sizedCanvas.width, height: sizedCanvas.height }
-  }
-
-  const fullImage = imageModel.fullImage.data()
-  if (fullImage && fullImage.naturalWidth > 0 && fullImage.naturalHeight > 0) {
-    return {
-      width: fullImage.naturalWidth,
-      height: fullImage.naturalHeight,
-    }
-  }
-
-  const meta = imageModel.thumbnailMeta.data() ?? imageModel.meta.data()
+  const meta = imageModel.thumbnailMeta.data()
   if (!meta) return { width: 0, height: 0 }
 
   return resolveOrientedMetaDimensions(meta.width, meta.height, meta.exif)
@@ -160,7 +142,10 @@ export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
   )
 
   const displayStage = computed(() => {
-    if (imageModel.sizedImage.data()) return 'developed'
+    const sizedCanvas = imageModel.sizedImageArtifact()
+    if (sizedCanvas && sizedCanvas.width > 0 && sizedCanvas.height > 0) {
+      return 'developed'
+    }
     if (imageModel.rawDevelopedImage.data()) return 'developed'
     if (imageModel.rawEmbeddedPreviewImage.data()) return 'embedded'
     return 'thumbnail'
@@ -176,14 +161,18 @@ export function reatomGalleryImage(imageSource: ImageFile): GalleryImageModel {
     return null
   }, `${name}.display.source`)
 
-  const displayElement = computed(
-    () =>
-      imageModel.sizedImage.data() ??
+  const displayElement = computed(() => {
+    imageModel.sizedImage.data()
+    const sizedCanvas = imageModel.sizedImageArtifact()
+    if (sizedCanvas && sizedCanvas.width > 0 && sizedCanvas.height > 0) {
+      return sizedCanvas
+    }
+    return (
       imageModel.rawDevelopedImage.data() ??
       imageModel.rawEmbeddedPreviewImage.data() ??
-      null,
-    `${name}.display.element`,
-  )
+      null
+    )
+  }, `${name}.display.element`)
 
   const isRawPipeline = computed(
     () =>

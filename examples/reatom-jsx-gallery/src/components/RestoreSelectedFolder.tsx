@@ -2,6 +2,7 @@ import { isAbort, wrap } from '@reatom/core'
 
 import {
   folderTree,
+  openFolder,
   pendingFolderRestore,
   requestFolderRestore,
   restoreSelectedFolder,
@@ -20,6 +21,8 @@ export const RestoreSelectedFolder = () => (
             if (restoreStarted) return
             if (handle === null) return
             if (folderTree() !== null) return
+            if (openFolder.pending() > 0 || restoreSelectedFolder.pending() > 0)
+              return
 
             restoreStarted = true
             restoreSelectedFolder().catch((error: unknown) => {
@@ -58,7 +61,12 @@ export const RestoreSelectedFolder = () => (
             transform: translateX(-50%);
           `}
         >
-          <span css={`font-size: 14px; line-height: 1.4;`}>
+          <span
+            css={`
+              font-size: 14px;
+              line-height: 1.4;
+            `}
+          >
             Restore your previous folder?
           </span>
           <button

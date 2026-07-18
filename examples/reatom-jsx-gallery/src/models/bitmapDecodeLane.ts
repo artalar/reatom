@@ -10,7 +10,7 @@ type BitmapDecodeQueueEntry = {
   priority: BitmapDecodePriority
   outputMegapixels: number
   grant: () => void
-  reject: (error: Error) => void
+  cancel: (error: Error) => void
 }
 
 const priorityRank: Record<BitmapDecodePriority, number> = {
@@ -21,6 +21,11 @@ const priorityRank: Record<BitmapDecodePriority, number> = {
 
 const maxParallelBitmapDecodes = 2
 const maxInFlightOutputMegapixels = 32
+
+type BitmapDecodeSlotLease = {
+  start: () => void
+  release: () => void
+}
 
 const bitmapDecodeQueue: BitmapDecodeQueueEntry[] = []
 let activeBitmapDecodeJobs = 0
@@ -52,8 +57,13 @@ function preemptLowerPriorityJobs(priority: BitmapDecodePriority) {
   for (const entry of bitmapDecodeQueue) {
     if (entry.cancelled) continue
     if (priorityRank[entry.priority] <= priorityRank.current) continue
-    entry.cancelled = true
-    entry.reject(createPreemptAbortError())
+    entry.cancel(createPreemptAbortError())
+  }
+
+  for (let index = bitmapDecodeQueue.length - 1; index >= 0; index--) {
+    if (bitmapDecodeQueue[index]?.cancelled) {
+      bitmapDecodeQueue.splice(index, 1)
+    }
   }
 }
 
@@ -85,7 +95,7 @@ export function acquireBitmapDecodeSlot(
   signal: AbortSignal,
   priority: BitmapDecodePriority,
   outputMegapixels: number,
-): Promise<() => void> {
+): Promise<BitmapDecodeSlotLease> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(createBitmapDecodeAbortError(signal))
@@ -95,6 +105,7 @@ export function acquireBitmapDecodeSlot(
     preemptLowerPriorityJobs(priority)
 
     let granted = false
+    let started = false
     let released = false
 
     const release = () => {
@@ -109,25 +120,36 @@ export function acquireBitmapDecodeSlot(
       runNextBitmapDecodeJob()
     }
 
+    const start = () => {
+      if (!granted || released) return
+      started = true
+    }
+
+    const cancel = (error: Error) => {
+      if (granted || entry.cancelled) return
+      entry.cancelled = true
+      signal.removeEventListener('abort', abort)
+      reject(error)
+    }
+
     const entry: BitmapDecodeQueueEntry = {
       cancelled: false,
       priority,
       outputMegapixels,
       grant: () => {
         granted = true
-        resolve(release)
+        resolve({ start, release })
       },
-      reject,
+      cancel,
     }
 
     const abort = () => {
       if (granted) {
-        release()
+        if (!started) release()
         return
       }
 
-      entry.cancelled = true
-      entry.reject(createBitmapDecodeAbortError(signal))
+      entry.cancel(createBitmapDecodeAbortError(signal))
     }
 
     signal.addEventListener('abort', abort, { once: true })
@@ -140,14 +162,10 @@ export function shutdownBitmapDecodeQueue(): void {
   while (bitmapDecodeQueue.length > 0) {
     const entry = bitmapDecodeQueue.shift()
     if (!entry || entry.cancelled) continue
-    entry.cancelled = true
     const error = new Error('Bitmap decode queue shut down')
     error.name = 'AbortError'
-    entry.reject(error)
+    entry.cancel(error)
   }
-
-  activeBitmapDecodeJobs = 0
-  inFlightOutputMegapixels = 0
 }
 
 export type { BitmapDecodePriority }

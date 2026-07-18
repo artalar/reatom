@@ -2,6 +2,7 @@ import { atom, clearStack, context, peek, wrap } from '@reatom/core'
 import { expect, test, vi } from 'vitest'
 
 import * as imageEngine from './image-engine'
+import type { ThumbnailResult } from './image-engine'
 import { reatomImage } from './reatomImage'
 
 class DecodeRejectingImage {
@@ -125,6 +126,183 @@ test('fullImage keeps a loaded image when full-size decode fails under cache pre
   })
 })
 
+test('thumbnail reuses larger cache on shrink and keeps old url while upgrading', async () => {
+  let createCount = 0
+  const revokeObjectURL = vi.fn()
+  vi.stubGlobal('URL', {
+    createObjectURL: () => {
+      createCount += 1
+      return `blob:thumbnail-${createCount}`
+    },
+    revokeObjectURL,
+  })
+  vi.stubGlobal(
+    'OffscreenCanvas',
+    class {
+      width: number
+      height: number
+      constructor(width: number, height: number) {
+        this.width = width
+        this.height = height
+      }
+      getContext() {
+        return {
+          fillStyle: '',
+          fillRect: () => undefined,
+          drawImage: () => undefined,
+        }
+      }
+      convertToBlob() {
+        return Promise.resolve(new Blob(['jpeg'], { type: 'image/jpeg' }))
+      }
+    },
+  )
+  vi.stubGlobal(
+    'createImageBitmap',
+    vi.fn(async () => ({
+      width: 1200,
+      height: 800,
+      close() {},
+    })),
+  )
+  vi.spyOn(imageEngine, 'parseImagePreviewMeta').mockResolvedValue({
+    width: 1200,
+    height: 800,
+    format: 'jpeg',
+    isProgressive: false,
+    hasExifThumbnail: false,
+  })
+
+  await context.start(async () => {
+    const target = atom(300, 'test.thumbnailTarget')
+    const priority = atom<'off' | 'high' | 'background'>(
+      'high',
+      'test.previewPriority',
+    )
+    const image = reatomImage(makeJpegBlob(), 'thumbnail-cache', {
+      thumbnailTargetSize: target,
+      previewLoadPriority: priority,
+    })
+
+    const first = await wrap(image.thumbnail())
+    expect(first.url).toBe('blob:thumbnail-1')
+    expect(peek(image.thumbnailLongEdge)).toBe(300)
+
+    target.set(200)
+    const reused = await wrap(image.thumbnail())
+    expect(reused).toBe(first)
+    expect(createCount).toBe(1)
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    let upgradeResolve: ((result: ThumbnailResult) => void) | null = null
+    const upgradePromise = new Promise<ThumbnailResult>((resolve) => {
+      upgradeResolve = resolve
+    })
+    const loadSpy = vi
+      .spyOn(imageEngine, 'loadThumbnailWithMeta')
+      .mockImplementationOnce(async () => upgradePromise)
+
+    target.set(600)
+    const upgradeRead = wrap(image.thumbnail())
+    await wrap(Promise.resolve())
+
+    expect(image.thumbnail.data()?.url).toBe('blob:thumbnail-1')
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+
+    upgradeResolve!({
+      url: 'blob:thumbnail-2',
+      width: 600,
+      height: 400,
+      source: 'generated',
+    })
+    const upgraded = await upgradeRead
+    expect(upgraded.url).toBe('blob:thumbnail-2')
+    expect(image.thumbnail.data()?.url).toBe('blob:thumbnail-2')
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:thumbnail-1')
+    expect(peek(image.thumbnailLongEdge)).toBe(600)
+
+    loadSpy.mockRestore()
+  })
+})
+
+test('thumbnail survives subscriber disconnect and is revoked on dispose', async () => {
+  let createCount = 0
+  const revokeObjectURL = vi.fn()
+  vi.stubGlobal('URL', {
+    createObjectURL: () => {
+      createCount += 1
+      return `blob:thumbnail-${createCount}`
+    },
+    revokeObjectURL,
+  })
+  vi.stubGlobal(
+    'OffscreenCanvas',
+    class {
+      width: number
+      height: number
+      constructor(width: number, height: number) {
+        this.width = width
+        this.height = height
+      }
+      getContext() {
+        return {
+          fillStyle: '',
+          fillRect: () => undefined,
+          drawImage: () => undefined,
+        }
+      }
+      convertToBlob() {
+        return Promise.resolve(new Blob(['jpeg'], { type: 'image/jpeg' }))
+      }
+    },
+  )
+  vi.stubGlobal(
+    'createImageBitmap',
+    vi.fn(async () => ({
+      width: 1200,
+      height: 800,
+      close() {},
+    })),
+  )
+  vi.spyOn(imageEngine, 'parseImagePreviewMeta').mockResolvedValue({
+    width: 1200,
+    height: 800,
+    format: 'jpeg',
+    isProgressive: false,
+    hasExifThumbnail: false,
+  })
+
+  await context.start(async () => {
+    const target = atom(300, 'test.thumbnailTarget')
+    const priority = atom<'off' | 'high' | 'background'>(
+      'high',
+      'test.previewPriority',
+    )
+    const image = reatomImage(makeJpegBlob(), 'thumbnail-disconnect', {
+      thumbnailTargetSize: target,
+      previewLoadPriority: priority,
+    })
+
+    const stop = image.thumbnail.data.subscribe(() => {})
+    const first = await wrap(image.thumbnail())
+    expect(first.url).toBe('blob:thumbnail-1')
+
+    stop()
+    await wrap(Promise.resolve())
+
+    expect(revokeObjectURL).not.toHaveBeenCalled()
+    expect(image.thumbnail.data()?.url).toBe('blob:thumbnail-1')
+
+    const reused = await wrap(image.thumbnail())
+    expect(reused).toBe(first)
+    expect(createCount).toBe(1)
+
+    image.dispose()
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:thumbnail-1')
+    expect(image.thumbnail.data()).toBeUndefined()
+  })
+})
+
 test('sizedImage returns null when policy chooses original decode path', async () => {
   await context.start(async () => {
     const image = reatomImage(makeJpegBlob(), 'small-image', {
@@ -149,19 +327,17 @@ test('sizedImage upgrades monotonically and clears on deactivation', async () =>
     transferFromImageBitmap() {}
   }
 
-  vi.stubGlobal(
-    'createImageBitmap',
-    vi.fn(
-      async (
-        _source: unknown,
-        options?: { resizeWidth?: number; resizeHeight?: number },
-      ) => ({
-        width: options?.resizeWidth ?? 1200,
-        height: options?.resizeHeight ?? 800,
-        close() {},
-      }),
-    ),
+  const createImageBitmapMock = vi.fn(
+    async (
+      _source: unknown,
+      options?: { resizeWidth?: number; resizeHeight?: number },
+    ) => ({
+      width: options?.resizeWidth ?? 1200,
+      height: options?.resizeHeight ?? 800,
+      close() {},
+    }),
   )
+  vi.stubGlobal('createImageBitmap', createImageBitmapMock)
 
   vi.stubGlobal('document', {
     createElement: () => {
@@ -208,9 +384,17 @@ test('sizedImage upgrades monotonically and clears on deactivation', async () =>
 
     const firstCanvas = await wrap(image.sizedImage())
     expect(firstCanvas).toBeTruthy()
+    if (!firstCanvas) throw new Error('Expected the first sized canvas')
 
     const firstLongEdge = peek(image.sizedImageLongEdge)
     expect(firstLongEdge).toBeGreaterThan(0)
+
+    const decodeCount = createImageBitmapMock.mock.calls.length
+    target.set({ width: 800, height: 600, zoom: 1 })
+    const reusedCanvas = await wrap(image.sizedImage())
+    expect(reusedCanvas).toBe(firstCanvas)
+    expect(firstCanvas.width).toBeGreaterThan(0)
+    expect(createImageBitmapMock).toHaveBeenCalledTimes(decodeCount)
 
     target.set({ width: 2400, height: 1600, zoom: 2 })
     const upgradedCanvas = await wrap(image.sizedImage())
@@ -219,5 +403,8 @@ test('sizedImage upgrades monotonically and clears on deactivation', async () =>
 
     active.set(false)
     await expect(wrap(image.sizedImage())).resolves.toBeNull()
+    // clearSizedImage zeroes the previous canvas in place; lightbox must not
+    // paint that wiped node from stale `.data()` (use artifact / size checks).
+    expect(firstCanvas.width).toBe(0)
   })
 })

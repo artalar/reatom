@@ -43,19 +43,8 @@ export const AppShell = ({ children }: { children: JSX.ElementChildren }) => (
       }
 
       &[data-theme-pack='neon'][data-theme-mode='light'] main {
-        background-color: #f7f5ff;
-        background-image:
-          radial-gradient(
-            circle at 15% 20%,
-            rgba(192, 38, 211, 0.16),
-            transparent 31%
-          ),
-          radial-gradient(
-            circle at 90% 8%,
-            rgba(8, 145, 178, 0.16),
-            transparent 29%
-          ),
-          linear-gradient(135deg, rgba(124, 58, 237, 0.08), transparent 48%);
+        background-color: var(--bg-primary);
+        background-image: var(--app-bg-image);
       }
 
       &[data-theme-pack='terminal'] {
@@ -152,21 +141,6 @@ export const AppShell = ({ children }: { children: JSX.ElementChildren }) => (
           auto;
       }
 
-      &[data-theme-pack='aurora'][data-theme-mode='light'] main {
-        background-color: #effefa;
-        background-image:
-          radial-gradient(
-            circle at 18% 20%,
-            rgba(15, 159, 142, 0.18),
-            transparent 34%
-          ),
-          radial-gradient(
-            circle at 82% 8%,
-            rgba(124, 58, 237, 0.14),
-            transparent 30%
-          );
-      }
-
       &[data-theme-pack='polaroid'][data-theme-mode='light'] main {
         background-color: #eadfcf;
         background-image: radial-gradient(
@@ -186,19 +160,8 @@ export const AppShell = ({ children }: { children: JSX.ElementChildren }) => (
       }
 
       &[data-theme-pack='neon'][data-theme-mode='light'] {
-        background-color: #f7f5ff;
-        background-image:
-          radial-gradient(
-            circle at 15% 20%,
-            rgba(192, 38, 211, 0.16),
-            transparent 31%
-          ),
-          radial-gradient(
-            circle at 90% 8%,
-            rgba(8, 145, 178, 0.16),
-            transparent 29%
-          ),
-          linear-gradient(135deg, rgba(124, 58, 237, 0.08), transparent 48%);
+        background-color: var(--bg-primary);
+        background-image: var(--app-bg-image);
         font-family: 'Inter', system-ui, sans-serif;
       }
 
@@ -226,21 +189,6 @@ export const AppShell = ({ children }: { children: JSX.ElementChildren }) => (
         background-color: #fff1b8;
         background-image: var(--app-bg-image);
         font-family: Arial, Helvetica, sans-serif;
-      }
-
-      &[data-theme-pack='aurora'][data-theme-mode='light'] {
-        background-color: #effefa;
-        background-image:
-          radial-gradient(
-            circle at 18% 20%,
-            rgba(15, 159, 142, 0.18),
-            transparent 34%
-          ),
-          radial-gradient(
-            circle at 82% 8%,
-            rgba(124, 58, 237, 0.14),
-            transparent 30%
-          );
       }
 
       &[data-theme-pack='polaroid'][data-theme-mode='light'] {
