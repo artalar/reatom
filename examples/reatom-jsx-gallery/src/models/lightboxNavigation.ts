@@ -58,10 +58,7 @@ export const lightboxPreloadImageElement = computed(() => {
     return sizedCanvas
   }
 
-  return (
-    preloadTarget.fullImage.data() ??
-    preloadTarget.display.element()
-  )
+  return preloadTarget.fullImage.data() ?? preloadTarget.display.element()
 }, 'lightbox.preloadImageElement')
 
 const primeLightboxPreload = action(() => {

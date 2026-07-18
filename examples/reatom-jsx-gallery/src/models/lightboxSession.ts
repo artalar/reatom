@@ -92,9 +92,7 @@ export const lightboxDisplayOrientationStyle = computed(() => {
   const sizedCanvas = model.sizedImageArtifact()
   const rawElement = model.rawDevelopedImage.data()
   const orientationBaked =
-    (sizedCanvas !== null &&
-      sizedCanvas.width > 0 &&
-      sizedCanvas.height > 0) ||
+    (sizedCanvas !== null && sizedCanvas.width > 0 && sizedCanvas.height > 0) ||
     (rawElement !== null && rawElement === model.rawDevelopedImage.data())
 
   return resolveImageOrientationStyle(
