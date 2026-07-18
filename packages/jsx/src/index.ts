@@ -12,7 +12,6 @@ import {
   isAtom,
   isLinkedListAtom,
   isObject,
-  isWritableAtom,
   type LinkedList,
   type LLNode,
   peek,
@@ -39,8 +38,8 @@ export type FC<Props = {}> = (
 
 export type { JSX, JSXElement }
 
-export { instance } from '@reatom/core'
 export { reatomClassName } from './utils'
+export { instance } from '@reatom/core'
 
 type DomApis = Pick<
   typeof window,
@@ -252,9 +251,32 @@ let walkAtom = (
   anAtom: AtomLike<JSX.ElementChildren>,
 ): DocumentFragment => {
   let fragment = createLiveFragment(dom, anAtom.name)
+  let { start, end, update } = fragment.__reatomFragment
 
-  unlink(fragment.__reatomFragment.start, () =>
-    anAtom.subscribe(fragment.__reatomFragment.update),
+  /**
+   * Render the current state eagerly while the fragment is detached, so the
+   * whole tree (including nested reactive children) is built before `mount`
+   * appends it, avoiding a wave of live-DOM insertions per nesting level.
+   * `update` cannot be used here: `start.after(fragment)` would insert the
+   * fragment into itself, so the content goes through a buffer instead. Reads
+   * that throw (suspense Promise, abort, errors) fall back to the lazy behavior
+   * — the fragment stays empty until the subscription renders it.
+   */
+  let state = peek(anAtom)
+  let initialContent = dom.document.createDocumentFragment()
+  walk(dom, initialContent, state)
+  end.before(initialContent)
+
+  /**
+   * `subscribe` emits synchronously on every (re)connect. Skipping states that
+   * match the last rendered one covers both the first mount (eagerly rendered
+   * above) and re-append of an unchanged node, while a state changed while
+   * disconnected still re-renders.
+   */
+  unlink(start, () =>
+    anAtom.subscribe(
+      (newState) => Object.is(state, (state = newState)) || update(newState),
+    ),
   )
 
   return fragment
@@ -270,10 +292,12 @@ let walkLinkedList = (
   let cb = (state: LinkedList<LLNode<JSX.Element>>) => {
     if (state.version - 1 > lastVersion) {
       element.innerHTML = ''
+      let rebuildBatch = dom.document.createDocumentFragment()
       for (let head = state.head; head; head = head[state.LL_NEXT] ?? null) {
         throwNativeFragment(head)
-        element.append(head)
+        rebuildBatch.append(head)
       }
+      element.append(rebuildBatch)
     } else {
       let appendBatch: undefined | DocumentFragment
       for (let change of state.changes) {
@@ -382,8 +406,11 @@ let createLiveFragment = (dom: DomApis, name: string): LiveDocumentFragment => {
   let start = dom.document.createComment(name)
   let end = start.cloneNode() as Comment
   let update = (children?: JSX.ElementChildren) => {
-    while (start.nextSibling && start.nextSibling !== end) {
-      start.nextSibling.remove()
+    if (start.nextSibling && start.nextSibling !== end) {
+      let staleRange = dom.document.createRange()
+      staleRange.setStartAfter(start)
+      staleRange.setEndBefore(end)
+      staleRange.deleteContents()
     }
 
     walk(dom, fragment, children)
@@ -508,7 +535,7 @@ let bindFieldModel = (
 }
 
 let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
-  if (key === 'children' || key === 'element') return
+  if (key === 'children' || key === 'element' || value === undefined) return
 
   /**
    * @todo Show warning if isAtom(value) && !isAction(value).
@@ -527,15 +554,14 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
    */
   if (key.startsWith('on:')) {
     key = key.slice(3)
-    if (typeof value === 'function') {
-      element.addEventListener(
-        key,
-        wrap(
-          // only for logging purposes
-          action(value as () => void, eventActionName(element, key, value)),
-        ),
-      )
-    }
+    element.addEventListener(
+      key,
+      wrap(
+        // only for logging purposes
+        action(value as () => void, eventActionName(element, key, value)),
+      ),
+    )
+
     return
   }
 
@@ -560,12 +586,11 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
 
   let setter = (val: any) => set(dom, element, key, val)
 
-  /** @todo Show warning if isAction(value). */
   if (key === 'class' || key === 'className') {
     if (typeof value === 'object' || typeof value === 'function') {
       unlink(element, () => reatomClassName(value).subscribe(setter))
     } else {
-      setter(typeof value === 'string' ? value : undefined)
+      setter(value)
     }
     return
   }
@@ -577,17 +602,14 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
 
   if (key.startsWith('model:')) {
     key = key.slice(6)
-    if (isWritableAtom(value)) {
-      setProp(dom, element, 'on:input', (event: any) => {
-        if (!event.target.validity.badInput) {
-          let val = event.target[key]
-          value.set(val == null || Number.isNaN(val) ? undefined : val)
-        }
-      })
-    }
+    setProp(dom, element, 'on:input', (event: any) => {
+      if (!event.target.validity.badInput) {
+        let val = event.target[key]
+        value.set(val == null || Number.isNaN(val) ? undefined : val)
+      }
+    })
   }
 
-  /** @todo Show warning if isAction(value). */
   if (isAtom(value) && !isAction(value)) {
     unlink(element, () => value.subscribe(setter))
   } else if (typeof value === 'function') {
@@ -621,8 +643,10 @@ let set = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   } else if (key === 'style') {
     if (isObject(value)) {
       for (let key in value) setStyleProp(element.style, key, value[key])
+    } else if (typeof value === 'string') {
+      element.style.cssText = value
     } else {
-      for (let key in element.style) element.style.removeProperty(key)
+      element.removeAttribute('style')
     }
   } else if (key.startsWith('style:')) {
     setStyleProp(element.style, key.slice(6), value)
@@ -747,19 +771,31 @@ export let mount = (
   let dom = DOM()
   let symbol = metaSymbol()
 
+  /**
+   * Teardown is the LIFO mirror of mount, which subscribes in a forward pass
+   * (parents first) and runs mount hooks in a backward pass (children first).
+   * So unmount hooks run forward (parents first, while children are still alive
+   * — same contract as React) and unsubscribes run backward (last subscription
+   * first), letting the core `unlink` hit its `pub.subs.pop()` fast path
+   * instead of scanning and shifting the subscribers array — O(n) instead of
+   * O(n²) for a shared pub.
+   */
   let cleanupNode = (node: Node) => {
     let iterator = dom.document.createNodeIterator(node, 1 | 128)
     while (iterator.nextNode()) {
       let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
+      if (meta?.unmount) {
+        meta.unmount(iterator.referenceNode)
+        meta.unmount = undefined
+      }
+    }
+    while (iterator.previousNode()) {
+      let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
       if (meta) {
-        if (meta.unsubscribes.length > 0) {
-          meta.unsubscribes.forEach((unsubscribe) => unsubscribe())
-          meta.unsubscribes = []
+        for (let i = meta.unsubscribes.length - 1; i >= 0; i--) {
+          meta.unsubscribes[i]!()
         }
-        if (meta.unmount) {
-          meta.unmount(iterator.referenceNode)
-          meta.unmount = undefined
-        }
+        meta.unsubscribes = []
       }
     }
   }

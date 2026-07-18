@@ -9,6 +9,7 @@ import {
   reatomForm,
   sleep,
   top,
+  withConnectHook,
   withInit,
   wrap,
 } from '@reatom/core'
@@ -514,6 +515,16 @@ test('ref unmount callback', () =>
     expect(ref).toBe(null)
   }))
 
+test('undefined ref does not throw on mount', () =>
+  context.start(async () => {
+    const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+    mount(parent(), <Component ref={undefined} />)
+    await wrap(sleep())
+
+    expect(parent().children).toHaveLength(1)
+  }))
+
 test('child ref unmount callback', () =>
   context.start(async () => {
     const Component = (props: JSX.HTMLAttributes) => <div {...props} />
@@ -748,6 +759,45 @@ test('ref mount and unmount callbacks order', () =>
     expect(order).toStrictEqual([2, 1, 0, 0, 1, 2])
   }))
 
+test('unmount unsubscribes in reverse subscription order', () =>
+  context.start(async () => {
+    const order: string[] = []
+    const track = (name: string) =>
+      atom(name, name).extend(
+        withConnectHook(() => {
+          order.push(`connect ${name}`)
+          return () => order.push(`disconnect ${name}`)
+        }),
+      )
+
+    const a = track('a')
+    const b = track('b')
+    const c = track('c')
+
+    const element = (
+      <div id={a}>
+        <div id={b}>
+          <div id={c} />
+        </div>
+      </div>
+    )
+
+    const { unmount } = mount(parent(), element)
+    await wrap(sleep())
+    expect(order).toStrictEqual(['connect a', 'connect b', 'connect c'])
+
+    unmount()
+    await wrap(sleep())
+    expect(order).toStrictEqual([
+      'connect a',
+      'connect b',
+      'connect c',
+      'disconnect c',
+      'disconnect b',
+      'disconnect a',
+    ])
+  }))
+
 test('style object update', () =>
   context.start(async () => {
     const styleTopAtom = atom<JSX.StyleProperties['top']>('0')
@@ -790,6 +840,49 @@ test('style object update', () =>
     await wrap(sleep())
     expect(firstEl.getAttribute('style')).toBe('left: 0px; bottom: 0px;')
     expect(secondEl.getAttribute('style')).toBe('left: 0px; bottom: 0px;')
+  }))
+
+test('style string value', () =>
+  context.start(async () => {
+    const styleAtom = atom<string | null>('background-color: red; top: 0px;')
+
+    const element = <div style={styleAtom}></div>
+
+    mount(parent(), element)
+
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBe(
+      'background-color: red; top: 0px;',
+    )
+
+    styleAtom.set('color: blue;')
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBe('color: blue;')
+
+    styleAtom.set(null)
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBeNull()
+  }))
+
+test('style object reset', () =>
+  context.start(async () => {
+    const styleAtom = atom<JSX.CSSProperties | null>({
+      'background-color': 'red',
+      top: '0px',
+    })
+
+    const element = <div style={styleAtom}></div>
+
+    mount(parent(), element)
+
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBe(
+      'background-color: red; top: 0px;',
+    )
+
+    styleAtom.set(null)
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBeNull()
   }))
 
 test('render atom fragments', () =>
@@ -1240,6 +1333,26 @@ test('model:field composes with ref when ref comes after', () =>
     expect(userRef).toBe(null)
   }))
 
+test('model:field keeps working when undefined ref comes after', () =>
+  context.start(async () => {
+    const field = reatomField('', 'nameField')
+
+    const input = instance(
+      HTMLInputElement,
+      <input model:field={field} ref={undefined} attr:type="text" />,
+    )
+
+    mount(parent(), input)
+    await wrap(sleep())
+
+    expect(field.elementRef()).toBe(input)
+
+    input.remove()
+    await wrap(sleep())
+
+    expect(field.elementRef()).toBe(undefined)
+  }))
+
 test('model:field sets number type and uses valueAsNumber', () =>
   context.start(async () => {
     const field = reatomField(0, 'countField')
@@ -1366,6 +1479,117 @@ test('preserves atom connection when moved within DOM', () =>
 
     expect(isConnected(valueAtom)).toBe(true)
     expect(element.className).toBe('bbb')
+  }))
+
+test('atom child renders synchronously at build time', () =>
+  context.start(async () => {
+    const val = atom('eager', 'val')
+    const element = <div>{val}</div>
+
+    expect(element.textContent).toBe('eager')
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('eager')
+  }))
+
+test('nested atom children render synchronously at build time', () =>
+  context.start(async () => {
+    const leaf = atom('leaf', 'leaf')
+    const middle = computed(() => <span>middle {leaf}</span>, 'middle')
+    const top = computed(() => <div>top {middle}</div>, 'top')
+    const element = <section>{top}</section>
+
+    expect(element.textContent).toBe('top middle leaf')
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('top middle leaf')
+
+    leaf.set('leaf!')
+    await wrap(sleep())
+    expect(element.textContent).toBe('top middle leaf!')
+  }))
+
+test('eagerly rendered atom child stays reactive after mount', () =>
+  context.start(async () => {
+    const val = atom('a', 'val')
+    const element = <div>{val}</div>
+
+    expect(element.textContent).toBe('a')
+
+    mount(parent(), element)
+    await wrap(sleep())
+
+    val.set('b')
+    await wrap(sleep())
+    expect(element.textContent).toBe('b')
+  }))
+
+test('atom child survives remove and re-append', () =>
+  context.start(async () => {
+    const val = atom('same', 'val')
+    const element = <div>{val}</div>
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('same')
+
+    element.remove()
+    await wrap(sleep())
+    parent().append(element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('same')
+
+    val.set('updated')
+    await wrap(sleep())
+    expect(element.textContent).toBe('updated')
+  }))
+
+test('atom child re-renders state changed while disconnected', () =>
+  context.start(async () => {
+    const val = atom('before', 'val')
+    const element = <div>{val}</div>
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('before')
+
+    element.remove()
+    await wrap(sleep())
+    val.set('after')
+    await wrap(sleep())
+    expect(element.textContent).toBe('before')
+
+    parent().append(element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('after')
+  }))
+
+test('initial atom children cause no live insertions after mount', () =>
+  context.start(async () => {
+    const leaf = atom('leaf', 'leaf')
+    const top = computed(() => <div>top {leaf}</div>, 'top')
+    const element = <section>{top}</section>
+
+    const target = parent()
+    const mutations: MutationRecord[] = []
+    const observer = new MutationObserver((records) =>
+      mutations.push(...records),
+    )
+    observer.observe(target, { childList: true, subtree: true })
+
+    mount(target, element)
+    await wrap(sleep())
+
+    mutations.push(...observer.takeRecords())
+    observer.disconnect()
+
+    const addedNodes = mutations.flatMap((mutation) => [
+      ...mutation.addedNodes,
+    ])
+    expect(addedNodes).toStrictEqual([element])
+    expect(element.textContent).toBe('top leaf')
   }))
 
 /**
