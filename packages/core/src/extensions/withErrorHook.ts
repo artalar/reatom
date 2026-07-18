@@ -73,20 +73,20 @@ export let addErrorHook = <T extends AtomLike>(
   target: T,
   cb: (error: unknown, params: OverloadParameters<T>) => void,
 ): Unsubscribe => {
+  let { middlewares } = target.__reatom
+  let before = new Set(middlewares)
+
   target.extend(withErrorHook(cb))
 
-  let hook = target.__reatom.middlewares.find(
-    (middleware) => middleware.name === 'withErrorHook',
-  )
-
+  let hook = middlewares.find((middleware) => !before.has(middleware))
   if (!hook) {
     throw new ReatomError('Failed to add error hook')
   }
 
   return () => {
-    let index = target.__reatom.middlewares.indexOf(hook)
+    let index = middlewares.indexOf(hook)
     if (index !== -1) {
-      target.__reatom.middlewares.splice(index, 1)
+      middlewares.splice(index, 1)
       _recompile(target)
     }
   }
