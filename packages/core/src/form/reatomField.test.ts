@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, viTest } from 'test'
+import { describe, expect, test, vi } from 'test'
 import { z } from 'zod'
 
 import {
