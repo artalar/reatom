@@ -1,12 +1,24 @@
-import { describe, expect, subscribe, test } from 'test'
+import { describe, expect, subscribe, test, vi } from 'test'
 
 import { wrap } from '..'
-import { action, atom } from '../core'
+import { action, atom, notify } from '../core'
 import { withComputed } from '../extensions'
-import { noop, random, sleep } from '../utils'
-import { createMemStorage, reatomPersist } from './'
+import { MAX_SAFE_TIMEOUT, noop, random, sleep } from '../utils'
+import { createMemStorage, type PersistRecord, reatomPersist } from './'
 
 const withSomePersist = reatomPersist(createMemStorage({ name: 'somePersist' }))
+
+const createRecord = <State>(
+  data: State,
+  overrides: Partial<PersistRecord<State>> = {},
+): PersistRecord<State> => ({
+  data,
+  id: 0,
+  timestamp: Date.now(),
+  to: Date.now() + MAX_SAFE_TIMEOUT,
+  version: 0,
+  ...overrides,
+})
 
 describe('base', () => {
   test('should persist and update state correctly', async () => {
@@ -131,6 +143,81 @@ describe('async', () => {
     expect(track).toBeCalledTimes(1)
     expect(track).toBeCalledWith(11)
   })
+
+  test('async storage caches missing records without revalidation loop', async () => {
+    let getCalls = 0
+    const stableNullPromise = Promise.resolve(null)
+    const withAsyncPersist = reatomPersist<string>({
+      name: 'auditAsyncMissingStorage',
+      get: () => {
+        getCalls++
+        if (getCalls > 3) return null
+        return getCalls === 1 ? Promise.resolve(null) : stableNullPromise
+      },
+      set: vi.fn(),
+      subscribe: () => noop,
+    })
+
+    const target = atom('initial', 'auditAsyncMissingAtom').extend(
+      withAsyncPersist('missing-key'),
+    )
+    const unsubscribe = target.subscribe(() => {})
+
+    expect(target()).toBe('initial')
+    await wrap(sleep())
+
+    unsubscribe()
+    expect(getCalls).toBe(1)
+  })
+
+  test('async storage treats expired records as cacheable misses', async () => {
+    let getCalls = 0
+    const expiredRecord = createRecord('expired', { to: Date.now() - 1 })
+    const stableExpiredPromise = Promise.resolve(expiredRecord)
+    const withAsyncPersist = reatomPersist<string>({
+      name: 'auditAsyncExpiredStorage',
+      get: () => {
+        getCalls++
+        if (getCalls > 3) return expiredRecord
+        return getCalls === 1
+          ? Promise.resolve(expiredRecord)
+          : stableExpiredPromise
+      },
+      set: vi.fn(),
+      subscribe: () => noop,
+    })
+
+    const target = atom('initial', 'auditAsyncExpiredAtom').extend(
+      withAsyncPersist('expired-key'),
+    )
+    const unsubscribe = target.subscribe(() => {})
+
+    expect(target()).toBe('initial')
+    await wrap(sleep())
+
+    unsubscribe()
+    expect(target()).toBe('initial')
+    expect(getCalls).toBe(1)
+  })
+
+  test('subscribe false applies async persisted value on init', async () => {
+    const withAsyncPersist = reatomPersist<string>({
+      name: 'auditAsyncInitStorage',
+      get: () => Promise.resolve(createRecord('stored')),
+      set: vi.fn(),
+    })
+
+    const target = atom('initial', 'auditAsyncInitAtom').extend(
+      withAsyncPersist({
+        key: 'async-init-key',
+        subscribe: false,
+      }),
+    )
+
+    expect(target()).toBe('initial')
+    await wrap(sleep())
+    expect(target()).toBe('stored')
+  })
 })
 
 describe('should not skip double update', () => {
@@ -206,4 +293,49 @@ describe('should not accept an action', () => {
     const testAction = action(() => {})
     expect(() => testAction.extend(withSomePersist('test'))).toThrow()
   })
+})
+
+test('stale subscribed records do not overwrite fresher local writes', () => {
+  let emitStoredRecord: ((record: PersistRecord<string>) => void) | undefined
+  const withSubscribedPersist = reatomPersist<string>({
+    name: 'auditSubscribedStorage',
+    get: () => null,
+    set: vi.fn(),
+    subscribe: (_options, callback) => {
+      emitStoredRecord = callback
+      return noop
+    },
+  })
+
+  const target = atom('initial', 'auditSubscribedAtom').extend(
+    withSubscribedPersist('subscribed-key'),
+  )
+  const unsubscribe = target.subscribe(() => {})
+  notify()
+
+  target.set('fresh')
+  emitStoredRecord?.(createRecord('stale', { timestamp: Date.now() - 1 }))
+
+  unsubscribe()
+  expect(target()).toBe('fresh')
+})
+
+test('migration result is not decoded a second time', () => {
+  const withMigratingPersist = reatomPersist<number>({
+    name: 'auditMigrationStorage',
+    get: () => createRecord(1),
+    set: vi.fn(),
+  })
+
+  const target = atom('initial', 'auditMigrationAtom').extend(
+    withMigratingPersist({
+      key: 'migration-key',
+      version: 1,
+      migration: () => 'migrated',
+      fromSnapshot: (snapshot) => `decoded:${snapshot}`,
+      toSnapshot: (state) => state.length,
+    }),
+  )
+
+  expect(target()).toBe('migrated')
 })

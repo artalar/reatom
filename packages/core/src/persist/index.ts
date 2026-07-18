@@ -13,6 +13,7 @@ import {
 import { withInit } from '../extensions'
 import { withConnectHook } from '../extensions/withConnectHook'
 import { memoKey } from '../methods/memo'
+import { peek } from '../methods/peek'
 import {
   type Fn,
   MAX_SAFE_TIMEOUT,
@@ -57,7 +58,7 @@ export interface PersistStorageCacheOption {
   cache?: Map<string, PersistRecord>
 }
 
-export type PersistCache = Map<string, PersistRecord>
+export type PersistCache = Map<string, PersistRecord | null>
 
 export interface PersistStorage<Snapshot = unknown, Options extends Rec = {}> {
   name: string
@@ -188,6 +189,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
           let cacheRec = cache.get(options.key)
 
           if (cacheRec !== undefined) {
+            if (cacheRec === null) return null
             if (cacheRec.to > Date.now()) {
               return cacheRec
             }
@@ -199,10 +201,11 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
           if (recOrPromise instanceof Promise) {
             return recOrPromise.then(
               bind((rec) => {
-                if (rec && rec.to >= Date.now() && !cache.has(options.key)) {
-                  cache.set(options.key, rec)
+                let freshRec = rec && rec.to >= Date.now() ? rec : null
+                if (!cache.has(options.key)) {
+                  cache.set(options.key, freshRec)
                 }
-                return rec
+                return freshRec
               }),
             )
           }
@@ -247,6 +250,8 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
             return storage.subscribe!(
               { ...options, cache },
               bind((rec) => {
+                let cached = cache.get(options.key)
+                if (cached && cached.timestamp > rec.timestamp) return
                 cache.set(options.key, rec)
                 callback(rec)
               }, top().root.frame),
@@ -299,16 +304,14 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
         ): AtomState<Target> => {
           if (!persist) return state
 
-          let snapshot = persist.data
+          if (Date.now() > persist.to) return state
 
           if (version !== persist.version) {
             if (migration === undefined) return state
-            snapshot = migration!(persist, version)
+            state = migration!(persist, version)
+          } else {
+            state = fromSnapshot(persist.data)
           }
-
-          if (Date.now() > persist.to) return state
-
-          state = fromSnapshot(snapshot)
 
           if (schema) {
             const validation = schema['~standard'].validate(state)
@@ -381,9 +384,27 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
               let persistRecord = storageAtom().get(
                 storageOptions as ThisOptions,
               )
-              return persistRecord instanceof Promise
-                ? state // FIXME should we subscribe to the promise?
-                : fromPersistRecord(persistRecord, state)
+              if (persistRecord instanceof Promise) {
+                persistRecord.then(
+                  bind(() => {
+                    let resolved = storageAtom().get(
+                      storageOptions as ThisOptions,
+                    )
+                    if (
+                      resolved &&
+                      !(resolved instanceof Promise) &&
+                      Object.is(peek(target), state)
+                    ) {
+                      _set(target, (current: AtomState<Target>) =>
+                        fromPersistRecord(resolved, current),
+                      )
+                    }
+                  }),
+                  noop,
+                )
+                return state
+              }
+              return fromPersistRecord(persistRecord, state)
             }),
             withMiddleware(
               () =>
