@@ -255,13 +255,13 @@ test('rollback survives an action invoked through a subscriber-created wrap', as
   // NEXT call clean again — in the UI this reads as rollback working every other click.)
   let handler!: () => Promise<void>
   const unsubscribe = like.subscribe(() => {
-    handler = wrap(async () => {
+    handler = async () => {
       try {
         await wrap(toggle())
       } catch {
         // the rollback is expected to have restored the state
       }
-    })
+    }
   })
 
   await wrap(handler()) // 1st failing toggle → optimistic flip is rolled back

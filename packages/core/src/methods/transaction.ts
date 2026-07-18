@@ -363,32 +363,31 @@ export let reatomTransaction = ({
   }
 
   /**
-   * Whether the current write happens INSIDE this scope's rollback flush.
+   * Queues currently being drained by a rollback flush.
    *
-   * Deliberately bounded, unlike `isCausedBy`: the walk stops at the nearest
-   * transaction boundary (the frame that owns a rollback queue). An unbounded
-   * ancestry check breaks UI bindings — subscriber callbacks run in the atom's
-   * live frame, so a handler `wrap`ped inside one (what reatom-react does on
-   * every render) keeps that frame in its chain. Once a rollback becomes the
-   * atom's last writer, every action invoked through such a handler would look
-   * "caused by rollback", silently skip all undo registration, and the next
-   * failure would have nothing to roll back (see the "subscriber-created wrap"
-   * test). A fresh transaction is a clean scope no matter what its caller's
-   * ancestry contains.
+   * A write performed by the flush itself must not register an "undo of the
+   * undo" into the queue it is draining — otherwise a repeated `rollback()`
+   * would re-apply the rolled-back state instead of being a no-op. Marking the
+   * queue (instead of inspecting the write's cause chain) keeps unrelated
+   * scopes intact by construction: a fresh transaction owns a fresh queue, so
+   * its writes always register no matter what ancestry the caller carries —
+   * subscriber callbacks run in the atom's live frame, so a handler created
+   * inside one (what UI bindings do on every render) may well have a past
+   * rollback in its chain (see the "subscriber-created wrap" test).
    */
-  let isRollbackFlush = (frame: null | Frame = top()): boolean => {
-    let visited = new Set<Frame>()
+  let flushing = new WeakSet<Rollbacks>()
 
-    while (frame && !visited.has(frame)) {
-      visited.add(frame)
-
-      if (frame.atom === (transactionVar.rollback as Atom)) return true
-      if (transactionVar.first(frame) !== undefined) return false
-
-      frame = frame.pubs[0]
+  let flushRollbacks = (rollbacks: undefined | Rollbacks) => {
+    if (!rollbacks) return
+    flushing.add(rollbacks)
+    try {
+      rollbacks
+        .splice(0)
+        .reverse()
+        .forEach((rollback) => rollback())
+    } finally {
+      flushing.delete(rollbacks)
     }
-
-    return false
   }
 
   let transactionVar = Object.assign(
@@ -413,16 +412,19 @@ export let reatomTransaction = ({
                 let prevState = top().state
                 let nextState = next(...params)
 
-                if (!Object.is(prevState, nextState) && !isRollbackFlush()) {
-                  findRollbacks()?.push(() =>
-                    target.set((state) =>
-                      onRollback({
-                        beforeState: prevState,
-                        currentState: state,
-                        transactionState: nextState,
-                      }),
-                    ),
-                  )
+                if (!Object.is(prevState, nextState)) {
+                  let rollbacks = findRollbacks()
+                  if (rollbacks && !flushing.has(rollbacks)) {
+                    rollbacks.push(() =>
+                      target.set((state) =>
+                        onRollback({
+                          beforeState: prevState,
+                          currentState: state,
+                          transactionState: nextState,
+                        }),
+                      ),
+                    )
+                  }
                 }
                 return nextState
               },
@@ -461,12 +463,7 @@ export let reatomTransaction = ({
                 let parentRollbacks = findRollbacks(top().pubs[0])
                 let selfRollbacks = transactionVar.set()
 
-                parentRollbacks?.push(() =>
-                  selfRollbacks
-                    .splice(0)
-                    .reverse()
-                    .forEach((rollback) => rollback()),
-                )
+                parentRollbacks?.push(() => flushRollbacks(selfRollbacks))
 
                 try {
                   let result = next(...params)
@@ -497,10 +494,7 @@ export let reatomTransaction = ({
       },
 
       rollback: action<[error?: any], void>(() => {
-        findRollbacks()
-          ?.splice(0)
-          .reverse()
-          .forEach((rollback) => rollback())
+        flushRollbacks(findRollbacks())
       }, 'transactionVar.rollback'),
     },
   )
