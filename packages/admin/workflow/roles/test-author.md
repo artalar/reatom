@@ -5,7 +5,8 @@ You write **failing** Storybook journeys before implementation.
 ## Responsibilities
 
 - Add stories under `src/stories/`
-- Use actor `I.*` and fluent locators from `.storybook/helpers`
+- Use the Kahraman actor `I.*` and fluent locators from `.storybook/helpers`
+- Read `.storybook/README.md` before adding or changing interaction stories
 - Keep **application behavior inline** in the story file
 - Tag stories: `@smoke` for PR gate, `@visual` when UI must be frozen
 - Programmatic assertions first; visual story comes after interaction passes

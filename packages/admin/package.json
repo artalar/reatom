@@ -89,6 +89,7 @@
     "@vitest/browser-playwright": "catalog:",
     "@vitest/ui": "catalog:",
     "eslint-plugin-simple-import-sort": "catalog:",
+    "kahraman": "^0.2.0",
     "playwright": "catalog:",
     "msw": "^2.12.13",
     "msw-storybook-addon": "^2.0.7",

@@ -634,6 +634,9 @@ importers:
       eslint-plugin-simple-import-sort:
         specifier: 'catalog:'
         version: 12.1.1(eslint@9.39.4(jiti@2.7.0))
+      kahraman:
+        specifier: ^0.2.0
+        version: 0.2.0(storybook@10.4.6(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)(@testing-library/dom@10.4.1)(@types/react@19.2.15)(prettier@3.8.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))
       msw:
         specifier: ^2.12.13
         version: 2.12.13(@types/node@25.5.0)(typescript@5.9.3)
@@ -5141,6 +5144,12 @@ packages:
 
   jsonc-parser@3.3.1:
     resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
+
+  kahraman@0.2.0:
+    resolution: {integrity: sha512-Pl2Y/R9znuso2j8SbCRbz+9wMSpssYLiNwJeFgbZNSuy8L2rk0F4CPxtvy8CHxQr7xE1YWgJsus2P94vAQ9Ysw==}
+    engines: {node: '>=20.11.0'}
+    peerDependencies:
+      storybook: '>=9.0.0'
 
   katex@0.16.47:
     resolution: {integrity: sha512-Eeo8Ys1doU1z+x8AZsPpQu+p/QcZBI5PeOo7QGQdy2x2m0MU/hYagBbGOmXwr5KVbEfVuWv9LpnQWeehogurjg==}
@@ -11718,6 +11727,10 @@ snapshots:
   json5@2.2.3: {}
 
   jsonc-parser@3.3.1: {}
+
+  kahraman@0.2.0(storybook@10.4.6(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)(@testing-library/dom@10.4.1)(@types/react@19.2.15)(prettier@3.8.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)):
+    dependencies:
+      storybook: 10.4.6(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)(@testing-library/dom@10.4.1)(@types/react@19.2.15)(prettier@3.8.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
 
   katex@0.16.47:
     dependencies:
