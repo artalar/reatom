@@ -603,9 +603,9 @@ function link(frame: Frame) {
 // for deps duplication we want to find just added dep.
 //
 // `subscribe` listeners (effects) may trail atom dependents on `pub.subs` —
-// e.g. a parent computed linked first, then a JSX view listener. Unlinking the
-// last *atom* must still hit the O(1) pop path; trailing listeners are not a
-// reason to scan/shift. `_unlinkStats` is a test probe for that invariant.
+// e.g. a parent computed linked first, then a JSX view listener. If the last
+// slot is an effect, swap+pop is still the O(1) hot path (same unlink cost as
+// a plain `pop()`). `_unlinkStats` is a test probe for that invariant.
 export let _unlinkStats = { pop: 0, shift: 0 }
 
 function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
@@ -619,21 +619,12 @@ function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
     // looks like the pub was dirty
     if (idx === -1) continue
 
-    // Hot path when `sub` is the last atom dependent. Trailing subscribe
-    // listeners (effects) are swapped into the hole and popped — same O(1) as
-    // a plain `pop()`, matching LIFO link order for the reactive graph.
-    let lastAtomIdx = idx
-    for (let j = pub.subs.length - 1; j > idx; j--) {
-      if ('__reatom' in pub.subs[j]!) {
-        lastAtomIdx = -1
-        break
-      }
-    }
-
-    if (lastAtomIdx === idx) {
+    let last = pub.subs.length - 1
+    // Hot path: `sub` is last, or only effects trail it (last slot is not an atom).
+    if (idx === last || !('__reatom' in pub.subs[last]!)) {
       _unlinkStats.pop++
-      if (idx !== pub.subs.length - 1) {
-        pub.subs[idx] = pub.subs[pub.subs.length - 1]!
+      if (idx !== last) {
+        pub.subs[idx] = pub.subs[last]!
       }
       pub.subs.pop()
       if (pub.subs.length === 0) {
