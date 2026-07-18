@@ -1,6 +1,6 @@
 // Types (exported once to avoid conflicts)
 export type { BroadcastMessage } from './broadcastChannel'
-export type { CookieAttributes } from './cookie'
+export type { CookieAttributes, CookieStorageOptions } from './cookie'
 export type { CookieStoreOptions } from './cookieStore'
 
 // Functions

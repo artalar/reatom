@@ -1,13 +1,27 @@
 import { afterEach, expect, expectTypeOf, test, vi, viTest } from 'test'
 
-import { atom, context } from '../../core'
+import { atom, context, notify } from '../../core'
+import { MAX_SAFE_TIMEOUT } from '../../utils'
+import type { PersistRecord } from '../index'
 import {
   reatomPersistWebStorage,
   withLocalStorage,
   withSessionStorage,
 } from './localStorage'
 
+const uniqueKey = (label: string) =>
+  `local-storage-${label}-${Date.now()}-${Math.random()}`
+
+const createRecord = <State>(data: State): PersistRecord<State> => ({
+  data,
+  id: 0,
+  timestamp: Date.now(),
+  to: Date.now() + MAX_SAFE_TIMEOUT,
+  version: 0,
+})
+
 afterEach(() => {
+  vi.restoreAllMocks()
   sessionStorage.clear()
   localStorage.clear()
 })
@@ -137,4 +151,72 @@ test('fromSnapshot and toSnapshot', () => {
 
   const persistedValue = localStorage.getItem(key)
   expect(JSON.parse(persistedValue!).data).toEqual([['c', 3]])
+})
+
+test('localStorage deletion events invalidate subscribers', () => {
+  const key = uniqueKey('clear')
+  const storedRecord = createRecord('stored')
+  localStorage.setItem(key, JSON.stringify(storedRecord))
+  const target = atom('initial', 'localStorageClearAtom').extend(
+    withLocalStorage(key),
+  )
+  const unsubscribe = target.subscribe(() => {})
+  notify()
+
+  expect(target()).toBe('stored')
+
+  localStorage.removeItem(key)
+  globalThis.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      oldValue: JSON.stringify(storedRecord),
+      newValue: null,
+      storageArea: localStorage,
+    }),
+  )
+
+  unsubscribe()
+  expect(target()).toBe('initial')
+})
+
+test('localStorage ignores malformed storage events', () => {
+  const key = uniqueKey('malformed')
+  let storageHandler: ((event: StorageEvent) => void) | undefined
+  const originalAddEventListener = globalThis.addEventListener.bind(globalThis)
+  vi.spyOn(globalThis, 'addEventListener').mockImplementation(
+    (
+      type: string,
+      listener: EventListenerOrEventListenerObject | null,
+      options?: boolean | AddEventListenerOptions,
+    ) => {
+      if (listener === null) return
+      if (type === 'storage' && typeof listener === 'function') {
+        storageHandler = (event) => listener(event)
+      }
+      return originalAddEventListener(type, listener, options)
+    },
+  )
+  const target = atom('initial', 'localStorageMalformedAtom').extend(
+    withLocalStorage(key),
+  )
+  const unsubscribe = target.subscribe(() => {})
+  notify()
+
+  expect(storageHandler).toBeDefined()
+  let thrown: unknown
+  try {
+    storageHandler?.(
+      new StorageEvent('storage', {
+        key,
+        newValue: '{broken',
+        storageArea: localStorage,
+      }),
+    )
+  } catch (error) {
+    thrown = error
+  }
+  expect(thrown).toBeUndefined()
+
+  unsubscribe()
+  expect(target()).toBe('initial')
 })

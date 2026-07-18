@@ -73,7 +73,7 @@ export interface PersistStorage<Snapshot = unknown, Options extends Rec = {}> {
   clear?(options: Options & { key: string }): void | Promise<void>
   subscribe?(
     options: Options & { key: string },
-    callback: (record: PersistRecord<Snapshot>) => void,
+    callback: (record: PersistRecord<Snapshot> | null) => void,
   ): Unsubscribe
 }
 
@@ -88,7 +88,7 @@ export interface SyncPersistStorage<
   clear?(options: Options & { key: string }): void
   subscribe?(
     options: Options & { key: string },
-    callback: (record: PersistRecord<Snapshot>) => void,
+    callback: (record: PersistRecord<Snapshot> | null) => void,
   ): Unsubscribe
 }
 
@@ -250,6 +250,11 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
             return storage.subscribe!(
               { ...options, cache },
               bind((rec) => {
+                if (rec === null) {
+                  cache.delete(options.key)
+                  callback(rec)
+                  return
+                }
                 let cached = cache.get(options.key)
                 if (cached && cached.timestamp > rec.timestamp) return
                 cache.set(options.key, rec)
@@ -295,6 +300,11 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
         let { key } = storageOptions
 
         if (!key) throw new Error('missed key')
+
+        let getOptions = storageOptions as ThisOptions & {
+          version: number | string
+        }
+        getOptions = { ...getOptions, version }
 
         let revalidate = () => _set(target, (state: AtomState<Target>) => state)
 
@@ -349,17 +359,24 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
 
             const ref = memoKey(`persist#${storage.name}`, () => ({
               persistRecord: null as ReturnType<typeof storage.get>,
+              initState: frame.state as AtomState<Target>,
             }))
 
-            let persistRecord = storage.get(storageOptions as ThisOptions)
+            let persistRecord = storage.get(getOptions)
 
             if (ref.persistRecord !== persistRecord) {
+              let previous = ref.persistRecord
               ref.persistRecord = persistRecord
 
               if (persistRecord instanceof Promise) {
                 persistRecord.then(bind(revalidate, frame.root.frame))
               } else if (persistRecord) {
                 frame.state = fromPersistRecord(persistRecord, frame.state)
+              } else if (
+                previous != null &&
+                !(previous instanceof Promise)
+              ) {
+                frame.state = ref.initState
               }
             }
 
@@ -368,10 +385,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
             let newState = next(...params)
 
             if (!Object.is(state, newState)) {
-              storage.set(
-                storageOptions as ThisOptions,
-                toPersistRecord(newState),
-              )
+              storage.set(getOptions, toPersistRecord(newState))
             }
 
             return newState
@@ -381,15 +395,11 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
         } else {
           target.extend(
             withInit(function withInitPersist(state) {
-              let persistRecord = storageAtom().get(
-                storageOptions as ThisOptions,
-              )
+              let persistRecord = storageAtom().get(getOptions)
               if (persistRecord instanceof Promise) {
                 persistRecord.then(
                   bind(() => {
-                    let resolved = storageAtom().get(
-                      storageOptions as ThisOptions,
-                    )
+                    let resolved = storageAtom().get(getOptions)
                     if (
                       resolved &&
                       !(resolved instanceof Promise) &&
@@ -412,10 +422,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
                   let { state } = top()
                   let newState = next(...params)
                   if (!Object.is(state, newState)) {
-                    storageAtom().set(
-                      storageOptions as ThisOptions,
-                      toPersistRecord(newState),
-                    )
+                    storageAtom().set(getOptions, toPersistRecord(newState))
                   }
                   return newState
                 },
@@ -426,10 +433,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
         if (subscribe) {
           target.extend(
             withConnectHook(() =>
-              storageAtom().subscribe?.(
-                storageOptions as ThisOptions,
-                revalidate,
-              ),
+              storageAtom().subscribe?.(getOptions, revalidate),
             ),
           )
         }
