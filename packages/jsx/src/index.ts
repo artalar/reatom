@@ -376,8 +376,13 @@ let walkLinkedList = (
     list.subscribe((state) => cb(state as LinkedList<LLNode<JSX.Element>>)),
   )
 
-  // check if change hook wasn't called by initialization
-  if (lastVersion === -1) cb(list() as LinkedList<LLNode<JSX.Element>>)
+  /**
+   * Check if change hook wasn't called by initialization. `peek` keeps the read
+   * untracked: element construction may happen inside a reactive function child
+   * (`{() => <Node />}`), and a tracked read would make that computed depend on
+   * every (nested) list, remounting the whole subtree on any list change.
+   */
+  if (lastVersion === -1) cb(peek(list) as LinkedList<LLNode<JSX.Element>>)
 }
 
 interface LiveDocumentFragment extends DocumentFragment {

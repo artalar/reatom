@@ -188,9 +188,7 @@ test('tree root replacement disconnects previous generation atoms', () =>
 
     mount(
       createContainer(),
-      (
-        <div>{() => <TreeNode tree={rootAtom()} />}</div>
-      ) as unknown as Element,
+      (<div>{() => <TreeNode tree={rootAtom()} />}</div>) as unknown as Element,
     )
     await wrap(sleep())
 

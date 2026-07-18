@@ -1,27 +1,13 @@
 /**
- * Bisect: why a single root.add remaps ALL tree nodes in examples/reatom-jsx-tree,
- * while profile-granularity.test.tsx (plain reatomLinkedList + reatomMap) only
- * maps the new leaf.
- *
- * Verdict (mapper calls after one root.add on a 6-node tree, 5 edges at mount):
- *
- * | variant                         | add mapper calls | remaps all? |
- * |---------------------------------|------------------|-------------|
- * | plain (no extras)               | ["root->c"] (1)  | no          |
- * | checked/indeterminate computeds | 1                | no          |
- * | computeds bound in view         | 1                | no          |
- * | getCalls(toggle) in checked     | 1                | no          |
- * | action-wrapped add              | 1                | no          |
- * | reactive `{() => <TreeNode/>}`  | 7 (c + full + c) | YES         |
- * | full app-like (all features)    | 7                | YES         |
- * | reactive + peek(TreeNode)       | 1                | no          |
- *
- * Minimal trigger: wrapping the tree view in a reactive function child
- * `{() => <TreeNode tree={root()} />}` (App.tsx). During that computed's
- * evaluation, TreeNode → walkLinkedList → `list()` reads the reatomMap atom,
- * so the wrapper depends on children. Adding a node invalidates the wrapper,
- * remounts the tree, and each remount calls `reatomMap()` again (new computed,
- * previous state undefined → full-rebuild branch).
+ * Regression: rendering a linked list inside a reactive function child (`{() =>
+ * <TreeNode tree={root()} />}`, as in examples/reatom-jsx-tree) used to make
+ * that computed depend on every (nested) list: `walkLinkedList` performed a
+ * tracked `list()` read during element construction. A single `create` on any
+ * list then invalidated the wrapper, recreated the whole subtree, and each
+ * recreation called `reatomMap` from scratch (fresh derived atom → full-rebuild
+ * branch) — the entire tree was remapped for one added leaf. The initial read
+ * is untracked (`peek`) now, so only the new leaf is mapped. Scenarios cover
+ * the feature bisect that located the trigger.
  */
 import {
   action,
@@ -105,8 +91,7 @@ const reatomTree = (
         children
           .array()
           .reduce(
-            (acc, child) =>
-              child.checked && child.checked() ? acc + 1 : acc,
+            (acc, child) => (child.checked && child.checked() ? acc + 1 : acc),
             0,
           ),
       `${name}._checkedCount`,
@@ -159,7 +144,7 @@ const reatomTree = (
   }
 }
 
-/** root + a(a1,a2) + b(b1) = 6 nodes, 5 parent→child edges */
+/** Root + a(a1,a2) + b(b1) = 6 nodes, 5 parent→child edges */
 const buildSampleTree = (opts: TreeOpts) => {
   const root = reatomTree('root', opts)
   const a = root.add('a')
@@ -292,27 +277,17 @@ test('action-wrapped add: only new leaf', () =>
     expect(addCalls).toEqual(['root->c'])
   }))
 
-test('MINIMAL TRIGGER: reactive root wrapper remaps all nodes', () =>
+test('reactive root wrapper: only new leaf (regression)', () =>
   context.start(async () => {
     const { addCalls, mountCalls } = await runScenario({
       label: 'reactive-wrapper',
       reactiveRootWrapper: true,
     })
     expect(mountCalls).toBe(5)
-    // Incremental create first, then full remount remaps every edge + new leaf.
-    expect(addCalls).toEqual([
-      'root->c',
-      'root->a',
-      'a->a1',
-      'a->a2',
-      'root->b',
-      'b->b1',
-      'root->c',
-    ])
-    expect(addCalls.length).toBeGreaterThan(mountCalls)
+    expect(addCalls).toEqual(['root->c'])
   }))
 
-test('full app-like model matches reactive-wrapper remap', () =>
+test('full app-like model: only new leaf (regression)', () =>
   context.start(async () => {
     const { addCalls } = await runScenario({
       label: 'full-app-like',
@@ -325,9 +300,7 @@ test('full app-like model matches reactive-wrapper remap', () =>
       bindChecked: true,
       reactiveRootWrapper: true,
     })
-    expect(addCalls.length).toBeGreaterThan(5)
-    expect(addCalls).toContain('root->c')
-    expect(addCalls).toContain('a->a1')
+    expect(addCalls).toEqual(['root->c'])
   }))
 
 test('reactive wrapper + peek(TreeNode): only new leaf (tracking proof)', () =>
