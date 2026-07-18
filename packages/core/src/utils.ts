@@ -291,6 +291,9 @@ export const isRec = (thing: unknown): thing is Record<string, unknown> => {
  * For iterables, compares each item in sequence for equality. For objects,
  * compares direct property values but not nested objects deeply.
  *
+ * Tradeoff: `Map` / `Set` equality follows insertion order (iterator sequence),
+ * not set-theoretic membership — cheaper, but order-sensitive.
+ *
  * @param a - First value to compare
  * @param b - Second value to compare
  * @param is - Optional comparison function to use for individual values
@@ -350,17 +353,21 @@ export const isShallowEqual = (a: any, b: any, is = Object.is) => {
  * sets. Uses a WeakMap to track visited objects to avoid infinite recursion
  * with circular references.
  *
+ * Same `Map` / `Set` insertion-order tradeoff as {@link isShallowEqual}.
+ *
  * @param a - First value to compare
  * @param b - Second value to compare
  * @returns True if the values are deeply equal, false otherwise
  */
 export const isDeepEqual = (a: any, b: any) => {
-  const visited = new WeakMap()
+  const visited = new WeakMap<object, WeakSet<object>>()
 
   const is = (a: any, b: any) => {
-    if (isObject(a)) {
-      if (visited.has(a)) return visited.get(a) === b
-      visited.set(a, b)
+    if (isObject(a) && isObject(b)) {
+      let paired = visited.get(a)
+      if (paired?.has(b)) return true
+      if (!paired) visited.set(a, (paired = new WeakSet()))
+      paired.add(b)
     }
     return isShallowEqual(a, b, is)
   }
@@ -621,7 +628,11 @@ const visited = _createGlobal(
  * - Symbols
  * - Functions
  * - Custom class instances
- * - Regular objects (with sorted keys for stability)
+ * - Regular objects (with sorted keys for property-order stability)
+ *
+ * Tradeoff: each object gets a unique identity tag, so distinct instances with
+ * the same structure do not stringify to the same key (needed for cycles /
+ * caching). Plain-object keys are sorted; `Map` / `Set` keep insertion order.
  *
  * @example
  *   // Handles circular references
@@ -629,66 +640,75 @@ const visited = _createGlobal(
  *   obj.self = obj
  *   const key = toStringKey(obj) // No infinite recursion!
  *
- *   // Stable representation of objects (key order doesn't matter)
- *   toStringKey({ a: 1, b: 2 }) === toStringKey({ b: 2, a: 1 }) // true
- *
  * @param thing - The value to convert to a string
  * @param immutable - Whether to memoize results for complex objects (defaults
  *   to true)
  * @returns A string representation of the value
  */
 export const toStringKey = (thing: any, immutable = true): string => {
-  let tag = typeof thing
+  const stack = new WeakSet<object>()
 
-  if (tag === 'symbol') return `[reatom Symbol]${thing.description || 'symbol'}`
+  const walk = (thing: any): string => {
+    let tag = typeof thing
 
-  if (
-    tag !== 'function' &&
-    (tag !== 'object' ||
-      thing === null ||
-      thing instanceof Date ||
-      thing instanceof RegExp)
-  ) {
-    return `[reatom ${tag}]` + thing
-  }
+    if (tag === 'symbol')
+      return `[reatom Symbol]${thing.description || 'symbol'}`
 
-  if (visited.has(thing)) return visited.get(thing)!
+    if (
+      tag !== 'function' &&
+      (tag !== 'object' ||
+        thing === null ||
+        thing instanceof Date ||
+        thing instanceof RegExp)
+    ) {
+      return `[reatom ${tag}]` + thing
+    }
 
-  let name =
-    Reflect.getPrototypeOf(thing)?.constructor.name ||
-    toString.call(thing).slice(8, -1)
-  // get a unique prefix for each type to separate same array / map
-  // thing could be a circular or not stringifiable object from a userspace
-  let result = `[reatom ${name}#${random()}]`
-  if (tag === 'function') {
-    visited.set(thing, (result += thing.name))
+    const cached = visited.get(thing)
+    if (cached !== undefined && (immutable || stack.has(thing))) return cached
+
+    let name =
+      Reflect.getPrototypeOf(thing)?.constructor.name ||
+      toString.call(thing).slice(8, -1)
+    let identity = cached ?? `[reatom ${name}#${random()}]`
+    if (tag === 'function') {
+      if (cached === undefined) visited.set(thing, (identity += thing.name))
+      return visited.get(thing)!
+    }
+
+    let result = identity
+    if (cached === undefined) visited.set(thing, identity)
+    stack.add(thing)
+
+    let proto = Reflect.getPrototypeOf(thing)
+    if (
+      proto &&
+      Reflect.getPrototypeOf(proto) &&
+      thing.toString !== toStringArray &&
+      Symbol.iterator in thing === false
+    ) {
+      stack.delete(thing)
+      return result
+    }
+
+    if (Symbol.iterator in thing) {
+      for (let item of thing) result += walk(item)
+    } else {
+      for (let [key, value] of Object.entries(thing).sort(([a], [b]) =>
+        a.localeCompare(b),
+      )) {
+        result += walk(key) + walk(value)
+      }
+    }
+
+    stack.delete(thing)
+
+    if (immutable) visited.set(thing, result)
+
     return result
   }
-  visited.set(thing, result)
 
-  let proto = Reflect.getPrototypeOf(thing)
-  if (
-    proto &&
-    Reflect.getPrototypeOf(proto) &&
-    thing.toString !== toStringArray &&
-    Symbol.iterator in thing === false
-  ) {
-    return result
-  }
-
-  let iterator =
-    Symbol.iterator in thing
-      ? thing
-      : Object.entries(thing).sort(([a], [b]) => a.localeCompare(b))
-  for (let item of iterator) result += toStringKey(item, immutable)
-
-  if (immutable) {
-    visited.set(thing, result)
-  } else {
-    visited.delete(thing)
-  }
-
-  return result
+  return walk(thing)
 }
 
 /**
