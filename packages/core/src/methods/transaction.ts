@@ -12,7 +12,6 @@ import {
 import { withCallHook } from '../extensions'
 import type { Fn } from '../utils'
 import { isAbort } from '../utils'
-import { isCausedBy } from './isCausedBy'
 import type { Variable } from './variable'
 import { variable } from './variable'
 
@@ -363,6 +362,35 @@ export let reatomTransaction = ({
     return undefined
   }
 
+  /**
+   * Whether the current write happens INSIDE this scope's rollback flush.
+   *
+   * Deliberately bounded, unlike `isCausedBy`: the walk stops at the nearest
+   * transaction boundary (the frame that owns a rollback queue). An unbounded
+   * ancestry check breaks UI bindings — subscriber callbacks run in the atom's
+   * live frame, so a handler `wrap`ped inside one (what reatom-react does on
+   * every render) keeps that frame in its chain. Once a rollback becomes the
+   * atom's last writer, every action invoked through such a handler would look
+   * "caused by rollback", silently skip all undo registration, and the next
+   * failure would have nothing to roll back (see the "subscriber-created wrap"
+   * test). A fresh transaction is a clean scope no matter what its caller's
+   * ancestry contains.
+   */
+  let isRollbackFlush = (frame: null | Frame = top()): boolean => {
+    let visited = new Set<Frame>()
+
+    while (frame && !visited.has(frame)) {
+      visited.add(frame)
+
+      if (frame.atom === (transactionVar.rollback as Atom)) return true
+      if (transactionVar.first(frame) !== undefined) return false
+
+      frame = frame.pubs[0]
+    }
+
+    return false
+  }
+
   let transactionVar = Object.assign(
     variable((rollbacks: Array<Fn> = []) => rollbacks, `transaction#${name}`),
     {
@@ -385,10 +413,7 @@ export let reatomTransaction = ({
                 let prevState = top().state
                 let nextState = next(...params)
 
-                if (
-                  !Object.is(prevState, nextState) &&
-                  !isCausedBy(transactionVar.rollback)
-                ) {
+                if (!Object.is(prevState, nextState) && !isRollbackFlush()) {
                   findRollbacks()?.push(() =>
                     target.set((state) =>
                       onRollback({
