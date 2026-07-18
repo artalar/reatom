@@ -372,10 +372,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
                 persistRecord.then(bind(revalidate, frame.root.frame))
               } else if (persistRecord) {
                 frame.state = fromPersistRecord(persistRecord, frame.state)
-              } else if (
-                previous != null &&
-                !(previous instanceof Promise)
-              ) {
+              } else if (previous != null && !(previous instanceof Promise)) {
                 frame.state = ref.initState
               }
             }
