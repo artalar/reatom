@@ -945,4 +945,4 @@ These features are not yet supported:
 - ❌ DOM-less SSR (you need a DOM-like environment such as [linkedom](https://github.com/WebReflection/linkedom))
 - ❌ React-style keyed reconciliation (use [`reatomLinkedList`](#linked-lists) — node identity is the key; structural updates are incremental)
 
-Lifecycle tracking is scoped to the `mount` target: subscriptions are cleaned up when nodes are removed *inside* the mounted tree or when you call the returned `unmount()`. Removing the mount target's ancestors directly (outside of the mounted tree) is not observed and leaks active subscriptions — you own the mount node and must call `unmount()` before detaching it.
+Lifecycle tracking is scoped to the `mount` target: subscriptions are cleaned up when nodes are removed _inside_ the mounted tree or when you call the returned `unmount()`. Removing the mount target's ancestors directly (outside of the mounted tree) is not observed and leaks active subscriptions — you own the mount node and must call `unmount()` before detaching it.

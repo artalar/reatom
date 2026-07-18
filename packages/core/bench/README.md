@@ -4,16 +4,16 @@ All kernel / cross-library benches live in this folder. Run from
 `packages/core` via the `package.json` scripts, or directly with `tsx` /
 `node --import=tsx`.
 
-| Script | File | Purpose |
-| --- | --- | --- |
-| `pnpm run bench_compare` | `bench_compare.ts` | Reatom-only A/B scenarios (kernel hot paths) |
-| `pnpm run bench_compare:mem` | same + `--expose-gc` | + heap-per-batch |
-| `pnpm run bench_dynamic_ab` | `bench_dynamic_ab.ts` | Reatom-only dynamic dependency lists |
-| `pnpm run bench_dynamic_ab:mem` | same + `--expose-gc` | + heap |
-| `pnpm run bench_profile` | `bench_profile.ts` | Diamond hot loop for CPU profiling |
-| `pnpm run bench_computed` | `bench_computed.ts` | Cross-library deep-computed comparison |
-| `pnpm run bench_computed:mem` | same + `--expose-gc` | + GC-aware run |
-| `pnpm run bench_dynamic` | `bench_dynamic.ts` | Cross-library dynamic dependency comparison |
+| Script                          | File                  | Purpose                                      |
+| ------------------------------- | --------------------- | -------------------------------------------- |
+| `pnpm run bench_compare`        | `bench_compare.ts`    | Reatom-only A/B scenarios (kernel hot paths) |
+| `pnpm run bench_compare:mem`    | same + `--expose-gc`  | + heap-per-batch                             |
+| `pnpm run bench_dynamic_ab`     | `bench_dynamic_ab.ts` | Reatom-only dynamic dependency lists         |
+| `pnpm run bench_dynamic_ab:mem` | same + `--expose-gc`  | + heap                                       |
+| `pnpm run bench_profile`        | `bench_profile.ts`    | Diamond hot loop for CPU profiling           |
+| `pnpm run bench_computed`       | `bench_computed.ts`   | Cross-library deep-computed comparison       |
+| `pnpm run bench_computed:mem`   | same + `--expose-gc`  | + GC-aware run                               |
+| `pnpm run bench_dynamic`        | `bench_dynamic.ts`    | Cross-library dynamic dependency comparison  |
 
 Env filters shared by the A/B harnesses:
 
@@ -37,16 +37,16 @@ Reatom-only microbench of the kernel hot paths. Each scenario builds a
 graph once, then runs `BATCHES` timed batches; reported value is the
 median wall-clock ms (and median heap delta with `--expose-gc`).
 
-| Scenario | What it stresses |
-| --- | --- |
-| deep diamond update ×1000 | write → mark → recompute through 8 subscribed computeds |
-| wide fan-out (1→100) ×100 | one write, many independent subscribers |
-| cutoff ×1000 | unchanged computed short-circuits downstream |
-| dynamic deps switch ×1000 | `link`/`unlink` on a toggle |
-| unsubscribed reads ×10000 | pull-based recompute without subscribers |
-| action calls ×1000 | action middleware + state append (notifies periodically to avoid quadratic history) |
-| wrap(fn) + variable find ×1000 | `wrap` + `Variable.find` on a short stack |
-| create+subscribe+unsubscribe ×500 | atom/computed lifecycle |
+| Scenario                          | What it stresses                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------- |
+| deep diamond update ×1000         | write → mark → recompute through 8 subscribed computeds                             |
+| wide fan-out (1→100) ×100         | one write, many independent subscribers                                             |
+| cutoff ×1000                      | unchanged computed short-circuits downstream                                        |
+| dynamic deps switch ×1000         | `link`/`unlink` on a toggle                                                         |
+| unsubscribed reads ×10000         | pull-based recompute without subscribers                                            |
+| action calls ×1000                | action middleware + state append (notifies periodically to avoid quadratic history) |
+| wrap(fn) + variable find ×1000    | `wrap` + `Variable.find` on a short stack                                           |
+| create+subscribe+unsubscribe ×500 | atom/computed lifecycle                                                             |
 
 Constraints: no `context.start`; periodic `notify()` in action/wrap
 scenarios is required (otherwise `ActionState` grows unboundedly inside
@@ -58,16 +58,16 @@ Post-kernel-optimization `core` (Apple M-class, Node 25, `BATCHES=20`,
 `--expose-gc`, 2026-07-09). Pre-opt numbers from the `next` fork A/B
 report (same machine family, `BATCHES=30`).
 
-| Scenario | pre-opt core | current core | heapKb/batch |
-| --- | ---: | ---: | ---: |
-| deep diamond update ×1000 | 2.26 | **1.66** | 5236 |
-| wide fan-out ×100 | 3.23 | **2.83** | 7139 |
-| cutoff ×1000 | 0.75 | **0.40** | 1485 |
-| dynamic deps switch ×1000 | 0.76 | **0.44** | 1485 |
-| unsubscribed reads ×10000 | 2.52 | **2.06** | 7747 |
-| action calls ×1000 | 0.34 | **0.32** | 2104 |
-| wrap + variable find ×1000 | 0.72 | **0.66** | 2971 |
-| create+sub+unsub ×500 | 2.69 | **2.58** | 4816 |
+| Scenario                   | pre-opt core | current core | heapKb/batch |
+| -------------------------- | -----------: | -----------: | -----------: |
+| deep diamond update ×1000  |         2.26 |     **1.66** |         5236 |
+| wide fan-out ×100          |         3.23 |     **2.83** |         7139 |
+| cutoff ×1000               |         0.75 |     **0.40** |         1485 |
+| dynamic deps switch ×1000  |         0.76 |     **0.44** |         1485 |
+| unsubscribed reads ×10000  |         2.52 |     **2.06** |         7747 |
+| action calls ×1000         |         0.34 |     **0.32** |         2104 |
+| wrap + variable find ×1000 |         0.72 |     **0.66** |         2971 |
+| create+sub+unsub ×500      |         2.69 |     **2.58** |         4816 |
 
 Reproduce:
 
@@ -85,12 +85,12 @@ Reatom-only port of the dynamic-list scenarios from `bench_dynamic.ts`.
 A subscribed `sum` computed tracks a growing/shrinking/shuffling array of
 atoms; each batch mutates the list and calls `notify()`.
 
-| Scenario | Mutation |
-| --- | --- |
+| Scenario               | Mutation                                             |
+| ---------------------- | ---------------------------------------------------- |
 | growing push / unshift | append / prepend a new atom, write the previous edge |
-| shrinking pop / shift | remove from end / front, write the removed atom |
-| shuffle removal | remove a random index |
-| middle removal | remove at `length/2` |
+| shrinking pop / shift  | remove from end / front, write the removed atom      |
+| shuffle removal        | remove a random index                                |
+| middle removal         | remove at `length/2`                                 |
 
 Constraints: same single-context rule as `bench_compare`. `growing
 unshift` writes the newly adjacent atom so the subscribed sum actually
@@ -104,14 +104,14 @@ Current `core`, `COUNTS=512`, batchSize=4, `--expose-gc` (2026-07-09).
 Pre-opt reference at count=2048 from the fork report is shown for
 relative scale only (different `count`).
 
-| Scenario | current core (count=512, ms) | heapKb | pre-opt → opt at count=2048 |
-| --- | ---: | ---: | --- |
-| growing push | 0.089 | 39.7 | 0.245 → 0.175 (−29%) |
-| growing unshift | 0.074 | 32.1 | — |
-| shrinking pop | 0.056 | 26.7 | 0.224 → 0.161 (−28%) |
-| shrinking shift | 0.061 | 19.6 | 0.229 → 0.190 (−17%) |
-| shuffle removal | 0.073 | 20.4 | 0.239 → 0.175 (−27%) |
-| middle removal | 0.063 | 22.4 | 0.211 → 0.173 (−18%) |
+| Scenario        | current core (count=512, ms) | heapKb | pre-opt → opt at count=2048 |
+| --------------- | ---------------------------: | -----: | --------------------------- |
+| growing push    |                        0.089 |   39.7 | 0.245 → 0.175 (−29%)        |
+| growing unshift |                        0.074 |   32.1 | —                           |
+| shrinking pop   |                        0.056 |   26.7 | 0.224 → 0.161 (−28%)        |
+| shrinking shift |                        0.061 |   19.6 | 0.229 → 0.190 (−17%)        |
+| shuffle removal |                        0.073 |   20.4 | 0.239 → 0.175 (−27%)        |
+| middle removal  |                        0.063 |   22.4 | 0.211 → 0.173 (−18%)        |
 
 ```bash
 pnpm run bench_dynamic_ab:mem
@@ -128,9 +128,9 @@ bench/bench_profile.ts`.
 
 ### Last results
 
-| Build | total ms (300k updates) |
-| --- | ---: |
-| pre-opt core | ~790 |
+| Build        |      total ms (300k updates) |
+| ------------ | ---------------------------: |
+| pre-opt core |                         ~790 |
 | current core | **~490–540** (one run 511.5) |
 
 ```bash

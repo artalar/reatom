@@ -39,8 +39,8 @@ export interface AtomMeta {
   /**
    * Middleware chain: `[setup.computed ?? identity, computedMiddleware (or
    * actionMiddleware), cacheMiddleware, ...custom]`. Subsequent elements are
-   * middleware wrapping from inner to outer. DO NOT change this array
-   * directly, use `extend` instead.
+   * middleware wrapping from inner to outer. DO NOT change this array directly,
+   * use `extend` instead.
    */
   readonly middlewares: Array<Fn>
 
@@ -946,7 +946,10 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
   return newState
 }
 
-/** Kernel middleware of actions, the non-reactive counterpart of `computedMiddleware` */
+/**
+ * Kernel middleware of actions, the non-reactive counterpart of
+ * `computedMiddleware`
+ */
 export function actionMiddleware(next: Fn, ...params: any[]) {
   let frame = STACK[STACK.length - 1]!
 
@@ -954,10 +957,7 @@ export function actionMiddleware(next: Fn, ...params: any[]) {
 
   _enqueue(() => (frame.state = []), 'cleanup')
 
-  return (frame.state = [
-    ...frame.state,
-    { params, payload: next(...params) },
-  ])
+  return (frame.state = [...frame.state, { params, payload: next(...params) }])
 }
 
 /** @internal recompile the middleware chain after middlewares change */
