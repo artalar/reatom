@@ -60,7 +60,7 @@
   "readme": "README.md",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/reatom/reatom.git"
+    "url": "https://github.com/reatom/reatom.git"
   },
   "bugs": {
     "url": "https://github.com/reatom/reatom/issues"
