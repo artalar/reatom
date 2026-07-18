@@ -157,15 +157,13 @@ const initUrlAtom = (): UrlAtom =>
             ) {
               event.preventDefault()
 
+              let previousHash = window.location.hash
               let { hash, href } = urlAtom.syncFromSource(new URL(link.href))
               history.pushState({}, '', href)
 
-              if (window.location.hash !== hash) {
+              if (previousHash !== hash) {
                 _enqueue(() => {
-                  window.location.hash = hash
-                  if (href === '' || href === '#') {
-                    window.dispatchEvent(new HashChangeEvent('hashchange'))
-                  }
+                  window.dispatchEvent(new HashChangeEvent('hashchange'))
                 }, 'effect')
               }
             }
