@@ -25,7 +25,7 @@ jobs:
       - uses: actions/github-script@v8
         id: script
         env:
-          PACKAGE_FILE_REGEX: ^packages\/(?:core|react)\/
+          PACKAGE_FILE_REGEX: ^packages\/(?:core|react|jsx)\/
 
         with:
           retries: 3
@@ -99,10 +99,10 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm --filter @reatom/react run build
+        run: pnpm --filter @reatom/react --filter @reatom/jsx run build
 
       - name: Publish packages
-        run: pnpm dlx pkg-pr-new publish packages/core packages/react --packageManager=pnpm --pnpm
+        run: pnpm dlx pkg-pr-new publish packages/core packages/react packages/jsx --packageManager=pnpm --pnpm
 
   publish-pr:
     timeout-minutes: 1
@@ -129,7 +129,7 @@ jobs:
         run: pnpm install
 
       - name: Build packages
-        run: pnpm --filter @reatom/react run build
+        run: pnpm --filter @reatom/react --filter @reatom/jsx run build
 
       - name: Publish packages
-        run: pnpm dlx pkg-pr-new publish packages/core packages/react --packageManager=pnpm --pnpm
+        run: pnpm dlx pkg-pr-new publish packages/core packages/react packages/jsx --packageManager=pnpm --pnpm
