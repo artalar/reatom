@@ -601,6 +601,13 @@ function link(frame: Frame) {
 // but in the real data, it is in the best case quite often (pub.subs.pop()).
 // For example, as we run `link` before `unlink` during deps invalidation,
 // for deps duplication we want to find just added dep.
+//
+// `subscribe` listeners (effects) may trail atom dependents on `pub.subs` —
+// e.g. a parent computed linked first, then a JSX view listener. Unlinking the
+// last *atom* must still hit the O(1) pop path; trailing listeners are not a
+// reason to scan/shift. `_unlinkStats` is a test probe for that invariant.
+export let _unlinkStats = { pop: 0, shift: 0 }
+
 function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
   // Start from the end to try to revet the link sequence with just "pop" complexity.
   // Do not unlink the zero pub, as it is just an actualization flag.
@@ -612,7 +619,22 @@ function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
     // looks like the pub was dirty
     if (idx === -1) continue
 
-    if (idx === pub.subs.length - 1) {
+    // Hot path when `sub` is the last atom dependent. Trailing subscribe
+    // listeners (effects) are swapped into the hole and popped — same O(1) as
+    // a plain `pop()`, matching LIFO link order for the reactive graph.
+    let lastAtomIdx = idx
+    for (let j = pub.subs.length - 1; j > idx; j--) {
+      if ('__reatom' in pub.subs[j]!) {
+        lastAtomIdx = -1
+        break
+      }
+    }
+
+    if (lastAtomIdx === idx) {
+      _unlinkStats.pop++
+      if (idx !== pub.subs.length - 1) {
+        pub.subs[idx] = pub.subs[pub.subs.length - 1]!
+      }
       pub.subs.pop()
       if (pub.subs.length === 0) {
         if (pub.atom.__reatom.onConnect !== undefined) {
@@ -621,8 +643,11 @@ function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
         unlink(pub.atom, pub.pubs)
       }
     } else {
+      _unlinkStats.shift++
       // Search the suitable element (not effect) from the end to reduce the shift (`splice`) complexity.
-      let shiftIdx = pub.subs.findLastIndex((el) => el !== sub)
+      let shiftIdx = pub.subs.findLastIndex(
+        (el) => el !== sub && '__reatom' in el,
+      )
 
       if (shiftIdx === -1) {
         shiftIdx = idx

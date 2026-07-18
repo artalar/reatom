@@ -4,6 +4,7 @@ import { withComputed } from '../extensions'
 import { identity } from '../utils'
 import {
   _read,
+  _unlinkStats,
   type Atom,
   atom,
   computed,
@@ -466,4 +467,55 @@ test('reactivity restored after error', () => {
   notify()
   expect(consumer()).toBe('state')
   expect(states).toEqual(['state'])
+})
+
+test('unlink pops when only subscribe listeners trail the last atom', () => {
+  const name = 'unlinkTrailingListeners'
+  const pub = atom(0, `${name}.pub`)
+  const mid = computed(() => pub(), `${name}.mid`)
+  const reader = computed(() => mid(), `${name}.reader`)
+
+  // Parent-style dependent links first, then a view `subscribe` listener trails.
+  const unReader = reader.subscribe()
+  const unView = mid.subscribe(() => {})
+
+  const midSubs = () =>
+    context()
+      .state.store.get(mid)!
+      .subs.map((el) =>
+        '__reatom' in el ? el.name : ((el as { name?: string }).name ?? 'anon'),
+      )
+
+  expect(midSubs()).toEqual([`${name}.reader`, 'listener'])
+
+  _unlinkStats.pop = 0
+  _unlinkStats.shift = 0
+
+  // Disconnecting `reader` unlinks it from `mid` while the view listener remains.
+  unReader()
+
+  expect(_unlinkStats.shift).toBe(0)
+  expect(_unlinkStats.pop).toBeGreaterThan(0)
+  expect(midSubs()).toEqual(['listener'])
+
+  unView()
+})
+
+test('unlink shifts when another atom dependent is after the sub', () => {
+  const name = 'unlinkShiftOtherAtom'
+  const pub = atom(0, `${name}.pub`)
+  const a = computed(() => pub(), `${name}.a`)
+  const b = computed(() => pub(), `${name}.b`)
+
+  const unA = a.subscribe()
+  const unB = b.subscribe()
+
+  _unlinkStats.pop = 0
+  _unlinkStats.shift = 0
+
+  unA()
+
+  expect(_unlinkStats.shift).toBeGreaterThan(0)
+
+  unB()
 })
