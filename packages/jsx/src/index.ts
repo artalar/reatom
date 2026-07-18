@@ -534,6 +534,52 @@ let bindFieldModel = (
   }
 }
 
+/**
+ * @todo Show warning if isAction(value).
+ *
+ * @todo Revert previous value.
+ */
+let bindSpread = (dom: DomApis, element: JSX.Element, value: any) => {
+  let isReactive = typeof value === 'function' || isAtom(value)
+  if (!isReactive) {
+    setProps(dom, element, value)
+    return
+  }
+
+  let stale: Unsubscribe[] = []
+  let dispose = () => {
+    for (let i = stale.length - 1; i >= 0; i--) stale[i]!()
+    stale = []
+  }
+  /**
+   * `unlink` is the only writer of the meta arrays, so everything appended
+   * during `setProps` belongs to the current spread record: the subscribe
+   * thunks are dropped (this subscription is the single re-entry point on
+   * reconnect) and the unsubscribes are taken over to be disposed before the
+   * next record is applied. Nested spreads splice their own additions first,
+   * leaving only their subscription for the parent to own — disposal cascades.
+   */
+  let spread = (val: any) => {
+    dispose()
+    let { subscribes, unsubscribes } = ensureMeta(element)
+    let subscribesCount = subscribes.length
+    let unsubscribesCount = unsubscribes.length
+    setProps(dom, element, val)
+    subscribes.length = subscribesCount
+    stale = unsubscribes.splice(unsubscribesCount)
+  }
+  unlink(element, () => {
+    let source = isAtom(value)
+      ? value
+      : computed(value, jsxElementKey(element, '$spread'))
+    let unsubscribe = source.subscribe(spread)
+    return () => {
+      dispose()
+      unsubscribe()
+    }
+  })
+}
+
 let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   if (key === 'children' || key === 'element' || value === undefined) return
 
@@ -547,40 +593,29 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
     return
   }
 
-  /**
-   * @todo Show warning if isAtom(value) && !isAction(value).
-   *
-   * @todo Remove previous event listener.
-   */
+  /** @todo Show warning if isAtom(value) && !isAction(value). */
   if (key.startsWith('on:')) {
     key = key.slice(3)
-    element.addEventListener(
-      key,
-      wrap(
-        // only for logging purposes
-        action(value as () => void, eventActionName(element, key, value)),
-      ),
+    let listener = wrap(
+      // only for logging purposes
+      action(value as () => void, eventActionName(element, key, value)),
     )
-
+    /**
+     * The immediate registration keeps listeners working before the first
+     * mount; re-adding an identical listener on (re)connect is a no-op per the
+     * DOM spec, so `unlink` here matters only for the removal side — it lets
+     * `$spread` re-application and unmount dispose stale handlers.
+     */
+    element.addEventListener(key, listener)
+    unlink(element, () => {
+      element.addEventListener(key, listener)
+      return () => element.removeEventListener(key, listener)
+    })
     return
   }
 
-  /**
-   * @todo Show warning if isAction(value).
-   *
-   * @todo Revert previous value.
-   */
   if (key === '$spread') {
-    let spread = (val: any) => setProps(dom, element, val)
-    if (isAtom(value) && !isAction(value)) {
-      unlink(element, () => value.subscribe(spread))
-    } else if (typeof value === 'function') {
-      unlink(element, () =>
-        computed(value, jsxElementKey(element, key)).subscribe(spread),
-      )
-    } else {
-      spread(value)
-    }
+    bindSpread(dom, element, value)
     return
   }
 
@@ -804,33 +839,28 @@ export let mount = (
    * @note The moved node creates two mutations: deletion then addition.
    * @todo Moving an node in the DOM unsubscribes and resubscribes to atoms.
    */
-  let observer = new dom.MutationObserver(
-    wrap((mutationsList) => {
-      for (let mutation of mutationsList) {
-        mutation.addedNodes.forEach((addedNode) => {
-          let iterator = dom.document.createNodeIterator(addedNode, 1 | 128)
-          while (iterator.nextNode()) {
-            let meta = (iterator.referenceNode as any)[symbol] as
-              | Meta
-              | undefined
-            meta?.subscribes.forEach((subscribe) =>
-              meta.unsubscribes.push(subscribe()),
-            )
+  let processMutations = (mutationsList: MutationRecord[]) => {
+    for (let mutation of mutationsList) {
+      mutation.addedNodes.forEach((addedNode) => {
+        let iterator = dom.document.createNodeIterator(addedNode, 1 | 128)
+        while (iterator.nextNode()) {
+          let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
+          meta?.subscribes.forEach((subscribe) =>
+            meta.unsubscribes.push(subscribe()),
+          )
+        }
+        while (iterator.previousNode()) {
+          let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
+          if (meta) {
+            let unmount = meta.mount?.(iterator.referenceNode)
+            if (typeof unmount === 'function') meta.unmount = unmount
           }
-          while (iterator.previousNode()) {
-            let meta = (iterator.referenceNode as any)[symbol] as
-              | Meta
-              | undefined
-            if (meta) {
-              let unmount = meta.mount?.(iterator.referenceNode)
-              if (typeof unmount === 'function') meta.unmount = unmount
-            }
-          }
-        })
-        mutation.removedNodes.forEach((removedNode) => cleanupNode(removedNode))
-      }
-    }),
-  )
+        }
+      })
+      mutation.removedNodes.forEach((removedNode) => cleanupNode(removedNode))
+    }
+  }
+  let observer = new dom.MutationObserver(wrap(processMutations))
   observer.observe(target.parentElement!, {
     childList: true,
     subtree: true,
@@ -842,6 +872,7 @@ export let mount = (
 
   return {
     unmount: bind(() => {
+      processMutations(observer.takeRecords())
       observer.disconnect()
       cleanupNode(child)
       child.remove()
