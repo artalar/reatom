@@ -213,8 +213,15 @@ export interface Frame<
    */
   pubs: [actualization: null | Frame, ...dependencies: Array<Frame>]
 
-  /** Array of atoms that depend on this atom (subscribers). */
-  readonly subs: Array<AtomLike | Fn>
+  /**
+   * Atom dependents (reactive graph edges). Kept separate from `listeners` so
+   * `link` / `unlink` can LIFO-`pop()` without view `subscribe` callbacks
+   * sitting on the same stack.
+   */
+  readonly subs: Array<AtomLike>
+
+  /** `subscribe` callbacks (effects). Not part of the atom LIFO unlink stack. */
+  readonly listeners: Array<Fn>
 
   /**
    * Run the callback in this context. DO NOT USE directly, use `wrap` instead
@@ -496,6 +503,7 @@ export function _copy(frame: Frame) {
     atom: frame.atom,
     pubs,
     subs: frame.subs,
+    listeners: frame.listeners,
     run,
     root: frame.root,
   }
@@ -504,6 +512,9 @@ export function _copy(frame: Frame) {
 
   return frame
 }
+
+let isLive = (frame: Frame): boolean =>
+  frame.subs.length !== 0 || frame.listeners.length !== 0
 
 export let isAtom = (value: any): value is AtomLike => {
   return typeof value === 'function' && '__reatom' in value
@@ -516,29 +527,28 @@ export let isWritableAtom = (value: any): value is Atom => {
 export function _mark(frame: Frame) {
   for (let i = 0; i < frame.subs.length; i++) {
     let sub = frame.subs[i]!
+    let subFrame = (
+      context.count === 1 ? sub.__reatom._frame : _getFrame(sub, frame.root)
+    )!
 
-    if ('__reatom' in sub) {
-      let subFrame = (
-        context.count === 1 ? sub.__reatom._frame : _getFrame(sub, frame.root)
-      )!
-
-      if (sub.__reatom.processing > 0) {
-        if (subFrame.subs.length > 0) {
-          _enqueue(() => {
-            _copy(_getFrame(sub, frame.root)!)
-          }, 'compute')
-          sub.__reatom.processing++
-        }
+    if (sub.__reatom.processing > 0) {
+      if (isLive(subFrame)) {
+        _enqueue(() => {
+          _copy(_getFrame(sub, frame.root)!)
+        }, 'compute')
+        sub.__reatom.processing++
       }
-
-      if (subFrame.pubs[0] !== null) {
-        _mark(_copy(subFrame))
-      } else if (sub.__reatom.processing > 0) {
-        _mark(subFrame)
-      }
-    } else {
-      _enqueue(sub, 'compute')
     }
+
+    if (subFrame.pubs[0] !== null) {
+      _mark(_copy(subFrame))
+    } else if (sub.__reatom.processing > 0) {
+      _mark(subFrame)
+    }
+  }
+
+  for (let i = 0; i < frame.listeners.length; i++) {
+    _enqueue(frame.listeners[i]!, 'compute')
   }
 }
 
@@ -553,7 +563,7 @@ function frameDependsOn(
   for (let i = 1; i < frame.pubs.length; i++) {
     let pub = frame.pubs[i]!
 
-    if (pub.subs.length !== 0) {
+    if (isLive(pub)) {
       continue
     }
 
@@ -588,7 +598,8 @@ function link(frame: Frame) {
 
   for (let i = 1; i < pubs.length; i++) {
     let pub = pubs[i]!
-    if (pub.subs.push(atom) === 1) {
+    // First atom dependent on a pub that was not already live via listeners.
+    if (pub.subs.push(atom) === 1 && pub.listeners.length === 0) {
       if (pub.atom.__reatom.onConnect !== undefined) {
         _enqueue(pub.atom.__reatom.onConnect, 'effect')
       }
@@ -601,11 +612,7 @@ function link(frame: Frame) {
 // but in the real data, it is in the best case quite often (pub.subs.pop()).
 // For example, as we run `link` before `unlink` during deps invalidation,
 // for deps duplication we want to find just added dep.
-//
-// `subscribe` listeners (effects) may trail atom dependents on `pub.subs` —
-// e.g. a parent computed linked first, then a JSX view listener. If the last
-// slot is an effect, swap+pop is still the O(1) hot path (same unlink cost as
-// a plain `pop()`). `_unlinkStats` is a test probe for that invariant.
+// `_unlinkStats` is a test probe for the pop vs shiftIdx paths.
 export let _unlinkStats = { pop: 0, shift: 0 }
 
 function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
@@ -619,15 +626,10 @@ function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
     // looks like the pub was dirty
     if (idx === -1) continue
 
-    let last = pub.subs.length - 1
-    // Hot path: `sub` is last, or only effects trail it (last slot is not an atom).
-    if (idx === last || !('__reatom' in pub.subs[last]!)) {
+    if (idx === pub.subs.length - 1) {
       _unlinkStats.pop++
-      if (idx !== last) {
-        pub.subs[idx] = pub.subs[last]!
-      }
       pub.subs.pop()
-      if (pub.subs.length === 0) {
+      if (pub.subs.length === 0 && pub.listeners.length === 0) {
         if (pub.atom.__reatom.onConnect !== undefined) {
           _enqueue(pub.atom.__reatom.onConnect.abort, 'effect')
         }
@@ -635,16 +637,10 @@ function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
       }
     } else {
       _unlinkStats.shift++
-      // Search the suitable element (not effect) from the end to reduce the shift (`splice`) complexity.
-      let shiftIdx = pub.subs.findLastIndex(
-        (el) => el !== sub && '__reatom' in el,
-      )
-
-      if (shiftIdx === -1) {
-        shiftIdx = idx
-      }
+      // Swap with the last dependent to keep splice at the end (O(1)).
+      let shiftIdx = pub.subs.length - 1
       pub.subs[idx] = pub.subs[shiftIdx]!
-      pub.subs.splice(shiftIdx, 1)
+      pub.subs.pop()
     }
   }
 }
@@ -671,8 +667,10 @@ function relink(frame: Frame, oldPubs: Frame['pubs']) {
  * @param anAtom - The atom to check for subscriptions
  * @returns `true` if the atom has subscribers, `false` otherwise
  */
-export let isConnected = (anAtom: AtomLike): boolean =>
-  !!_getFrame(anAtom, top().root)?.subs.length
+export let isConnected = (anAtom: AtomLike): boolean => {
+  let frame = _getFrame(anAtom, top().root)
+  return !!frame && isLive(frame)
+}
 
 export function assertFn(fn: unknown): asserts fn is Fn {
   if (typeof fn !== 'function') {
@@ -691,6 +689,7 @@ export let _trackAction = (target: Action, parentFrame: Frame): Frame => {
       atom: target,
       pubs: [parentFrame.root.frame],
       subs: [],
+      listeners: [],
       run,
       root: parentFrame.root,
     }
@@ -724,7 +723,7 @@ function subscribe(this: AtomLike, userCb?: Fn) {
   let frame = _getFrame(this, parentFrame.root)!
 
   let listener = () => {
-    if (frame.subs.length === 0) return
+    if (!isLive(frame)) return
 
     // `this()` call is required for invalidation,
     // put it to the condition to reduce codesize
@@ -746,23 +745,25 @@ function subscribe(this: AtomLike, userCb?: Fn) {
     }
   }
 
-  if (frame!.subs.push(listener) === 1) {
-    if (frame!.atom.__reatom.onConnect !== undefined) {
-      _enqueue(frame!.atom.__reatom.onConnect, 'effect')
+  let wasLive = isLive(frame)
+  frame.listeners.push(listener)
+  if (!wasLive) {
+    if (frame.atom.__reatom.onConnect !== undefined) {
+      _enqueue(frame.atom.__reatom.onConnect, 'effect')
     }
-    relink(frame!, [null])
+    relink(frame, [null])
   }
 
   if (userCb && !isActionSubscription) frame.run(userCb, frame.state)
 
   return bind(() => {
-    let idx = frame.subs.lastIndexOf(listener)
+    let idx = frame.listeners.lastIndexOf(listener)
 
     if (idx === -1) return
 
-    frame.subs.splice(idx, 1)
+    frame.listeners.splice(idx, 1)
 
-    if (frame.subs.length === 0) {
+    if (!isLive(frame)) {
       if (frame.atom.__reatom.onConnect !== undefined) {
         _enqueue(frame.atom.__reatom.onConnect.abort, 'effect')
       }
@@ -837,7 +838,7 @@ export function _isPubsChanged(
       continue
     } else if (
       pubFreshFrame.pubs.length === 1 ||
-      (pubFreshFrame.pubs[0] !== null && pubFreshFrame.subs.length !== 0)
+      (pubFreshFrame.pubs[0] !== null && isLive(pubFreshFrame))
     ) {
       pubFreshState = pubFreshFrame.state
       pubFreshError = pubFreshFrame.error
@@ -910,7 +911,7 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
   let { state, pubs } = frame
   let dirty = pubs[0] === null
   let dependent = pubs.length !== 1
-  let subscribed = frame.subs.length !== 0
+  let subscribed = isLive(frame)
   let computed = next !== identity
   let emptyComputed = computed && !dependent
   let newState = state
@@ -936,7 +937,7 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
         // TODO
         // Object.freeze(frame.pubs)
 
-        if (frame.subs.length !== 0) {
+        if (subscribed) {
           // TODO may be a bug with resubscribing
           relink(frame, pubs)
         }
@@ -1003,7 +1004,7 @@ export function _cacheImpl(next: Fn, args: null | any[], direct: boolean): any {
   let { error, state } = frame
   let dirty = frame.pubs[0] === null
   let dependent = frame.pubs.length !== 1
-  let subscribed = frame.subs.length !== 0
+  let subscribed = isLive(frame)
   let isInit = frame.state instanceof AtomInitState
 
   if (
@@ -1214,6 +1215,7 @@ export let createAtom: {
           atom: target,
           pubs: [null],
           subs: [],
+          listeners: [],
           run,
           root: topFrame.root,
         }
@@ -1406,6 +1408,7 @@ export let context = _createGlobal('context', (): ContextAtom => {
       atom: result as any,
       pubs: [null],
       subs: [],
+      listeners: [],
       run,
       root: undefined as any,
     }

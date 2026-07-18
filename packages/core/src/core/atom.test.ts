@@ -173,18 +173,20 @@ test('update propagation for atom with listener', () => {
   expect(cb3).toBeCalledWith(1)
 
   cb3.unsubscribe()
-  expect(_read(a2)!.subs.length).toBe(1)
-  expect(_read(a3)!.subs.length).toBe(0)
+  expect(_read(a2)!.listeners.length).toBe(1)
+  expect(_read(a2)!.subs.length).toBe(0)
+  expect(_read(a3)!.listeners.length).toBe(0)
   a1.set(2)
   notify()
   expect(cb2).toBeCalledTimes(3)
   expect(cb2).toBeCalledWith(2)
 
   a3.subscribe(cb3)
-  expect(_read(a2)!.subs.length).toBe(2)
+  expect(_read(a2)!.subs).toEqual([a3])
+  expect(_read(a2)!.listeners.length).toBe(1)
 
   computed(() => a3()).subscribe()
-  expect(_read(a2)!.subs.length).toBe(2)
+  expect(_read(a2)!.subs).toEqual([a3])
 })
 
 test('conditional deps duplication', () => {
@@ -366,7 +368,7 @@ test('deps state cache do not cache deps pubs', async () => {
   expect(consumerFn).toBeCalledTimes(0)
 
   const { store } = context().state
-  expect(store.get(consumer)!.subs.length).toBe(1)
+  expect(store.get(consumer)!.listeners.length).toBe(1)
   expect(store.get(proxy)!.subs.length).toBe(1)
   expect(store.get(dep)!.subs.length).toBe(1)
 
@@ -469,34 +471,32 @@ test('reactivity restored after error', () => {
   expect(states).toEqual(['state'])
 })
 
-test('unlink pops when only subscribe listeners trail the last atom', () => {
+test('unlink pops while subscribe listeners stay on a separate stack', () => {
   const name = 'unlinkTrailingListeners'
   const pub = atom(0, `${name}.pub`)
   const mid = computed(() => pub(), `${name}.mid`)
   const reader = computed(() => mid(), `${name}.reader`)
 
-  // Parent-style dependent links first, then a view `subscribe` listener trails.
+  // Parent-style dependent links first, then a view `subscribe` listener.
   const unReader = reader.subscribe()
   const unView = mid.subscribe(() => {})
 
-  const midSubs = () =>
-    context()
-      .state.store.get(mid)!
-      .subs.map((el) =>
-        '__reatom' in el ? el.name : ((el as { name?: string }).name ?? 'anon'),
-      )
+  const midFrame = () => context().state.store.get(mid)!
 
-  expect(midSubs()).toEqual([`${name}.reader`, 'listener'])
+  expect(midFrame().subs.map((el) => el.name)).toEqual([`${name}.reader`])
+  expect(midFrame().listeners).toHaveLength(1)
 
   _unlinkStats.pop = 0
   _unlinkStats.shift = 0
 
-  // Disconnecting `reader` unlinks it from `mid` while the view listener remains.
+  // Disconnecting `reader` unlinks it from `mid` via `pop` — view listeners
+  // no longer share `subs`, so they cannot force `shiftIdx`.
   unReader()
 
   expect(_unlinkStats.shift).toBe(0)
   expect(_unlinkStats.pop).toBeGreaterThan(0)
-  expect(midSubs()).toEqual(['listener'])
+  expect(midFrame().subs).toEqual([])
+  expect(midFrame().listeners).toHaveLength(1)
 
   unView()
 })

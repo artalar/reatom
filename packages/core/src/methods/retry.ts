@@ -21,7 +21,7 @@ export const reset = <T extends AtomLike>(target: T) => {
   if (targetFrame) {
     // FIXME: `splice` only new frame, do not brake immutability!
     _copy(targetFrame).pubs.splice(1)
-    if (targetFrame.subs.length > 0) {
+    if (targetFrame.subs.length > 0 || targetFrame.listeners.length > 0) {
       _mark(targetFrame)
     }
   }
