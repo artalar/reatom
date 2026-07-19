@@ -467,3 +467,120 @@ test('reactivity restored after error', () => {
   expect(consumer()).toBe('state')
   expect(states).toEqual(['state'])
 })
+
+test('error propagation for subscribe callback', () => {
+  const name = 'errorSubscribe'
+
+  const flag = atom(false, `${name}.flag`)
+  const dep = computed(() => {
+    if (flag()) {
+      throw new Error(name)
+    }
+    return 'state'
+  }, `${name}.dep`)
+
+  const listener = subscribe(dep)
+  expect(listener).toBeCalledTimes(1)
+  expect(listener).toBeCalledWith('state')
+
+  flag.set(true)
+  notify()
+  // without errorCb the throw escapes to the notify queue; userCb is skipped
+  expect(listener).toBeCalledTimes(1)
+  expect(() => dep()).toThrow(name)
+})
+
+test('subscribe errorCb receives thrown error and skips userCb', () => {
+  const name = 'subscribeErrorCb'
+  const source = atom(0, `${name}.source`)
+  let shouldThrow = false
+  const dep = computed(() => {
+    let n = source()
+    if (shouldThrow) throw new Error(name)
+    return `ok-${n}`
+  }, `${name}.dep`)
+
+  const states: string[] = []
+  const errors: unknown[] = []
+
+  dep.subscribe(
+    (state) => states.push(state),
+    (error) => errors.push(error),
+  )
+  expect(states).toEqual(['ok-0'])
+  expect(errors).toEqual([])
+
+  shouldThrow = true
+  source.set(1)
+  notify()
+  expect(states).toEqual(['ok-0'])
+  expect(errors).toHaveLength(1)
+  expect(errors[0]).toBeInstanceOf(Error)
+  expect((errors[0] as Error).message).toBe(name)
+
+  shouldThrow = false
+  source.set(2)
+  notify()
+  expect(states).toEqual(['ok-0', 'ok-2'])
+  expect(errors).toHaveLength(1)
+})
+
+test('subscribe userCb fires on recovery to the same state after errorCb', () => {
+  const name = 'subscribeErrorRecoverySameState'
+  const source = atom(0, `${name}.source`)
+  let shouldThrow = false
+  const dep = computed(() => {
+    source()
+    if (shouldThrow) throw new Error(name)
+    return 'same'
+  }, `${name}.dep`)
+
+  const states: string[] = []
+  const errors: unknown[] = []
+
+  dep.subscribe(
+    (state) => states.push(state),
+    (error) => errors.push(error),
+  )
+  expect(states).toEqual(['same'])
+
+  shouldThrow = true
+  source.set(1)
+  notify()
+  expect(errors).toHaveLength(1)
+  expect(states).toEqual(['same'])
+
+  shouldThrow = false
+  source.set(2)
+  notify()
+  // the subscriber saw an error last, so an equal state must still be delivered
+  expect(states).toEqual(['same', 'same'])
+  expect(errors).toHaveLength(1)
+})
+
+test('subscribe errorCb receives initial error', () => {
+  const name = 'subscribeInitError'
+  const dep = computed(() => {
+    throw new Error(name)
+  }, `${name}.dep`)
+
+  const states: string[] = []
+  const errors: unknown[] = []
+
+  dep.subscribe(
+    (state) => states.push(state),
+    (error) => errors.push(error),
+  )
+  expect(states).toEqual([])
+  expect(errors).toHaveLength(1)
+  expect((errors[0] as Error).message).toBe(name)
+})
+
+test('subscribe without errorCb still throws on init', () => {
+  const name = 'subscribeInitThrow'
+  const dep = computed(() => {
+    throw new Error(name)
+  }, `${name}.dep`)
+
+  expect(() => dep.subscribe(() => {})).toThrow(name)
+})

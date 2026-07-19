@@ -120,11 +120,21 @@ export interface AtomLike<
    * a subscriber is added, the callback is immediately invoked with the current
    * state. After that, it's called whenever the atom's state changes.
    *
+   * When the atom throws during invalidation (or on the initial read),
+   * `errorCb` is called with the raw thrown value (including suspense
+   * `Promise`s and aborts) instead of the state callback. Without `errorCb`,
+   * the throw escapes to the notify queue (or to the subscribe caller for
+   * non-Promise / non-abort init errors).
+   *
    * @param cb - Callback function that receives the atom's state when it
    *   changes
+   * @param errorCb - Optional callback invoked when the atom errors
    * @returns An unsubscribe function that removes the subscription when called
    */
-  subscribe: (cb?: (payload: Payload) => any) => Unsubscribe
+  subscribe: (
+    cb?: (payload: Payload) => any,
+    errorCb?: (error: unknown) => any,
+  ) => Unsubscribe
 
   toJSON: () => unknown
 
@@ -686,12 +696,13 @@ export let _trackAction = (target: Action, parentFrame: Frame): Frame => {
   return targetFrame
 }
 
-function subscribe(this: AtomLike, userCb?: Fn) {
+function subscribe(this: AtomLike, userCb?: Fn, errorCb?: Fn) {
   let isActionSubscription = isAction(this)
 
   let parentFrame = top()
 
   // initiate the target frame
+  let initError: unknown
   try {
     // call root to prevent reactive tracking
     parentFrame.root.frame.run(() => {
@@ -702,29 +713,47 @@ function subscribe(this: AtomLike, userCb?: Fn) {
       }
     })
   } catch (error) {
-    if (!(error instanceof Promise) && !isAbort(error)) throw error
+    if (errorCb) {
+      initError = error
+    } else if (!(error instanceof Promise) && !isAbort(error)) {
+      throw error
+    }
   }
 
   let frame = _getFrame(this, parentFrame.root)!
+  // after an error delivery an equal recovered state must not be skipped
+  let errored = initError !== undefined
 
   let listener = () => {
     if (frame.subs.length === 0) return
 
-    // `this()` call is required for invalidation,
-    // put it to the condition to reduce codesize
-    if ((isActionSubscription || !Object.is(frame.state, this())) && userCb) {
-      let frameSnapshot = (frame = _getFrame(this, parentFrame.root)!)
-      let state = frame.state
+    try {
+      // the `this()` call is required for invalidation
+      let changed = isActionSubscription || !Object.is(frame.state, this())
+      if ((changed || errored) && userCb) {
+        errored = false
+        let frameSnapshot = (frame = _getFrame(this, parentFrame.root)!)
+        let state = frame.state
 
+        _enqueue(() => {
+          if (frameSnapshot === frame) {
+            if (isActionSubscription) {
+              ;(state as ActionState).forEach(({ payload, params }) =>
+                frame.run(userCb, payload, params),
+              )
+            } else {
+              frame.run(userCb, state)
+            }
+          }
+        }, 'effect')
+      }
+    } catch (error) {
+      if (!errorCb) throw error
+      errored = true
+      let frameSnapshot = (frame = _getFrame(this, parentFrame.root)!)
       _enqueue(() => {
         if (frameSnapshot === frame) {
-          if (isActionSubscription) {
-            ;(state as ActionState).forEach(({ payload, params }) =>
-              frame.run(userCb, payload, params),
-            )
-          } else {
-            frame.run(userCb, state)
-          }
+          frame.run(errorCb, error)
         }
       }, 'effect')
     }
@@ -737,7 +766,11 @@ function subscribe(this: AtomLike, userCb?: Fn) {
     relink(frame!, [null])
   }
 
-  if (userCb && !isActionSubscription) frame.run(userCb, frame.state)
+  if (initError !== undefined) {
+    frame.run(errorCb!, initError)
+  } else if (userCb && !isActionSubscription) {
+    frame.run(userCb, frame.state)
+  }
 
   return bind(() => {
     let idx = frame.subs.lastIndexOf(listener)

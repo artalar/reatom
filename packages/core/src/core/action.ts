@@ -25,7 +25,10 @@ export interface Action<
   Params extends any[] = any[],
   Payload = any,
 > extends AtomLike<ActionState<Params, Payload>, Params, Payload> {
-  subscribe: (cb?: (payload: Payload, params: Params) => any) => Unsubscribe
+  subscribe: (
+    cb?: (payload: Payload, params: Params) => any,
+    errorCb?: (error: unknown) => any,
+  ) => Unsubscribe
 }
 
 /** Action type that supports all overloads of the original function */

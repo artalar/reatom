@@ -1,5 +1,4 @@
 import {
-  _createGlobal,
   _read,
   action,
   assert,
@@ -18,9 +17,21 @@ import {
   ReatomError,
   type Rec,
   type Unsubscribe,
-  wrap,
 } from '@reatom/core'
 
+import { clearJsxError, reportJsxError } from './error'
+import {
+  booleanAttributes,
+  boundaries,
+  type BoundaryHandle,
+  DOM,
+  jsxBoundary,
+  jsxHName,
+  jsxInlineStyles,
+  metaSymbol,
+  propertiesAsAttributes,
+  stylesheet,
+} from './global'
 import type {
   AttributesAtomMaybe,
   FieldModelBinding,
@@ -38,6 +49,13 @@ export type FC<Props = {}> = (
 
 export type { JSX, JSXElement }
 
+export {
+  findBoundary,
+  jsxError,
+  type JsxErrorPayload,
+  type JsxErrorPhase,
+} from './error'
+export { DOM, stylesheet } from './global'
 export { reatomClassName } from './utils'
 export { instance } from '@reatom/core'
 
@@ -53,29 +71,8 @@ type DomApis = Pick<
   | 'DocumentFragment'
 >
 
-export let DOM = atom(globalThis.window, 'jsx.DOM')
-
 export let DEBUG = atom(true, 'jsx.DEBUG')
 
-let jsxInlineStyles = _createGlobal('jsx_inlineStylesRegistry', () => ({
-  count: 0,
-  ids: {} as Rec<string>,
-}))
-/**
- * @note Create style tag for support oldest browser.
- * @see https://developer.mozilla.org/en-US/docs/Web/API/CSSStyleSheet/CSSStyleSheet
- * @see https://developer.mozilla.org/en-US/docs/Web/API/Document/adoptedStyleSheets
- * @see https://measurethat.net/Benchmarks/Show/5920
- */
-export let stylesheet = _createGlobal('jsx_stylesheet', () => {
-  let target = atom(
-    () =>
-      DOM().document.head.appendChild(DOM().document.createElement('style'))
-        .sheet!,
-  )
-  return Object.assign(() => peek(target), { set: target.set })
-})
-let jsxHName = _createGlobal('jsx_hCurrentName', () => ({ current: '' }))
 let jsxElementKey = (element: Node, key: string) =>
   `${jsxHName.current}.${element.nodeName.toLowerCase()}._${key}`
 
@@ -113,10 +110,6 @@ interface Meta {
   mount: ((element: Node) => ((element: Node) => void) | undefined) | undefined
   unmount: ((element: Node) => void) | undefined
 }
-let metaSymbol = _createGlobal('jsx_metaSymbolAtomSlot', () => {
-  let target = atom(() => Symbol(), 'jsx.metaSymbol')
-  return () => peek(target)
-})
 let ensureMeta = (node: Node): Meta => {
   return ((node as any)[metaSymbol()] ??= {
     subscribes: [],
@@ -130,91 +123,6 @@ let unlink = (node: Node, subscribe: () => () => void) => {
   meta.subscribes.push(subscribe)
   if (node.isConnected) meta.unsubscribes.push(subscribe())
 }
-
-/**
- * @see https://github.com/preactjs/preact/blob/d16a34e275e31afd6738a9f82b5ba2fb9dbf032b/src/diff/props.js#L107
- * @see https://www.measurethat.net/Benchmarks/Show/7818
- */
-let propertiesAsAttributes = _createGlobal(
-  'jsx_propertiesAsAttributes',
-  () =>
-    new Set<string>([
-      /** Numeric attributes with a default value other than 0. */
-      'height',
-      'high',
-      'low',
-      'optimum',
-      'results',
-      'size',
-      'span',
-      'start',
-      'width',
-
-      /** Numeric properties with a default value other than 0. */
-      // 'colspan',
-      // 'rowspan',
-      // 'maxlength',
-      // 'minlength',
-      // 'tabindex',
-
-      /** Properties with value HTMLElement. */
-      'form',
-      'list',
-
-      /** Setting the value to an empty string must be explicit. */
-      'download',
-      'href',
-      'role',
-    ]),
-)
-/** @see https://developer.mozilla.org/en-US/docs/Glossary/Boolean/HTML */
-let booleanAttributes = _createGlobal(
-  'jsx_booleanAttributes',
-  () =>
-    new Set<string>([
-      'allowfullscreen',
-      'allowpaymentrequest',
-      'async',
-      'attributionsrc',
-      'autofocus',
-      'autoplay',
-      'browsingtopics',
-      'capture',
-      'checked',
-      'compact',
-      'controls',
-      'credentialless',
-      'crossorigin',
-      'declare',
-      'default',
-      'defer',
-      'disabled',
-      'disablepictureinpicture',
-      'disableremoteplayback',
-      'formnovalidate',
-      'hidden',
-      'inert',
-      'ismap',
-      'itemscope',
-      'loop',
-      'multiple',
-      'muted',
-      'nomodule',
-      'novalidate',
-      'open',
-      'playsinline',
-      'readonly',
-      'required',
-      'reversed',
-      'scoped',
-      'selected',
-      'shadowrootclonable',
-      'shadowrootdelegatesfocus',
-      'shadowrootserializable',
-      'virtualkeyboardpolicy',
-      'webkitdirectory',
-    ]),
-)
 
 let isSkipped = (value: unknown): value is boolean | '' | null | undefined =>
   typeof value === 'boolean' || value === '' || value == null
@@ -249,9 +157,15 @@ let walk = (
 let walkAtom = (
   dom: DomApis,
   anAtom: AtomLike<JSX.ElementChildren>,
-): DocumentFragment => {
+): LiveDocumentFragment => {
   let fragment = createLiveFragment(dom, anAtom.name)
   let { start, end, update } = fragment.__reatomFragment
+  let state: JSX.ElementChildren
+  let marked: Element | undefined
+
+  let onError = (error: unknown) => {
+    marked = reportJsxError(error, 'children', anAtom.name, start)
+  }
 
   /**
    * Render the current state eagerly while the fragment is detached, so the
@@ -259,13 +173,17 @@ let walkAtom = (
    * appends it, avoiding a wave of live-DOM insertions per nesting level.
    * `update` cannot be used here: `start.after(fragment)` would insert the
    * fragment into itself, so the content goes through a buffer instead. Reads
-   * that throw (suspense Promise, abort, errors) fall back to the lazy behavior
-   * — the fragment stays empty until the subscription renders it.
+   * that throw (suspense Promise, abort, errors) leave the fragment empty; the
+   * error is reported and a boundary may render a fallback.
    */
-  let state = peek(anAtom)
-  let initialContent = dom.document.createDocumentFragment()
-  walk(dom, initialContent, state)
-  end.before(initialContent)
+  try {
+    state = peek(anAtom)
+    let initialContent = dom.document.createDocumentFragment()
+    walk(dom, initialContent, state)
+    end.before(initialContent)
+  } catch (error) {
+    onError(error)
+  }
 
   /**
    * `subscribe` emits synchronously on every (re)connect. Skipping states that
@@ -274,9 +192,10 @@ let walkAtom = (
    * disconnected still re-renders.
    */
   unlink(start, () =>
-    anAtom.subscribe(
-      (newState) => Object.is(state, (state = newState)) || update(newState),
-    ),
+    anAtom.subscribe((newState) => {
+      marked = clearJsxError(marked)
+      if (!Object.is(state, (state = newState))) update(newState)
+    }, onError),
   )
 
   return fragment
@@ -405,6 +324,7 @@ let createLiveFragment = (dom: DomApis, name: string): LiveDocumentFragment => {
   let fragment = dom.document.createDocumentFragment() as LiveDocumentFragment
   let start = dom.document.createComment(name)
   let end = start.cloneNode() as Comment
+  let marked: Element | undefined
   let update = (children?: JSX.ElementChildren) => {
     if (start.nextSibling && start.nextSibling !== end) {
       let staleRange = dom.document.createRange()
@@ -413,8 +333,13 @@ let createLiveFragment = (dom: DomApis, name: string): LiveDocumentFragment => {
       staleRange.deleteContents()
     }
 
-    walk(dom, fragment, children)
-    start.after(fragment)
+    try {
+      walk(dom, fragment, children)
+      start.after(fragment)
+      marked = clearJsxError(marked)
+    } catch (error) {
+      marked = reportJsxError(error, 'children', name, start)
+    }
   }
   fragment.__reatomFragment = {
     start,
@@ -559,7 +484,9 @@ let bindSpread = (dom: DomApis, element: JSX.Element, value: any) => {
    * next record is applied. Nested spreads splice their own additions first,
    * leaving only their subscription for the parent to own — disposal cascades.
    */
+  let marked: Element | undefined
   let spread = (val: any) => {
+    marked = clearJsxError(marked)
     dispose()
     let { subscribes, unsubscribes } = ensureMeta(element)
     let subscribesCount = subscribes.length
@@ -572,7 +499,14 @@ let bindSpread = (dom: DomApis, element: JSX.Element, value: any) => {
     let source = isAtom(value)
       ? value
       : computed(value, jsxElementKey(element, '$spread'))
-    let unsubscribe = source.subscribe(spread)
+    let unsubscribe = source.subscribe(spread, (error) => {
+      marked = reportJsxError(
+        error,
+        'prop',
+        jsxElementKey(element, '$spread'),
+        element,
+      )
+    })
     return () => {
       dispose()
       unsubscribe()
@@ -596,9 +530,21 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   /** @todo Show warning if isAtom(value) && !isAction(value). */
   if (key.startsWith('on:')) {
     key = key.slice(3)
-    let listener = wrap(
+    let actionName = eventActionName(element, key, value)
+    let onEventError = (error: unknown) =>
+      reportJsxError(error, 'event', actionName, element)
+    let listener = bind(
       // only for logging purposes
-      action(value as () => void, eventActionName(element, key, value)),
+      action((event: Event) => {
+        try {
+          let result = (value as (event: Event) => unknown)(event)
+          ;(result as PromiseLike<unknown>)?.then?.(undefined, onEventError)
+          return result
+        } catch (error) {
+          onEventError(error)
+          throw error
+        }
+      }, actionName),
     )
     /**
      * The immediate registration keeps listeners working before the first
@@ -619,11 +565,24 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
     return
   }
 
-  let setter = (val: any) => set(dom, element, key, val)
+  let marked: Element | undefined
+  let onPropError = (error: unknown) => {
+    marked = reportJsxError(error, 'prop', jsxElementKey(element, key), element)
+  }
+  let setter = (val: unknown) => {
+    try {
+      set(dom, element, key, val)
+      marked = clearJsxError(marked)
+    } catch (error) {
+      onPropError(error)
+    }
+  }
 
   if (key === 'class' || key === 'className') {
     if (typeof value === 'object' || typeof value === 'function') {
-      unlink(element, () => reatomClassName(value).subscribe(setter))
+      unlink(element, () =>
+        reatomClassName(value).subscribe(setter, onPropError),
+      )
     } else {
       setter(value)
     }
@@ -646,10 +605,13 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   }
 
   if (isAtom(value) && !isAction(value)) {
-    unlink(element, () => value.subscribe(setter))
+    unlink(element, () => value.subscribe(setter, onPropError))
   } else if (typeof value === 'function') {
     unlink(element, () =>
-      computed(value, jsxElementKey(element, key)).subscribe(setter),
+      computed(value, jsxElementKey(element, key)).subscribe(
+        setter,
+        onPropError,
+      ),
     )
   } else {
     setter(value)
@@ -815,12 +777,22 @@ export let mount = (
    * instead of scanning and shifting the subscribers array — O(n) instead of
    * O(n²) for a shared pub.
    */
+  let lifecycle = (phase: 'ref' | 'mount', node: Node, cb: () => void) => {
+    try {
+      cb()
+    } catch (error) {
+      reportJsxError(error, phase, node.nodeName.toLowerCase(), node)
+    }
+  }
+
   let cleanupNode = (node: Node) => {
     let iterator = dom.document.createNodeIterator(node, 1 | 128)
     while (iterator.nextNode()) {
       let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
       if (meta?.unmount) {
-        meta.unmount(iterator.referenceNode)
+        lifecycle('ref', iterator.referenceNode, () =>
+          meta.unmount!(iterator.referenceNode),
+        )
         meta.unmount = undefined
       }
     }
@@ -828,7 +800,7 @@ export let mount = (
       let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
       if (meta) {
         for (let i = meta.unsubscribes.length - 1; i >= 0; i--) {
-          meta.unsubscribes[i]!()
+          lifecycle('mount', iterator.referenceNode, meta.unsubscribes[i]!)
         }
         meta.unsubscribes = []
       }
@@ -846,21 +818,25 @@ export let mount = (
         while (iterator.nextNode()) {
           let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
           meta?.subscribes.forEach((subscribe) =>
-            meta.unsubscribes.push(subscribe()),
+            lifecycle('mount', iterator.referenceNode, () =>
+              meta.unsubscribes.push(subscribe()),
+            ),
           )
         }
         while (iterator.previousNode()) {
           let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
           if (meta) {
-            let unmount = meta.mount?.(iterator.referenceNode)
-            if (typeof unmount === 'function') meta.unmount = unmount
+            lifecycle('ref', iterator.referenceNode, () => {
+              let unmount = meta.mount?.(iterator.referenceNode)
+              if (typeof unmount === 'function') meta.unmount = unmount
+            })
           }
         }
       })
       mutation.removedNodes.forEach((removedNode) => cleanupNode(removedNode))
     }
   }
-  let observer = new dom.MutationObserver(wrap(processMutations))
+  let observer = new dom.MutationObserver(bind(processMutations))
   observer.observe(target.parentElement!, {
     childList: true,
     subtree: true,
@@ -897,3 +873,91 @@ export let Bind = <T extends Element>(
     Partial<Omit<T, 'children'>> & JSX.DOMAttributes<T>
   >,
 ): T => props.element
+
+export interface ErrorBoundaryProps {
+  fallback: (error: unknown, retry: () => void) => JSX.ElementChildren
+  pending?: JSX.ElementChildren
+  onError?: (error: unknown) => void
+  children?: JSX.ElementChildren
+}
+
+/**
+ * Catches reactive render errors (and construction errors from lazy children)
+ * inside its range. Boundary ownership follows the node's current DOM position,
+ * so an element created elsewhere and later inserted under this boundary is
+ * adopted automatically.
+ *
+ * Prefer lazy children `{() => <Child />}` so construction-time throws are
+ * caught; eagerly created element children ran before this component.
+ */
+export let ErrorBoundary = (props: ErrorBoundaryProps): JSX.Element => {
+  let failure = atom<null | { error: unknown }>(null, 'jsx.ErrorBoundary')
+  let retry = action(() => failure.set(null), 'jsx.ErrorBoundary.retry')
+
+  let handle: BoundaryHandle = {
+    start: undefined!,
+    end: undefined!,
+    catch(error: unknown) {
+      props.onError?.(error)
+      if (error instanceof Promise) {
+        // Ignore settles of a promise that is no longer the current failure.
+        error.then(
+          bind(() => failure()?.error === error && retry()),
+          bind(
+            (reason: unknown) =>
+              failure()?.error === error && handle.catch(reason),
+          ),
+        )
+      }
+      failure.set({ error })
+    },
+  }
+
+  if (
+    peek(DEBUG) &&
+    props.children != null &&
+    typeof props.children !== 'function' &&
+    !isAtom(props.children)
+  ) {
+    console.warn(
+      'ErrorBoundary: prefer lazy children `{() => <Child />}` so construction-time errors are caught',
+    )
+  }
+
+  let content = computed(() => {
+    if (!failure()) {
+      let prev = jsxBoundary.current
+      jsxBoundary.current = handle
+      try {
+        let children = props.children
+        let result =
+          typeof children === 'function'
+            ? (children as () => JSX.ElementChildren)()
+            : children
+        // Nested walkAtom may have reported into this boundary during the call.
+        if (!failure()) return result
+      } catch (error) {
+        // `jsxBoundary.current` is still `handle` here, so this both tracks
+        // the error and delivers it to this boundary.
+        reportJsxError(error, 'children', 'ErrorBoundary')
+      } finally {
+        jsxBoundary.current = prev
+      }
+    }
+    let current = failure()
+    if (!current) return undefined
+    return current.error instanceof Promise
+      ? props.pending
+      : props.fallback(current.error, retry)
+  }, 'jsx.ErrorBoundary.content')
+
+  let fragment = walkAtom(_read(DOM)?.state ?? peek(DOM), content)
+  handle.start = fragment.__reatomFragment.start
+  handle.end = fragment.__reatomFragment.end
+  unlink(handle.start, () => {
+    boundaries.add(handle)
+    return () => boundaries.delete(handle)
+  })
+
+  return fragment as unknown as JSX.Element
+}
