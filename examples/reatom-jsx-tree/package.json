@@ -13,8 +13,6 @@
     "@reatom/jsx": "1001.*.*"
   },
   "devDependencies": {
-    "@happy-dom/global-registrator": "^20.11.0",
-    "happy-dom": "^20.11.0",
     "typescript": "^5.9.3",
     "vite": "^8.0.14"
   }

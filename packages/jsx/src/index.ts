@@ -491,7 +491,8 @@ let bindFieldModel = (
   field: FieldModelBinding,
   userRef?: RefCallback,
 ) => {
-  let value = field.value()
+  // Untracked: element construction may run inside a reactive function child.
+  let value = peek(field.value)
   let kind =
     typeof value === 'boolean'
       ? 'checkbox'
