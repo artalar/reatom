@@ -21,7 +21,7 @@ export default defineConfig({
 
 In development the plugin:
 
-1. **Routes** — tracks `reatomRoute(...)` / `parent.reatomRoute(...)` calls, then on hot dispose removes the old child from `parent.routes` / `urlAtom.routes` and `retryComputed(parent.outlet)` when the parent has an outlet.
+1. **Routes** — tracks `reatomRoute(...)` / `parent.reatomRoute(...)` calls; on hot dispose removes the old child from `parent.routes` / `urlAtom.routes` and `retryComputed(parent.outlet)`, then retries the parent outlet again after each new route is registered (plain `routes` objects do not invalidate `outlet` on their own).
 2. **JSX** — tracks `mount(...)` from `@reatom/jsx`, then on hot dispose calls `unmount()` so the re-executed module can mount a fresh tree.
 
 Modules that already contain `import.meta.hot` are left untouched so manual HMR keeps working.
