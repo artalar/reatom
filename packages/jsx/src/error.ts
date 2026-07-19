@@ -1,10 +1,6 @@
 import { action, isAbort } from '@reatom/core'
 
-import {
-  boundaries,
-  type BoundaryHandle,
-  jsxBoundary,
-} from './global'
+import { boundaries, type BoundaryHandle, jsxBoundary } from './global'
 
 export type { BoundaryHandle }
 export type JsxErrorPhase = 'children' | 'prop' | 'event' | 'ref' | 'mount'
@@ -52,9 +48,9 @@ export let jsxError = action((payload: JsxErrorPayload): JsxErrorPayload => {
 }, 'jsx.error')
 
 /**
- * Returns the element marked with `data-reatom-error` (hybrid default path),
- * so the caller can clear the mark via {@link clearJsxError} on the next
- * successful delivery.
+ * Returns the element marked with `data-reatom-error` (hybrid default path), so
+ * the caller can clear the mark via {@link clearJsxError} on the next successful
+ * delivery.
  */
 export let reportJsxError = (
   error: unknown,
