@@ -130,7 +130,11 @@ const wrapCallsWithStarts = (
 const buildRoutePreamble = (): string =>
   `import { retryComputed as ${RETRY}, urlAtom as ${URL_ATOM} } from '@reatom/core';
 const ${ROUTE_LIST} = [];
-const ${ROUTE_TRACK} = (route) => (${ROUTE_LIST}.push(route), route);
+const ${ROUTE_TRACK} = (route) => {
+  ${ROUTE_LIST}.push(route);
+  if (route.parent && "outlet" in route.parent) ${RETRY}(route.parent.outlet);
+  return route;
+};
 `
 
 const buildMountPreamble = (): string =>

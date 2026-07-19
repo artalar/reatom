@@ -32,6 +32,9 @@ export const homeRoute = layoutRoute.reatomRoute('')
     expect(result!.code).toContain(
       'delete __REATOM_VITE_urlAtom.routes[route.name]',
     )
+    expect(result!.code).toContain(
+      'if (route.parent && "outlet" in route.parent) __REATOM_VITE_retryComputed(route.parent.outlet)',
+    )
   })
 
   test('wraps mount from @reatom/jsx', () => {

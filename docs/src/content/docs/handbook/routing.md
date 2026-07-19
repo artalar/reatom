@@ -1244,7 +1244,7 @@ export default defineConfig({
 })
 ```
 
-Or handle it manually in the route module (where `myRoute` is defined). Use `dispose` so the old route is removed _before_ the updated module registers the new one:
+Or handle it manually in the route module (where `myRoute` is defined). Use `dispose` so the old route is removed _before_ the updated module registers the new one, then `retryComputed` again after registration so the parent outlet sees the new child:
 
 ```typescript
 import { reatomRoute, retryComputed } from '@reatom/core'
@@ -1258,6 +1258,9 @@ if (import.meta.hot) {
     if (parent && 'outlet' in parent) retryComputed(parent.outlet)
   })
   import.meta.hot.accept()
+  if (myRoute.parent && 'outlet' in myRoute.parent) {
+    retryComputed(myRoute.parent.outlet)
+  }
 }
 ```
 
