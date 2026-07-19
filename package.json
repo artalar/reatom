@@ -5,7 +5,7 @@
   "scripts": {
     "postinstall": "pnpm --filter @reatom/core run build",
     "prepare": "git config blame.ignoreRevsFile .git-blame-ignore-revs && husky",
-    "test": "pnpm --filter @reatom/core --filter @reatom/react --filter @reatom/jsx --filter @reatom/zod run test",
+    "test": "pnpm --filter @reatom/core --filter @reatom/react --filter @reatom/jsx --filter @reatom/zod --filter @reatom/vite run test",
     "release": "tsx ./tools/publish.ts",
     "reset": "sh ./tools/reset.sh",
     "package-generator": "tsx tools/new-package.ts",

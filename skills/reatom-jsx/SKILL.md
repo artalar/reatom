@@ -43,7 +43,7 @@ Use this map to open only the relevant parts of [REFERENCE.md](REFERENCE.md):
 - Form submit loader: style `[data-submitting]` on the form (set automatically by `model={form}`); CSS-only spinner on `[type='submit']::after`.
 - For SPA navigation use `reatomRoute`: links via `href={route.path(params)}`, programmatic moves via `route.go(params)` — see the `reatom` skill Routing section.
 - Use `prop:*` for DOM properties, `attr:*` for attributes when semantics matter.
-- Mount with `mount(root, <App />)`; call `unmount()` on teardown (including Vite HMR).
+- Mount with `mount(root, <App />)`; call `unmount()` on teardown (including Vite HMR). Prefer `@reatom/vite` (`reatom()` plugin) so mount/route HMR dispose is automatic.
 - For dynamic lists, store elements in atoms or map inside reactive children — no keyed reconciliation.
 
 When [REFERENCE.md](REFERENCE.md) and local examples disagree, prefer the reference and fix the example if it is wrong.

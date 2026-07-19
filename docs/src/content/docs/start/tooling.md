@@ -72,6 +72,21 @@ LOG.extend(
 )
 ```
 
+## Vite
+
+[`@reatom/vite`](/reference/vite) injects development HMR cleanup for `reatomRoute` / nested `.reatomRoute()` and for `@reatom/jsx` `mount()`:
+
+```ts title="vite.config.ts"
+import { defineConfig } from 'vite'
+import { reatom } from '@reatom/vite'
+
+export default defineConfig({
+  plugins: [reatom()],
+})
+```
+
+See [routing HMR](/handbook/routing/#hot-module-replacement-vite) and [JSX HMR](/reference/jsx#hot-module-replacement-vite) for the underlying dispose pattern.
+
 ## Eslint
 
 We recommend using ESLint to enforce best practices and coding standards in your Reatom projects. We will publish our own ESLint plugin for name autofix soon, but you can use this plugin right now to automate `action`, `computed`, `effect` naming:
