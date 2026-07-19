@@ -377,7 +377,7 @@ let walkLinkedList = (
   )
 
   // check if change hook wasn't called by initialization
-  if (lastVersion === -1) cb(list() as LinkedList<LLNode<JSX.Element>>)
+  if (lastVersion === -1) cb(peek(list) as LinkedList<LLNode<JSX.Element>>)
 }
 
 interface LiveDocumentFragment extends DocumentFragment {
@@ -486,7 +486,7 @@ let bindFieldModel = (
   field: FieldModelBinding,
   userRef?: RefCallback,
 ) => {
-  let value = field.value()
+  let value = peek(field.value)
   let kind =
     typeof value === 'boolean'
       ? 'checkbox'

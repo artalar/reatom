@@ -1301,6 +1301,26 @@ test('model:field binds checkbox checked', () =>
     expect(input.checked).toBe(true)
   }))
 
+test('model:field inside a function child does not track the field value', () =>
+  context.start(async () => {
+    const field = reatomField('a', 'wrappedField')
+
+    const container = (
+      <div>{() => <input model:field={field} attr:type="text" />}</div>
+    )
+    mount(parent(), container)
+    await wrap(sleep())
+    const input = container.querySelector('input')!
+    expect(input.value).toBe('a')
+
+    // A tracked `field.value()` read in bindFieldModel would make the wrapper
+    // computed depend on the value and recreate the input on every change.
+    field.change('b')
+    await wrap(sleep())
+    expect(input.value).toBe('b')
+    expect(container.querySelector('input')).toBe(input)
+  }))
+
 test('model:field composes with ref when ref comes after', () =>
   context.start(async () => {
     const field = reatomField('', 'nameField')
@@ -1585,9 +1605,7 @@ test('initial atom children cause no live insertions after mount', () =>
     mutations.push(...observer.takeRecords())
     observer.disconnect()
 
-    const addedNodes = mutations.flatMap((mutation) => [
-      ...mutation.addedNodes,
-    ])
+    const addedNodes = mutations.flatMap((mutation) => [...mutation.addedNodes])
     expect(addedNodes).toStrictEqual([element])
     expect(element.textContent).toBe('top leaf')
   }))

@@ -178,6 +178,36 @@ test('linked list removeMany', () =>
     expect(stripJsxCompilerProps(container.innerHTML)).toBe('')
   }))
 
+test('linked list render inside a function child is not tracked', () =>
+  context.start(async () => {
+    let mapperCalls = 0
+    const list = reatomLinkedList((value: number) => ({ value }), 'list')
+    list.create(1)
+
+    const container = (
+      <div>
+        {() => (
+          <ul>
+            {list.reatomMap((node) => {
+              mapperCalls++
+              return <li>{node.value}</li>
+            }, 'list.views')}
+          </ul>
+        )}
+      </div>
+    )
+    mount(parent(), container)
+    await wrap(sleep())
+    expect(mapperCalls).toBe(1)
+
+    // A tracked initial read would make the wrapper computed depend on the
+    // list, so this create would recreate the subtree and remap every node.
+    list.create(2)
+    await wrap(sleep())
+    expect(mapperCalls).toBe(2)
+    expect(container.querySelectorAll('li').length).toBe(2)
+  }))
+
 test('linked list createMany and removeMany with reatomMap', () =>
   context.start(async () => {
     const list = reatomLinkedList((value: number) => atom(value))
