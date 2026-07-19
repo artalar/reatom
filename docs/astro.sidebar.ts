@@ -148,6 +148,10 @@ export const sidebar = [
         link: '/reference/jsx',
       },
       {
+        label: '@reatom/vite',
+        link: '/reference/vite',
+      },
+      {
         label: '@reatom/zod',
         link: '/reference/zod',
       },

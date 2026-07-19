@@ -1233,7 +1233,18 @@ const route = reatomRoute({
 
 Child routes are registered on a plain `routes` object on the parent. The parent’s `outlet` computed does not automatically invalidate when that object is mutated, so after a hot update you can end up with a stale outlet until you drop the old child from the registry and force the parent outlet to recompute.
 
-In the route module (where `myRoute` is defined), you can use:
+Prefer [`@reatom/vite`](/reference/vite) — it injects this cleanup automatically in development:
+
+```ts title="vite.config.ts"
+import { defineConfig } from 'vite'
+import { reatom } from '@reatom/vite'
+
+export default defineConfig({
+  plugins: [reatom()],
+})
+```
+
+Or handle it manually in the route module (where `myRoute` is defined). Use `dispose` so the old route is removed _before_ the updated module registers the new one:
 
 ```typescript
 import { reatomRoute, retryComputed } from '@reatom/core'
@@ -1241,10 +1252,12 @@ import { reatomRoute, retryComputed } from '@reatom/core'
 const myRoute = reatomRoute({})
 
 if (import.meta.hot) {
-  import.meta.hot.accept(() => {
-    delete myRoute.parent!.routes[myRoute.name]
-    retryComputed(myRoute.parent!.outlet)
+  import.meta.hot.dispose(() => {
+    const parent = myRoute.parent
+    if (parent?.routes) delete parent.routes[myRoute.name]
+    if (parent && 'outlet' in parent) retryComputed(parent.outlet)
   })
+  import.meta.hot.accept()
 }
 ```
 

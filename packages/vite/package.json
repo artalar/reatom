@@ -1,0 +1,89 @@
+{
+  "name": "@reatom/vite",
+  "type": "module",
+  "version": "1001.0.0",
+  "private": false,
+  "sideEffects": false,
+  "description": "Vite plugin for Reatom routing and JSX hot module replacement",
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "require": "./dist/index.cjs",
+    "default": "./dist/index.js"
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "browserslist": [
+    "last 1 year"
+  ],
+  "scripts": {
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "build": "tsdown",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "tsdown": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "esm",
+      "cjs"
+    ],
+    "fixedExtension": false,
+    "deps": {
+      "neverBundle": [
+        "magic-string",
+        "typescript"
+      ]
+    }
+  },
+  "peerDependencies": {
+    "@reatom/core": "workspace:^",
+    "vite": ">=5"
+  },
+  "peerDependenciesMeta": {
+    "@reatom/core": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "magic-string": "^0.30.21",
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "@reatom/core": "workspace:^",
+    "@types/node": "catalog:",
+    "tsdown": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reatom/reatom.git",
+    "directory": "packages/vite"
+  },
+  "bugs": {
+    "url": "https://github.com/reatom/reatom/issues"
+  },
+  "homepage": "https://www.reatom.dev/reference/vite",
+  "keywords": [
+    "vite",
+    "vite-plugin",
+    "hmr",
+    "routing",
+    "jsx",
+    "reatom"
+  ],
+  "files": [
+    "/dist"
+  ]
+}
