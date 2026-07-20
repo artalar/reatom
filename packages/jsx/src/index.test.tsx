@@ -275,14 +275,19 @@ test.skip('spreads difference', () =>
 test('multiple render shared element', () =>
   context.start(async () => {
     const valueAtom = atom('abc', 'value')
-    const element = <p>{valueAtom}</p>
 
-    const Component = () => (
-      <>
-        <div id="1">{element}</div>
-        <div id="2">{element}</div>
-      </>
-    )
+    // Create the element inside the component so each mount gets a fresh
+    // binding. Reusing a node after teardown drops reconnect thunks (leak
+    // prevention) and would leave a stale text node.
+    const Component = () => {
+      const element = <p>{valueAtom}</p>
+      return (
+        <>
+          <div id="1">{element}</div>
+          <div id="2">{element}</div>
+        </>
+      )
+    }
 
     const childAtom = atom<JSX.Element | undefined>(
       <Component></Component>,
@@ -1554,7 +1559,7 @@ test('eagerly rendered atom child stays reactive after mount', () =>
     expect(element.textContent).toBe('b')
   }))
 
-test('atom child survives remove and re-append', () =>
+test('atom child teardown drops reconnect after remove', () =>
   context.start(async () => {
     const val = atom('same', 'val')
     const element = <div>{val}</div>
@@ -1569,12 +1574,14 @@ test('atom child survives remove and re-append', () =>
     await wrap(sleep())
     expect(element.textContent).toBe('same')
 
+    // Detach clears meta.subscribes so re-appended nodes stay inert —
+    // recreate the element (or keep it inside a live parent) instead.
     val.set('updated')
     await wrap(sleep())
-    expect(element.textContent).toBe('updated')
+    expect(element.textContent).toBe('same')
   }))
 
-test('atom child re-renders state changed while disconnected', () =>
+test('atom child does not rebind after disconnect teardown', () =>
   context.start(async () => {
     const val = atom('before', 'val')
     const element = <div>{val}</div>
@@ -1591,7 +1598,7 @@ test('atom child re-renders state changed while disconnected', () =>
 
     parent().append(element)
     await wrap(sleep())
-    expect(element.textContent).toBe('after')
+    expect(element.textContent).toBe('before')
   }))
 
 test('initial atom children cause no live insertions after mount', () =>
