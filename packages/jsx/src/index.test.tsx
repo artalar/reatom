@@ -154,28 +154,21 @@ test('dynamic children', () =>
     )
   }))
 
-test('on: handler action name uses function name', () =>
+test('on: handlers run under shared jsxEvent action', () =>
   context.start(async () => {
-    // Action wrapping for named handlers only runs when DEBUG is enabled.
-    DEBUG.set(true)
-    let namedActionName = ''
-    let anonymousActionName = ''
-    let frequentActionName = ''
+    let clickActionName = ''
+    let moveActionName = ''
 
     function handleClick() {
-      namedActionName = top().atom.name
+      clickActionName = top().atom.name
     }
 
     function handlePanMove() {
-      frequentActionName = top().atom.name
+      moveActionName = top().atom.name
     }
 
     const Button = () => (
-      <button
-        on:click={handleClick}
-        on:dblclick={() => (anonymousActionName = top().atom.name)}
-        on:mousemove={handlePanMove}
-      >
+      <button on:click={handleClick} on:mousemove={handlePanMove}>
         click
       </button>
     )
@@ -186,21 +179,14 @@ test('on: handler action name uses function name', () =>
     await wrap(sleep())
 
     element.click()
-    expect(namedActionName).toBe('Button.button.handleClick')
-
-    element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    expect(anonymousActionName).toBe('Button.button.dblclick')
+    expect(clickActionName).toBe('jsx.event')
 
     element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
-    expect(frequentActionName).toBe('Button.button._handlePanMove')
-
-    DEBUG.set(false)
+    expect(moveActionName).toBe('jsx.event')
   }))
 
 test('function child computed name uses component and element', () =>
   context.start(async () => {
-    // Atom key strings are only allocated when DEBUG is enabled.
-    DEBUG.set(true)
     let computedName = ''
 
     const InfoRow = ({ value }: { value: () => string }) => (
@@ -222,7 +208,6 @@ test('function child computed name uses component and element', () =>
     await wrap(sleep())
 
     expect(computedName).toBe('InfoRow.span._children')
-    DEBUG.set(false)
   }))
 
 test('spreads', () =>

@@ -77,37 +77,18 @@ export let DEBUG = atom(true, 'jsx.DEBUG')
 let jsxElementKey = (element: Node, key: string) =>
   `${jsxHName.current}.${element.nodeName.toLowerCase()}._${key}`
 
-/** Named keys only when DEBUG is on; `''` skips `defineProperty` in createAtom. */
-let jsxAtomKey = (element: Node, key: string) =>
-  peek(DEBUG) ? jsxElementKey(element, key) : ''
-
-/** Matches {@link isSkip} — actions with `._` in the name are omitted from logs. */
-let noisyDomEvents = new Set([
-  'dragover',
-  'gesturechange',
-  'mousemove',
-  'mouseout',
-  'mouseover',
-  'pointermove',
-  'pointerout',
-  'pointerover',
-  'pointerrawupdate',
-  'scroll',
-  'scrollsnapchanging',
-  'touchmove',
-  'wheel',
-])
-
-let eventActionName = (element: Node, eventKey: string, handler: Fn) => {
-  let elementPart = element.nodeName.toLowerCase()
-  let base = jsxHName.current
-    ? `${jsxHName.current}.${elementPart}`
-    : elementPart
-  let segment =
-    handler.name && handler.name !== `on:${eventKey}` ? handler.name : eventKey
-  let hideFromLogs = noisyDomEvents.has(eventKey)
-  return `${base}${hideFromLogs ? '._' : '.'}${segment}`
-}
+export let jsxEvent = action((handler: Fn, event: Event, node: Node) => {
+  try {
+    let result = handler(event)
+    ;(result as PromiseLike<unknown>)?.then?.(undefined, (error: unknown) => {
+      reportJsxError(error, 'event', 'jsx.event', node)
+    })
+    return result
+  } catch (error) {
+    reportJsxError(error, 'event', 'jsx.event', node)
+    throw error
+  }
+}, 'jsx.event')
 
 interface Meta {
   subscribes: (() => Unsubscribe)[]
@@ -263,7 +244,7 @@ let walk = (
     walk(
       dom,
       element,
-      computed(children as () => any, jsxAtomKey(element, 'children')),
+      computed(children as () => any, jsxElementKey(element, 'children')),
     )
   } else if (!isSkipped(children)) {
     element.append(children as Node | string)
@@ -677,7 +658,7 @@ let bindSpread = (dom: DomApis, element: JSX.Element, value: any) => {
   unlink(element, () => {
     let source = isAtom(value)
       ? value
-      : computed(value, jsxAtomKey(element, '$spread'))
+      : computed(value, jsxElementKey(element, '$spread'))
     let unsubscribe = source.subscribe(spread, (error) => {
       marked = reportJsxError(
         error,
@@ -709,28 +690,14 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   /** @todo Show warning if isAtom(value) && !isAction(value). */
   if (key.startsWith('on:')) {
     key = key.slice(3)
-    let debug = peek(DEBUG)
-    let actionName = debug ? eventActionName(element, key, value) : key
-    let onEventError = (error: unknown) =>
-      reportJsxError(error, 'event', actionName, element)
-    let run = (event: Event) => {
-      try {
-        let result = (value as (event: Event) => unknown)(event)
-        ;(result as PromiseLike<unknown>)?.then?.(undefined, onEventError)
-        return result
-      } catch (error) {
-        onEventError(error)
-        throw error
-      }
-    }
     // Bind to the root frame — not `top()`. Row render often runs inside
     // `reatomMap`'s computed; capturing that frame would pin its pre-`_copy`
     // state (createMany `nodes` / head→tail) for as long as the listener
     // lives, which is the 25_run-clear-memory leak.
-    let rootFrame = top().root.frame
-    let listener = debug
-      ? bind(action(run, actionName), rootFrame)
-      : bind(run, rootFrame)
+    let listener = bind(
+      (event: Event) => jsxEvent(value, event, element),
+      top().root.frame,
+    )
     /**
      * The immediate registration keeps listeners working before the first
      * mount; re-adding an identical listener on (re)connect is a no-op per the
@@ -793,7 +760,7 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
     unlink(element, () => value.subscribe(setter, onPropError))
   } else if (typeof value === 'function') {
     unlink(element, () =>
-      computed(value, jsxAtomKey(element, key)).subscribe(setter, onPropError),
+      computed(value, jsxElementKey(element, key)).subscribe(setter, onPropError),
     )
   } else {
     setter(value)
