@@ -143,13 +143,25 @@ let lifecycle = (phase: 'ref' | 'mount', node: Node, cb: () => void) => {
   }
 }
 
+/**
+ * Depth-first walk over the real DOM pointers. A visit may connect a
+ * subscription that emits synchronously and rewrites the following content
+ * (live fragment update, primitive Text upgrade), so the walk re-checks the
+ * pointers after each visit: when the visited child was detached
+ * (`replaceWith`), it resumes after the last child still in place, keeping the
+ * replacement content and the following siblings in the traversal. Emissions
+ * only rewrite content after their own node, so earlier siblings stay valid
+ * anchors. (`NodeIterator` would give this liveness for free, but live
+ * iterators tax every subsequent DOM mutation of the whole document.)
+ */
 let walkTree = (node: Node, visit: (node: Node) => void) => {
   visit(node)
+  let prev: Node | null = null
   let child = node.firstChild
   while (child) {
-    let next = child.nextSibling
     walkTree(child, visit)
-    child = next
+    if (child.parentNode === node) prev = child
+    child = prev ? prev.nextSibling : node.firstChild
   }
 }
 
@@ -159,22 +171,23 @@ let walkTree = (node: Node, visit: (node: Node) => void) => {
  */
 let connectNode = (node: Node, symbol: symbol) => {
   let nodesToMount: Node[] = []
-  walkTree(node, (node) => {
-    let meta = (node as any)[symbol] as Meta | undefined
+  walkTree(node, (visited) => {
+    let meta = (visited as any)[symbol] as Meta | undefined
     if (!meta) return
 
     if (meta.unsubscribes.length === 0) {
       for (let subscribe of meta.subscribes) {
-        lifecycle('mount', node, () => meta.unsubscribes.push(subscribe()))
+        lifecycle('mount', visited, () => meta.unsubscribes.push(subscribe()))
       }
     }
-    if (!meta.mounted) nodesToMount.push(node)
+    if (!meta.mounted) nodesToMount.push(visited)
   })
 
   for (let i = nodesToMount.length - 1; i >= 0; i--) {
     let node = nodesToMount[i]!
     let meta = (node as any)[symbol] as Meta | undefined
-    if (!meta) continue
+    // The `mounted` re-check dedupes nodes queued twice by a mid-walk restart.
+    if (!meta || meta.mounted) continue
 
     meta.mounted = true
     lifecycle('ref', node, () => {
@@ -192,13 +205,13 @@ let connectNode = (node: Node, symbol: symbol) => {
 let cleanupNodes = (nodes: Node[], symbol: symbol) => {
   let metaNodes: Node[] = []
   for (let node of nodes) {
-    walkTree(node, (node) => {
-      let meta = (node as any)[symbol] as Meta | undefined
+    walkTree(node, (visited) => {
+      let meta = (visited as any)[symbol] as Meta | undefined
       if (!meta) return
 
-      metaNodes.push(node)
+      metaNodes.push(visited)
       if (meta.unmount) {
-        lifecycle('ref', node, () => meta.unmount!(node))
+        lifecycle('ref', visited, () => meta.unmount!(visited))
         meta.unmount = undefined
       }
     })

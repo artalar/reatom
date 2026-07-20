@@ -1609,6 +1609,62 @@ test('eagerly rendered atom child stays reactive after mount', () =>
     expect(element.textContent).toBe('b')
   }))
 
+test('siblings connect when an earlier atom child changed before mount', () =>
+  context.start(async () => {
+    const first = atom<JSX.ElementChildren>(
+      (<i>a</i>) as unknown as JSX.ElementChildren,
+      'first',
+    )
+    const second = atom('x', 'second')
+    const element = (
+      <div>
+        {first}
+        <span>{second}</span>
+      </div>
+    )
+
+    // Change the fragment state between build and mount: the subscription
+    // connected during the mount walk emits synchronously and rewrites the
+    // fragment content mid-walk. The walk must keep visiting the replacement
+    // content and the following siblings.
+    first.set((<b>b</b>) as unknown as JSX.ElementChildren)
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.querySelector('b')?.textContent).toBe('b')
+    expect(element.querySelector('i')).toBe(null)
+
+    second.set('y')
+    await wrap(sleep())
+    expect(element.textContent).toBe('by')
+  }))
+
+test('siblings connect when a primitive atom child upgraded before mount', () =>
+  context.start(async () => {
+    const first = atom<JSX.ElementChildren>('a', 'first')
+    const second = atom('x', 'second')
+    const element = (
+      <div>
+        {first}
+        <span>{second}</span>
+      </div>
+    )
+
+    // The primitive Text fast path upgrades via `replaceWith` when its state
+    // stops being primitive, removing the very node the mount walk is
+    // visiting. The walk must continue into the replacement fragment and the
+    // following siblings.
+    first.set((<b>b</b>) as unknown as JSX.ElementChildren)
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.querySelector('b')?.textContent).toBe('b')
+
+    second.set('y')
+    await wrap(sleep())
+    expect(element.textContent).toBe('by')
+  }))
+
 test('atom child teardown drops reconnect after remove', () =>
   context.start(async () => {
     const val = atom('same', 'val')
