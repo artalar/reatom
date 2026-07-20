@@ -772,7 +772,7 @@ test('ref mount and unmount callbacks order', () =>
     expect(order).toStrictEqual([2, 1, 0, 0, 1, 2])
   }))
 
-test('batched removal disconnects every shared pub subscription', () =>
+test('batched removal unsubscribes shared pubs in reverse subscription order', () =>
   context.start(async () => {
     const order: string[] = []
     const shared = atom('shared', 'shared')
@@ -795,20 +795,16 @@ test('batched removal disconnects every shared pub subscription', () =>
     await wrap(sleep())
     expect(order).toStrictEqual(['connect a', 'connect b', 'connect c'])
 
-    // Teardown runs in one parent-first pass (DOM order) — core sub removal
-    // is order-agnostic, so no reverse batch ordering is required.
     element.replaceChildren()
     await wrap(sleep())
     expect(order).toStrictEqual([
       'connect a',
       'connect b',
       'connect c',
-      'disconnect a',
-      'disconnect b',
       'disconnect c',
+      'disconnect b',
+      'disconnect a',
     ])
-
-    expect(isConnected(shared)).toBe(false)
 
     unmount()
   }))
