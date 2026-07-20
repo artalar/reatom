@@ -1,10 +1,6 @@
 import { _createGlobal, atom, peek, type Rec } from '@reatom/core'
 
-export interface BoundaryHandle {
-  catch: (error: unknown) => void
-  start: Comment
-  end: Comment
-}
+export type BoundaryHandle = (error: unknown) => void
 
 type JsxGlobal = {
   inlineStyles: { count: number; ids: Rec<string> }
@@ -13,7 +9,6 @@ type JsxGlobal = {
   propertiesAsAttributes: Set<string>
   booleanAttributes: Set<string>
   boundaryCurrent: { current: BoundaryHandle | undefined }
-  boundaries: Set<BoundaryHandle>
   dom: ReturnType<typeof atom<typeof globalThis.window>>
   stylesheet: ReturnType<typeof createStylesheet>
 }
@@ -95,7 +90,6 @@ let createJsxGlobal = (): JsxGlobal => {
       'webkitdirectory',
     ]),
     boundaryCurrent: { current: undefined },
-    boundaries: new Set(),
     dom,
     stylesheet: createStylesheet(dom),
   }
@@ -108,7 +102,6 @@ export let {
   propertiesAsAttributes,
   booleanAttributes,
   boundaryCurrent: jsxBoundary,
-  boundaries,
   dom: DOM,
   stylesheet,
 } = _createGlobal('jsx', createJsxGlobal)

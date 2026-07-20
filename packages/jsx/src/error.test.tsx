@@ -97,6 +97,8 @@ test('ErrorBoundary catches lazy child construction error and supports retry', (
     const { unmount } = mount(parent(), host)
     await wrap(sleep())
 
+    expect(element.nodeName).toBe('SPAN')
+    expect(element.style.display).toBe('contents')
     expect(host.querySelector('#fallback')?.textContent).toContain('construct')
     expect(host.querySelector('#ok')).toBeNull()
     expect(onError).toHaveBeenCalledTimes(1)

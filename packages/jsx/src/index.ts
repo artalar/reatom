@@ -7,6 +7,7 @@ import {
   bind,
   computed,
   type Fn,
+  isAbort,
   isAction,
   isAtom,
   isLinkedListAtom,
@@ -20,10 +21,13 @@ import {
   type Unsubscribe,
 } from '@reatom/core'
 
-import { clearJsxError, reportJsxError } from './error'
+import {
+  jsxError,
+  type JsxErrorPayload,
+  type JsxErrorPhase,
+} from './error'
 import {
   booleanAttributes,
-  boundaries,
   type BoundaryHandle,
   DOM,
   jsxBoundary,
@@ -50,12 +54,7 @@ export type FC<Props = {}> = (
 
 export type { JSX, JSXElement }
 
-export {
-  findBoundary,
-  jsxError,
-  type JsxErrorPayload,
-  type JsxErrorPhase,
-} from './error'
+export { jsxError, type JsxErrorPayload, type JsxErrorPhase }
 export { DOM, stylesheet } from './global'
 export { reatomClassName } from './utils'
 export { instance } from '@reatom/core'
@@ -91,6 +90,7 @@ export let jsxEvent = action((handler: Fn, event: Event, node: Node) => {
 }, 'jsx.event')
 
 interface Meta {
+  boundary: BoundaryHandle | undefined
   subscribes: (() => Unsubscribe)[]
   unsubscribes: Unsubscribe[]
   mount: ((element: Node) => ((element: Node) => void) | undefined) | undefined
@@ -105,6 +105,7 @@ interface Meta {
 }
 let ensureMeta = (node: Node): Meta => {
   return ((node as any)[metaSymbol()] ??= {
+    boundary: undefined,
     subscribes: [],
     unsubscribes: [],
     mount: undefined,
@@ -112,6 +113,42 @@ let ensureMeta = (node: Node): Meta => {
     mounted: false,
   })
 }
+export let findBoundary = (node: Node): BoundaryHandle | undefined => {
+  let current: Node | null = node
+  while (current) {
+    let boundary = ensureMeta(current).boundary
+    if (boundary) return boundary
+    current = current.parentNode
+  }
+  return undefined
+}
+let reportJsxError = (
+  error: unknown,
+  phase: JsxErrorPhase,
+  name: string,
+  node?: Node,
+): Element | undefined => {
+  if (isAbort(error)) return undefined
+
+  jsxError({ error, phase, name, node })
+
+  let boundary = (node && findBoundary(node)) || jsxBoundary.current
+  if (boundary) {
+    boundary(error)
+  } else if (!(error instanceof Promise) && node) {
+    let ElementConstructor = node.ownerDocument?.defaultView?.Element
+    let host =
+      ElementConstructor && node instanceof ElementConstructor
+        ? node
+        : node.parentElement
+    host?.setAttribute('data-reatom-error', '')
+    return host ?? undefined
+  }
+  return undefined
+}
+let clearJsxError = (marked?: Element): undefined =>
+  void marked?.removeAttribute('data-reatom-error')
+
 let unlink = (node: Node, subscribe: () => () => void) => {
   let meta = ensureMeta(node)
   meta.subscribes.push(subscribe)
@@ -991,9 +1028,9 @@ export interface ErrorBoundaryProps {
 
 /**
  * Catches reactive render errors (and construction errors from lazy children)
- * inside its range. Boundary ownership follows the node's current DOM position,
- * so an element created elsewhere and later inserted under this boundary is
- * adopted automatically.
+ * inside its wrapper. Boundary ownership follows the node's current DOM
+ * ancestors, so an element inserted under this boundary is adopted
+ * automatically.
  *
  * Prefer lazy children `{() => <Child />}` so construction-time throws are
  * caught; eagerly created element children ran before this component.
@@ -1002,23 +1039,18 @@ export let ErrorBoundary = (props: ErrorBoundaryProps): JSX.Element => {
   let failure = atom<null | { error: unknown }>(null, 'jsx.ErrorBoundary')
   let retry = action(() => failure.set(null), 'jsx.ErrorBoundary.retry')
 
-  let handle: BoundaryHandle = {
-    start: undefined!,
-    end: undefined!,
-    catch(error: unknown) {
-      props.onError?.(error)
-      if (error instanceof Promise) {
-        // Ignore settles of a promise that is no longer the current failure.
-        error.then(
-          bind(() => failure()?.error === error && retry()),
-          bind(
-            (reason: unknown) =>
-              failure()?.error === error && handle.catch(reason),
-          ),
-        )
-      }
-      failure.set({ error })
-    },
+  let handle: BoundaryHandle = (error) => {
+    props.onError?.(error)
+    if (error instanceof Promise) {
+      // Ignore settles of a promise that is no longer the current failure.
+      error.then(
+        bind(() => failure()?.error === error && retry()),
+        bind(
+          (reason: unknown) => failure()?.error === error && handle(reason),
+        ),
+      )
+    }
+    failure.set({ error })
   }
 
   if (
@@ -1060,21 +1092,9 @@ export let ErrorBoundary = (props: ErrorBoundaryProps): JSX.Element => {
   }, 'jsx.ErrorBoundary.content')
 
   let dom = _read(DOM)?.state ?? peek(DOM)
-  let node = walkAtom(dom, content)
-  let fragment: LiveDocumentFragment
-  if (isLiveFragment(node)) {
-    fragment = node
-  } else {
-    // Boundary range needs comment markers; wrap Text (or other) fast-path nodes.
-    fragment = createLiveFragment(dom, 'jsx.ErrorBoundary')
-    fragment.__reatomFragment.end.before(node)
-  }
-  handle.start = fragment.__reatomFragment.start
-  handle.end = fragment.__reatomFragment.end
-  unlink(handle.start, () => {
-    boundaries.add(handle)
-    return () => boundaries.delete(handle)
-  })
-
-  return fragment as unknown as JSX.Element
+  let element = dom.document.createElement('span')
+  element.style.display = 'contents'
+  ensureMeta(element).boundary = handle
+  element.append(walkAtom(dom, content))
+  return element
 }
