@@ -185,8 +185,9 @@ let connectNode = (node: Node, symbol: symbol) => {
 }
 
 /**
- * Unmount refs parent-first, then unsubscribe in exact reverse registration
- * order. The latter lets shared core pubs use their `pub.subs.pop()` path.
+ * Unmount refs parent-first, then unsubscribe the batch in reverse DOM order.
+ * This mirrors normal parent-first registration so shared core pubs can use
+ * their `pub.subs.pop()` path.
  */
 let cleanupNodes = (nodes: Node[], symbol: symbol) => {
   let metaNodes: Node[] = []
