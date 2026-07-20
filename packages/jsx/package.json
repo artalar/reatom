@@ -1,7 +1,7 @@
 {
   "name": "@reatom/jsx",
   "type": "module",
-  "version": "1001.2.0",
+  "version": "1001.3.0",
   "sideEffects": false,
   "description": "Reatom for jsx",
   "exports": {

@@ -270,7 +270,7 @@ const moveLL = <Node extends LLNode>(
 const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
   const LL_PREV: LL_PREV = state.LL_PREV as any
   const LL_NEXT: LL_NEXT = state.LL_NEXT as any
-  let node = state.head
+  let node: null | LLNode = state.head
   state.head = null
   state.tail = null
   state.size = 0
@@ -935,13 +935,6 @@ export function reatomLinkedList<
   // }
 
   return linkedList.extend(
-    withChangeHook((_, prev) => {
-      if (prev) {
-        _enqueue(() => {
-          prev.changes = []
-        }, 'cleanup')
-      }
-    }),
     () => ({
       LL_PREV,
       LL_NEXT,
@@ -966,6 +959,13 @@ export function reatomLinkedList<
       // reatomReduce,
 
       __reatomLinkedList: true as const,
+    }),
+    withChangeHook((_, prev) => {
+      if (prev) {
+        _enqueue(() => {
+          prev.changes = []
+        }, 'cleanup')
+      }
     }),
     withFromJson((snapshot) => {
       if (!Array.isArray(snapshot)) {

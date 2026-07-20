@@ -1,3 +1,13 @@
+## 1001.3.0 (2026-07-21)
+
+[Changes since `v1001.2`](https://github.com/reatom/reatom/compare/1001.2.0...1001.3.0).
+
+### Core
+
+- feat(core): `log.label` for custom logger titles ([4745a6f](https://github.com/reatom/reatom/commit/4745a6f7d5a94508a1b7f26c225c5f1c05e68b9b))
+- feat(core,jsx): atom error subscription ([3c482b1](https://github.com/reatom/reatom/commit/3c482b13b11fe68bc2db775f0d887fce194eb239))
+- fix(core,jsx): jsfb patch + browser vitest keyed-list bench (#1321) ([7cf67f6](https://github.com/reatom/reatom/commit/7cf67f61183f3b8ea04619f212421599c0dc568d))
+
 ## 1001.2.0 (2026-07-19)
 
 [Changes since `v1001.1`](https://github.com/reatom/reatom/compare/1001.1.0...1001.2.0).

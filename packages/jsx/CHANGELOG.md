@@ -1,3 +1,17 @@
+## 1001.3.0 (2026-07-21)
+
+[Changes since `v1001.2`](https://github.com/reatom/reatom/compare/1001.2.0...1001.3.0).
+
+Requires `@reatom/core@1001.3`.
+
+### JSX
+
+- feat(core,jsx): `ErrorBoundary` and atom error subscription ([3c482b1](https://github.com/reatom/reatom/commit/3c482b13b11fe68bc2db775f0d887fce194eb239))
+- fix(jsx): untracked reads during element construction (linked-list render, `model:field`) (#1319) ([a717e02](https://github.com/reatom/reatom/commit/a717e029c9cfa416568577acf3e6407801957329))
+- fix(core,jsx): jsfb patch + browser vitest keyed-list bench (#1321) ([7cf67f6](https://github.com/reatom/reatom/commit/7cf67f61183f3b8ea04619f212421599c0dc568d))
+- fix(jsx): optimize error handling ([e032d65](https://github.com/reatom/reatom/commit/e032d653a267d779632a91a9108a67365cff29a9))
+- fix(jsx): support `log.label` ([f2a812a](https://github.com/reatom/reatom/commit/f2a812abcfe783693a5b3476a8ab262950d7abbb))
+
 ## 1001.2.0 (2026-07-19)
 
 [Changes since `v1001.1`](https://github.com/reatom/reatom/compare/1001.1.0...1001.2.0).
