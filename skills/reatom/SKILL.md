@@ -26,6 +26,7 @@ Use this map to open only the relevant parts of [REFERENCE.md](REFERENCE.md):
 | Async context after await / callbacks   | **wrap** rules                            |
 | Collections, boolean, route helpers     | Primitives quick usage                    |
 | Nested reactive fields                  | Atomization                               |
+| Logging, log.label, log.state            | Full SPA example (logging setup)          |
 | Hooks, connect/disconnect, lazy work    | Lifecycle and extension hooks             |
 | DOM / external events                   | Event sampling and orchestration          |
 | Hot derivations                         | Memoization: **memo** and **memoKey**     |

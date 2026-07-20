@@ -803,6 +803,14 @@ declare global {
 globalThis.LOG = log
 ```
 
+`log` forwards args to `console.log` when `connectLogger()` is active. Helpers:
+
+```ts
+LOG('debug', payload) // group title: "LOG"
+LOG.label('fetch payload', response) // group title: "fetch payload"
+LOG.state('user', data) // logs only when `data` changes for that name
+```
+
 Routes:
 
 ```ts

@@ -72,6 +72,25 @@ LOG.extend(
 )
 ```
 
+#### `log.label`
+
+Same as `log`, but the first argument is a required label used as the logger title instead of `"LOG"`:
+
+```ts
+LOG.label('fetch payload', response)
+// group title: "fetch payload"
+// console.log: response
+```
+
+#### `log.state`
+
+Logs a value only when it changes for the given name (`Object.is`). Always returns the value, so it can be used inline:
+
+```ts
+const data = LOG.state('user', useSomeData())
+// logs only when `data` changes between calls with the same name
+```
+
 ## Vite
 
 [`@reatom/vite`](/reference/vite) injects development HMR cleanup for `reatomRoute` / nested `.reatomRoute()` and for `@reatom/jsx` `mount()`:
