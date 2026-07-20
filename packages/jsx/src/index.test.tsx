@@ -103,18 +103,19 @@ test('children updates', () =>
     mount(parent(), element)
     await wrap(sleep())
 
-    expect(element.childNodes.length).toBe(7)
-    expect(element.childNodes[2]?.textContent).toBe('foo')
-    expect(element.childNodes[5]).toBe(a)
+    // Primitive string atom → single Text node (no live-fragment markers)
+    expect(element.childNodes.length).toBe(5)
+    expect(element.childNodes[1]?.textContent).toBe('foo')
+    expect(element.childNodes[3]).toBe(a)
 
     val.set('bar')
     await wrap(sleep())
-    expect(element.childNodes[2]?.textContent).toBe('bar')
+    expect(element.childNodes[1]?.textContent).toBe('bar')
 
-    expect(element.childNodes[5]).toBe(a)
+    expect(element.childNodes[3]).toBe(a)
     route.set('b')
     await wrap(sleep())
-    expect(element.childNodes[5]).toBe(b)
+    expect(element.childNodes[3]).toBe(b)
   }))
 
 test('dynamic children', () =>
@@ -155,6 +156,8 @@ test('dynamic children', () =>
 
 test('on: handler action name uses function name', () =>
   context.start(async () => {
+    // Action wrapping for named handlers only runs when DEBUG is enabled.
+    DEBUG.set(true)
     let namedActionName = ''
     let anonymousActionName = ''
     let frequentActionName = ''
@@ -190,10 +193,14 @@ test('on: handler action name uses function name', () =>
 
     element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
     expect(frequentActionName).toBe('Button.button._handlePanMove')
+
+    DEBUG.set(false)
   }))
 
 test('function child computed name uses component and element', () =>
   context.start(async () => {
+    // Atom key strings are only allocated when DEBUG is enabled.
+    DEBUG.set(true)
     let computedName = ''
 
     const InfoRow = ({ value }: { value: () => string }) => (
@@ -215,6 +222,7 @@ test('function child computed name uses component and element', () =>
     await wrap(sleep())
 
     expect(computedName).toBe('InfoRow.span._children')
+    DEBUG.set(false)
   }))
 
 test('spreads', () =>
@@ -285,13 +293,13 @@ test('multiple render shared element', () =>
     mount(parent(), app)
     await wrap(sleep())
     expect(stripJsxCompilerProps(app.innerHTML)).toBe(
-      '<!--child--><!----><div id="1"></div><div id="2"><p><!--value-->abc<!--value--></p></div><!----><!--child-->',
+      '<!--child--><!----><div id="1"></div><div id="2"><p>abc</p></div><!----><!--child-->',
     )
 
     valueAtom.set('def')
     await wrap(sleep())
     expect(stripJsxCompilerProps(app.innerHTML)).toBe(
-      '<!--child--><!----><div id="1"></div><div id="2"><p><!--value-->def<!--value--></p></div><!----><!--child-->',
+      '<!--child--><!----><div id="1"></div><div id="2"><p>def</p></div><!----><!--child-->',
     )
 
     childAtom.set(undefined)
@@ -304,7 +312,7 @@ test('multiple render shared element', () =>
     valueAtom.set('ghi')
     await wrap(sleep())
     expect(stripJsxCompilerProps(app.innerHTML)).toBe(
-      '<!--child--><!----><div id="1"></div><div id="2"><p><!--value-->ghi<!--value--></p></div><!----><!--child-->',
+      '<!--child--><!----><div id="1"></div><div id="2"><p>ghi</p></div><!----><!--child-->',
     )
   }))
 
@@ -1025,7 +1033,7 @@ test('dynamic atom fragment', () =>
     child.set(() => atom('child atom', 'test.child'))
     await wrap(sleep())
     expect(stripJsxCompilerProps(container.outerHTML)).toBe(
-      '<div><!--test--><!--test.child-->child atom<!--test.child--><!--test--></div>',
+      '<div><!--test-->child atom<!--test--></div>',
     )
   }))
 

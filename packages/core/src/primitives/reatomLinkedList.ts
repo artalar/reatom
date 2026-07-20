@@ -259,7 +259,19 @@ const moveLL = <Node extends LLNode>(
 }
 
 const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
-  while (state.tail) removeLL(state, state.tail)
+  const LL_PREV: LL_PREV = state.LL_PREV as any
+  const LL_NEXT: LL_NEXT = state.LL_NEXT as any
+  let node = state.head
+  state.head = null
+  state.tail = null
+  state.size = 0
+  // Null links so nodes can be safely re-inserted later without stale neighbors.
+  while (node) {
+    const next = node[LL_NEXT]
+    node[LL_PREV] = null
+    node[LL_NEXT] = null
+    node = next
+  }
 }
 
 export const toArray = <T extends Rec>(
@@ -517,20 +529,38 @@ export function reatomLinkedList<
     return state
   }
 
+  const releaseChangeNodeRefs = (
+    changes: LinkedList<LLNode<Node>>['changes'],
+  ) => {
+    for (let i = 0; i < changes.length; i++) {
+      let change = changes[i]!
+      // Stale frames from `_copy` keep the previous state object; large
+      // createMany/removeMany payloads would otherwise pin every node after
+      // clearLL has already nulled list links.
+      if (change.kind === 'createMany' || change.kind === 'removeMany') {
+        change.nodes = []
+      }
+    }
+  }
+
   const batchFn = <T>(cb: Fn): T => {
     if (STATE) return cb()
 
     let result: T
 
-    linkedList.set(({ head, tail, size, version, LL_PREV, LL_NEXT }) => {
+    linkedList.set((prev) => {
+      // Drop heavy payloads from the superseded state so orphaned frames
+      // cannot retain every created node after the next update/clear.
+      releaseChangeNodeRefs(prev.changes)
+
       STATE = {
-        LL_PREV,
-        LL_NEXT,
-        size,
-        version: version + 1,
+        LL_PREV: prev.LL_PREV,
+        LL_NEXT: prev.LL_NEXT,
+        size: prev.size,
+        version: prev.version + 1,
         changes: [],
-        head,
-        tail,
+        head: prev.head,
+        tail: prev.tail,
       }
 
       try {
@@ -737,7 +767,7 @@ export function reatomLinkedList<
         }
 
         for (let head = ll.head; head; head = head[LL_NEXT]) {
-          const node = peek(() => cb(head)) as LLNode<T>
+          const node = peek(cb, head) as LLNode<T>
           addLL(mapList, node, mapList.tail)
           mapList.map.set(head, node)
           hooks.onCreate?.(node)
@@ -759,7 +789,7 @@ export function reatomLinkedList<
         for (const change of ll.changes) {
           switch (change.kind) {
             case 'create': {
-              const node = cb(change.node) as LLNode<T>
+              const node = peek(cb, change.node) as LLNode<T>
               addLL(mapList, node, mapList.tail)
               mapList.map.set(change.node, node)
               mapList.changes.push({ kind: 'create', node })
@@ -769,7 +799,7 @@ export function reatomLinkedList<
             case 'createMany': {
               const nodes: Array<LLNode<T>> = []
               for (const originNode of change.nodes) {
-                const node = cb(originNode) as LLNode<T>
+                const node = peek(cb, originNode) as LLNode<T>
                 addLL(mapList, node, mapList.tail)
                 mapList.map.set(originNode, node)
                 nodes.push(node)
@@ -817,6 +847,10 @@ export function reatomLinkedList<
             case 'clear': {
               hooks.onClear?.(mapList)
               clearLL(mapList)
+              // Drop origin→mapped entries so cleared DOM/views aren't pinned
+              // by the derived list's WeakMap while origin nodes are still
+              // reachable through other short-lived paths.
+              mapList.map = new WeakMap()
               mapList.changes.push({ kind: 'clear' })
               break
             }

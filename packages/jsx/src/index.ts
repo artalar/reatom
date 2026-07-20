@@ -16,6 +16,7 @@ import {
   peek,
   ReatomError,
   type Rec,
+  top,
   type Unsubscribe,
 } from '@reatom/core'
 
@@ -39,7 +40,7 @@ import type {
   JSX,
   LinkedListJSXAtom,
 } from './jsx'
-import { reatomClassName } from './utils'
+import { parseClasses, reatomClassName } from './utils'
 
 declare type JSXElement = JSX.Element
 
@@ -75,6 +76,10 @@ export let DEBUG = atom(true, 'jsx.DEBUG')
 
 let jsxElementKey = (element: Node, key: string) =>
   `${jsxHName.current}.${element.nodeName.toLowerCase()}._${key}`
+
+/** Named keys only when DEBUG is on; `''` skips `defineProperty` in createAtom. */
+let jsxAtomKey = (element: Node, key: string) =>
+  peek(DEBUG) ? jsxElementKey(element, key) : ''
 
 /** Matches {@link isSkip} — actions with `._` in the name are omitted from logs. */
 let noisyDomEvents = new Set([
@@ -124,6 +129,166 @@ let unlink = (node: Node, subscribe: () => () => void) => {
   if (node.isConnected) meta.unsubscribes.push(subscribe())
 }
 
+/**
+ * Teardown is the LIFO mirror of mount, which subscribes in a forward pass
+ * (parents first) and runs mount hooks in a backward pass (children first). So
+ * unmount hooks run forward (parents first, while children are still alive —
+ * same contract as React) and unsubscribes run backward (last subscription
+ * first), letting the core `unlink` hit its `pub.subs.pop()` fast path instead
+ * of scanning and shifting the subscribers array — O(n) instead of O(n²) for a
+ * shared pub.
+ */
+let lifecycle = (phase: 'ref' | 'mount', node: Node, cb: () => void) => {
+  try {
+    cb()
+  } catch (error) {
+    reportJsxError(error, phase, node.nodeName.toLowerCase(), node)
+  }
+}
+
+// Element | Text | Comment — Text carries unlink meta for primitive atom children.
+let nodeFilter = 1 | 4 | 128
+
+let connectMetaSubscribes = (node: Node, meta: Meta) => {
+  let { subscribes, unsubscribes } = meta
+  for (let i = 0; i < subscribes.length; i++) {
+    let subscribe = subscribes[i]!
+    lifecycle('mount', node, () => unsubscribes.push(subscribe()))
+  }
+}
+
+let connectMetaMount = (node: Node, meta: Meta) => {
+  lifecycle('ref', node, () => {
+    let unmount = meta.mount?.(node)
+    if (typeof unmount === 'function') meta.unmount = unmount
+  })
+}
+
+/**
+ * Same contract as NodeIterator(Element|Text|Comment), without allocating an
+ * iterator per row — important for create1k/create10k (thousands of row
+ * roots).
+ */
+let connectElementTree = (root: Element, symbol: symbol) => {
+  let skipMount: undefined | WeakSet<Node>
+
+  let subscribeWalk = (node: Node) => {
+    let meta = (node as any)[symbol] as Meta | undefined
+    if (meta?.unsubscribes.length) {
+      ;(skipMount ??= new WeakSet()).add(node)
+    } else if (meta) {
+      connectMetaSubscribes(node, meta)
+    }
+    if (node.nodeType === 1) {
+      for (let child = node.firstChild; child; child = child.nextSibling) {
+        subscribeWalk(child)
+      }
+    }
+  }
+
+  let mountWalk = (node: Node) => {
+    if (node.nodeType === 1) {
+      let child = node.lastChild
+      while (child) {
+        let prev = child.previousSibling
+        mountWalk(child)
+        child = prev
+      }
+    }
+    if (skipMount?.has(node)) return
+    let meta = (node as any)[symbol] as Meta | undefined
+    if (meta) connectMetaMount(node, meta)
+  }
+
+  subscribeWalk(root)
+  mountWalk(root)
+}
+
+/**
+ * Teardown mirror of {@link connectElementTree}: unmount hooks forward
+ * (parents first), then unsubscribes backward (children first / LIFO). Must
+ * visit Text nodes — primitive atom children store unlink meta there.
+ */
+let cleanupElementTree = (root: Element, symbol: symbol) => {
+  let unmountWalk = (node: Node) => {
+    let meta = (node as any)[symbol] as Meta | undefined
+    if (meta?.unmount) {
+      lifecycle('ref', node, () => meta.unmount!(node))
+      meta.unmount = undefined
+    }
+    if (node.nodeType === 1) {
+      for (let child = node.firstChild; child; child = child.nextSibling) {
+        unmountWalk(child)
+      }
+    }
+  }
+
+  let unsubscribeWalk = (node: Node) => {
+    if (node.nodeType === 1) {
+      let child = node.lastChild
+      while (child) {
+        let prev = child.previousSibling
+        unsubscribeWalk(child)
+        child = prev
+      }
+    }
+    let meta = (node as any)[symbol] as Meta | undefined
+    if (meta) {
+      for (let i = meta.unsubscribes.length - 1; i >= 0; i--) {
+        lifecycle('mount', node, meta.unsubscribes[i]!)
+      }
+      meta.unsubscribes = []
+      // Drop reconnect thunks — cleanup only runs for truly detached nodes
+      // (moves skip teardown). Clears closures that would otherwise pin
+      // render-time captures through `meta.subscribes`.
+      meta.subscribes = []
+    }
+  }
+
+  unmountWalk(root)
+  unsubscribeWalk(root)
+}
+
+/**
+ * Run subscribe + ref hooks that MutationObserver would run for a newly
+ * inserted subtree. Safe to call when the node is already live: nodes with
+ * `unsubscribes.length > 0` are skipped (moves / eager reconnect).
+ */
+let connectNode = (dom: DomApis, node: Node) => {
+  let symbol = metaSymbol()
+  // Element roots: manual tree walk (bench rows). Other roots keep iterator.
+  if (node.nodeType === 1) {
+    connectElementTree(node as Element, symbol)
+    return
+  }
+  let iterator = dom.document.createNodeIterator(node, nodeFilter)
+  let skipMount: undefined | WeakSet<Node>
+  while (iterator.nextNode()) {
+    let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
+    // Already live from before a move (e.g. child of a non-meta parent).
+    if (meta?.unsubscribes.length) {
+      ;(skipMount ??= new WeakSet()).add(iterator.referenceNode)
+      continue
+    }
+    if (meta) connectMetaSubscribes(iterator.referenceNode, meta)
+  }
+  while (iterator.previousNode()) {
+    if (skipMount?.has(iterator.referenceNode)) continue
+    let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
+    if (meta) connectMetaMount(iterator.referenceNode, meta)
+  }
+}
+
+/** Connect each top-level node in an inclusive sibling range (after append). */
+let connectRange = (dom: DomApis, first: Node, last: Node) => {
+  let node: Node | null = first
+  while (node) {
+    connectNode(dom, node)
+    if (node === last) break
+    node = node.nextSibling
+  }
+}
+
 let isSkipped = (value: unknown): value is boolean | '' | null | undefined =>
   typeof value === 'boolean' || value === '' || value == null
 
@@ -147,20 +312,71 @@ let walk = (
     walk(
       dom,
       element,
-      computed(children as () => any, jsxElementKey(element, 'children')),
+      computed(children as () => any, jsxAtomKey(element, 'children')),
     )
   } else if (!isSkipped(children)) {
     element.append(children as Node | string)
   }
 }
 
-let walkAtom = (
+/** Non-skipped string/number/bigint — safe for a single Text node (no markers). */
+let isPrimitiveText = (value: unknown): value is string | number | bigint =>
+  (typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'bigint') &&
+  !isSkipped(value)
+
+let walkAtom = (dom: DomApis, anAtom: AtomLike<JSX.ElementChildren>): Node => {
+  let state: JSX.ElementChildren
+  try {
+    state = peek(anAtom)
+  } catch (error) {
+    return walkAtomFragment(dom, anAtom, undefined, error)
+  }
+
+  /**
+   * Fast path for label-like atoms: one Text node instead of a live fragment
+   * with comment markers. Only when the _initial_ value is a non-skipped
+   * primitive — skipped values (boolean / '' / null / undefined) and complex
+   * children keep the fragment path for correct empty/marker semantics.
+   */
+  if (isPrimitiveText(state)) {
+    let textNode = dom.document.createTextNode(String(state))
+    let marked: Element | undefined
+    let onError = (error: unknown) => {
+      marked = reportJsxError(error, 'children', anAtom.name, textNode)
+    }
+
+    unlink(textNode, () =>
+      anAtom.subscribe((newState) => {
+        marked = clearJsxError(marked)
+        if (Object.is(state, (state = newState))) return
+        if (
+          typeof newState === 'string' ||
+          typeof newState === 'number' ||
+          typeof newState === 'bigint'
+        ) {
+          textNode.data = String(newState)
+        } else if (isSkipped(newState)) {
+          textNode.data = ''
+        }
+      }, onError),
+    )
+
+    return textNode
+  }
+
+  return walkAtomFragment(dom, anAtom, state)
+}
+
+let walkAtomFragment = (
   dom: DomApis,
   anAtom: AtomLike<JSX.ElementChildren>,
+  state?: JSX.ElementChildren,
+  peekError?: unknown,
 ): LiveDocumentFragment => {
   let fragment = createLiveFragment(dom, anAtom.name)
   let { start, end, update } = fragment.__reatomFragment
-  let state: JSX.ElementChildren
   let marked: Element | undefined
 
   let onError = (error: unknown) => {
@@ -176,13 +392,17 @@ let walkAtom = (
    * that throw (suspense Promise, abort, errors) leave the fragment empty; the
    * error is reported and a boundary may render a fallback.
    */
-  try {
-    state = peek(anAtom)
-    let initialContent = dom.document.createDocumentFragment()
-    walk(dom, initialContent, state)
-    end.before(initialContent)
-  } catch (error) {
-    onError(error)
+  if (peekError !== undefined) {
+    onError(peekError)
+  } else {
+    try {
+      if (state === undefined) state = peek(anAtom)
+      let initialContent = dom.document.createDocumentFragment()
+      walk(dom, initialContent, state)
+      end.before(initialContent)
+    } catch (error) {
+      onError(error)
+    }
   }
 
   /**
@@ -208,6 +428,15 @@ let walkLinkedList = (
 ) => {
   let lastVersion = -1
 
+  let flushAppend = (batch: DocumentFragment) => {
+    let first = batch.firstChild
+    let last = batch.lastChild
+    element.append(batch)
+    // Eagerly subscribe while the parent is live so create rows don't wait
+    // for MutationObserver; processMutations skips already-connected roots.
+    if (element.isConnected && first && last) connectRange(dom, first, last)
+  }
+
   let cb = (state: LinkedList<LLNode<JSX.Element>>) => {
     if (state.version - 1 > lastVersion) {
       element.innerHTML = ''
@@ -216,7 +445,7 @@ let walkLinkedList = (
         throwNativeFragment(head)
         rebuildBatch.append(head)
       }
-      element.append(rebuildBatch)
+      flushAppend(rebuildBatch)
     } else {
       let appendBatch: undefined | DocumentFragment
       for (let change of state.changes) {
@@ -233,8 +462,12 @@ let walkLinkedList = (
             throwNativeFragment(node)
             appendBatch.append(node)
           }
+          // Drop refs from the change record once applied. Stale atom frames
+          // (pre-`_copy`) can otherwise pin the entire createMany payload even
+          // after `clearLL` nulls list links.
+          change.nodes = []
         } else if (appendBatch) {
-          element.append(appendBatch)
+          flushAppend(appendBatch)
           appendBatch = undefined
         }
 
@@ -258,6 +491,7 @@ let walkLinkedList = (
               element.removeChild(node)
             }
           }
+          change.nodes = []
         }
         // TODO support fragments
         else if (change.kind === 'swap') {
@@ -286,7 +520,7 @@ let walkLinkedList = (
         }
       }
 
-      if (appendBatch) element.append(appendBatch)
+      if (appendBatch) flushAppend(appendBatch)
     }
     lastVersion = state.version
   }
@@ -311,10 +545,11 @@ let isLiveFragment = (node: Node): node is LiveDocumentFragment =>
   !!node && '__reatomFragment' in node
 
 let throwNativeFragment = (element: JSX.Element) => {
+  // Elements (nodeType 1) are never native fragments — skip assert in createMany.
+  if (element.nodeType === 1) return
   assert(
-    // TODO improve perf
-    String(element) !== '[object DocumentFragment]' ||
-      '__reatomFragment' in element,
+    // DocumentFragment.nodeType === 11; avoid String(element) allocation
+    element.nodeType !== 11 || '__reatomFragment' in element,
     'native fragment is not supported',
     ReatomError,
   )
@@ -498,7 +733,7 @@ let bindSpread = (dom: DomApis, element: JSX.Element, value: any) => {
   unlink(element, () => {
     let source = isAtom(value)
       ? value
-      : computed(value, jsxElementKey(element, '$spread'))
+      : computed(value, jsxAtomKey(element, '$spread'))
     let unsubscribe = source.subscribe(spread, (error) => {
       marked = reportJsxError(
         error,
@@ -530,22 +765,28 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   /** @todo Show warning if isAtom(value) && !isAction(value). */
   if (key.startsWith('on:')) {
     key = key.slice(3)
-    let actionName = eventActionName(element, key, value)
+    let debug = peek(DEBUG)
+    let actionName = debug ? eventActionName(element, key, value) : key
     let onEventError = (error: unknown) =>
       reportJsxError(error, 'event', actionName, element)
-    let listener = bind(
-      // only for logging purposes
-      action((event: Event) => {
-        try {
-          let result = (value as (event: Event) => unknown)(event)
-          ;(result as PromiseLike<unknown>)?.then?.(undefined, onEventError)
-          return result
-        } catch (error) {
-          onEventError(error)
-          throw error
-        }
-      }, actionName),
-    )
+    let run = (event: Event) => {
+      try {
+        let result = (value as (event: Event) => unknown)(event)
+        ;(result as PromiseLike<unknown>)?.then?.(undefined, onEventError)
+        return result
+      } catch (error) {
+        onEventError(error)
+        throw error
+      }
+    }
+    // Bind to the root frame — not `top()`. Row render often runs inside
+    // `reatomMap`'s computed; capturing that frame would pin its pre-`_copy`
+    // state (createMany `nodes` / head→tail) for as long as the listener
+    // lives, which is the 25_run-clear-memory leak.
+    let rootFrame = top().root.frame
+    let listener = debug
+      ? bind(action(run, actionName), rootFrame)
+      : bind(run, rootFrame)
     /**
      * The immediate registration keeps listeners working before the first
      * mount; re-adding an identical listener on (re)connect is a no-op per the
@@ -579,9 +820,33 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   }
 
   if (key === 'class' || key === 'className') {
-    if (typeof value === 'object' || typeof value === 'function') {
+    if (isAtom(value) && !isAction(value)) {
       unlink(element, () =>
-        reatomClassName(value).subscribe(setter, onPropError),
+        value.subscribe((v) => {
+          setter(v == null || typeof v === 'boolean' ? '' : v)
+        }, onPropError),
+      )
+    } else if (typeof value === 'function') {
+      // Lightweight path: avoid `named('classNameAtom')` + full parse for
+      // string/null/boolean results; only parse arrays/objects.
+      unlink(element, () =>
+        computed(
+          () => {
+            let v = value()
+            while (typeof v === 'function') v = v()
+            if (typeof v === 'string') return v
+            if (v == null || typeof v === 'boolean') return ''
+            return parseClasses(v)
+          },
+          jsxAtomKey(element, key),
+        ).subscribe(setter, onPropError),
+      )
+    } else if (typeof value === 'object' && value !== null) {
+      unlink(element, () =>
+        reatomClassName(value, jsxAtomKey(element, key)).subscribe(
+          setter,
+          onPropError,
+        ),
       )
     } else {
       setter(value)
@@ -608,10 +873,7 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
     unlink(element, () => value.subscribe(setter, onPropError))
   } else if (typeof value === 'function') {
     unlink(element, () =>
-      computed(value, jsxElementKey(element, key)).subscribe(
-        setter,
-        onPropError,
-      ),
+      computed(value, jsxAtomKey(element, key)).subscribe(setter, onPropError),
     )
   } else {
     setter(value)
@@ -768,25 +1030,15 @@ export let mount = (
   let dom = DOM()
   let symbol = metaSymbol()
 
-  /**
-   * Teardown is the LIFO mirror of mount, which subscribes in a forward pass
-   * (parents first) and runs mount hooks in a backward pass (children first).
-   * So unmount hooks run forward (parents first, while children are still alive
-   * — same contract as React) and unsubscribes run backward (last subscription
-   * first), letting the core `unlink` hit its `pub.subs.pop()` fast path
-   * instead of scanning and shifting the subscribers array — O(n) instead of
-   * O(n²) for a shared pub.
-   */
-  let lifecycle = (phase: 'ref' | 'mount', node: Node, cb: () => void) => {
-    try {
-      cb()
-    } catch (error) {
-      reportJsxError(error, phase, node.nodeName.toLowerCase(), node)
-    }
-  }
-
   let cleanupNode = (node: Node) => {
-    let iterator = dom.document.createNodeIterator(node, 1 | 128)
+    // Element roots: manual walk visits Text (primitive atom children).
+    // Iterator whatToShow must stay Element|Text|Comment (1|4|128) — omitting
+    // Text (4) leaves label-atom subscriptions alive after clear/remove.
+    if (node.nodeType === 1) {
+      cleanupElementTree(node as Element, symbol)
+      return
+    }
+    let iterator = dom.document.createNodeIterator(node, nodeFilter)
     while (iterator.nextNode()) {
       let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
       if (meta?.unmount) {
@@ -803,37 +1055,38 @@ export let mount = (
           lifecycle('mount', iterator.referenceNode, meta.unsubscribes[i]!)
         }
         meta.unsubscribes = []
+        meta.subscribes = []
       }
     }
   }
 
   /**
-   * @note The moved node creates two mutations: deletion then addition.
-   * @todo Moving an node in the DOM unsubscribes and resubscribes to atoms.
+   * @note A DOM move (insertBefore/append of an already-attached node) creates
+   * two mutations: deletion then addition. After records are delivered the node
+   * is already `isConnected`, so we skip teardown/resubscribe and keep atom
+   * subscriptions alive (critical for linked-list swap/move).
    */
   let processMutations = (mutationsList: MutationRecord[]) => {
+    // Roots reported as removed-but-still-connected were moved within the
+    // observed tree. Track them so the matching add skips remount (including
+    // ref-only nodes that have no atom unsubscribes to detect).
+    let moved: undefined | WeakSet<Node>
+    for (let mutation of mutationsList) {
+      mutation.removedNodes.forEach((removedNode) => {
+        if (removedNode.isConnected) {
+          ;(moved ??= new WeakSet()).add(removedNode)
+          return
+        }
+        cleanupNode(removedNode)
+      })
+    }
     for (let mutation of mutationsList) {
       mutation.addedNodes.forEach((addedNode) => {
-        let iterator = dom.document.createNodeIterator(addedNode, 1 | 128)
-        while (iterator.nextNode()) {
-          let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
-          meta?.subscribes.forEach((subscribe) =>
-            lifecycle('mount', iterator.referenceNode, () =>
-              meta.unsubscribes.push(subscribe()),
-            ),
-          )
-        }
-        while (iterator.previousNode()) {
-          let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
-          if (meta) {
-            lifecycle('ref', iterator.referenceNode, () => {
-              let unmount = meta.mount?.(iterator.referenceNode)
-              if (typeof unmount === 'function') meta.unmount = unmount
-            })
-          }
-        }
+        if (moved?.has(addedNode)) return
+        // connectNode skips nodes that already have unsubscribes (eager
+        // walkLinkedList connect, or children of a moved non-meta parent).
+        connectNode(dom, addedNode)
       })
-      mutation.removedNodes.forEach((removedNode) => cleanupNode(removedNode))
     }
   }
   let observer = new dom.MutationObserver(bind(processMutations))
@@ -951,7 +1204,16 @@ export let ErrorBoundary = (props: ErrorBoundaryProps): JSX.Element => {
       : props.fallback(current.error, retry)
   }, 'jsx.ErrorBoundary.content')
 
-  let fragment = walkAtom(_read(DOM)?.state ?? peek(DOM), content)
+  let dom = _read(DOM)?.state ?? peek(DOM)
+  let node = walkAtom(dom, content)
+  let fragment: LiveDocumentFragment
+  if (isLiveFragment(node)) {
+    fragment = node
+  } else {
+    // Boundary range needs comment markers; wrap Text (or other) fast-path nodes.
+    fragment = createLiveFragment(dom, 'jsx.ErrorBoundary')
+    fragment.__reatomFragment.end.before(node)
+  }
   handle.start = fragment.__reatomFragment.start
   handle.end = fragment.__reatomFragment.end
   unlink(handle.start, () => {
