@@ -205,9 +205,9 @@ let connectElementTree = (root: Element, symbol: symbol) => {
 }
 
 /**
- * Teardown mirror of {@link connectElementTree}: unmount hooks forward
- * (parents first), then unsubscribes backward (children first / LIFO). Must
- * visit Text nodes — primitive atom children store unlink meta there.
+ * Teardown mirror of {@link connectElementTree}: unmount hooks forward (parents
+ * first), then unsubscribes backward (children first / LIFO). Must visit Text
+ * nodes — primitive atom children store unlink meta there.
  */
 let cleanupElementTree = (root: Element, symbol: symbol) => {
   let unmountWalk = (node: Node) => {
