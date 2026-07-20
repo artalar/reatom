@@ -40,7 +40,7 @@ import type {
   JSX,
   LinkedListJSXAtom,
 } from './jsx'
-import { parseClasses, reatomClassName } from './utils'
+import { reatomClassName } from './utils'
 
 declare type JSXElement = JSX.Element
 
@@ -764,33 +764,9 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   }
 
   if (key === 'class' || key === 'className') {
-    if (isAtom(value) && !isAction(value)) {
+    if (typeof value === 'object' || typeof value === 'function') {
       unlink(element, () =>
-        value.subscribe((v) => {
-          setter(v == null || typeof v === 'boolean' ? '' : v)
-        }, onPropError),
-      )
-    } else if (typeof value === 'function') {
-      // Lightweight path: avoid `named('classNameAtom')` + full parse for
-      // string/null/boolean results; only parse arrays/objects.
-      unlink(element, () =>
-        computed(
-          () => {
-            let v = value()
-            while (typeof v === 'function') v = v()
-            if (typeof v === 'string') return v
-            if (v == null || typeof v === 'boolean') return ''
-            return parseClasses(v)
-          },
-          jsxAtomKey(element, key),
-        ).subscribe(setter, onPropError),
-      )
-    } else if (typeof value === 'object' && value !== null) {
-      unlink(element, () =>
-        reatomClassName(value, jsxAtomKey(element, key)).subscribe(
-          setter,
-          onPropError,
-        ),
+        reatomClassName(value).subscribe(setter, onPropError),
       )
     } else {
       setter(value)
