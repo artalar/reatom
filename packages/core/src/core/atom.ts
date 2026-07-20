@@ -607,52 +607,38 @@ function link(frame: Frame) {
   }
 }
 
-/** `Frame['subs']` with the last removal index memo (see {@link _removeSub}). */
-interface Subs extends Array<AtomLike | Fn> {
-  /** @internal */
-  _hint?: number
-}
-
-/**
- * Removes one occurrence of `sub` from `pub.subs` and reports whether it was
- * found. The last slot is probed first: `relink` unlinks a kept dep right after
- * `link` pushed its duplicate there, and LIFO teardown lands there too. Other
- * positions are searched from the previous removal index (wrapping to a full
- * scan on miss), so a batch teardown finds each next subscriber in a couple of
- * probes whatever its order — O(n) for a shared pub instead of the O(n²) a
- * plain `lastIndexOf` degrades to. The hole is filled with the last element:
- * `subs` order is not semantic, it only shapes delivery order within one notify
- * batch.
- */
-function _removeSub(pub: Frame, sub: AtomLike | Fn): boolean {
-  let subs = pub.subs as Subs
-  let last = subs.length - 1
-  let idx = last
-  if (last < 0) return false
-  if (subs[last] !== sub) {
-    idx = subs.indexOf(sub, Math.min(subs._hint ?? 0, last))
-    if (idx === -1) idx = subs.indexOf(sub)
-    if (idx === -1) return false
-    subs._hint = idx
-    subs[idx] = subs[last]!
-  }
-  subs.pop()
-  return true
-}
-
+// The algorithm might look sub-optimal and have extra "complexity",
+// but in the real data, it is in the best case quite often (pub.subs.pop()).
+// For example, as we run `link` before `unlink` during deps invalidation,
+// for deps duplication we want to find just added dep.
 function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
-  // Walk old pubs backwards to revert the link sequence: `relink` links
-  // first, so a kept dep's duplicate sits at the end of `pub.subs`.
+  // Start from the end to try to revet the link sequence with just "pop" complexity.
   // Do not unlink the zero pub, as it is just an actualization flag.
   for (let i = oldPubs.length - 1; i > 0; i--) {
     let pub = oldPubs[i]!
 
-    // `_removeSub` misses when the pub was dirty
-    if (_removeSub(pub, sub) && pub.subs.length === 0) {
-      if (pub.atom.__reatom.onConnect !== undefined) {
-        _enqueue(pub.atom.__reatom.onConnect.abort, 'effect')
+    let idx = pub.subs.lastIndexOf(sub)
+
+    // looks like the pub was dirty
+    if (idx === -1) continue
+
+    if (idx === pub.subs.length - 1) {
+      pub.subs.pop()
+      if (pub.subs.length === 0) {
+        if (pub.atom.__reatom.onConnect !== undefined) {
+          _enqueue(pub.atom.__reatom.onConnect.abort, 'effect')
+        }
+        unlink(pub.atom, pub.pubs)
       }
-      unlink(pub.atom, pub.pubs)
+    } else {
+      // Search the suitable element (not effect) from the end to reduce the shift (`splice`) complexity.
+      let shiftIdx = pub.subs.findLastIndex((el) => el !== sub)
+
+      if (shiftIdx === -1) {
+        shiftIdx = idx
+      }
+      pub.subs[idx] = pub.subs[shiftIdx]!
+      pub.subs.splice(shiftIdx, 1)
     }
   }
 }
@@ -787,7 +773,11 @@ function subscribe(this: AtomLike, userCb?: Fn, errorCb?: Fn) {
   }
 
   return bind(() => {
-    if (!_removeSub(frame, listener)) return
+    let idx = frame.subs.lastIndexOf(listener)
+
+    if (idx === -1) return
+
+    frame.subs.splice(idx, 1)
 
     if (frame.subs.length === 0) {
       if (frame.atom.__reatom.onConnect !== undefined) {

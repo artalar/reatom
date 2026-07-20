@@ -25,7 +25,6 @@
     "size": "size-limit --config .size-limit.json",
     "deopt": "dexnode deopt.js",
     "bench_dynamic": "tsx bench/bench_dynamic.ts",
-    "bench_unlink": "tsx bench/bench_unlink_order.ts",
     "bench_computed": "tsx bench/bench_computed.ts",
     "bench_computed:mem": "node --expose-gc --import=tsx bench/bench_computed.ts",
     "bench_profile": "tsx bench/bench_profile.ts"
