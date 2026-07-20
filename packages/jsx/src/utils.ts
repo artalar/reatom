@@ -9,7 +9,7 @@ export let reatomClassName = (
   name: string = named('classNameAtom'),
 ): Computed<string> => computed(() => parseClasses(value), name)
 
-let parseClasses = (value: JSX.ClassNameValue): string => {
+export let parseClasses = (value: JSX.ClassNameValue): string => {
   let className = ''
   value = resolveGetter(value)
   if (typeof value === 'string') className = value

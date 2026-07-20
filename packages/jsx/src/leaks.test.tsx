@@ -4,6 +4,7 @@ import {
   context,
   type Fn,
   isConnected,
+  reatomLinkedList,
   sleep,
   withInit,
   wrap,
@@ -101,4 +102,150 @@ test('atom child update after detach does not leak replaced content subscription
 
     expect(isConnected(outer)).toBe(false)
     expect(isConnected(innerValue)).toBe(false)
+  }))
+
+test('TEXT atom child disconnects when parent element removed', () =>
+  context.start(async () => {
+    const label = atom('hello', 'label')
+    const row = (
+      <tr>
+        <td>
+          <a>{label}</a>
+        </td>
+      </tr>
+    )
+
+    const container = <tbody>{row}</tbody>
+    mount(createContainer(), container)
+    await wrap(sleep())
+
+    expect(isConnected(label)).toBe(true)
+    const a = container.querySelector('a')!
+    expect(a.firstChild?.nodeType).toBe(3)
+
+    row.remove()
+    await wrap(sleep())
+
+    expect(isConnected(label)).toBe(false)
+  }))
+
+test('TEXT atom child disconnects on linked-list clear', () =>
+  context.start(async () => {
+    const list = reatomLinkedList(
+      (id: number, label: string) => ({
+        id,
+        label: atom(label, ''),
+      }),
+      'list',
+    )
+    const jsxList = list.reatomMap(
+      (row) => (
+        <tr>
+          <td>{row.label}</td>
+        </tr>
+      ),
+      'views',
+    )
+
+    const container = <tbody>{jsxList}</tbody>
+    mount(createContainer(), container)
+    await wrap(sleep())
+
+    const nodes = list.createMany([
+      [1, 'a'],
+      [2, 'b'],
+      [3, 'c'],
+    ])
+    await wrap(sleep())
+
+    for (const n of nodes) {
+      expect(isConnected(n.label)).toBe(true)
+    }
+    expect(container.querySelectorAll('tr').length).toBe(3)
+    const td = container.querySelector('td')!
+    expect(td.childNodes.length).toBe(1)
+    expect(td.firstChild?.nodeType).toBe(3)
+
+    list.clear()
+    await wrap(sleep())
+    await wrap(sleep())
+
+    expect(container.querySelectorAll('tr').length).toBe(0)
+    for (const n of nodes) {
+      expect(isConnected(n.label)).toBe(false)
+    }
+  }))
+
+test('ref mount hook runs once for linked-list rows', () =>
+  context.start(async () => {
+    const refSpy = vi.fn()
+    const list = reatomLinkedList((id: number) => ({ id }), 'list')
+    const views = list.reatomMap(
+      (node) => (
+        <tr>
+          <td ref={refSpy}>{node.id}</td>
+        </tr>
+      ),
+      'views',
+    )
+
+    const container = <tbody>{views}</tbody>
+    mount(createContainer(), container)
+    await wrap(sleep())
+
+    list.create(1)
+    await wrap(sleep())
+    await wrap(sleep())
+
+    expect(refSpy).toHaveBeenCalledTimes(1)
+  }))
+
+test('linked-list clear drops element meta.subscribes (no render-frame pin)', () =>
+  context.start(async () => {
+    const list = reatomLinkedList(
+      (id: number, label: string) => ({
+        id,
+        label: atom(label, ''),
+        selected: atom(false, ''),
+      }),
+      'list',
+    )
+    const jsxList = list.reatomMap(
+      (row) => (
+        <tr class={() => (row.selected() ? 'danger' : undefined)}>
+          <td>
+            <a on:click={() => row.selected.set(true)}>{row.label}</a>
+          </td>
+        </tr>
+      ),
+      'views',
+    )
+
+    const container = <tbody>{jsxList}</tbody>
+    mount(createContainer(), container)
+    await wrap(sleep())
+
+    list.createMany([
+      [1, 'a'],
+      [2, 'b'],
+    ])
+    await wrap(sleep())
+
+    const row = container.querySelector('tr') as any
+    expect(row).toBeTruthy()
+    const metaKey = Object.getOwnPropertySymbols(row).find((s) => {
+      const m = row[s]
+      return m && Array.isArray(m.subscribes) && Array.isArray(m.unsubscribes)
+    })!
+    expect(row[metaKey].subscribes.length).toBeGreaterThan(0)
+    expect(row[metaKey].unsubscribes.length).toBeGreaterThan(0)
+
+    list.clear()
+    await wrap(sleep())
+    await wrap(sleep())
+
+    // Teardown must clear both live unsubscribes and reconnect thunks so
+    // bind()/render closures cannot pin a reatomMap frame state after clear.
+    expect(row[metaKey].unsubscribes).toEqual([])
+    expect(row[metaKey].subscribes).toEqual([])
   }))

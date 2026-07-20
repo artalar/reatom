@@ -1276,11 +1276,12 @@ export let createAtom: {
     },
   )
 
-  // TODO configure
-  Object.defineProperty(target, 'name', {
-    value: name,
-    configurable: true,
-  })
+  if (name) {
+    Object.defineProperty(target, 'name', {
+      value: name,
+      configurable: true,
+    })
+  }
 
   if (setup.middlewares) {
     // @ts-expect-error
