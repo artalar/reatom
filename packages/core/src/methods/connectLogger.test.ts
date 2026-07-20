@@ -178,9 +178,7 @@ test('log.label uses the label as the logger title', () => {
     false,
   )
   expect(
-    (consoleSpy.mock.calls as unknown[][]).some(
-      (call) => call[0] === payload,
-    ),
+    (consoleSpy.mock.calls as unknown[][]).some((call) => call[0] === payload),
   ).toBe(true)
 
   vi.restoreAllMocks()

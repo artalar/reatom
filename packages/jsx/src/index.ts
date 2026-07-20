@@ -21,11 +21,7 @@ import {
   type Unsubscribe,
 } from '@reatom/core'
 
-import {
-  jsxError,
-  type JsxErrorPayload,
-  type JsxErrorPhase,
-} from './error'
+import { jsxError, type JsxErrorPayload, type JsxErrorPhase } from './error'
 import {
   booleanAttributes,
   type BoundaryHandle,
@@ -1045,9 +1041,7 @@ export let ErrorBoundary = (props: ErrorBoundaryProps): JSX.Element => {
       // Ignore settles of a promise that is no longer the current failure.
       error.then(
         bind(() => failure()?.error === error && retry()),
-        bind(
-          (reason: unknown) => failure()?.error === error && handle(reason),
-        ),
+        bind((reason: unknown) => failure()?.error === error && handle(reason)),
       )
     }
     failure.set({ error })
