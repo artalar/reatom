@@ -4,16 +4,17 @@ All kernel / cross-library benches live in this folder. Run from
 `packages/core` via the `package.json` scripts, or directly with `tsx` /
 `node --import=tsx`.
 
-| Script                          | File                  | Purpose                                      |
-| ------------------------------- | --------------------- | -------------------------------------------- |
-| `pnpm run bench_compare`        | `bench_compare.ts`    | Reatom-only A/B scenarios (kernel hot paths) |
-| `pnpm run bench_compare:mem`    | same + `--expose-gc`  | + heap-per-batch                             |
-| `pnpm run bench_dynamic_ab`     | `bench_dynamic_ab.ts` | Reatom-only dynamic dependency lists         |
-| `pnpm run bench_dynamic_ab:mem` | same + `--expose-gc`  | + heap                                       |
-| `pnpm run bench_profile`        | `bench_profile.ts`    | Diamond hot loop for CPU profiling           |
-| `pnpm run bench_computed`       | `bench_computed.ts`   | Cross-library deep-computed comparison       |
-| `pnpm run bench_computed:mem`   | same + `--expose-gc`  | + GC-aware run                               |
-| `pnpm run bench_dynamic`        | `bench_dynamic.ts`    | Cross-library dynamic dependency comparison  |
+| Script                          | File                    | Purpose                                       |
+| ------------------------------- | ----------------------- | --------------------------------------------- |
+| `pnpm run bench_compare`        | `bench_compare.ts`      | Reatom-only A/B scenarios (kernel hot paths)  |
+| `pnpm run bench_compare:mem`    | same + `--expose-gc`    | + heap-per-batch                              |
+| `pnpm run bench_dynamic_ab`     | `bench_dynamic_ab.ts`   | Reatom-only dynamic dependency lists          |
+| `pnpm run bench_dynamic_ab:mem` | same + `--expose-gc`    | + heap                                        |
+| `pnpm run bench_profile`        | `bench_profile.ts`      | Diamond hot loop for CPU profiling            |
+| `pnpm run bench_computed`       | `bench_computed.ts`     | Cross-library deep-computed comparison        |
+| `pnpm run bench_computed:mem`   | same + `--expose-gc`    | + GC-aware run                                |
+| `pnpm run bench_dynamic`        | `bench_dynamic.ts`      | Cross-library dynamic dependency comparison   |
+| `pnpm run bench_unlink`         | `bench_unlink_order.ts` | Shared-pub teardown in LIFO/FIFO/random order |
 
 Env filters shared by the A/B harnesses:
 

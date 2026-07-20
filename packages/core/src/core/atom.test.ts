@@ -186,6 +186,50 @@ test('update propagation for atom with listener', () => {
   expect(_read(a2)!.subs.length).toBe(2)
 })
 
+test('out-of-order teardown of a shared pub', () => {
+  const name = 'outOfOrderTeardown'
+  const shared = atom(0, `${name}.shared`)
+
+  // Graph unlink: many computed dependents removed in registration (FIFO),
+  // random, and reverse order — order must not affect correctness.
+  const computeds = Array.from({ length: 16 }, (_, i) =>
+    computed(() => shared() + i, `${name}.c${i}`),
+  )
+  const unsubs = computeds.map((c) => c.subscribe())
+  expect(_read(shared)!.subs.length).toBe(16)
+
+  const order = [0, 3, 1, 15, 7, 2, 4, 5, 6, 8, 14, 9, 13, 10, 12, 11]
+  for (const [n, i] of order.entries()) {
+    unsubs[i]!()
+    expect(_read(shared)!.subs.length).toBe(16 - n - 1)
+  }
+  expect(isConnected(shared)).toBe(false)
+
+  // Direct effect listeners: same identity-based removal path.
+  const listenerUnsubs = Array.from({ length: 8 }, () => shared.subscribe())
+  expect(_read(shared)!.subs.length).toBe(8)
+  for (const i of [0, 2, 4, 6, 1, 3, 5, 7]) listenerUnsubs[i]!()
+  expect(isConnected(shared)).toBe(false)
+
+  // Double unsubscribe stays a no-op even for a reconnected atom.
+  const un = shared.subscribe()
+  listenerUnsubs[0]!()
+  expect(_read(shared)!.subs.length).toBe(1)
+  un()
+  un()
+  expect(_read(shared)!.subs.length).toBe(0)
+
+  // The atom is fully operational after the churn.
+  const check = vi.fn()
+  const reconnect = computeds[5]!.subscribe(check)
+  expect(check).toBeCalledWith(5)
+  shared.set(10)
+  notify()
+  expect(check).toBeCalledWith(15)
+  reconnect()
+  expect(isConnected(shared)).toBe(false)
+})
+
 test('conditional deps duplication', () => {
   const name = 'conditionalDeps'
   const condition = atom(true, `${name}.condition`)
