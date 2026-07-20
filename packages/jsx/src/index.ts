@@ -200,43 +200,36 @@ let connectNode = (node: Node, symbol: symbol) => {
 }
 
 /**
- * Unmount refs parent-first, then unsubscribe the batch in reverse DOM order.
- * This mirrors normal parent-first registration so shared core pubs can use
- * their `pub.subs.pop()` path.
+ * Unmount refs and unsubscribe in one parent-first pass: refs release while
+ * children are still alive (same contract as React), and core sub removal is
+ * order-agnostic (see `_removeSub` in core), so no reverse batch pass is
+ * needed.
  */
 let cleanupNodes = (nodes: Node[], symbol: symbol) => {
-  let metaNodes: Node[] = []
   for (let node of nodes) {
     walkTree(node, (visited) => {
       let meta = (visited as any)[symbol] as Meta | undefined
       if (!meta) return
 
-      metaNodes.push(visited)
       if (meta.unmount) {
         lifecycle('ref', visited, () => meta.unmount!(visited))
         meta.unmount = undefined
       }
+
+      // A node that was never connected (appended and removed in the same
+      // tick, or fresh content inside a removed ancestor) keeps its subscribe
+      // thunks for a future append.
+      if (!meta.mounted && meta.unsubscribes.length === 0) return
+
+      for (let unsubscribe of meta.unsubscribes) {
+        lifecycle('mount', visited, unsubscribe)
+      }
+
+      meta.unsubscribes = []
+      // Truly detached nodes are inert if re-appended and release render captures.
+      meta.subscribes = []
+      meta.mounted = false
     })
-  }
-
-  for (let i = metaNodes.length - 1; i >= 0; i--) {
-    let node = metaNodes[i]!
-    let meta = (node as any)[symbol] as Meta | undefined
-    if (!meta) continue
-
-    // A node that was never connected (appended and removed in the same tick,
-    // or fresh content inside a removed ancestor) keeps its subscribe thunks
-    // for a future append.
-    if (!meta.mounted && meta.unsubscribes.length === 0) continue
-
-    for (let j = meta.unsubscribes.length - 1; j >= 0; j--) {
-      lifecycle('mount', node, meta.unsubscribes[j]!)
-    }
-
-    meta.unsubscribes = []
-    // Truly detached nodes are inert if re-appended and release render captures.
-    meta.subscribes = []
-    meta.mounted = false
   }
 }
 
