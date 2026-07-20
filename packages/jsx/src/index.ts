@@ -760,7 +760,10 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
     unlink(element, () => value.subscribe(setter, onPropError))
   } else if (typeof value === 'function') {
     unlink(element, () =>
-      computed(value, jsxElementKey(element, key)).subscribe(setter, onPropError),
+      computed(value, jsxElementKey(element, key)).subscribe(
+        setter,
+        onPropError,
+      ),
     )
   } else {
     setter(value)
