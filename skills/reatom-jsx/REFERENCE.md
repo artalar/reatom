@@ -7,6 +7,7 @@
 - **🛠 No extra build step:** just TSX and TypeScript support
 - **🎯 Tiny footprint:** ~3KB runtime (plus a minimal core)
 - **🎨 Built-in styles:** efficient via CSS variables
+- **🛡 Error boundaries:** isolate UI failures with `<ErrorBoundary>` and track via `jsxError`
 
 [![Try it out in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/reatom/reatom/tree/v1001/examples/reatom-jsx)
 
@@ -725,7 +726,7 @@ Use the `ref` prop to get access to the DOM element and register mount/unmount s
 />
 ```
 
-Unmount callbacks are called automatically in reverse order — from child to parent:
+Mount refs run child-first; unmount refs run parent-first:
 
 ```tsx
 <div
@@ -748,9 +749,48 @@ Console output:
 ```txt
 mount child
 mount parent
-unmount child
 unmount parent
+unmount child
 ```
+
+## Error handling
+
+By default, a reactive render or prop failure keeps the last good DOM, reports through `jsxError`, and marks the host with `data-reatom-error` until the next successful update. Abort errors are ignored.
+
+Use `<ErrorBoundary>` to swap a subtree for a fallback:
+
+```tsx
+import { addCallHook } from '@reatom/core'
+import { ErrorBoundary, jsxError } from '@reatom/jsx'
+
+addCallHook(jsxError, ({ error, phase, name }) => {
+  // Sentry / analytics
+})
+
+const App = () => (
+  <ErrorBoundary
+    fallback={(error, retry) => (
+      <div>
+        {(error as Error).message}
+        <button on:click={retry}>Retry</button>
+      </div>
+    )}
+    pending={<div>Loading…</div>}
+    onError={(error) => console.error(error)}
+  >
+    {() => <RiskyView />}
+  </ErrorBoundary>
+)
+```
+
+- Prefer lazy children `{() => <Child />}` (or an atom) so construction-time throws are caught. Eager element children are created before the boundary runs.
+- `fallback(error, retry)` renders after a failure; call `retry()` to clear and re-render children.
+- Thrown promises use `pending` while unsettled; rejection goes to `fallback`.
+- Ownership follows the node's current DOM ancestors — moving a node under another boundary adopts it. The wrapper is a `display: contents` `<span>`.
+- `jsxError` phases: `children` | `prop` | `event` | `ref` | `mount`.
+- `on:*` handlers report then rethrow; other phases leave sibling subscriptions intact.
+
+Style failed nodes with `[data-reatom-error]` when you rely on the hybrid default path without a boundary.
 
 ## Utilities
 
