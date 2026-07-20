@@ -401,6 +401,57 @@ test('should track createMany and removeMany with reatomMap', () => {
   expect(mapped().changes[0]!.kind).toBe('removeMany')
 })
 
+test('should keep changes payload readable synchronously after a follow-up update', () => {
+  const list = reatomLinkedList((n: number) => ({ n }))
+
+  list.createMany([[1], [2]])
+  const state = list()
+
+  list.create(3)
+
+  const change = state.changes[0]!
+  expect(change.kind).toBe('createMany')
+  expect(change.kind === 'createMany' && change.nodes.map(({ n }) => n)).toEqual([
+    1, 2,
+  ])
+
+  notify()
+  expect(state.changes).toEqual([])
+})
+
+test('should keep changes payload intact for a subscriber doing a re-entrant update', () => {
+  const list = reatomLinkedList((n: number) => ({ n }))
+
+  // Mirror consumer: incrementally applies `state.changes` to an external
+  // structure — the same contract as jsx `walkLinkedList` and `reatomMap`.
+  const mirror = new Set<number>()
+  list.subscribe((state) => {
+    // A "capped list" invariant: react to overflow with a re-entrant update
+    // before syncing the notification payload.
+    if (state.size > 2) {
+      list.remove(state.head!)
+    }
+
+    for (const change of state.changes) {
+      if (change.kind === 'create') {
+        mirror.add(change.node.n)
+      } else if (change.kind === 'createMany') {
+        for (const node of change.nodes) mirror.add(node.n)
+      } else if (change.kind === 'remove') {
+        mirror.delete(change.node.n)
+      } else if (change.kind === 'removeMany') {
+        for (const node of change.nodes) mirror.delete(node.n)
+      }
+    }
+  })
+
+  list.createMany([[1], [2], [3]])
+  notify()
+
+  expect(list.array().map(({ n }) => n)).toEqual([2, 3])
+  expect([...mirror]).toEqual([2, 3])
+})
+
 test('should allow using element from one list in another list via list-specific symbols', () => {
   const listA = reatomLinkedList((n: number) => ({ n }))
   const listB = reatomLinkedList((n: number) => ({ n }))

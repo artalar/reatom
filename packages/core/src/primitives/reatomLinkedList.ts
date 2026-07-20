@@ -1,5 +1,14 @@
 import type { Action, Atom, Computed } from '../core'
-import { action, atom, computed, isAtom, named, ReatomError } from '../core'
+import {
+  _enqueue,
+  action,
+  atom,
+  computed,
+  isAtom,
+  named,
+  ReatomError,
+} from '../core'
+import { withChangeHook } from '../extensions/withChangeHook'
 import { withFromJson } from '../extensions/withFromJson'
 import { withToJson } from '../extensions/withToJson'
 import { peek } from '../methods'
@@ -265,7 +274,6 @@ const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
   state.head = null
   state.tail = null
   state.size = 0
-  // Null links so nodes can be safely re-inserted later without stale neighbors.
   while (node) {
     const next = node[LL_NEXT]
     node[LL_PREV] = null
@@ -529,38 +537,20 @@ export function reatomLinkedList<
     return state
   }
 
-  const releaseChangeNodeRefs = (
-    changes: LinkedList<LLNode<Node>>['changes'],
-  ) => {
-    for (let i = 0; i < changes.length; i++) {
-      let change = changes[i]!
-      // Stale frames from `_copy` keep the previous state object; large
-      // createMany/removeMany payloads would otherwise pin every node after
-      // clearLL has already nulled list links.
-      if (change.kind === 'createMany' || change.kind === 'removeMany') {
-        change.nodes = []
-      }
-    }
-  }
-
   const batchFn = <T>(cb: Fn): T => {
     if (STATE) return cb()
 
     let result: T
 
-    linkedList.set((prev) => {
-      // Drop heavy payloads from the superseded state so orphaned frames
-      // cannot retain every created node after the next update/clear.
-      releaseChangeNodeRefs(prev.changes)
-
+    linkedList.set(({ head, tail, size, version, LL_PREV, LL_NEXT }) => {
       STATE = {
-        LL_PREV: prev.LL_PREV,
-        LL_NEXT: prev.LL_NEXT,
-        size: prev.size,
-        version: prev.version + 1,
+        LL_PREV,
+        LL_NEXT,
+        size,
+        version: version + 1,
         changes: [],
-        head: prev.head,
-        tail: prev.tail,
+        head,
+        tail,
       }
 
       try {
@@ -847,9 +837,6 @@ export function reatomLinkedList<
             case 'clear': {
               hooks.onClear?.(mapList)
               clearLL(mapList)
-              // Drop origin→mapped entries so cleared DOM/views aren't pinned
-              // by the derived list's WeakMap while origin nodes are still
-              // reachable through other short-lived paths.
               mapList.map = new WeakMap()
               mapList.changes.push({ kind: 'clear' })
               break
@@ -948,6 +935,13 @@ export function reatomLinkedList<
   // }
 
   return linkedList.extend(
+    withChangeHook((_, prev) => {
+      if (prev) {
+        _enqueue(() => {
+          prev.changes = []
+        }, 'cleanup')
+      }
+    }),
     () => ({
       LL_PREV,
       LL_NEXT,

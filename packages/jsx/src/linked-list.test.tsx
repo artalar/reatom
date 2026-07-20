@@ -121,6 +121,39 @@ test('linked list createMany', () =>
     )
   }))
 
+test('linked list render keeps changes payload for sibling subscribers', () =>
+  context.start(async () => {
+    const list = reatomLinkedList((value: number) => <span>{value}</span>)
+
+    const container = <div>{list}</div>
+    mount(parent(), container)
+    await wrap(sleep())
+
+    // A sibling consumer applying the same incremental contract as the
+    // renderer (e.g. analytics or scroll-into-view of new rows). It
+    // subscribes after the renderer, so its notification runs later.
+    const seen: number[] = []
+    const unsubscribe = list.subscribe((state) => {
+      for (const change of state.changes) {
+        if (change.kind === 'createMany') {
+          for (const node of change.nodes) {
+            seen.push(Number(node.textContent))
+          }
+        }
+      }
+    })
+
+    list.createMany([[1], [2], [3]])
+    await wrap(sleep())
+
+    expect(stripJsxCompilerProps(container.innerHTML)).toBe(
+      '<span>1</span><span>2</span><span>3</span>',
+    )
+    expect(seen).toEqual([1, 2, 3])
+
+    unsubscribe()
+  }))
+
 test('linked list move to head', () =>
   context.start(async () => {
     const list = reatomLinkedList((value: number) => <span>{value}</span>)

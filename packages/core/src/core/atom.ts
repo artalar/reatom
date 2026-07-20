@@ -1276,8 +1276,6 @@ export let createAtom: {
     },
   )
 
-  // Skip when callers pass `''` (e.g. jsx with DEBUG off) to avoid
-  // defineProperty overhead on hot create paths.
   if (name) {
     Object.defineProperty(target, 'name', {
       value: name,

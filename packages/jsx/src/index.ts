@@ -480,10 +480,6 @@ let walkLinkedList = (
             throwNativeFragment(node)
             appendBatch.append(node)
           }
-          // Drop refs from the change record once applied. Stale atom frames
-          // (pre-`_copy`) can otherwise pin the entire createMany payload even
-          // after `clearLL` nulls list links.
-          change.nodes = []
         } else if (appendBatch) {
           flushAppend(appendBatch)
           appendBatch = undefined
@@ -509,7 +505,6 @@ let walkLinkedList = (
               element.removeChild(node)
             }
           }
-          change.nodes = []
         }
         // TODO support fragments
         else if (change.kind === 'swap') {
