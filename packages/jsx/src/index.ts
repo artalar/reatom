@@ -114,6 +114,13 @@ interface Meta {
   unsubscribes: Unsubscribe[]
   mount: ((element: Node) => ((element: Node) => void) | undefined) | undefined
   unmount: ((element: Node) => void) | undefined
+  /**
+   * Guards `mount` hooks against double runs when a subtree is connected twice
+   * (eager `flushAppend` connect + the MutationObserver pass). The
+   * `unsubscribes.length` check can't cover ref-only nodes that have no atom
+   * subscriptions.
+   */
+  mounted: boolean
 }
 let ensureMeta = (node: Node): Meta => {
   return ((node as any)[metaSymbol()] ??= {
@@ -121,6 +128,7 @@ let ensureMeta = (node: Node): Meta => {
     unsubscribes: [],
     mount: undefined,
     unmount: undefined,
+    mounted: false,
   })
 }
 let unlink = (node: Node, subscribe: () => () => void) => {
@@ -158,6 +166,8 @@ let connectMetaSubscribes = (node: Node, meta: Meta) => {
 }
 
 let connectMetaMount = (node: Node, meta: Meta) => {
+  if (meta.mounted) return
+  meta.mounted = true
   lifecycle('ref', node, () => {
     let unmount = meta.mount?.(node)
     if (typeof unmount === 'function') meta.unmount = unmount
@@ -242,6 +252,7 @@ let cleanupElementTree = (root: Element, symbol: symbol) => {
       // (moves skip teardown). Clears closures that would otherwise pin
       // render-time captures through `meta.subscribes`.
       meta.subscribes = []
+      meta.mounted = false
     }
   }
 
@@ -359,6 +370,13 @@ let walkAtom = (dom: DomApis, anAtom: AtomLike<JSX.ElementChildren>): Node => {
           textNode.data = String(newState)
         } else if (isSkipped(newState)) {
           textNode.data = ''
+        } else {
+          // Upgrade to the live-fragment path: complex children (elements,
+          // arrays, nested atoms) need markers and full `walk` rendering.
+          // Replacing the Text node lets the MutationObserver tear down this
+          // subscription and connect the fragment's one; the fragment renders
+          // `newState` eagerly, so nothing is missed in between.
+          textNode.replaceWith(walkAtomFragment(dom, anAtom, newState))
         }
       }, onError),
     )
@@ -1056,6 +1074,7 @@ export let mount = (
         }
         meta.unsubscribes = []
         meta.subscribes = []
+        meta.mounted = false
       }
     }
   }

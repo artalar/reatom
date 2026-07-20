@@ -176,6 +176,33 @@ test('TEXT atom child disconnects on linked-list clear', () =>
     }
   }))
 
+test('ref mount hook runs once for eagerly connected linked-list rows', () =>
+  context.start(async () => {
+    // Rows appended to a live list parent are connected eagerly (flushAppend)
+    // and then reported again by the MutationObserver; the `mounted` flag must
+    // dedupe ref hooks for nodes that have no atom subscriptions to detect.
+    const refSpy = vi.fn()
+    const list = reatomLinkedList((id: number) => ({ id }), 'list')
+    const views = list.reatomMap(
+      (node) => (
+        <tr>
+          <td ref={refSpy}>{node.id}</td>
+        </tr>
+      ),
+      'views',
+    )
+
+    const container = <tbody>{views}</tbody>
+    mount(createContainer(), container)
+    await wrap(sleep())
+
+    list.create(1)
+    await wrap(sleep())
+    await wrap(sleep())
+
+    expect(refSpy).toHaveBeenCalledTimes(1)
+  }))
+
 test('linked-list clear drops element meta.subscribes (no render-frame pin)', () =>
   context.start(async () => {
     const list = reatomLinkedList(

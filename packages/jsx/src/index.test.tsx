@@ -1042,6 +1042,28 @@ test('dynamic atom fragment', () =>
     )
   }))
 
+test('atom child switching from primitive to element renders the element', () =>
+  context.start(async () => {
+    const child = atom<JSX.ElementChildren>('loading...', 'child')
+    const element = <div>{child}</div>
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('loading...')
+
+    // The primitive Text fast path must upgrade to the live-fragment path
+    // when the atom state stops being a primitive.
+    child.set((<span>done</span>) as unknown as JSX.ElementChildren)
+    await wrap(sleep())
+    expect(element.querySelector('span')?.textContent).toBe('done')
+    expect(element.textContent).toBe('done')
+
+    // And the fragment stays reactive for further updates.
+    child.set('text again')
+    await wrap(sleep())
+    expect(element.textContent).toBe('text again')
+  }))
+
 const expectHtmlElementProperty = <
   Tag extends keyof JSX.HTMLElementTags,
   Property extends keyof JSX.HTMLElementTags[Tag],
