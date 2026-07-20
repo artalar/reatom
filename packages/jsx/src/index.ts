@@ -115,10 +115,8 @@ interface Meta {
   mount: ((element: Node) => ((element: Node) => void) | undefined) | undefined
   unmount: ((element: Node) => void) | undefined
   /**
-   * Guards `mount` hooks against double runs when a subtree is connected twice
-   * (eager `flushAppend` connect + the MutationObserver pass). The
-   * `unsubscribes.length` check can't cover ref-only nodes that have no atom
-   * subscriptions.
+   * Keeps ref-only nodes mounted when a DOM move reports both removal and
+   * addition. `unsubscribes.length` cannot identify those nodes.
    */
   mounted: boolean
 }
@@ -137,15 +135,6 @@ let unlink = (node: Node, subscribe: () => () => void) => {
   if (node.isConnected) meta.unsubscribes.push(subscribe())
 }
 
-/**
- * Teardown is the LIFO mirror of mount, which subscribes in a forward pass
- * (parents first) and runs mount hooks in a backward pass (children first). So
- * unmount hooks run forward (parents first, while children are still alive —
- * same contract as React) and unsubscribes run backward (last subscription
- * first), letting the core `unlink` hit its `pub.subs.pop()` fast path instead
- * of scanning and shifting the subscribers array — O(n) instead of O(n²) for a
- * shared pub.
- */
 let lifecycle = (phase: 'ref' | 'mount', node: Node, cb: () => void) => {
   try {
     cb()
@@ -154,149 +143,79 @@ let lifecycle = (phase: 'ref' | 'mount', node: Node, cb: () => void) => {
   }
 }
 
-// Element | Text | Comment — Text carries unlink meta for primitive atom children.
-let nodeFilter = 1 | 4 | 128
-
-let connectMetaSubscribes = (node: Node, meta: Meta) => {
-  let { subscribes, unsubscribes } = meta
-  for (let i = 0; i < subscribes.length; i++) {
-    let subscribe = subscribes[i]!
-    lifecycle('mount', node, () => unsubscribes.push(subscribe()))
+let walkTree = (node: Node, visit: (node: Node) => void) => {
+  visit(node)
+  let child = node.firstChild
+  while (child) {
+    let next = child.nextSibling
+    walkTree(child, visit)
+    child = next
   }
 }
 
-let connectMetaMount = (node: Node, meta: Meta) => {
-  if (meta.mounted) return
-  meta.mounted = true
-  lifecycle('ref', node, () => {
-    let unmount = meta.mount?.(node)
-    if (typeof unmount === 'function') meta.unmount = unmount
+/**
+ * Subscribe parent-first so boundaries exist before descendants initialize,
+ * then mount refs child-first. Cleanup mirrors both orders below.
+ */
+let connectNode = (node: Node, symbol: symbol) => {
+  let nodesToMount: Node[] = []
+  walkTree(node, (node) => {
+    let meta = (node as any)[symbol] as Meta | undefined
+    if (!meta) return
+
+    if (meta.unsubscribes.length === 0) {
+      for (let subscribe of meta.subscribes) {
+        lifecycle('mount', node, () => meta.unsubscribes.push(subscribe()))
+      }
+    }
+    if (!meta.mounted) nodesToMount.push(node)
   })
+
+  for (let i = nodesToMount.length - 1; i >= 0; i--) {
+    let node = nodesToMount[i]!
+    let meta = (node as any)[symbol] as Meta | undefined
+    if (!meta) continue
+
+    meta.mounted = true
+    lifecycle('ref', node, () => {
+      let unmount = meta.mount?.(node)
+      if (typeof unmount === 'function') meta.unmount = unmount
+    })
+  }
 }
 
 /**
- * Same contract as NodeIterator(Element|Text|Comment), without allocating an
- * iterator per row — important for create1k/create10k (thousands of row
- * roots).
+ * Unmount refs parent-first, then unsubscribe in exact reverse registration
+ * order. The latter lets shared core pubs use their `pub.subs.pop()` path.
  */
-let connectElementTree = (root: Element, symbol: symbol) => {
-  let skipMount: undefined | WeakSet<Node>
+let cleanupNodes = (nodes: Node[], symbol: symbol) => {
+  let metaNodes: Node[] = []
+  for (let node of nodes) {
+    walkTree(node, (node) => {
+      let meta = (node as any)[symbol] as Meta | undefined
+      if (!meta) return
 
-  let subscribeWalk = (node: Node) => {
+      metaNodes.push(node)
+      if (meta.unmount) {
+        lifecycle('ref', node, () => meta.unmount!(node))
+        meta.unmount = undefined
+      }
+    })
+  }
+
+  for (let i = metaNodes.length - 1; i >= 0; i--) {
+    let node = metaNodes[i]!
     let meta = (node as any)[symbol] as Meta | undefined
-    if (meta?.unsubscribes.length) {
-      ;(skipMount ??= new WeakSet()).add(node)
-    } else if (meta) {
-      connectMetaSubscribes(node, meta)
-    }
-    if (node.nodeType === 1) {
-      for (let child = node.firstChild; child; child = child.nextSibling) {
-        subscribeWalk(child)
-      }
-    }
-  }
+    if (!meta) continue
 
-  let mountWalk = (node: Node) => {
-    if (node.nodeType === 1) {
-      let child = node.lastChild
-      while (child) {
-        let prev = child.previousSibling
-        mountWalk(child)
-        child = prev
-      }
+    for (let j = meta.unsubscribes.length - 1; j >= 0; j--) {
+      lifecycle('mount', node, meta.unsubscribes[j]!)
     }
-    if (skipMount?.has(node)) return
-    let meta = (node as any)[symbol] as Meta | undefined
-    if (meta) connectMetaMount(node, meta)
-  }
 
-  subscribeWalk(root)
-  mountWalk(root)
-}
-
-/**
- * Teardown mirror of {@link connectElementTree}: unmount hooks forward (parents
- * first), then unsubscribes backward (children first / LIFO). Must visit Text
- * nodes — primitive atom children store unlink meta there.
- */
-let cleanupElementTree = (root: Element, symbol: symbol) => {
-  let unmountWalk = (node: Node) => {
-    let meta = (node as any)[symbol] as Meta | undefined
-    if (meta?.unmount) {
-      lifecycle('ref', node, () => meta.unmount!(node))
-      meta.unmount = undefined
-    }
-    if (node.nodeType === 1) {
-      for (let child = node.firstChild; child; child = child.nextSibling) {
-        unmountWalk(child)
-      }
-    }
-  }
-
-  let unsubscribeWalk = (node: Node) => {
-    if (node.nodeType === 1) {
-      let child = node.lastChild
-      while (child) {
-        let prev = child.previousSibling
-        unsubscribeWalk(child)
-        child = prev
-      }
-    }
-    let meta = (node as any)[symbol] as Meta | undefined
-    if (meta) {
-      for (let i = meta.unsubscribes.length - 1; i >= 0; i--) {
-        lifecycle('mount', node, meta.unsubscribes[i]!)
-      }
-      meta.unsubscribes = []
-      // Drop reconnect thunks — cleanup only runs for truly detached nodes
-      // (moves skip teardown). Clears closures that would otherwise pin
-      // render-time captures through `meta.subscribes`.
-      meta.subscribes = []
-      meta.mounted = false
-    }
-  }
-
-  unmountWalk(root)
-  unsubscribeWalk(root)
-}
-
-/**
- * Run subscribe + ref hooks that MutationObserver would run for a newly
- * inserted subtree. Safe to call when the node is already live: nodes with
- * `unsubscribes.length > 0` are skipped (moves / eager reconnect).
- */
-let connectNode = (dom: DomApis, node: Node) => {
-  let symbol = metaSymbol()
-  // Element roots: manual tree walk (bench rows). Other roots keep iterator.
-  if (node.nodeType === 1) {
-    connectElementTree(node as Element, symbol)
-    return
-  }
-  let iterator = dom.document.createNodeIterator(node, nodeFilter)
-  let skipMount: undefined | WeakSet<Node>
-  while (iterator.nextNode()) {
-    let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
-    // Already live from before a move (e.g. child of a non-meta parent).
-    if (meta?.unsubscribes.length) {
-      ;(skipMount ??= new WeakSet()).add(iterator.referenceNode)
-      continue
-    }
-    if (meta) connectMetaSubscribes(iterator.referenceNode, meta)
-  }
-  while (iterator.previousNode()) {
-    if (skipMount?.has(iterator.referenceNode)) continue
-    let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
-    if (meta) connectMetaMount(iterator.referenceNode, meta)
-  }
-}
-
-/** Connect each top-level node in an inclusive sibling range (after append). */
-let connectRange = (dom: DomApis, first: Node, last: Node) => {
-  let node: Node | null = first
-  while (node) {
-    connectNode(dom, node)
-    if (node === last) break
-    node = node.nextSibling
+    meta.unsubscribes = []
+    // Truly detached nodes are inert if re-appended and release render captures.
+    meta.subscribes = []
+    meta.mounted = false
   }
 }
 
@@ -446,15 +365,6 @@ let walkLinkedList = (
 ) => {
   let lastVersion = -1
 
-  let flushAppend = (batch: DocumentFragment) => {
-    let first = batch.firstChild
-    let last = batch.lastChild
-    element.append(batch)
-    // Eagerly subscribe while the parent is live so create rows don't wait
-    // for MutationObserver; processMutations skips already-connected roots.
-    if (element.isConnected && first && last) connectRange(dom, first, last)
-  }
-
   let cb = (state: LinkedList<LLNode<JSX.Element>>) => {
     if (state.version - 1 > lastVersion) {
       element.innerHTML = ''
@@ -463,7 +373,7 @@ let walkLinkedList = (
         throwNativeFragment(head)
         rebuildBatch.append(head)
       }
-      flushAppend(rebuildBatch)
+      element.append(rebuildBatch)
     } else {
       let appendBatch: undefined | DocumentFragment
       for (let change of state.changes) {
@@ -481,7 +391,7 @@ let walkLinkedList = (
             appendBatch.append(node)
           }
         } else if (appendBatch) {
-          flushAppend(appendBatch)
+          element.append(appendBatch)
           appendBatch = undefined
         }
 
@@ -533,7 +443,7 @@ let walkLinkedList = (
         }
       }
 
-      if (appendBatch) flushAppend(appendBatch)
+      if (appendBatch) element.append(appendBatch)
     }
     lastVersion = state.version
   }
@@ -1043,37 +953,6 @@ export let mount = (
   let dom = DOM()
   let symbol = metaSymbol()
 
-  let cleanupNode = (node: Node) => {
-    // Element roots: manual walk visits Text (primitive atom children).
-    // Iterator whatToShow must stay Element|Text|Comment (1|4|128) — omitting
-    // Text (4) leaves label-atom subscriptions alive after clear/remove.
-    if (node.nodeType === 1) {
-      cleanupElementTree(node as Element, symbol)
-      return
-    }
-    let iterator = dom.document.createNodeIterator(node, nodeFilter)
-    while (iterator.nextNode()) {
-      let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
-      if (meta?.unmount) {
-        lifecycle('ref', iterator.referenceNode, () =>
-          meta.unmount!(iterator.referenceNode),
-        )
-        meta.unmount = undefined
-      }
-    }
-    while (iterator.previousNode()) {
-      let meta = (iterator.referenceNode as any)[symbol] as Meta | undefined
-      if (meta) {
-        for (let i = meta.unsubscribes.length - 1; i >= 0; i--) {
-          lifecycle('mount', iterator.referenceNode, meta.unsubscribes[i]!)
-        }
-        meta.unsubscribes = []
-        meta.subscribes = []
-        meta.mounted = false
-      }
-    }
-  }
-
   /**
    * @note A DOM move (insertBefore/append of an already-attached node) creates
    * two mutations: deletion then addition. After records are delivered the node
@@ -1081,26 +960,16 @@ export let mount = (
    * subscriptions alive (critical for linked-list swap/move).
    */
   let processMutations = (mutationsList: MutationRecord[]) => {
-    // Roots reported as removed-but-still-connected were moved within the
-    // observed tree. Track them so the matching add skips remount (including
-    // ref-only nodes that have no atom unsubscribes to detect).
-    let moved: undefined | WeakSet<Node>
+    let removedNodes: Node[] = []
     for (let mutation of mutationsList) {
-      mutation.removedNodes.forEach((removedNode) => {
-        if (removedNode.isConnected) {
-          ;(moved ??= new WeakSet()).add(removedNode)
-          return
-        }
-        cleanupNode(removedNode)
-      })
+      for (let removedNode of mutation.removedNodes) {
+        if (!removedNode.isConnected) removedNodes.push(removedNode)
+      }
     }
+    cleanupNodes(removedNodes, symbol)
+
     for (let mutation of mutationsList) {
-      mutation.addedNodes.forEach((addedNode) => {
-        if (moved?.has(addedNode)) return
-        // connectNode skips nodes that already have unsubscribes (eager
-        // walkLinkedList connect, or children of a moved non-meta parent).
-        connectNode(dom, addedNode)
-      })
+      mutation.addedNodes.forEach((addedNode) => connectNode(addedNode, symbol))
     }
   }
   let observer = new dom.MutationObserver(bind(processMutations))
@@ -1117,7 +986,7 @@ export let mount = (
     unmount: bind(() => {
       processMutations(observer.takeRecords())
       observer.disconnect()
-      cleanupNode(child)
+      cleanupNodes([child], symbol)
       child.remove()
     }),
   }

@@ -772,11 +772,12 @@ test('ref mount and unmount callbacks order', () =>
     expect(order).toStrictEqual([2, 1, 0, 0, 1, 2])
   }))
 
-test('unmount unsubscribes in reverse subscription order', () =>
+test('batched removal unsubscribes shared pubs in reverse subscription order', () =>
   context.start(async () => {
     const order: string[] = []
+    const shared = atom('shared', 'shared')
     const track = (name: string) =>
-      atom(name, name).extend(
+      computed(() => `${shared()} ${name}`, name).extend(
         withConnectHook(() => {
           order.push(`connect ${name}`)
           return () => order.push(`disconnect ${name}`)
@@ -787,19 +788,14 @@ test('unmount unsubscribes in reverse subscription order', () =>
     const b = track('b')
     const c = track('c')
 
-    const element = (
-      <div id={a}>
-        <div id={b}>
-          <div id={c} />
-        </div>
-      </div>
-    )
-
+    const element = <div />
     const { unmount } = mount(parent(), element)
+    await wrap(sleep())
+    element.append(<span id={a} />, <span id={b} />, <span id={c} />)
     await wrap(sleep())
     expect(order).toStrictEqual(['connect a', 'connect b', 'connect c'])
 
-    unmount()
+    element.replaceChildren()
     await wrap(sleep())
     expect(order).toStrictEqual([
       'connect a',
@@ -809,6 +805,8 @@ test('unmount unsubscribes in reverse subscription order', () =>
       'disconnect b',
       'disconnect a',
     ])
+
+    unmount()
   }))
 
 test('style object update', () =>
@@ -1520,13 +1518,25 @@ test('form model sets submit error attrs', () =>
     expect(formElement.classList.contains('has-submit-error')).toBe(true)
   }))
 
-test('preserves atom connection when moved within DOM', () =>
+test('preserves atom and ref lifecycle when moved within DOM', () =>
   context.start(async () => {
     const valueAtom = atom('aaa')
-    const element = <div class={valueAtom}></div>
+    const mountRef = vi.fn()
+    const unmountRef = vi.fn()
+    const element = (
+      <div
+        class={valueAtom}
+        ref={() => {
+          mountRef()
+          return unmountRef
+        }}
+      ></div>
+    )
 
     mount(parent(), element)
     await wrap(sleep())
+    expect(mountRef).toHaveBeenCalledOnce()
+
     parent().parentElement!.append(element)
     await wrap(sleep())
     valueAtom.set('bbb')
@@ -1534,6 +1544,24 @@ test('preserves atom connection when moved within DOM', () =>
 
     expect(isConnected(valueAtom)).toBe(true)
     expect(element.className).toBe('bbb')
+    expect(mountRef).toHaveBeenCalledOnce()
+    expect(unmountRef).not.toHaveBeenCalled()
+
+    element.remove()
+    await wrap(sleep())
+    expect(unmountRef).toHaveBeenCalledOnce()
+  }))
+
+test('mounts once when an element moves before observer delivery', () =>
+  context.start(async () => {
+    const mountRef = vi.fn()
+    const element = <div ref={mountRef} />
+
+    mount(parent(), element)
+    parent().parentElement!.append(element)
+    await wrap(sleep())
+
+    expect(mountRef).toHaveBeenCalledOnce()
   }))
 
 test('atom child renders synchronously at build time', () =>
