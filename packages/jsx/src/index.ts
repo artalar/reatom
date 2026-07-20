@@ -115,8 +115,10 @@ interface Meta {
   mount: ((element: Node) => ((element: Node) => void) | undefined) | undefined
   unmount: ((element: Node) => void) | undefined
   /**
-   * Keeps ref-only nodes mounted when a DOM move reports both removal and
-   * addition. `unsubscribes.length` cannot identify those nodes.
+   * Whether the node is currently connected. Keeps ref-only nodes mounted when
+   * a DOM move reports both removal and addition (`unsubscribes.length` cannot
+   * identify those nodes) and marks never-connected nodes so cleanup preserves
+   * their subscribe thunks for a future append.
    */
   mounted: boolean
 }
@@ -221,6 +223,11 @@ let cleanupNodes = (nodes: Node[], symbol: symbol) => {
     let node = metaNodes[i]!
     let meta = (node as any)[symbol] as Meta | undefined
     if (!meta) continue
+
+    // A node that was never connected (appended and removed in the same tick,
+    // or fresh content inside a removed ancestor) keeps its subscribe thunks
+    // for a future append.
+    if (!meta.mounted && meta.unsubscribes.length === 0) continue
 
     for (let j = meta.unsubscribes.length - 1; j >= 0; j--) {
       lifecycle('mount', node, meta.unsubscribes[j]!)
@@ -983,7 +990,12 @@ export let mount = (
     cleanupNodes(removedNodes, symbol)
 
     for (let mutation of mutationsList) {
-      mutation.addedNodes.forEach((addedNode) => connectNode(addedNode, symbol))
+      mutation.addedNodes.forEach((addedNode) => {
+        // Skip nodes that were appended and removed within the same batch:
+        // they never really appeared, so connecting them would run orphan
+        // ref hooks and leak subscriptions with no removal record to come.
+        if (addedNode.isConnected) connectNode(addedNode, symbol)
+      })
     }
   }
   let observer = new dom.MutationObserver(bind(processMutations))

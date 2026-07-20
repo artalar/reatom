@@ -1564,6 +1564,42 @@ test('mounts once when an element moves before observer delivery', () =>
     expect(mountRef).toHaveBeenCalledOnce()
   }))
 
+test('skips lifecycle for a node appended and removed in the same tick', () =>
+  context.start(async () => {
+    const mountRef = vi.fn()
+    const unmountRef = vi.fn()
+    const value = atom('aaa', 'value')
+    const inner = (
+      <span
+        id={value}
+        ref={() => {
+          mountRef()
+          return unmountRef
+        }}
+      />
+    )
+    const element = <div />
+
+    mount(parent(), element)
+    await wrap(sleep())
+
+    element.append(inner)
+    inner.remove()
+    await wrap(sleep())
+
+    // The node never really appeared: no subscription churn, no orphan ref
+    // mount without a matching unmount.
+    expect(mountRef).not.toHaveBeenCalled()
+    expect(unmountRef).not.toHaveBeenCalled()
+    expect(isConnected(value)).toBe(false)
+
+    // The untouched node connects normally on a later append.
+    element.append(inner)
+    await wrap(sleep())
+    expect(mountRef).toHaveBeenCalledOnce()
+    expect(isConnected(value)).toBe(true)
+  }))
+
 test('atom child renders synchronously at build time', () =>
   context.start(async () => {
     const val = atom('eager', 'val')
