@@ -14,6 +14,7 @@ import {
   isObject,
   type LinkedList,
   type LLNode,
+  log,
   peek,
   ReatomError,
   type Rec,
@@ -21,16 +22,19 @@ import {
   type Unsubscribe,
 } from '@reatom/core'
 
-import { jsxError, type JsxErrorPayload, type JsxErrorPhase } from './error'
 import {
   booleanAttributes,
+  noisyDomEvents,
+  propertiesAsAttributes,
+} from './constants'
+import { jsxError, type JsxErrorPayload, type JsxErrorPhase } from './error'
+import {
   type BoundaryHandle,
   DOM,
   jsxBoundary,
   jsxHName,
   jsxInlineStyles,
   metaSymbol,
-  propertiesAsAttributes,
   stylesheet,
 } from './global'
 import type {
@@ -72,18 +76,33 @@ export let DEBUG = atom(true, 'jsx.DEBUG')
 let jsxElementKey = (element: Node, key: string) =>
   `${jsxHName.current}.${element.nodeName.toLowerCase()}._${key}`
 
-export let jsxEvent = action((handler: Fn, event: Event, node: Node) => {
-  try {
-    let result = handler(event)
-    ;(result as PromiseLike<unknown>)?.then?.(undefined, (error: unknown) => {
-      reportJsxError(error, 'event', 'jsx.event', node)
-    })
-    return result
-  } catch (error) {
-    reportJsxError(error, 'event', 'jsx.event', node)
-    throw error
-  }
-}, 'jsx.event')
+let eventActionName = (element: Node, eventKey: string, handler: Fn) => {
+  let elementPart = element.nodeName.toLowerCase()
+  let base = jsxHName.current
+    ? `${jsxHName.current}.${elementPart}`
+    : elementPart
+  let segment =
+    handler.name && handler.name !== `on:${eventKey}` ? handler.name : eventKey
+  let hideFromLogs = noisyDomEvents.has(eventKey)
+  return `${base}${hideFromLogs ? '._' : '.'}${segment}`
+}
+
+export let jsxEvent = action(
+  (name: string, event: Event, node: Node, handler: Fn) => {
+    if (!/\._/.test(name)) log.label(name, event, node)
+    try {
+      let result = handler(event)
+      ;(result as PromiseLike<unknown>)?.then?.(undefined, (error: unknown) => {
+        reportJsxError(error, 'event', name, node)
+      })
+      return result
+    } catch (error) {
+      reportJsxError(error, 'event', name, node)
+      throw error
+    }
+  },
+  'jsx._event',
+)
 
 interface Meta {
   boundary: BoundaryHandle | undefined
@@ -723,12 +742,13 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   /** @todo Show warning if isAtom(value) && !isAction(value). */
   if (key.startsWith('on:')) {
     key = key.slice(3)
+    let name = eventActionName(element, key, value)
     // Bind to the root frame — not `top()`. Row render often runs inside
     // `reatomMap`'s computed; capturing that frame would pin its pre-`_copy`
     // state (createMany `nodes` / head→tail) for as long as the listener
     // lives, which is the 25_run-clear-memory leak.
     let listener = bind(
-      (event: Event) => jsxEvent(value, event, element),
+      (event: Event) => jsxEvent(name, event, element, value),
       top().root.frame,
     )
     /**

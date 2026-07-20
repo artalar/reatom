@@ -1,10 +1,12 @@
 import {
+  addCallHook,
   atom,
   clearStack,
   computed,
   context,
   type Fn,
   isConnected,
+  log,
   reatomField,
   reatomForm,
   sleep,
@@ -158,6 +160,10 @@ test('on: handlers run under shared jsxEvent action', () =>
   context.start(async () => {
     let clickActionName = ''
     let moveActionName = ''
+    let labels: string[] = []
+    let unsubLabel = addCallHook(log.label, (_payload, params) => {
+      labels.push(String(params[0]))
+    })
 
     function handleClick() {
       clickActionName = top().atom.name
@@ -179,10 +185,16 @@ test('on: handlers run under shared jsxEvent action', () =>
     await wrap(sleep())
 
     element.click()
-    expect(clickActionName).toBe('jsx.event')
+    expect(clickActionName).toBe('jsx._event')
+    await wrap(sleep())
+    expect(labels).toEqual(['Button.button.handleClick'])
 
     element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
-    expect(moveActionName).toBe('jsx.event')
+    expect(moveActionName).toBe('jsx._event')
+    await wrap(sleep())
+    expect(labels).toEqual(['Button.button.handleClick'])
+
+    unsubLabel()
   }))
 
 test('function child computed name uses component and element', () =>
