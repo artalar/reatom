@@ -411,9 +411,9 @@ test('should keep changes payload readable synchronously after a follow-up updat
 
   const change = state.changes[0]!
   expect(change.kind).toBe('createMany')
-  expect(change.kind === 'createMany' && change.nodes.map(({ n }) => n)).toEqual([
-    1, 2,
-  ])
+  expect(
+    change.kind === 'createMany' && change.nodes.map(({ n }) => n),
+  ).toEqual([1, 2])
 
   notify()
   expect(state.changes).toEqual([])
