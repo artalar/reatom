@@ -590,6 +590,7 @@ export let withCache =
             } else {
               if (isPromise(payload)) payload.catch(noop)
               controller.abort('cache')
+              abortVar.set()
             }
 
             cacheVar.set(
