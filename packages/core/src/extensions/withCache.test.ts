@@ -4,6 +4,10 @@ import { withAsyncData } from '../async/withAsyncData'
 import { action, atom, computed, context, top } from '../core'
 import { schedule, wrap } from '../methods'
 import { createMemStorage, type PersistRecord, reatomPersist } from '../persist'
+import {
+  type AbstractRender,
+  reatomAbstractRender,
+} from '../reatomAbstractRender'
 import { withSearchParams } from '../routing'
 import { type Fn, noop, type Rec, sleep } from '../utils'
 import { urlAtom } from '../web'
@@ -491,6 +495,102 @@ test('pending stays correct after a persist-hydrated cache hit under a computed 
       expect(query.pending()).toBe(0) // ← currently -1: the negative-pending symptom
 
       un()
+    }),
+  )
+})
+
+test('remount after an SSR-hydrated cache hit must render, not throw the cache AbortError', async () => {
+  // Repro of a real navigation crash: land on a server-rendered page (hydration
+  // cache hit), route away, route back — the route's clientLoader awaits the
+  // query and the whole page falls into the error boundary with
+  // '<name>.query.withAbort cache [#N]'.
+  //
+  // Empirically pinned conditions:
+  // 1. the cache record must come from persist HYDRATION (SSR snapshot) — after
+  //    a live fetch on the same client the very same flow passes;
+  // 2. the crash needs a DIRECT `query()` call (what a route loader does): its
+  //    recomputation hits the hydrated cache, withCache aborts the call's own
+  //    `withAbort` controller with 'cache', and the returned promise REJECTS
+  //    with that AbortError instead of resolving with the cached value.
+  //    Render-only reads (`data()`/`pending()`) never throw.
+  const name = 'withCache.remount'
+  const storage = createMemStorage({ name, subscribe: false })
+  const withSSR = reatomPersist(storage)
+
+  const make = () => {
+    const cursor = atom<string | null>(null, `${name}.cursor`)
+    const pageSize = computed(
+      () => (cursor() === null ? 7 : 20),
+      `${name}.pageSize`,
+    )
+    const query = computed(async () => {
+      const cur = cursor()
+      const limit = pageSize()
+      return await wrap(
+        schedule(async () => {
+          await sleep(10)
+          return `${cur}:${limit}`
+        }),
+      )
+    }, `${name}.query`).extend(
+      withAsyncData({ initState: 'INIT' }),
+      withCache({ withPersist: withSSR }),
+    )
+    return { cursor, query }
+  }
+
+  // server: render the landing page → cache filled for the initial params → snapshot
+  const snapshot = await wrap(
+    context.start(async () => {
+      const { query } = make()
+      await wrap(query())
+      await wrap(sleep(20))
+      return storage.snapshotAtom()
+    }),
+  )
+
+  await wrap(
+    context.start(async () => {
+      const { query } = make()
+      storage.snapshotAtom.set(snapshot)
+
+      // What reatom-react's `reatomComponent` does for a list view: an abstract
+      // render whose render function reads the async data and pending state.
+      const mountView = () => {
+        const view: AbstractRender<Rec, { data: string; pending: number }> =
+          reatomAbstractRender({
+            frame: top().root.frame,
+            render: () => ({ data: query.data(), pending: query.pending() }),
+            // React: subscription → setState → the component function runs again
+            rerender: () => view.render({}),
+            name: `${name}.view`,
+            abortOnUnmount: false,
+          })
+        // React order: render phase first, then the mount effect
+        const first = view.render({}).result
+        const unmount = view.mount()
+        return { first, unmount, render: () => view.render({}).result }
+      }
+
+      // visit 1: the profile page straight from SSR — hydration cache hit.
+      // The route's clientLoader does NOT run on hydration (the server loader
+      // already ran), the view just renders.
+      const view1 = mountView()
+      await wrap(sleep(20))
+      expect(view1.render().data).toBe('null:7')
+      view1.unmount() // navigate away
+
+      await wrap(sleep(20))
+
+      // visit 2: navigate back — the route's clientLoader awaits the query
+      // BEFORE the new view instance renders
+      await wrap(query()) // ← bug: rejects '<name>.query.withAbort cache [#N]'
+
+      const view2 = mountView()
+      await wrap(sleep(20))
+      expect(view2.render().data).toBe('null:7')
+      expect(view2.render().pending).toBe(0)
+      view2.unmount()
     }),
   )
 })
