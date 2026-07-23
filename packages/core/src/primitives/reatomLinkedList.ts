@@ -47,6 +47,11 @@ export interface LinkedList<
   head: null | Node
   tail: null | Node
   size: number
+  /**
+   * Monotonic transaction counter driving the `changes` replay protocol: a
+   * consumer holding the previous version applies `changes`, a bigger gap
+   * means missed updates and requires a full rebuild. Never rewinds.
+   */
   version: number
   changes: Array<LLChanges<Node>>
   /**
@@ -307,6 +312,16 @@ const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
     node[LL_NEXT] = null
     node = next
   }
+}
+
+const isPristineLL = <Node extends LLNode>(state: LinkedList<Node>): boolean => {
+  const LL_NEXT: LL_NEXT = state.LL_NEXT as any
+  let head: null | LLNode = state.head
+  for (const node of state.initNodes) {
+    if (head !== node) return false
+    head = head[LL_NEXT]
+  }
+  return head === null
 }
 
 /**
@@ -727,33 +742,14 @@ export function reatomLinkedList<
     })
   }, `${name}.clear`)
 
-  const isPristine = (state: LinkedList<LLNode<Node>>): boolean => {
-    if (state.size !== state.initNodes.length) return false
-    let head: null | LLNode<Node> = state.head
-    for (const node of state.initNodes) {
-      if (head !== node) return false
-      head = head[LL_NEXT]
-    }
-    return head === null
-  }
-
   const reset = action((): void => {
-    if (isPristine(STATE ?? linkedList())) return
+    if (isPristineLL(STATE ?? linkedList())) return
 
     return batchFn(() => {
       const state = STATE!
-      const { initNodes } = state
-
       clearLL(state)
-      state.changes.push({ kind: 'clear' })
-
-      if (initNodes.length) {
-        for (const node of initNodes) {
-          throwModel(node)
-          addLL(state, node, state.tail)
-        }
-        state.changes.push({ kind: 'createMany', nodes: initNodes.slice() })
-      }
+      for (const node of state.initNodes) addLL(state, node, state.tail)
+      state.version++
     })
   }, `${name}.reset`)
 

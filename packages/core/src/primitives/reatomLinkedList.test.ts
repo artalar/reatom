@@ -568,18 +568,16 @@ describe('reset', () => {
     expect(list.array()).toBe(arrayBefore)
   })
 
-  test('should emit clear and createMany changes', () => {
+  test('should skip granular changes and leave a version gap instead', () => {
     const list = setup()
-    const initNodes = list.array()
 
-    list.remove(initNodes[0]!)
+    list.remove(list.array()[0]!)
     notify()
+    const { version } = list()
 
     list.reset()
-    expect(list().changes).toEqual([
-      { kind: 'clear' },
-      { kind: 'createMany', nodes: initNodes },
-    ])
+    expect(list().changes).toEqual([])
+    expect(list().version).toBe(version + 2)
   })
 
   test('should keep derived reatomMap consistent', () => {
