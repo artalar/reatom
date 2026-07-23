@@ -421,6 +421,28 @@ describe(`reset consistency (#1309)`, () => {
     expect(fieldArray.focus().dirty).toBe(false)
   })
 
+  test(`keeps dirty relevant after an element replacement`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'replaceDirty.fieldArray',
+    })
+    expect(fieldArray.focus().dirty).toBe(false)
+
+    // `remove` + `create` compensate the chain length of the stale snapshot
+    fieldArray.remove(fieldArray.array()[1]!)
+    fieldArray.create('d')
+    notify()
+    expect(fieldArray.focus().dirty).toBe(true)
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().dirty).toBe(false)
+    expect(fieldArray.array().map((element) => element())).toEqual([
+      'a',
+      'b',
+      'c',
+    ])
+  })
+
   test(`keeps dirty relevant after swap`, () => {
     const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
       name: 'resetSwapDirty.fieldArray',

@@ -14,6 +14,7 @@ import {
   type LinkedListLikeAtom,
   type LLNode,
   reatomLinkedList,
+  toArray,
 } from '../primitives'
 import { isShallowEqual } from '../utils'
 import type { FieldAtom } from './reatomField'
@@ -382,18 +383,11 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
   const fieldArrayAtom = linkedListAtom.extend(
     withBaseField({
       initStateAtom,
-      getNormalizedState: (state) => {
-        // TODO decouple into a function (including a reatomForm one)
-        const elements = []
-        let head = state.head
-        while (head) {
-          elements.push(head)
-          head = head[state.LL_NEXT]
-        }
-        // a stale `initState` snapshot chain is desynced from its `size`, as
-        // the nodes are shared with the live list, so use `initNodes` then
-        return elements.length === state.size ? elements : state.initNodes
-      },
+      getNormalizedState: (state) =>
+        // an `initState` snapshot shares its nodes with the live list and its
+        // chain rots on the in-place mutations, so represent it with the
+        // immutable `initNodes` and walk the chain only for the live state
+        state === fieldArrayAtom() ? toArray(state) : state.initNodes,
       getValue: (): FieldArrayLLNode<Node>[] => fieldArrayAtom.array(),
       isDirty,
       ...restOptions,
