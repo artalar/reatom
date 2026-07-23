@@ -396,11 +396,12 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
   )
 
   fieldArrayAtom.reset.extend(
-    withActionMiddleware(() =>
-      function fieldArrayReset(next, ...params) {
-        if (!params.length) llReset()
-        return next(...params)
-      },
+    withActionMiddleware(
+      () =>
+        function fieldArrayReset(next, ...params) {
+          if (!params.length) llReset()
+          return next(...params)
+        },
     ),
   )
 

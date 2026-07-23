@@ -49,16 +49,16 @@ export interface LinkedList<
   size: number
   /**
    * Monotonic transaction counter driving the `changes` replay protocol: a
-   * consumer holding the previous version applies `changes`, a bigger gap
-   * means missed updates and requires a full rebuild. Never rewinds.
+   * consumer holding the previous version applies `changes`, a bigger gap means
+   * missed updates and requires a full rebuild. Never rewinds.
    */
   version: number
   changes: Array<LLChanges<Node>>
   /**
    * The nodes of the initial state in their initial order. Unlike the node
    * chain, this plain array is immune to the in-place pointer mutations
-   * performed by list operations, so it stays pristine across the atom
-   * lifetime and is used by `reset`. Empty for derived lists (`reatomMap`).
+   * performed by list operations, so it stays pristine across the atom lifetime
+   * and is used by `reset`. Empty for derived lists (`reatomMap`).
    */
   initNodes: Array<Node>
 }
@@ -71,8 +71,8 @@ export interface LinkedListLikeAtom<T extends LinkedList = LinkedList>
 }
 
 /**
- * The own methods of a linked list atom, decoupled from the base atom shape,
- * so derived abstractions (like `reatomFieldArray`) can compose them with a
+ * The own methods of a linked list atom, decoupled from the base atom shape, so
+ * derived abstractions (like `reatomFieldArray`) can compose them with a
  * different base keeping every member declared in a single place.
  */
 export interface LinkedListMethods<
@@ -146,7 +146,9 @@ export interface LinkedListAtom<
   Params extends any[] = any[],
   Node extends Rec = Rec,
   Key extends keyof Node = never,
-> extends LinkedListLikeAtom<LinkedList<LLNode<Node>>>,
+>
+  extends
+    LinkedListLikeAtom<LinkedList<LLNode<Node>>>,
     LinkedListMethods<Params, Node, Key> {}
 
 // TODO rename to `DerivedLinkedList`
@@ -314,7 +316,9 @@ const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
   }
 }
 
-const isPristineLL = <Node extends LLNode>(state: LinkedList<Node>): boolean => {
+const isPristineLL = <Node extends LLNode>(
+  state: LinkedList<Node>,
+): boolean => {
   const LL_NEXT: LL_NEXT = state.LL_NEXT as any
   let head: null | LLNode = state.head
   for (const node of state.initNodes) {
