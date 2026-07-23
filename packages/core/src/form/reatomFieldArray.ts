@@ -4,12 +4,14 @@ import {
   type AtomState,
   isAtom,
   named,
+  withActionMiddleware,
   withParams,
 } from '../core'
 import { withCallHook } from '../extensions'
 import {
   type LinkedList,
   type LinkedListAtom,
+  type LinkedListLikeAtom,
   type LLNode,
   reatomLinkedList,
 } from '../primitives'
@@ -127,7 +129,11 @@ type FieldArrayInitState<T> = {
 export type FieldArrayAtom<
   Param = any,
   Node extends FieldsAtomizeInitState = FieldsAtomizeInitState,
-> = LinkedListAtom<[FieldArrayInitState<Param>], FieldsAtomize<Node>> &
+> = Omit<
+  LinkedListAtom<[FieldArrayInitState<Param>], FieldsAtomize<Node>>,
+  'reset'
+> &
+  LinkedListLikeAtom<FieldArrayState<Node>> &
   BaseFieldExt<
     FieldArrayState<Node>,
     [initState: FieldArrayInitState<Param>[]]
@@ -352,7 +358,7 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
     }),
   )
 
-  const fieldArrayAtom = reatomLinkedList(
+  const linkedListAtom = reatomLinkedList(
     {
       create: (param) => {
         const factoryName = `${name}.item`
@@ -369,7 +375,11 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
       ),
     },
     name,
-  ).extend(
+  )
+
+  const llReset = linkedListAtom.reset
+
+  const fieldArrayAtom = linkedListAtom.extend(
     withBaseField({
       initStateAtom,
       getNormalizedState: (state) => {
@@ -380,13 +390,23 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
           elements.push(head)
           head = head[state.LL_NEXT]
         }
-        // TODO: reatomLinkedLost does not support the same elements in two or more difference linked lists so we need to limit size of the array there
-        return elements.slice(0, state.size)
+        // a stale `initState` snapshot chain is desynced from its `size`, as
+        // the nodes are shared with the live list, so use `initNodes` then
+        return elements.length === state.size ? elements : state.initNodes
       },
       getValue: (): FieldArrayLLNode<Node>[] => fieldArrayAtom.array(),
       isDirty,
       ...restOptions,
     }),
+  )
+
+  fieldArrayAtom.reset.extend(
+    withActionMiddleware(() =>
+      function fieldArrayReset(next, ...params) {
+        if (!params.length) llReset()
+        return next(...params)
+      },
+    ),
   )
 
   return Object.assign(fieldArrayAtom, {
