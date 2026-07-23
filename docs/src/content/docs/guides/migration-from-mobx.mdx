@@ -1,0 +1,758 @@
+---
+title: Migration from MobX
+description: Map the full MobX surface — observables, actions, reactions, custom atoms, mobx-utils, and MobX-State-Tree — onto Reatom
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components'
+
+MobX makes state reactive by watching mutations through proxies. It is terse, but the magic comes with rules: read observables inside `observer`, mutate only inside actions, reach for `runInAction` after every `await`, remember `action.bound` so `this` survives, and keep `makeObservable` annotations in sync with your fields.
+
+Reatom keeps the same reactivity but makes the reads **explicit** — you call an atom to read it, you call `.set` to change it. There are no proxies, no annotations, and no `this`, so the rules that surround MobX simply do not apply. This guide maps the whole MobX surface onto Reatom: observables, actions, reactions, custom atoms, `mobx-utils`, and MobX-State-Tree.
+
+## One example, before and after
+
+Loading a list — the everyday case. MobX has no async status built in, so even with `flow` you hand-track `loading` and `error`, wrap the component in `observer`, and trigger the load from an effect.
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```tsx
+import { useEffect } from 'react'
+import { makeAutoObservable } from 'mobx'
+import { observer } from 'mobx-react-lite'
+
+class IssueStore {
+  issues = []
+  loading = false
+  error = null
+  constructor() {
+    makeAutoObservable(this) // `*load` is auto-detected as a flow
+  }
+  *load() {
+    this.loading = true
+    this.error = null
+    try {
+      this.issues = yield api.getIssues()
+    } catch (error) {
+      this.error = error
+    } finally {
+      this.loading = false
+    }
+  }
+}
+const store = new IssueStore()
+
+const IssueList = observer(() => {
+  useEffect(() => {
+    store.load()
+  }, [])
+
+  if (store.loading) return <Spinner />
+  if (store.error) return <ErrorBox message={store.error.message} />
+  return (
+    <ul>
+      {store.issues.map((issue) => (
+        <li key={issue.id}>{issue.title}</li>
+      ))}
+    </ul>
+  )
+})
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```tsx
+import { computed, withAsyncData, wrap } from '@reatom/core'
+import { reatomComponent } from '@reatom/react'
+
+export const issues = computed(async () => {
+  return await wrap(api.getIssues())
+}, 'issues').extend(withAsyncData({ initState: [] }))
+
+const IssueList = reatomComponent(() => {
+  if (!issues.ready()) return <Spinner />
+  if (issues.error()) return <ErrorBox message={issues.error()!.message} />
+  return (
+    <ul>
+      {issues.data().map((issue) => (
+        <li key={issue.id}>{issue.title}</li>
+      ))}
+    </ul>
+  )
+}, 'IssueList')
+```
+
+</TabItem>
+</Tabs>
+
+One `computed` extended with `withAsyncData` replaces the class, the flow, and the three hand-tracked fields. It is **lazy** — reading `issues.data()` connects it and starts the fetch, so no mount effect — and it gives `.ready()`, `.error()`, `.data()`, plus request abort on a new run, for free. (Note: after a failed request `issues.ready()` is `true` — the request _settled_ — so check `!ready()` for the spinner first, then `error()`.)
+
+MobX _can_ be lazy too — wiring `onBecomeObserved` in the constructor fetches on first read — but that is more boilerplate, not less, and it walks straight into a [render-time trap](#flow-fixes-one-async-footgun-not-the-other) where the loading flag silently fails to show on mount (too much code to reproduce here). In Reatom the laziness is the `computed` itself and the status is derived, so there is nothing to wire and nothing to mis-time.
+
+## APIs that disappear
+
+These MobX tools have **no Reatom equivalent because the problem they solve does not exist** in an explicit-read model:
+
+| MobX                                                     | Why it is gone in Reatom                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `makeObservable` / `makeAutoObservable`                  | atoms declare themselves — there is no annotation step to keep in sync          |
+| `action`, `runInAction`, `configure({ enforceActions })` | state changes only through `.set`; no "mutate inside an action" rule to enforce |
+| `action.bound`, `flow.bound`, `autoBind`                 | there is no `this` — an action is a standalone function                         |
+| `transaction`                                            | updates batch automatically to the next tick                                    |
+| `observable.ref`                                         | atoms already hold immutable references; a new value is a new reference         |
+| `keepAlive`                                              | a `computed` stays cached without a subscriber, so nothing to keep alive ¹      |
+| `untracked` around reads                                 | reads are explicit; use `peek(atom)` for a one-off non-reactive read            |
+| `toJS` deep unwrap                                       | `deatomize(model)` returns a plain snapshot                                     |
+
+¹ <small>MobX's `keepAlive` bundles two things behind one flag — caching the value and keeping the computed connected to its dependencies. Reatom decouples them: the value is cached with no subscriber (the `keepAlive: true` win), while connect/disconnect resources (subscriptions, polling, `withConnectHook`) still release when the computed is unobserved (the `keepAlive: false` win).</small>
+
+## The shift: class store → factory of atoms
+
+**1. A class store becomes a factory.** `makeAutoObservable(this)` in a constructor becomes a function that returns atoms, computeds, and actions. The class name becomes the factory name; instantiating with `new` becomes calling the factory.
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```ts
+class CounterStore {
+  count = 0
+  constructor() {
+    makeAutoObservable(this)
+  }
+  get doubled() {
+    return this.count * 2
+  }
+  inc() {
+    this.count++
+  }
+}
+const counter = new CounterStore()
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { atom, action, computed } from '@reatom/core'
+
+export const reatomCounter = (name: string) => {
+  const count = atom(0, name)
+  const inc = action(() => count.set((c) => c + 1), `${name}.inc`)
+  const doubled = computed(() => count() * 2, `${name}.doubled`)
+
+  return count.extend(() => ({ doubled, inc }))
+}
+export const counter = reatomCounter('counter')
+```
+
+</TabItem>
+</Tabs>
+
+A getter becomes a `computed`, a method a standalone `action`, and the factory returns the **key atom** extended with the rest — so a consumer reads `counter()` for the value and reaches `counter.doubled()` / `counter.inc()` off it. (`withActions` is the shortcut for bolting an action or two onto a single exported atom; inside a factory, plain `action`s read cleaner.) If a store is a plain singleton with no nested instances, you can skip the factory and export the atoms directly as a module — the factory earns its place when you need several instances (`useLocalObservable`, nested stores), covered in [Scoped instances](#scoped-instances).
+
+**2. Nested observables become atomized data.** MobX makes every nested object and array observable so a deep mutation (`store.user.profile.name = 'Jane'`) is tracked. Reatom keeps the structure as plain data and lifts only the **mutable leaves** into atoms — [atomization](/handbook/atomization/). A deep update is then a `.set` on the leaf; there is no `this`, no proxy, and no `runInAction`.
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```ts
+runInAction(() => {
+  store.user.profile.name = 'Jane'
+})
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { atom } from '@reatom/core'
+
+const user = {
+  profile: {
+    name: atom('John', 'user.name'),
+    age: atom(30, 'user.age'),
+  },
+}
+
+user.profile.name.set('Jane')
+```
+
+</TabItem>
+</Tabs>
+
+For applying a whole plain patch at once — a DTO from the server — `updateAtomized(user, { profile: patch })` splashes it across the atomized leaves in one call, touching only the keys present.
+
+## Actions and async
+
+A method that changes state maps to an action (`withActions` on the atom, or a standalone `action`). MobX needs `runInAction` to mutate after an `await`; Reatom has no such rule — but for tracked async you get more than a rule removed.
+
+The first screen showed **reading** data with `withAsyncData`. For **commands** — a POST, a form submit — use `action(async …).extend(withAsync())`, which tracks `.ready()` / `.error()` on the action itself.
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```ts
+class TodoStore {
+  saving = false
+  saveError = null
+  constructor() {
+    makeAutoObservable(this)
+  }
+  *save(todo) {
+    this.saving = true
+    this.saveError = null
+    try {
+      yield api.saveTodo(todo)
+    } catch (error) {
+      this.saveError = error
+    } finally {
+      this.saving = false
+    }
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { action, withAsync, wrap } from '@reatom/core'
+
+export const save = action(async (todo) => {
+  await wrap(api.saveTodo(todo))
+}, 'save').extend(withAsync())
+
+// save.ready() — false while the request is in flight
+// save.error() — the failure, if any
+```
+
+</TabItem>
+</Tabs>
+
+`flow` / `flowResult` map to `action(async …)` — plain async/await instead of generators. `flow` cancels a running generator; Reatom's `withAbort()` cancels the previous call when a new one starts (add it to the action). `mobx-utils`' `fromPromise` maps to `computed(async …).extend(withAsyncData())`, which is the same "promise as observable state" idea with `.ready()`/`.error()`/`.data()` baked in.
+
+### `flow` fixes one async footgun, not the other
+
+MobX's async rules — `runInAction`, `flow` — are about mutating state **after an `await`**. They do nothing for mutating state **during a render**, and the two are easy to confuse. This pattern trips on exactly that gap: lazily fetch when data is first observed, and flip a loading flag.
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```tsx
+class Store {
+  items = []
+  loading = false
+  constructor() {
+    makeAutoObservable(this)
+    onBecomeObserved(this, 'items', this.load) // fires when `items` is first read
+  }
+  load = async () => {
+    this.loading = true // set synchronously, before the await
+    this.items = await api.getItems()
+    this.loading = false
+  }
+}
+const store = new Store()
+
+const List = observer(() => (
+  <>
+    {store.loading && <Spinner />} {/* never shows on mount */}
+    <ul>
+      {store.items.map((i) => (
+        <li key={i.id}>{i.name}</li>
+      ))}
+    </ul>
+  </>
+))
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```tsx
+export const items = computed(async () => {
+  return await wrap(api.getItems())
+}, 'items').extend(withAsyncData({ initState: [] }))
+
+const List = reatomComponent(
+  () => (
+    <>
+      {!items.ready() && <Spinner />}
+      <ul>
+        {items.data().map((i) => (
+          <li key={i.id}>{i.name}</li>
+        ))}
+      </ul>
+    </>
+  ),
+  'List',
+)
+```
+
+</TabItem>
+</Tabs>
+
+On mount the `<Spinner>` never appears — yet it shows fine when `load()` is called from a button. `onBecomeObserved` fires **during** the render that first reads `items`, so `this.loading = true` runs synchronously inside the render reaction, and MobX does not re-render a reaction for a mutation made during its own run. Switching `load` to a `flow` does **not** help: `flow` only wraps the code **after** each `yield`; the `loading = true` before the first yield still runs mid-render. (It is already inside an auto-action from `makeAutoObservable`, and still breaks — the problem is _when_ the mutation happens, not whether it is in an action.) The fix is to move the trigger out of render — a `useEffect` — or defer the mutation.
+
+Reatom has no such flag. `ready()` is **derived** from the `computed`'s async lifecycle, not a value set during render; reading `items.data()` connects the computed (the `onBecomeObserved` analogue) and starts the fetch, and the spinner is a pure derivation. There is no mutation-during-render to mis-time, so it works on mount.
+
+## Reactions
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```ts
+import { autorun, reaction, when } from 'mobx'
+
+// runs now and on every read dependency change
+autorun(() => console.log(user.name))
+
+// runs only when the tracked expression changes (not on init)
+reaction(
+  () => user.name,
+  (name) => console.log(name),
+)
+
+// resolves once when the condition becomes true
+await when(() => store.ready)
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import {
+  effect,
+  ifChanged,
+  isInit,
+  peek,
+  take,
+  throwAbort,
+  wrap,
+} from '@reatom/core'
+
+// runs now and on every read dependency change
+effect(() => console.log(userName()))
+
+// runs only when the tracked atom changes (not on init)
+effect(() => {
+  const name = userName()
+  if (isInit()) return
+  peek(() => console.log(name))
+})
+
+// resolves once when the condition becomes true
+await wrap(take(ready, (v) => v || throwAbort()))
+```
+
+</TabItem>
+</Tabs>
+
+`autorun` maps directly to `effect` — both run immediately and re-run on any read dependency. `reaction` is the subtle one: read the atom first, then guard with `isInit()`, then run the untracked callback with `peek`. **Watch this on migration** — a literal `reaction` → `effect` without the `isInit()` guard fires an extra time on mount, which is a silent bug if the callback sends analytics or a request. `when` becomes `take` with a `throwAbort()` filter — the wait continues until the predicate passes.
+
+Reaction **options** map to how you shape the effect:
+
+```ts
+// { fireImmediately: true } — the Reatom default; just drop the isInit() guard
+effect(() => cb(dataAtom()))
+
+// { delay: 300 } — sleep inside the effect; each new run aborts the sleeping
+// previous one, so it debounces
+effect(async () => {
+  const value = dataAtom()
+  await wrap(sleep(300))
+  peek(() => cb(value))
+})
+
+// { equals: comparer.structural } — memoize the source so it emits on real changes only
+const dataAtom = computed(() => derive(), 'data').extend(withMemo(isDeepEqual))
+
+// { onError } — handle failures with withErrorHook
+const source = computed(() => derive(), 'data').extend(
+  withErrorHook((error) => report(error)),
+)
+```
+
+MobX's lower-level **observation** APIs are separate hooks, not reaction options:
+
+```ts
+// onBecomeObserved / onBecomeUnobserved — first subscriber / last unsubscribe
+const data = computed(() => derive(), 'data').extend(
+  withConnectHook(() => startPolling()),
+  withDisconnectHook(() => stopPolling()),
+)
+
+// observe(obj, cb) — react to an atom's own changes
+const name = atom('', 'name').extend(
+  withChangeHook((next, prev) => sync(next, prev)),
+)
+
+// intercept(obj, cb) — inspect or replace a value before it lands
+// (withParams for a transform; withMiddleware if you also need to reject a change)
+const age = atom(0, 'age').extend(
+  withParams((value: number) => Math.max(0, value)),
+)
+```
+
+## Collections and computed-with-args
+
+MobX ships observable `Map`/`Set`/array because native ones are not reactive. Reatom has the same primitives, holding an immutable collection that is replaced on each change:
+
+| MobX               | Reatom        |
+| ------------------ | ------------- |
+| `observable.array` | `reatomArray` |
+| `observable.map`   | `reatomMap`   |
+| `observable.set`   | `reatomSet`   |
+
+MobX's `computed` takes no arguments, so a value keyed by an id uses `computedFn` (from `mobx-utils`) or `createTransformer`. In Reatom, mint one `computed` per key and cache it — each instance is memoized and reactive on its own:
+
+```ts
+import { computed, reatomMap } from '@reatom/core'
+
+const cache = reatomMap<string, ReturnType<typeof computed<number>>>(
+  [],
+  '_priceCache',
+)
+
+export const priceWithTax = (id: string) =>
+  cache.getOrCreate(id, () =>
+    computed(() => prices()[id] * 1.2, `priceWithTax#${id}`),
+  )
+```
+
+## Custom observables
+
+MobX's lowest-level extension point is `createAtom(name, onBecomeObserved, onBecomeUnobserved)` plus `reportObserved()` / `reportChanged()` — used to wrap an external source (a clock, a socket) that should only run while something watches it. Reatom's `reatomObservable` expresses the same lifecycle declaratively:
+
+<Tabs syncKey="lib">
+<TabItem label="MobX">
+
+```ts
+import { createAtom } from 'mobx'
+
+class Clock {
+  atom
+  value = new Date()
+  constructor() {
+    this.atom = createAtom(
+      'Clock',
+      () => this.start(), // onBecomeObserved
+      () => this.stop(), // onBecomeUnobserved
+    )
+  }
+  get now() {
+    this.atom.reportObserved()
+    return this.value
+  }
+  tick() {
+    this.value = new Date()
+    this.atom.reportChanged()
+  }
+  start() {
+    this.timer = setInterval(() => this.tick(), 1000)
+  }
+  stop() {
+    clearInterval(this.timer)
+  }
+}
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { reatomObservable } from '@reatom/core'
+
+export const now = reatomObservable<Date>({
+  initState: new Date(),
+  subscribe(next) {
+    const timer = setInterval(() => next(new Date()), 1000)
+    return () => clearInterval(timer) // runs on disconnect
+  },
+})
+```
+
+</TabItem>
+</Tabs>
+
+`subscribe` runs when the atom gains its first observer and its returned cleanup runs when the last one leaves — exactly `onBecomeObserved` / `onBecomeUnobserved`. For a source you also write back to, add a `next` field to the producer; `reportChanged` becomes calling the `next` callback.
+
+## React
+
+`observer(Component)` becomes `reatomComponent(Component, 'name')` — the wrapper that tracks which atoms the render reads. Unlike `observer`, you can read atoms conditionally and after early returns (no rules-of-hooks constraints), and any async started in the component is aborted on unmount. For a trivial read you do not even need the adapter — `useSyncExternalStore(atom.subscribe, atom)` works with plain React.
+
+`useLocalObservable(() => new Store())` — a store scoped to a component — becomes the [factory + provider pattern](#scoped-instances).
+
+## Scoped instances
+
+<Aside type="note" title="A singleton store needs no DI here">
+  In MobX, even a single root store is usually handed down through a React
+  context — a `Provider` plus a `useStore` hook (or the legacy `inject` from
+  `mobx-react`) — largely to keep it testable and SSR-safe. A Reatom singleton
+  is just **module-level atoms**: `import {todos} from './model'` and read them,
+  no provider. The per-test and per-request isolation that DI buys comes instead
+  from [`context.start()`](/handbook/async-context/) scoping a whole context at
+  once. The React provider below appears **only** when you need several
+  independent instances of a model on one page (`useLocalObservable`, nested
+  stores).
+</Aside>
+
+`useLocalObservable`, and nested stores instantiated per component, map to a factory handed to a subtree through a provider. Create the model in a `reatomFactoryComponent`, put it in a `variable`, and join the React subtree to the frame that owns it:
+
+```tsx
+import { variable, top, wrap } from '@reatom/core'
+import {
+  reatomFactoryComponent,
+  reatomContext,
+  reatomComponent,
+} from '@reatom/react'
+import { reatomCounter } from './counter'
+
+// pass the factory: params and model type are inferred
+const counterVar = variable(reatomCounter, 'counterVar')
+
+export const CounterScope = reatomFactoryComponent(({ children }) => {
+  counterVar.set('counter') // 'counter' is the factory's name arg — runs it, stores the instance
+  const frame = top() // capture the frame HERE, next to .set — see note
+  return () => (
+    <reatomContext.Provider value={frame}>{children}</reatomContext.Provider>
+  )
+}, 'CounterScope')
+
+export const CounterView = reatomComponent(() => {
+  const counter = counterVar.require()
+  return (
+    <button onClick={wrap(() => counter.inc())}>{counter.doubled()}</button>
+  )
+}, 'CounterView')
+```
+
+> **Why the provider is needed.** Reatom's frame graph is built from execution and dependencies, not from JSX nesting — the two are independent. `variable.set` writes onto the frame running _right now_, and `variable.require` looks a value up by walking the dependency graph. `reatomContext.Provider` joins a slice of the React tree to a specific frame; without it a `reatomComponent`, however deep in the markup, attaches to the root and never sees the value. Capture `top()` in the **same phase** where you called `.set()` (in a factory component that is the init phase, not the render closure) — a frame captured in the wrong phase is unreachable and the lookup returns `undefined` with no warning.
+
+## MobX-State-Tree
+
+MST is MobX plus a runtime type system and a tree: you declare a shape with `types.*`, and instances know their parent, root, and path. That structure buys snapshots, patches, references, and typed actions. Most of it maps onto Reatom's [atomization](/handbook/atomization/) and factories.
+
+A `types.model` becomes a factory. State that MST persists becomes atoms; `.views` (getters) become computeds; `.actions` become actions:
+
+<Tabs syncKey="lib">
+<TabItem label="MobX-State-Tree">
+
+```ts
+import { types } from 'mobx-state-tree'
+
+const Todo = types
+  .model('Todo', { id: types.identifier, title: types.string, done: false })
+  .actions((self) => ({
+    toggle() {
+      self.done = !self.done
+    },
+  }))
+
+const TodoStore = types
+  .model('TodoStore', { todos: types.array(Todo) })
+  .views((self) => ({
+    get left() {
+      return self.todos.filter((t) => !t.done).length
+    },
+  }))
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import {
+  atom,
+  computed,
+  reatomLinkedList,
+  withActions,
+  withLocalStorage,
+} from '@reatom/core'
+
+type TodoDto = { id: string; title: string; done?: boolean }
+
+// the node factory: plain props in, a full model out
+const reatomTodo = ({ id, title, done = false }: TodoDto) => ({
+  id,
+  title: atom(title, `todos#${id}.title`),
+  done: atom(done, `todos#${id}.done`).extend(
+    withActions((target) => ({ toggle: () => target.set((d) => !d) })),
+  ),
+})
+
+export const todos = reatomLinkedList(
+  { create: reatomTodo, key: 'id' }, // `key` gives id lookup, like types.identifier
+  'todos',
+).extend(withLocalStorage('todos')) // snapshot in and out, for free
+
+export const left = computed(
+  () => todos.array().filter((todo) => !todo.done()).length,
+  'todos.left',
+)
+```
+
+</TabItem>
+</Tabs>
+
+`reatomLinkedList` takes a node factory and mirrors MST's tree ergonomics: you `todos.create({ id, title })` from a plain object (MST accepts plain snapshots too), look items up by id with `todos.map().get(id)` (`types.identifier` / `types.reference`), and reorder with `move` / `swap` without rebuilding the array. And because each node's fields are atoms, serialization is built in: `deatomize(todos)` (or `JSON.stringify`) yields a plain-JSON snapshot — MST's `getSnapshot` — and the `withLocalStorage('todos')` above reconstructs the whole list, nodes and atoms, on reload — MST's `applySnapshot`. So the plain-object round-trip that draws people to MST comes with the primitive, no type-tree required.
+
+The rest of the MST surface:
+
+| MobX-State-Tree                                 | Reatom                                                                                   |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `types.*` runtime validation                    | a Standard Schema (Zod, Valibot) where you need it — e.g. `withLocalStorage({ schema })` |
+| `getSnapshot(node)`                             | `deatomize(model)` — a plain-JSON snapshot                                               |
+| `applySnapshot(node, snap)`                     | `updateAtomized(model, snap)`                                                            |
+| `onSnapshot(node, cb)`                          | `effect(() => cb(deatomize(model)))`                                                     |
+| `types.reference` / `types.identifier`          | atomization — hold the real object, no `resolveIdentifier` needed                        |
+| `.volatile` state                               | a plain atom that simply is not persisted                                                |
+| `afterCreate` / `beforeDestroy` / `addDisposer` | `withConnectHook` / `withDisconnectHook` / `abortVar.subscribe`                          |
+| `getEnv(self)` dependency injection             | factory arguments, or a `variable`                                                       |
+| `addMiddleware`                                 | `withMiddleware`, or `addGlobalExtension`                                                |
+| `protect` / `unprotect`                         | not needed — state only changes through `.set`                                           |
+
+Two MST features have **no direct equivalent yet**, and it is worth saying so plainly:
+
+- **Patches** (`onPatch` / `applyPatch` / `recordPatches`) — a stream of JSON patches for undo/redo or collaborative sync. `withChangeHook` tells you an atom changed but does not emit a path or an inverse patch. A `withUndo` extension for the undo/redo case is planned; there is a [recipe](#undo--redo) meanwhile.
+- **Actions as data** (`onAction` / `applyAction` / `recordActions`) — serializable, replayable actions. Reatom actions are atoms under the hood, so this is possible in principle, but there is no ready API. `@reatom/admin` can export and replay a session for debugging, which covers the devtools use case.
+
+## Undo / redo
+
+There is no built-in undo yet (a `withUndo` extension is planned). A small recipe covers linear history — `isCausedBy` distinguishes an undo/redo write from a normal edit:
+
+```ts
+import { action, atom, isCausedBy, withChangeHook } from '@reatom/core'
+
+export const withUndo = (target, name = target.name) => {
+  const past = atom([], `${name}.past`)
+  const future = atom([], `${name}.future`)
+
+  const undo = action(() => {
+    const stack = past()
+    if (!stack.length) return
+    future.set((f) => [target(), ...f])
+    past.set(stack.slice(0, -1))
+    target.set(stack[stack.length - 1])
+  }, `${name}.undo`)
+
+  const redo = action(() => {
+    const stack = future()
+    if (!stack.length) return
+    past.set((p) => [...p, target()])
+    future.set(stack.slice(1))
+    target.set(stack[0])
+  }, `${name}.redo`)
+
+  target.extend(
+    withChangeHook((_state, prevState) => {
+      if (isCausedBy(undo) || isCausedBy(redo)) return
+      past.set((stack) => [...stack, prevState])
+      future.set([])
+    }),
+  )
+
+  return Object.assign(target, { past, future, undo, redo })
+}
+```
+
+## Testing
+
+A MobX store test instantiates the store and asserts observables — fine for a flat store. **Nested stores** are where it bites: a child that reaches a parent or a root store forces you to build the whole tree (or hand-mock the parent) just to exercise one branch, and you recreate instances in every `beforeEach` so state does not leak between cases.
+
+Reatom swaps manual re-instantiation for context isolation with the [reusables test harness](https://reatom.github.io/reusables/test/) — it wraps each test in a fresh `context.start()`, so the same module-level atoms hold independent state per test, and tests of the same model run isolated (even in parallel).
+
+```shell
+npx jsrepo add github/reatom/reusables test
+```
+
+```ts
+import { test, expect } from 'test'
+import { reatomTodo } from './todo'
+
+test('toggle', () => {
+  const todo = reatomTodo({ id: '1', title: 'write docs' })
+  todo.done.toggle()
+  expect(todo.done()).toBe(true)
+}) // next test starts from a clean context
+```
+
+A **nested model is just its factory** — call it directly, no root store to assemble and no parent to mock. Computeds also read correctly without an active reaction, so there is no `autorun` to set up just to observe a derived value.
+
+To swap a leaf, `mock` replaces any atom or action for the duration of a test:
+
+```ts
+import { mock } from '@reatom/core'
+
+test('total uses the live price', () => {
+  const un = mock(price, () => 100) // pin a source atom
+  expect(totalWithTax()).toBe(120)
+  un()
+})
+```
+
+And a `variable`-injected dependency (the DI from [Scoped instances](#scoped-instances)) is mocked by running the body with a stub — no container, no `getEnv`:
+
+```ts
+import { wrap } from '@reatom/core'
+
+test('save posts to the api', async () => {
+  const calls: unknown[] = []
+  const stub = { save: async (todo) => (calls.push(todo), 'id-1') }
+  const id = await wrap(apiVar.run(stub, () => saveTodo(todo)))
+  expect(id).toBe('id-1')
+  expect(calls).toHaveLength(1)
+})
+```
+
+For persistence, `createMemStorage({ name, snapshot })` gives a controlled in-memory backend.
+
+## Ecosystem
+
+| Package (monthly installs)       | Role                        | Reatom                                                              |
+| -------------------------------- | --------------------------- | ------------------------------------------------------------------- |
+| `mobx-react-lite` / `mobx-react` | React bindings (`observer`) | `reatomComponent` (`@reatom/react`)                                 |
+| `mobx-utils`                     | promises, transformers, VMs | `withAsyncData`, keyed `computed`, `reatomForm`, `reatomObservable` |
+| `mobx-state-tree`                | typed tree with snapshots   | factories + atomization (above)                                     |
+| `mobx-keystone`                  | class-based MST alternative | migrated the same way — a factory of atoms                          |
+| `mobx-persist-store`             | persistence                 | `withLocalStorage` / `withSessionStorage` / `withIndexedDb`         |
+| `mobx-devtools-mst`              | devtools                    | `connectLogger()`; `@reatom/admin` for a UI                         |
+
+A few `mobx-utils` specifics: `createViewModel` (edit a draft, then `submit`/`reset`) maps to [`reatomForm`](/handbook/forms/introduction/); `lazyObservable` / `fromResource` map to `computed(...).extend(withConnectHook(...))` or `reatomObservable`; `deepObserve` maps to `effect(() => … deatomize(model))` for the subscription, though Reatom does not report the changed **path**; `keepAlive` is unnecessary since computeds cache without a subscriber.
+
+## Coverage table
+
+| MobX                                      | Reatom                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `observable` / `makeAutoObservable`       | `atom` (mutable leaves), plain data around them                     |
+| `observable.box`                          | `atom`                                                              |
+| `observable.array` / `.map` / `.set`      | `reatomArray` / `reatomMap` / `reatomSet`                           |
+| `observable.ref`                          | default — atoms hold references                                     |
+| `observable.deep`                         | atomization of the mutable leaves                                   |
+| `computed`                                | `computed`                                                          |
+| `computed.struct`                         | `computed` + `withMemo(isDeepEqual)`                                |
+| `action` / `runInAction`                  | `withActions` / `action`, or a direct `.set`                        |
+| `action.bound` / `flow.bound`             | not needed — no `this`                                              |
+| `flow` / `flowResult`                     | `action(async …)` (+ `withAsync` for status, `withAbort` to cancel) |
+| `autorun`                                 | `effect`                                                            |
+| `reaction`                                | `effect` + `ifChanged` / `isInit` guard                             |
+| `when`                                    | `take(atom, (v) => v \|\| throwAbort())`                            |
+| `onBecomeObserved` / `onBecomeUnobserved` | `withConnectHook` / `withDisconnectHook`                            |
+| `observe`                                 | `withChangeHook`                                                    |
+| `intercept`                               | `withParams` (or `withMiddleware` to reject a change)               |
+| `untracked`                               | `peek`                                                              |
+| `toJS`                                    | `deatomize`                                                         |
+| `transaction`                             | automatic batching                                                  |
+| `createAtom` / `reportObserved`           | `reatomObservable`                                                  |
+| `computedFn` / `createTransformer`        | keyed `computed` via `reatomMap.getOrCreate`                        |
+| `observer` / `<Observer>`                 | `reatomComponent`, or `useSyncExternalStore`                        |
+| `useLocalObservable`                      | factory + `reatomContext.Provider`                                  |
+| `configure` / `enableStaticRendering`     | context and SSR are configured via `context.start` (see SSR guide)  |
+| `spy` / `trace` / `getDebugName`          | `connectLogger()` / `@reatom/admin`                                 |
+| `getDependencyTree` / `getObserverTree`   | `@reatom/admin` cause graph                                         |
+| MST `getSnapshot` / `applySnapshot`       | `deatomize` / `updateAtomized`                                      |
+| MST `onSnapshot`                          | `effect(() => cb(deatomize(model)))`                                |
+| MST references / identifiers              | atomization (hold the real object)                                  |
+| MST `getEnv`                              | factory arguments or `variable`                                     |
+| MST patches / actions-as-data             | no direct equivalent yet (see above)                                |
