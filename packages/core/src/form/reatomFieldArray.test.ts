@@ -443,6 +443,21 @@ describe(`reset consistency (#1309)`, () => {
     ])
   })
 
+  test(`keeps dirty relevant after move`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'resetMoveDirty.fieldArray',
+    })
+    expect(fieldArray.focus().dirty).toBe(false)
+
+    fieldArray.move(fieldArray.array()[0]!, fieldArray.array()[2]!)
+    notify()
+    expect(fieldArray.focus().dirty).toBe(true)
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().dirty).toBe(false)
+  })
+
   test(`keeps dirty relevant after swap`, () => {
     const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
       name: 'resetSwapDirty.fieldArray',

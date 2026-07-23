@@ -245,7 +245,3 @@ const AddressTagField = reatomComponent(
   },
 )
 ```
-
-## Known limitations
-
-Currently, the `dirty` state calculation does not work quite accurately because `reatomLinkedList` does not yet support multiple lists with overlapping elements (when one element can be in two or more linked lists simultaneously). Currently, the dirty check is limited to only checking the number of elements between `initState` and the current field array state. This can lead to situations where, for example, when moving/swapping elements, the field will be considered untouched.
