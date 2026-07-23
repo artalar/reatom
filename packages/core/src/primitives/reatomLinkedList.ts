@@ -49,6 +49,13 @@ export interface LinkedList<
   size: number
   version: number
   changes: Array<LLChanges<Node>>
+  /**
+   * The nodes of the initial state in their initial order. Unlike the node
+   * chain, this plain array is immune to the in-place pointer mutations
+   * performed by list operations, so it stays pristine across the atom
+   * lifetime and is used by `reset`. Empty for derived lists (`reatomMap`).
+   */
+  initNodes: Array<Node>
 }
 
 export interface LinkedListLikeAtom<T extends LinkedList = LinkedList>
@@ -72,6 +79,14 @@ export interface LinkedListAtom<
   swap: Action<[a: LLNode<Node>, b: LLNode<Node>], void>
   move: Action<[node: LLNode<Node>, after: null | LLNode<Node>], void>
   clear: Action<[], void>
+
+  /**
+   * Restores the list to its initial nodes in their initial order — the state
+   * captured at creation or at the last `initiateFromState` /
+   * `initiateFromSnapshot` application. Node identity is preserved: the
+   * original node objects are relinked, not recreated.
+   */
+  reset: Action<[], void>
 
   find: (cb: (node: LLNode<Node>) => boolean) => null | LLNode<Node>
 
@@ -505,12 +520,15 @@ export function reatomLinkedList<
       changes: [],
       head: null,
       tail: null,
+      initNodes: [],
     } as LinkedList<LLNode<Node>>
 
     for (const node of initState) {
       throwModel(node)
       addLL(state, node, state.tail)
     }
+
+    state.initNodes = toArray(state)
 
     return state
   }
@@ -527,12 +545,15 @@ export function reatomLinkedList<
       changes: [],
       head: null,
       tail: null,
+      initNodes: [],
     } as LinkedList<LLNode<Node>>
 
     for (const node of initState) {
       throwModel(node)
       addLL(state, node, state.tail)
     }
+
+    state.initNodes = toArray(state)
 
     return state
   }
@@ -542,25 +563,28 @@ export function reatomLinkedList<
 
     let result: T
 
-    linkedList.set(({ head, tail, size, version, LL_PREV, LL_NEXT }) => {
-      STATE = {
-        LL_PREV,
-        LL_NEXT,
-        size,
-        version: version + 1,
-        changes: [],
-        head,
-        tail,
-      }
+    linkedList.set(
+      ({ head, tail, size, version, LL_PREV, LL_NEXT, initNodes }) => {
+        STATE = {
+          LL_PREV,
+          LL_NEXT,
+          size,
+          version: version + 1,
+          changes: [],
+          head,
+          tail,
+          initNodes,
+        }
 
-      try {
-        result = cb()
+        try {
+          result = cb()
 
-        return STATE
-      } finally {
-        STATE = null
-      }
-    })
+          return STATE
+        } finally {
+          STATE = null
+        }
+      },
+    )
 
     return result!
   }
@@ -682,6 +706,36 @@ export function reatomLinkedList<
     })
   }, `${name}.clear`)
 
+  const isPristine = (state: LinkedList<LLNode<Node>>): boolean => {
+    if (state.size !== state.initNodes.length) return false
+    let head: null | LLNode<Node> = state.head
+    for (const node of state.initNodes) {
+      if (head !== node) return false
+      head = head[LL_NEXT]
+    }
+    return head === null
+  }
+
+  const reset = action((): void => {
+    if (isPristine(STATE ?? linkedList())) return
+
+    return batchFn(() => {
+      const state = STATE!
+      const { initNodes } = state
+
+      clearLL(state)
+      state.changes.push({ kind: 'clear' })
+
+      if (initNodes.length) {
+        for (const node of initNodes) {
+          throwModel(node)
+          addLL(state, node, state.tail)
+        }
+        state.changes.push({ kind: 'createMany', nodes: initNodes.slice() })
+      }
+    })
+  }, `${name}.reset`)
+
   const find = (cb: (node: LLNode<Node>) => boolean): null | LLNode<Node> => {
     for (let { head } = linkedList(); head; head = head[LL_NEXT]) {
       if (cb(head)) return head
@@ -753,6 +807,7 @@ export function reatomLinkedList<
           changes: [],
           head: null,
           tail: null,
+          initNodes: [],
           map: new WeakMap(),
         }
 
@@ -773,6 +828,7 @@ export function reatomLinkedList<
           size: mapList.size,
           version: ll.version,
           changes: [],
+          initNodes: [],
           map: mapList.map,
         }
 
@@ -946,6 +1002,7 @@ export function reatomLinkedList<
       swap,
       move,
       clear,
+      reset,
 
       find,
 

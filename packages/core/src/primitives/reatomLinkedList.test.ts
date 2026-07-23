@@ -1,6 +1,6 @@
 import { describe, expect, subscribe, test, vi } from 'test'
 
-import { atom, computed, isAtom, isConnected, notify } from '../core'
+import { atom, computed, context, isAtom, isConnected, notify } from '../core'
 import { withChangeHook } from '../extensions'
 import { deatomize, isCausedBy } from '../methods'
 import { createMemStorage, reatomPersist } from '../persist'
@@ -476,6 +476,185 @@ test('should allow using element from one list in another list via list-specific
   expect(nextInB?.n).toBe(20)
 
   expect(nodeInA).not.toBe(nodeInB)
+})
+
+describe('reset', () => {
+  const setup = () =>
+    reatomLinkedList({
+      create: (n: number) => ({ n }),
+      initSnapshot: [[1], [2], [3]],
+    })
+
+  test('should restore the initial state after removals preserving node identity', () => {
+    const list = setup()
+    const initNodes = list.array()
+
+    list.remove(initNodes[1]!)
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 3])
+
+    list.reset()
+    notify()
+    expect(list().size).toBe(3)
+    expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3])
+    expect(list.array().every((node, i) => node === initNodes[i])).toBe(true)
+    validateIntegrity(list().head, list)
+  })
+
+  test('should drop created elements', () => {
+    const list = setup()
+
+    const four = list.create(4)
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3, 4])
+
+    list.reset()
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3])
+    expect(list.array()).not.toContain(four)
+    validateIntegrity(list().head, list)
+  })
+
+  test('should restore the order after swap and move', () => {
+    const list = setup()
+    const [one, , three] = list.array()
+
+    list.swap(one!, three!)
+    list.move(one!, null)
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 3, 2])
+
+    list.reset()
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3])
+    validateIntegrity(list().head, list)
+  })
+
+  test('should restore all elements after clear', () => {
+    const list = setup()
+
+    list.clear()
+    notify()
+    expect(list().size).toBe(0)
+
+    list.reset()
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3])
+  })
+
+  test('should clear the list created without initial elements', () => {
+    const list = reatomLinkedList((n: number) => ({ n }))
+
+    list.create(1)
+    list.create(2)
+    notify()
+
+    list.reset()
+    notify()
+    expect(list().size).toBe(0)
+    expect(list.array()).toEqual([])
+  })
+
+  test('should be a no-op for a pristine list', () => {
+    const list = setup()
+    const track = subscribe(list)
+    notify()
+    const calls = track.mock.calls.length
+    const arrayBefore = list.array()
+
+    list.reset()
+    notify()
+    expect(track.mock.calls.length).toBe(calls)
+    expect(list.array()).toBe(arrayBefore)
+  })
+
+  test('should emit clear and createMany changes', () => {
+    const list = setup()
+    const initNodes = list.array()
+
+    list.remove(initNodes[0]!)
+    notify()
+
+    list.reset()
+    expect(list().changes).toEqual([
+      { kind: 'clear' },
+      { kind: 'createMany', nodes: initNodes },
+    ])
+  })
+
+  test('should keep derived reatomMap consistent', () => {
+    const list = setup()
+    const rows = list.reatomMap(({ n }) => ({ n: n * 10 }))
+    const track = subscribe(computed(() => rows.array().map(({ n }) => n)))
+    notify()
+    expect(track.mock.lastCall?.[0]).toEqual([10, 20, 30])
+
+    list.remove(list.array()[1]!)
+    notify()
+    expect(track.mock.lastCall?.[0]).toEqual([10, 30])
+
+    list.reset()
+    notify()
+    expect(track.mock.lastCall?.[0]).toEqual([10, 20, 30])
+  })
+
+  test('should reset to the state applied via initiateFromSnapshot', () => {
+    const list = setup()
+
+    list.set(list.initiateFromSnapshot([[10], [20], [30]]))
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([10, 20, 30])
+
+    list.remove(list.array()[0]!)
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([20, 30])
+
+    list.reset()
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([10, 20, 30])
+  })
+
+  test('should compose with batch', () => {
+    const list = setup()
+
+    list.batch(() => {
+      list.create(4)
+      list.reset()
+      list.create(5)
+    })
+    notify()
+    expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3, 5])
+    validateIntegrity(list().head, list)
+  })
+
+  test('should keep the state isolated between contexts', () => {
+    const list = setup()
+
+    const rootA = context.start()
+    const rootB = context.start()
+
+    rootA.run(() => {
+      list.set(list.initiateFromSnapshot([[10]]))
+      notify()
+      expect(list.array().map(({ n }) => n)).toEqual([10])
+    })
+
+    rootB.run(() => {
+      list.create(4)
+      notify()
+      list.reset()
+      notify()
+      expect(list.array().map(({ n }) => n)).toEqual([1, 2, 3])
+    })
+
+    rootA.run(() => {
+      list.create(11)
+      notify()
+      list.reset()
+      notify()
+      expect(list.array().map(({ n }) => n)).toEqual([10])
+    })
+  })
 })
 
 describe('serialization / deserialization', () => {
