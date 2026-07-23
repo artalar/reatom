@@ -502,15 +502,15 @@ import {
 } from '@reatom/react'
 
 export const reatomCounter = (name: string) =>
-  atom(0, `${name}.count`).extend(
+  atom(0, name).extend(
     withActions((target) => ({ inc: () => target.set((c) => c + 1) })),
   )
-type Counter = ReturnType<typeof reatomCounter>
 
-const counterVar = variable<Counter>('counter')
+// pass the factory: params and model type are inferred
+const counterVar = variable(reatomCounter, 'counterVar')
 
 export const CounterScope = reatomFactoryComponent(({ children }) => {
-  counterVar.set(reatomCounter('counter'))
+  counterVar.set('counter') // 'counter' is the factory's name arg — runs it, stores the instance
   const frame = top() // capture the frame HERE, next to .set — see note
   return () => (
     <reatomContext.Provider value={frame}>{children}</reatomContext.Provider>
