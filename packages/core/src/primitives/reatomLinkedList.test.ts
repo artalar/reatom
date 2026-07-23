@@ -10,7 +10,7 @@ import type {
   LL_PREV,
   LLNode,
 } from './reatomLinkedList'
-import { reatomLinkedList, toArray } from './reatomLinkedList'
+import { reatomLinkedList, linkedListToArray } from './reatomLinkedList'
 
 const validateIntegrity = <T extends LLNode>(
   head: T | null,
@@ -696,7 +696,7 @@ describe('serialization / deserialization', () => {
     ).extend(
       withPersist({
         key,
-        toSnapshot: (state) => deatomize(toArray(state)),
+        toSnapshot: (state) => deatomize(linkedListToArray(state)),
       }),
     )
 

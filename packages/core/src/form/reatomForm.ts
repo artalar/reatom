@@ -17,6 +17,7 @@ import {
   isFieldArrayAtom,
   isFieldAtom,
   isRec,
+  linkedListToArray,
   named,
   withAbort,
   withAsync,
@@ -544,11 +545,7 @@ export function reatomForm<
       else {
         element.extend(
           withInit((state) => {
-            let head = state.head
-            while (head) {
-              setupFields(head)
-              head = head[state.LL_NEXT]
-            }
+            linkedListToArray(state).forEach((node) => setupFields(node))
             return state
           }),
         )

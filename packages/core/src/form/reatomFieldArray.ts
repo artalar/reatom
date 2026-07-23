@@ -10,11 +10,11 @@ import {
 import { withCallHook } from '../extensions'
 import {
   type LinkedList,
-  type LinkedListAtom,
   type LinkedListLikeAtom,
+  type LinkedListMethods,
   type LLNode,
+  linkedListToArray,
   reatomLinkedList,
-  toArray,
 } from '../primitives'
 import { isShallowEqual } from '../utils'
 import type { FieldAtom } from './reatomField'
@@ -130,11 +130,12 @@ type FieldArrayInitState<T> = {
 export type FieldArrayAtom<
   Param = any,
   Node extends FieldsAtomizeInitState = FieldsAtomizeInitState,
-> = Omit<
-  LinkedListAtom<[FieldArrayInitState<Param>], FieldsAtomize<Node>>,
-  'reset'
-> &
-  LinkedListLikeAtom<FieldArrayState<Node>> &
+> = LinkedListLikeAtom<FieldArrayState<Node>> &
+  // the field `reset` from `BaseFieldExt` shadows the linked list one
+  Omit<
+    LinkedListMethods<[FieldArrayInitState<Param>], FieldsAtomize<Node>>,
+    'reset'
+  > &
   BaseFieldExt<
     FieldArrayState<Node>,
     [initState: FieldArrayInitState<Param>[]]
@@ -387,7 +388,7 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
         // an `initState` snapshot shares its nodes with the live list and its
         // chain rots on the in-place mutations, so represent it with the
         // immutable `initNodes` and walk the chain only for the live state
-        state === fieldArrayAtom() ? toArray(state) : state.initNodes,
+        state === linkedListAtom() ? linkedListToArray(state) : state.initNodes,
       getValue: (): FieldArrayLLNode<Node>[] => fieldArrayAtom.array(),
       isDirty,
       ...restOptions,
