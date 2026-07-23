@@ -1,0 +1,646 @@
+---
+title: Migration from Zustand
+description: Map every Zustand API — and its popular middlewares — onto Reatom, with shorter and more scalable equivalents
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components'
+
+Zustand gives you one store object and a `set` function. It is small and pleasant until the app grows: then you reach for selectors to avoid re-renders, `shallow` to compare them, `partialize` to split what to persist, `combine` to keep types tidy, and a handful of community middlewares to add computed values, cross-tab sync, or undo. Most of that machinery exists to work around **one** design choice — the single store object.
+
+Reatom has no store object. State is a set of independent atoms; a component subscribes to the exact atoms it reads. Because of that, a large part of the Zustand API surface does not get _translated_ here — it simply **disappears**, and what remains is usually shorter.
+
+This guide maps the whole Zustand surface — core APIs and the official middlewares — onto Reatom. It is honest about the few places where you write a bit more.
+
+## One example, before and after
+
+A store that loads a list — the everyday case a real app hits on day one. Zustand has no async primitive, so you hand-maintain `loading` and `error`, guard with `try/catch`, read the three fields together with `useShallow`, and kick the fetch off from a mount effect.
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```tsx
+import { useEffect } from 'react'
+import { create } from 'zustand'
+import { useShallow } from 'zustand/shallow'
+
+const useBearStore = create((set) => ({
+  bears: [],
+  loading: false,
+  error: null,
+  fetchBears: async () => {
+    set({ loading: true, error: null })
+    try {
+      set({ bears: await api.getBears(), loading: false })
+    } catch (error) {
+      set({ error, loading: false })
+    }
+  },
+}))
+
+function Bears() {
+  const { bears, loading, error } = useBearStore(
+    useShallow((s) => ({ bears: s.bears, loading: s.loading, error: s.error })),
+  )
+  const fetchBears = useBearStore((s) => s.fetchBears)
+  useEffect(() => {
+    fetchBears()
+  }, [fetchBears])
+
+  if (loading) return <Spinner />
+  if (error) return <ErrorBox message={error.message} />
+  return (
+    <ul>
+      {bears.map((bear) => (
+        <li key={bear.id}>{bear.name}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```tsx
+import { computed, withAsyncData, wrap } from '@reatom/core'
+import { reatomComponent } from '@reatom/react'
+
+export const bears = computed(async () => {
+  return await wrap(api.getBears())
+}, 'bears').extend(withAsyncData({ initState: [] }))
+
+export const Bears = reatomComponent(() => {
+  if (!bears.ready()) return <Spinner />
+  if (bears.error()) return <ErrorBox message={bears.error()!.message} />
+  return (
+    <ul>
+      {bears.data().map((bear) => (
+        <li key={bear.id}>{bear.name}</li>
+      ))}
+    </ul>
+  )
+}, 'Bears')
+```
+
+</TabItem>
+</Tabs>
+
+One `computed` extended with `withAsyncData` replaces the whole apparatus. It is **lazy**: reading `bears.data()` in the component connects it and starts the fetch — no mount effect. It gives you `.ready()`, `.error()`, and `.data()` for free, so there is no manual `loading`/`error` bookkeeping and no `useShallow` to read them together. And `withAsyncData` aborts a stale request under the hood, so the self-racing that Zustand leaves to you is gone. (One subtlety worth pinning down: after a failed request `bears.ready()` is `true` — the request _settled_ — so check `!ready()` for the spinner first, then `error()`.)
+
+## APIs that disappear
+
+Before the mapping, the payoff. These Zustand tools have **no Reatom equivalent because the problem they solve does not exist** in an atomic model:
+
+| Zustand                                           | Why it is gone in Reatom                                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `useStore((s) => s.x)` selectors                  | `x()` already subscribes to one atom, not the whole store                                          |
+| `shallow`, `useShallow`                           | there is no store object to compare shallowly                                                      |
+| `createWithEqualityFn`, `useStoreWithEqualityFn`  | same; for a custom equality use `withMemo(isEqual)` on the source                                  |
+| auto-generating selectors (a whole guide)         | nothing to generate — atoms are the selectors                                                      |
+| `combine`                                         | it exists to keep types clean when you split state and actions; in Reatom they are always separate |
+| `partialize` (persist option)                     | persistence is attached per atom — there is nothing to slice off                                   |
+| transient updates (`subscribe` without re-render) | a plain subscription never triggers a React re-render anyway                                       |
+| `unstable_ssrSafe`                                | `context.start()` isolates a request instead of forbidding writes                                  |
+| "How to reset state" (a whole guide)              | `reset()` ships inside the primitives (`reatomEnum`, `reatomRecord`, …)                            |
+
+That is roughly a third of the documented Zustand surface, removed rather than reimplemented.
+
+## The shift: store object → module of atoms
+
+Three mechanical rules cover almost every migration.
+
+**1. A store becomes a module of atoms.** The store keys become top-level atoms; the key names move into the atom names (they drive logging and devtools).
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+// one object, merged by `set`
+create((set) => ({
+  count: 0,
+  step: 1,
+  inc: () => set((s) => ({ count: s.count + s.step })),
+}))
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+// independent atoms in a module
+export const count = atom(0, 'counter.count')
+export const step = atom(1, 'counter.step')
+```
+
+</TabItem>
+</Tabs>
+
+**2. `.extend` is `Object.assign`; `withActions` makes real actions.** You attach methods, atoms, or computeds to an atom by extending it. A bare `.extend((target) => ({ ... }))` is a literal assign — the callbacks are plain functions:
+
+```ts
+export const count = atom(0, 'count').extend((target) => ({
+  inc: () => target.set((s) => s + 1),
+  isZero: computed(() => target() === 0, 'count.isZero'), // atoms and computeds live here too
+}))
+```
+
+That already works. But wrapping the callbacks in `withActions` turns them into **actions**, which is what you want in practice. `.extend` takes **several** extensions, so the computed stays right beside the actions — just in its own assign, not inside `withActions`:
+
+```ts
+export const count = atom(0, 'count').extend(
+  withActions((target) => ({ inc: () => target.set((s) => s + 1) })),
+  (target) => ({ isZero: computed(() => target() === 0, 'count.isZero') }),
+)
+```
+
+An action shows up in the logger and devtools with its own name (`count.inc`), and you can subscribe to it (`withCallHook`, `take`, `getCalls`). In Zustand you cannot subscribe to a specific action at all — only to state changes. Use `withActions` for anything a user or effect triggers; keep computeds and atoms in a separate assign. Do not put a `computed` **inside** `withActions` — it wraps every callback as an action, so the computed would silently lose its reactivity and become an action too.
+
+**3. A middleware becomes an extension.** `create(persist(devtools(...)))` — a nesting of wrappers around the whole store — becomes `atom(...).extend(withLocalStorage(...))` applied to the atoms that need it. Extensions compose per atom, so you never persist or log more than you meant to.
+
+## Deriving state
+
+Zustand has no first-class derived state; you compute inside selectors or with `combine`, and every consumer recomputes.
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+// recomputed in every component that reads it
+const fullName = useUserStore((s) => `${s.first} ${s.last}`)
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+export const fullName = computed(() => `${first()} ${last()}`, 'fullName')
+```
+
+</TabItem>
+</Tabs>
+
+`computed` is lazy and memoized: it recalculates only when `first` or `last` change **and** only while something reads it. Community packages like `zustand-computed` (and its two competitors) exist to add exactly this — in Reatom it is a core primitive.
+
+## Async mutations
+
+The first screen covered **reading** data with `withAsyncData`. For **commands you trigger** — a POST, a form submit — use `action(async …).extend(withAsync())`. It puts the same `.ready()` / `.error()` on the action itself, instead of extra `saving`/`saveError` fields in the store.
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+const useStore = create((set) => ({
+  saving: false,
+  saveError: null,
+  save: async (todo) => {
+    set({ saving: true, saveError: null })
+    try {
+      await api.saveTodo(todo)
+      set({ saving: false })
+    } catch (error) {
+      set({ saving: false, saveError: error })
+    }
+  },
+}))
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { action, withAsync, wrap } from '@reatom/core'
+
+export const save = action(async (todo) => {
+  await wrap(api.saveTodo(todo))
+}, 'save').extend(withAsync())
+
+// save.ready() — false while the request is in flight
+// save.error() — the failure, if any
+```
+
+</TabItem>
+</Tabs>
+
+Reatom splits reads from writes on purpose: `computed(async …).extend(withAsyncData())` for data you read, `action(async …).extend(withAsync())` for commands you trigger. Both track status and abort for you — the `saving`/`error` bookkeeping never lands in your state shape. Add `withAbort()` to the action if a new call should cancel the previous one.
+
+## Persistence
+
+Zustand's `persist` wraps the **whole store** into one storage key, and then you need `partialize` to choose what to save, and `merge`/`version`/`migrate` to evolve it. Reatom attaches persistence **per atom**:
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+create(
+  persist((set) => ({ bears: 0, fish: 0, tmp: null }), {
+    name: 'bear-storage',
+    partialize: (s) => ({ bears: s.bears }), // persist only `bears`
+  }),
+)
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { atom, withLocalStorage } from '@reatom/core'
+
+export const bears = atom(0, 'bears').extend(withLocalStorage('bears'))
+export const fish = atom(0, 'fish') // not persisted — nothing to partialize
+export const tmp = atom(null, 'tmp')
+```
+
+</TabItem>
+</Tabs>
+
+`partialize` disappears: an atom is persisted only if you extend it. Cross-tab synchronization — which Zustand needs a third-party package for — is **on by default** (`subscribe: true` in the web-storage adapters), so two tabs stay in sync for free.
+
+### Migrations
+
+Because each atom owns its key, a migration only ever reshapes **its own value**, which is simpler than reshaping the whole store:
+
+```ts
+export const theme = atom('light', 'theme').extend(
+  withLocalStorage({
+    key: 'theme',
+    version: 2,
+    migration: (record) => {
+      let data = record.data
+      if (record.version === 0) data = data.mode // v0 { mode } → v1 string
+      if (record.version <= 1) data = data.toUpperCase() // v1 → v2
+      return data
+    },
+  }),
+)
+```
+
+Note the shape: `migration(record, targetVersion)` branches on `record.version` (the **old** version found in storage) — always compare versions explicitly, otherwise there is nothing to migrate. This is the direct analogue of Zustand's `migrate(persistedState, version)`.
+
+### Migrating existing user data.
+
+Zustand and Reatom use **different on-disk envelopes** — Zustand writes `{ state, version }`, Reatom writes `{ data, id, timestamp, to, version }`. Pointing `withLocalStorage` at a key written by Zustand yields `undefined` **silently** (no error, no fallback). If you have production data to carry over, see the recipe below — do not just swap the API.
+
+<details>
+<summary><strong>Carrying over data already written by Zustand</strong></summary>
+
+You have two options. If you are splitting one store into per-atom keys, a **one-time bootstrap** is the idiomatic target — read the legacy blob once, set the atoms, drop the old key:
+
+```ts
+export const bears = atom(0, 'bears').extend(withLocalStorage('bears'))
+export const fish = atom(0, 'fish').extend(withLocalStorage('fish'))
+
+const legacy = localStorage.getItem('bear-storage')
+if (legacy) {
+  const { state } = JSON.parse(legacy)
+  bears.set(state.bears)
+  fish.set(state.fish)
+  localStorage.removeItem('bear-storage')
+}
+```
+
+If instead you need a **dual-running** setup (ship gradually, keep the ability to roll back to Zustand), build a translating storage adapter that reads and writes Zustand's envelope:
+
+```ts
+import { reatomPersist, MAX_SAFE_TIMEOUT } from '@reatom/core'
+
+const withZustandStorage = reatomPersist({
+  name: 'zustand-compat',
+  get({ key }) {
+    const str = localStorage.getItem(key)
+    if (!str) return null
+    const { state, version = 0 } = JSON.parse(str)
+    // `to` is required, otherwise the record reads as expired → undefined
+    return {
+      data: state,
+      id: 0,
+      timestamp: Date.now(),
+      to: Date.now() + MAX_SAFE_TIMEOUT,
+      version,
+    }
+  },
+  set({ key }, rec) {
+    localStorage.setItem(
+      key,
+      JSON.stringify({ state: rec.data, version: rec.version }),
+    )
+  },
+  clear: ({ key }) => localStorage.removeItem(key),
+})
+```
+
+This reads a Zustand key, runs it through the atom's `migration`, and writes back in Zustand's format. TTL and cross-tab sync are not carried by this shim (Zustand's envelope has no room for them) — drop it once the migration is complete.
+
+</details>
+
+## Immutable updates (`immer`)
+
+The `immer` middleware exists so a deeply nested update reads like `state.user.profile.name = 'Jane'` instead of a tower of spreads. Reatom removes the pain at the root: model mutable fields as atoms (atomization), and each leaf is directly addressable — a nested update is just `.set()` on it, no draft, no spread, no `immer`.
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+// store shape: { user: { profile: { name, age } } }
+set((state) => {
+  state.user.profile.name = 'Jane'
+})
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { atom } from '@reatom/core'
+
+// mutable leaves are atoms; the shape around them stays plain data
+const user = {
+  profile: {
+    name: atom('John', 'user.name'),
+    age: atom(30, 'user.age'),
+  },
+}
+
+user.profile.name.set('Jane')
+```
+
+</TabItem>
+</Tabs>
+
+Where `immer` really earns its keep is applying a whole plain patch at once — a DTO from the server, a form result. Writing that out by hand is one `.set()` per field; `updateAtomized` splashes the patch across the atomized structure in one call, touching only the keys present and preserving the rest:
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+// merge a server DTO into the nested store
+set((state) => {
+  Object.assign(state.user.profile, patch) // { name, age, ... }
+})
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { updateAtomized } from '@reatom/core'
+
+// one call instead of user.profile.name.set(...), user.profile.age.set(...), ...
+updateAtomized(user, { profile: patch })
+```
+
+</TabItem>
+</Tabs>
+
+For **collections**, the primitives carry the mutating verbs as actions: `reatomArray` (`push`/`pop`/`shift`/`unshift`), `reatomMap`, `reatomSet`, `reatomRecord` (`merge`/`omit`/`reset`).
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+set((s) => {
+  s.todos.push({ text, done: false })
+})
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+import { reatomArray } from '@reatom/core'
+export const todos = reatomArray([], 'todos')
+todos.push({ text, done: false })
+```
+
+</TabItem>
+</Tabs>
+
+If you truly want draft-style mutation for a one-off, `produce` inside a plain `.set` still works — but atomization scales better, because a change touches exactly one field instead of recreating the whole tree.
+
+## Devtools
+
+Zustand's `devtools` connects the store to the Redux DevTools extension. Reatom's default is `connectLogger()` — one line, zero config, and it prints the **causal chain** (what actually triggered each update), not just a flat action list:
+
+```ts
+// setup.ts — import before the rest of the app
+import { connectLogger } from '@reatom/core'
+if (import.meta.env.DEV) connectLogger()
+```
+
+For a full inspector UI — activity feed, timeline, cause graph, state explorer, session export/replay — there is `@reatom/admin`. It is younger than the logger and still stabilizing, but the direction is a devtools surface beyond what Redux DevTools offers.
+
+## Subscriptions outside React
+
+Zustand needs the `subscribeWithSelector` middleware to subscribe to a slice. In Reatom every atom is directly subscribable:
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```ts
+const unsub = useStore.subscribe(
+  (s) => s.count,
+  (count) => console.log(count),
+)
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```ts
+const unsub = count.subscribe((value) => console.log(value))
+// derived slice: computed(() => s.count, 'slice').subscribe(...)
+```
+
+</TabItem>
+</Tabs>
+
+## Scoped store instances
+
+Most Zustand stores are module singletons, and so are Reatom modules — no ceremony. When you genuinely need **several independent instances** of the same model on one page (the job `zustand-context` does), both libraries wrap the model in a factory and hand an instance to a subtree through a provider:
+
+<Tabs syncKey="lib">
+<TabItem label="Zustand">
+
+```tsx
+import { createContext, useContext, useRef } from 'react'
+import { createStore, useStore } from 'zustand'
+
+const createCounterStore = () =>
+  createStore((set) => ({
+    count: 0,
+    inc: () => set((s) => ({ count: s.count + 1 })),
+  }))
+
+const CounterContext = createContext(null)
+
+function CounterScope({ children }) {
+  const ref = useRef()
+  if (!ref.current) ref.current = createCounterStore()
+  return (
+    <CounterContext.Provider value={ref.current}>
+      {children}
+    </CounterContext.Provider>
+  )
+}
+
+function CounterView() {
+  const store = useContext(CounterContext)
+  if (!store) throw new Error('CounterScope is missing')
+  const { count, inc } = useStore(store)
+  return <button onClick={inc}>{count}</button>
+}
+```
+
+</TabItem>
+<TabItem label="Reatom">
+
+```tsx
+import { atom, variable, top, wrap, withActions } from '@reatom/core'
+import {
+  reatomFactoryComponent,
+  reatomContext,
+  reatomComponent,
+} from '@reatom/react'
+
+export const reatomCounter = (name: string) =>
+  atom(0, `${name}.count`).extend(
+    withActions((target) => ({ inc: () => target.set((c) => c + 1) })),
+  )
+type Counter = ReturnType<typeof reatomCounter>
+
+const counterVar = variable<Counter>('counter')
+
+export const CounterScope = reatomFactoryComponent(({ children }) => {
+  counterVar.set(reatomCounter('counter'))
+  const frame = top() // capture the frame HERE, next to .set — see note
+  return () => (
+    <reatomContext.Provider value={frame}>{children}</reatomContext.Provider>
+  )
+}, 'CounterScope')
+
+export const CounterView = reatomComponent(() => {
+  const counter = counterVar.require()
+  return <button onClick={wrap(counter.inc)}>{counter()}</button>
+}, 'CounterView')
+```
+
+</TabItem>
+</Tabs>
+
+The shapes line up — factory, a provider that owns one instance, a consumer that reads it. The difference is what carries the instance: Zustand threads it through a React `createContext` and a `useContext` hook (with a `useRef` guard so it is created once); Reatom keeps the instance in a `variable` on its own frame and joins the React subtree to that frame with `reatomContext.Provider`. Same amount of scaffolding, but the Reatom instance stays a plain reactive model — no separate context object, no selector on the consumer side.
+
+> **Why the provider is needed.** Reatom's frame graph is built from execution and dependencies, not from JSX nesting — the two graphs are independent. `variable.set` writes onto the frame that is running _right now_, and `variable.require`/`get` looks a value up by walking the dependency graph. `reatomContext.Provider` is what joins a slice of the React tree to a specific frame; without it, a `reatomComponent` — however deep in the markup — attaches to the root and never sees the value. Capture `top()` in the **same phase** where you called `.set()` (in a factory component that is the init phase, not the render closure) — a frame captured in the wrong phase is unreachable and the lookup returns `undefined` with no warning.
+
+For a single module-level model, plain factory arguments are simpler than a variable: `reatomCounter(dto, 'counter')` and export the instance.
+
+## Undo / redo (`zundo`)
+
+There is no built-in undo yet (a `withUndo` extension is planned). Until then, a small recipe covers linear history.
+
+```ts
+import { action, atom, isCausedBy, withChangeHook } from '@reatom/core'
+
+export const withUndo = (target, name = target.name) => {
+  const past = atom([], `${name}.past`)
+  const future = atom([], `${name}.future`)
+
+  const undo = action(() => {
+    const stack = past()
+    if (!stack.length) return
+    future.set((f) => [target(), ...f])
+    past.set(stack.slice(0, -1))
+    target.set(stack[stack.length - 1])
+  }, `${name}.undo`)
+
+  const redo = action(() => {
+    const stack = future()
+    if (!stack.length) return
+    past.set((p) => [...p, target()])
+    future.set(stack.slice(1))
+    target.set(stack[0])
+  }, `${name}.redo`)
+
+  target.extend(
+    withChangeHook((_state, prevState) => {
+      if (isCausedBy(undo) || isCausedBy(redo)) return
+      past.set((stack) => [...stack, prevState])
+      future.set([])
+    }),
+  )
+
+  return Object.assign(target, { past, future, undo, redo })
+}
+
+// const count = withUndo(atom(0, 'count'))
+// count.set(1); count.set(2); count.undo() // → 1; count.redo() // → 2
+```
+
+## Testing
+
+Zustand tests reset the module store between cases. Reatom isolates the whole context per test with the [reusables test harness](https://reatom.github.io/reusables/test/)— which wraps each test in a fresh `context.start()`
+
+```shell
+npx jsrepo add github/reatom/reusables test
+```
+
+```ts
+import { test, expect } from 'test'
+import { bears } from './bears'
+
+test('increase', () => {
+  bears.increase(1)
+  expect(bears()).toBe(1)
+}) // next test starts from a clean context automatically
+```
+
+Because state lives in the context, not in the module, the same module-level store holds independent state in every `context.start()`. So you test the real store directly — no reset boilerplate — and concurrent tests of the same store never interfere. Zustand's module store is a singleton shared across tests: to run them in parallel you first have to convert it into a factory (`createStore`) and spin up a fresh instance per test. In Reatom the isolation is the context's job, so the store stays a plain module.
+
+For persistence tests, `createMemStorage({ name, snapshot })` gives an in-memory backend; for stubbing an atom or action, `mock(target, cb)`.
+
+## Community middlewares
+
+Zustand's ecosystem is long but thin — the most-installed third-party package sits at about **1%** of Zustand's own installs, and much of what those packages add is core in Reatom. The ones worth a mapping:
+
+| Need                        | Zustand packages                                                                  | Reatom                                                                                                    |
+| --------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| computed / derived state    | `zustand-computed`, `zustand-computed-state`, `zustand-middleware-computed-state` | `computed` (core)                                                                                         |
+| cross-tab sync              | `zustand-sync-tabs`, `shared-zustand`, `persist-and-sync`, `use-broadcast-ts`     | persist adapters sync tabs by default (`subscribe: true`); `withBroadcastChannel` for non-persisted atoms |
+| undo / redo                 | `zundo`                                                                           | recipe above; `withUndo` planned                                                                          |
+| store in React context / DI | `zustand-context`, `zustand-utils`, `zustand-di`                                  | factory + `reatomContext.Provider`, or factory arguments                                                  |
+
+## Coverage table
+
+Everything else in the Zustand surface, mapped:
+
+| Zustand                                           | Reatom                                                                                                   |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `create(fn)`                                      | a module of `atom` / `computed` / `action`                                                               |
+| `createStore` (vanilla)                           | atoms are already framework-agnostic                                                                     |
+| `useStore(store, selector)`                       | call the atom: `myAtom()` inside `reatomComponent`                                                       |
+| `store.getState()`                                | `myAtom()` (or `peek(myAtom)` for a non-reactive read)                                                   |
+| `store.setState(partial)`                         | `myAtom.set(value)` / `reatomRecord.merge(slice)`                                                        |
+| `store.setState(fn)`                              | `myAtom.set((prev) => next)`                                                                             |
+| `store.subscribe(cb)`                             | `myAtom.subscribe(cb)`                                                                                   |
+| `store.getInitialState()`                         | keep the init value in a constant                                                                        |
+| `useShallow(selector)`                            | not needed — read atoms individually                                                                     |
+| `createWithEqualityFn` / `useStoreWithEqualityFn` | `withMemo(isEqual)` on the source atom                                                                   |
+| `combine(state, actions)`                         | state and actions are already separate                                                                   |
+| `redux(reducer, initial)`                         | `atom` + `withActions`, or a single action with a `switch`                                               |
+| `persist`                                         | `withLocalStorage` / `withSessionStorage` / `withIndexedDb`                                              |
+| `createJSONStorage`                               | built into the web-storage adapters                                                                      |
+| `persist.partialize`                              | persist only the atoms you extend                                                                        |
+| `persist.migrate` / `version`                     | `withLocalStorage({ version, migration })`                                                               |
+| `persist.merge`                                   | `fromSnapshot` in the persist options                                                                    |
+| `persist.skipHydration` / `rehydrate()`           | start on `createMemStorage`, then `storageAtom.set(realStorage)`                                         |
+| `persist.onRehydrateStorage`                      | `withChangeHook` (guard with `isInit()`)                                                                 |
+| `store.persist.clearStorage()`                    | `withStorage.storageAtom().clear({ key })`                                                               |
+| `devtools`                                        | `connectLogger()`; `@reatom/admin` for a UI                                                              |
+| `immer`                                           | atomization + `updateAtomized`, or `reatomArray`/`reatomMap`/`reatomRecord`                              |
+| `subscribeWithSelector`                           | `computed(...).subscribe(cb)`                                                                            |
+| `unstable_ssrSafe`                                | `context.start()` per request (see the SSR guide)                                                        |
+| Next.js "per-request store"                       | `context.start()` per request (see the SSR guide)                                                        |
+| slices pattern                                    | one module of atoms per feature; import across modules directly                                          |
+| auto-generating selectors                         | not needed — atoms are the selectors                                                                     |
+| transient updates                                 | a subscription already avoids re-renders                                                                 |
+| "how to reset state"                              | `reset()` on `reatomEnum` / `reatomRecord` / `reatomMap`; a plain atom resets with `atom.set(initValue)` |
+| maps & sets                                       | `reatomMap` / `reatomSet`                                                                                |
+| testing                                           | reusables test harness + `context.start()` + `mock`                                                      |
