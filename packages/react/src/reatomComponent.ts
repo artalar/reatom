@@ -1,4 +1,6 @@
 import {
+  _read,
+  abortVar,
   action,
   assert,
   bind,
@@ -6,6 +8,7 @@ import {
   type Frame,
   named,
   notify,
+  type ReatomAbortController,
   reatomAbstractRender,
   ReatomError,
   type Rec,
@@ -170,25 +173,44 @@ export let reatomFactoryComponent = <Props extends Rec = {}>(
   const deps = typeof options === 'object' ? (options.deps ?? []) : []
   const name = typeof options === 'object' ? options.name : options
 
+  type Instance = {
+    controller: ReatomAbortController
+    abort: Fn
+    render: (props: Props) => React.ReactNode
+  }
+
   const Component: Fn = reatomComponent(
     (props: Props) => {
-      const { abort, render } = React.useMemo(
-        () => {
-          const initAction = action(init, `${Component.name}._init`).extend(
-            withAbort(),
-          )
-
-          return {
-            abort: bind(initAction.abort),
-            render: initAction(props, { name: Component.name }),
-          }
-        },
+      const [, recreate] = React.useState(0)
+      const box = React.useMemo(
+        () => ({ instance: null as null | Instance }),
         deps.map((dep) => props[dep]),
       )
 
-      useEffect(() => abort, [])
+      if (!box.instance || box.instance.controller.signal.aborted) {
+        const initAction = action(init, `${Component.name}._init`).extend(
+          withAbort(),
+        )
+        const render = initAction(props, { name: Component.name })
 
-      return render(props)
+        box.instance = {
+          render,
+          controller: abortVar.require(_read(initAction)!),
+          abort: bind(initAction.abort),
+        }
+      }
+
+      const { instance } = box
+
+      useEffect(() => {
+        if (instance.controller.signal.aborted) {
+          recreate((s) => s + 1)
+          return
+        }
+        return () => instance.abort()
+      }, [instance])
+
+      return instance.render(props)
     },
     { deps, name, abortOnUnmount: false },
   )
