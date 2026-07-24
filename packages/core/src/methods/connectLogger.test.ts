@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'test'
 
-import { sleep, wrap } from '..'
+import { peek, sleep, wrap } from '..'
 import { atom, computed, EXTENSIONS, notify, withActions } from '../core'
 import { connectLogger, log } from './connectLogger'
 import { getStackTrace } from './getStackTrace'
@@ -115,6 +115,69 @@ test('connectLogger match', () => {
   expect(logs.some((log) => String(log).includes('blocked'))).toBe(false)
 
   vi.restoreAllMocks()
+})
+
+test('connectLogger logs a cold computed read', () => {
+  const groupSpy = vi
+    .spyOn(console, 'groupCollapsed')
+    .mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
+
+  connectLogger({ match: (name) => name.startsWith('coldRead.') })
+
+  const counter = atom(0, 'coldRead.counter')
+  const doubled = computed(() => counter() * 2, 'coldRead.doubled')
+
+  // remove the logger middleware to not interact with other tests
+  EXTENSIONS.pop()
+
+  try {
+    counter.set(24)
+    expect(peek(doubled)).toBe(48)
+    notify()
+
+    const titles = (groupSpy.mock.calls as unknown[][]).map((call) =>
+      String(call[0]),
+    )
+    expect(titles).toEqual(
+      expect.arrayContaining([expect.stringContaining('coldRead.doubled')]),
+    )
+  } finally {
+    vi.restoreAllMocks()
+  }
+})
+
+test('connectLogger skips cold reads during initial subscription', () => {
+  const groupSpy = vi
+    .spyOn(console, 'groupCollapsed')
+    .mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
+
+  connectLogger({ match: (name) => name.startsWith('subscriptionInit.') })
+
+  const counter = atom(0, 'subscriptionInit.counter')
+  const doubled = computed(() => counter() * 2, 'subscriptionInit.doubled')
+
+  // remove the logger middleware to not interact with other tests
+  EXTENSIONS.pop()
+
+  let unsubscribe: undefined | (() => void)
+  try {
+    unsubscribe = doubled.subscribe(() => {})
+    notify()
+
+    const titles = (groupSpy.mock.calls as unknown[][]).map((call) =>
+      String(call[0]),
+    )
+    expect(
+      titles.filter((title) => title.includes('subscriptionInit.')),
+    ).toEqual([])
+  } finally {
+    unsubscribe?.()
+    vi.restoreAllMocks()
+  }
 })
 
 test('log.state logs only when data changes', () => {

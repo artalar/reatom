@@ -298,7 +298,7 @@ export let connectLogger = ({
                   let inits = frame.root.inits
                   if (!inits.has(initKey)) {
                     inits.set(initKey, null)
-                    if (params.length === 0) return
+                    if (params.length === 0 && isConnected(target)) return
                   }
 
                   logStack(
