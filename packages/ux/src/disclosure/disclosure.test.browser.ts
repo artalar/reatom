@@ -42,6 +42,60 @@ test('a real CSS transition is measured from the computed style', () => {
   expect(getAnimationTimeout(getComputedStyle(element))).toBe(200)
 })
 
+test('a real mixed transition and animation ends at the longest of the two', () => {
+  // The longest delay belongs to the transition and the longest duration to the
+  // animation, so adding them would answer 700 instead of the real 500 — the
+  // over-waiting Ariakit fixed in `@ariakit/react-components` 0.2.0.
+  const element = renderContent(`
+    transition: opacity 100ms linear 400ms;
+    animation: end-time-fade 300ms linear;
+  `)
+
+  expect(getAnimationTimeout(getComputedStyle(element))).toBe(500)
+})
+
+test('each real transitioned property is paired with its own delay', () => {
+  const element = renderContent(`
+    transition:
+      opacity 100ms linear 200ms,
+      transform 300ms linear;
+  `)
+
+  expect(getAnimationTimeout(getComputedStyle(element))).toBe(300)
+})
+
+test('a real element with no animation at all has no end time', () => {
+  // `transition-property` computes to `all` and `animation-name` to `none`, and
+  // neither has a duration to wait for
+  const element = renderContent('opacity: 1;')
+
+  expect(getAnimationTimeout(getComputedStyle(element))).toBe(0)
+})
+
+test('the content unmounts as soon as the real end time passes', async () => {
+  // The transition ends at 400ms and the animation at 300ms, so the wait is
+  // 400ms. Summing the longest delay and the longest duration would answer
+  // 600ms.
+  const element = renderContent(`
+    transition: opacity 100ms linear 300ms;
+    animation: end-time-fade 300ms linear;
+  `)
+  const disclosure = reatomDisclosure({ animated: true, name: 'd' }).extend(
+    withDisclosureAnimation(),
+  )
+  const un = disclosure.mounted.subscribe(() => {})
+  disclosure.contentElement.set(element)
+
+  disclosure.show()
+  await wrap(sleep(250))
+  expect(disclosure.animating()).toBe(true)
+
+  await wrap(sleep(250))
+  expect(disclosure.animating()).toBe(false)
+
+  un()
+})
+
 test('the content stays mounted until a real transition ends', async () => {
   const element = renderContent('transition: opacity 120ms linear;')
   const disclosure = reatomDisclosure({ animated: true, name: 'd' }).extend(

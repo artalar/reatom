@@ -12,6 +12,18 @@ import type { DisclosureModel } from './reatomDisclosure'
 
 /** The CSS timing properties an animation end is derived from. */
 export interface CssTimingStyle {
+  /**
+   * The properties that transition, which is what says **how many** transitions
+   * there are: CSS cycles the duration and delay lists to match this one.
+   * `none` means nothing transitions, whatever the other lists say.
+   *
+   * Optional in the {@link getAnimationTimeout} input, where it defaults to one
+   * unnamed item — a caller that has durations and no property list means "one
+   * transition".
+   */
+  transitionProperty: string
+  /** The same for animations: the item count, and `none` for "no animation". */
+  animationName: string
   transitionDuration: string
   animationDuration: string
   transitionDelay: string
@@ -26,23 +38,79 @@ export interface CssTimingStyle {
 const FRAME_MS = 1000 / 60
 
 /**
+ * Parses one CSS time value into milliseconds.
+ *
+ * Port of Ariakit's `parseCSSTime`. A non-numeric value — `animation-duration:
+ * auto` — parses to `NaN`, which would poison every sum and comparison it
+ * reaches, so it counts as `0`.
+ */
+const parseOneCssTime = (time: string | undefined): number => {
+  const value = time?.trim() || '0s'
+  const multiplier = value.endsWith('ms') ? 1 : 1000
+  const parsed = Number.parseFloat(value) * multiplier
+  return Number.isNaN(parsed) ? 0 : parsed
+}
+
+/**
  * Parses CSS time values and returns the longest one in milliseconds.
  *
  * A property may carry several comma-separated times (`transition-duration:
- * 0.1s, 0.3s`); the longest wins, because the animation ends when the slowest
- * part ends. Ported from Ariakit's `parseCSSTime`
- * (`ariakit-react-components/src/disclosure/disclosure-content.tsx:37-50`).
+ * 0.1s, 0.3s`); this reports the longest of them, and of every argument.
+ *
+ * @remarks
+ *   Note that the longest duration is _not_ how {@link getAnimationTimeout}
+ *   answers: an end time pairs each item's own delay with its own duration.
+ *   This stays exported for a caller that only needs to read a CSS time.
+ * @example
+ *   parseCssTime('0.15s') // 150
+ *   parseCssTime('0.1s, 0.3s') // 300
+ *   parseCssTime('0.1s', '250ms') // 250
  */
 export const parseCssTime = (...times: Array<string | undefined>): number =>
   times
     .filter((time): time is string => time != null)
     .join(', ')
-    .split(', ')
+    .split(',')
     .reduce((longest, time) => {
-      const multiplier = time.endsWith('ms') ? 1 : 1000
-      const current = Number.parseFloat(time || '0s') * multiplier
+      const current = parseOneCssTime(time)
       return current > longest ? current : longest
     }, 0)
+
+/**
+ * The time one set of transitions or animations ends: the longest per-item
+ * `delay + duration`.
+ *
+ * @remarks
+ *   Port of Ariakit's `getEndTime`. `names` is the `transition-property` or
+ *   `animation-name` list, whose length is the number of items; CSS cycles the
+ *   (possibly shorter) delay and duration lists to match it, so each is indexed
+ *   modulo its own length, and a duration with no item to belong to is
+ *   ignored.
+ *
+ *   An empty `names` counts as one unnamed item, so a caller that passes only
+ *   durations and delays still gets an end time — see
+ *   {@link CssTimingStyle.transitionProperty}.
+ */
+const getEndTime = (
+  names: string | undefined,
+  delays: string | undefined,
+  durations: string | undefined,
+): number => {
+  const nameList = (names ?? '').split(',')
+  const delayList = (delays ?? '').split(',')
+  const durationList = (durations ?? '').split(',')
+
+  let endTime = 0
+  for (const [index, name] of nameList.entries()) {
+    // `transition-property: none` and `animation-name: none` mean nothing runs
+    // for that item, so a duration still set on it does not count.
+    if (name.trim() === 'none') continue
+    const delay = parseOneCssTime(delayList[index % delayList.length])
+    const duration = parseOneCssTime(durationList[index % durationList.length])
+    endTime = Math.max(endTime, delay + duration)
+  }
+  return endTime
+}
 
 /**
  * Computes how long an animation takes, from already-resolved CSS styles.
@@ -52,6 +120,24 @@ export const parseCssTime = (...times: Array<string | undefined>): number =>
  * before the animation ends, or the animation may never start
  * (`disclosure-content.tsx:166-202`).
  *
+ * @remarks
+ *   The answer is the longest per-item `delay + duration`, per element and per
+ *   kind (transitions, animations), and the longest of those — Ariakit's
+ *   `getElementEndTime`. Adding the longest delay to the longest duration, as
+ *   this port did before Ariakit's own fix, overestimates whenever the two
+ *   belong to different items: a transition with a long delay next to an
+ *   animation with a long duration kept `mounted` true well past the real end.
+ * @example
+ *   // `transition: opacity 100ms linear 400ms; animation: fade 300ms linear;`
+ *   getAnimationTimeout({
+ *     transitionProperty: 'opacity',
+ *     transitionDelay: '400ms',
+ *     transitionDuration: '100ms',
+ *     animationName: 'fade',
+ *     animationDelay: '0s',
+ *     animationDuration: '300ms',
+ *   }) // 500 — the transition's own end, not 400 + 300
+ *
  * @param style The content element's computed style.
  * @param otherStyle An optional second element that animates together with the
  *   content, e.g. a dialog animating behind its backdrop.
@@ -59,22 +145,29 @@ export const parseCssTime = (...times: Array<string | undefined>): number =>
 export const getAnimationTimeout = (
   style?: Partial<CssTimingStyle> | null,
   otherStyle?: Partial<CssTimingStyle> | null,
-): number => {
-  const delay = parseCssTime(
-    style?.transitionDelay,
-    style?.animationDelay,
-    otherStyle?.transitionDelay,
-    otherStyle?.animationDelay,
+): number =>
+  Math.max(
+    getEndTime(
+      style?.transitionProperty,
+      style?.transitionDelay,
+      style?.transitionDuration,
+    ),
+    getEndTime(
+      style?.animationName,
+      style?.animationDelay,
+      style?.animationDuration,
+    ),
+    getEndTime(
+      otherStyle?.transitionProperty,
+      otherStyle?.transitionDelay,
+      otherStyle?.transitionDuration,
+    ),
+    getEndTime(
+      otherStyle?.animationName,
+      otherStyle?.animationDelay,
+      otherStyle?.animationDuration,
+    ),
   )
-  const duration = parseCssTime(
-    style?.transitionDuration,
-    style?.animationDuration,
-    otherStyle?.transitionDuration,
-    otherStyle?.animationDuration,
-  )
-
-  return delay + duration
-}
 
 /**
  * Resolves after the browser painted the current state.

@@ -374,7 +374,7 @@ test('parseCssTime takes the longest CSS time in seconds or milliseconds', () =>
   expect(parseCssTime(undefined)).toBe(0)
 })
 
-test('getAnimationTimeout sums the longest delay and duration', () => {
+test('getAnimationTimeout takes the longest end time, per element', () => {
   const style = {
     transitionDuration: '0.2s',
     animationDuration: '0s',
@@ -383,6 +383,7 @@ test('getAnimationTimeout sums the longest delay and duration', () => {
   }
 
   expect(getAnimationTimeout(style)).toBe(250)
+  // the other element's own end time, not its duration added to this one's delay
   expect(
     getAnimationTimeout(style, {
       transitionDuration: '0.5s',
@@ -390,8 +391,73 @@ test('getAnimationTimeout sums the longest delay and duration', () => {
       transitionDelay: '0s',
       animationDelay: '0s',
     }),
-  ).toBe(550)
+  ).toBe(500)
   expect(getAnimationTimeout()).toBe(0)
+})
+
+test('getAnimationTimeout pairs each item with its own delay', () => {
+  // `transition: opacity 100ms linear 400ms; animation: fade 300ms linear;` —
+  // the transition ends at 500ms and the animation at 300ms. Summing the
+  // longest delay and the longest duration would answer 700, which is the
+  // overestimate Ariakit fixed in `@ariakit/react-components` 0.2.0.
+  expect(
+    getAnimationTimeout({
+      transitionProperty: 'opacity',
+      transitionDelay: '400ms',
+      transitionDuration: '100ms',
+      animationName: 'fade',
+      animationDelay: '0s',
+      animationDuration: '300ms',
+    }),
+  ).toBe(500)
+
+  // two transitioned properties, each with its own timing
+  expect(
+    getAnimationTimeout({
+      transitionProperty: 'opacity, transform',
+      transitionDelay: '200ms, 0s',
+      transitionDuration: '100ms, 300ms',
+    }),
+  ).toBe(300)
+
+  // a shorter list cycles, the way CSS reads it: opacity 50+100, transform
+  // 250+100
+  expect(
+    getAnimationTimeout({
+      transitionProperty: 'opacity, transform',
+      transitionDelay: '50ms, 250ms',
+      transitionDuration: '100ms',
+    }),
+  ).toBe(350)
+})
+
+test('getAnimationTimeout ignores timings nothing runs on', () => {
+  // `transition-property: none` with a duration left over from another rule
+  expect(
+    getAnimationTimeout({
+      transitionProperty: 'none',
+      transitionDelay: '100ms',
+      transitionDuration: '500ms',
+    }),
+  ).toBe(0)
+
+  // a duration with no property to belong to
+  expect(
+    getAnimationTimeout({
+      transitionProperty: 'opacity',
+      transitionDelay: '0s',
+      transitionDuration: '100ms, 900ms',
+    }),
+  ).toBe(100)
+
+  // `animation-duration: auto` parses to NaN, which must not poison the sum
+  expect(
+    getAnimationTimeout({
+      animationName: 'fade',
+      animationDelay: '50ms',
+      animationDuration: 'auto',
+    }),
+  ).toBe(50)
 })
 
 test('the animation layer stops a numeric animation after its timeout', async () => {
