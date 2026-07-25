@@ -21,9 +21,10 @@ import type { ElementDescriptor } from './element'
  */
 export const isTextFieldElement = (element: Element): boolean => {
   try {
-    const isTextInput =
-      element instanceof HTMLInputElement && element.selectionStart !== null
-    return isTextInput || element.tagName === 'TEXTAREA'
+    // Realm-bound constructors reject elements from same-origin iframes.
+    if (element.tagName === 'TEXTAREA') return true
+    if (element.tagName !== 'INPUT') return false
+    return (element as HTMLInputElement).selectionStart !== null
   } catch {
     return false
   }
@@ -48,10 +49,7 @@ export const describeElement = (element: Element): ElementDescriptor => {
     tagName: element.tagName.toLowerCase(),
     type: typeof control.type === 'string' ? control.type : undefined,
     disabled: control.disabled === true,
-    ariaDisabled: element.getAttribute('aria-disabled') as
-      | 'true'
-      | 'false'
-      | null,
+    ariaDisabled: element.getAttribute('aria-disabled'),
     readOnly: control.readOnly === true,
     contentEditable: (element as HTMLElement).isContentEditable === true,
     textField: isTextFieldElement(element),

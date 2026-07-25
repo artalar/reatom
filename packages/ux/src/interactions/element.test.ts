@@ -35,6 +35,9 @@ test('isDisabledDescriptor accepts aria-disabled as authored', () => {
   expect(isDisabledDescriptor({ tagName: 'div', ariaDisabled: 'false' })).toBe(
     false,
   )
+  expect(
+    isDisabledDescriptor({ tagName: 'div', ariaDisabled: 'invalid' }),
+  ).toBe(false)
   expect(isDisabledDescriptor({ tagName: 'div', ariaDisabled: null })).toBe(
     false,
   )

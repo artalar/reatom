@@ -31,7 +31,7 @@ export interface ElementDescriptor {
   /** The element's own `disabled` property. */
   disabled?: boolean
   /** The element's `aria-disabled` attribute, as authored. */
-  ariaDisabled?: boolean | 'true' | 'false' | null
+  ariaDisabled?: boolean | string | null
   /** The `readOnly` property of a form control. */
   readOnly?: boolean
   /** `element.isContentEditable`. */
