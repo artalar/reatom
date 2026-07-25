@@ -573,24 +573,33 @@ test('the button ref assigns the select element, the anchor, and the disclosure'
   expect(fruit.selectElement()).toBe(button)
   expect(fruit.popover.anchorElement()).toBe(button)
   expect(fruit.popover.disclosureElement()).toBe(button)
+
+  // being the anchor is a fallback, so a list positioned against something else
+  // keeps its anchor — Ariakit's `SelectAnchor`
+  const anchor = element()
+  fruit.popover.props.anchor().ref(anchor)
+  expect(fruit.popover.anchorElement()).toBe(anchor)
+  expect(fruit.popover.disclosureElement()).toBe(button)
 })
 
-test('clicking the button toggles the list and adopts the anchor', () => {
+test('clicking the button toggles the list', () => {
   const fruit = reatomSelect({ name: 'fruit' })
   const button = element()
 
   fruit.props.select().onClick(event(button))
   expect(fruit.popover()).toBe(true)
-  expect(fruit.popover.anchorElement()).toBe(button)
 
   fruit.props.select().onClick(event(button))
   expect(fruit.popover()).toBe(false)
 
-  // a prevented click adopts the anchor but does not toggle
-  const other = element()
-  fruit.props.select().onClick({ currentTarget: other, defaultPrevented: true })
+  // a prevented click does not toggle, and anchoring is the ref's business
+  // anyway — Ariakit's `SelectPopover` applies `usePopoverDisclosure` and
+  // nothing else, so the anchor follows the disclosure element
+  fruit.props
+    .select()
+    .onClick({ currentTarget: button, defaultPrevented: true })
   expect(fruit.popover()).toBe(false)
-  expect(fruit.popover.anchorElement()).toBe(other)
+  expect(fruit.popover.anchorElement()).toBe(null)
 
   const fixed = reatomSelect({ toggleOnClick: false, name: 'fixed' })
   fixed.props.select().onClick(event(element()))

@@ -88,11 +88,34 @@ export interface PopoverUnits extends DialogUnits {
   /** The alignment of `currentPlacement`; `null` while it is centered. */
   alignment: Computed<PopoverAlignment | null>
   /**
-   * The element the popover is positioned against. Assigned by the `anchor` or
-   * `disclosure` prop record, or written directly for a virtual anchor (a text
-   * selection, a pointer position).
+   * The element the popover is positioned against. Assigned by the `anchor`
+   * prop record, or written directly for a virtual anchor (a text selection, a
+   * pointer position).
+   *
+   * @remarks
+   *   Writable, and a write wins over {@link PopoverUnits.anchorFallbackElement}:
+   *   a popover whose anchor is not its button keeps the anchor it was given,
+   *   even when the disclosure element is assigned afterwards. Ariakit reaches
+   *   the same precedence with a `syncedAnchorElement` variable and a `sync`
+   *   listener over `anchorElement` and `disclosureElement`
+   *   (`popover-store.ts:66-80`).
+   *
+   *   Writing `null` hands the popover back to the fallback, which is what an
+   *   anchor element that unmounts does through `props.anchor().ref(null)`.
    */
   anchorElement: Atom<HTMLElement | null>
+  /**
+   * The element {@link PopoverUnits.anchorElement} falls back to while no
+   * explicit anchor is set: the disclosure element, so a popover whose anchor
+   * _is_ its button needs no `anchor` record.
+   *
+   * @remarks
+   *   Derived from `disclosureElement` and writable, so a widget whose anchor
+   *   fallback is another element can override it — `reatomCombobox` prefers
+   *   the input element the way Ariakit's combobox store syncs the anchor from
+   *   `baseElement || disclosureElement` (`combobox-store.ts:133-157`).
+   */
+  anchorFallbackElement: Atom<HTMLElement | null>
   /**
    * The wrapper element that carries the position. Ariakit renders it around
    * the dialog element so a consumer can animate the dialog without fighting
@@ -215,6 +238,32 @@ export const withPopover = (
     // against, so the positioner's first result would be recomputed away.
     peek(currentPlacement)
 
+    // The disclosure element is only a _fallback_ anchor: Ariakit writes it into
+    // `anchorElement` from a `sync` listener and remembers what it wrote in a
+    // `syncedAnchorElement` variable, so that an explicitly set anchor is left
+    // alone (`popover-store.ts:66-80`). Here the fallback is its own writable
+    // derivation and the precedence is the anchor's own derivation below.
+    const anchorFallbackElement = atom<HTMLElement | null>(
+      null,
+      `${name}.anchorFallbackElement`,
+    ).extend(withComputed(() => dialog.disclosureElement()))
+
+    const anchorElement = atom<HTMLElement | null>(
+      null,
+      `${name}.anchorElement`,
+    ).extend(
+      withComputed((state) => {
+        let next = state
+        ifChanged(anchorFallbackElement, (element, previous) => {
+          // `state` is an explicit anchor exactly when it is set and is not the
+          // fallback this atom adopted before — Ariakit's comparison against
+          // `syncedAnchorElement`, without the mutable variable.
+          if (!state || state === previous) next = element
+        })
+        return next
+      }),
+    )
+
     // Ariakit resets its `positioned` state from the positioning effect's
     // cleanup, which runs when the popover unmounts (`popover.tsx:371-374`).
     // Here that is a derivation of `mounted` that the positioner may override.
@@ -231,7 +280,8 @@ export const withPopover = (
         () => getPopoverAlignment(currentPlacement()),
         `${name}.alignment`,
       ),
-      anchorElement: atom<HTMLElement | null>(null, `${name}.anchorElement`),
+      anchorElement,
+      anchorFallbackElement,
       popoverElement: atom<HTMLElement | null>(null, `${name}.popoverElement`),
       arrowElement: atom<HTMLElement | null>(null, `${name}.arrowElement`),
       positioned,

@@ -14,7 +14,6 @@ import type { AssignerExt, Computed } from '@reatom/core'
 import { computed, wrap } from '@reatom/core'
 
 import type {
-  DialogClickEvent,
   DialogContentProps,
   DialogDisclosureProps,
   DialogPropRecords,
@@ -28,22 +27,23 @@ export const POPOVER_ARROW_SIZE = 30
 
 /** Props to spread on the element the popover is positioned against. */
 export interface PopoverAnchorProps {
-  /** Assigns the model's `anchorElement`; pass `null` on unmount. */
+  /**
+   * Assigns the model's `anchorElement`, which wins over the disclosure
+   * fallback. Pass `null` on unmount: the popover then goes back to being
+   * anchored to its disclosure element.
+   */
   ref: (element: HTMLElement | null) => void
 }
 
-/** Props to spread on the button that opens the popover. */
-export interface PopoverDisclosureProps extends DialogDisclosureProps {
-  /**
-   * Toggles the popover and adopts the button as the anchor, so a popover whose
-   * anchor _is_ its button needs no `anchor` record (`popover-disclosure.tsx`:
-   * the component applies `usePopoverAnchor` and sets `anchorElement` from the
-   * click as well).
-   */
-  onClick: (event?: DialogClickEvent) => void
-  /** Assigns both `disclosureElement` and `anchorElement`. */
-  ref: (element: HTMLElement | null) => void
-}
+/**
+ * Props to spread on the button that opens the popover.
+ *
+ * Identical to the dialog's: Ariakit's `PopoverDisclosure` applies
+ * `useDialogDisclosure` and nothing else (`popover-disclosure.tsx`), because a
+ * popover whose anchor _is_ its button is anchored through
+ * `PopoverUnits.anchorFallbackElement` rather than by the record.
+ */
+export interface PopoverDisclosureProps extends DialogDisclosureProps {}
 
 /**
  * The layout Ariakit gives the positioning wrapper: the popover is placed with
@@ -123,7 +123,10 @@ export interface PopoverPropRecords extends Omit<
 > {
   /** The element the popover is positioned against. */
   anchor: Computed<PopoverAnchorProps>
-  /** The button that opens the popover, and anchors it by default. */
+  /**
+   * The button that opens the popover, and anchors it while no `anchor` record
+   * assigned one.
+   */
   disclosure: Computed<PopoverDisclosureProps>
   /** The wrapper element the position is written to. */
   wrapper: Computed<PopoverWrapperProps>
@@ -155,12 +158,11 @@ export interface PopoverPropsOptions extends DialogPropsOptions {
  *
  * @remarks
  *   The dialog records are composed, not reimplemented: `backdrop`, `dismiss`,
- *   `heading`, `description`, and `focusTrap` are the dialog's own, `content`
- *   is the dialog's plus what positioning needs, and `disclosure` is the
- *   dialog's plus the anchor bookkeeping. The base records are built under the
- *   same name — a popover's `content` record _is_ its dialog's `content`
- *   record, one layer down — so the element ids stay the ones a dialog would
- *   render.
+ *   `disclosure`, `heading`, `description`, and `focusTrap` are the dialog's
+ *   own, and `content` is the dialog's plus what positioning needs. The base
+ *   records are built under the same name — a popover's `content` record _is_
+ *   its dialog's `content` record, one layer down — so the element ids stay the
+ *   ones a dialog would render.
  *
  *   Three elements are new, and they nest: the `wrapper` carries the position,
  *   the `content` inside it is the dialog element, and the `arrow` inside that
@@ -170,8 +172,10 @@ export interface PopoverPropsOptions extends DialogPropsOptions {
  * @example
  *   const popover = reatomPopover({ name: 'filters' })
  *
- *   popover.props.disclosure().onClick({ currentTarget: button })
- *   popover.anchorElement() // button
+ *   popover.props.disclosure().ref(button)
+ *   popover.anchorElement() // button — the disclosure is the fallback anchor
+ *   popover.props.anchor().ref(selection)
+ *   popover.anchorElement() // selection — an explicit anchor wins
  *   popover.props.content()['data-placing'] // true — not placed yet
  */
 export const popoverProps = (
@@ -193,31 +197,16 @@ export const popoverProps = (
     anchor: computed(
       (): PopoverAnchorProps => ({
         ref: wrap((element: HTMLElement | null) => {
-          model.anchorElement.set(element)
+          // Ariakit's store restores the disclosure fallback whenever
+          // `anchorElement` becomes `null` (`popover-store.ts:71-79`), so an
+          // anchor that unmounts hands the popover back to its button.
+          model.anchorElement.set(element ?? model.anchorFallbackElement())
         }),
       }),
       `${name}.props.anchor`,
     ),
 
-    disclosure: computed((): PopoverDisclosureProps => {
-      const base = dialog.disclosure()
-
-      return {
-        ...base,
-        // The anchor is adopted even when the click was prevented, matching
-        // Ariakit's order: `usePopoverDisclosure` sets the anchor element first
-        // and only then runs the handler that may have prevented the toggle.
-        onClick: wrap((event?: DialogClickEvent) => {
-          const element = event?.currentTarget
-          if (element) model.anchorElement.set(element as HTMLElement)
-          base.onClick(event)
-        }),
-        ref: wrap((element: HTMLElement | null) => {
-          model.anchorElement.set(element)
-          base.ref(element)
-        }),
-      }
-    }, `${name}.props.disclosure`),
+    disclosure: dialog.disclosure,
 
     wrapper: computed(
       (): PopoverWrapperProps => ({

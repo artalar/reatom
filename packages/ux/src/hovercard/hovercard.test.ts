@@ -795,9 +795,14 @@ test('clicking the disclosure makes the card behave like a popover', () => {
   expect(hovercard.disclosureElement()).toBe(button)
   expect(hovercard.props.disclosure()['aria-expanded']).toBe(true)
 
-  // the button is not the anchor: a hovercard belongs to the text it describes,
-  // not to a 1×1 hidden button
-  expect(hovercard.anchorElement()).toBe(null)
+  // Nothing anchored the card, so it falls back to the disclosure element like
+  // every popover does (`popover-store.ts:66-80`). A hovercard belongs to the
+  // text it describes, and that `anchor` record wins over the hidden button.
+  expect(hovercard.anchorElement()).toBe(button)
+
+  const anchor = element('anchor')
+  hovercard.props.anchor().ref(anchor)
+  expect(hovercard.anchorElement()).toBe(anchor)
 
   hovercard.props.disclosure().onClick({ currentTarget: button })
   expect(hovercard()).toBe(false)

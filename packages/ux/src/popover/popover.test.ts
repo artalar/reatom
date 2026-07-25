@@ -405,9 +405,9 @@ test('the disclosure record toggles the popover and anchors it', () => {
     'aria-controls': 'p-content',
   })
 
-  // ariakit-react-components/src/popover/popover-disclosure.tsx:50-53 — the
-  // button becomes the anchor, so a popover next to its button needs no
-  // separate anchor element
+  // ariakit-react-components/src/popover/popover-disclosure.tsx — the record is
+  // the dialog's, and the button becomes the anchor through the model's
+  // fallback, so a popover next to its button needs no separate anchor element
   popover.props.disclosure().onClick({ currentTarget: button })
 
   expect(popover()).toBe(true)
@@ -429,7 +429,7 @@ test('the disclosure ref anchors the popover before it is ever clicked', () => {
   expect(popover.disclosureElement()).toBe(null)
 })
 
-test('a prevented click still anchors the popover, but does not open it', () => {
+test('a prevented click neither opens nor anchors the popover', () => {
   const popover = reatomPopover({ name: 'p' })
   const button = element('button')
 
@@ -438,7 +438,71 @@ test('a prevented click still anchors the popover, but does not open it', () => 
     .onClick({ currentTarget: button, defaultPrevented: true })
 
   expect(popover()).toBe(false)
+  // Ariakit assigns the disclosure element from the ref as well, so a rendered
+  // button is the anchor whatever its click handler does (`disclosure.tsx`).
+  expect(popover.anchorElement()).toBe(null)
+
+  popover.props.disclosure().ref(button)
   expect(popover.anchorElement()).toBe(button)
+})
+
+// ariakit-components/src/popover/popover-store.ts:66-80 — the `syncedAnchorElement`
+// precedence: the disclosure element is only a fallback anchor.
+test('an explicit anchor wins over the disclosure element', () => {
+  const popover = reatomPopover({ name: 'p' })
+  const anchor = element('anchor')
+  const button = element('button')
+  const otherButton = element('other-button')
+
+  popover.props.anchor().ref(anchor)
+  popover.props.disclosure().ref(button)
+
+  expect(popover.anchorElement()).toBe(anchor)
+  expect(popover.disclosureElement()).toBe(button)
+
+  // …and it survives a disclosure element that is assigned again later
+  popover.props.disclosure().ref(otherButton)
+  expect(popover.anchorElement()).toBe(anchor)
+})
+
+test('an anchor set after the disclosure element still wins', () => {
+  const popover = reatomPopover({ name: 'p' })
+  const anchor = element('anchor')
+  const button = element('button')
+
+  popover.props.disclosure().ref(button)
+  expect(popover.anchorElement()).toBe(button)
+
+  popover.props.anchor().ref(anchor)
+  expect(popover.anchorElement()).toBe(anchor)
+
+  popover.props.disclosure().ref(null)
+  expect(popover.anchorElement()).toBe(anchor)
+})
+
+test('an anchor element that unmounts hands the popover back to the button', () => {
+  const popover = reatomPopover({ name: 'p' })
+  const anchor = element('anchor')
+  const button = element('button')
+
+  popover.props.disclosure().ref(button)
+  popover.props.anchor().ref(anchor)
+  expect(popover.anchorElement()).toBe(anchor)
+
+  popover.props.anchor().ref(null)
+  expect(popover.anchorElement()).toBe(button)
+})
+
+test('a virtual anchor written directly wins over the disclosure element', () => {
+  const popover = reatomPopover({ name: 'p' })
+  const selection = element('selection')
+  const button = element('button')
+
+  popover.anchorElement.set(selection)
+  popover.props.disclosure().ref(button)
+
+  expect(popover.anchorElement()).toBe(selection)
+  expect(popover.anchorFallbackElement()).toBe(button)
 })
 
 test('the wrapper record is the positioning box', () => {

@@ -163,11 +163,12 @@ export interface SelectButtonProps {
    */
   'aria-labelledby': string | undefined
   /**
-   * Assigns `selectElement`, and the popover's anchor and disclosure — the
-   * button is all three.
+   * Assigns `selectElement` and the popover's `disclosureElement` — the button
+   * is both, and being the disclosure is also what anchors the list to it
+   * unless the `anchor` record set an explicit anchor.
    */
   ref: (element: HTMLElement | null) => void
-  /** Toggles the list, adopting the button as the popover anchor. */
+  /** Toggles the list. */
   onClick: (event?: SelectClickEvent) => void
   /**
    * Opens the list, and moves the active item — which on a closed select also
@@ -670,18 +671,14 @@ export const selectProps = (
 
   const selectRef = wrap((element: HTMLElement | null) => {
     model.selectElement.set(element)
-    // The button is the anchor of the popover and its disclosure, which is what
-    // `usePopoverDisclosure` assigns at the end of Ariakit's `useSelect`.
-    popover.anchorElement.set(element)
+    // The button is the popover's disclosure, which is what
+    // `usePopoverDisclosure` assigns at the end of Ariakit's `useSelect`; the
+    // popover anchors itself to it through `anchorFallbackElement`, so an
+    // explicit anchor still wins.
     popover.disclosureElement.set(element)
   })
 
   const onSelectClick = wrap((event?: SelectClickEvent) => {
-    const element = event?.currentTarget
-    // The anchor is adopted even when the click was prevented, matching
-    // Ariakit's order: `usePopoverDisclosure` sets the anchor element first and
-    // only then runs the handler that may have prevented the toggle.
-    if (element) popover.anchorElement.set(element as HTMLElement)
     if (event?.defaultPrevented) return
     if (!toggleOnClick) return
     popover.toggle()

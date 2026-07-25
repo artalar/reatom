@@ -178,8 +178,8 @@ export interface ComboboxInputProps {
    */
   tabIndex: number | undefined
   /**
-   * Assigns the composite `baseElement` and the popover anchor; `null` on
-   * unmount.
+   * Assigns the composite `baseElement` and the popover's disclosure element,
+   * which is what anchors the list to the input; `null` on unmount.
    */
   ref: (element: HTMLElement | null) => void
   /**
@@ -673,12 +673,13 @@ export const comboboxProps = (
   // --- the input -------------------------------------------------------------
 
   const inputRef = wrap((element: HTMLElement | null) => {
+    // The input is the composite element, and the popover's anchor fallback
+    // reads it from there — Ariakit's combobox store syncs the anchor from
+    // `baseElement || disclosureElement` (`combobox-store.ts:133-157`), so an
+    // explicit anchor set through `popover.props.anchor` wins over the input.
     composite.baseElement.set(element)
-    // The input is the anchor of the popover, which is what `usePopoverAnchor`
-    // does at the end of Ariakit's `useCombobox`.
-    popover.anchorElement.set(element)
-    // …and its disclosure, so Escape and focus restoration land on the input
-    // rather than on the disclosure button (`combobox-disclosure.tsx`: "The
+    // The input is also the disclosure, so Escape and focus restoration land on
+    // it rather than on the disclosure button (`combobox-disclosure.tsx`: "The
     // combobox input should remain the disclosure element").
     popover.disclosureElement.set(element)
   })

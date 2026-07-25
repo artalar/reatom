@@ -770,6 +770,38 @@ test('the input ref is the composite element, the anchor, and the disclosure', (
   expect(fruit.composite.baseElement()).toBe(null)
 })
 
+// ariakit-components/src/combobox/combobox-store.ts:133-157 — the combobox syncs
+// the anchor from `baseElement || disclosureElement`, so the input anchors the
+// list even when another element is the disclosure.
+test('the input anchors the list over the disclosure element', () => {
+  const fruit = reatomCombobox({ name: 'fruit' })
+  const input = element()
+  const button = element()
+
+  fruit.popover.disclosureElement.set(button)
+  expect(fruit.popover.anchorElement()).toBe(button)
+
+  fruit.props.input().ref(input)
+  expect(fruit.popover.anchorElement()).toBe(input)
+  expect(fruit.popover.anchorFallbackElement()).toBe(input)
+})
+
+test('an explicit anchor wins over the combobox input', () => {
+  const fruit = reatomCombobox({ name: 'fruit' })
+  const input = element()
+  const anchor = element()
+
+  fruit.popover.props.anchor().ref(anchor)
+  fruit.props.input().ref(input)
+
+  expect(fruit.popover.anchorElement()).toBe(anchor)
+  expect(fruit.popover.anchorFallbackElement()).toBe(input)
+
+  // …and the input takes over again once the anchor unmounts
+  fruit.popover.props.anchor().ref(null)
+  expect(fruit.popover.anchorElement()).toBe(input)
+})
+
 test('the list record carries the popup role and the multi-selectable flag', () => {
   const fruits = reatomCombobox({ selectedValue: [], name: 'fruits' })
 

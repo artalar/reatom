@@ -420,6 +420,25 @@ test('the button ref is the disclosure and the anchor at once', () => {
   expect(edit.anchorElement()).toBe(null)
 })
 
+// ariakit-components/src/popover/popover-store.ts:66-80, which is what makes
+// Ariakit's `MenuAnchor` work: the button is only the fallback anchor.
+test('a menu anchored elsewhere keeps its anchor', () => {
+  const edit = menu({ name: 'edit' })
+  const button = element('edit-button')
+  const anchor = element('selection')
+
+  edit.anchorElement.set(anchor)
+  edit.props.button().ref(button)
+
+  expect(edit.disclosureElement()).toBe(button)
+  expect(edit.anchorElement()).toBe(anchor)
+
+  // a click on the button does not take the anchor away either
+  edit.props.button().onClick({ detail: 1, currentTarget: button })
+  expect(edit()).toBe(true)
+  expect(edit.anchorElement()).toBe(anchor)
+})
+
 test('a pointer click toggles the menu open at its container', () => {
   const edit = menu({ name: 'edit' })
   const button = element('edit-button')

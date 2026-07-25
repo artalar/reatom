@@ -643,6 +643,15 @@ export function reatomCombobox(options: ComboboxOptions = {}): Combobox {
     name: `${name}.popover`,
   })
 
+  // Ariakit's combobox store syncs the anchor from `baseElement ||
+  // disclosureElement` rather than from the disclosure element alone
+  // (`combobox-store.ts:133-157`), so the input anchors the list even when a
+  // disclosure button of its own is around — and an explicitly set anchor still
+  // wins over both.
+  popover.anchorFallbackElement.extend(
+    withComputed((state) => composite.baseElement() ?? state),
+  )
+
   // Ariakit shares `rtl` with the tag store through `pick(tag, ['value','rtl'])`,
   // which mirrors the key in both directions. A writable derivation is the same
   // thing without the mirroring: the combobox follows the tag list's direction

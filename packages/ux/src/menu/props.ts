@@ -165,7 +165,10 @@ export interface MenuButtonProps {
    * which case the attribute is inert.
    */
   type: 'button'
-  /** Assigns the model's `disclosureElement` **and** `anchorElement`. */
+  /**
+   * Assigns the model's `disclosureElement`, which is what anchors the menu to
+   * its button unless an `anchor` record set an explicit anchor.
+   */
   ref: (element: HTMLElement | null) => void
   /** Opens, or toggles, the menu. */
   onClick: (event?: MenuMouseEvent) => void
@@ -400,10 +403,12 @@ export interface MenuPropRecords extends Omit<
   'anchor' | 'disclosure' | 'content'
 > {
   /**
-   * Props for the button that opens the menu. It is the popover's disclosure
-   * _and_ its anchor, and the hovercard's anchor: a menu button is all three,
-   * which is why the hovercard's own `anchor` and hidden keyboard `disclosure`
-   * records are not part of this set.
+   * Props for the button that opens the menu. It is the popover's disclosure,
+   * and the menu is anchored to it through `PopoverUnits.anchorFallbackElement`
+   * — which is why the hovercard's own `anchor` and hidden keyboard
+   * `disclosure` records are not part of this set. Write `anchorElement`
+   * directly for a menu anchored elsewhere (Ariakit's `MenuAnchor`): an
+   * explicit anchor wins over the button.
    */
   button: Computed<MenuButtonProps>
   /**
@@ -586,32 +591,27 @@ export const menuProps = (
   // --- the button ------------------------------------------------------------
 
   /**
-   * Ariakit's `showMenu`: the button is the disclosure _and_ the anchor, and
-   * both handles are assigned before showing so the positioner and the focus
-   * restore have something to work with.
+   * Ariakit's `showMenu`: the button is the disclosure element, and it is
+   * assigned before showing so the positioner and the focus restore have
+   * something to work with — the anchor follows it through
+   * `PopoverUnits.anchorFallbackElement`, which is what leaves an explicit
+   * `MenuAnchor` in place (`menu-button.tsx` applies `usePopoverDisclosure`).
    */
   const showFromButton = (target: unknown): void => {
     const element = target as HTMLElement | null | undefined
-    if (element) {
-      model.disclosureElement.set(element)
-      model.anchorElement.set(element)
-    }
+    if (element) model.disclosureElement.set(element)
     model.show()
   }
 
   const buttonRef = wrap((element: HTMLElement | null) => {
     model.disclosureElement.set(element)
-    model.anchorElement.set(element)
   })
 
   const onButtonClick = wrap((event?: MenuMouseEvent) => {
     if (event?.defaultPrevented) return
 
     const element = event?.currentTarget as HTMLElement | null | undefined
-    if (element) {
-      model.disclosureElement.set(element)
-      model.anchorElement.set(element)
-    }
+    if (element) model.disclosureElement.set(element)
 
     const intent = mapMenuButtonClickIntent({
       detail: event?.detail,
