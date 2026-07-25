@@ -120,7 +120,11 @@ export {
   type FocusVisibleIntent,
   type ModalityEvent,
 } from './focusable/focusIntent'
-export { focusableProps, type FocusableElementProps, type FocusableProps } from './focusable/props'
+export {
+  focusableProps,
+  type FocusableElementProps,
+  type FocusableProps,
+} from './focusable/props'
 export {
   reatomFocusable,
   type FocusableEvent,
