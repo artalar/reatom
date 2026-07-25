@@ -37,6 +37,13 @@ export const dialogDescriptionId = (name: string): string =>
 export interface DialogKeyboardEvent {
   key: string
   defaultPrevented?: boolean
+  /** `true` when a descendant already stopped the key from propagating. */
+  cancelBubble?: boolean
+  /**
+   * Keeps a key the dialog acted on from reaching anything above it. Optional
+   * so a plain object still satisfies the shape.
+   */
+  stopPropagation?: () => void
 }
 
 /** The minimal shape of a click event the backdrop and dismiss button need. */
@@ -96,9 +103,13 @@ export interface DialogContentProps {
   /** Assigns the model's `contentElement`; pass `null` on unmount. */
   ref: (element: HTMLElement | null) => void
   /**
-   * Closes the dialog on Escape pressed inside it. `withDialogDismiss` listens
-   * on the document instead, which also covers Escape pressed while focus is
-   * outside the dialog.
+   * Closes the dialog on Escape pressed inside it, and stops the key there —
+   * the dialog element is the boundary of its own Escape, so an outer widget
+   * does not act on the press that closed this dialog. A press a nested widget
+   * consumed never reaches this handler, and then the dialog stays open.
+   *
+   * `withDialogDismiss` listens on the document as well, which is what covers
+   * Escape pressed while focus is outside the dialog.
    */
   onKeyDown: (event: DialogKeyboardEvent) => void
 }
@@ -287,6 +298,9 @@ export const dialogProps = (
             !isDialogEscape({
               key: event.key,
               defaultPrevented: event.defaultPrevented,
+              // The event reached the dialog element, so nothing below it
+              // consumed the key — unless a capture handler above did.
+              propagationStopped: event.cancelBubble,
               enabled: model.hideOnEscape(),
               topmost: model.topmost(),
               insideContent: true,
@@ -296,6 +310,11 @@ export const dialogProps = (
           }
           // The same key press bubbles through every dialog it is nested in.
           if (!claimEscape(event)) return
+          // The dialog element is the boundary of its own Escape, so an outer
+          // widget does not act on the press that closed this dialog
+          // (`dialog.tsx`: `onKeyDown` calls `event.stopPropagation()` once
+          // `hideOnEscapeEvent` accepted the key).
+          event.stopPropagation?.()
           model.dismiss('escape')
           notify()
         }),

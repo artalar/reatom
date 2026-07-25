@@ -73,11 +73,22 @@ const getDocument = (element: HTMLElement | null): Document | null => {
  * Closes the dialog on Escape and on interactions outside it.
  *
  * @remarks
- *   Both listeners are installed on the document in the capture phase, which is
- *   what makes Escape work while focus is outside the dialog and lets a
- *   consumer stop the event before the dialog sees it (`dialog.tsx`: "We're
- *   attaching the listener to the document instead of the dialog element so we
- *   can listen to the Escape key anywhere in the document").
+ *   The listeners are installed on the document rather than on the dialog
+ *   element, which is what makes Escape work while focus is outside the dialog
+ *   (`dialog.tsx`: "We're attaching the listener to the document instead of the
+ *   dialog element so we can listen to the Escape key anywhere in the
+ *   document").
+ *
+ *   Escape takes **two passes** over one key press, as it does in Ariakit since
+ *   `@ariakit/react-components` 0.3.4: a capture listener decides whether the
+ *   key is this dialog's to act on, and a bubble listener commits the
+ *   dismissal. A key a widget nested in the dialog consumed with
+ *   `stopPropagation()` never reaches the second pass, so it keeps the dialog
+ *   open — and once the dismissal is committed the event is stopped at the
+ *   document, so nothing above the dialog acts on the same press. Deciding in
+ *   the capture pass is what keeps the decision honest: at that point nothing
+ *   has closed yet, so `topmost` still describes the stack the user pressed the
+ *   key in.
  *
  *   Only the topmost dialog of a nested stack reacts to Escape — see
  *   `DialogUnits.topmost`.
@@ -110,6 +121,14 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
         const document = getDocument(target.contentElement())
         if (!document) return
 
+        /**
+         * The presses this dialog accepted, mapped to whether they were already
+         * default-prevented then — Ariakit's `escapeEvents` map. A press
+         * prevented _after_ the accept pass was consumed below the dialog too,
+         * exactly like one whose propagation was stopped.
+         */
+        const accepted = new WeakMap<Event, boolean>()
+
         onEvent(
           document,
           'keydown',
@@ -121,6 +140,7 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
             const escape = isDialogEscape({
               key: event.key,
               defaultPrevented: event.defaultPrevented,
+              propagationStopped: event.cancelBubble,
               enabled: target.hideOnEscape(),
               topmost: target.topmost(),
               bodyTarget: eventTarget?.tagName === 'BODY',
@@ -129,14 +149,35 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
               insideDisclosure: contains(disclosure, eventTarget),
             })
             if (!escape) return
-            // Only one dialog of a stack may act on one key press.
-            if (!claimEscape(event)) return
 
-            target.dismiss('escape')
-            notify()
+            accepted.set(event, event.defaultPrevented)
           },
           { capture: true },
         )
+
+        onEvent(document, 'keydown', (event) => {
+          const wasPrevented = accepted.get(event)
+          if (wasPrevented === undefined) return
+          accepted.delete(event)
+
+          // Both are a descendant of the dialog saying it handled the key
+          // itself. `cancelBubble` is the belt to the bubble phase's braces: an
+          // event stopped below the document never gets here in the first place.
+          if (event.cancelBubble) return
+          if (event.defaultPrevented && !wasPrevented) return
+
+          // Only one dialog of a stack may act on one key press, whichever of
+          // its handlers gets there first.
+          if (!claimEscape(event)) return
+
+          // The dialog is the boundary of its own Escape: nothing above it —
+          // another widget's document listener, a `window` handler — acts on a
+          // press this dialog just consumed.
+          event.stopPropagation()
+
+          target.dismiss('escape')
+          notify()
+        })
       }, `${name}.escape`)
 
       effect(() => {

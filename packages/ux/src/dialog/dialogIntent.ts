@@ -25,6 +25,22 @@ export interface DialogEscapeContext {
   key: string
   /** Another handler already handled the key. */
   defaultPrevented?: boolean
+  /**
+   * Somebody stopped the key from propagating any further —
+   * `event.cancelBubble` of a DOM event.
+   *
+   * @remarks
+   *   A widget nested in the dialog that handles `Escape` itself — a third-party
+   *   combobox closing its list, a code editor leaving its insert mode — calls
+   *   `stopPropagation()`, and then the dialog must stay open: the key was
+   *   consumed below it. Ariakit shipped the contract in
+   *   `@ariakit/react-components` 0.3.4 by preflighting the key in a capture
+   *   listener and committing the hide only in a bubble listener that a stopped
+   *   event never reaches (`dialog.tsx`, `acceptEscape` / `hideOnEscapeEvent`);
+   *   this flag is the same refusal for a handler that sees the event after the
+   *   fact.
+   */
+  propagationStopped?: boolean
   /** The model's `hideOnEscape` flag. */
   enabled: boolean
   /**
@@ -53,6 +69,10 @@ export interface DialogEscapeContext {
  *   focused, and then filters the target: only `<body>`, the dialog subtree, or
  *   the disclosure subtree may close it — a keypress inside an unrelated widget
  *   must not (`dialog.tsx`, `isValidTarget`).
+ *
+ *   A key somebody else consumed is refused twice over: through
+ *   `defaultPrevented` and through
+ *   {@link DialogEscapeContext.propagationStopped}.
  * @example
  *   isDialogEscape({ key: 'Escape', enabled: true, topmost: true }) // false — no valid target
  *   isDialogEscape({
@@ -61,10 +81,18 @@ export interface DialogEscapeContext {
  *     topmost: true,
  *     bodyTarget: true,
  *   }) // true
+ *   isDialogEscape({
+ *     key: 'Escape',
+ *     enabled: true,
+ *     topmost: true,
+ *     bodyTarget: true,
+ *     propagationStopped: true,
+ *   }) // false — a nested widget consumed the key
  */
 export const isDialogEscape = (context: DialogEscapeContext): boolean => {
   if (context.key !== 'Escape') return false
   if (context.defaultPrevented) return false
+  if (context.propagationStopped) return false
   if (!context.enabled) return false
   if (!context.topmost) return false
 

@@ -496,6 +496,83 @@ test('Escape closes only the innermost dialog of a stack', async () => {
   expect(parent()).toBe(false)
 })
 
+// react-components 0.3.4, "Handling Esc in nested widgets": a widget nested in
+// the dialog must be able to consume the key
+test('a descendant that stops the Escape keeps the dialog open', async () => {
+  const { dialog, content, input } = await mount()
+  // a third-party widget inside the dialog that handles Escape itself
+  const widget = create('div')
+  const field = create('input')
+  widget.append(field)
+  content.append(widget)
+  widget.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') event.stopPropagation()
+  })
+
+  dialog.show()
+  await settle()
+
+  await press(field, 'Escape')
+  expect(dialog()).toBe(true)
+
+  // the same press from outside that widget still closes it
+  await press(input, 'Escape')
+  expect(dialog()).toBe(false)
+})
+
+test('a descendant that prevents the Escape keeps the dialog open', async () => {
+  const { dialog, content } = await mount()
+  const field = create('input')
+  content.append(field)
+  field.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') event.preventDefault()
+  })
+
+  dialog.show()
+  await settle()
+
+  field.dispatchEvent(
+    new KeyboardEvent('keydown', {
+      key: 'Escape',
+      bubbles: true,
+      cancelable: true,
+    }),
+  )
+  await settle()
+
+  expect(dialog()).toBe(true)
+})
+
+test('an Escape the dialog acted on is stopped at its boundary', async () => {
+  const { dialog, content, input } = await mount()
+  const seen: Array<string> = []
+  // an outer widget listening for the same key, above the dialog element
+  container.addEventListener('keydown', () => seen.push('ancestor'))
+  const onWindow = () => seen.push('window')
+  window.addEventListener('keydown', onWindow)
+  cleanups.push(() => window.removeEventListener('keydown', onWindow))
+
+  dialog.show()
+  await settle()
+
+  // pressed inside the dialog: the dialog element is the boundary
+  await press(input, 'Escape')
+  expect(dialog()).toBe(false)
+  expect(seen).toEqual([])
+
+  dialog.show()
+  await settle()
+
+  // pressed outside it: the document is, which is where the listener lives
+  await press(document.body, 'Escape')
+  expect(dialog()).toBe(false)
+  expect(seen).toEqual([])
+
+  // a key the dialog does not act on is left alone
+  await press(content, 'Enter')
+  expect(seen).toEqual(['ancestor', 'window'])
+})
+
 test('a nested dialog is not disabled by its parent', async () => {
   const parent = reatomDialog({ name: 'parent' }).extend(withDialogDom())
   const child = reatomDialog({ parent, name: 'parent.child' }).extend(
