@@ -183,7 +183,9 @@ export const checkboxProps = (
       | null
       | undefined
     const reported =
-      native && typeof target?.checked === 'boolean' ? target.checked : undefined
+      native && typeof target?.checked === 'boolean'
+        ? target.checked
+        : undefined
     item.change(reported ?? !toNativeChecked(item.checked()))
     notify()
   })
