@@ -8,9 +8,9 @@ Models are created during DTO atomization: named atoms, actions, and computeds
 with no React/Vue/Solid/JSX coupling. Bind them later with `bindField`-style
 helpers, `$spread` in `@reatom/jsx`, or any other adapter.
 
-> Package status: early scaffolding. See [`PORTING_STATUS.md`](PORTING_STATUS.md)
-> for the feature checklist and [`PORTING_PLAN.md`](PORTING_PLAN.md) for the
-> universal Ariakit → Reatom port template.
+> Ariakit store inventory is ported (see [`PORTING_STATUS.md`](PORTING_STATUS.md)).
+> Package remains `private` pending handbook docs and examples. Port template:
+> [`PORTING_PLAN.md`](PORTING_PLAN.md).
 
 ## Installation
 
