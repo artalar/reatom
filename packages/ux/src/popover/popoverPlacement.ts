@@ -35,9 +35,6 @@ export const POPOVER_BASE_PLACEMENTS = [
   'left',
 ] as const satisfies ReadonlyArray<PopoverBasePlacement>
 
-/** Ariakit's `isValidPlacement` pattern (`popover.tsx`). */
-const PLACEMENT_PATTERN = /^(?:top|bottom|left|right)(?:-(?:start|end))?$/
-
 /**
  * Whether a string is a placement.
  *
@@ -49,7 +46,7 @@ const PLACEMENT_PATTERN = /^(?:top|bottom|left|right)(?:-(?:start|end))?$/
  *   isPopoverPlacement('above') // false
  */
 export const isPopoverPlacement = (value: string): value is PopoverPlacement =>
-  PLACEMENT_PATTERN.test(value)
+  /^(?:top|bottom|left|right)(?:-(?:start|end))?$/.test(value)
 
 /**
  * The side of a placement.

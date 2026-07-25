@@ -200,7 +200,7 @@ export const popoverProps = (
           // Ariakit's store restores the disclosure fallback whenever
           // `anchorElement` becomes `null` (`popover-store.ts:71-79`), so an
           // anchor that unmounts hands the popover back to its button.
-          model.anchorElement.set(element ?? model.anchorFallbackElement())
+          model.anchorElement.set(element)
         }),
       }),
       `${name}.props.anchor`,

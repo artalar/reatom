@@ -370,6 +370,20 @@ test('applyPopoverPosition moves the popover and its arrow', () => {
     '--popover-transform-origin': '22px -5px',
   })
   expect(arrow.style).toMatchObject({ left: '12px', top: '', bottom: '100%' })
+
+  applyPopoverPosition(
+    wrapper,
+    arrow,
+    { x: 10, y: 4, placement: 'right', arrow: { y: 3 } },
+    1,
+  )
+
+  expect(arrow.style).toMatchObject({
+    left: '',
+    top: '3px',
+    right: '100%',
+    bottom: '',
+  })
 })
 
 test('applyPopoverPosition leaves the arrow alone when it was not measured', () => {
@@ -503,6 +517,9 @@ test('a virtual anchor written directly wins over the disclosure element', () =>
 
   expect(popover.anchorElement()).toBe(selection)
   expect(popover.anchorFallbackElement()).toBe(button)
+
+  popover.anchorElement.set(null)
+  expect(popover.anchorElement()).toBe(button)
 })
 
 test('the wrapper record is the positioning box', () => {

@@ -16,6 +16,7 @@ import {
   named,
   peek,
   withComputed,
+  withMiddleware,
 } from '@reatom/core'
 
 import type { DialogExtOptions, DialogUnits } from '../dialog/reatomDialog'
@@ -262,6 +263,30 @@ export const withPopover = (
         })
         return next
       }),
+      // `withComputed` preserves direct writes without recomputing. Normalize a
+      // cleared explicit anchor at the write boundary so `set(null)` restores
+      // the current fallback immediately, as the public atom contract states.
+      withMiddleware(
+        () =>
+          (
+            next,
+            ...params:
+              | []
+              | [
+                  | HTMLElement
+                  | null
+                  | ((state: HTMLElement | null) => HTMLElement | null),
+                ]
+          ) => {
+            if (params.length === 0) return next()
+            const update = params[0]
+            return next((state: HTMLElement | null) => {
+              const element =
+                typeof update === 'function' ? update(state) : update
+              return element ?? peek(anchorFallbackElement)
+            })
+          },
+      ),
     )
 
     // Ariakit resets its `positioned` state from the positioning effect's

@@ -26,7 +26,7 @@ import {
   action,
   effect,
   getCalls,
-  notify,
+  isAbort,
   withAbort,
   withConnectHook,
   wrap,
@@ -296,6 +296,10 @@ export const applyPopoverPosition = (
   Object.assign(arrowElement.style, {
     left: arrowX != null ? `${arrowX}px` : '',
     top: arrowY != null ? `${arrowY}px` : '',
+    // React's style diff clears the old dynamic side; this direct DOM writer
+    // has to do that explicitly when floating-ui flips the placement.
+    right: '',
+    bottom: '',
     [side]: '100%',
   })
 }
@@ -356,20 +360,20 @@ export const withFloating = (
   return (target) => {
     const { name } = target
 
-    const request = (popoverElement: HTMLElement): PopoverPositionRequest => ({
-      anchorElement: target.anchorElement(),
-      popoverElement,
-      arrowElement: target.arrowElement(),
-      placement: target.placement(),
-      strategy: fixed ? 'fixed' : 'absolute',
-    })
-
     const position = action(async () => {
       const popoverElement = target.popoverElement()
       if (!popoverElement) return
 
       const measured = await wrap(
-        Promise.resolve(computePosition(request(popoverElement))),
+        Promise.resolve(
+          computePosition({
+            anchorElement: target.anchorElement(),
+            popoverElement,
+            arrowElement: target.arrowElement(),
+            placement: target.placement(),
+            strategy: fixed ? 'fixed' : 'absolute',
+          }),
+        ),
       )
 
       // Ariakit reports the resolved placement back to the store, which is what
@@ -414,8 +418,11 @@ export const withFloating = (
                   strategy: fixed ? 'fixed' : 'absolute',
                 },
                 wrap(() => {
-                  position()
-                  notify()
+                  // `autoUpdate` is fire-and-forget; superseding measurements
+                  // abort normally and must not become unhandled rejections.
+                  void position().catch((error: unknown) => {
+                    if (!isAbort(error)) throw error
+                  })
                 }),
               ),
             )
