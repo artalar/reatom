@@ -168,6 +168,9 @@ at the `pr-4378` snapshot. "In `@reatom/ux`" reflects `packages/ux/src` today.
 
 ### 7. Changelog-driven fix sweep over ported features
 
+**Done** — the outcome per entry, with the fix and the test that proves it, is
+[`MAIN_SWEEP_NOTES.md`](./MAIN_SWEEP_NOTES.md).
+
 One reviewing agent, one pass, changelog as the spec. For each entry below,
 reproduce against our model in the matching test tier; fix only where we fail:
 
