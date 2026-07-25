@@ -113,6 +113,39 @@ test('the completion keeps the characters the user pressed', () => {
   expect(comboboxCompletionValue('apple', 'Apple')).toBe(undefined)
 })
 
+// react-components 0.3.0: "Fixed `Combobox` inline autocomplete so decomposed
+// Unicode input no longer produces misspelled completion values." A dead key and
+// most IMEs insert an accented letter as two code units — the base letter plus a
+// combining mark — so the typed value is longer than the prefix it matches in the
+// item, and cutting the item by the typed length eats a character of it.
+test('a decomposed accent does not eat a character of the completion', () => {
+  const decomposed = 'cafe\u0301'
+
+  expect(decomposed.normalize('NFC')).toBe('café')
+  expect(decomposed).toHaveLength(5)
+  expect(hasComboboxCompletion(decomposed, 'Cafe Latte')).toBe(true)
+
+  // 'cafe' + ' Latte', never 'cafe' + 'Latte'
+  expect(comboboxCompletionValue(decomposed, 'Cafe Latte')).toBe(
+    `${decomposed} Latte`,
+  )
+  expect(comboboxCompletionValue(decomposed, 'Cafeteria')).toBe(
+    `${decomposed}teria`,
+  )
+  // the composed form of the same word is one code unit per character, so it
+  // matched the item length all along
+  expect(comboboxCompletionValue('café', 'Cafe Latte')).toBe('café Latte')
+
+  expect(
+    comboboxInputValue({
+      value: decomposed,
+      activeValue: 'Cafe Latte',
+      inline: true,
+      autoSelected: true,
+    }),
+  ).toBe(`${decomposed} Latte`)
+})
+
 // --- the displayed value ----------------------------------------------------
 
 test('the displayed value is the typed one unless a completion applies', () => {

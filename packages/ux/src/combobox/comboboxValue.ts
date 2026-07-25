@@ -143,16 +143,25 @@ export const hasComboboxCompletion = (
  *   storeValue.length)` (`combobox.tsx`). Note that it keeps the _typed_ prefix
  *   and only borrows the tail from the item, so the characters the user pressed
  *   never change under their caret.
+ *
+ *   The tail starts where the _normalized_ typed value ends, not where the typed
+ *   value does. A dead key and most IMEs insert an accented letter decomposed —
+ *   the base letter plus a combining mark, two code units — so the typed value
+ *   is longer than the prefix it matched in the item, and slicing the item by
+ *   the typed length would eat a character of it (react-components 0.3.0,
+ *   "decomposed Unicode input no longer produces misspelled completion
+ *   values").
  * @example
  *   comboboxCompletionValue('ap', 'Apple') // 'apple' — 'ap' + 'ple'
  *   comboboxCompletionValue('ap', 'Banana') // undefined
+ *   comboboxCompletionValue('cafe\u0301', 'Cafe Latte') // 'café Latte'
  */
 export const comboboxCompletionValue = (
   value: string,
   activeValue?: string,
 ): string | undefined =>
   hasComboboxCompletion(value, activeValue)
-    ? value + activeValue!.slice(value.length)
+    ? value + activeValue!.slice(normalizeString(value).length)
     : undefined
 
 /** The state {@link comboboxInputValue} resolves the displayed value from. */
