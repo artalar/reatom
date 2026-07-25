@@ -1,7 +1,7 @@
 import { atom, context, effect } from '@reatom/core'
 import { beforeEach, expect, test } from 'vitest'
 
-import { claimEscape } from './dialogDom'
+import { claimEscape, setAttribute } from './dialogDom'
 import {
   isDialogEscape,
   isDialogInteractionOutside,
@@ -346,6 +346,23 @@ test('isDialogEscape accepts only Escape from a valid target', () => {
   ).toBe(false)
 })
 
+// react-components 0.3.4, "Handling Esc in nested widgets"
+test('isDialogEscape refuses a key a nested widget consumed', () => {
+  const base = {
+    key: 'Escape',
+    enabled: true,
+    topmost: true,
+    insideContent: true,
+  } as const
+
+  expect(isDialogEscape(base)).toBe(true)
+  expect(isDialogEscape({ ...base, propagationStopped: true })).toBe(false)
+  // a valid target does not make up for it either
+  expect(
+    isDialogEscape({ ...base, bodyTarget: true, propagationStopped: true }),
+  ).toBe(false)
+})
+
 test('isDialogInteractionOutside excludes everything that belongs to the dialog', () => {
   // ariakit-react-components/src/dialog/utils/use-hide-on-interact-outside.ts
   expect(isDialogInteractionOutside({})).toBe(true)
@@ -452,6 +469,97 @@ test('nextDialogFinalFocus restores, retries, or gives up', () => {
   expect(nextDialogFinalFocus({ enabled: true, canRetry: true })).toBe('retry')
 })
 
+// --- the orchestrated DOM mutations -----------------------------------------
+
+/** A stand-in for a DOM node with the attribute API `setAttribute` mutates. */
+const attributed = (attributes: Record<string, string>) =>
+  ({
+    getAttribute: (key: string) => attributes[key] ?? null,
+    setAttribute: (key: string, value: string) => {
+      attributes[key] = value
+    },
+    removeAttribute: (key: string) => {
+      delete attributes[key]
+    },
+  }) as unknown as Element
+
+test('the restore stack of one key unwinds in order', () => {
+  const attributes: Record<string, string> = { inert: 'initial' }
+  const element = attributed(attributes)
+
+  const restoreOne = setAttribute(element, 'inert', 'one')
+  const restoreTwo = setAttribute(element, 'inert', 'two')
+  const restoreThree = setAttribute(element, 'inert', 'three')
+  expect(attributes.inert).toBe('three')
+
+  restoreThree()
+  expect(attributes.inert).toBe('two')
+  restoreTwo()
+  expect(attributes.inert).toBe('one')
+  restoreOne()
+  expect(attributes.inert).toBe('initial')
+})
+
+// react-components 0.2.0: "Fixed `Dialog` cleanup so stale nested dialog effects
+// no longer restore page accessibility state while a newer effect is active."
+// Two dialogs disable the same background element, and they close in whichever
+// order the user picked; the one that closes first must leave the attribute to
+// the one still open, and hand it back only when that one is done with it.
+test('a stale restore waits for the current owner of the key', () => {
+  const attributes: Record<string, string> = { inert: 'initial' }
+  const element = attributed(attributes)
+
+  const restoreOne = setAttribute(element, 'inert', 'one')
+  const restoreTwo = setAttribute(element, 'inert', 'two')
+
+  // the outer dialog closes first, while the inner one is still open
+  restoreOne()
+  expect(attributes.inert).toBe('two')
+
+  // and the value the inner one found is what it restores — both undone at once
+  restoreTwo()
+  expect(attributes.inert).toBe('initial')
+
+  // a restore is idempotent, so a re-run of the same effect cleanup is harmless
+  restoreOne()
+  restoreTwo()
+  expect(attributes.inert).toBe('initial')
+})
+
+test('a restore in the middle of the stack is skipped over, not applied', () => {
+  const attributes: Record<string, string> = { inert: 'initial' }
+  const element = attributed(attributes)
+
+  const restoreOne = setAttribute(element, 'inert', 'one')
+  const restoreTwo = setAttribute(element, 'inert', 'two')
+  const restoreThree = setAttribute(element, 'inert', 'three')
+
+  restoreTwo()
+  expect(attributes.inert).toBe('three')
+
+  restoreThree()
+  expect(attributes.inert).toBe('one')
+
+  restoreOne()
+  expect(attributes.inert).toBe('initial')
+})
+
+test('every element and every key keeps its own stack', () => {
+  const first: Record<string, string> = {}
+  const second: Record<string, string> = {}
+  const element = attributed(first)
+  const other = attributed(second)
+
+  const restoreInert = setAttribute(element, 'inert', '')
+  setAttribute(element, 'aria-hidden', 'true')
+  setAttribute(other, 'inert', '')
+
+  restoreInert()
+  expect('inert' in first).toBe(false)
+  expect(first['aria-hidden']).toBe('true')
+  expect('inert' in second).toBe(true)
+})
+
 // --- prop records -----------------------------------------------------------
 
 test('the disclosure record is the disclosure button plus aria-haspopup', () => {
@@ -554,6 +662,31 @@ test('Escape is ignored when disabled, prevented, or not topmost', () => {
   detach()
   dialog.props.content().onKeyDown({ key: 'Escape' })
   expect(dialog()).toBe(false)
+})
+
+// react-components 0.3.4, "Handling Esc in nested widgets"
+test('the content record stops an Escape it acted on at the dialog', () => {
+  const dialog = reatomDialog({ name: 'd' })
+  dialog.show()
+
+  let stopped = 0
+  const press = (event: Partial<Record<string, unknown>> = {}) =>
+    dialog.props.content().onKeyDown({
+      key: 'Escape',
+      stopPropagation: () => stopped++,
+      ...event,
+    })
+
+  // a key a nested widget consumed leaves the dialog open, and is not stopped a
+  // second time
+  press({ cancelBubble: true })
+  expect(dialog()).toBe(true)
+  expect(stopped).toBe(0)
+
+  press()
+  expect(dialog()).toBe(false)
+  // nothing above the dialog acts on the press that closed it
+  expect(stopped).toBe(1)
 })
 
 test('an explicit label wins over the registered heading', () => {

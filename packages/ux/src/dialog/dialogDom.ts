@@ -19,7 +19,31 @@ export type Restore = () => void
 
 const noop: Restore = () => {}
 
-const restorers = new WeakMap<Element, Map<string, Restore>>()
+/** One applied mutation of a key, and whether its owner is done with it. */
+interface RestoreEntry {
+  restore: Restore
+  disposed: boolean
+}
+
+const restorers = new WeakMap<Element, Map<string, Array<RestoreEntry>>>()
+
+/**
+ * Runs the restore of every entry that is both disposed and on top of the
+ * stack, which is the only position where restoring is safe.
+ */
+const flushRestores = (
+  stacks: Map<string, Array<RestoreEntry>>,
+  key: string,
+  stack: Array<RestoreEntry>,
+): void => {
+  while (stack.length) {
+    const entry = stack[stack.length - 1]!
+    if (!entry.disposed) return
+    stack.pop()
+    entry.restore()
+  }
+  stacks.delete(key)
+}
 
 /**
  * Applies a DOM mutation that can be applied more than once to the same element
@@ -28,9 +52,16 @@ const restorers = new WeakMap<Element, Map<string, Restore>>()
  * @remarks
  *   Two open dialogs may both want `inert` on the same background element, and
  *   they close in an arbitrary order. Ariakit solves it with a per-element,
- *   per-key stack of restore callbacks: the latest setup wins, and restoring it
- *   hands the key back to the previous owner instead of resetting to the
- *   original value (`orchestrate.ts`). This is a direct port.
+ *   per-key stack of restore callbacks (`orchestrate.ts`); this is a direct
+ *   port.
+ *
+ *   A restore that is not the top of its stack only _marks_ its entry: running
+ *   it would undo the mutation of a newer owner that is still active — the
+ *   background of an outer dialog becoming interactive again the moment the
+ *   inner one closes (react-components 0.2.0, "stale nested dialog effects no
+ *   longer restore page accessibility state while a newer effect is active").
+ *   The marked entries are unwound when the entry above them is disposed too,
+ *   so the original value is reached whichever order the dialogs closed in.
  * @param element - The element being mutated.
  * @param key - What is being mutated, e.g. an attribute or property name.
  * @param setup - Applies the mutation and returns its restore callback.
@@ -40,32 +71,20 @@ export const orchestrate = (
   key: string,
   setup: () => Restore,
 ): Restore => {
-  let elementRestorers = restorers.get(element)
-  if (!elementRestorers) restorers.set(element, (elementRestorers = new Map()))
+  let stacks = restorers.get(element)
+  if (!stacks) restorers.set(element, (stacks = new Map()))
+  let stack = stacks.get(key)
+  if (!stack) stacks.set(key, (stack = []))
 
-  const previous = elementRestorers.get(key)
-
-  if (!previous) {
-    elementRestorers.set(key, setup())
-    return () => {
-      elementRestorers!.get(key)?.()
-      elementRestorers!.delete(key)
-    }
-  }
-
-  const restore = setup()
-  const next = () => {
-    restore()
-    previous()
-    elementRestorers!.delete(key)
-  }
-  elementRestorers.set(key, next)
+  // Applied before the entry is pushed, so `setup` snapshots the value the
+  // owner below it left behind.
+  const entry: RestoreEntry = { restore: setup(), disposed: false }
+  stack.push(entry)
 
   return () => {
-    // A later setup already took over this key; it owns the restore now.
-    if (elementRestorers!.get(key) !== next) return
-    restore()
-    elementRestorers!.set(key, previous)
+    if (entry.disposed) return
+    entry.disposed = true
+    flushRestores(stacks!, key, stack!)
   }
 }
 
