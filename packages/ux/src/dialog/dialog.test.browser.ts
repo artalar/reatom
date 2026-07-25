@@ -450,6 +450,56 @@ test('a click outside closes the dialog, a click inside does not', async () => {
   expect(dialog.dismissIntent()).toBe('outside')
 })
 
+// react-components 0.3.4: "Fixed `Dialog` […] so interacting with elements
+// returned by `getPersistentElements` across open shadow roots no longer closes
+// the component before it receives focus." A listener on the document is given
+// `event.target` retargeted to the shadow host, and the host is not part of the
+// dialog — only the composed path still points at the element under the pointer.
+test('a click inside a shadow root of the dialog does not close it', async () => {
+  const dialog = reatomDialog({ modal: false, name: 'shadow' }).extend(
+    withDialogDom(),
+  )
+  const host = create('div')
+  const outside = create('button', 'Outside')
+  container.append(outside, host)
+
+  const content = create('div')
+  const input = create('input')
+  content.append(input)
+  host.attachShadow({ mode: 'open' }).append(content)
+
+  spread(content, dialog.props.content)
+  await settle()
+
+  dialog.show()
+  await settle()
+
+  // a real pointer event is composed, which is what makes it leave the root
+  const clickThroughShadow = async (element: Element) => {
+    const init = { bubbles: true, composed: true }
+    element.dispatchEvent(new MouseEvent('mousedown', init))
+    element.dispatchEvent(new MouseEvent('click', init))
+    await settle()
+  }
+
+  const seen: Array<EventTarget | null> = []
+  document.addEventListener('click', (event) => seen.push(event.target), {
+    capture: true,
+    once: true,
+  })
+
+  await clickThroughShadow(input)
+
+  // what the document listener was given instead of the field
+  expect(seen).toEqual([host])
+  expect(dialog()).toBe(true)
+
+  // …while an interaction that really is outside still closes it
+  await clickThroughShadow(outside)
+  expect(dialog()).toBe(false)
+  expect(dialog.dismissIntent()).toBe('outside')
+})
+
 // ariakit#1336, ariakit#2330: selecting text inside the dialog and releasing
 // the button outside of it must not close anything
 test('a drag out of the dialog does not close it', async () => {

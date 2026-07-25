@@ -36,6 +36,7 @@ import {
   contains,
   disableTree,
   disableTreeOutside,
+  getEventTargets,
   isDisclosureTarget,
   isFocusOutsideDialog,
   isInDocument,
@@ -150,7 +151,7 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
         let pressed = false
         let pressedOutside = false
 
-        const onNestedDialog = (eventTarget: Element | null) =>
+        const onNestedDialog = (eventTarget: Element) =>
           target
             .nestedDialogs()
             .some(
@@ -159,17 +160,36 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
                 contains(dialog.backdropElement(), eventTarget),
             )
 
+        /**
+         * Whether any element the event passed through belongs to the dialog.
+         * The path, not `event.target`, because a document listener sees that
+         * one retargeted to a shadow host — see {@link getEventTargets}.
+         */
+        const isInside = (targets: Array<Element>) =>
+          targets.some(
+            (eventTarget) =>
+              contains(content, eventTarget) || onNestedDialog(eventTarget),
+          )
+
         const describe = (event: Event): DialogOutsideContext => {
-          const eventTarget = event.target as Element | null
+          // The retargeted target is the one to ask about the document: an
+          // element inside a shadow root is not reachable from `body`, so a
+          // connectivity check on it would call every such event detached.
+          const rootTarget = event.target as Element | null
+          const targets = getEventTargets(event)
 
           return {
-            inDocument: !!eventTarget && isInDocument(eventTarget),
-            insideContent: contains(content, eventTarget),
-            onNestedDialog: onNestedDialog(eventTarget),
-            onDisclosure:
-              !!eventTarget &&
+            inDocument: !!rootTarget && isInDocument(rootTarget),
+            insideContent: targets.some((eventTarget) =>
+              contains(content, eventTarget),
+            ),
+            onNestedDialog: targets.some(onNestedDialog),
+            onDisclosure: targets.some((eventTarget) =>
               isDisclosureTarget(target.disclosureElement(), eventTarget),
-            onFocusTrap: !!eventTarget?.hasAttribute?.('data-focus-trap'),
+            ),
+            onFocusTrap: targets.some((eventTarget) =>
+              eventTarget.hasAttribute?.('data-focus-trap'),
+            ),
             onContentBox: isPointerEventInside(event, content),
           }
         }
@@ -184,10 +204,8 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
           document,
           'mousedown',
           (event) => {
-            const eventTarget = event.target as Element | null
             pressed = true
-            pressedOutside =
-              !contains(content, eventTarget) && !onNestedDialog(eventTarget)
+            pressedOutside = !isInside(getEventTargets(event))
           },
           { capture: true },
         )

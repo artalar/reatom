@@ -196,6 +196,36 @@ export const isInDocument = (element: Element): boolean => {
   return contains(element.ownerDocument.body, element)
 }
 
+const isElementNode = (value: unknown): value is Element =>
+  !!value && (value as Node).nodeType === 1
+
+/**
+ * Every element an event passed through, innermost first.
+ *
+ * @remarks
+ *   A listener on the document sees `event.target` retargeted to the _host_ of
+ *   the shadow root the event came from, so the element the user really
+ *   interacted with only appears in the composed path. Scanning the whole path
+ *   is what lets a dialog — or a nested dialog, a disclosure, a focus-trap
+ *   sentinel — rendered inside an open shadow root recognise its own events
+ *   instead of dismissing itself (react-components 0.3.4, "interacting with
+ *   elements returned by `getPersistentElements` across open shadow roots no
+ *   longer closes the component before it receives focus").
+ *
+ *   Port of Ariakit's `getEventTargets` (`use-previous-mouse-down-ref.ts`)
+ *   without its iframe host chain, which is a separate contract. A closed shadow
+ *   root reports the retargeted path, so its internals stay private here too.
+ * @returns The path, or the target alone for an event that has no
+ *   `composedPath` (a synthetic one in a node test).
+ */
+export const getEventTargets = (event: Event): Array<Element> => {
+  const path =
+    typeof event.composedPath === 'function' ? event.composedPath() : []
+  const elements = path.filter(isElementNode)
+  if (elements.length) return elements
+  return isElementNode(event.target) ? [event.target] : []
+}
+
 /**
  * `true` when the event target belongs to the dialog's disclosure element.
  *
