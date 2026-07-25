@@ -239,6 +239,7 @@ export {
   contains,
   disableTree,
   disableTreeOutside,
+  getEventTargets,
   getTabbableIn,
   isBackdrop,
   isDisclosureTarget,
