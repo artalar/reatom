@@ -366,7 +366,9 @@ test('a disclosure without a composite is a plain popover disclosure', () => {
   const props = overflow.props.disclosure
 
   expect(props()).toMatchObject({
-    'aria-hidden': true,
+    // Without composite items to stand for, this is an ordinary disclosure and
+    // must remain exposed to assistive technology.
+    'aria-hidden': false,
     'data-active-item': undefined,
     // no composite to hold a roving tabindex, so the button keeps its own
     tabIndex: undefined,

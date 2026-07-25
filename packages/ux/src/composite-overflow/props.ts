@@ -15,7 +15,6 @@ import { computed, notify, wrap } from '@reatom/core'
 
 import type { CompositeNavigationKeyEvent } from '../composite/navigationIntent'
 import { mapNavigationIntent } from '../composite/navigationIntent'
-import type { CompositeItemNode } from '../composite/reatomComposite'
 import { isSelfTarget } from '../interactions/element'
 import type {
   PopoverContentProps,
@@ -70,7 +69,8 @@ export interface CompositeOverflowDisclosureProps extends PopoverDisclosureProps
   /** The `id` of the element, which is also its composite item id. */
   id: string
   /**
-   * Hides the button from assistive technology while it does not have focus.
+   * Hides the button from assistive technology while it belongs to a composite
+   * and does not have focus.
    *
    * The items it stands for are composite items themselves, so a screen reader
    * reaches them without it; announcing a "+2 items" button as well would
@@ -304,32 +304,29 @@ export const compositeOverflowProps = (
     notify()
   })
 
-  /**
-   * The roving tabindex of an item that is registered only while it has focus.
-   *
-   * A registered disclosure reuses the composite's own derivation; an
-   * unregistered one can hold the single tab stop only when the composite has
-   * no rendered item to hold it, which is the first branch of Ariakit's
-   * `isTabbable` selector (`composite-item.tsx`).
-   */
-  const tabIndexOf = (item: CompositeItemNode | null): number | undefined => {
-    if (!composite) return undefined
-    if (item) return item.tabbable() ? undefined : -1
-    return composite.items.renderedItems().length ? -1 : undefined
-  }
-
   return {
     ...rest,
 
     disclosure: computed((): CompositeOverflowDisclosureProps => {
       const id = model.disclosureId()
+      const item = model.disclosureItem()
 
       return {
         ...popoverDisclosure(),
         id,
-        'aria-hidden': !model.disclosureFocused(),
+        'aria-hidden': composite ? !model.disclosureFocused() : false,
         'data-active-item': composite?.() === id || undefined,
-        tabIndex: tabIndexOf(model.disclosureItem()),
+        // A registered disclosure reuses the composite's derivation. Otherwise,
+        // it can hold the tab stop only when no rendered item can hold it.
+        tabIndex: !composite
+          ? undefined
+          : item
+            ? item.tabbable()
+              ? undefined
+              : -1
+            : composite.items.renderedItems().length
+              ? -1
+              : undefined,
         ref,
         onFocus,
         onBlur,
