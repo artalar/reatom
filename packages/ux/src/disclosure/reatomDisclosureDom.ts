@@ -31,13 +31,6 @@ export interface CssTimingStyle {
 }
 
 /**
- * `setTimeout` may fire a few milliseconds late, so Ariakit subtracts one frame
- * from the measured timeout to stop the animation right after it ends instead
- * of flickering (`disclosure-content.tsx:216-221`).
- */
-const FRAME_MS = 1000 / 60
-
-/**
  * Parses one CSS time value into milliseconds.
  *
  * Port of Ariakit's `parseCSSTime`. A non-numeric value — `animation-duration:
@@ -169,19 +162,6 @@ export const getAnimationTimeout = (
     ),
   )
 
-/**
- * Resolves after the browser painted the current state.
- *
- * The double `requestAnimationFrame` is Ariakit's workaround for measuring an
- * element whose enter styles were just applied but not yet rendered
- * (`disclosure-content.tsx:30-35, 140-145`).
- */
-const afterPaint = (): Promise<void> =>
-  new Promise((resolve) => {
-    if (typeof requestAnimationFrame !== 'function') return resolve()
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-  })
-
 /** Options of {@link withDisclosureAnimation}. */
 export interface DisclosureAnimationOptions {
   /**
@@ -211,8 +191,8 @@ export interface DisclosureAnimationUnits {
  * timer bookkeeping: the delay lives in the flow as `await wrap(sleep(ms))` and
  * `withAbort()` cancels a stale wait when the state changes again.
  *
- * Lazy by design — the flow starts on the first subscriber of the model and
- * stops on disconnect, so an unmounted widget holds no pending timers.
+ * Lazy by design — the flow follows the `mounted` signal's connection and stops
+ * on disconnect, so an unmounted widget holds no pending timers.
  *
  * @example
  *   const dialog = reatomDisclosure({
@@ -240,7 +220,14 @@ export const withDisclosureAnimation = (
       if (typeof animated === 'number') {
         timeout = animated
       } else {
-        await wrap(afterPaint())
+        // Two frames ensure enter styles have painted before timings are read
+        // (`disclosure-content.tsx:30-35, 140-145`).
+        await wrap(
+          new Promise<void>((resolve) => {
+            if (typeof requestAnimationFrame !== 'function') return resolve()
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+          }),
+        )
         const element = target.contentElement()
         const other = otherElement?.() ?? null
         timeout =
@@ -252,12 +239,14 @@ export const withDisclosureAnimation = (
             : 0
       }
 
-      if (timeout > 0) await wrap(sleep(Math.max(timeout - FRAME_MS, 0)))
+      // Subtract one frame so a slightly late timer does not cause flicker
+      // (`disclosure-content.tsx:216-221`).
+      if (timeout > 0) await wrap(sleep(Math.max(timeout - 1000 / 60, 0)))
 
       target.animating.set(false)
     }, `${name}.endAnimation`).extend(withAbort())
 
-    target.extend(
+    target.mounted.extend(
       withConnectHook(() => {
         effect(() => {
           // Reading `open` restarts the wait on every transition, so a close

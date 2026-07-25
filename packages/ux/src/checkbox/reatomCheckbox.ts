@@ -39,6 +39,19 @@ export type CheckboxValue =
   | number
   | ReadonlyArray<CheckboxItemValue>
 
+type CheckboxItemValueFor<T extends CheckboxValue> =
+  T extends ReadonlyArray<infer Item>
+    ? Extract<Item, CheckboxItemValue>
+    : Extract<T, CheckboxItemValue>
+
+type CheckboxOptionsConstraint<T extends CheckboxValue> = [
+  Extract<T, CheckboxItemValue>,
+] extends [never]
+  ? unknown
+  : false extends T
+    ? unknown
+    : never
+
 /**
  * Derives the tri-state checked flag of one checkbox from the group value.
  *
@@ -174,7 +187,7 @@ export interface CheckboxItemModel<T extends CheckboxValue = CheckboxValue> {
    * The value this checkbox contributes to the group, or `undefined` for a
    * standalone checkbox that owns the whole state.
    */
-  itemValue: CheckboxItemValue | undefined
+  itemValue: CheckboxItemValueFor<T> | undefined
   /** Tri-state checked flag derived from the group value. */
   checked: Computed<CheckboxChecked>
   /** `true` while `checked` is `'mixed'` — the source of `indeterminate`. */
@@ -214,7 +227,7 @@ export interface CheckboxModel<T extends CheckboxValue = CheckboxValue>
    * Returns the memoized sub-model of one group item. Calling it twice with the
    * same value returns the same model, so prop-record identity is stable.
    */
-  item: (itemValue: CheckboxItemValue) => CheckboxItemModel<T>
+  item: (itemValue: CheckboxItemValueFor<T>) => CheckboxItemModel<T>
 }
 
 /** Options of {@link reatomCheckbox}. */
@@ -306,7 +319,7 @@ export function reatomCheckbox(
 ): CheckboxModel<CheckboxChecked>
 
 export function reatomCheckbox<T extends CheckboxValue>(
-  options: CheckboxOptions<T>,
+  options: CheckboxOptions<T> & CheckboxOptionsConstraint<T>,
 ): CheckboxModel<T>
 
 export function reatomCheckbox(options: CheckboxOptions = {}): CheckboxModel {

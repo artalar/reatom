@@ -1,4 +1,4 @@
-import { atom, context, effect, sleep, wrap } from '@reatom/core'
+import { atom, context, effect, isConnected, sleep, wrap } from '@reatom/core'
 import { beforeEach, expect, test } from 'vitest'
 
 import {
@@ -533,6 +533,26 @@ test('the animation layer is lazy: it works only while subscribed', async () => 
   await wrap(sleep(60))
   expect(disclosure.animating()).toBe(false)
   un()
+})
+
+test('the animation flow disconnects with the mounted signal', async () => {
+  const disclosure = reatomDisclosure({ animated: 20, name: 'd' }).extend(
+    withDisclosureAnimation(),
+  )
+  const un = disclosure.mounted.subscribe(() => {})
+
+  disclosure.show()
+  expect(isConnected(disclosure)).toBe(true)
+
+  un()
+  await wrap(sleep(0))
+
+  expect(isConnected(disclosure.mounted)).toBe(false)
+  expect(isConnected(disclosure)).toBe(false)
+
+  // Disconnecting aborts the pending timeout instead of retaining the model.
+  await wrap(sleep(60))
+  expect(disclosure.animating()).toBe(true)
 })
 
 test('the model stays usable as a plain boolean atom', async () => {

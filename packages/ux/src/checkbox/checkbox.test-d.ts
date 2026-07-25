@@ -42,6 +42,8 @@ test('a group value type flows into the items', () => {
   expectTypeOf(apple.change(true)).toEqualTypeOf<Array<string>>()
   // an item is always tri-state, whatever the group holds
   expectTypeOf(apple.checked()).toEqualTypeOf<CheckboxChecked>()
+  // @ts-expect-error item values must match the group's array element type
+  fruits.item(1)
   // numeric item values are accepted as well
   expectTypeOf(
     reatomCheckbox<Array<number>>({ value: [] }).item(1).toggle(),
@@ -55,12 +57,12 @@ test('a single-select group must admit the unset value', () => {
   expectTypeOf(size.item('small').toggle()).toEqualTypeOf<string | false>()
 
   // Unchecking a scalar group falls back to `false` (Ariakit's
-  // `prevValue === value ? false : value`), so `string | false` is the honest
-  // annotation. A `string`-only generic still compiles — the type system can
-  // not see the transition — which is why the factory documents this.
-  expectTypeOf(
-    reatomCheckbox<string>({ value: 'small' }).item('small').toggle(),
-  ).toEqualTypeOf<string>()
+  // `prevValue === value ? false : value`), so a narrower annotation is
+  // rejected instead of promising a state the transition cannot preserve.
+  // @ts-expect-error a scalar group must include its false unset state
+  reatomCheckbox<string>({ value: 'small' })
+  // @ts-expect-error the same constraint applies when the scalar is inferred
+  reatomCheckbox({ value: 'small' })
 })
 
 test('an adopted atom infers the value type', () => {

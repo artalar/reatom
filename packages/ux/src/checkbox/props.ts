@@ -27,7 +27,7 @@ export interface CheckboxChangeEvent extends CheckboxPropsEvent {
    *   Typed as `unknown` on purpose: a narrower shape would make a real DOM
    *   `Event` (whose `currentTarget` is `EventTarget | null`) unassignable, so
    *   the handlers could not be passed to `addEventListener` without a cast.
-   *   {@link reportedChecked} narrows it at runtime instead.
+   *   The change handler narrows it at runtime instead.
    */
   readonly currentTarget?: unknown
 }
@@ -35,15 +35,6 @@ export interface CheckboxChangeEvent extends CheckboxPropsEvent {
 /** A `keydown` event. */
 export interface CheckboxKeyboardEvent extends CheckboxPropsEvent {
   readonly key?: string
-}
-
-/**
- * Reads the checked flag a checkbox element reports, or `undefined` when the
- * event does not come from one.
- */
-const reportedChecked = (event: CheckboxChangeEvent): boolean | undefined => {
-  const target = event.currentTarget as { checked?: unknown } | null | undefined
-  return typeof target?.checked === 'boolean' ? target.checked : undefined
 }
 
 /** The props of one checkbox element. */
@@ -187,7 +178,12 @@ export const checkboxProps = (
     }
     // A native element has already flipped its own property, and that flag is
     // authoritative — a custom element has not.
-    const reported = native ? reportedChecked(event) : undefined
+    const target = event.currentTarget as
+      | { checked?: unknown }
+      | null
+      | undefined
+    const reported =
+      native && typeof target?.checked === 'boolean' ? target.checked : undefined
     item.change(reported ?? !toNativeChecked(item.checked()))
     notify()
   })
@@ -196,6 +192,11 @@ export const checkboxProps = (
     // A native checkbox turns the click into a `change` event by itself, so
     // handling both would toggle twice.
     if (native) return
+    if (item.disabled()) {
+      event.stopPropagation?.()
+      event.preventDefault?.()
+      return
+    }
     if (event.defaultPrevented) return
     item.toggle()
     notify()

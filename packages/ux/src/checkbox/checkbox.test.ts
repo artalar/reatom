@@ -341,7 +341,7 @@ test('an adopted atom is reactive through the model', async () => {
   const source = atom<boolean | 'mixed'>(false, 'source')
   const agree = reatomCheckbox({ valueAtom: source, name: 'agree' })
   const track = vi.fn()
-  const un = effect(() => track(agree.checked()), 'agree.track').subscribe()
+  const tracker = effect(() => track(agree.checked()), 'agree.track')
 
   await null
   expect(track).toHaveBeenLastCalledWith(false)
@@ -354,7 +354,7 @@ test('an adopted atom is reactive through the model', async () => {
   await null
   expect(track).toHaveBeenLastCalledWith(false)
 
-  un()
+  tracker.unsubscribe()
 })
 
 test('passing both value and valueAtom is a programming error', () => {
@@ -557,6 +557,19 @@ test('a custom checkbox toggles on click', () => {
   // a caller that already handled the event wins
   control().onClick({ defaultPrevented: true })
   expect(terms()).toBe(false)
+})
+
+test('a disabled custom checkbox cancels the click event', () => {
+  const terms = reatomCheckbox({ disabled: true, name: 'terms' })
+  const { control } = checkboxProps(terms, { native: false })
+  const preventDefault = vi.fn()
+  const stopPropagation = vi.fn()
+
+  control().onClick({ preventDefault, stopPropagation })
+
+  expect(terms()).toBe(false)
+  expect(preventDefault).toHaveBeenCalledOnce()
+  expect(stopPropagation).toHaveBeenCalledOnce()
 })
 
 test('a custom checkbox toggles on Space and Enter', () => {
