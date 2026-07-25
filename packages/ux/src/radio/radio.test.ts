@@ -717,7 +717,10 @@ test('tabbing back into the group lands on the checked radio', () => {
   const props = plan.props.group()
 
   const blur = (relatedTarget: HTMLElement) =>
-    props.onBlur({ currentTarget: group, relatedTarget } as unknown as FocusEvent)
+    props.onBlur({
+      currentTarget: group,
+      relatedTarget,
+    } as unknown as FocusEvent)
 
   // focus moving between the radios of the group changes nothing
   blur(inside)
