@@ -435,6 +435,49 @@ test('a nested dialog is not disabled by its parent', async () => {
   expect(isFocusable(childInput)).toBe(true)
 })
 
+// react-components 0.3.4: "Fixed sibling modal `Dialog` components […] rendered
+// in their default portals so opening them in the same render no longer made
+// each other inert." Ariakit has to infer the relation between two modals from
+// the order their portal nodes were created, and two that opened in one render
+// disabled each other, leaving the whole page inert. Here the relation is
+// declared, so the order they opened in decides nothing — and the restore of the
+// dialog that closes first leaves the background inert for the one still open.
+test('the declared stack, not the open order, decides which modal traps', async () => {
+  const parent = reatomDialog({ name: 'parent' }).extend(withDialogDom())
+  const child = reatomDialog({ parent, name: 'parent.child' }).extend(
+    withDialogDom(),
+  )
+  const parentContent = create('div')
+  const childContent = create('div')
+  const outside = create('button', 'Outside')
+  // rendered next to each other, which is where a default portal puts them
+  container.append(outside, parentContent, childContent)
+  spread(parentContent, parent.props.content)
+  spread(childContent, child.props.content)
+  await settle()
+
+  // the nested dialog opens first, and its parent joins it in the same batch
+  child.show()
+  parent.show()
+  await settle()
+
+  expect(outside.hasAttribute('inert')).toBe(true)
+  expect(childContent.hasAttribute('inert')).toBe(false)
+  // the innermost dialog of the stack is the one that traps
+  expect(parentContent.hasAttribute('inert')).toBe(true)
+
+  child.hide()
+  await settle()
+
+  // the page belongs to the parent again, and is still not the user's
+  expect(parentContent.hasAttribute('inert')).toBe(false)
+  expect(outside.hasAttribute('inert')).toBe(true)
+
+  parent.hide()
+  await settle()
+  expect(outside.hasAttribute('inert')).toBe(false)
+})
+
 // ariakit-react-components/src/dialog/utils/use-hide-on-interact-outside.ts
 test('a click outside closes the dialog, a click inside does not', async () => {
   const { dialog, outside, input } = await mount({ modal: false })
