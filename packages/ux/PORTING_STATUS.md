@@ -95,12 +95,12 @@ skips, leaving nothing `todo` or `partial`.
 
 Verified on this branch:
 
-| Command                           | Result                                                       |
-| --------------------------------- | ------------------------------------------------------------ |
-| `pnpm -F @reatom/ux typecheck`    | clean                                                        |
-| `pnpm -F @reatom/ux test:unit`    | 66 files, **1077** tests passed, no type errors              |
-| `pnpm -F @reatom/ux test:browser` | 19 files, **162** tests passed                               |
-| `pnpm -F @reatom/ux port-status`  | scanned 19, ported 17, partial 0, unlocked (none)            |
+| Command                           | Result                                            |
+| --------------------------------- | ------------------------------------------------- |
+| `pnpm -F @reatom/ux typecheck`    | clean                                             |
+| `pnpm -F @reatom/ux test:unit`    | 66 files, **1077** tests passed, no type errors   |
+| `pnpm -F @reatom/ux test:browser` | 19 files, **162** tests passed                    |
+| `pnpm -F @reatom/ux port-status`  | scanned 19, ported 17, partial 0, unlocked (none) |
 
 `menubar` and `toolbar` have no dedicated browser files on purpose: both are thin
 `composite` wrappers whose DOM story is already asserted in
@@ -112,15 +112,15 @@ Compared against Ariakit `main` after the solid/next fork — see
 [`MAIN_GAP_ANALYSIS.md`](MAIN_GAP_ANALYSIS.md). Store inventories match; gaps
 were post-fork behavior deltas and one React-only feature:
 
-| Item | Status |
-| ---- | ------ |
-| `composite-typeahead` + `typeaheadText` | done (`src/composite/typeahead.ts`) |
-| Anchor-element precedence (popover/combobox) | done |
-| Tag literal delimiter matching | done |
-| Disclosure per-property animation end time | done |
-| Dialog `scrollbar-gutter` scroll lock | done |
-| Dialog Esc containment | done |
-| Changelog regression sweep | done ([`MAIN_SWEEP_NOTES.md`](MAIN_SWEEP_NOTES.md)) |
+| Item                                         | Status                                              |
+| -------------------------------------------- | --------------------------------------------------- |
+| `composite-typeahead` + `typeaheadText`      | done (`src/composite/typeahead.ts`)                 |
+| Anchor-element precedence (popover/combobox) | done                                                |
+| Tag literal delimiter matching               | done                                                |
+| Disclosure per-property animation end time   | done                                                |
+| Dialog `scrollbar-gutter` scroll lock        | done                                                |
+| Dialog Esc containment                       | done                                                |
+| Changelog regression sweep                   | done ([`MAIN_SWEEP_NOTES.md`](MAIN_SWEEP_NOTES.md)) |
 
 Still deferred from that analysis: `composite-container`, `UndoManager` (core),
 virtualized renderers.
