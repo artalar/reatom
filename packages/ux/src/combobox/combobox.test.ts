@@ -1,5 +1,13 @@
 import type { Atom } from '@reatom/core'
-import { atom, context, notify, peek, reatomField } from '@reatom/core'
+import {
+  atom,
+  context,
+  effect,
+  getCalls,
+  notify,
+  peek,
+  reatomField,
+} from '@reatom/core'
 import { beforeEach, expect, test } from 'vitest'
 
 import { reatomComposite } from '../composite/reatomComposite'
@@ -573,6 +581,36 @@ test('withComboboxAutoSelect activates the first item as the user types', () => 
   un()
 })
 
+test('auto-select does not move to and refocus the same item on every keystroke', async () => {
+  const fruit = reatomCombobox({ autoSelect: true, name: 'fruit' }).extend(
+    withComboboxAutoSelect(),
+  )
+  fruit.props.item('Apple')().ref(element())
+
+  const moves: Array<string | null | undefined> = []
+  const stopTracking = effect(() => {
+    for (const call of getCalls(fruit.composite.move)) {
+      moves.push(call.params[0])
+    }
+  }, 'fruit.moves')
+  const unsubscribe = fruit.subscribe(() => {})
+
+  fruit.popover.show()
+  fruit.popover.positioned.set(true)
+  fruit.canAutoSelect.set(true)
+  fruit.set('a')
+  notify()
+  await null
+
+  fruit.set('ap')
+  notify()
+  await null
+
+  expect(moves).toEqual([fruit.itemId('Apple')])
+  unsubscribe()
+  stopTracking()
+})
+
 test('withComboboxAutoSelect waits for the popover to be placed', () => {
   const fruit = reatomCombobox({ autoSelect: true, name: 'fruit' }).extend(
     withComboboxAutoSelect(),
@@ -1138,7 +1176,7 @@ test('Enter on the input, or on a disabled item, is a no-op but is swallowed', (
   expect(fruit.selectedValue()).toBe('')
 })
 
-test('Enter applies the policy the item record was created with', () => {
+test('Enter applies the policy of the mounted item record', () => {
   const fruits = reatomCombobox({
     selectedValue: [],
     // off, so the assertion below is about the click policy and not about the
@@ -1146,9 +1184,12 @@ test('Enter applies the policy the item record was created with', () => {
     resetValueOnHide: false,
     name: 'fruits',
   })
-  const { input } = mount(fruits, ['Apple'])
+  const { input, items } = mount(fruits, ['Apple'])
   // an item that opts back into closing the list, the way a "create" item does
-  fruits.props.item('Apple', { hideOnClick: true, setValueOnClick: true })
+  fruits.props.item('Apple')().ref(null)
+  fruits.props
+    .item('Apple', { hideOnClick: true, setValueOnClick: true })()
+    .ref(items.get('Apple')!)
   fruits.popover.show()
   fruits.composite.navigate({ move: 'first' })
 
@@ -1271,6 +1312,39 @@ test('the per item policies are all overridable', () => {
     .onClick()
   expect(fruit.selectedValue()).toBe('Banana')
   expect(fruit()).toBe('')
+})
+
+test('an unmounted item does not leave its click policy on a later record', () => {
+  const fruit = reatomCombobox({ name: 'fruit' })
+  const input = element()
+  fruit.props.input().ref(input)
+
+  const custom = fruit.props.item('Apple', { hideOnClick: false })
+  custom().ref(element())
+  custom().ref(null)
+
+  const current = fruit.props.item('Apple')
+  current().ref(element())
+  fruit.popover.show()
+  fruit.composite.move(fruit.itemId('Apple'))
+  current().onClick()
+
+  expect(fruit.selectedValue()).toBe('Apple')
+  expect(fruit.popover()).toBe(false)
+})
+
+test('a modifier-click navigation does not activate a link item', () => {
+  const fruit = reatomCombobox({ name: 'fruit' })
+  const link = Object.assign(element(), { tagName: 'A' })
+  fruit.props.item('Apple')().ref(link)
+  fruit.popover.show()
+
+  fruit.props
+    .item('Apple')()
+    .onClick(event(link, { ctrlKey: true, altKey: false, metaKey: false }))
+
+  expect(fruit.selectedValue()).toBe('')
+  expect(fruit.popover()).toBe(true)
 })
 
 test('a prevented click on an item is left alone', () => {

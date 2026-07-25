@@ -816,7 +816,12 @@ export function reatomCombobox(options: ComboboxOptions = {}): Combobox {
 
   const autoSelectFirst = action((): string | null => {
     const id = firstValueItemId() ?? composite.first() ?? null
-    composite.move(id)
+    // Typing another character often resolves to the same first item. Re-firing
+    // `move` would make the focus effect focus the input again on every
+    // keystroke, which can interrupt mobile keyboards. Keep the value in sync
+    // without emitting another focus move when the target did not change.
+    if (peek(composite) === id) activeValue.set(itemValue(id))
+    else composite.move(id)
     return id
   }, `${name}.autoSelectFirst`)
 

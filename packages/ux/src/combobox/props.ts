@@ -23,7 +23,7 @@ import {
   mapNavigationIntent,
 } from '../composite/navigationIntent'
 import { isDisclosureContentHidden } from '../disclosure/props'
-import { hasFocus } from '../focusable/focusableDom'
+import { hasFocus, isApple } from '../focusable/focusableDom'
 import { isTextFieldElement } from '../interactions/describeElement'
 import { isSelfTarget } from '../interactions/element'
 import { queueBeforeEvent } from '../interactions/queueBeforeEvent'
@@ -94,6 +94,11 @@ export const isComboboxMultiSelectableRole = (
 export interface ComboboxPropsEvent {
   readonly defaultPrevented?: boolean
   preventDefault?: () => void
+  /** Present on click events; optional so programmatic calls stay lightweight. */
+  readonly currentTarget?: unknown
+  readonly altKey?: boolean
+  readonly ctrlKey?: boolean
+  readonly metaKey?: boolean
 }
 
 /**
@@ -484,7 +489,8 @@ export interface ComboboxPropRecords {
   /**
    * Props for the element of one item value. The record is memoized per value,
    * so repeated calls keep the same identity; passing options returns a fresh,
-   * uncached record whose policy is still remembered for the `Enter` key.
+   * uncached record. While that record is mounted, the `Enter` key applies its
+   * policy too.
    */
   item: (
     value: string,
@@ -494,14 +500,6 @@ export interface ComboboxPropRecords {
   cancel: Computed<ComboboxCancelProps>
   /** Props for a button that toggles the list. */
   disclosure: Computed<ComboboxDisclosureProps>
-}
-
-/** The resolved per item click policy, once the reactive defaults are read. */
-interface ComboboxItemPolicy {
-  selectValueOnClick: boolean
-  setValueOnClick: boolean
-  hideOnClick: boolean
-  resetValueOnSelect: boolean
 }
 
 /**
@@ -573,49 +571,41 @@ export const comboboxProps = (
   const multiSelectableRole = isComboboxMultiSelectableRole(popupRole)
 
   /**
-   * The per value option overrides, so `Enter` applies the same policy a click
-   * would.
+   * The mounted per-value option overrides, so `Enter` applies the same policy
+   * a click would.
    */
   const itemOptions = new Map<string, ComboboxItemPropsOptions>()
 
-  const policy = (value: string): ComboboxItemPolicy => {
+  /** Ariakit's `ComboboxItem` click transition, in its order. */
+  const activate = (
+    value: string,
+    options: ComboboxItemPropsOptions = itemOptions.get(value) ?? {},
+  ): void => {
     const {
       selectValueOnClick = true,
       setValueOnClick: itemSetValue,
       hideOnClick,
       resetValueOnSelect,
-    } = itemOptions.get(value) ?? {}
-    // Read once: both defaults are the same question, and Ariakit resolves them
-    // from the same `Array.isArray(selectedValue)`.
+    } = options
+    // Read once: the value and hide defaults are the same question, and Ariakit
+    // resolves them from the same `Array.isArray(selectedValue)`.
     const multi = model.multiSelectable()
-
-    return {
-      selectValueOnClick,
-      setValueOnClick: itemSetValue ?? !multi,
-      hideOnClick: hideOnClick ?? !multi,
-      resetValueOnSelect: resetValueOnSelect ?? model.resetValueOnSelect(),
-    }
-  }
-
-  /** Ariakit's `ComboboxItem` click transition, in its order. */
-  const activate = (value: string): void => {
-    const resolved = policy(value)
     // `select` clears the value first, so a `setValueOnClick` that runs after it
     // still wins — which is how a single-selectable combobox ends up showing
     // what was picked.
-    if (resolved.selectValueOnClick) {
-      model.select(value, resolved.resetValueOnSelect)
+    if (selectValueOnClick) {
+      model.select(value, resetValueOnSelect ?? model.resetValueOnSelect())
     }
-    if (resolved.setValueOnClick) model.set(value)
-    if (resolved.hideOnClick) popover.hide()
+    if (itemSetValue ?? !multi) model.set(value)
+    if (hideOnClick ?? !multi) popover.hide()
   }
 
-  /** The element's own value, which is what Ariakit's `canShow` measures. */
-  const elementValue = (event: ComboboxTargetedEvent): string =>
-    readComboboxInput(event.currentTarget).value
-
   const canShow = (event: ComboboxTargetedEvent, override?: boolean): boolean =>
-    override ?? canShowComboboxList(elementValue(event), showMinLength)
+    override ??
+    canShowComboboxList(
+      readComboboxInput(event.currentTarget).value,
+      showMinLength,
+    )
 
   /**
    * Opens the list on `mouseup` rather than now.
@@ -874,13 +864,39 @@ export const comboboxProps = (
     } = options
 
     const ref = wrap((element: HTMLElement | null) => {
-      if (element) model.renderItem(value, { element })
-      else model.unrenderItem(value)
+      if (element) {
+        // Enter is handled on the input, so remember the policy of the mounted
+        // item. Removing the record must remove its policy as well; otherwise a
+        // later default record for the same value inherits stale overrides.
+        itemOptions.set(value, options)
+        model.renderItem(value, { element })
+      } else {
+        if (itemOptions.get(value) === options) itemOptions.delete(value)
+        model.unrenderItem(value)
+      }
     })
 
     const onClick = wrap((event?: ComboboxPropsEvent) => {
       if (event?.defaultPrevented) return
-      activate(value)
+      const element = event?.currentTarget as {
+        tagName?: unknown
+        type?: unknown
+      } | null
+      const tagName =
+        typeof element?.tagName === 'string'
+          ? element.tagName.toLowerCase()
+          : undefined
+      const navigationTarget =
+        tagName === 'a' ||
+        ((tagName === 'button' || tagName === 'input') &&
+          element?.type === 'submit')
+      if (
+        navigationTarget &&
+        (event?.altKey || (isApple() ? event?.metaKey : event?.ctrlKey))
+      ) {
+        return
+      }
+      activate(value, options)
       notify()
     })
 
@@ -1025,12 +1041,7 @@ export const comboboxProps = (
     ),
 
     item: (value, itemPropsOptions) => {
-      // Remembered even for an uncached record, because `Enter` on the input has
-      // to apply the same policy the item's own click would.
-      if (itemPropsOptions) {
-        itemOptions.set(value, itemPropsOptions)
-        return itemRecord(value, itemPropsOptions)
-      }
+      if (itemPropsOptions) return itemRecord(value, itemPropsOptions)
 
       let record = itemRecords.get(value)
       if (!record) itemRecords.set(value, (record = itemRecord(value)))

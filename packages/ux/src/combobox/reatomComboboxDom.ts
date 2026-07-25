@@ -33,8 +33,7 @@ import type { ComboboxModel } from './reatomCombobox'
  *   Only the `tag` copy is re-exported from `src/index.ts`, since two identical
  *   public `isTouchDevice` names cannot coexist there.
  */
-export const isTouchDevice = (): boolean =>
-  canUseDOM() && !!navigator.maxTouchPoints
+const isTouchDevice = (): boolean => canUseDOM() && !!navigator.maxTouchPoints
 
 /**
  * `true` on Safari _and_ a touch screen, the combination where
