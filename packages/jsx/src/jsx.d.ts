@@ -82,7 +82,12 @@ export namespace JSX {
   }
 
   interface $Spread<T> {
-    $spread?: Partial<this>
+    /**
+     * A reactive plain prop record. The record may come from a headless model,
+     * so it is intentionally structural instead of requiring this element's
+     * template-literal index signatures.
+     */
+    $spread?: AtomOrGetterMaybe<object>
   }
 
   interface ElementChildrenAttribute {
