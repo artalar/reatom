@@ -68,14 +68,27 @@ export const applyActivationIntent = (
   return
 }
 
+/** Attributes and handlers a command element needs. */
+export interface CommandElementProps {
+  'data-active': true | undefined
+  onKeyDown: (event: KeyboardEvent) => void
+  onKeyUp: (event: KeyboardEvent) => void
+  /**
+   * Ends a space press when focus leaves the element, which is the one release
+   * no `keyup` reports.
+   *
+   * @remarks
+   *   Bind it to `focusout` rather than to the non-bubbling `blur`, as React's
+   *   `onBlur` and `focusableProps` already do: focus moving into a descendant
+   *   also cancels the press, and only `focusout` reports that.
+   */
+  onBlur: (event: FocusEvent) => void
+}
+
 /** Prop record produced by {@link commandProps}. */
 export interface CommandProps {
   /** Props for the command element itself. */
-  element: Computed<{
-    'data-active': true | undefined
-    onKeyDown: (event: KeyboardEvent) => void
-    onKeyUp: (event: KeyboardEvent) => void
-  }>
+  element: Computed<CommandElementProps>
 }
 
 /**
@@ -99,7 +112,7 @@ export const commandProps = (
   name: string = model.name,
 ): CommandProps => ({
   element: computed(
-    () => ({
+    (): CommandElementProps => ({
       'data-active': model() || undefined,
       onKeyDown: wrap((event: KeyboardEvent) => {
         applyActivationIntent(event, model.keyDown(describeKeyEvent(event)))
@@ -107,6 +120,10 @@ export const commandProps = (
       }),
       onKeyUp: wrap((event: KeyboardEvent) => {
         applyActivationIntent(event, model.keyUp(describeKeyEvent(event)))
+        notify()
+      }),
+      onBlur: wrap(() => {
+        model.cancel()
         notify()
       }),
     }),

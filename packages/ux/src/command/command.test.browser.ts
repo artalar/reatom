@@ -26,9 +26,12 @@ const mount = (tag: string, model: ReturnType<typeof reatomCommand>) => {
   document.body.append(element)
 
   const props = commandProps(model).element
-  const { onKeyDown, onKeyUp } = props()
+  const { onKeyDown, onKeyUp, onBlur } = props()
   element.addEventListener('keydown', onKeyDown)
   element.addEventListener('keyup', onKeyUp)
+  // `focusout`, not `blur`: focus moving into a descendant cancels the press
+  // too, and only the bubbling event reports that. See `CommandElementProps`.
+  element.addEventListener('focusout', onBlur)
 
   const unsubscribe = props.subscribe(({ 'data-active': active }) => {
     if (active) element.setAttribute('data-active', '')
@@ -172,6 +175,50 @@ test('the deferred Firefox click still fires when no keyup arrives', async () =>
 
   await nextFrame()
   expect(clicks).toHaveLength(1)
+})
+
+test('focus leaving the element mid-press clears data-active', async () => {
+  // react-components 0.3.1: the keyup goes to whatever has focus now, so
+  // without the focusout handler the element would stay `data-active` forever.
+  const command = reatomCommand({ name: 'stuck' })
+  const { element, clicks } = mount('div', command)
+  const other = document.createElement('button')
+  document.body.append(other)
+  cleanups.push(() => other.remove())
+
+  element.focus()
+  press(element, 'keydown', ' ')
+  expect(element.hasAttribute('data-active')).toBe(true)
+
+  other.focus()
+  expect(element.hasAttribute('data-active')).toBe(false)
+
+  // The release lands on the new focus target, and the command stays quiet.
+  press(other, 'keyup', ' ')
+  await Promise.resolve()
+  expect(clicks).toHaveLength(0)
+})
+
+test('a space keyup bubbling from a child does not click the command', async () => {
+  // react-components 0.3.1: "a Space keyup bubbling up from a focused child no
+  // longer dispatches a synthetic click on the element".
+  const command = reatomCommand({ name: 'row2' })
+  const { element, clicks } = mount('div', command)
+  const child = document.createElement('button')
+  element.append(child)
+
+  element.focus()
+  press(element, 'keydown', ' ')
+  expect(element.hasAttribute('data-active')).toBe(true)
+
+  // Focus moves into the child mid-press: `focusout` bubbles out of the element,
+  // so the press is cancelled before the child's keyup bubbles back through.
+  child.focus()
+  press(child, 'keyup', ' ')
+
+  await Promise.resolve()
+  expect(clicks).toHaveLength(0)
+  expect(element.hasAttribute('data-active')).toBe(false)
 })
 
 test('a native button is left to the browser for real key presses', () => {

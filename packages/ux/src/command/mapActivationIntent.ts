@@ -154,6 +154,8 @@ const mapKeyDownIntent = (
   event: CommandActivationEvent,
   context: Required<Omit<CommandActivationContext, 'pressed'>>,
 ): CommandActivationIntent => {
+  if (event.defaultPrevented) return IGNORE
+  if (context.disabled) return IGNORE
   // A key that bubbled up from a child, or that lands in an editable element,
   // belongs to that element — typing a space inside a nested input must not
   // activate the surrounding command.
@@ -197,22 +199,35 @@ const mapKeyUpIntent = (
   event: CommandActivationEvent,
   context: Required<CommandActivationContext>,
 ): CommandActivationIntent => {
-  // Releasing space after a meta shortcut (Cmd+Space and friends) must not
-  // activate the command.
-  if (event.metaKey) return IGNORE
   if (!context.pressed) return IGNORE
   if (!context.clickOnSpace || !isActivationSpaceKey(event.key)) return IGNORE
 
-  // `pressed` is cleared even for native controls, so a stale keydown can never
-  // activate a later keyup.
-  if (isNativeActivation(event, event.element)) {
-    return {
-      preventDefault: false,
-      pressed: false,
-      active: null,
-      click: 'none',
-    }
+  const native = isNativeActivation(event, event.element)
+
+  // Releasing space always ends the press, before any of the guards below — a
+  // keyup that refuses to click must still not leave the element looking
+  // pressed (react-components 0.3.1, `command.tsx`: "Clear the active state as
+  // soon as Space is released, before all the guards below"). `pressed` is
+  // cleared even for native controls, so a stale keydown can never activate a
+  // later keyup; `active` is only ever set for non-native ones.
+  const release: CommandActivationIntent = {
+    preventDefault: false,
+    pressed: false,
+    active: native ? null : false,
+    click: 'none',
   }
+
+  if (event.defaultPrevented) return release
+  // The keydown only records the press when it was self-targeted, so a keyup
+  // bubbling up from a child that took focus mid-press must not click this
+  // element.
+  if (event.selfTarget === false) return release
+  if (context.disabled) return release
+  // Releasing space after a meta shortcut (Cmd+Space and friends) is not an
+  // activation.
+  if (event.metaKey) return release
+  if (native) return release
+
   return {
     preventDefault: true,
     pressed: false,
@@ -227,6 +242,11 @@ const mapKeyUpIntent = (
  * This is the whole of Ariakit's `Command` keyboard behavior as a pure
  * function: `Enter` activates on `keydown`, space activates on `keyup` after a
  * matching `keydown`, and native clickable elements are left to the browser.
+ *
+ * A space `keyup` always ends the press, whatever the guards decide about the
+ * click, so nothing can leave the element stuck with `data-active`. The one
+ * release the keyboard never sees — focus moving away while space is held — is
+ * `CommandModel.cancel`.
  *
  * @example
  *   // Enter on a custom button dispatches the click ourselves
@@ -257,9 +277,6 @@ export const mapActivationIntent = (
     pressed = false,
     firefox = false,
   } = context
-
-  if (event.defaultPrevented) return IGNORE
-  if (disabled) return IGNORE
 
   return event.type === 'keyup'
     ? mapKeyUpIntent(event, {

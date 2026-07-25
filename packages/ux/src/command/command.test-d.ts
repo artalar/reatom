@@ -62,4 +62,11 @@ test('the prop record is framework-neutral plain data', () => {
   expectTypeOf(record['data-active']).toEqualTypeOf<true | undefined>()
   expectTypeOf(record.onKeyDown).toEqualTypeOf<(event: KeyboardEvent) => void>()
   expectTypeOf(record.onKeyUp).toEqualTypeOf<(event: KeyboardEvent) => void>()
+  expectTypeOf(record.onBlur).toEqualTypeOf<(event: FocusEvent) => void>()
+})
+
+test('cancelling a press reports whether there was one', () => {
+  const command = reatomCommand({ name: 'save' })
+
+  expectTypeOf(command.cancel()).toEqualTypeOf<boolean>()
 })

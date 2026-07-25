@@ -11,6 +11,7 @@ import {
   isNativeActivation,
   mapActivationIntent,
 } from './mapActivationIntent'
+import { commandProps } from './props'
 import { reatomCommand } from './reatomCommand'
 
 beforeEach(() => context.reset())
@@ -21,6 +22,9 @@ const IGNORED: CommandActivationIntent = {
   active: null,
   click: 'none',
 }
+
+/** The record's `onBlur` reads nothing off the event, only that it happened. */
+const blurEvent = () => ({}) as FocusEvent
 
 /** A trusted key event on a `<div role="button">` — the non-native case. */
 const key = (
@@ -158,14 +162,72 @@ test('space is native on input and select as well as buttons', () => {
   ).toBe(false)
 })
 
-test('a meta-modified keyup is ignored', () => {
+/**
+ * A space keyup that refuses the click but still ends the press, which is the
+ * shape every guard in `mapKeyUpIntent` returns (react-components 0.3.1).
+ */
+const RELEASED: CommandActivationIntent = {
+  preventDefault: false,
+  pressed: false,
+  active: false,
+  click: 'none',
+}
+
+test('a meta-modified keyup releases the press without activating', () => {
   // Ariakit `onKeyUp`: `if (event.metaKey) return` — releasing space after a
-  // Cmd shortcut must not activate the command.
+  // Cmd shortcut must not activate the command. react-components 0.3.1 moved
+  // the guard below the state reset, so the element does not stay `data-active`
+  // (changelog: "stuck in the active (data-active) state when the Space key is
+  // released while the Meta key is held").
   expect(
     mapActivationIntent(key({ type: 'keyup', key: ' ', metaKey: true }), {
       pressed: true,
     }),
-  ).toEqual(IGNORED)
+  ).toEqual(RELEASED)
+})
+
+test('a keyup a consumer already handled releases the press', () => {
+  // react-components 0.3.1: "calling `event.preventDefault()` in a custom
+  // `onKeyUp` handler no longer leaves the element stuck looking pressed".
+  expect(
+    mapActivationIntent(
+      key({ type: 'keyup', key: ' ', defaultPrevented: true }),
+      { pressed: true },
+    ),
+  ).toEqual(RELEASED)
+})
+
+test('a space keyup bubbling from a child releases without clicking', () => {
+  // react-components 0.3.1: "a Space keyup bubbling up from a focused child no
+  // longer dispatches a synthetic click on the element". The keydown only
+  // records the press when it was self-targeted, so the release is all that is
+  // left to do.
+  expect(
+    mapActivationIntent(key({ type: 'keyup', key: ' ', selfTarget: false }), {
+      pressed: true,
+    }),
+  ).toEqual(RELEASED)
+})
+
+test('a native control keeps its own click when the keyup is refused', () => {
+  // `active` is `null` — never set for a native control, so there is nothing to
+  // clear — while `pressed` is cleared as on any other release.
+  expect(
+    mapActivationIntent(
+      key({
+        type: 'keyup',
+        key: ' ',
+        metaKey: true,
+        element: { tagName: 'button' },
+      }),
+      { pressed: true },
+    ),
+  ).toEqual({
+    preventDefault: false,
+    pressed: false,
+    active: null,
+    click: 'none',
+  })
 })
 
 test('Spacebar is accepted as the legacy alias of space', () => {
@@ -259,13 +321,16 @@ test('already-handled, disabled, bubbled and editable events are ignored', () =>
   }
 })
 
-test('a disabled keyup is ignored before the pressed flag is read', () => {
+test('a command disabled between keydown and keyup still releases', () => {
+  // react-components 0.3.1: a command that becomes disabled mid-press ("it
+  // disables itself on the Space keydown") loses focusability, so the keyup may
+  // land on the body — the press has to end wherever the guard runs.
   expect(
     mapActivationIntent(key({ type: 'keyup', key: ' ' }), {
       disabled: true,
       pressed: true,
     }),
-  ).toEqual(IGNORED)
+  ).toEqual(RELEASED)
 })
 
 // --- click init -------------------------------------------------------------
@@ -344,4 +409,37 @@ test('disabling a command mid-press clears active and pressed', () => {
 
   command.disabled.set(false)
   expect(command()).toBe(false)
+})
+
+test('losing focus mid-press ends the press', () => {
+  // react-components 0.3.1: "clears its pressed state (data-active) when the
+  // element loses focus while Space is held, mirroring how native buttons
+  // cancel the Space activation when they lose focus before the keyup". The
+  // keyup goes to whatever has focus now, so no key event can do this.
+  const command = reatomCommand({ name: 'c4' })
+
+  command.keyDown({ key: ' ', isTrusted: true })
+  expect(command()).toBe(true)
+
+  expect(command.cancel()).toBe(true)
+  expect(command()).toBe(false)
+  expect(command.pressed()).toBe(false)
+
+  // …and the space keyup that arrives afterwards, from wherever focus went, can
+  // not resurrect the activation.
+  expect(command.keyUp({ key: ' ', isTrusted: true })).toEqual(IGNORED)
+
+  // Nothing to cancel when no press is open.
+  expect(command.cancel()).toBe(false)
+})
+
+test('the prop record cancels the press on focusout', () => {
+  const command = reatomCommand({ name: 'c5' })
+  const props = commandProps(command)
+
+  command.keyDown({ key: ' ', isTrusted: true })
+  expect(props.element()['data-active']).toBe(true)
+
+  props.element().onBlur(blurEvent())
+  expect(props.element()['data-active']).toBeUndefined()
 })

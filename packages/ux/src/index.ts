@@ -122,6 +122,7 @@ export {
 } from './command/mapActivationIntent'
 export {
   applyActivationIntent,
+  type CommandElementProps,
   type CommandProps,
   commandProps,
   describeKeyEvent,

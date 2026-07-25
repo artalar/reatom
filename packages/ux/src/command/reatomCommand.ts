@@ -79,6 +79,18 @@ export interface CommandModel extends Atom<boolean> {
   keyDown: Action<[CommandKeyEvent], CommandActivationIntent>
   /** Applies a `keyup`; see {@link CommandModel.keyDown}. */
   keyUp: Action<[CommandKeyEvent], CommandActivationIntent>
+  /**
+   * Ends a space press that will get no `keyup`, and reports whether there was
+   * one to end.
+   *
+   * @remarks
+   *   When focus leaves the element while space is held, the `keyup` is delivered
+   *   to whatever has focus now, so {@link CommandModel.keyUp} never runs and
+   *   the element would stay `data-active` forever. Native buttons cancel the
+   *   space activation on focus loss, and Ariakit mirrors that from an `onBlur`
+   *   handler (react-components 0.3.1).
+   */
+  cancel: Action<[], boolean>
 }
 
 /**
@@ -149,6 +161,12 @@ export const reatomCommand = (options: CommandOptions = {}): CommandModel => {
       withActions(() => ({
         keyDown: (event: CommandKeyEvent) => applyIntent(event, 'keydown'),
         keyUp: (event: CommandKeyEvent) => applyIntent(event, 'keyup'),
+        cancel: () => {
+          if (!pressed()) return false
+          pressed.set(false)
+          active.set(false)
+          return true
+        },
       })),
     )
 }
