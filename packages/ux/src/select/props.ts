@@ -24,6 +24,7 @@ import {
   mapEntryIntent,
   mapNavigationIntent,
 } from '../composite/navigationIntent'
+import { applyTypeaheadIntent } from '../composite/props'
 import { compositeElementId } from '../composite/reatomComposite'
 import { VISUALLY_HIDDEN_STYLE } from '../dialog/dialogDom'
 import { isDisclosureContentHidden } from '../disclosure/props'
@@ -173,6 +174,14 @@ export interface SelectButtonProps {
    * writes the value, so the arrow keys change a closed select.
    */
   onKeyDown: (event: SelectKeyboardEvent) => void
+  /**
+   * The typeahead: typing on the button jumps to the item whose text starts
+   * with the characters, which on a closed select writes its value too.
+   *
+   * The capture phase is Ariakit's own choice: a printable key must not reach a
+   * child that would act on it — `Space` on a nested button, for one.
+   */
+  onKeyDownCapture: (event: SelectKeyboardEvent) => void
 }
 
 /**
@@ -231,6 +240,11 @@ export interface SelectListProps {
    * navigates the items.
    */
   onKeyDown: (event: SelectKeyboardEvent) => void
+  /**
+   * The typeahead, as on the button — typing inside an open list jumps to the
+   * matching item.
+   */
+  onKeyDownCapture: (event: SelectKeyboardEvent) => void
   /** Focusing the list itself makes the list, not an item, the active element. */
   onFocus: (event: SelectFocusEvent) => void
 }
@@ -254,6 +268,7 @@ export interface SelectPopoverProps
       | 'tabIndex'
       | 'ref'
       | 'onKeyDown'
+      | 'onKeyDownCapture'
       | 'onFocus'
     > {}
 
@@ -481,6 +496,12 @@ export interface SelectItemPropsOptions {
   /** The row the item belongs to, which is what turns the list into a grid. */
   rowId?: string
   /**
+   * The text the typeahead matches instead of the item's value — Ariakit's
+   * `typeaheadText`, for an item whose value is not what the user would type.
+   * An empty string opts the item out of the typeahead.
+   */
+  typeaheadText?: string
+  /**
    * Whether clicking the item writes its value. Defaults to the model-wide
    * option.
    */
@@ -577,10 +598,12 @@ interface SelectItemPolicy {
  *       boolean. A consumer that needs the predicate can read the event in its
  *       own handler and toggle the model.
  *
- *   What is deliberately **not** ported: `useCompositeTypeahead`, which Ariakit
- *   applies to both the button and the list, because `composite-typeahead` has
- *   no port yet — the item `text` the composite collection already stores is
- *   what it will read.
+ *   `useCompositeTypeahead`, which Ariakit applies to both the button and the
+ *   list, is the `onKeyDownCapture` of the `select`, `list`, and `popover`
+ *   records: one handler over `composite.typeahead`, so typing on the closed
+ *   button and typing inside the open list continue the same search. Each item
+ *   registers its value as the text it is matched by, and
+ *   {@link SelectItemPropsOptions.typeaheadText} overrides that.
  * @example
  *   const fruit = reatomSelect({ name: 'fruit' })
  *
@@ -724,6 +747,19 @@ export const selectProps = (
     notify()
   })
 
+  /**
+   * The typeahead, shared by the button and the list.
+   *
+   * Ariakit applies `useCompositeTypeahead` to both elements, and the buffer
+   * lives on the store, so typing on the button and typing inside the open list
+   * continue one search. Here it is one handler over `composite.typeahead` for
+   * the same reason.
+   */
+  const onTypeaheadKeyDown = wrap((event: SelectKeyboardEvent) => {
+    applyTypeaheadIntent(composite, event)
+    notify()
+  })
+
   // --- the label -------------------------------------------------------------
 
   const labelRef = wrap((element: HTMLElement | null) => {
@@ -848,6 +884,7 @@ export const selectProps = (
     const {
       disabled,
       rowId,
+      typeaheadText,
       focusOnHover = focusOnHoverDefault,
       // `#value` and not `#id`: the logger reads better with the text the user
       // sees, and it is the collection's own `items#id` convention.
@@ -855,8 +892,9 @@ export const selectProps = (
     } = itemPropsOptions
 
     const ref = wrap((element: HTMLElement | null) => {
-      if (element) model.renderItem(value, { element, disabled, rowId })
-      else model.unrenderItem(value)
+      if (element) {
+        model.renderItem(value, { element, disabled, rowId, typeaheadText })
+      } else model.unrenderItem(value)
     })
 
     const onClick = wrap((event?: SelectPropsEvent) => {
@@ -978,6 +1016,7 @@ export const selectProps = (
         ref: selectRef,
         onClick: onSelectClick,
         onKeyDown: onSelectKeyDown,
+        onKeyDownCapture: onTypeaheadKeyDown,
       }),
       `${name}.props.select`,
     ),
@@ -1009,6 +1048,7 @@ export const selectProps = (
         style: hidden ? { display: 'none' } : undefined,
         ref: listRef,
         onKeyDown: onListKeyDown,
+        onKeyDownCapture: onTypeaheadKeyDown,
         onFocus: onListFocus,
       }
     }, `${name}.props.list`),
@@ -1029,6 +1069,7 @@ export const selectProps = (
         // dialog's closes the popover, which is the order Ariakit's handler
         // chain gives.
         onKeyDown: onPopoverKeyDown,
+        onKeyDownCapture: onTypeaheadKeyDown,
         onFocus: onListFocus,
       }
     }, `${name}.props.popover`),

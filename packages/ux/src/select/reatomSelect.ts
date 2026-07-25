@@ -144,11 +144,17 @@ export interface SelectExtOptions<T extends SelectValue = SelectValue> {
  * Options of {@link reatomSelect}: everything the composite, the popover, and
  * the prop records accept, plus {@link SelectExtOptions}.
  *
- * Four composite defaults differ from {@link reatomComposite}'s, matching
- * Ariakit's `createSelectStore`: `activeId` is `null`, `orientation` is
- * `'vertical'`, `virtualFocus` is on, and `includesBaseElement` is `false` —
- * the list element is not part of the arrow-key order even though the active id
- * starts at `null`. The popover is placed `'bottom-start'`.
+ * Five composite defaults differ from {@link reatomComposite}'s, matching
+ * Ariakit's `createSelectStore` and the components it renders: `activeId` is
+ * `null`, `orientation` is `'vertical'`, `virtualFocus` is on,
+ * `includesBaseElement` is `false` — the list element is not part of the
+ * arrow-key order even though the active id starts at `null` — and `typeahead`
+ * is on, since Ariakit's `Select` and `SelectList` both render
+ * `CompositeTypeahead`. The popover is placed `'bottom-start'`.
+ *
+ * A select driven by a {@link SelectExtOptions.combobox} has no typeahead of its
+ * own: the composite belongs to the combobox, where typing filters the list
+ * instead — Ariakit's `typeahead: !hasCombobox`.
  */
 export interface SelectOptions<T extends SelectValue = SelectValue>
   extends
@@ -474,6 +480,7 @@ export function reatomSelect(options: SelectOptions = {}): Select {
     orientation = 'vertical',
     virtualFocus = true,
     includesBaseElement = false,
+    typeahead = true,
     placement = 'bottom-start',
     id: initId,
 
@@ -523,6 +530,7 @@ export function reatomSelect(options: SelectOptions = {}): Select {
       orientation,
       virtualFocus,
       includesBaseElement,
+      typeahead,
       name: `${name}.composite`,
     })
 

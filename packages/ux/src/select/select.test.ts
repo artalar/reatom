@@ -367,6 +367,101 @@ test('navigation skips an item that has no value', () => {
   expect(fruit()).toBe('Orange')
 })
 
+test('navigation skips a run of items that have no value', () => {
+  // react-components 0.3.1: "Fixed arrow keys on a closed `Select` freezing the
+  // page when multiple `SelectItem` components without a `value` prop follow the
+  // active item". Ariakit walked the list with a growing `skip` and could loop
+  // forever; marking the valueless items disabled answers the same question in
+  // one `nextId` pass, so there is no loop to run away.
+  const fruit = reatomSelect({ name: 'fruit' })
+  mount(fruit, ['Apple'])
+  for (const id of ['plain1', 'plain2', 'plain3']) {
+    fruit.composite.items.renderItem({ id, element: element() })
+  }
+  fruit.props.item('Orange')().ref(element())
+
+  expect(fruit.composite.nextId({ move: 'next' })).toBe('plain1')
+  expect(fruit.nextValueId({ move: 'next' })).toBe(fruit.itemId('Orange'))
+
+  // and backwards from the far end, over the same run
+  fruit.composite.set(fruit.itemId('Orange'))
+  expect(fruit.nextValueId({ move: 'previous' })).toBe(fruit.itemId('Apple'))
+})
+
+test('the value-aware walk wraps over valueless items with focusLoop', () => {
+  // The second half of the same fix: "Items without a `value` are now skipped
+  // correctly, including when `focusLoop` wraps around the list."
+  const fruit = reatomSelect({ focusLoop: true, name: 'fruit' })
+  mount(fruit, ['Apple'])
+  for (const id of ['plain1', 'plain2']) {
+    fruit.composite.items.renderItem({ id, element: element() })
+  }
+  fruit.props.item('Orange')().ref(element())
+
+  // …[Apple, plain1, plain2, Orange]: the wrap past the end has to cross the
+  // valueless run in the middle too.
+  fruit.composite.set(fruit.itemId('Orange'))
+  expect(fruit.nextValueId({ move: 'next' })).toBe(fruit.itemId('Apple'))
+  expect(fruit.navigateValue({ move: 'next' })).toBe(fruit.itemId('Apple'))
+  expect(fruit()).toBe('Apple')
+
+  // With only one item left to select, the wrap has nowhere to go and the active
+  // item stays put. Ariakit's `nextWithValue` returns that same item's id and
+  // re-moves onto it; the end state is identical, and `undefined` avoids a
+  // `move` that would re-write the value the user is already on.
+  fruit.unrenderItem('Orange')
+  expect(fruit.nextValueId({ move: 'next' })).toBe(undefined)
+  expect(fruit.navigateValue({ move: 'next' })).toBe(undefined)
+  expect(fruit.composite()).toBe(fruit.itemId('Apple'))
+  expect(fruit()).toBe('Apple')
+})
+
+test('a list of nothing but valueless items goes nowhere', () => {
+  // Ariakit returns `undefined` after visiting every reachable item, so `move()`
+  // leaves the active item alone rather than landing on an item that selects
+  // nothing.
+  const fruit = reatomSelect({ focusLoop: true, name: 'fruit' })
+  mount(fruit)
+  for (const id of ['plain1', 'plain2']) {
+    fruit.composite.items.renderItem({ id, element: element() })
+  }
+  fruit.composite.set('plain1')
+
+  expect(fruit.nextValueId({ move: 'next' })).toBe(undefined)
+  expect(fruit.navigateValue({ move: 'next' })).toBe(undefined)
+  expect(fruit.composite()).toBe('plain1')
+  expect(fruit()).toBe(undefined)
+})
+
+test('an item that never mounted is still addressable and selectable', () => {
+  // components 0.1.8: "Fixed collection store `item` lookups to resolve
+  // controlled items added after store creation when no live item is
+  // registered. This allows `Select` typeahead to update its value while options
+  // are unmounted." Registration and rendering are separate here, so a
+  // config-provided item is in the collection from the start.
+  const fruit = reatomSelect({
+    items: [{ value: 'Apple' }, { value: 'Orange' }],
+    name: 'fruit',
+  })
+
+  // registered, so the value seed and the lookups see it…
+  expect(fruit()).toBe('Apple')
+  expect(fruit.item('Orange')?.id).toBe(fruit.itemId('Orange'))
+  expect(fruit.item('Orange')?.rendered()).toBe(false)
+  // …but not navigable, because there is no element to focus
+  expect(fruit.composite.navigationItems()).toEqual([])
+
+  expect(fruit.select('Orange')).toBe('Orange')
+  expect(fruit.isSelected('Orange')).toBe(true)
+  expect(fruit.selectedId).toBeDefined()
+
+  // an item added after the model was created resolves the same way
+  fruit.composite.items.registerItem({ id: fruit.itemId('Pear') })
+  expect(fruit.item('Pear')?.rendered()).toBe(false)
+  expect(fruit.select('Pear')).toBe('Pear')
+  expect(fruit.itemValues()).toContain('Pear')
+})
+
 // --- valueOnShow and reset ---------------------------------------------------
 
 test('reset restores the value the list opened with', () => {
