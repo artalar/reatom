@@ -69,8 +69,17 @@ test('a narrowed value union types the whole group', () => {
   expectTypeOf(plan.select('pro')).toEqualTypeOf<'free' | 'pro' | null>()
   expectTypeOf(plan.item('pro').select()).toEqualTypeOf<'free' | 'pro' | null>()
 
+  // @ts-expect-error guarded selection must preserve the narrowed state
+  plan.select('team')
+  // @ts-expect-error an item outside the union could write an invalid state
+  plan.item('team')
   // @ts-expect-error only the listed plans exist
   plan.set('team')
+
+  // @ts-expect-error a non-null state needs an initial value or adopted atom
+  reatomRadio<'free' | 'pro'>({ name: 'missing-initial-value' })
+  // @ts-expect-error initial items must belong to the narrowed value union
+  reatomRadio<'free' | 'pro' | null>({ items: [{ value: 'team' }] })
 })
 
 test('an adopted atom is what "controlled" means', () => {
@@ -81,7 +90,12 @@ test('an adopted atom is what "controlled" means', () => {
   const narrow = atom<'free' | 'pro'>('free', 'narrow')
   const narrowed = reatomRadio({ valueAtom: narrow, name: 'narrowed' })
   expectTypeOf(narrowed()).toEqualTypeOf<'free' | 'pro'>()
+  expectTypeOf(narrowed.select('pro')).toEqualTypeOf<'free' | 'pro'>()
 
+  // @ts-expect-error a non-null adopted atom cannot be cleared
+  narrowed.select(null)
+  // @ts-expect-error an item must belong to the adopted atom's union
+  narrowed.item('team')
   // @ts-expect-error an adopted atom must hold radio values
   reatomRadio({ valueAtom: atom(true, 'flag') })
 })

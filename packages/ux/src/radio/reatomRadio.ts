@@ -51,6 +51,20 @@ export type RadioItemValue = string | number
  */
 export type RadioValue = RadioItemValue | null
 
+type RadioItemValueFor<T extends RadioValue> = Extract<T, RadioItemValue>
+
+type RadioOptionsConstraint<T extends RadioValue> = null extends T
+  ? unknown
+  : { value: T } | { valueAtom: Atom<T> }
+
+type RadioValueAtomOptions<T extends RadioValue> = Omit<
+  RadioOptions<T>,
+  'value' | 'valueAtom'
+> & {
+  value?: never
+  valueAtom: Atom<T>
+}
+
 /**
  * Derives whether one radio is checked from the group value.
  *
@@ -74,7 +88,11 @@ export const isRadioItemChecked = (
   state: RadioValue,
   itemValue?: RadioItemValue,
 ): boolean => {
-  if (itemValue != null && state != null) return state === itemValue
+  if (itemValue != null && state != null) {
+    // SameValueZero matches the Map used by `item`: notably, NaN identifies
+    // itself and -0 is the same radio as 0.
+    return state === itemValue || Object.is(state, itemValue)
+  }
   return Boolean(state)
 }
 
@@ -92,10 +110,23 @@ export const isRadioItemChecked = (
  *   same problem Ariakit solves for the native `name` attribute (issue #3833).
  * @example
  *   radioItemId('plan', 'free') // 'plan-free'
- *   radioItemId('plan', 'a b') // 'plan-a-b' — non-word characters collapse
+ *   radioItemId('plan', 2) // 'plan-n-32' — numbers keep their type
+ *   radioItemId('plan', 'a b') // 'plan-s-61-20-62' — unsafe values are encoded
  */
-export const radioItemId = (groupId: string, value: RadioItemValue): string =>
-  compositeElementId(`${groupId}-${value}`)
+export const radioItemId = (groupId: string, value: RadioItemValue): string => {
+  const stringValue = String(value)
+  const safeString =
+    typeof value === 'string' &&
+    /^[\w-]+$/.test(value) &&
+    !/^[ns]-(?:[0-9a-f]+(?:-[0-9a-f]+)*)?$/.test(value)
+  const valueId = safeString
+    ? value
+    : `${typeof value === 'number' ? 'n' : 's'}-${Array.from(
+        stringValue,
+        (character) => character.codePointAt(0)!.toString(16),
+      ).join('-')}`
+  return `${compositeElementId(groupId)}-${valueId}`
+}
 
 /**
  * Registration payload of one radio — plain data, never atoms.
@@ -120,9 +151,11 @@ export interface RadioItemPatch {
 }
 
 /** Registration payload of one radio, including the value that identifies it. */
-export interface RadioItemInit extends RadioItemPatch {
+export interface RadioItemInit<
+  T extends RadioItemValue = RadioItemValue,
+> extends RadioItemPatch {
   /** The value this radio contributes to the group. */
-  value: RadioItemValue
+  value: T
 }
 
 /**
@@ -140,7 +173,7 @@ export interface RadioItemModel<T extends RadioValue = RadioValue> {
   /** Unit name of this radio — `plan#free`. */
   name: string
   /** The value this radio contributes to the group. */
-  value: RadioItemValue
+  value: RadioItemValueFor<T>
   /** The composite item id, which is also the DOM `id` of the element. */
   id: string
   /**
@@ -223,7 +256,7 @@ export interface RadioOptions<T extends RadioValue = RadioValue>
    * exactly like {@link CompositeOptions.items} — so nothing is navigable until
    * an element mounts.
    */
-  items?: Array<RadioItemInit>
+  items?: Array<RadioItemInit<RadioItemValueFor<T>>>
   /**
    * Loops from the last radio back to the first one.
    *
@@ -309,7 +342,7 @@ export interface RadioUnits<T extends RadioValue = RadioValue> {
    *   mounts. That makes the first call a write, so describe radios where you
    *   create the model or in a component body — not inside a `computed`.
    */
-  item: (value: RadioItemValue) => RadioItemModel<T>
+  item: (value: RadioItemValueFor<T>) => RadioItemModel<T>
   /**
    * Selects a value, returning the resulting group value.
    *
@@ -321,7 +354,7 @@ export interface RadioUnits<T extends RadioValue = RadioValue> {
    *   Writing the model atom directly bypasses both guards, which is what makes
    *   it the right tool for hydration and tests.
    */
-  select: Action<[value: RadioValue], T>
+  select: Action<[value: T], T>
   /**
    * Hands the group's single tab stop back to the checked radio, and returns
    * the id it moved to — or `undefined` when nothing is checked or the checked
@@ -451,9 +484,12 @@ const adoptAtom = <T>(source: Atom<T>, name: string): Atom<T> =>
  * @see https://ariakit.com/components/radio
  * @see https://www.w3.org/WAI/ARIA/apg/patterns/radio/
  */
+export function reatomRadio<T extends RadioValue>(
+  options: RadioValueAtomOptions<T>,
+): Radio<T>
 export function reatomRadio(options?: RadioOptions): Radio
 export function reatomRadio<T extends RadioValue>(
-  options: RadioOptions<T>,
+  options: RadioOptions<T> & RadioOptionsConstraint<T>,
 ): Radio<T>
 
 export function reatomRadio(options: RadioOptions = {}): Radio {
@@ -489,6 +525,7 @@ export function reatomRadio(options: RadioOptions = {}): Radio {
   // The group id prefixes every radio id, so two groups with the same values
   // stay apart, and it is the default native `name` too (Ariakit issue #3833).
   const groupId = initId ?? compositeElementId(name)
+  const itemIdPrefix = `${compositeElementId(groupId)}-`
 
   const composite = reatomComposite({
     ...compositeOptions,
@@ -556,7 +593,7 @@ export function reatomRadio(options: RadioOptions = {}): Radio {
     patch: RadioItemPatch = {},
   ): RadioItemModel => {
     const id = radioItemId(groupId, itemValue)
-    const itemName = `${name}#${itemValue}`
+    const itemName = `${name}#${id.slice(itemIdPrefix.length)}`
 
     // Registering on creation is what makes the per radio state outlive a mount
     // cycle: `unrender` then only drops the render reference, so `disabled` and

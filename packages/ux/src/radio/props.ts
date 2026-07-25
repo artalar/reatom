@@ -11,7 +11,6 @@
 import type { AssignerExt, Computed } from '@reatom/core'
 import { computed, notify, withMemo, wrap } from '@reatom/core'
 
-import type { CompositeOrientation } from '../composite/getNextId'
 import type { CompositeBaseProps, CompositeItemProps } from '../composite/props'
 import { isFocusEventOutside } from '../focusable/focusableDom'
 import type { RadioItemModel, RadioItemValue, RadioModel } from './reatomRadio'
@@ -188,11 +187,6 @@ export interface RadioPropRecords {
     options?: RadioItemPropsOptions,
   ) => Computed<RadioItemProps>
 }
-
-const ariaOrientation = (
-  orientation: CompositeOrientation,
-): 'horizontal' | 'vertical' | undefined =>
-  orientation === 'both' ? undefined : orientation
 
 /**
  * Reactive prop record for one radio element.
@@ -379,7 +373,7 @@ export const radioProps = (
         // and the "enter the widget" keyboard handling.
         ...model.composite.props.base(),
         role: 'radiogroup',
-        'aria-orientation': ariaOrientation(orientation),
+        'aria-orientation': orientation === 'both' ? undefined : orientation,
         'aria-disabled': model.disabled() ? 'true' : undefined,
         'aria-readonly': model.readOnly() ? 'true' : undefined,
         'aria-labelledby': labelledBy,

@@ -47,6 +47,8 @@ test('isRadioItemChecked covers every state / item value pair', () => {
   expect(isRadioItemChecked(1, '1')).toBe(false)
   // `0` is a real value, not "nothing selected"
   expect(isRadioItemChecked(0, 0)).toBe(true)
+  // item(value) uses SameValueZero keys, so NaN identifies itself too
+  expect(isRadioItemChecked(Number.NaN, Number.NaN)).toBe(true)
   // a radio without a value only reports whether _something_ is selected,
   // matching Ariakit's `!!storeValue` fallback
   expect(isRadioItemChecked('apple')).toBe(true)
@@ -55,10 +57,21 @@ test('isRadioItemChecked covers every state / item value pair', () => {
 
 test('radioItemId derives a DOM-safe id from the group id and the value', () => {
   expect(radioItemId('plan', 'free')).toBe('plan-free')
-  expect(radioItemId('plan', 2)).toBe('plan-2')
-  expect(radioItemId('plan', 'a b/c')).toBe('plan-a-b-c')
+  expect(radioItemId('plan', 2)).toBe('plan-n-32')
+  expect(radioItemId('plan', 'a b/c')).toBe('plan-s-61-20-62-2f-63')
   // the group prefix is what keeps two groups with the same values apart
   expect(radioItemId('billing', 'free')).not.toBe(radioItemId('plan', 'free'))
+})
+
+test('radioItemId keeps every supported value distinct', () => {
+  const values = [1, '1', 'a b', 'a/b', 's-61-20-62'] as const
+  const plan = reatomRadio({ name: 'plan' })
+  const items = values.map((value) => plan.item(value))
+
+  expect(new Set(items.map((item) => item.id)).size).toBe(values.length)
+  expect(new Set(items.map((item) => item.name)).size).toBe(values.length)
+  expect(plan.composite.items.ids()).toEqual(items.map((item) => item.id))
+  for (const item of items) expect(item.id).toMatch(/^[\w-]+$/)
 })
 
 // --- defaults ---------------------------------------------------------------
