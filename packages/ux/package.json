@@ -1,0 +1,25 @@
+{
+  "name": "@reatom/ux",
+  "type": "module",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Headless UI behavior models for Reatom (planning stage, see PORTING_PLAN.md)",
+  "sideEffects": false,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@reatom/core": "workspace:^"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reatom/reatom.git",
+    "directory": "packages/ux"
+  }
+}
