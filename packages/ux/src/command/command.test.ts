@@ -265,13 +265,13 @@ test('clickOnEnter / clickOnSpace false block the browser default', () => {
     active: null,
     click: 'none',
   })
-  // keyup is simply inert when space handling is off
+  // If the option changes after keydown, keyup must still close the press.
   expect(
     mapActivationIntent(key({ type: 'keyup', key: ' ' }), {
       clickOnSpace: false,
       pressed: true,
     }),
-  ).toEqual(IGNORED)
+  ).toEqual(RELEASED)
 })
 
 test('already-handled, disabled, bubbled and editable events are ignored', () => {
@@ -391,6 +391,19 @@ test('reatomCommand reads its options reactively', () => {
   expect(command.keyDown({ key: 'Enter', isTrusted: true }).click).toBe(
     'before-keyup',
   )
+})
+
+test('turning clickOnSpace off mid-press releases without activating', () => {
+  const command = reatomCommand({ name: 'c2-space' })
+
+  command.keyDown({ key: ' ', isTrusted: true })
+  expect(command()).toBe(true)
+  expect(command.pressed()).toBe(true)
+
+  command.clickOnSpace.set(false)
+  expect(command.keyUp({ key: ' ', isTrusted: true })).toEqual(RELEASED)
+  expect(command()).toBe(false)
+  expect(command.pressed()).toBe(false)
 })
 
 test('disabling a command mid-press clears active and pressed', () => {

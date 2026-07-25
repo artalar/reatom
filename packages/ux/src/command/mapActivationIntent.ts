@@ -197,10 +197,12 @@ const mapKeyDownIntent = (
 
 const mapKeyUpIntent = (
   event: CommandActivationEvent,
-  context: Required<CommandActivationContext>,
+  context: Required<
+    Pick<CommandActivationContext, 'clickOnSpace' | 'disabled' | 'pressed'>
+  >,
 ): CommandActivationIntent => {
   if (!context.pressed) return IGNORE
-  if (!context.clickOnSpace || !isActivationSpaceKey(event.key)) return IGNORE
+  if (!isActivationSpaceKey(event.key)) return IGNORE
 
   const native = isNativeActivation(event, event.element)
 
@@ -218,6 +220,9 @@ const mapKeyUpIntent = (
   }
 
   if (event.defaultPrevented) return release
+  // `clickOnSpace` is reactive and can turn off after keydown. The matching
+  // keyup must still close the press even though it must no longer click.
+  if (!context.clickOnSpace) return release
   // The keydown only records the press when it was self-targeted, so a keyup
   // bubbling up from a child that took focus mid-press must not click this
   // element.
@@ -280,11 +285,9 @@ export const mapActivationIntent = (
 
   return event.type === 'keyup'
     ? mapKeyUpIntent(event, {
-        clickOnEnter,
         clickOnSpace,
         disabled,
         pressed,
-        firefox,
       })
     : mapKeyDownIntent(event, {
         clickOnEnter,

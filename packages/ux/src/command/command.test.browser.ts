@@ -113,6 +113,23 @@ test('space activates on release, with data-active in between', async () => {
   expect(clicks).toHaveLength(1)
 })
 
+test('turning clickOnSpace off mid-press releases without clicking', async () => {
+  const command = reatomCommand({ name: 'toggle-off' })
+  const { element, clicks } = mount('div', command)
+  element.focus()
+
+  press(element, 'keydown', ' ')
+  expect(element.hasAttribute('data-active')).toBe(true)
+
+  command.clickOnSpace.set(false)
+  const keyup = press(element, 'keyup', ' ')
+  expect(keyup.defaultPrevented).toBe(false)
+  expect(element.hasAttribute('data-active')).toBe(false)
+
+  await Promise.resolve()
+  expect(clicks).toHaveLength(0)
+})
+
 test('a key event from a nested input is left to that input', async () => {
   // Ariakit guards `onKeyDown` with `isSelfTarget(event)` and `isTextField`.
   // The text-field probe is a real DOM read (`selectionStart`), so it can only
