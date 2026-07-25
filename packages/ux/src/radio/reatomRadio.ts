@@ -330,11 +330,11 @@ export interface RadioUnits<T extends RadioValue = RadioValue> {
    * @remarks
    *   The APG contract is that `Tab` enters a radio group at the checked radio.
    *   Arrow keys can leave the active item elsewhere — a group with
-   *   `selectOnMove` off navigates without selecting — so the tab stop has to be
-   *   put back when focus leaves the group. Ariakit does exactly this from
-   *   `RadioGroup`'s `onBlurCapture` (react-components 0.3.0: "tabbing back into
-   *   a group focuses the checked `Radio` after another unchecked `Radio` has
-   *   received focus"); {@link RadioGroupProps.onBlur} is the port of it.
+   *   `selectOnMove` off navigates without selecting — so the tab stop has to
+   *   be put back when focus leaves the group. Ariakit does exactly this from
+   *   `RadioGroup`'s `onBlurCapture` (react-components 0.3.0: "tabbing back
+   *   into a group focuses the checked `Radio` after another unchecked `Radio`
+   *   has received focus"); {@link RadioGroupProps.onBlur} is the port of it.
    *
    *   A plain `composite.set`, not a `move`: putting the tab stop back is not a
    *   navigation, so "selection follows focus" must not fire.
