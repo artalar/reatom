@@ -14,7 +14,12 @@ import type {
   ThemePack,
   ViewMode,
 } from '../types'
-import { IMAGE_TYPE_OPTIONS, filterTypes, includeSubfolders, sortField } from './filters'
+import {
+  IMAGE_TYPE_OPTIONS,
+  filterTypes,
+  includeSubfolders,
+  sortField,
+} from './filters'
 import {
   developRawFullSize,
   ignoreExifOrientation,
