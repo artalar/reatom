@@ -2,7 +2,11 @@ import { notify } from '@reatom/core'
 import { afterEach, expect, test } from 'vitest'
 
 import { describeElement } from '../interactions/describeElement'
-import { connectKeyboardModality, isFocusable } from './focusableDom'
+import {
+  connectFocusable,
+  connectKeyboardModality,
+  isFocusable,
+} from './focusableDom'
 import type { FocusableElementProps } from './props'
 import { focusableProps } from './props'
 import type { FocusableModel } from './reatomFocusable'
@@ -152,6 +156,23 @@ test('repeated calls reuse the installed listeners', () => {
   // one listener, so one transition — not two competing writes
   button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
   expect(modality()).toBe(false)
+})
+
+test('a dedicated modality model can observe a child document', () => {
+  const modality = reatomFocusVisible({ name: 'm.frame' })
+  const childDocument = document.implementation.createHTMLDocument('frame')
+  cleanups.push(connectKeyboardModality(modality, childDocument))
+
+  document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+  expect(modality()).toBe(true)
+
+  childDocument.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+  expect(modality()).toBe(false)
+
+  childDocument.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }),
+  )
+  expect(modality()).toBe(true)
 })
 
 test('keyboard focus shows the ring, pointer focus does not', async () => {
@@ -311,6 +332,23 @@ test('disabling a focused element removes the ring marker too', async () => {
   focusable.disabled.set(true)
   notify()
   expect(element.hasAttribute('data-focus-visible')).toBe(false)
+})
+
+test('detaching an element stops its focus-visible cleanup effect', () => {
+  const modality = reatomFocusVisible({ name: 'f.detach.modality' })
+  const focusable = reatomFocusable({ name: 'f.detach', modality })
+  const element = document.createElement('div')
+  document.body.append(element)
+  cleanups.push(connectKeyboardModality(modality), () => element.remove())
+
+  const disconnect = connectFocusable(focusable, element)
+  disconnect()
+
+  element.dataset.focusVisible = 'true'
+  focusable.focusable.set(false)
+  notify()
+
+  expect(element.getAttribute('data-focus-visible')).toBe('true')
 })
 
 test('the ring never lands when focusable is turned off mid-flight', async () => {

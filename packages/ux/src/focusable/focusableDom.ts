@@ -37,27 +37,26 @@ const FOCUSABLE_SELECTOR =
   'summary, iframe, object, embed, area[href], audio[controls], ' +
   "video[controls], [contenteditable]:not([contenteditable='false'])"
 
-/** Port of Ariakit's `isVisible` (`ariakit-utils/src/dom.ts`). */
-const isVisible = (element: Element): boolean => {
-  if (typeof element.checkVisibility === 'function') {
-    return element.checkVisibility()
-  }
-  const html = element as HTMLElement
-  return (
-    html.offsetWidth > 0 ||
-    html.offsetHeight > 0 ||
-    element.getClientRects().length > 0
-  )
-}
-
 /**
  * `true` when the element can receive focus right now.
  *
- * Port of Ariakit's `isFocusable` (`ariakit-utils/src/focus.ts`).
+ * Port of Ariakit's `isFocusable` (`ariakit-utils/src/focus.ts`) and its
+ * once-used `isVisible` helper (`ariakit-utils/src/dom.ts`).
  */
 export const isFocusable = (element: Element): boolean => {
   if (!element.matches(FOCUSABLE_SELECTOR)) return false
-  if (!isVisible(element)) return false
+  if (typeof element.checkVisibility === 'function') {
+    if (!element.checkVisibility()) return false
+  } else {
+    const html = element as HTMLElement
+    if (
+      html.offsetWidth <= 0 &&
+      html.offsetHeight <= 0 &&
+      element.getClientRects().length === 0
+    ) {
+      return false
+    }
+  }
   if (element.closest('[inert]')) return false
   return true
 }
@@ -95,7 +94,7 @@ export const isFocusEventOutside = (
 const modalityListeners = new WeakMap<FocusVisibleModel, () => void>()
 
 /**
- * Wires a keyboard-modality model to the document.
+ * Wires a keyboard-modality model to a document.
  *
  * Both listeners are installed in the capture phase, so modality is already up
  * to date by the time an element's own `focus` handler runs — a `mousedown`
@@ -105,22 +104,25 @@ const modalityListeners = new WeakMap<FocusVisibleModel, () => void>()
  * Ariakit's `hasInstalledGlobalEventListeners` guard: every focusable element
  * asks for them, only the first one installs them.
  *
- * Unlike Ariakit's `addGlobalEventListener`, child frames are not covered; a
- * frame needs its own model and its own call.
+ * Unlike Ariakit's `addGlobalEventListener`, child frames are not covered
+ * automatically; pass the frame's document with a dedicated model.
  *
  * @param model - Model to update; defaults to the shared `keyboardModality`.
+ * @param ownerDocument - Document to observe; defaults to the global document.
  * @returns A function that removes the listeners.
  */
 export const connectKeyboardModality = (
   model: FocusVisibleModel = keyboardModality,
+  ownerDocument?: Document,
 ): (() => void) => {
   const installed = modalityListeners.get(model)
   if (installed) return installed
 
   if (!canUseDOM()) return () => {}
+  const targetDocument = ownerDocument ?? document
 
   const unsubscribeKeyDown = onEvent(
-    document,
+    targetDocument,
     'keydown',
     (event) => {
       model.keyDown({
@@ -132,7 +134,7 @@ export const connectKeyboardModality = (
     { capture: true },
   )
   const unsubscribeMouseDown = onEvent(
-    document,
+    targetDocument,
     'mousedown',
     (event) => {
       const target = event.target as Element | null
@@ -239,7 +241,7 @@ export const connectFocusable = (
   model: FocusableModel,
   element: HTMLElement,
 ): (() => void) => {
-  connectKeyboardModality(model.modality)
+  connectKeyboardModality(model.modality, element.ownerDocument)
 
   model.element.set(element)
   model.descriptor.set(describeElement(element))
@@ -270,13 +272,13 @@ export const connectFocusable = (
   // The state half of this is the model's own `withComputed`; what needs a DOM
   // is the attribute `applyFocusVisible` wrote imperatively, which no blur will
   // come to remove.
-  const stopRingCleanup = effect(() => {
+  const ringCleanup = effect(() => {
     if (model.focusable() && !model.trulyDisabled()) return
     element.removeAttribute('data-focus-visible')
-  }, `${model.name}.focusVisibleCleanup`).subscribe()
+  }, `${model.name}.focusVisibleCleanup`)
 
   return () => {
-    stopRingCleanup()
+    ringCleanup.unsubscribe()
     observer?.disconnect()
     if (model.element() === element) {
       model.element.set(null)

@@ -53,9 +53,10 @@ export interface FocusVisibleModel extends Atom<boolean> {
  * be _visible_.
  *
  * This is Layer 1 only: it holds the flag and the transitions, but installs no
- * listeners. Attach `withGlobalModality()` from
- * [`focusableDom.ts`](./focusableDom.ts) — or use the shared `keyboardModality`
- * instance exported there — to wire it to the document.
+ * listeners. Call `connectKeyboardModality()` from
+ * [`focusableDom.ts`](./focusableDom.ts) to wire it to a document, or let
+ * `connectFocusable()` attach the shared `keyboardModality` instance exported
+ * below.
  *
  * @example
  *   const modality = reatomFocusVisible({ name: 'app.modality' })
