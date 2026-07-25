@@ -84,24 +84,27 @@ export const getTagDelimiters = (
  *       whose only delimiters are leading ones also returns an empty array
  *       (`",,a"` splits into nothing).
  *
- *   A string delimiter is matched as a regular expression (`String.match`
- *   compiles it) but split literally, exactly as in Ariakit. It only matters
- *   for delimiters with regex syntax in them — pass a `RegExp` for those.
+ *   A string delimiter is matched **literally**, the way `String.split` splits by
+ *   it — see {@link matchTagDelimiter}.
  * @example
  *   splitTagValue('a,b', [',']) // ['a', 'b']
  *   splitTagValue('a b', [',']) // [] — no delimiter matched
  *   splitTagValue(',a,b', [',']) // ['a', 'b'] — the leading comma is dropped
+ *   splitTagValue('a.b', ['.']) // ['a', 'b'] — a literal dot, not a wildcard
  */
 export const splitTagValue = (
   value: string,
   delimiters: ReadonlyArray<string | RegExp>,
 ): Array<string> => {
   for (const delimiter of delimiters) {
-    let match = value.match(delimiter)
+    let match = matchTagDelimiter(value, delimiter)
 
-    while (match?.index === 0) {
-      value = value.slice(match[0].length)
-      match = value.match(delimiter)
+    // A zero-length match sits at offset 0 of every value and consumes nothing,
+    // so stripping it would never terminate — Ariakit's "ignore zero-length
+    // matches so patterns like /x*/ don't loop forever".
+    while (match?.index === 0 && match.length > 0) {
+      value = value.slice(match.length)
+      match = matchTagDelimiter(value, delimiter)
     }
 
     if (!match) continue
@@ -109,6 +112,46 @@ export const splitTagValue = (
   }
 
   return []
+}
+
+/** Where a delimiter matches a value, as {@link matchTagDelimiter} reports it. */
+interface TagDelimiterMatch {
+  /**
+   * The offset the delimiter matched at, `undefined` for a global regex —
+   * `String.match` returns every match and no index for one, which
+   * {@link splitTagValue} reads as "not at the start".
+   */
+  index?: number
+  /** How much of the value the match consumes. */
+  length: number
+}
+
+/**
+ * Finds a delimiter in a value: a string literally, a regular expression as a
+ * pattern.
+ *
+ * @remarks
+ *   Port of Ariakit's `matchDelimiter` (`tag/utils.ts`). Matching a string
+ *   delimiter with `String.match` would compile it as a pattern while
+ *   `String.split` still splits by it literally, and the two disagree on every
+ *   delimiter that has regex syntax in it: `'.'` matched every character (so a
+ *   whole value was stripped as a leading delimiter), and `'+'` or `'('` threw
+ *   or matched nothing. Ariakit shipped the literal match in
+ *   `@ariakit/react-components` 0.1.2; this port predated it.
+ */
+const matchTagDelimiter = (
+  value: string,
+  delimiter: string | RegExp,
+): TagDelimiterMatch | null => {
+  if (typeof delimiter === 'string') {
+    const index = value.indexOf(delimiter)
+    if (index === -1) return null
+    return { index, length: delimiter.length }
+  }
+
+  const match = value.match(delimiter)
+  if (!match) return null
+  return { index: match.index, length: match[0].length }
 }
 
 /**

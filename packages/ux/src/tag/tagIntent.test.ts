@@ -73,11 +73,55 @@ test('splitTagValue strips leading delimiters instead of emitting empty values',
   expect(splitTagValue(',,', [','])).toEqual([])
 })
 
-test('a string delimiter is matched as a regex, exactly as in Ariakit', () => {
-  // `'.'` matches every character, so the whole value is consumed as a leading
-  // delimiter and nothing is left to split — pass /\./ for a literal dot
-  expect(splitTagValue('a.b', ['.'])).toEqual([])
+test('a string delimiter is matched literally, metacharacters and all', () => {
+  // `'.'` is split literally, so it has to be matched literally too — Ariakit's
+  // own `matchDelimiter` fix (`tag/utils.ts`)
+  expect(splitTagValue('a.b', ['.'])).toEqual(['a', 'b'])
   expect(splitTagValue('a.b', [/\./])).toEqual(['a', 'b'])
+
+  // the cases Ariakit's `utils.test.ts` mirrors, including the leading strip
+  expect(splitTagValue('.one.two.', ['.'])).toEqual(['one', 'two', ''])
+  expect(splitTagValue('+one+two+', ['+'])).toEqual(['one', 'two', ''])
+  expect(splitTagValue('|one|two|', ['|'])).toEqual(['one', 'two', ''])
+
+  // a value a literal delimiter does not occur in has nothing to split, even
+  // when it would have matched as a pattern
+  expect(splitTagValue('abc', ['.'])).toEqual([])
+  expect(splitTagValue('abc', ['a|b'])).toEqual([])
+  // …and one that does occur splits on the whole string
+  expect(splitTagValue('one::two', ['::'])).toEqual(['one', 'two'])
+})
+
+test('splitTagValue never loops on a zero-length regex match', () => {
+  // `/x*/` matches the empty string at offset 0 of every value, which the
+  // leading-delimiter strip has to ignore — Ariakit's "so patterns like /x*/
+  // don't loop forever"
+  expect(splitTagValue('abc', [/x*/])).toEqual(['a', 'b', 'c'])
+  expect(splitTagValue('axbc', [/x*/])).toEqual(['a', 'b', 'c'])
+})
+
+test('a regex delimiter keeps its own split semantics', () => {
+  // a capturing group emits the separators, as `String.split` does
+  expect(splitTagValue('one,two;three', [/([,;])/])).toEqual([
+    'one',
+    ',',
+    'two',
+    ';',
+    'three',
+  ])
+
+  // a global regex reports no `index`, so nothing is stripped and the leading
+  // empty value survives — the behavior of Ariakit's `matchDelimiter`
+  expect(splitTagValue(',one,two', [/,/g])).toEqual(['', 'one', 'two'])
+  expect(splitTagValue(',one,two', [/,/])).toEqual(['one', 'two'])
+})
+
+test('the first delimiter that matches wins, whatever its kind', () => {
+  expect(splitTagValue('one,two three', [/\s/, ','])).toEqual([
+    'one,two',
+    'three',
+  ])
+  expect(splitTagValue('one,two', [/\s/, ','])).toEqual(['one', 'two'])
 })
 
 test('cleanTagValues trims and drops the empty values', () => {
