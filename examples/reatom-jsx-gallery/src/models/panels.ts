@@ -1,7 +1,18 @@
-import { atom, reatomBoolean } from '@reatom/core'
+import { reatomDialog, reatomDisclosure, withDialogDom } from '@reatom/ux'
 
 export { activeFilterCount } from './filters'
 
-export const filterPanelOpen = atom(false, 'filterPanelOpen')
-export const settingsPanelOpen = atom(false, 'settingsPanelOpen')
-export const imageInfoPanelOpen = reatomBoolean(false, 'imageInfoPanel.open')
+export const filterPanelOpen = reatomDialog({
+  hidden: false,
+  name: 'filterPanel',
+}).extend(withDialogDom())
+
+export const settingsPanelOpen = reatomDialog({
+  hidden: false,
+  name: 'settingsPanel',
+}).extend(withDialogDom())
+
+export const imageInfoPanelOpen = reatomDisclosure({
+  hidden: false,
+  name: 'imageInfoPanel.open',
+})

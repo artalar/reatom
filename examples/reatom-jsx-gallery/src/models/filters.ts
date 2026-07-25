@@ -23,7 +23,7 @@ export const sortField = reatomEnum(
 
 export const sortOrder = reatomEnum(['asc', 'desc'], 'sortOrder')
 
-export const filterTypes = atom(new Set<string>(), 'filterTypes')
+export const filterTypes = atom<ReadonlyArray<string>>([], 'filterTypes')
 export const searchQuery = atom('', 'searchQuery')
 export const includeSubfolders = reatomBoolean(true, 'includeSubfolders')
 export const filterSizeMin = atom(0, 'filterSizeMin')
@@ -31,7 +31,7 @@ export const filterSizeMax = atom(Infinity, 'filterSizeMax')
 
 export const activeFilterCount = computed(() => {
   let count = 0
-  if (filterTypes().size > 0) count++
+  if (filterTypes().length > 0) count++
   if (filterSizeMin() > 0) count++
   if (filterSizeMax() < Infinity) count++
   if (searchQuery() !== '') count++
@@ -51,18 +51,15 @@ export const filterSizeMaxKb = computed(() => {
 
 export const toggleFilterType = action((extension: string) => {
   filterTypes.set((previousTypes) => {
-    const nextTypes = new Set(previousTypes)
-    if (nextTypes.has(extension)) {
-      nextTypes.delete(extension)
-    } else {
-      nextTypes.add(extension)
+    if (previousTypes.includes(extension)) {
+      return previousTypes.filter((type) => type !== extension)
     }
-    return nextTypes
+    return [...previousTypes, extension]
   })
 }, 'filters.toggleType')
 
 export const clearFilters = action(() => {
-  filterTypes.set(new Set<string>())
+  filterTypes.set([])
   filterSizeMin.set(0)
   filterSizeMax.set(Infinity)
   searchQuery.set('')

@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/html'
+import { context } from '@reatom/core'
 import { expect } from 'storybook/test'
 
 import { mockFolderTree } from '../__fixtures__/mockData'
+import { viewMode } from '../model'
 import { StoryWrapper } from '../shared/StoryWrapper'
 import {
   createMyself,
@@ -18,7 +20,7 @@ const loc = {
   searchInputAppears: (canvas) =>
     canvas.findByPlaceholderText('Search images...'),
   listViewButtonAppears: (canvas) =>
-    canvas.findByRole('button', { name: 'list view' }),
+    canvas.findByRole('radio', { name: 'list view' }),
 } satisfies Record<string, Locator>
 
 const I = createMyself((I) => ({
@@ -35,7 +37,8 @@ const I = createMyself((I) => ({
     const listBtn = await I.resolveLocator(
       loc.listViewButtonAppears as DefiniteLocator,
     )
-    await expect(listBtn).toHaveAttribute('aria-pressed', 'true')
+    await expect(context.start(() => viewMode())).toBe('list')
+    await expect(listBtn).toHaveAttribute('aria-checked', 'true')
   },
 }))
 

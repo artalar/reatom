@@ -430,6 +430,9 @@ importers:
       '@reatom/jsx':
         specifier: 1001.*.*
         version: link:../../packages/jsx
+      '@reatom/ux':
+        specifier: workspace:*
+        version: link:../../packages/ux
       libraw-wasm:
         specifier: ^1.1.2
         version: 1.3.0

@@ -169,7 +169,7 @@ test('dimension reads do not start full image pipelines', () =>
 test('visibleIndexMap filters by type', () =>
   context.start(() => {
     loadGalleryState({ tree: mockFolderTree })
-    filterTypes.set(new Set(['jpg']))
+    filterTypes.set(['jpg'])
     const map = visibleIndexMap()
     expect([...map.keys()].every((i) => i.source.name.endsWith('.jpg'))).toBe(
       true,

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/html'
+import { expect } from 'storybook/test'
 
 import { mockFolderTree } from '../__fixtures__/mockData'
 import { StoryWrapper } from '../shared/StoryWrapper'
@@ -26,6 +27,8 @@ const I = createMyself((I) => ({
   toggleJpgFilter: async () => {
     await I.click(loc.jpgCheckboxAppears)
     await waitForUpdate()
+    const checkbox = await I.resolveLocator(loc.jpgCheckboxAppears)
+    await expect(checkbox).toBeChecked()
   },
 }))
 
@@ -41,7 +44,7 @@ type Story = StoryObj
 export const OpenNoFilters: Story = {
   render: () => {
     loadGalleryState({ tree: mockFolderTree })
-    filterPanelOpen.set(true)
+    filterPanelOpen.show()
     return (
       <StoryWrapper>
         <FilterPanel />
@@ -56,7 +59,7 @@ export const OpenNoFilters: Story = {
 export const ToggleTypeFilter: Story = {
   render: () => {
     loadGalleryState({ tree: mockFolderTree })
-    filterPanelOpen.set(true)
+    filterPanelOpen.show()
     return (
       <StoryWrapper>
         <FilterPanel />

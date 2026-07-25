@@ -1,6 +1,10 @@
-import { sortField, sortOrder, toggleSortOrder } from '../model'
+import type { Computed } from '@reatom/core'
+import type { RadioItemProps } from '@reatom/ux'
+
+import { sortFieldRadio, sortOrder, toggleSortOrder } from '../model'
 import type { SortField } from '../types'
 import { SortAscIcon, SortDescIcon } from './Icons'
+import { radioButtonProps } from './uxProps'
 
 const SORT_FIELD_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'name', label: 'Name' },
@@ -11,16 +15,19 @@ const SORT_FIELD_OPTIONS: { value: SortField; label: string }[] = [
 ]
 
 const SortFieldButton = ({
-  value,
   label,
+  props,
+  isActive,
 }: {
-  value: SortField
   label: string
+  props: Computed<RadioItemProps>
+  isActive: () => boolean
 }) => (
   <button
+    $spread={radioButtonProps(props)}
+    type="button"
     class="glass-lens"
-    on:click={() => sortField.set(value)}
-    attr:data-active={() => sortField() === value}
+    attr:data-active={isActive}
     css={`
       padding: 5px 10px;
       border: var(--border-width) var(--control-border-style) var(--border);
@@ -50,6 +57,8 @@ const SortFieldButton = ({
 
 export const SortPanel = () => (
   <div
+    $spread={sortFieldRadio.props.group}
+    aria-label="Sort field"
     css={`
       display: flex;
       align-items: center;
@@ -57,9 +66,16 @@ export const SortPanel = () => (
       flex-wrap: wrap;
     `}
   >
-    {SORT_FIELD_OPTIONS.map((opt) => (
-      <SortFieldButton value={opt.value} label={opt.label} />
-    ))}
+    {SORT_FIELD_OPTIONS.map((opt) => {
+      const item = sortFieldRadio.item(opt.value)
+      return (
+        <SortFieldButton
+          label={opt.label}
+          props={sortFieldRadio.props.item(item)}
+          isActive={item.checked}
+        />
+      )
+    })}
     <button
       on:click={toggleSortOrder}
       css={`

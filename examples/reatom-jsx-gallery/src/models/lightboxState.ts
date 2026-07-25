@@ -1,14 +1,18 @@
 import { atom, reatomBoolean, withLocalStorage } from '@reatom/core'
+import { reatomDialog, withDialogDom } from '@reatom/ux'
 
 import type { GalleryImageModel } from './contracts'
 
-export const lightboxOpen = reatomBoolean(false, 'lightboxOpen')
+export const lightboxOpen = reatomDialog({
+  label: 'Image preview',
+  name: 'lightboxOpen',
+}).extend(withDialogDom())
 export const lightboxImage = atom<GalleryImageModel | null>(
   null,
   'lightboxImage',
 )
 export const lightboxSizedImageWindowIds = atom<ReadonlySet<string>>(
-  new Set(),
+  new Set<string>(),
   'lightbox.sizedImageWindowIds',
 )
 export const lightboxNavigationDirection = atom<1 | -1>(

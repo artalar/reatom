@@ -25,8 +25,9 @@ const loc = {
     canvas.findByRole('button', { name: 'Close preview' }),
   scrubberAppears: (canvas) =>
     canvas.findByRole('slider', { name: 'Folder position' }),
-  nextButton: (canvas) =>
-    canvas.findByRole('button', { name: 'Next image' }),
+  nextButton: (canvas) => canvas.findByRole('button', { name: 'Next image' }),
+  lightboxDialogAppears: (canvas) =>
+    canvas.findByRole('dialog', { name: /Image preview:/ }),
 } satisfies Record<string, Locator>
 
 const largePhotoDecodeTimeoutMs = 60_000
@@ -55,6 +56,15 @@ const I = createMyself((I) => ({
   },
   goToNextImage: async () => {
     await I.click(loc.nextButton)
+  },
+  closeWithEscape: async () => {
+    const dialog = await I.see(loc.lightboxDialogAppears)
+    dialog.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    )
+    await waitFor(async () => {
+      await expect(dialog).not.toBeInTheDocument()
+    })
   },
 }))
 
@@ -106,6 +116,23 @@ export const OpenWithImages: Story = {
   },
 }
 
+export const CloseWithEscape: Story = {
+  render: () => {
+    loadGalleryStateWithImageModels({ tree: mockFolderTree })
+    const first = currentImages()[0]
+    if (first) openLightbox(first)
+    return (
+      <StoryWrapper>
+        <Lightbox />
+      </StoryWrapper>
+    )
+  },
+  play: async () => {
+    await I.seeLightboxOpen()
+    await I.closeWithEscape()
+  },
+}
+
 /**
  * Regression on real ~54 MP camera JPEGs from `__fixtures__/personal/`.
  * Navigating to the preloaded neighbor used to get stuck on preview quality
@@ -130,9 +157,7 @@ export const FullResolutionAcrossNavigation: Story = {
   },
 }
 
-/**
- * Same regression from the "open the second image first" angle.
- */
+/** Same regression from the "open the second image first" angle. */
 export const FullResolutionFromMiddleImage: Story = {
   parameters: largePhotoStoryParameters,
   loaders: [loadPersonalTree],

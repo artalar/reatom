@@ -1,18 +1,23 @@
+import type { Computed } from '@reatom/core'
+import type { CompositeItemProps, RadioItemProps } from '@reatom/ux'
+
 import { isFileSystemAccessSupported } from '../filesystem'
 import {
+  clearSelectionToolbarItem,
   clearSelection,
   folderTree,
   openFolder,
   resolvedThemeMode,
   searchQuery,
+  selectionToolbar,
+  selectAllToolbarItem,
   selectAllImages,
   selectedCount,
-  setViewMode,
+  themeToggleTooltip,
   toggleResolvedThemeMode,
-  viewMode,
+  viewModeRadio,
   visibleIndexMap,
 } from '../model'
-import type { ViewMode } from '../types'
 import {
   FilterIcon,
   GalleryMarkIcon,
@@ -29,6 +34,7 @@ import {
   filterPanelOpen,
   settingsPanelOpen,
 } from './panelState'
+import { locallyPositionedTooltipProps, radioButtonProps } from './uxProps'
 
 const ToolbarButton = ({
   label,
@@ -36,14 +42,17 @@ const ToolbarButton = ({
   variant = 'default',
   disabled = false,
   title,
+  itemProps,
 }: {
   label: string
   onClick: () => void
   variant?: 'default' | 'accent'
   disabled?: boolean
   title?: string
+  itemProps?: Computed<CompositeItemProps>
 }) => (
   <button
+    $spread={itemProps ?? {}}
     type="button"
     on:click={onClick}
     data-terminal-bracket="true"
@@ -104,17 +113,19 @@ const ToolbarButton = ({
 const ViewModeButton = ({
   mode,
   icon,
-  onClick,
+  props,
+  isActive,
 }: {
-  mode: ViewMode
+  mode: 'grid' | 'list' | 'table'
   icon: () => Element
-  onClick: () => void
+  props: Computed<RadioItemProps>
+  isActive: () => boolean
 }) => (
   <button
+    $spread={radioButtonProps(props)}
     type="button"
     class="glass-lens"
-    aria-pressed={() => viewMode() === mode}
-    on:click={onClick}
+    attr:data-active={isActive}
     title={`${mode} view`}
     aria-label={`${mode} view`}
     css={`
@@ -131,13 +142,13 @@ const ViewModeButton = ({
       background: transparent;
       color: var(--text-secondary);
 
-      &[aria-pressed='true'] {
+      &[data-active='true'] {
         background: var(--accent);
         color: var(--accent-contrast);
         border-color: var(--accent);
         box-shadow: var(--glow);
       }
-      &:not([aria-pressed='true']):hover {
+      &:not([data-active='true']):hover {
         background: var(--hover-bg);
         color: var(--text-primary);
       }
@@ -258,7 +269,7 @@ export const Toolbar = () => (
     />
 
     <div
-      role="group"
+      $spread={viewModeRadio.props.group}
       aria-label="View mode"
       css={`
         display: flex;
@@ -266,24 +277,29 @@ export const Toolbar = () => (
         flex-shrink: 0;
       `}
     >
-      <ViewModeButton
-        mode="grid"
-        icon={GridIcon}
-        onClick={() => setViewMode('grid')}
-      />
-      <ViewModeButton
-        mode="list"
-        icon={ListIcon}
-        onClick={() => setViewMode('list')}
-      />
-      <ViewModeButton
-        mode="table"
-        icon={TableIcon}
-        onClick={() => setViewMode('table')}
-      />
+      {(
+        [
+          ['grid', GridIcon],
+          ['list', ListIcon],
+          ['table', TableIcon],
+        ] as const
+      ).map(([mode, icon]) => {
+        const item = viewModeRadio.item(mode)
+        return (
+          <ViewModeButton
+            mode={mode}
+            icon={icon}
+            props={viewModeRadio.props.item(item, {
+              name: `${item.name}.toolbarProps`,
+            })}
+            isActive={item.checked}
+          />
+        )
+      })}
     </div>
 
     <div
+      $spread={selectionToolbar.props.separator}
       css={`
         width: 1px;
         height: 24px;
@@ -293,6 +309,8 @@ export const Toolbar = () => (
     />
 
     <div
+      $spread={selectionToolbar.props.base}
+      aria-label="Selection"
       css={`
         display: flex;
         align-items: center;
@@ -321,8 +339,16 @@ export const Toolbar = () => (
           </span>
         )
       }}
-      <ToolbarButton label="All" onClick={() => selectAllImages()} />
-      <ToolbarButton label="Clear" onClick={() => clearSelection()} />
+      <ToolbarButton
+        label="All"
+        onClick={() => selectAllImages()}
+        itemProps={selectionToolbar.props.item(selectAllToolbarItem)}
+      />
+      <ToolbarButton
+        label="Clear"
+        onClick={() => clearSelection()}
+        itemProps={selectionToolbar.props.item(clearSelectionToolbarItem)}
+      />
     </div>
 
     <div css="flex: 1;" />
@@ -402,8 +428,8 @@ export const Toolbar = () => (
 
     <div css="display: flex; gap: calc(4px + var(--shadow-clearance, 0px)); flex-shrink: 0;">
       <button
+        $spread={filterPanelOpen.props.disclosure}
         type="button"
-        on:click={() => filterPanelOpen.set((s) => !s)}
         title="Filters"
         aria-label={() => {
           const count = activeFilterCount()
@@ -460,8 +486,8 @@ export const Toolbar = () => (
       </button>
 
       <button
+        $spread={settingsPanelOpen.props.disclosure}
         type="button"
-        on:click={() => settingsPanelOpen.set((s) => !s)}
         title="Settings"
         aria-label="Settings"
         aria-expanded={settingsPanelOpen}
@@ -488,37 +514,58 @@ export const Toolbar = () => (
         <SettingsIcon />
       </button>
 
-      <button
-        type="button"
-        on:click={toggleResolvedThemeMode}
-        title="Toggle light/dark theme"
-        aria-label={() =>
-          resolvedThemeMode() === 'dark'
-            ? 'Switch to light theme'
-            : 'Switch to dark theme'
-        }
-        css={`
-          width: 32px;
-          height: 32px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 16px;
-          background: transparent;
-          border: var(--border-width) var(--control-border-style) transparent;
-          border-radius: var(--radius-sm);
-          cursor: pointer;
-          color: var(--text-secondary);
-          transition: all 0.15s ease;
-
-          &:hover {
-            background: var(--hover-bg);
-            color: var(--text-primary);
+      <span css="position: relative; display: inline-flex;">
+        <button
+          $spread={themeToggleTooltip.props.anchor}
+          type="button"
+          on:click={toggleResolvedThemeMode}
+          aria-label={() =>
+            resolvedThemeMode() === 'dark'
+              ? 'Switch to light theme'
+              : 'Switch to dark theme'
           }
-        `}
-      >
-        {() => (resolvedThemeMode() === 'dark' ? <MoonIcon /> : <SunIcon />)}
-      </button>
+          css={`
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: transparent;
+            border: var(--border-width) var(--control-border-style) transparent;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.15s ease;
+
+            &:hover {
+              background: var(--hover-bg);
+              color: var(--text-primary);
+            }
+          `}
+        >
+          {() => (resolvedThemeMode() === 'dark' ? <MoonIcon /> : <SunIcon />)}
+        </button>
+        <span css="position: absolute; right: 0; top: calc(100% + 8px); z-index: 1200; width: max-content;">
+          <span
+            $spread={locallyPositionedTooltipProps(
+              themeToggleTooltip.props.content,
+            )}
+            css={`
+              display: block;
+              padding: 5px 8px;
+              border-radius: var(--radius-sm);
+              background: var(--text-primary);
+              color: var(--bg-primary);
+              font-size: 11px;
+              box-shadow: 0 8px 24px var(--shadow);
+              pointer-events: none;
+            `}
+          >
+            Toggle light/dark theme
+          </span>
+        </span>
+      </span>
     </div>
   </header>
 )

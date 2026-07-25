@@ -3,6 +3,7 @@ import {
   atom,
   computed,
   reatomEnum,
+  withChangeHook,
   withLocalStorage,
 } from '@reatom/core'
 
@@ -101,11 +102,15 @@ export const imageFit = reatomEnum(['contain', 'cover', 'fill', 'none'], {
 export const gridGap = reatomEnum(['none', 'small', 'medium', 'large', 'xl'], {
   name: 'gridGap',
   initState: 'medium',
-}).extend(withLocalStorage('gallery.gridGap'))
+}).extend(
+  withLocalStorage('gallery.gridGap'),
+  withChangeHook((gap) => {
+    if (gap === 'none') imageFit.setCover()
+  }),
+)
 
 export const setGridGap = action((gap: GridGap) => {
   gridGap.set(gap)
-  if (gap === 'none') imageFit.setCover()
 }, 'view.setGridGap')
 
 export const gridColumnsLabel = computed(() => {

@@ -120,6 +120,9 @@ Use the toolbar controls to:
 
 - **State Management**: [Reatom](https://reatom.js.org/) - Efficient reactive state
 - **UI**: Reatom JSX - React-like JSX without React
+- **Accessible widgets**: `@reatom/ux` dialog, disclosure, radio, checkbox,
+  toolbar, tooltip, and command models bound to native DOM through reactive
+  `$spread` prop records.
 - **Build Tool**: Vite - Fast development and optimized builds
 - **TypeScript**: Full type safety
 - **File System Access API**: Local folder access

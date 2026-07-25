@@ -1,4 +1,5 @@
-import { focusableCardAttrs } from '../a11y'
+import { commandProps, reatomCommand } from '@reatom/ux'
+
 import {
   bindGalleryImagePreview,
   folderModelTree,
@@ -16,6 +17,9 @@ import { CheckIcon, HeartIcon } from './Icons'
 const ListImage = ({ image }: { image: ImageModel }) => {
   const isSelected = () => image.selected()
   const isFavorite = () => image.favorite()
+  const openCommandProps = commandProps(
+    reatomCommand({ name: `gallery.image#${image.id}.listOpen` }),
+  )
   const displayThumbnail = () => {
     if (image.previewLoadPriority() === 'off') return null
 
@@ -29,7 +33,10 @@ const ListImage = ({ image }: { image: ImageModel }) => {
 
   return (
     <div
-      {...focusableCardAttrs(openLabel, () => openLightbox(image))}
+      $spread={openCommandProps.element}
+      role="button"
+      tabindex={0}
+      aria-label={openLabel}
       attr:data-selected={isSelected}
       css:preview-width={() => `${listPreviewWidth()}px`}
       css:preview-height={() => `${listPreviewHeight()}px`}
