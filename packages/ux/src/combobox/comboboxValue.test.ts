@@ -4,6 +4,7 @@ import {
   canShowComboboxList,
   hasComboboxModifier,
   isComboboxEnterBlocked,
+  isComboboxPasteShortcut,
   isComboboxPrimaryPress,
   isComboboxShowKey,
   isComboboxTypeaheadKey,
@@ -277,6 +278,33 @@ test('a printable key on an item is typing, a shortcut is not', () => {
   expect(isComboboxTypeaheadKey({ key: 'ArrowDown' })).toBe(false)
   expect(isComboboxTypeaheadKey({ key: 'Enter' })).toBe(false)
   expect(isComboboxTypeaheadKey({ key: 'Escape' })).toBe(false)
+})
+
+// react-components 0.3.0: "non-paste Ctrl/Cmd character shortcuts preserve focus
+// and the combobox value when virtual focus is disabled, while paste shortcuts
+// still route to the input" — the text of a paste has to land in the field, so
+// this one shortcut still moves focus there.
+test('the paste shortcut on an item is typing, unlike every other shortcut', () => {
+  expect(isComboboxPasteShortcut({ key: 'v', ctrlKey: true })).toBe(true)
+  expect(isComboboxPasteShortcut({ key: 'v', metaKey: true })).toBe(true)
+  expect(isComboboxPasteShortcut({ key: 'V', metaKey: true })).toBe(true)
+  // `Cmd+Shift+V` pastes without formatting, still a paste
+  expect(
+    isComboboxPasteShortcut({ key: 'v', metaKey: true, shiftKey: true }),
+  ).toBe(true)
+  // plain typing, and the platform shortcuts built on the same letter
+  expect(isComboboxPasteShortcut({ key: 'v' })).toBe(false)
+  expect(isComboboxPasteShortcut({ key: 'v', altKey: true })).toBe(false)
+  expect(
+    isComboboxPasteShortcut({ key: 'v', ctrlKey: true, altKey: true }),
+  ).toBe(false)
+  expect(isComboboxPasteShortcut({ key: 'c', ctrlKey: true })).toBe(false)
+
+  expect(isComboboxTypeaheadKey({ key: 'v', metaKey: true })).toBe(true)
+  expect(isComboboxTypeaheadKey({ key: 'v', ctrlKey: true })).toBe(true)
+  expect(isComboboxTypeaheadKey({ key: 'v', ctrlKey: true, altKey: true })).toBe(
+    false,
+  )
 })
 
 // --- the pointer policy -----------------------------------------------------

@@ -75,6 +75,22 @@ export const isComboboxEnterBlocked = (
 ): boolean => open && event.key === 'Enter'
 
 /**
+ * Whether a key press is the paste shortcut, `Ctrl+V` or `Cmd+V`.
+ *
+ * @remarks
+ *   The one modified character shortcut that still belongs to the input rather
+ *   than to the item it was pressed on, see {@link isComboboxTypeaheadKey}.
+ *   `Alt` excludes the platform shortcuts built on the same letter.
+ * @example
+ *   isComboboxPasteShortcut({ key: 'v', metaKey: true }) // true
+ *   isComboboxPasteShortcut({ key: 'v' }) // false — that is just typing
+ */
+export const isComboboxPasteShortcut = (event: ComboboxKeyEvent): boolean =>
+  !!(event.ctrlKey || event.metaKey) &&
+  !event.altKey &&
+  event.key.toLowerCase() === 'v'
+
+/**
  * Whether a key press on an _item_ should be handed to the combobox input.
  *
  * @remarks
@@ -83,19 +99,27 @@ export const isComboboxEnterBlocked = (
  *   fill the text field. So we need to programmatically focus on the text field
  *   when the user presses printable keys."
  *
- *   One deliberate deviation: Ariakit's condition is `event.key.length === 1 ||
- *   key === 'Backspace' || key === 'Delete'`, which also matches `Ctrl+C` and
- *   `Cmd+A` — those would move focus out of the item and break copying from it.
- *   The modifier check excludes them; `Shift` is allowed, because a capital
- *   letter must reach the input.
+ *   A modified character key is a shortcut, not typing: `Ctrl+C` and `Cmd+A`
+ *   match Ariakit's original `event.key.length === 1` condition, and handing
+ *   them to the input would move focus out of the item and overwrite the value
+ *   in the middle of a copy or a select-all. The exception is the paste
+ *   shortcut, which is typing by another name — the input has to have focus for
+ *   the text to land in it (react-components 0.3.0, "non-paste Ctrl/Cmd
+ *   character shortcuts preserve focus and the combobox value when virtual
+ *   focus is disabled, while paste shortcuts still route to the input").
+ *
+ *   `Shift` alone is allowed throughout, because a capital letter must reach the
+ *   input.
  * @example
  *   isComboboxTypeaheadKey({ key: 'a' }) // true
  *   isComboboxTypeaheadKey({ key: 'A', shiftKey: true }) // true
  *   isComboboxTypeaheadKey({ key: 'Backspace' }) // true
+ *   isComboboxTypeaheadKey({ key: 'v', metaKey: true }) // true — a paste
  *   isComboboxTypeaheadKey({ key: 'c', ctrlKey: true }) // false
  *   isComboboxTypeaheadKey({ key: 'ArrowDown' }) // false
  */
 export const isComboboxTypeaheadKey = (event: ComboboxKeyEvent): boolean => {
+  if (isComboboxPasteShortcut(event)) return true
   if (event.ctrlKey || event.altKey || event.metaKey) return false
   return (
     event.key.length === 1 ||

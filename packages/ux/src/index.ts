@@ -50,6 +50,7 @@ export {
   type ComboboxPointerEvent,
   hasComboboxModifier,
   isComboboxEnterBlocked,
+  isComboboxPasteShortcut,
   isComboboxPrimaryPress,
   isComboboxShowKey,
   isComboboxTypeaheadKey,
