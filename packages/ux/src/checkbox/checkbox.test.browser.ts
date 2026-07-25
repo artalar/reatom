@@ -212,7 +212,9 @@ test('a disabled custom checkbox leaves the tab order', async () => {
   expect(div.tabIndex).toBe(-1)
   expect(div.getAttribute('aria-disabled')).toBe('true')
 
-  div.click()
+  const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+  div.dispatchEvent(click)
   await null
+  expect(click.defaultPrevented).toBe(true)
   expect(terms()).toBe(false)
 })
