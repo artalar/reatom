@@ -328,7 +328,7 @@ test('a non-modal dialog leaves the background alone', async () => {
 })
 
 // ariakit-react-components/src/dialog/utils/use-prevent-body-scroll.ts
-test('a modal dialog locks the body scroll while it is mounted', async () => {
+test('a modal dialog locks the scroll while it is mounted', async () => {
   const { dialog } = await mount()
 
   dialog.show()
@@ -336,6 +336,91 @@ test('a modal dialog locks the body scroll while it is mounted', async () => {
   expect(document.body.style.overflow).toBe('hidden')
 
   dialog.hide()
+  await settle()
+  expect(document.body.style.overflow).toBe('')
+})
+
+test('a scrollbar that takes no space is not compensated for', async () => {
+  const { dialog } = await mount()
+  const html = document.documentElement
+  // a page tall enough to scroll, whose scrollbar is an overlay one — this
+  // browser runs with `--hide-scrollbars`, which is the same measurement
+  const tall = create('div')
+  tall.style.height = '300vh'
+  container.append(tall)
+  expect(window.innerWidth - html.clientWidth).toBe(0)
+
+  dialog.show()
+  await settle()
+
+  // hiding the overflow cannot shift the layout, so there is nothing to
+  // reserve: no gutter, no padding, and no `--scrollbar-width`
+  expect(html.getAttribute('style')).toBe(null)
+  expect(document.body.style.paddingRight).toBe('')
+  expect(document.body.style.overflow).toBe('hidden')
+
+  dialog.hide()
+  await settle()
+  expect(document.body.style.overflow).toBe('')
+})
+
+test('a page that reserves the gutter itself is locked through it', async () => {
+  // the technique the lock prefers wherever the browser supports it
+  expect(CSS.supports('scrollbar-gutter', 'stable')).toBe(true)
+
+  const html = document.documentElement
+  // `both-edges` is an author keyword the lock must carry over as it is
+  html.style.setProperty('scrollbar-gutter', 'stable both-edges')
+  cleanups.push(() => html.removeAttribute('style'))
+
+  const { dialog } = await mount()
+
+  dialog.show()
+  await settle()
+
+  expect(html.style.getPropertyValue('scrollbar-gutter')).toBe(
+    'stable both-edges',
+  )
+  // the reserved gutter keeps the scrollbar's space while the hidden overflow
+  // of `<html>` — the element the page scrolls through — locks the scroll
+  expect(html.style.getPropertyValue('overflow-x')).toBe('hidden')
+  expect(html.style.getPropertyValue('overflow-y')).toBe('hidden')
+  // and `<body>` is left alone, so nothing shifts
+  expect(document.body.style.overflow).toBe('')
+  expect(document.body.style.paddingRight).toBe('')
+
+  dialog.hide()
+  await settle()
+
+  // the author's declaration is back, and the lock's own ones are gone
+  expect(html.getAttribute('style')).toBe(
+    'scrollbar-gutter: stable both-edges;',
+  )
+})
+
+test('a dialog stack locks the scroll once and releases it last', async () => {
+  const parent = reatomDialog({ name: 'parent' }).extend(withDialogDom())
+  const child = reatomDialog({ parent, name: 'parent.child' }).extend(
+    withDialogDom(),
+  )
+  const parentContent = create('div')
+  const childContent = create('div')
+  container.append(parentContent, childContent)
+  spread(parentContent, parent.props.content)
+  spread(childContent, child.props.content)
+  await settle()
+
+  parent.show()
+  child.show()
+  await settle()
+  expect(document.body.style.overflow).toBe('hidden')
+
+  // the parent is still open, so the page stays locked
+  child.hide()
+  await settle()
+  expect(document.body.style.overflow).toBe('hidden')
+
+  parent.hide()
   await settle()
   expect(document.body.style.overflow).toBe('')
 })

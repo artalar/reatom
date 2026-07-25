@@ -132,6 +132,33 @@ export const assignStyle = (
     }
   })
 
+/**
+ * Sets one inline CSS property and returns a callback restoring it.
+ *
+ * @remarks
+ *   Port of Ariakit's `setCSSProperty` (`orchestrate.ts`). Unlike
+ *   {@link assignStyle}, which snapshots and restores the whole `cssText`, this
+ *   touches a single declaration — so a restore cannot clobber inline styles
+ *   somebody else wrote to the same element in the meantime, and a custom
+ *   property (`--scrollbar-width`) can be written at all.
+ * @param property - A CSS property name in **kebab-case**, custom properties
+ *   included.
+ */
+export const setCssProperty = (
+  element: HTMLElement,
+  property: string,
+  value: string,
+): Restore =>
+  orchestrate(element, property, () => {
+    const previous = element.style.getPropertyValue(property)
+    const priority = element.style.getPropertyPriority(property)
+    element.style.setProperty(property, value)
+    return () => {
+      if (previous) element.style.setProperty(property, previous, priority)
+      else element.style.removeProperty(property)
+    }
+  })
+
 /** An element in a lib version that already types the `inert` property. */
 type InertElement = Element & { inert: boolean }
 
@@ -396,20 +423,62 @@ interface ScrollLock {
 
 const scrollLocks = new WeakMap<Document, ScrollLock>()
 
+/** The `CSS` global, which the `Window` type does not declare. */
+interface WindowWithCss extends Window {
+  CSS?: Pick<typeof CSS, 'supports'>
+}
+
+/** `true` while the browser implements `scrollbar-gutter` (Safari 18.2 and up). */
+const supportsScrollbarGutter = (view: Window): boolean =>
+  !!(view as WindowWithCss).CSS?.supports('scrollbar-gutter', 'stable')
+
 /**
- * Prevents the document from scrolling, compensating for the scrollbar width so
- * the page does not shift.
+ * `true` for a computed `overflow` value that lets the scroll propagate to the
+ * viewport.
+ *
+ * `happy-dom` and `jsdom` answer an empty string for an unset computed value
+ * where a browser answers the `visible` keyword, so both count.
+ */
+const isOverflowVisible = (value: string): boolean =>
+  !value || value === 'visible'
+
+/**
+ * Prevents the document from scrolling, keeping the scrollbar's space reserved
+ * so the page does not shift.
  *
  * @remarks
  *   Ariakit elects a single "root" dialog through a
  *   `data-dialog-prevent-body-scroll` attribute on `<body>` and a
  *   `MutationObserver` that retries when it is released (`use-root-dialog.ts`),
  *   because a second lock would measure a scrollbar width of `0` and overwrite
- *   the first one's padding. A reference count expresses the same rule
+ *   the first one's compensation. A reference count expresses the same rule
  *   directly: only the first lock applies, only the last release restores.
  *
- *   RTL documents keep their scrollbar on the left, so the compensation goes to
- *   the matching side (`getPaddingProperty`).
+ *   Three techniques, in the order Ariakit picks them
+ *   (`use-prevent-body-scroll.ts`, `@ariakit/react-components` 0.3.2):
+ *
+ *   1. **Nothing to compensate** — overlay scrollbars, or a page that does not
+ *        overflow: hiding the overflow cannot shift anything, so only
+ *        `overflow: hidden` on `<body>` is needed.
+ *   2. **`scrollbar-gutter: stable` on `<html>`**, plus hidden `overflow` on it. The
+ *        gutter keeps the scrollbar's space while the hidden overflow removes
+ *        the scrollbar, so neither in-flow content nor a `position: fixed`
+ *        element moves. It has to go on `<html>`: the property applies to the
+ *        viewport from there and does not propagate from `<body>`. A page that
+ *        reserves the gutter itself keeps its own value — `both-edges`
+ *        included.
+ *   3. **The body-padding fallback** for a browser without `scrollbar-gutter`
+ *        (Safari below 18.2): the removed scrollbar is compensated with padding
+ *        on the side it was on — RTL documents keep it on the left
+ *        (`getPaddingProperty`) — and its width is published as
+ *        `--scrollbar-width` so a userland `position: fixed` element can
+ *        compensate too.
+ *
+ *   `<html>` gets `overflow` hidden through the two longhands rather than the
+ *   shorthand, so restoring keeps a longhand the page set itself (`overflow-y:
+ *   scroll`). On techniques 1 and 3 that only happens when the page scrolls
+ *   through `<html>` itself, in which case hiding the body overflow alone would
+ *   not lock anything (ariakit#4345).
  * @param element - Any element in the document to lock, usually the dialog.
  */
 export const lockBodyScroll = (element: Element): Restore => {
@@ -428,18 +497,76 @@ export const lockBodyScroll = (element: Element): Restore => {
 
   const { documentElement, body } = document
   const view = document.defaultView
+  const style = view?.getComputedStyle(documentElement)
+
+  // The page may reserve the gutter itself, and then the scrollbar measures `0`
+  // because `clientWidth` already includes the reserved space — so the computed
+  // style, not the measurement, is what says the lock belongs on the gutter
+  // technique. It also carries the author's keywords, which must survive.
+  const gutter = style?.getPropertyValue('scrollbar-gutter') ?? ''
+  const hasGutter = gutter.includes('stable')
   const scrollbarWidth = view
     ? view.innerWidth - documentElement.clientWidth
     : 0
-  const scrollbarX =
-    Math.round(documentElement.getBoundingClientRect().left) +
-    documentElement.scrollLeft
-  const paddingProperty = scrollbarX ? 'paddingLeft' : 'paddingRight'
 
-  const restore = assignStyle(body, {
-    overflow: 'hidden',
-    [paddingProperty]: `${scrollbarWidth}px`,
-  })
+  const restores: Array<Restore> = []
+
+  const hideHtmlOverflow = () => {
+    restores.push(
+      setCssProperty(documentElement, 'overflow-x', 'hidden'),
+      setCssProperty(documentElement, 'overflow-y', 'hidden'),
+    )
+  }
+
+  /**
+   * The page scrolls through `<html>` itself whenever its own overflow is not
+   * visible, and then the body overflow no longer propagates to the viewport.
+   */
+  const hideHtmlOverflowIfItScrolls = () => {
+    if (!style) return
+    if (
+      !isOverflowVisible(style.getPropertyValue('overflow-x')) ||
+      !isOverflowVisible(style.getPropertyValue('overflow-y'))
+    ) {
+      hideHtmlOverflow()
+    }
+  }
+
+  if (!hasGutter && !scrollbarWidth) {
+    restores.push(assignStyle(body, { overflow: 'hidden' }))
+    hideHtmlOverflowIfItScrolls()
+  } else if (hasGutter || (view && supportsScrollbarGutter(view))) {
+    restores.push(
+      setCssProperty(
+        documentElement,
+        'scrollbar-gutter',
+        hasGutter ? gutter : 'stable',
+      ),
+    )
+    hideHtmlOverflow()
+  } else {
+    const scrollbarX =
+      Math.round(documentElement.getBoundingClientRect().left) +
+      documentElement.scrollLeft
+    const paddingProperty = scrollbarX ? 'paddingLeft' : 'paddingRight'
+
+    restores.push(
+      setCssProperty(
+        documentElement,
+        '--scrollbar-width',
+        `${scrollbarWidth}px`,
+      ),
+      assignStyle(body, {
+        overflow: 'hidden',
+        [paddingProperty]: `${scrollbarWidth}px`,
+      }),
+    )
+    hideHtmlOverflowIfItScrolls()
+  }
+
+  const restore = () => {
+    for (const undo of restores.reverse()) undo()
+  }
 
   const created: ScrollLock = { count: 1, restore }
   scrollLocks.set(document, created)
