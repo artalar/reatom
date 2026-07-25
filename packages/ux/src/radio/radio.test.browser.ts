@@ -52,9 +52,11 @@ const spread = (
 
   // Handlers keep a stable identity across records, so they are attached once.
   for (const [key, value] of Object.entries(record)) {
-    if (key.startsWith('on')) {
-      element.addEventListener(key.slice(2).toLowerCase(), value)
-    }
+    if (!key.startsWith('on')) continue
+    const type = key.slice(2).toLowerCase()
+    // React's `onBlur` is `focusout`, and the group record needs the bubbling
+    // form to hear focus leaving one of its radios — see `RadioGroupProps`.
+    element.addEventListener(type === 'blur' ? 'focusout' : type, value)
   }
 
   const unsubscribe = props.subscribe((next) => {
@@ -296,6 +298,41 @@ test('a custom radio group needs the role, the tab order, and Space', async () =
   expect(plan()).toBe('pro')
   expect(divs[1]!.getAttribute('aria-checked')).toBe('true')
   expect(divs[0]!.getAttribute('aria-checked')).toBe('false')
+})
+
+// react-components 0.3.0: "Fixed `RadioGroup` so tabbing back into a group
+// focuses the checked `Radio` after another unchecked `Radio` has received
+// focus."
+test('leaving the group gives the tab stop back to the checked radio', async () => {
+  const plan = reatomRadio({
+    value: 'free',
+    selectOnMove: false,
+    name: 'plan',
+  })
+  plan.composite.extend(withCompositeFocus())
+  const inputs = await mount(plan, ['free', 'pro', 'team'])
+
+  const outside = document.createElement('button')
+  document.body.append(outside)
+  cleanups.push(() => outside.remove())
+
+  expect(tabIndexes(inputs)).toEqual([0, -1, -1])
+
+  inputs[0]!.focus()
+  // With `selectOnMove` off the arrow keys move without answering the question,
+  // so the tab stop drifts onto a radio the user never picked.
+  await press(inputs[0]!, 'ArrowRight')
+  expect(plan()).toBe('free')
+  expect(document.activeElement).toBe(inputs[1])
+  expect(tabIndexes(inputs)).toEqual([-1, 0, -1])
+
+  outside.focus()
+  await settle()
+
+  expect(document.activeElement).toBe(outside)
+  expect(tabIndexes(inputs)).toEqual([0, -1, -1])
+  // and the restore did not select anything on the way
+  expect(plan()).toBe('free')
 })
 
 test('unmounting a radio leaves the group navigable', async () => {

@@ -322,6 +322,24 @@ export interface RadioUnits<T extends RadioValue = RadioValue> {
    *   it the right tool for hydration and tests.
    */
   select: Action<[value: RadioValue], T>
+  /**
+   * Hands the group's single tab stop back to the checked radio, and returns
+   * the id it moved to — or `undefined` when nothing is checked or the checked
+   * radio is not rendered.
+   *
+   * @remarks
+   *   The APG contract is that `Tab` enters a radio group at the checked radio.
+   *   Arrow keys can leave the active item elsewhere — a group with
+   *   `selectOnMove` off navigates without selecting — so the tab stop has to be
+   *   put back when focus leaves the group. Ariakit does exactly this from
+   *   `RadioGroup`'s `onBlurCapture` (react-components 0.3.0: "tabbing back into
+   *   a group focuses the checked `Radio` after another unchecked `Radio` has
+   *   received focus"); {@link RadioGroupProps.onBlur} is the port of it.
+   *
+   *   A plain `composite.set`, not a `move`: putting the tab stop back is not a
+   *   navigation, so "selection follows focus" must not fire.
+   */
+  activateChecked: Action<[], string | undefined>
 }
 
 /**
@@ -520,6 +538,16 @@ export function reatomRadio(options: RadioOptions = {}): Radio {
     return value.set(next)
   }, `${name}.select`)
 
+  const activateChecked = action((): string | undefined => {
+    const id = checkedId()
+    if (id === undefined) return undefined
+    // Only a rendered radio can hold the tab stop, the same guard the
+    // `withComputed` seed above applies.
+    if (!composite.items.item(id)?.rendered()) return undefined
+    composite.set(id)
+    return id
+  }, `${name}.activateChecked`)
+
   const itemsByValue = new Map<RadioItemValue, RadioItemModel>()
   const itemsById = new Map<string, RadioItemModel>()
 
@@ -632,6 +660,7 @@ export function reatomRadio(options: RadioOptions = {}): Radio {
       checkedId,
       item,
       select,
+      activateChecked,
     }))
     .extend(
       withRadioProps({

@@ -693,6 +693,82 @@ test('focus activates a radio without selecting it', () => {
   expect(free!.active()).toBe(false)
 })
 
+test('tabbing back into the group lands on the checked radio', () => {
+  // react-components 0.3.0: "Fixed `RadioGroup` so tabbing back into a group
+  // focuses the checked `Radio` after another unchecked `Radio` has received
+  // focus." Arrow keys with `selectOnMove` off leave the tab stop on a radio the
+  // user never picked; the APG says Tab must re-enter at the checked one.
+  const plan = reatomRadio({ value: 'free', selectOnMove: false, name: 'plan' })
+  render(plan, 'free', 'pro', 'team')
+
+  expect(plan.composite()).toBe('plan-free')
+
+  plan.composite.navigate({ move: 'next' })
+  expect(plan.composite()).toBe('plan-pro')
+  expect(plan()).toBe('free')
+
+  const inside = element()
+  const outside = element()
+  // `isFocusEventOutside` asks the group element whether it contains the next
+  // focus target, which is the only DOM fact this handler reads.
+  const group = {
+    contains: (node: unknown) => node === inside,
+  } as unknown as HTMLElement
+  const props = plan.props.group()
+
+  const blur = (relatedTarget: HTMLElement) =>
+    props.onBlur({ currentTarget: group, relatedTarget } as unknown as FocusEvent)
+
+  // focus moving between the radios of the group changes nothing
+  blur(inside)
+  expect(plan.composite()).toBe('plan-pro')
+
+  blur(outside)
+  expect(plan.composite()).toBe('plan-free')
+  // putting the tab stop back is not a navigation, so nothing was selected
+  expect(plan()).toBe('free')
+})
+
+test('the tab stop stays put when there is no rendered checked radio', () => {
+  const plan = reatomRadio({ selectOnMove: false, name: 'plan' })
+  render(plan, 'free', 'pro')
+
+  plan.composite.navigate({ move: 'next' })
+  expect(plan.composite()).toBe('plan-pro')
+
+  // nothing checked
+  expect(plan.activateChecked()).toBe(undefined)
+  expect(plan.composite()).toBe('plan-pro')
+
+  // checked, but the radio never mounted, so it has nothing to focus
+  plan.set('team')
+  plan.item('team')
+  expect(plan.activateChecked()).toBe(undefined)
+  expect(plan.composite()).toBe('plan-pro')
+})
+
+test('a disabled group disables every radio in it', () => {
+  // react-components 0.3.4: "The `RadioGroup` `disabled` prop now marks the group
+  // as disabled and disables descendant `Radio` components, including radios
+  // rendered as custom elements."
+  const plan = reatomRadio({ disabled: true, name: 'plan' })
+  const [free, pro] = render(plan, 'free', 'pro')
+
+  expect(plan.props.group()['aria-disabled']).toBe('true')
+  for (const item of [free!, pro!]) {
+    expect(item.disabled()).toBe(true)
+    expect(item.editable()).toBe(false)
+    expect(plan.props.item(item)()['aria-disabled']).toBe('true')
+  }
+
+  plan.disabled.set(false)
+  expect(plan.props.group()['aria-disabled']).toBe(undefined)
+  expect(free!.disabled()).toBe(false)
+  // …and a radio disabled on its own is unaffected by the group flag
+  pro!.update({ disabled: true })
+  expect(pro!.disabled()).toBe(true)
+})
+
 test('units are named after the model, radios included', () => {
   const plan = reatomRadio({ name: 'settings.plan' })
   const free = plan.item('free')

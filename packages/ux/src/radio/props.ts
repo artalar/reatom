@@ -13,6 +13,7 @@ import { computed, notify, withMemo, wrap } from '@reatom/core'
 
 import type { CompositeOrientation } from '../composite/getNextId'
 import type { CompositeBaseProps, CompositeItemProps } from '../composite/props'
+import { isFocusEventOutside } from '../focusable/focusableDom'
 import type { RadioItemModel, RadioItemValue, RadioModel } from './reatomRadio'
 
 /**
@@ -45,6 +46,17 @@ export interface RadioGroupProps extends CompositeBaseProps {
   /** The `id` of the element that labels the group — usually its legend. */
   'aria-labelledby': string | undefined
   'aria-describedby': string | undefined
+  /**
+   * Gives the tab stop back to the checked radio when focus leaves the group,
+   * so `Tab` re-enters at the checked one and not at whatever the arrow keys
+   * last activated. See {@link RadioUnits.activateChecked}.
+   *
+   * @remarks
+   *   Bind it to `focusout` rather than to the non-bubbling `blur` — Ariakit uses
+   *   `onBlurCapture` on the group, and only the bubbling event reports focus
+   *   moving out of a radio inside it.
+   */
+  onBlur: (event: FocusEvent) => void
 }
 
 /** Props to spread on one radio element. */
@@ -349,6 +361,15 @@ export const radioProps = (
 
   const records = new WeakMap<RadioItemModel, Computed<RadioItemProps>>()
 
+  const onGroupBlur = wrap((event: FocusEvent) => {
+    if (event.defaultPrevented) return
+    // Moving between the radios of the group is not leaving it, and must not
+    // undo the navigation the user is in the middle of.
+    if (!isFocusEventOutside(event)) return
+    model.activateChecked()
+    notify()
+  })
+
   return {
     group: computed((): RadioGroupProps => {
       const orientation = model.composite.orientation()
@@ -363,6 +384,7 @@ export const radioProps = (
         'aria-readonly': model.readOnly() ? 'true' : undefined,
         'aria-labelledby': labelledBy,
         'aria-describedby': describedBy,
+        onBlur: onGroupBlur,
       }
     }, `${name}.props.group`).extend(withMemo()),
 
