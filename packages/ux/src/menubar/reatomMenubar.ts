@@ -1,4 +1,4 @@
-/**
+/*
  * Layer 1 for `menubar`: the model.
  *
  * Ported from [Ariakit](https://github.com/ariakit/ariakit) (MIT, ©
@@ -70,8 +70,9 @@ export interface Menubar extends MenubarModel {
  *   (`ariakit-components/src/menubar/menubar-store.ts` is 51 lines, of which
  *   the only logic is `orientation: 'horizontal'` and `focusLoop: true`), so
  *   this port is deliberately thin: the navigation, the roving tabindex, the
- *   item collection, and the `move` event all come from {@link reatomComposite},
- *   and the menubar contributes the two ARIA roles.
+ *   item collection, and the `move` event all come from {@link reatomComposite};
+ *   the menubar layer contributes the container role and orientation plus the
+ *   item role.
  *
  *   Submenus are not part of it. A menu button lives in the menubar as a plain
  *   item; the popup it controls is a `menu` model (Wave 5), which takes the

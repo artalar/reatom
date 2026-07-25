@@ -1,4 +1,4 @@
-/**
+/*
  * Layer 2 for `menubar`: the reactive prop records that turn a composite
  * element into a menubar and its items into menu items.
  *
@@ -93,10 +93,10 @@ export const menubarAriaOrientation = (
  * @remarks
  *   Everything interactive — the roving tabindex, `aria-activedescendant`, the
  *   element refs, and the arrow-key handlers — comes from the composite records
- *   unchanged, exactly like Ariakit's `useMenubar`, which adds two attributes
- *   and then delegates to `useComposite`. The menubar adds only the two roles
- *   the [APG menubar
- *   pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/) requires.
+ *   unchanged, exactly like Ariakit's `useMenubar`, which adds the container
+ *   role and orientation before delegating to `useComposite`. This layer also
+ *   gives each item the `menuitem` role required by the [APG menubar
+ *   pattern](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/).
  *
  *   The composite records are destructured up front, so layering the result back
  *   onto the same `props` object (see {@link withMenubarProps}) can not make a
