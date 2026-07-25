@@ -1,9 +1,10 @@
 import type { Computed } from '@reatom/core'
 import { context, notify } from '@reatom/core'
-import { userEvent } from '@vitest/browser/context'
 import { afterEach, beforeEach, expect, test } from 'vitest'
+import { userEvent } from 'vitest/browser'
 
 import { isFocusable } from '../focusable/focusableDom'
+import { disableTree } from './dialogDom'
 import type { DialogOptions } from './reatomDialog'
 import { reatomDialog } from './reatomDialog'
 import { withDialogDom } from './reatomDialogDom'
@@ -173,6 +174,19 @@ test('initialFocus wins over the first tabbable element', async () => {
   expect(document.activeElement).toBe(dismiss)
 })
 
+test('a hidden autofocus candidate is skipped', async () => {
+  const { disclosure, content, input } = await mount()
+  const hidden = create('button')
+  hidden.dataset.autofocus = 'true'
+  hidden.hidden = true
+  content.prepend(hidden)
+
+  disclosure.click()
+  await settle()
+
+  expect(document.activeElement).toBe(input)
+})
+
 test('an empty dialog focuses itself, because of its tabIndex', async () => {
   const dialog = reatomDialog({ name: 'empty' }).extend(withDialogDom())
   const content = create('div')
@@ -315,6 +329,33 @@ test('a modal dialog makes the background inert and restores it', async () => {
 
   expect(outside.hasAttribute('inert')).toBe(false)
   expect(isFocusable(outside)).toBe(true)
+})
+
+test('the inert fallback blocks focus on the disabled branch root', () => {
+  const inert = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'inert')
+  expect(inert?.configurable).toBe(true)
+
+  const background = create('button', 'Background')
+  const foreground = create('button', 'Foreground')
+  container.append(background, foreground)
+  foreground.focus()
+
+  Reflect.deleteProperty(HTMLElement.prototype, 'inert')
+  let restore: (() => void) | undefined
+  try {
+    restore = disableTree(background)
+
+    expect(background.tabIndex).toBe(-1)
+    background.focus()
+    expect(document.activeElement).toBe(foreground)
+  } finally {
+    restore?.()
+    Object.defineProperty(HTMLElement.prototype, 'inert', inert!)
+  }
+
+  expect(background.tabIndex).toBe(0)
+  background.focus()
+  expect(document.activeElement).toBe(background)
 })
 
 test('a non-modal dialog leaves the background alone', async () => {

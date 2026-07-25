@@ -28,24 +28,6 @@ interface RestoreEntry {
 const restorers = new WeakMap<Element, Map<string, Array<RestoreEntry>>>()
 
 /**
- * Runs the restore of every entry that is both disposed and on top of the
- * stack, which is the only position where restoring is safe.
- */
-const flushRestores = (
-  stacks: Map<string, Array<RestoreEntry>>,
-  key: string,
-  stack: Array<RestoreEntry>,
-): void => {
-  while (stack.length) {
-    const entry = stack[stack.length - 1]!
-    if (!entry.disposed) return
-    stack.pop()
-    entry.restore()
-  }
-  stacks.delete(key)
-}
-
-/**
  * Applies a DOM mutation that can be applied more than once to the same element
  * and the same property, and still restores to the original value.
  *
@@ -84,7 +66,16 @@ export const orchestrate = (
   return () => {
     if (entry.disposed) return
     entry.disposed = true
-    flushRestores(stacks!, key, stack!)
+
+    // Only the top entry may restore without overwriting a newer owner's
+    // mutation. Once it is disposed, unwind any older disposed entries too.
+    while (stack.length) {
+      const current = stack[stack.length - 1]!
+      if (!current.disposed) return
+      stack.pop()
+      current.restore()
+    }
+    stacks.delete(key)
   }
 }
 
@@ -180,12 +171,21 @@ export const contains = (
  *   already ported `isFocusable` check is reused instead, which costs a walk
  *   over the subtree — acceptable for a dialog, which is small by construction,
  *   and it keeps a single definition of "focusable" in the package.
+ * @param includeContainer - Include `container` when it is itself tabbable.
  */
-export const getTabbableIn = (container: Element): Array<HTMLElement> => {
+export const getTabbableIn = (
+  container: Element,
+  includeContainer = false,
+): Array<HTMLElement> => {
   const elements = Array.from(container.querySelectorAll<HTMLElement>('*'))
-  return elements.filter(
+  const tabbables = elements.filter(
     (element) => isFocusable(element) && element.tabIndex >= 0,
   )
+  const root = container as HTMLElement
+  if (includeContainer && isFocusable(root) && root.tabIndex >= 0) {
+    tabbables.unshift(root)
+  }
+  return tabbables
 }
 
 /**
@@ -373,14 +373,24 @@ export const disableTree = (element: Element): Restore => {
     return setProperty(element as unknown as InertElement, 'inert', true)
   }
 
-  const restores = getTabbableIn(element).map((tabbable) =>
+  const restores = getTabbableIn(element, true).flatMap((tabbable) => [
     setAttribute(tabbable, 'tabindex', '-1'),
-  )
+    orchestrate(tabbable, 'focus', () => {
+      const hadOwnFocus = Object.hasOwn(tabbable, 'focus')
+      const previousFocus = tabbable.focus
+      tabbable.focus = noop
+      return () => {
+        if (hadOwnFocus) tabbable.focus = previousFocus
+        else Reflect.deleteProperty(tabbable, 'focus')
+      }
+    }),
+  ])
   restores.push(
     setAttribute(element, 'aria-hidden', 'true'),
     assignStyle(element as HTMLElement, {
       pointerEvents: 'none',
       userSelect: 'none',
+      cursor: 'default',
     }),
   )
 
@@ -428,10 +438,6 @@ const scrollLocks = new WeakMap<Document, ScrollLock>()
 interface WindowWithCss extends Window {
   CSS?: Pick<typeof CSS, 'supports'>
 }
-
-/** `true` while the browser implements `scrollbar-gutter` (Safari 18.2 and up). */
-const supportsScrollbarGutter = (view: Window): boolean =>
-  !!(view as WindowWithCss).CSS?.supports('scrollbar-gutter', 'stable')
 
 /**
  * `true` for a computed `overflow` value that lets the scroll propagate to the
@@ -536,7 +542,13 @@ export const lockBodyScroll = (element: Element): Restore => {
   if (!hasGutter && !scrollbarWidth) {
     restores.push(assignStyle(body, { overflow: 'hidden' }))
     hideHtmlOverflowIfItScrolls()
-  } else if (hasGutter || (view && supportsScrollbarGutter(view))) {
+  } else if (
+    hasGutter ||
+    !!(view as WindowWithCss | null)?.CSS?.supports(
+      'scrollbar-gutter',
+      'stable',
+    )
+  ) {
     restores.push(
       setCssProperty(
         documentElement,
@@ -643,7 +655,7 @@ export const resolveInitialFocus = (
   const autoFocus = content.querySelector<HTMLElement>(
     '[data-autofocus=true],[autofocus]',
   )
-  if (autoFocus) return autoFocus
+  if (autoFocus && isFocusable(autoFocus)) return autoFocus
 
   return getTabbableIn(content)[0] ?? content
 }

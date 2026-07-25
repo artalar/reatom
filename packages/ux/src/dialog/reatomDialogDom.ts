@@ -55,20 +55,6 @@ import {
 } from './dialogIntent'
 import type { DialogModel } from './reatomDialog'
 
-const microtask = (): Promise<void> =>
-  new Promise((resolve) => queueMicrotask(() => resolve()))
-
-const nextFrame = (): Promise<void> =>
-  typeof requestAnimationFrame === 'function'
-    ? new Promise((resolve) => requestAnimationFrame(() => resolve()))
-    : Promise.resolve()
-
-/** The document the dialog lives in, or `null` outside a browser. */
-const getDocument = (element: HTMLElement | null): Document | null => {
-  if (element) return element.ownerDocument
-  return canUseDOM() ? document : null
-}
-
 /**
  * Closes the dialog on Escape and on interactions outside it.
  *
@@ -118,7 +104,9 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
         // `mounted`, not `open`: an animated dialog is still on screen while it
         // closes, and Escape must keep working until it is gone.
         if (!target.mounted()) return
-        const document = getDocument(target.contentElement())
+        const document =
+          target.contentElement()?.ownerDocument ??
+          (canUseDOM() ? globalThis.document : null)
         if (!document) return
 
         /**
@@ -201,17 +189,6 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
                 contains(dialog.backdropElement(), eventTarget),
             )
 
-        /**
-         * Whether any element the event passed through belongs to the dialog.
-         * The path, not `event.target`, because a document listener sees that
-         * one retargeted to a shadow host — see {@link getEventTargets}.
-         */
-        const isInside = (targets: Array<Element>) =>
-          targets.some(
-            (eventTarget) =>
-              contains(content, eventTarget) || onNestedDialog(eventTarget),
-          )
-
         const describe = (event: Event): DialogOutsideContext => {
           // The retargeted target is the one to ask about the document: an
           // element inside a shadow root is not reachable from `body`, so a
@@ -246,7 +223,12 @@ export const withDialogDismiss = (): GenericExt<DialogModel> => (target) => {
           'mousedown',
           (event) => {
             pressed = true
-            pressedOutside = !isInside(getEventTargets(event))
+            // The composed path, not `event.target`, preserves interactions
+            // from inside an open shadow root.
+            pressedOutside = !getEventTargets(event).some(
+              (eventTarget) =>
+                contains(content, eventTarget) || onNestedDialog(eventTarget),
+            )
           },
           { capture: true },
         )
@@ -345,7 +327,7 @@ export const withDialogFocus = (): AssignerExt<
       if (!target.autoFocusOnShow()) return
       if (!target.contentElement()?.isConnected) return
 
-      await wrap(microtask())
+      await wrap(new Promise<void>((resolve) => queueMicrotask(resolve)))
       // The dialog was closed while the focus was queued.
       if (!target()) return
       const content = target.contentElement()
@@ -378,7 +360,13 @@ export const withDialogFocus = (): AssignerExt<
       let { element, intent } = resolveRestore(true)
 
       if (intent === 'retry') {
-        await wrap(nextFrame())
+        await wrap(
+          typeof requestAnimationFrame === 'function'
+            ? new Promise<void>((resolve) =>
+                requestAnimationFrame(() => resolve()),
+              )
+            : Promise.resolve(),
+        )
         ;({ element, intent } = resolveRestore(false))
       }
 
