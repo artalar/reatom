@@ -9,7 +9,7 @@
  * `packages/ariakit-utils/src/platform.ts`.
  */
 
-import { onEvent, wrap } from '@reatom/core'
+import { effect, onEvent, wrap } from '@reatom/core'
 
 import { describeElement } from '../interactions/describeElement'
 import { isSelfTarget } from '../interactions/element'
@@ -194,6 +194,12 @@ export const applyFocusVisible = (
   if (!element) return
   return queueBeforeEvent(element, 'focusout', () => {
     if (!hasFocus(element)) return
+    // Re-checked after the wait, not only before it: `focusable` can be turned
+    // off — or the element disabled — between the key press and the frame this
+    // runs on, and then the ring must not appear at all. `model.show()` already
+    // refuses the state; without this the attribute would still land, and no
+    // event would ever remove it (react-components 0.3.2).
+    if (!model.focusable() || model.trulyDisabled()) return
     // Ariakit sets the attribute imperatively so it is visible to CSS even
     // before a renderer reacts to the state change.
     element.dataset.focusVisible = 'true'
@@ -221,7 +227,11 @@ export const clearFocusVisible = (
  *   refs and effects are assigned, so focus is queued in a microtask to let
  *   other attachments land first;
  * - A hidden element fires no `blur`, so while the ring is on the element is
- *   observed and the ring cleared as soon as it stops being focusable.
+ *   observed and the ring cleared as soon as it stops being focusable;
+ * - Neither does a disabled element, and turning `focusable` off silences the
+ *   blur handler altogether, so the imperative `data-focus-visible` marker is
+ *   removed from the element whenever the model stops wanting the ring —
+ *   Ariakit's `cleanupFocusVisible` effect (react-components 0.3.2).
  *
  * @returns A cleanup function; call it when the element is detached.
  */
@@ -257,7 +267,16 @@ export const connectFocusable = (
     observer.observe(element)
   }
 
+  // The state half of this is the model's own `withComputed`; what needs a DOM
+  // is the attribute `applyFocusVisible` wrote imperatively, which no blur will
+  // come to remove.
+  const stopRingCleanup = effect(() => {
+    if (model.focusable() && !model.trulyDisabled()) return
+    element.removeAttribute('data-focus-visible')
+  }, `${model.name}.focusVisibleCleanup`).subscribe()
+
   return () => {
+    stopRingCleanup()
     observer?.disconnect()
     if (model.element() === element) {
       model.element.set(null)

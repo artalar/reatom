@@ -1,3 +1,4 @@
+import { notify } from '@reatom/core'
 import { afterEach, expect, test } from 'vitest'
 
 import { describeElement } from '../interactions/describeElement'
@@ -273,6 +274,61 @@ test('a hidden element loses the ring without firing blur', async () => {
   expect(isFocusable(element)).toBe(false)
 
   await waitFor(() => !focusable(), 'the focus ring to be cleared')
+  expect(element.hasAttribute('data-focus-visible')).toBe(false)
+})
+
+test('turning focusable off removes the ring marker from the element', async () => {
+  // react-components 0.3.2: "Fixed `Focusable` … to clear focus-visible styling
+  // when `focusable` becomes `false`." The marker is written imperatively by
+  // `applyFocusVisible`, and turning the feature off silences the blur handler
+  // that would remove it, so a DOM-level cleanup is the only way out.
+  const modality = reatomFocusVisible({ name: 'f.dom8.modality' })
+  const focusable = reatomFocusable({ name: 'f.dom8', modality })
+  const element = mount('div', focusable)
+
+  element.focus()
+  await nextFrame()
+  expect(element.getAttribute('data-focus-visible')).toBe('true')
+
+  focusable.focusable.set(false)
+  // The cleanup is an effect, so it lands in the effect phase — a prop record's
+  // handler flushes it the same way.
+  notify()
+  expect(focusable()).toBe(false)
+  expect(element.hasAttribute('data-focus-visible')).toBe(false)
+})
+
+test('disabling a focused element removes the ring marker too', async () => {
+  // The other half of the same Ariakit effect: a disabled element fires no blur.
+  const modality = reatomFocusVisible({ name: 'f.dom9.modality' })
+  const focusable = reatomFocusable({ name: 'f.dom9', modality })
+  const element = mount('div', focusable)
+
+  element.focus()
+  await nextFrame()
+  expect(element.getAttribute('data-focus-visible')).toBe('true')
+
+  focusable.disabled.set(true)
+  notify()
+  expect(element.hasAttribute('data-focus-visible')).toBe(false)
+})
+
+test('the ring never lands when focusable is turned off mid-flight', async () => {
+  // `applyFocusVisible` is queued before `focusout`, so the flag can flip
+  // between the key press and the frame the marker would be written on.
+  const modality = reatomFocusVisible({ name: 'f.dom10.modality' })
+  modality.pointerDown({})
+  const focusable = reatomFocusable({ name: 'f.dom10', modality })
+  const element = mount('div', focusable)
+
+  element.focus()
+  press(element, 'ArrowDown')
+  focusable.focusable.set(false)
+
+  await nextFrame()
+  await nextFrame()
+
+  expect(focusable()).toBe(false)
   expect(element.hasAttribute('data-focus-visible')).toBe(false)
 })
 
