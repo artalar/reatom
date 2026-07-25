@@ -81,8 +81,8 @@ export interface Toolbar extends ToolbarModel {
  * @example
  *   const toolbar = reatomToolbar({ name: 'editor.toolbar' })
  *
- *   toolbar.items.renderItem({ id: 'bold' })
- *   toolbar.items.renderItem({ id: 'italic' })
+ *   const bold = toolbar.items.renderItem({ id: 'bold' })
+ *   const italic = toolbar.items.renderItem({ id: 'italic' })
  *
  *   toolbar() // 'bold' — the first enabled item is auto-seeded
  *   toolbar.move(toolbar.next()) // 'italic'
