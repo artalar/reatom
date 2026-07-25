@@ -615,7 +615,14 @@ export function reatomSelect(options: SelectOptions = {}): Select {
 
   initItems?.forEach(({ value: itemValueOf, ...init }) => {
     composite.items.registerItem(
-      itemValueOf === undefined ? init : { ...init, id: itemId(itemValueOf) },
+      itemValueOf === undefined
+        ? init
+        : // `text` as in `renderItem`: a config-provided item has no element to
+          // read it from, and the typeahead has to reach it anyway — Ariakit's
+          // `itemTextStartsWith` falls back to the item's `value` for exactly
+          // this case (issue #6733, typing on a closed select whose options
+          // never mounted).
+          { text: itemValueOf, ...init, id: itemId(itemValueOf) },
     )
   })
 

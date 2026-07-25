@@ -161,6 +161,7 @@ export {
   mapNavigationIntent,
 } from './composite/navigationIntent'
 export {
+  applyTypeaheadIntent,
   type CompositeBaseProps,
   type CompositeItemProps,
   compositeItemProps,
@@ -168,6 +169,7 @@ export {
   type CompositePropRecords,
   compositeProps,
   type CompositePropsOptions,
+  type CompositeTypeaheadEvent,
   withCompositeProps,
 } from './composite/props'
 export {
@@ -187,6 +189,27 @@ export {
   type CompositeFocusOptions,
   withCompositeFocus,
 } from './composite/reatomCompositeDom'
+export {
+  isTypeaheadKey,
+  matchTypeahead,
+  reatomTypeahead,
+  restartTypeaheadItems,
+  scheduleTypeaheadExpire,
+  TYPEAHEAD_TIMEOUT,
+  type TypeaheadExpire,
+  type TypeaheadItem,
+  typeaheadItemStartsWith,
+  typeaheadItemText,
+  type TypeaheadKeyEvent,
+  type TypeaheadMatch,
+  type TypeaheadMatchContext,
+  type TypeaheadModel,
+  type TypeaheadOptions,
+  type TypeaheadPress,
+  type TypeaheadRestart,
+  type TypeaheadRestartContext,
+  type TypeaheadUnits,
+} from './composite/typeahead'
 export {
   COMPOSITE_OVERFLOW_HIDDEN_STYLE,
   type CompositeOverflowContentProps,

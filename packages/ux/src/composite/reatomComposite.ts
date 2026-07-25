@@ -36,6 +36,8 @@ import {
 import type { CompositeNavigationIntent } from './navigationIntent'
 import type { CompositePropRecords } from './props'
 import { withCompositeProps } from './props'
+import type { TypeaheadItem, TypeaheadModel } from './typeahead'
+import { reatomTypeahead } from './typeahead'
 
 /**
  * Turns a model name into a DOM-safe `id`.
@@ -68,6 +70,14 @@ export interface CompositeItemInit extends CollectionItemInit {
    * because its collection stores it from `element.textContent`.
    */
   text?: string
+  /**
+   * The text the typeahead matches instead of {@link CompositeItemInit.text} —
+   * Ariakit's `typeaheadText` item option, for an item whose visible label is
+   * not what the user would type (an icon plus a name, a localized alias).
+   *
+   * An empty string opts the item out of matching altogether.
+   */
+  typeaheadText?: string
 }
 
 /** The atomized per item state a composite adds to every collection item. */
@@ -78,6 +88,11 @@ export interface CompositeItemState {
   rowId: Atom<string | undefined>
   /** The item's text content, for typeahead. */
   text: Atom<string | undefined>
+  /**
+   * The text the typeahead matches instead of {@link CompositeItemState.text},
+   * empty string to opt the item out.
+   */
+  typeaheadText: Atom<string | undefined>
   /**
    * Whether the item is the active one — the source of Ariakit's
    * `data-active-item`. It is DOM focus with roving tabindex, and virtual focus
@@ -175,6 +190,21 @@ export interface CompositeOptions {
    * @default `activeId === null`
    */
   includesBaseElement?: boolean
+  /**
+   * Whether printable characters move the active item to the next item whose
+   * text starts with them — Ariakit's `CompositeTypeahead`.
+   *
+   * It is opt-in, exactly like rendering that component: Ariakit gives a
+   * typeahead to `select` and `menu` only, and neither a radio group nor a tab
+   * list nor a toolbar wants one. {@link reatomSelect} and {@link reatomMenu}
+   * turn it on themselves.
+   *
+   * The state it needs is always there ({@link CompositeUnits.typeahead}); this
+   * only seeds `typeahead.enabled`, which stays writable.
+   *
+   * @default false
+   */
+  typeahead?: boolean
   /** The model name; every nested unit is named after it. */
   name?: string
 }
@@ -199,6 +229,24 @@ export interface CompositeUnits {
    * navigable.
    */
   navigationItems: Computed<Array<CompositeNavigationItem>>
+  /**
+   * The snapshot the typeahead matches against: the same items plus the two
+   * text fields.
+   *
+   * It is the _rendered_ items, unless more items are registered than rendered
+   * — Ariakit's comment: "We typically want to use the rendered items, as
+   * they're already sorted. However, the composite list might be unmounted or
+   * virtualized, in which case we'll use the original items." That is what lets
+   * a closed select's typeahead reach options whose elements were never
+   * mounted.
+   */
+  typeaheadItems: Computed<Array<TypeaheadItem>>
+  /**
+   * The typeahead: the buffer of characters typed so far, and the key press
+   * transition that moves the active item. Off by default, see
+   * {@link CompositeOptions.typeahead}.
+   */
+  typeahead: TypeaheadModel
   /** The active item node, `null` when the active id is `null` or unknown. */
   activeItem: Computed<CompositeItemNode | null>
   /**
@@ -328,6 +376,10 @@ export interface Composite extends CompositeModel {
  *   - `getNextId` and its helpers are pure exported functions
  *       ([`getNextId.ts`](./getNextId.ts)), so the grid / loop / wrap / shift
  *       matrix is testable over plain arrays.
+ *   - `CompositeTypeahead`'s module-level `WeakMap` of character buffers is a
+ *       sub-model ([`typeahead.ts`](./typeahead.ts)), so two composites cannot
+ *       share a buffer and its reset delay is a flow rather than a timer
+ *       handle. Enable it with {@link CompositeOptions.typeahead}.
  *
  *   The auto-seeding has one deliberate asymmetry: writing `undefined` back does
  *   not re-seed immediately, because a `withComputed` derivation only re-runs
@@ -369,6 +421,7 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
     // Ariakit ties the default to `activeId === null`: starting at the composite
     // element only makes sense if it is part of the focus order.
     includesBaseElement: initIncludesBaseElement = initActiveId === null,
+    typeahead: initTypeahead = false,
     name = named('composite'),
   } = options
 
@@ -401,6 +454,7 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
       disabled: atom(init.disabled ?? false, `${item.name}.disabled`),
       rowId: atom(init.rowId, `${item.name}.rowId`),
       text: atom(init.text, `${item.name}.text`),
+      typeaheadText: atom(init.typeaheadText, `${item.name}.typeaheadText`),
       active: computed(() => activeId() === item.id, `${item.name}.active`),
       tabbable: computed(() => isTabbable(item.id), `${item.name}.tabbable`),
     }),
@@ -408,6 +462,9 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
       if (init.disabled !== undefined) item.disabled.set(init.disabled)
       if (init.rowId !== undefined) item.rowId.set(init.rowId)
       if (init.text !== undefined) item.text.set(init.text)
+      if (init.typeaheadText !== undefined) {
+        item.typeaheadText.set(init.typeaheadText)
+      }
     },
     items: initItems,
     name: `${name}.items`,
@@ -523,10 +580,38 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
     `${name}.navigate`,
   )
 
+  const typeaheadItems = computed((): Array<TypeaheadItem> => {
+    const registered = items.array()
+    const rendered = items.renderedItems()
+    const list = registered.length > rendered.length ? registered : rendered
+
+    return list.map((item) => ({
+      id: item.id,
+      disabled: item.disabled(),
+      rowId: item.rowId(),
+      text: item.text(),
+      typeaheadText: item.typeaheadText(),
+    }))
+  }, `${name}.typeaheadItems`)
+
+  // A `move` and not an `activeId.set`: a typeahead jump is a focus move, so
+  // `withCompositeFocus` follows it and the select's "selection follows focus"
+  // middleware sees it — which is what makes typing on a closed select change
+  // its value.
+  const typeahead = reatomTypeahead({
+    items: typeaheadItems,
+    activeId,
+    move,
+    enabled: initTypeahead,
+    name: `${name}.typeahead`,
+  })
+
   return activeId
     .extend(() => ({
       items,
       navigationItems,
+      typeaheadItems,
+      typeahead,
       activeItem,
       activeDescendant,
       id,

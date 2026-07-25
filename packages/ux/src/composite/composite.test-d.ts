@@ -5,9 +5,15 @@ import type { CompositeNavigationItem } from './getNextId'
 import { getNextId } from './getNextId'
 import type { CompositeNavigationIntent } from './navigationIntent'
 import { mapNavigationIntent } from './navigationIntent'
-import type { CompositeBaseProps, CompositeItemProps } from './props'
+import type {
+  CompositeBaseProps,
+  CompositeItemProps,
+  CompositeTypeaheadEvent,
+} from './props'
+import { applyTypeaheadIntent } from './props'
 import type { CompositeItemNode, CompositeModel } from './reatomComposite'
 import { reatomComposite } from './reatomComposite'
+import type { TypeaheadItem, TypeaheadModel, TypeaheadPress } from './typeahead'
 
 test('the model is the activeId atom, with the collection as a sub-model', () => {
   const composite = reatomComposite({ name: 'composite' })
@@ -39,6 +45,7 @@ test('item state is atomized per item', () => {
   expectTypeOf(item.disabled).toExtend<Atom<boolean>>()
   expectTypeOf(item.rowId()).toEqualTypeOf<string | undefined>()
   expectTypeOf(item.text()).toEqualTypeOf<string | undefined>()
+  expectTypeOf(item.typeaheadText()).toEqualTypeOf<string | undefined>()
   expectTypeOf(item.active).toExtend<Computed<boolean>>()
   expectTypeOf(item.tabbable()).toEqualTypeOf<boolean>()
   expectTypeOf(item.element()).toEqualTypeOf<HTMLElement | null>()
@@ -68,6 +75,33 @@ test('navigation queries answer with an id, null, or nothing', () => {
 
   // @ts-expect-error only the documented moves are navigable
   composite.nextId({ move: 'sideways' })
+})
+
+test('the typeahead is a string atom with the key press on it', () => {
+  const composite = reatomComposite({ typeahead: true, name: 'typeahead' })
+
+  expectTypeOf(composite.typeahead).toExtend<TypeaheadModel>()
+  expectTypeOf(composite.typeahead()).toEqualTypeOf<string>()
+  expectTypeOf(composite.typeahead.enabled).toExtend<Atom<boolean>>()
+  expectTypeOf(composite.typeahead.timeout).toExtend<Atom<number>>()
+  expectTypeOf(
+    composite.typeahead.press({ key: 'a' }),
+  ).toEqualTypeOf<TypeaheadPress>()
+  expectTypeOf(composite.typeahead.clear()).toEqualTypeOf<void>()
+  expectTypeOf(composite.typeahead.expire()).toEqualTypeOf<Promise<void>>()
+  expectTypeOf(composite.typeaheadItems()).toEqualTypeOf<Array<TypeaheadItem>>()
+
+  // a real DOM event satisfies the handler's event shape, whose two targets are
+  // `unknown` for that reason
+  expectTypeOf<KeyboardEvent>().toExtend<CompositeTypeaheadEvent>()
+  expectTypeOf(applyTypeaheadIntent(composite, { key: 'a' })).toEqualTypeOf<
+    string | undefined
+  >()
+
+  // the key is what the typeahead reads, `code` is not it
+  expectTypeOf(composite.typeahead.press).not.toBeCallableWith({
+    code: 'KeyA',
+  })
 })
 
 test('the pure helpers work on plain data, with no model', () => {

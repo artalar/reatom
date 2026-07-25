@@ -93,6 +93,14 @@ export interface MenuExtOptions
    */
   orientation?: CompositeOptions['orientation']
   /**
+   * Whether typing printable characters jumps to the matching item — Ariakit's
+   * `MenuList` renders `CompositeTypeahead`, so unlike a plain composite a menu
+   * has it on.
+   *
+   * @default true
+   */
+  typeahead?: boolean
+  /**
    * The DOM `id` of the menu element — the element that holds the items, which
    * is also the popover content element and therefore what the button's
    * `aria-controls` points at.
@@ -333,6 +341,7 @@ export const withMenu = (
     focusWrap,
     focusShift,
     includesBaseElement,
+    typeahead = true,
     id,
 
     // The hovercard half, of which four defaults differ from a plain card's.
@@ -372,6 +381,7 @@ export const withMenu = (
       focusWrap,
       focusShift,
       includesBaseElement,
+      typeahead,
       id: elementId,
       name: `${name}.composite`,
     })

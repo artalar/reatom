@@ -785,6 +785,97 @@ test('the perpendicular arrows of a menubar menu move along the bar', () => {
   expect(menubar()).toBe('file')
 })
 
+// --- the typeahead ----------------------------------------------------------
+
+/** Renders items whose text the typeahead can match, as a mounted menu does. */
+const renderLabelled = (model: Menu, labels: Record<string, string>) =>
+  Object.entries(labels).map(([id, text]) =>
+    model.composite.items.renderItem({ id, text, element: element(id) }),
+  )
+
+test('a menu types ahead by default, since MenuList renders CompositeTypeahead', () => {
+  expect(menu({ name: 'edit' }).composite.typeahead.enabled()).toBe(true)
+  expect(
+    menu({ typeahead: false, name: 'off' }).composite.typeahead.enabled(),
+  ).toBe(false)
+  // a plain composite still has none of it
+  expect(reatomMenubar({ name: 'menubar' }).typeahead.enabled()).toBe(false)
+})
+
+test('typing in an open menu jumps to the matching item', () => {
+  const edit = menu({ name: 'edit' })
+  renderLabelled(edit, { undo: 'Undo', redo: 'Redo', rename: 'Rename' })
+  const list = element('edit')
+  edit.props.popover().ref(list)
+  edit.show()
+
+  expect(edit.composite()).toBe('undo')
+
+  const press = keyEvent('r', list)
+  edit.props.popover().onKeyDownCapture(press)
+  expect(edit.composite()).toBe('redo')
+  expect(press.defaultPrevented).toBe(true)
+
+  // the same key cycles through the items that start with it…
+  edit.props.popover().onKeyDownCapture(keyEvent('r', list))
+  expect(edit.composite()).toBe('rename')
+  // …while a word narrows the search down
+  edit.composite.typeahead.clear()
+  edit.composite.set('undo')
+  edit.props.popover().onKeyDownCapture(keyEvent('r', list))
+  edit.props.popover().onKeyDownCapture(keyEvent('e', list))
+  expect(edit.composite.typeahead()).toBe('re')
+  expect(edit.composite()).toBe('redo')
+})
+
+test('the list record types ahead too, and it is the composite handler itself', () => {
+  const edit = menu({ name: 'edit' })
+  renderLabelled(edit, { undo: 'Undo', redo: 'Redo' })
+  const list = element('edit')
+  edit.props.list().ref(list)
+  edit.show()
+
+  // one identity across the three records, so a view re-reading them does not
+  // re-attach the listener
+  expect(edit.props.list().onKeyDownCapture).toBe(
+    edit.props.popover().onKeyDownCapture,
+  )
+
+  edit.props.list().onKeyDownCapture(keyEvent('r', list))
+  expect(edit.composite()).toBe('redo')
+})
+
+test('typing in a menubar walks its buttons, not the open menu items', () => {
+  // Ariakit puts a typeahead on a menu button that sits in a menubar, matching
+  // the bar's own items; here the menubar owns that, which is the same result
+  // through its own composite.
+  const menubar = reatomMenubar({ typeahead: true, name: 'menubar' })
+  menubar.items.renderItem({
+    id: 'file',
+    text: 'File',
+    element: element('file'),
+  })
+  menubar.items.renderItem({
+    id: 'edit',
+    text: 'Edit',
+    element: element('edit'),
+  })
+  const file = menu({ menubar, name: 'file' })
+  renderLabelled(file, { undo: 'Undo', redo: 'Redo' })
+
+  const bar = element('menubar')
+  menubar.props.base().ref(bar)
+  // the composite records are typed against the DOM event, unlike the menu's
+  // structural ones — the fake stands in for it here
+  menubar.props
+    .base()
+    .onKeyDownCapture(keyEvent('e', bar) as unknown as KeyboardEvent)
+
+  expect(menubar()).toBe('edit')
+  // the menu's own buffer is untouched: two composites, two buffers
+  expect(file.composite.typeahead()).toBe('')
+})
+
 // --- the item records -------------------------------------------------------
 
 test('an item record is a composite item that runs a command', () => {

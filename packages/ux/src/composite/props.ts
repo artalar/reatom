@@ -12,10 +12,13 @@ import type { AssignerExt, Computed } from '@reatom/core'
 import { computed, notify, wrap } from '@reatom/core'
 
 import { isTextFieldElement } from '../interactions/describeElement'
+import type { EventTargetsLike } from '../interactions/element'
 import { isSelfTarget } from '../interactions/element'
 import { isCompositeGrid } from './getNextId'
 import { mapEntryIntent, mapNavigationIntent } from './navigationIntent'
 import type { CompositeItemNode, CompositeModel } from './reatomComposite'
+import type { TypeaheadKeyEvent } from './typeahead'
+import { isTypeaheadKey } from './typeahead'
 
 /** Props to spread on the composite element itself. */
 export interface CompositeBaseProps {
@@ -44,6 +47,20 @@ export interface CompositeBaseProps {
    * only element that can receive them.
    */
   onKeyDown: (event: KeyboardEvent) => void
+  /**
+   * The typeahead: printable characters move the active item to the next one
+   * whose text starts with them. A no-op until
+   * {@link CompositeOptions.typeahead} — or `model.typeahead.enabled` — turns it
+   * on.
+   *
+   * The **capture** phase is Ariakit's own choice, with its reason: "the event
+   * might be handled by a child component. For example, the space key may
+   * trigger a click event on a child component. We need to prevent this
+   * behavior if the character is a valid typeahead key." A view binds it as
+   * React's `onKeyDownCapture`, or as `addEventListener('keydown', handler,
+   * true)`.
+   */
+  onKeyDownCapture: (event: KeyboardEvent) => void
   /** Focusing the container itself activates the container, not an item. */
   onFocus: (event: FocusEvent) => void
 }
@@ -112,6 +129,91 @@ export interface CompositePropRecords {
 const baseIsTextField = (model: CompositeModel): boolean => {
   const element = model.baseElement()
   return element ? isTextFieldElement(element) : false
+}
+
+/**
+ * The event {@link applyTypeaheadIntent} reads: a key press that knows where it
+ * happened.
+ *
+ * Both targets are `unknown` so a real DOM event — whose `currentTarget` is
+ * `EventTarget | null` — stays assignable; the guards narrow them at runtime.
+ */
+export interface CompositeTypeaheadEvent extends TypeaheadKeyEvent {
+  readonly defaultPrevented?: boolean
+  readonly target?: unknown
+  readonly currentTarget?: unknown
+  preventDefault?: () => void
+}
+
+/** Whether the event target is a text field, where the key is text, not a jump. */
+const isTextFieldTarget = (target: unknown): boolean => {
+  const element = target as Element | null | undefined
+  if (!element || typeof element !== 'object') return false
+  return isTextFieldElement(element)
+}
+
+/**
+ * Whether the key press happened on the composite element itself or on one of
+ * its items — Ariakit's `isSelfTargetOrItem`.
+ *
+ * Anything else inside the widget (a search input, a nested button) keeps its
+ * own keys, and typing there abandons the buffer.
+ */
+const isSelfTargetOrItem = (
+  model: CompositeModel,
+  event: CompositeTypeaheadEvent,
+): boolean => {
+  if (isSelfTarget(event as unknown as EventTargetsLike)) return true
+  const target = event.target
+  if (!target) return false
+  return model.items
+    .renderedItems()
+    .some((item) => !item.disabled() && item.element() === target)
+}
+
+/**
+ * Runs the typeahead for one key press: the DOM half of Ariakit's
+ * `useCompositeTypeahead`.
+ *
+ * @remarks
+ *   The two guards it adds to {@link TypeaheadUnits.press} are the ones that need
+ *   an element: a text field target — where a printable key is text — and an
+ *   event that neither the composite element nor one of its items fired. Both
+ *   abandon the buffer, as Ariakit's `clearChars` does.
+ *
+ *   `preventDefault` is called for every key the typeahead consumed, matching
+ *   Ariakit, even when nothing matched: otherwise `Space` typed inside a word
+ *   would activate the focused item.
+ *
+ *   It is exported because `select` and `menu` build their own prop records on
+ *   top of the composite instead of spreading its base one, and all three must
+ *   apply the same policy.
+ * @example
+ *   // inside a widget's own `onKeyDownCapture`
+ *   applyTypeaheadIntent(model.composite, event)
+ *
+ * @returns The id the typeahead moved to, `undefined` when nothing moved.
+ */
+export const applyTypeaheadIntent = (
+  model: CompositeModel,
+  event: CompositeTypeaheadEvent,
+): string | undefined => {
+  const { typeahead } = model
+  if (event.defaultPrevented) return undefined
+  if (!typeahead.enabled()) return undefined
+
+  if (
+    isTextFieldTarget(event.target) ||
+    !isTypeaheadKey(event, typeahead()) ||
+    !isSelfTargetOrItem(model, event)
+  ) {
+    typeahead.clear()
+    return undefined
+  }
+
+  const { handled, id } = typeahead.press(event)
+  if (handled) event.preventDefault?.()
+  return id
 }
 
 /**
@@ -256,6 +358,11 @@ export const compositeProps = (
     notify()
   })
 
+  const onKeyDownCapture = wrap((event: KeyboardEvent) => {
+    applyTypeaheadIntent(model, event)
+    notify()
+  })
+
   const records = new WeakMap<CompositeItemNode, Computed<CompositeItemProps>>()
 
   return {
@@ -266,6 +373,7 @@ export const compositeProps = (
         tabIndex: model.virtualFocus() || model() === null ? 0 : undefined,
         ref,
         onKeyDown,
+        onKeyDownCapture,
         onFocus,
       }),
       `${name}.props.base`,

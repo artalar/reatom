@@ -29,7 +29,7 @@ import type {
   CompositeItemPropsOptions,
   CompositePropRecords,
 } from '../composite/props'
-import { compositeItemProps } from '../composite/props'
+import { applyTypeaheadIntent, compositeItemProps } from '../composite/props'
 import type {
   CompositeItemNode,
   CompositeModel,
@@ -217,6 +217,16 @@ export interface MenuListProps extends CompositeBaseProps {
   ref: (element: HTMLElement | null) => void
   /** Leaves the menu — closes a submenu, or moves along a menubar. */
   onKeyDown: (event: MenuKeyboardEvent) => void
+  /**
+   * The typeahead: printable characters move the active item to the next one
+   * whose text starts with them — Ariakit's `MenuList` renders
+   * `CompositeTypeahead`, so a menu has it on unless
+   * {@link MenuExtOptions.typeahead} turns it off.
+   *
+   * Bind it in the **capture** phase, see
+   * {@link CompositeBaseProps.onKeyDownCapture}.
+   */
+  onKeyDownCapture: (event: MenuKeyboardEvent) => void
 }
 
 /**
@@ -236,6 +246,7 @@ export interface MenuPopoverProps
       | 'aria-activedescendant'
       | 'ref'
       | 'onKeyDown'
+      | 'onKeyDownCapture'
     > {
   /**
    * Focusing the menu element itself clears the active item, and arms the focus
@@ -515,6 +526,14 @@ const hasPopupAttribute = (target: unknown): boolean => {
  *       DOM read of `disclosureElement.id`, so `aria-labelledby` is right on
  *       the first render instead of after an effect.
  *
+ *   The typeahead comes from the composite: the `list` and `popover` records
+ *   carry its `onKeyDownCapture`, which {@link reatomMenu} turns on the way
+ *   Ariakit's `MenuList` renders `CompositeTypeahead`. Ariakit also puts one on
+ *   the menu _button_ when the button sits in a menubar, matching the bar's
+ *   buttons against **this menu's** items — that is not ported, because typing
+ *   on a menubar belongs to the menubar: give it one with `reatomMenubar({
+ *   typeahead: true })` and its own base record handles the key, including a
+ *   press that lands on a button.
  * @example
  *   const edit = reatomMenu({ name: 'edit' })
  *   const undo = edit.composite.items.renderItem({ id: 'undo' })
@@ -802,6 +821,16 @@ export const menuProps = (
     // The composite navigates only what the menu did not consume; its own
     // handler bails on a prevented event.
     compositeBase().onKeyDown(event as unknown as KeyboardEvent)
+  })
+
+  /**
+   * The typeahead half of a `keydown`, which the menu only re-types: the policy
+   * is the composite's, and one handler over one buffer is what Ariakit's
+   * `MenuList` renders as `CompositeTypeahead`.
+   */
+  const onMenuKeyDownCapture = wrap((event: MenuKeyboardEvent) => {
+    applyTypeaheadIntent(composite, event)
+    notify()
   })
 
   /**
@@ -1152,6 +1181,7 @@ export const menuProps = (
         style: style.display ? { display: 'none' } : undefined,
         ref: listRef,
         onKeyDown: onMenuKeyDown,
+        onKeyDownCapture: onMenuKeyDownCapture,
       }
     }, `${name}.props.list`),
 
@@ -1167,6 +1197,10 @@ export const menuProps = (
         'aria-activedescendant': base['aria-activedescendant'],
         ref: listRef,
         onKeyDown: onPopoverKeyDown,
+        // The list record's handler, not a popover-specific one: the typeahead
+        // needs no dialog layer on top of it, and one identity keeps a view from
+        // re-attaching the listener.
+        onKeyDownCapture: onMenuKeyDownCapture,
         onFocus: onPopoverFocus,
       }
     }, `${name}.props.popover`),

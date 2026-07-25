@@ -959,6 +959,108 @@ test('a combobox with virtual focus off suppresses autoFocus, not data-autofocus
   expect(props.autoFocus).toBe(false)
 })
 
+// --- the typeahead -----------------------------------------------------------
+
+test('a select types ahead by default, and one driven by a combobox does not', () => {
+  const fruit = reatomSelect({ name: 'fruit' })
+  // Ariakit's `Select` and `SelectList` both render `CompositeTypeahead`
+  expect(fruit.composite.typeahead.enabled()).toBe(true)
+
+  // …but with a combobox, typing filters the list instead — Ariakit's
+  // `typeahead: !hasCombobox`
+  const search = reatomCombobox({ name: 'searched.search' })
+  const searched = reatomSelect({ combobox: search, name: 'searched' })
+  expect(searched.composite.typeahead.enabled()).toBe(false)
+
+  const off = reatomSelect({ typeahead: false, name: 'off' })
+  expect(off.composite.typeahead.enabled()).toBe(false)
+})
+
+// Ariakit `select-typeahead`: "matches custom item content while closed".
+test('typing on the closed button writes the value without opening the list', () => {
+  const fruit = reatomSelect({
+    value: 'Brazil',
+    setValueOnMove: true,
+    name: 'country',
+  })
+  const { button } = mount(fruit, ['Brazil', 'Canada', 'Japan'])
+
+  const press = event(button, { key: 'c' })
+  fruit.props.select().onKeyDownCapture(press)
+
+  // the jump goes through `composite.move`, which is what `setValueOnMove`
+  // watches — so a closed select changes its value by typing
+  expect(fruit()).toBe('Canada')
+  expect(fruit.popover()).toBe(false)
+  expect(prevented.has(press)).toBe(true)
+  expect(fruit.composite.typeahead()).toBe('c')
+})
+
+// Ariakit `select-typeahead`: "matches custom item content and skips empty text
+// while open" and "updates custom item text".
+test('typeaheadText overrides the value, and an empty one skips the item', () => {
+  const fruit = reatomSelect({ name: 'country' })
+  const button = element()
+  fruit.props.select().ref(button)
+
+  // the flag is part of the label but not of what the user types, and `Citrus`
+  // opts out of the search altogether
+  fruit.props.item('Citrus', { typeaheadText: '' })().ref(element())
+  fruit.props.item('Canada', { typeaheadText: 'Canada' })().ref(element())
+  const list = element()
+  fruit.props.list().ref(list)
+  fruit.popover.show()
+
+  fruit.props.list().onKeyDownCapture(event(list, { key: 'c' }))
+  expect(fruit.composite()).toBe(fruit.itemId('Canada'))
+
+  // the option is one atom per item, so an alias applied later is picked up
+  // without re-registering anything
+  fruit.item('Canada')!.typeaheadText.set('Dominion')
+  fruit.composite.typeahead.clear()
+  fruit.composite.set(null)
+  fruit.props.list().onKeyDownCapture(event(list, { key: 'd' }))
+  expect(fruit.composite()).toBe(fruit.itemId('Canada'))
+})
+
+// Ariakit issue #6733, "typeahead updates the value for late unmounted items":
+// the buffer must reach options whose elements were never mounted.
+test('the typeahead reaches registered items that never rendered', () => {
+  const fruit = reatomSelect({
+    items: [{ value: 'Apple' }, { value: 'Banana' }, { value: 'Orange' }],
+    value: 'Orange',
+    setValueOnMove: true,
+    name: 'fruit',
+  })
+  const button = element()
+  fruit.props.select().ref(button)
+
+  expect(fruit.composite.items.renderedItems()).toEqual([])
+
+  fruit.props.select().onKeyDownCapture(event(button, { key: 'a' }))
+  expect(fruit.composite()).toBe(fruit.itemId('Apple'))
+  expect(fruit()).toBe('Apple')
+})
+
+test('the button and the open list continue one search', () => {
+  const fruit = reatomSelect({ name: 'fruit' })
+  const { button, list } = mount(fruit, ['Apple', 'Apricot'])
+
+  // Ariakit applies `useCompositeTypeahead` to both elements and keeps the
+  // buffer on the store, so the search survives the list opening
+  fruit.props.select().onKeyDownCapture(event(button, { key: 'a' }))
+  expect(fruit.composite.typeahead()).toBe('a')
+
+  fruit.popover.show()
+  fruit.props.list().onKeyDownCapture(event(list, { key: 'p' }))
+  expect(fruit.composite.typeahead()).toBe('ap')
+  expect(fruit.composite()).toBe(fruit.itemId('Apple'))
+
+  fruit.props.popover().onKeyDownCapture(event(list, { key: 'r' }))
+  expect(fruit.composite.typeahead()).toBe('apr')
+  expect(fruit.composite()).toBe(fruit.itemId('Apricot'))
+})
+
 // --- the composite option ----------------------------------------------------
 
 test('with a combobox the list is not the composite element', () => {
