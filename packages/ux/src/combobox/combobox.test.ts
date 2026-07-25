@@ -966,6 +966,48 @@ test('an IME composition does not arm the auto-select until it ends', () => {
   expect(fruit.canAutoSelect()).toBe(true)
 })
 
+// react-components 0.3.2: "Fixed `Combobox` with `autoSelect` moving focus
+// between Korean IME composition steps." Ariakit re-arms its `canAutoSelectRef`
+// from an effect on the value as well, so every composition step — each of which
+// is a value change — armed the auto-select again and moved the active item away
+// while the syllable was still being composed; the fix is a second
+// `composingRef` that suppresses that re-arm. Here the input handler is the only
+// writer of the flag, so a composition step can only ever clear it.
+test('a composition step does not move the active item, the end of one does', () => {
+  const hangul = reatomCombobox({ autoSelect: true, name: 'hangul' }).extend(
+    withComboboxAutoSelect(),
+  )
+  const { input } = mount(hangul, ['한국', '항구'])
+  // the auto-select only runs while the input still holds focus
+  Object.assign(input, { ownerDocument: { activeElement: input } })
+
+  const un = hangul.subscribe(() => {})
+  hangul.popover.show()
+  hangul.popover.positioned.set(true)
+  notify()
+  expect(hangul.composite()).toBe(null)
+
+  // ㅎ → 하 → 한: one `input` event per jamo, all inside one composition
+  for (const step of ['ㅎ', '하', '한']) {
+    typed(input, step)
+    hangul.props
+      .input()
+      .onInput(
+        event(input, { inputType: 'insertCompositionText', isComposing: true }),
+      )
+    notify()
+    expect(hangul()).toBe(step)
+    expect(hangul.canAutoSelect()).toBe(false)
+    expect(hangul.composite()).toBe(null)
+  }
+
+  // the syllable is committed, so now the first item is the one Enter takes
+  hangul.props.input().onCompositionEnd()
+  notify()
+  expect(hangul.composite()).toBe(hangul.itemId('한국'))
+  un()
+})
+
 test('a React synthetic event carries the input details on nativeEvent', () => {
   const fruit = reatomCombobox({ autoComplete: 'inline', name: 'fruit' })
   const { input } = mount(fruit, ['Apple'])
