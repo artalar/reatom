@@ -29,6 +29,9 @@ import type { ComboboxModel } from './reatomCombobox'
  *   `tag` edge of `combobox` is type-only, and a runtime import would make
  *   every combobox pull the tag module in. Both copies should move to
  *   `interactions/` together.
+ *
+ *   Only the `tag` copy is re-exported from `src/index.ts`, since two identical
+ *   public `isTouchDevice` names cannot coexist there.
  */
 export const isTouchDevice = (): boolean =>
   canUseDOM() && !!navigator.maxTouchPoints

@@ -44,9 +44,9 @@ See [`PORTING_PLAN.md`](PORTING_PLAN.md) for the universal port template.
 | `toolbar`            | 3    | `composite`                                       | ported  | Composite + separator orientation |
 | `tag`                | 3    | `composite`                                       | ported  | Input caret + delimiter intents   |
 | `menubar`            | 3    | `composite`                                       | ported  | Awaits `menu` for submenus        |
-| `composite-overflow` | 3    | `popover`                                         | todo    |                                   |
-| `hovercard`          | 4    | `popover`                                         | todo    |                                   |
-| `combobox`           | 4    | `composite`, `popover`, (`tag`)                   | todo    |                                   |
+| `composite-overflow` | 3    | `popover`                                         | ported  | Transparent, not `display: none`  |
+| `hovercard`          | 4    | `popover`                                         | ported  | Delays sampled; safe polygon      |
+| `combobox`           | 4    | `composite`, `popover`, (`tag`)                   | ported  | Inline completion + virtual focus |
 | `select`             | 4    | `composite`, `popover`, (`combobox`)              | todo    |                                   |
 | `tooltip`            | 5    | `hovercard`                                       | todo    |                                   |
 | `menu`               | 5    | `composite`, `hovercard`, (`combobox`, `menubar`) | todo    |                                   |
@@ -57,11 +57,15 @@ See [`PORTING_PLAN.md`](PORTING_PLAN.md) for the universal port template.
 ## Progress snapshot
 
 - **Ported:** disclosure, collection, checkbox, focusable, command, composite,
-  dialog, popover, radio, toolbar, tag, menubar
-- **Unlocked next:** composite-overflow, hovercard — both only need `popover`.
-- **`combobox` / `select`:** `port-status` reports `combobox` as unlocked because
-  its store imports (`composite`, `popover`, `tag`) are ported, but the store
-  graph undercounts it: `combobox` still needs the textbox/list surface
-  (`focusable` text-field paths, `queueBeforeEvent` typeahead, virtual focus),
-  and `select` needs `combobox` on top of that. Port `composite-overflow` and
-  `hovercard` first.
+  dialog, popover, radio, toolbar, tag, menubar, composite-overflow, hovercard,
+  combobox
+- **Unlocked next:** select, tooltip, menu, tab.
+  - `select` — `composite` and `popover` are ported, and its `combobox` edge is
+    type-only and satisfied anyway.
+  - `tooltip` — needs `hovercard` only.
+  - `menu` — `composite` and `hovercard` are ported; its `combobox` and
+    `menubar` edges are type-only and both satisfied.
+  - `tab` — `collection` and `composite` are ported; its `combobox` and `select`
+    edges are type-only (`tab-store.ts` imports both with `import type`), so
+    `port-status` still lists only menu, select, and tooltip — it reads import
+    edges without distinguishing type-only ones.

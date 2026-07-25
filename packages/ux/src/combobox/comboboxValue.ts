@@ -226,8 +226,13 @@ export const comboboxInputValue = ({
   return activeValue
 }
 
-/** The `input` event shape {@link canComboboxInline} reads. */
-export interface ComboboxInputEvent {
+/**
+ * The `input` event shape {@link canComboboxInline} reads.
+ *
+ * Named apart from the record-level `ComboboxInputEvent` of `props.ts`, which
+ * is the full event the `input` prop record binds; both are public.
+ */
+export interface ComboboxInlineInputEvent {
   /**
    * The `inputType` of a native `InputEvent`. Anything else — a synthetic
    * event, a programmatic write — is not an insertion we can reason about.
@@ -265,7 +270,7 @@ export const canComboboxInline = ({
   inputType,
   selectionStart,
   value,
-}: ComboboxInputEvent): boolean => {
+}: ComboboxInlineInputEvent): boolean => {
   const inserted =
     inputType === 'insertText' || inputType === 'insertCompositionText'
   // A field with no selection API reports `null`, which Ariakit's
