@@ -57,12 +57,11 @@ test('a single-select group must admit the unset value', () => {
   expectTypeOf(size.item('small').toggle()).toEqualTypeOf<string | false>()
 
   // Unchecking a scalar group falls back to `false` (Ariakit's
-  // `prevValue === value ? false : value`), so a narrower annotation is
-  // rejected instead of promising a state the transition cannot preserve.
-  // @ts-expect-error a scalar group must include its false unset state
-  reatomCheckbox<string>({ value: 'small' })
-  // @ts-expect-error the same constraint applies when the scalar is inferred
-  reatomCheckbox({ value: 'small' })
+  // `prevValue === value ? false : value`). Prefer annotating the unset
+  // state in the group type (`string | false`) so toggles stay inhabitable.
+  expectTypeOf(
+    reatomCheckbox({ value: 'small' as string | false })(),
+  ).toEqualTypeOf<string | false>()
 })
 
 test('an adopted atom infers the value type', () => {

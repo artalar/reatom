@@ -44,14 +44,6 @@ type CheckboxItemValueFor<T extends CheckboxValue> =
     ? Extract<Item, CheckboxItemValue>
     : Extract<T, CheckboxItemValue>
 
-type CheckboxOptionsConstraint<T extends CheckboxValue> = [
-  Extract<T, CheckboxItemValue>,
-] extends [never]
-  ? unknown
-  : false extends T
-    ? unknown
-    : never
-
 /**
  * Derives the tri-state checked flag of one checkbox from the group value.
  *
@@ -314,17 +306,11 @@ export interface CheckboxOptions<T extends CheckboxValue = CheckboxValue> {
  * @param options - See {@link CheckboxOptions}.
  * @returns The value atom extended with the checkbox units.
  */
-export function reatomCheckbox(
-  options?: CheckboxOptions<CheckboxChecked>,
-): CheckboxModel<CheckboxChecked>
-
-export function reatomCheckbox<T extends CheckboxValue>(
-  options: CheckboxOptions<T> & CheckboxOptionsConstraint<T>,
-): CheckboxModel<T>
-
-export function reatomCheckbox(options: CheckboxOptions = {}): CheckboxModel {
+export function reatomCheckbox<T extends CheckboxValue = CheckboxChecked>(
+  options: CheckboxOptions<T> = {},
+): CheckboxModel<T> {
   const {
-    value: initValue = false,
+    value: initValue = false as T,
     valueAtom,
     disabled: initDisabled = false,
     readOnly: initReadOnly = false,
@@ -337,7 +323,9 @@ export function reatomCheckbox(options: CheckboxOptions = {}): CheckboxModel {
     )
   }
 
-  const value = valueAtom ? adoptAtom(valueAtom, name) : atom(initValue, name)
+  const value = (
+    valueAtom ? adoptAtom(valueAtom, name) : atom(initValue, name)
+  ) as Atom<T>
   const disabled = atom(initDisabled, `${name}.disabled`)
   const readOnly = atom(initReadOnly, `${name}.readOnly`)
   const editable = computed(
@@ -346,9 +334,9 @@ export function reatomCheckbox(options: CheckboxOptions = {}): CheckboxModel {
   )
 
   const createItem = (
-    itemValue: CheckboxItemValue | undefined,
+    itemValue: CheckboxItemValueFor<T> | undefined,
     itemName: string,
-  ): CheckboxItemModel => {
+  ): CheckboxItemModel<T> => {
     const checked = computed(
       () => isCheckboxItemChecked(value(), itemValue),
       `${itemName}.checked`,
@@ -356,9 +344,11 @@ export function reatomCheckbox(options: CheckboxOptions = {}): CheckboxModel {
     const mixed = computed(() => checked() === 'mixed', `${itemName}.mixed`)
     const element = atom<HTMLElement | null>(null, `${itemName}.element`)
 
-    const change = action((nextChecked: boolean) => {
+    const change = action((nextChecked: boolean): T => {
       if (!editable()) return value()
-      return value.set(nextCheckboxValue(value(), itemValue, nextChecked))
+      return value.set(
+        nextCheckboxValue(value(), itemValue, nextChecked) as T,
+      )
     }, `${itemName}.change`)
 
     const toggle = action(
@@ -380,9 +370,11 @@ export function reatomCheckbox(options: CheckboxOptions = {}): CheckboxModel {
     }
   }
 
-  const items = new Map<CheckboxItemValue, CheckboxItemModel>()
+  const items = new Map<CheckboxItemValueFor<T>, CheckboxItemModel<T>>()
 
-  const item = (itemValue: CheckboxItemValue): CheckboxItemModel => {
+  const item = (
+    itemValue: CheckboxItemValueFor<T>,
+  ): CheckboxItemModel<T> => {
     let model = items.get(itemValue)
     if (!model) {
       items.set(

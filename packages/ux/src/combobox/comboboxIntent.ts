@@ -21,10 +21,10 @@
  */
 export interface ComboboxKeyEvent {
   key: string
-  ctrlKey?: boolean
-  altKey?: boolean
-  shiftKey?: boolean
-  metaKey?: boolean
+  readonly ctrlKey?: boolean
+  readonly altKey?: boolean
+  readonly shiftKey?: boolean
+  readonly metaKey?: boolean
 }
 
 /**
@@ -131,8 +131,8 @@ export const isComboboxTypeaheadKey = (event: ComboboxKeyEvent): boolean => {
 /** The minimal shape of a pointer event the input's `onMouseDown` reads. */
 export interface ComboboxPointerEvent {
   /** `0` is the primary button; Ariakit ignores every other one. */
-  button?: number
-  ctrlKey?: boolean
+  readonly button?: number
+  readonly ctrlKey?: boolean
 }
 
 /**
