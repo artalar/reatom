@@ -302,9 +302,9 @@ test('the paste shortcut on an item is typing, unlike every other shortcut', () 
 
   expect(isComboboxTypeaheadKey({ key: 'v', metaKey: true })).toBe(true)
   expect(isComboboxTypeaheadKey({ key: 'v', ctrlKey: true })).toBe(true)
-  expect(isComboboxTypeaheadKey({ key: 'v', ctrlKey: true, altKey: true })).toBe(
-    false,
-  )
+  expect(
+    isComboboxTypeaheadKey({ key: 'v', ctrlKey: true, altKey: true }),
+  ).toBe(false)
 })
 
 // --- the pointer policy -----------------------------------------------------

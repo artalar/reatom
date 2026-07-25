@@ -55,8 +55,8 @@ const flushRestores = (
  *   per-key stack of restore callbacks (`orchestrate.ts`); this is a direct
  *   port.
  *
- *   A restore that is not the top of its stack only _marks_ its entry: running
- *   it would undo the mutation of a newer owner that is still active — the
+ *   A restore that is not the top of its stack only _marks_ its entry: running it
+ *   would undo the mutation of a newer owner that is still active — the
  *   background of an outer dialog becoming interactive again the moment the
  *   inner one closes (react-components 0.2.0, "stale nested dialog effects no
  *   longer restore page accessibility state while a newer effect is active").
@@ -240,8 +240,9 @@ const isElementNode = (value: unknown): value is Element =>
  *   longer closes the component before it receives focus").
  *
  *   Port of Ariakit's `getEventTargets` (`use-previous-mouse-down-ref.ts`)
- *   without its iframe host chain, which is a separate contract. A closed shadow
- *   root reports the retargeted path, so its internals stay private here too.
+ *   without its iframe host chain, which is a separate contract. A closed
+ *   shadow root reports the retargeted path, so its internals stay private here
+ *   too.
  * @returns The path, or the target alone for an event that has no
  *   `composedPath` (a synthetic one in a node test).
  */
