@@ -5,6 +5,6 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "types": ["vitest", "node"]
   },
-  "include": ["src", "spike", "tools"],
+  "include": ["src", "tools"],
   "exclude": ["build", "dist"]
 }

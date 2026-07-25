@@ -1,8 +1,8 @@
 # `@reatom/ux` — universal template for porting Ariakit to Reatom headless models
 
-> Status: plan / RFC. The package is `private` and publishes nothing. A validated spike lives in
-> [`spike/models.ts`](spike/models.ts) + [`spike/models.test.ts`](spike/models.test.ts) — verify it
-> with `pnpm -F @reatom/ux test` (7 passing) and `pnpm -F @reatom/ux typecheck` (clean).
+> Status: active port. The package is `private` while Wave 1+ land. See
+> [`PORTING_STATUS.md`](PORTING_STATUS.md) for the live checklist; verify with
+> `pnpm -F @reatom/ux test` and `pnpm -F @reatom/ux typecheck`.
 
 ## TL;DR
 

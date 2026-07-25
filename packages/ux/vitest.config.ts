@@ -5,11 +5,7 @@ export default defineConfig({
     sequence: { groupOrder: 20 },
     testTimeout: 5000,
     name: '@reatom/ux',
-    include: [
-      './src/**/*.test.ts',
-      './src/**/*.test-d.ts',
-      './spike/**/*.test.ts',
-    ],
+    include: ['./src/**/*.test.ts', './src/**/*.test-d.ts'],
     typecheck: {
       enabled: true,
       tsconfig: './tsconfig.json',
