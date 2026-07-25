@@ -98,20 +98,32 @@ Verified on this branch:
 | Command                           | Result                                                       |
 | --------------------------------- | ------------------------------------------------------------ |
 | `pnpm -F @reatom/ux typecheck`    | clean                                                        |
-| `pnpm -F @reatom/ux test:unit`    | 65 files, 1004 tests passed, no type errors                  |
-| `pnpm -F @reatom/ux test:browser` | 18 files, 136 tests passed                                   |
+| `pnpm -F @reatom/ux test:unit`    | 66 files, **1077** tests passed, no type errors              |
+| `pnpm -F @reatom/ux test:browser` | 19 files, **162** tests passed                               |
 | `pnpm -F @reatom/ux port-status`  | scanned 19, ported 17, partial 0, unlocked (none)            |
-| `pnpm -F @reatom/ux build`        | `tsdown` ESM + CJS + `.d.ts`, 401.61 kB ESM (110.80 kB gzip) |
 
-The unit figure splits into 27 node files carrying 756 runtime tests and 19
-`*.test-d.ts` files carrying 124 type tests; vitest counts the type files twice
-because they are collected by both the runtime project and the typecheck
-project, which is why the headline is 1004 rather than 880.
-
-Browser coverage is 17 feature files plus `smoke.test.browser.ts`. `menubar` and
-`toolbar` have none on purpose: both are thin `composite` wrappers whose only DOM
-story — roving tabindex and `aria-activedescendant` — is already asserted in
+`menubar` and `toolbar` have no dedicated browser files on purpose: both are thin
+`composite` wrappers whose DOM story is already asserted in
 `composite.test.browser.ts`.
+
+### Ariakit `main` sync
+
+Compared against Ariakit `main` after the solid/next fork — see
+[`MAIN_GAP_ANALYSIS.md`](MAIN_GAP_ANALYSIS.md). Store inventories match; gaps
+were post-fork behavior deltas and one React-only feature:
+
+| Item | Status |
+| ---- | ------ |
+| `composite-typeahead` + `typeaheadText` | done (`src/composite/typeahead.ts`) |
+| Anchor-element precedence (popover/combobox) | done |
+| Tag literal delimiter matching | done |
+| Disclosure per-property animation end time | done |
+| Dialog `scrollbar-gutter` scroll lock | done |
+| Dialog Esc containment | done |
+| Changelog regression sweep | done ([`MAIN_SWEEP_NOTES.md`](MAIN_SWEEP_NOTES.md)) |
+
+Still deferred from that analysis: `composite-container`, `UndoManager` (core),
+virtualized renderers.
 
 ### Known gaps
 
