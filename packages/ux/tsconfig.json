@@ -3,7 +3,8 @@
   "compilerOptions": {
     "declarationMap": true,
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
-    "types": ["vitest"]
+    "types": ["vitest", "node"]
   },
+  "include": ["src", "spike", "tools"],
   "exclude": ["build", "dist"]
 }

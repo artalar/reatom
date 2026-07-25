@@ -14,6 +14,9 @@ export default defineConfig({
       './packages/preact/vitest.browser.config.ts',
       './packages/solid-js/vitest.browser.config.ts',
       './packages/vue/vitest.config.ts',
+      './packages/ux/vitest.config.ts',
+      './packages/ux/vitest.browser.config.ts',
     ],
   },
 })
+
