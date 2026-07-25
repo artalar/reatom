@@ -1,6 +1,7 @@
 import { context, notify, sleep } from '@reatom/core'
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
+import { withDialogDismiss } from '../dialog/reatomDialogDom'
 import type { Hovercard } from './reatomHovercard'
 import { reatomHovercard } from './reatomHovercard'
 import { withHovercardDom } from './reatomHovercardDom'
@@ -313,6 +314,92 @@ test('a nested card is part of the card for the pointer', async () => {
 
   await sleep(HIDE_MS * 2)
   expect(hovercard()).toBe(true)
+})
+
+// react-components 0.3.0: "Fixed `Hovercard` so it stays open when hovering
+// content rendered inside an open shadow root." A composed event is retargeted
+// to the shadow host by the time a document listener reads `event.target`, and
+// the host is not the card — only `composedPath()` still points at the element
+// the pointer is really over.
+test('the pointer on a card inside an open shadow root keeps it open', async () => {
+  const { hovercard, card } = await mount()
+  const host = box({ top: '0px', left: '0px' })
+  host.attachShadow({ mode: 'open' }).append(card)
+
+  // opened without ever hovering the anchor, so there is no safe polygon to
+  // keep the card open: being on the card is the only thing that can
+  hovercard.show()
+  await settle()
+  expect(hovercard.enterPoint()).toBe(null)
+
+  // what a document listener would see instead of the card
+  const seen: Array<EventTarget | null> = []
+  document.addEventListener('mousemove', (event) => seen.push(event.target), {
+    capture: true,
+    once: true,
+  })
+
+  dispatch(card, 'mousemove', centre(card))
+
+  expect(seen).toEqual([host])
+  expect(hovercard.hidePending()).toBe(false)
+
+  await sleep(HIDE_MS * 2)
+  expect(hovercard()).toBe(true)
+})
+
+// react-components 0.3.0: "Fixed nested `Hovercard` components so pressing
+// Escape closes the topmost card even when focus is on another element."
+// Ariakit answers "am I the topmost?" by marking every element outside each open
+// dialog and asking whether its own element got marked; here the nesting is
+// declared, so `topmost` is a derivation of the stack and of the `open` atoms.
+test('Escape closes the topmost nested card, wherever focus is', async () => {
+  const outer = reatomHovercard({ showTimeout: 0, name: 'outer' }).extend(
+    withDialogDismiss(),
+  )
+  const inner = reatomHovercard({
+    parent: outer,
+    showTimeout: 0,
+    name: 'inner',
+  }).extend(withDialogDismiss())
+
+  outer.props.content().ref(box({ top: '60px', left: '100px' }))
+  inner.props.content().ref(box({ top: '60px', left: '220px' }))
+  cleanups.push(outer.subscribe(() => {}))
+  cleanups.push(inner.subscribe(() => {}))
+
+  // focus is on something that is neither card, nor a disclosure of either —
+  // and it was there before the cards opened, so no interaction moved it out
+  const elsewhere = box({ top: '300px', left: '0px' }, 'button')
+  elsewhere.focus()
+  expect(document.activeElement).toBe(elsewhere)
+
+  outer.show()
+  inner.show()
+  await settle()
+  expect(outer()).toBe(true)
+  expect(inner()).toBe(true)
+
+  const escape = () => {
+    elsewhere.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
+    return settle()
+  }
+
+  expect(outer.topmost()).toBe(false)
+  expect(inner.topmost()).toBe(true)
+
+  await escape()
+  expect(inner()).toBe(false)
+  expect(outer()).toBe(true)
+
+  await escape()
+  expect(outer()).toBe(false)
 })
 
 test('the pointer-transition events are suppressed during an approach', async () => {
