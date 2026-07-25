@@ -72,7 +72,7 @@ const trackMoves = (tab: Tab) => {
   const track = effect(() => {
     for (const call of getCalls(tab.composite.move)) moves.push(call.params[0])
   }, 'moves')
-  return { moves, unsubscribe: track.subscribe(() => {}) }
+  return { moves, unsubscribe: track.unsubscribe }
 }
 
 /** The only two `FocusEvent` fields the composite prop records read. */
@@ -311,7 +311,6 @@ test('select sets the selection and moves the active tab as an event', async () 
   const track = effect(() => {
     for (const call of getCalls(tab.composite.move)) moves.push(call.params[0])
   }, 'moves')
-  const unsubscribe = track.subscribe(() => {})
 
   expect(tab.select('two')).toBe('two')
   await null
@@ -321,7 +320,7 @@ test('select sets the selection and moves the active tab as an event', async () 
   // the move is what `withCompositeFocus()` observes to move real DOM focus
   expect(moves).toEqual(['two'])
 
-  unsubscribe()
+  track.unsubscribe()
 })
 
 test('select refuses a disabled tab and swallows "nowhere to go"', () => {
@@ -401,6 +400,25 @@ test('an unrendered panel has no tab, and unknown ids never throw', () => {
 
   tab.panels.renderItem({ id: 'p1' })
   expect(panel.tabId()).toBe('one')
+})
+
+test('an explicitly paired panel is discoverable only while rendered', () => {
+  const tab = reatomTab({
+    panels: [{ id: 'p1', tabId: 'one' }],
+    name: 'tab',
+  })
+  const [one] = renderTabs(tab, 'one')
+
+  expect(tab.panelFor('one')).toBe(null)
+  expect(tab.props.tab(one!)()['aria-controls']).toBe(undefined)
+
+  const panel = tab.panels.renderItem({ id: 'p1' })
+  expect(tab.panelFor('one')).toBe(panel)
+  expect(tab.props.tab(one!)()['aria-controls']).toBe('p1')
+
+  tab.panels.unrenderItem('p1')
+  expect(tab.panelFor('one')).toBe(null)
+  expect(tab.props.tab(one!)()['aria-controls']).toBe(undefined)
 })
 
 // --- preserve and restore ---------------------------------------------------
@@ -641,6 +659,26 @@ test('a selection that follows a move does not ask for focus twice', async () =>
   unsubscribe()
 })
 
+test('a queued focus move is cancelled when the tab disconnects', async () => {
+  const document = reatomDocument()
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+  const tabs = ['one', 'two'].map((id) =>
+    tab.tabs.renderItem({ id, element: elementIn(document) }),
+  )
+  const { moves, unsubscribe } = trackMoves(tab)
+  const disconnect = connect(tab)
+  document.activeElement = tabs[0]!.element()
+
+  tab.set('two')
+  notify()
+  disconnect()
+  await null
+  notify()
+
+  expect(moves).toEqual([])
+  unsubscribe()
+})
+
 // --- prop records -----------------------------------------------------------
 
 test('the tab list record is the composite base plus the tablist ARIA', () => {
@@ -696,7 +734,6 @@ test('clicking a tab selects it without moving the active tab', async () => {
   const track = effect(() => {
     for (const call of getCalls(tab.composite.move)) moves.push(call.params[0])
   }, 'moves')
-  const unsubscribe = track.subscribe(() => {})
 
   // a click has already put DOM focus on the tab, so Ariakit only sets the
   // selection — the active tab follows through the derivation
@@ -721,7 +758,7 @@ test('clicking a tab selects it without moving the active tab', async () => {
   expect(prevented).toBe(true)
   expect(tab()).toBe('two')
 
-  unsubscribe()
+  track.unsubscribe()
 })
 
 test('focusing a tab activates it without selecting it', () => {

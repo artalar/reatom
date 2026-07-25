@@ -9,7 +9,7 @@
  * `packages/ariakit-react-components/src/composite/composite-separator.tsx`.
  */
 
-import type { Computed, Ext } from '@reatom/core'
+import type { Computed } from '@reatom/core'
 import { computed } from '@reatom/core'
 
 import type { CompositeOrientation } from '../composite/getNextId'
@@ -162,11 +162,12 @@ export const toolbarProps = (
  *
  * @remarks
  *   The composite records are upgraded **in place**, which is why this is an
- *   `Ext` and not an assigner: `extend` refuses to replace an existing member,
- *   and the toolbar's `base` record wraps the composite's rather than
- *   substituting for it. Mutating the one record object also keeps the identity
- *   of the memoized item records, so an adapter that already attached their
- *   handlers is unaffected.
+ *   in-place extension and not an assigner: `extend` refuses to replace an
+ *   existing member, and the toolbar's `base` record wraps the composite's
+ *   rather than substituting for it. Mutating the one record object also keeps
+ *   the identity of the memoized item records, so an adapter that already
+ *   attached their handlers is unaffected. The generic return preserves any
+ *   extensions the composite already carries.
  * @example
  *   const toolbar = reatomComposite({
  *     focusLoop: true,
@@ -175,12 +176,12 @@ export const toolbarProps = (
  */
 export const withToolbarProps = (
   options: ToolbarPropsOptions = {},
-): Ext<Composite, Toolbar> => {
-  return (target) => {
+): (<Target extends Composite>(target: Target) => Target & Toolbar) => {
+  return <Target extends Composite>(target: Target): Target & Toolbar => {
     Object.assign(
       target.props,
       toolbarProps(target, { composite: target.props, ...options }),
     )
-    return target as Toolbar
+    return target as Target & Toolbar
   }
 }

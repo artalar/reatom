@@ -10,9 +10,9 @@
 
 import type { Ext } from '@reatom/core'
 import {
-  effect,
+  abortVar,
+  addChangeHook,
   getCalls,
-  ifChanged,
   withConnectHook,
   wrap,
 } from '@reatom/core'
@@ -76,36 +76,32 @@ export const withTabFocus = <T extends TabModel>(): Ext<T, T> => {
   return (target) =>
     target.extend(
       withConnectHook(() => {
-        effect(() => {
-          // Read in a fixed order and unconditionally: `getCalls` and
-          // `ifChanged` both address their dependency by position.
-          const moves = getCalls(target.composite.move)
+        const signal = abortVar.require().signal
 
-          ifChanged(target, (selected, _previous, isFirst) => {
-            // The first run is the connection, not a selection change; the
-            // seeded selection has no focus to move.
-            if (isFirst) return
-            // A move already asks for focus, so a selection that follows one is
-            // not a reason to ask again — Ariakit's `activeId !==
-            // selectedTab.id` guard, which holds for the same cases.
-            if (moves.length) return
-            if (selected == null) return
+        return addChangeHook(target, (selected) => {
+          // A move already asks for focus, so a selection that follows one is
+          // not a reason to ask again — Ariakit's `activeId !==
+          // selectedTab.id` guard, which holds for the same cases.
+          if (getCalls(target.composite.move).length) return
+          if (selected == null) return
 
-            const items = target.tabs.renderedItems()
-            const tab = items.find((item) => item.id === selected)
-            if (!isSelectableTab(tab)) return
+          const items = target.tabs.renderedItems()
+          const tab = items.find((item) => item.id === selected)
+          if (!isSelectableTab(tab)) return
 
-            const focused = getFocusedTab(items)
-            if (!focused || focused === tab) return
+          const focused = getFocusedTab(items)
+          if (!focused || focused === tab) return
 
-            // Deferred like the focus call of `withCompositeFocus()`, and for
-            // the same reason: the view has to apply the props of this
-            // selection before anything focuses an element. A `move` from
-            // inside the very effect that observes `move` calls would also
-            // close a cycle in the frame's cause chain.
-            queueMicrotask(wrap(() => target.composite.move(selected)))
-          })
-        }, `${target.name}.focusOnSelect`)
+          // Deferred like the focus call of `withCompositeFocus()`, and for
+          // the same reason: the view has to apply the props of this selection
+          // before anything focuses an element.
+          queueMicrotask(
+            wrap(() => {
+              if (signal.aborted) return
+              target.composite.move(selected)
+            }),
+          )
+        })
       }),
     )
 }

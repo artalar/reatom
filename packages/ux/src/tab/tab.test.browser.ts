@@ -1,5 +1,5 @@
 import type { Computed } from '@reatom/core'
-import { atom, context, notify } from '@reatom/core'
+import { atom, context, notify, wrap } from '@reatom/core'
 import { afterEach, beforeEach, expect, test } from 'vitest'
 
 import { withCompositeFocus } from '../composite/reatomCompositeDom'
@@ -238,7 +238,10 @@ test('a controlled selection keeps focus outside the tab list where it is', asyn
   button.textContent = 'select the third tab'
   container.after(button)
   cleanups.push(() => button.remove())
-  button.addEventListener('click', () => tab.set('three'))
+  button.addEventListener(
+    'click',
+    wrap(() => tab.set('three')),
+  )
 
   button.focus()
   button.click()

@@ -222,9 +222,9 @@ export interface TabUnits {
   /** The selected tab, `null` when nothing or an unknown tab is selected. */
   selectedTab: Computed<CompositeItemNode | null>
   /**
-   * The panel of a tab, or `null` for an unknown tab, an unpaired one, or a
-   * nullish id. Never throws: unknown ids are normal during mount/unmount
-   * races.
+   * The rendered panel of a tab, or `null` for an unknown tab, an unpaired or
+   * unrendered panel, or a nullish id. Never throws: missing ids and elements
+   * are normal during mount/unmount races.
    */
   panelFor: (tabId?: string | null) => TabPanelNode | null
   /**
@@ -446,13 +446,6 @@ export const reatomTab = (options: TabOptions = {}): Tab => {
     name: `${name}.panels`,
   })
 
-  const seedSelectedId = (state: string | null | undefined) => {
-    // Read unconditionally: a conditional read would drop the dependency and
-    // the seed would never arrive once a tab renders.
-    const first = getFirstEnabledId(composite.navigationItems())
-    return state === undefined ? first : state
-  }
-
   // Ariakit seeds the selection from a `sync` listener that writes the state
   // back ("Automatically set selectedId if it's undefined"). A write-back
   // derivation that must stay writable is exactly `withComputed`.
@@ -460,7 +453,12 @@ export const reatomTab = (options: TabOptions = {}): Tab => {
   // The cast works around `AtomState`, which drops `undefined` from a state
   // union because it infers through the optional `AtomLike.__state` property.
   selectedId.extend(
-    withComputed(seedSelectedId as (state: string | null) => string | null),
+    withComputed(((state: string | null | undefined) => {
+      // Read unconditionally: a conditional read would drop the dependency and
+      // the seed would never arrive once a tab renders.
+      const first = getFirstEnabledId(composite.navigationItems())
+      return state === undefined ? first : state
+    }) as (state: string | null) => string | null),
   )
 
   // The active tab follows the selected one, so `Tab` enters the widget at the
@@ -489,7 +487,9 @@ export const reatomTab = (options: TabOptions = {}): Tab => {
 
   const panelFor = (tabId?: string | null): TabPanelNode | null => {
     if (tabId == null) return null
-    return panels.array().find((panel) => panel.tabId() === tabId) ?? null
+    return (
+      panels.renderedItems().find((panel) => panel.tabId() === tabId) ?? null
+    )
   }
 
   const select = action((id?: string | null): string | null | undefined => {
