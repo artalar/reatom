@@ -21,38 +21,38 @@ See [`PORTING_PLAN.md`](PORTING_PLAN.md) for the universal port template.
 
 ## Legend
 
-| Status    | Meaning                                                |
-| --------- | ------------------------------------------------------ |
-| `todo`    | Not started                                            |
-| `partial` | Model started; prop records/tests/docs incomplete      |
+| Status    | Meaning                                              |
+| --------- | ---------------------------------------------------- |
+| `todo`    | Not started                                          |
+| `partial` | Model started; prop records/tests/docs incomplete    |
 | `ported`  | Model + tests (+ browser when needed) + export (1–4) |
-| `skipped` | Explicitly out of scope                                |
+| `skipped` | Explicitly out of scope                              |
 
 ## Features
 
-| Feature              | Wave | Depends on                                        | Status  | Notes |
-| -------------------- | ---- | ------------------------------------------------- | ------- | ----- |
-| `disclosure`         | 1    | —                                                 | ported  | |
-| `collection`         | 1    | —                                                 | ported  | |
-| `checkbox`           | 1    | —                                                 | ported  | |
+| Feature              | Wave | Depends on                                        | Status  | Notes                             |
+| -------------------- | ---- | ------------------------------------------------- | ------- | --------------------------------- |
+| `disclosure`         | 1    | —                                                 | ported  |                                   |
+| `collection`         | 1    | —                                                 | ported  |                                   |
+| `checkbox`           | 1    | —                                                 | ported  |                                   |
 | `focusable`          | 1    | —                                                 | ported  | No store — modality + per-element |
-| `command`            | 1    | —                                                 | ported  | Pure intent + thin model |
-| `composite`          | 2    | `collection`                                      | ported  | Keystone navigation |
+| `command`            | 1    | —                                                 | ported  | Pure intent + thin model          |
+| `composite`          | 2    | `collection`                                      | ported  | Keystone navigation               |
 | `dialog`             | 2    | `disclosure`                                      | ported  | Focus trap / inert / nested stack |
-| `popover`            | 3    | `dialog`                                          | todo    | |
-| `radio`              | 3    | `composite`                                       | todo    | |
-| `toolbar`            | 3    | `composite`                                       | todo    | |
-| `tag`                | 3    | `composite`                                       | todo    | |
-| `menubar`            | 3    | `composite`                                       | todo    | |
-| `composite-overflow` | 3    | `popover`                                         | todo    | |
-| `hovercard`          | 4    | `popover`                                         | todo    | |
-| `combobox`           | 4    | `composite`, `popover`, (`tag`)                   | todo    | |
-| `select`             | 4    | `composite`, `popover`, (`combobox`)              | todo    | |
-| `tooltip`            | 5    | `hovercard`                                       | todo    | |
-| `menu`               | 5    | `composite`, `hovercard`, (`combobox`, `menubar`) | todo    | |
-| `tab`                | 5    | `collection`, `composite`, (`combobox`, `select`) | todo    | |
-| `menu-bar`           | —    | `menubar`                                         | skipped | Alias of `menubar` |
-| `form`               | —    | `collection`                                      | skipped | Use `@reatom/core` forms |
+| `popover`            | 3    | `dialog`                                          | todo    |                                   |
+| `radio`              | 3    | `composite`                                       | todo    |                                   |
+| `toolbar`            | 3    | `composite`                                       | todo    |                                   |
+| `tag`                | 3    | `composite`                                       | todo    |                                   |
+| `menubar`            | 3    | `composite`                                       | todo    |                                   |
+| `composite-overflow` | 3    | `popover`                                         | todo    |                                   |
+| `hovercard`          | 4    | `popover`                                         | todo    |                                   |
+| `combobox`           | 4    | `composite`, `popover`, (`tag`)                   | todo    |                                   |
+| `select`             | 4    | `composite`, `popover`, (`combobox`)              | todo    |                                   |
+| `tooltip`            | 5    | `hovercard`                                       | todo    |                                   |
+| `menu`               | 5    | `composite`, `hovercard`, (`combobox`, `menubar`) | todo    |                                   |
+| `tab`                | 5    | `collection`, `composite`, (`combobox`, `select`) | todo    |                                   |
+| `menu-bar`           | —    | `menubar`                                         | skipped | Alias of `menubar`                |
+| `form`               | —    | `collection`                                      | skipped | Use `@reatom/core` forms          |
 
 ## Progress snapshot
 
