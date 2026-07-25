@@ -4,12 +4,12 @@ Scope: `packages/ux/src/tooltip/**` (7 files).
 
 ## Counts
 
-| Severity  | Found | Fixed | Open |
-| --------- | ----: | ----: | ---: |
-| Critical  |     0 |     0 |    0 |
-| High      |     2 |     2 |    0 |
-| Medium    |     0 |     0 |    0 |
-| Low       |     1 |     1 |    0 |
+| Severity  | Found | Fixed |  Open |
+| --------- | ----: | ----: | ----: |
+| Critical  |     0 |     0 |     0 |
+| High      |     2 |     2 |     0 |
+| Medium    |     0 |     0 |     0 |
+| Low       |     1 |     1 |     0 |
 | **Total** | **3** | **3** | **0** |
 
 Code changed: **yes**.
