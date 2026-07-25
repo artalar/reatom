@@ -32,6 +32,10 @@ The real gaps are two kinds:
 **7 actionable items** (1 new feature port, 5 small targeted fixes, 1
 changelog-driven review sweep), plus 3 deliberate "later" and a skip list.
 
+> **Status (2026-07-25):** all 7 actionable items are done on this branch.
+> See [`MAIN_SWEEP_NOTES.md`](MAIN_SWEEP_NOTES.md) for the changelog sweep
+> outcomes; typeahead lives in `src/composite/typeahead.ts`.
+
 ## How the comparison was made
 
 - `git diff pr-4378..origin/main -- packages/ariakit-components/src` — 9 of 19
