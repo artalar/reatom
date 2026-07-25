@@ -346,9 +346,7 @@ export function reatomCheckbox<T extends CheckboxValue = CheckboxChecked>(
 
     const change = action((nextChecked: boolean): T => {
       if (!editable()) return value()
-      return value.set(
-        nextCheckboxValue(value(), itemValue, nextChecked) as T,
-      )
+      return value.set(nextCheckboxValue(value(), itemValue, nextChecked) as T)
     }, `${itemName}.change`)
 
     const toggle = action(
@@ -372,9 +370,7 @@ export function reatomCheckbox<T extends CheckboxValue = CheckboxChecked>(
 
   const items = new Map<CheckboxItemValueFor<T>, CheckboxItemModel<T>>()
 
-  const item = (
-    itemValue: CheckboxItemValueFor<T>,
-  ): CheckboxItemModel<T> => {
+  const item = (itemValue: CheckboxItemValueFor<T>): CheckboxItemModel<T> => {
     let model = items.get(itemValue)
     if (!model) {
       items.set(
