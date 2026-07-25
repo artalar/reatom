@@ -316,6 +316,49 @@ test('a nested card is part of the card for the pointer', async () => {
   expect(hovercard()).toBe(true)
 })
 
+test('focus inside a nested card pins its parent open', async () => {
+  const { hovercard, anchor, outside } = await mount()
+  const submenu = reatomHovercard({
+    parent: hovercard,
+    name: 'h.submenu',
+  })
+  const submenuCard = box({
+    top: '60px',
+    left: '220px',
+    width: '100px',
+    height: '100px',
+  })
+  const submenuButton = document.createElement('button')
+  submenuCard.append(submenuButton)
+  submenu.props.content().ref(submenuCard)
+  submenu.show()
+  await open(hovercard, anchor)
+
+  submenuButton.focus()
+  expect(document.activeElement).toBe(submenuButton)
+  dispatch(outside, 'mousemove', centre(outside))
+
+  expect(hovercard.hidePending()).toBe(false)
+  await sleep(HIDE_MS * 2)
+  expect(hovercard()).toBe(true)
+})
+
+test('the disclosure is part of the card for the pointer', async () => {
+  const { hovercard, anchor } = await mount()
+  const disclosure = box(
+    { top: '20px', left: '100px', width: '20px', height: '20px' },
+    'button',
+  )
+  hovercard.props.disclosure().ref(disclosure)
+  await open(hovercard, anchor)
+
+  dispatch(disclosure, 'mousemove', centre(disclosure))
+
+  expect(hovercard.hidePending()).toBe(false)
+  await sleep(HIDE_MS * 2)
+  expect(hovercard()).toBe(true)
+})
+
 // react-components 0.3.0: "Fixed `Hovercard` so it stays open when hovering
 // content rendered inside an open shadow root." A composed event is retargeted
 // to the shadow host by the time a document listener reads `event.target`, and
@@ -344,6 +387,25 @@ test('the pointer on a card inside an open shadow root keeps it open', async () 
   expect(seen).toEqual([host])
   expect(hovercard.hidePending()).toBe(false)
 
+  await sleep(HIDE_MS * 2)
+  expect(hovercard()).toBe(true)
+})
+
+test('the pointer on a shadow-root widget inside the card keeps it open', async () => {
+  const { hovercard, anchor, card } = await mount()
+  const widget = document.createElement('span')
+  const shadow = widget.attachShadow({ mode: 'open' })
+  const button = document.createElement('button')
+  shadow.append(button)
+  card.append(widget)
+  await open(hovercard, anchor)
+
+  // Reaching ordinary card content clears the transit polygon. The shadow
+  // widget must then be recognized from its composed path alone.
+  dispatch(card, 'mousemove', centre(card))
+  dispatch(button, 'mousemove', centre(card))
+
+  expect(hovercard.hidePending()).toBe(false)
   await sleep(HIDE_MS * 2)
   expect(hovercard()).toBe(true)
 })

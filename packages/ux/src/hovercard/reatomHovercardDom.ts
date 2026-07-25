@@ -224,20 +224,25 @@ export const withHovercardHover = (): GenericExt<HovercardModel> => (target) =>
           if (!context) return
           const { card, polygon } = context
 
-          // `composedPath()[0]` instead of `target`, so an element inside a
-          // shadow root is still recognized as part of the card.
-          const [eventTarget] = event.composedPath() as Array<Node>
-          const onAnchor = contains(target.anchorElement(), eventTarget)
+          // Membership in the full composed path recognizes light-DOM
+          // descendants as well as widgets rendered inside shadow roots.
+          const path = event.composedPath()
+          const anchor = target.anchorElement()
+          const disclosure = target.disclosureElement()
+          const onAnchor =
+            (!!anchor && path.includes(anchor)) ||
+            (!!disclosure && path.includes(disclosure))
+          const nestedCards = target.nestedCards()
           const point = getEventPoint(event)
 
           const intent = mapHovercardMoveIntent({
             moving: target.moving(),
             focusWithin: hasFocusWithin(card),
             onCard:
-              contains(card, eventTarget) ||
-              target
-                .nestedCards()
-                .some((element) => contains(element, eventTarget)),
+              path.includes(card) ||
+              nestedCards.some(
+                (element) => hasFocusWithin(element) || path.includes(element),
+              ),
             onAnchor,
             hidePending: target.hidePending(),
             inPolygon: !!polygon && isPointInPolygon(point, polygon),

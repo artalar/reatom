@@ -126,20 +126,6 @@ export const isPointInPolygon = (
   return inside
 }
 
-/** Which sides of the rect the enter point is outside of. */
-const getEnterPointPlacement = (
-  enterPoint: Point,
-  rect: PolygonRect,
-): readonly ['left' | 'right' | null, 'top' | 'bottom' | null] => {
-  const { top, right, bottom, left } = rect
-  const [x, y] = enterPoint
-
-  return [
-    x < left ? 'left' : x > right ? 'right' : null,
-    y < top ? 'top' : y > bottom ? 'bottom' : null,
-  ] as const
-}
-
 /**
  * The polygon the pointer may travel through without the card closing: the
  * point it left the anchor at, plus the card's box.
@@ -167,7 +153,9 @@ export const getSafePolygon = (
   enterPoint: Point,
 ): Polygon => {
   const { top, right, bottom, left } = rect
-  const [x, y] = getEnterPointPlacement(enterPoint, rect)
+  const [enterX, enterY] = enterPoint
+  const x = enterX < left ? 'left' : enterX > right ? 'right' : null
+  const y = enterY < top ? 'top' : enterY > bottom ? 'bottom' : null
   const polygon: Polygon = [enterPoint]
 
   if (x) {

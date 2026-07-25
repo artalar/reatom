@@ -662,6 +662,22 @@ test('the anchor record opens the card and adopts the hovered element', () => {
   expect(hovercard.disclosureElement()).toBe(anchor)
 })
 
+test('a hover show restores the anchor after a disclosure ref render', async () => {
+  const hovercard = reatomHovercard({ timeout: 0, name: 'h' })
+  const anchor = element('anchor')
+  const disclosure = element('disclosure')
+
+  hovercard.props.anchor().onMouseMove({ currentTarget: anchor, movementX: 4 })
+  // Showing changes the disclosure prop record. A renderer can detach and
+  // reattach its callback ref during that update, temporarily restoring the
+  // hidden button as the disclosure element.
+  hovercard.props.disclosure().ref(disclosure)
+  expect(hovercard.disclosureElement()).toBe(disclosure)
+
+  await null
+  expect(hovercard.disclosureElement()).toBe(anchor)
+})
+
 test('the anchor record ignores everything that is not hover intent', () => {
   const hovercard = reatomHovercard({ timeout: 0, name: 'h' })
   const anchor = element('anchor')

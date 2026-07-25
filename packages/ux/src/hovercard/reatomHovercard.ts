@@ -361,7 +361,18 @@ export const withHovercard = (
       showDelay,
       () => {
         if (!moving()) return
+        const anchor = popover.anchorElement()
         popover.show()
+        // Showing recomputes the disclosure prop record. A renderer may
+        // reattach its callback ref and temporarily restore the hidden button;
+        // reassert the hovered anchor after that render, as Ariakit does.
+        if (anchor) {
+          queueMicrotask(
+            wrap(() => {
+              popover.disclosureElement.set(anchor)
+            }),
+          )
+        }
       },
       'showDelayed',
     )
@@ -483,7 +494,7 @@ export const withHovercard = (
  *   // @reatom/jsx
  *   ;<>
  *   <a $spread={profile.props.anchor}>@username</a>
- *   <button $spread={profile.props.disclosure} />
+ *   <button $spread={profile.props.disclosure}>Details</button>
  *   <div $spread={profile.props.wrapper}>
  *   <div $spread={profile.props.content}>...</div>
  *   </div>
