@@ -25,13 +25,13 @@ export const isTouchDevice = (): boolean =>
   canUseDOM() && !!navigator.maxTouchPoints
 
 /**
- * Fills in {@link TagModel.touch} from the device once touch state is used.
+ * Fills in {@link TagModel.touch} from the device, once the model is used.
  *
  * @remarks
  *   Ariakit probes the device in an effect (`useTouchDevice`) rather than during
  *   render, so that server-rendered markup is the pointer variant and hydration
  *   cannot mismatch. The connect hook is the same deferral: the atom keeps its
- *   `false` default until a touch-dependent prop record subscribes to it.
+ *   `false` default until something subscribes to the model.
  * @example
  *   const invitees = reatomTag({ name: 'invitees' }).extend(withTagTouch())
  *
@@ -40,14 +40,12 @@ export const isTouchDevice = (): boolean =>
  *   invitees.props.remove('react')().role // 'button'
  */
 export const withTagTouch = <T extends TagModel>(): Ext<T, T> => {
-  return (target) => {
-    target.touch.extend(
+  return (target) =>
+    target.extend(
       withConnectHook(() => {
         target.touch.set(isTouchDevice())
       }),
     )
-    return target
-  }
 }
 
 /**

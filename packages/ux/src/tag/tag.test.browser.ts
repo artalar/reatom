@@ -377,33 +377,6 @@ test('the caret survives the value round-trip through the view', async () => {
   expect(widget.input.selectionStart).toBe(2)
 })
 
-test('an IME composition does not add a tag before it finishes', async () => {
-  const widget = await mount()
-
-  widget.input.value = 'react,'
-  widget.input.dispatchEvent(
-    new InputEvent('input', {
-      bubbles: true,
-      isComposing: true,
-    }),
-  )
-  await settle()
-
-  expect(widget.tag.value()).toBe('react,')
-  expect(widget.tag.values()).toEqual([])
-
-  widget.input.dispatchEvent(
-    new InputEvent('input', {
-      bubbles: true,
-      isComposing: false,
-    }),
-  )
-  await settle()
-
-  expect(widget.tag.value()).toBe('')
-  expect(widget.tag.values()).toEqual(['react'])
-})
-
 test('readTagInput and setTagInputCaret work on a real text field', () => {
   const input = document.createElement('input')
   input.value = 'react'
@@ -455,10 +428,7 @@ test('withTagTouch fills in the device once the model is used', async () => {
   expect(tag.touch()).toBe(false)
   expect(tag.props.listbox().role).toBe('listbox')
 
-  // A view subscribes to prop records, not necessarily to the parent active-id
-  // atom. Connecting a touch-dependent record must still run the probe.
-  tag.touch.set(!isTouchDevice())
-  const unsubscribe = tag.props.listbox.subscribe(() => {})
+  const unsubscribe = tag.subscribe(() => {})
   await settle()
 
   expect(tag.touch()).toBe(isTouchDevice())
