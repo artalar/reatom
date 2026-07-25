@@ -39,11 +39,11 @@ See [`PORTING_PLAN.md`](PORTING_PLAN.md) for the universal port template.
 | `command`            | 1    | —                                                 | ported  | Pure intent + thin model          |
 | `composite`          | 2    | `collection`                                      | ported  | Keystone navigation               |
 | `dialog`             | 2    | `disclosure`                                      | ported  | Focus trap / inert / nested stack |
-| `popover`            | 3    | `dialog`                                          | todo    |                                   |
-| `radio`              | 3    | `composite`                                       | todo    |                                   |
-| `toolbar`            | 3    | `composite`                                       | todo    |                                   |
-| `tag`                | 3    | `composite`                                       | todo    |                                   |
-| `menubar`            | 3    | `composite`                                       | todo    |                                   |
+| `popover`            | 3    | `dialog`                                          | ported  | Positioner injected, not bundled  |
+| `radio`              | 3    | `composite`                                       | ported  | Roving tabindex + native sync     |
+| `toolbar`            | 3    | `composite`                                       | ported  | Composite + separator orientation |
+| `tag`                | 3    | `composite`                                       | ported  | Input caret + delimiter intents   |
+| `menubar`            | 3    | `composite`                                       | ported  | Awaits `menu` for submenus        |
 | `composite-overflow` | 3    | `popover`                                         | todo    |                                   |
 | `hovercard`          | 4    | `popover`                                         | todo    |                                   |
 | `combobox`           | 4    | `composite`, `popover`, (`tag`)                   | todo    |                                   |
@@ -56,5 +56,12 @@ See [`PORTING_PLAN.md`](PORTING_PLAN.md) for the universal port template.
 
 ## Progress snapshot
 
-- **Ported:** disclosure, collection, checkbox, focusable, command, composite, dialog
-- **Unlocked next:** popover, radio, toolbar, tag, menubar
+- **Ported:** disclosure, collection, checkbox, focusable, command, composite,
+  dialog, popover, radio, toolbar, tag, menubar
+- **Unlocked next:** composite-overflow, hovercard — both only need `popover`.
+- **`combobox` / `select`:** `port-status` reports `combobox` as unlocked because
+  its store imports (`composite`, `popover`, `tag`) are ported, but the store
+  graph undercounts it: `combobox` still needs the textbox/list surface
+  (`focusable` text-field paths, `queueBeforeEvent` typeahead, virtual focus),
+  and `select` needs `combobox` on top of that. Port `composite-overflow` and
+  `hovercard` first.
