@@ -3,7 +3,7 @@ import type { ReatomAbortController } from '../methods'
 import { type Fn, isAbort, type Rec, type Unsubscribe } from '../utils'
 import type { Action, ActionState, Ext } from './'
 import { _enqueue, type Extend, extend, isAction, notify } from './'
-import { _createGlobal, ensureReatomGlobal, VERSION } from './globalStore'
+import { _createGlobal, ensureReatomGlobal } from './globalStore'
 
 /*
 Atom call flow:
@@ -409,12 +409,6 @@ export interface ContextAtom extends AtomLike<RootState, [], RootFrame> {
 export class ReatomError extends Error {}
 
 let reatomRuntime = ensureReatomGlobal()
-
-if (reatomRuntime.version !== VERSION) {
-  throw new ReatomError(
-    `can't use different versions of the library. Loaded: ${reatomRuntime.version}, duplicated: ${VERSION}`,
-  )
-}
 
 export let EXTENSIONS = reatomRuntime.extensions as Array<Ext>
 
@@ -1555,4 +1549,4 @@ export let mock = <Params extends any[], Payload>(
   }
 }
 
-STACK.push(context.start())
+if (context.count === 0) STACK.push(context.start())

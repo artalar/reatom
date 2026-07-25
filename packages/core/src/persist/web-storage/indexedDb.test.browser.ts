@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'test'
 
-import { atom } from '../../core'
+import { atom, ensureReatomGlobal } from '../../core'
 import { wrap } from '../../methods'
 import { sleep } from '../../utils'
 import type { PersistRecord } from '../index'
@@ -239,10 +239,12 @@ describe('cold-start rehydration with multiple atoms', () => {
 
   // Reset the lazy `idb-keyval` import so each test exercises the cold-start path.
   beforeEach(() => {
-    const rt = (globalThis as any).__REATOM as { persistIndexedDbLazy?: any }
-    if (rt?.persistIndexedDbLazy) {
-      rt.persistIndexedDbLazy.promise = null
-      rt.persistIndexedDbLazy.module = null
+    const idbLazy = ensureReatomGlobal().persistIndexedDbLazy as
+      | { promise: Promise<any> | null; module: any }
+      | undefined
+    if (idbLazy) {
+      idbLazy.promise = null
+      idbLazy.module = null
     }
   })
 

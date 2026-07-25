@@ -19,7 +19,7 @@ Env filters shared by the A/B harnesses:
 
 - `LIB=core|next` — which sources to load (`core` = `../src`, `next` =
   `../../next/src`). Default `core`. Variants must run in **separate
-  processes** — they share `globalThis.__REATOM`.
+  processes** — copies with the same `VERSION` share one global runtime.
 - `SCENARIO=<substr>` — keep only matching scenario names.
 - `BATCHES=<n>` — `bench_compare` batch count (default 30).
 - `COUNTS=2048,512` — `bench_dynamic_ab` list sizes.
