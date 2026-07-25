@@ -31,6 +31,15 @@ test('initial items option seeds the collection lazily', () => {
   expect(collection.item('a')?.rendered()).toBe(false)
 })
 
+test('initial items reject duplicate explicit ids', () => {
+  expect(() =>
+    reatomCollection({
+      items: [{ id: 'a' }, { id: 'a' }],
+      name: 'duplicate',
+    }),
+  ).toThrow('Duplicate initial collection item id "a"')
+})
+
 test('registerItem is idempotent per id and reference counted', () => {
   const collection = reatomCollection({ name: 'refcount' })
 
@@ -46,6 +55,17 @@ test('registerItem is idempotent per id and reference counted', () => {
   expect(collection.unregisterItem('a')).toBe(true)
   expect(collection.ids()).toEqual([])
   expect(collection.item('a')).toBe(null)
+})
+
+test('empty explicit ids are rejected', () => {
+  const collection = reatomCollection({ name: 'empty' })
+
+  expect(() => collection.registerItem({ id: '' })).toThrow(
+    'Collection item id cannot be empty',
+  )
+  expect(() =>
+    reatomCollection({ items: [{ id: '' }], name: 'initialEmpty' }),
+  ).toThrow('Collection item id cannot be empty')
 })
 
 test('unregisterItem is a no-op for unknown and already removed items', () => {
@@ -68,6 +88,29 @@ test('generated ids are unique and follow the registration order', () => {
   expect(first.id).not.toBe(second.id)
   expect(collection.ids()).toEqual([first.id, second.id])
   expect(collection.item(first.id)).toBe(first)
+})
+
+test('generated ids do not collide with explicit ids', () => {
+  const collection = reatomCollection({ name: 'generated' })
+  const explicit = collection.registerItem({ id: 'generated-1' })
+
+  const generated = collection.registerItem()
+
+  expect(generated.id).toBe('generated-2')
+  expect(collection.ids()).toEqual([explicit.id, generated.id])
+  expect(collection.item(explicit.id)).toBe(explicit)
+  expect(collection.item(generated.id)).toBe(generated)
+})
+
+test('generated ids are isolated between contexts for SSR', () => {
+  const collection = reatomCollection({ name: 'ssr' })
+  const registerIds = () => [
+    collection.registerItem().id,
+    collection.registerItem().id,
+  ]
+
+  expect(context.start(registerIds)).toEqual(['ssr-1', 'ssr-2'])
+  expect(context.start(registerIds)).toEqual(['ssr-1', 'ssr-2'])
 })
 
 test('renderItem marks DOM presence without hiding the registration', () => {
@@ -104,6 +147,16 @@ test('an item registered twice survives a single unrender', () => {
 
   collection.unregisterItem('a')
   expect(collection.item('a')).toBe(null)
+})
+
+test('unrenderItem preserves registrations without a matching render', () => {
+  const collection = reatomCollection({ name: 'unmatched' })
+  const item = collection.registerItem({ id: 'a' })
+
+  expect(collection.unrenderItem(item)).toBe(false)
+  expect(collection.item('a')).toBe(item)
+  expect(item.registrations()).toBe(1)
+  expect(item.renders()).toBe(0)
 })
 
 test('renderedItems keeps its reference while the rendered set is stable', () => {
@@ -168,6 +221,17 @@ test('create option atomizes extra per item state', () => {
 
   expect(collection.registerItem({ id: 'a', disabled: false })).toBe(a)
   expect(a.disabled()).toBe(false)
+})
+
+test('create option cannot replace base item fields', () => {
+  const collection = reatomCollection({
+    create: () => ({ id: 'overridden' }),
+    name: 'collision',
+  })
+
+  expect(() => collection.registerItem({ id: 'a' })).toThrow(
+    'Collection item field "id" cannot be replaced',
+  )
 })
 
 test('registrations are coalesced into a single notification', () => {

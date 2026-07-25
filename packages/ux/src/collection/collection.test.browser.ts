@@ -157,6 +157,19 @@ test('applyDomOrder sorts on demand, without any observer', () => {
   expect(applyDomOrder(collection)).toBe(false)
 })
 
+test('items without elements do not block DOM ordering', () => {
+  const [one, two] = [div('one'), div('two')]
+  container.append(one, two)
+
+  const collection = reatomCollection({ name: 'missingElement' })
+  collection.renderItem({ id: 'two', element: two })
+  collection.renderItem({ id: 'missing' })
+  collection.renderItem({ id: 'one', element: one })
+
+  expect(applyDomOrder(collection)).toBe(true)
+  expect(collection.ids()).toEqual(['one', 'two', 'missing'])
+})
+
 test('withDomOrder stops sorting once the collection is disconnected', async () => {
   const [one, two] = [div('one'), div('two')]
   container.append(two, one)

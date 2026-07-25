@@ -16,9 +16,9 @@ import { action, atom, computed, named, reatomLinkedList } from '@reatom/core'
  */
 export interface CollectionItemInit {
   /**
-   * The id of the item. A stable id is generated from the collection name when
-   * omitted, so ids stay the same between the server and the client as long as
-   * the registration order matches.
+   * The non-empty id of the item. A stable id is generated from the collection
+   * name when omitted, so ids stay the same between the server and the client
+   * as long as the registration order matches.
    */
   id?: string
   /**
@@ -91,7 +91,7 @@ export interface CollectionOptions<
    * always merged, everything else is up to this callback.
    */
   update?: (init: Init, item: CollectionItemNode<Extra>) => void
-  /** Items to register upfront, in order. */
+  /** Items to register upfront, in order. Explicit ids must be unique. */
   items?: Array<Init>
   /** The model name, used as the prefix of every unit name. */
   name?: string
@@ -135,7 +135,8 @@ export interface CollectionModel<
   renderItem: Action<[init?: Init], CollectionItemNode<Extra>>
   /**
    * Undoes a single `renderItem`: drops one render reference and one
-   * registration reference.
+   * registration reference. Returns `false` without changing the item when no
+   * matching render reference exists.
    */
   unrenderItem: Action<[target?: CollectionItemTarget<Extra>], boolean>
   /**
@@ -205,10 +206,37 @@ export const reatomCollection = <
     name = named('collection'),
   } = options
 
-  let idSeed = 0
+  const initialIds = new Set<string>()
+  for (const init of initItems ?? []) {
+    if (init.id === undefined) continue
+    if (init.id === '') {
+      throw new TypeError('Collection item id cannot be empty')
+    }
+    if (initialIds.has(init.id)) {
+      throw new TypeError(`Duplicate initial collection item id "${init.id}"`)
+    }
+    initialIds.add(init.id)
+  }
+
+  let initialIdSeed = 0
+  const initSnapshot = initItems?.map((init): [init?: Init] => {
+    if (init.id !== undefined) return [init]
+
+    let id: string
+    do id = `${name}-${++initialIdSeed}`
+    while (initialIds.has(id))
+    initialIds.add(id)
+
+    return [{ ...init, id } as Init]
+  })
+
+  const idSeed = atom(initialIdSeed, `${name}._idSeed`)
 
   const createItem = (init: Init = {} as Init): CollectionItemModel & Extra => {
-    const id = init.id ?? `${name}-${++idSeed}`
+    if (init.id === '') {
+      throw new TypeError('Collection item id cannot be empty')
+    }
+    const id = init.id ?? createGeneratedId()
     const itemName = `${name}#${id}`
     const renders = atom(0, `${itemName}.renders`)
     const item: CollectionItemModel = {
@@ -223,14 +251,25 @@ export const reatomCollection = <
       rendered: computed(() => renders() > 0, `${itemName}.rendered`),
     }
 
-    return Object.assign(item, create?.(init, item)) as CollectionItemModel &
-      Extra
+    const extra = create?.(init, item)
+    if (extra) {
+      for (const key in extra) {
+        if (key in item) {
+          throw new TypeError(
+            `Collection item field "${key}" cannot be replaced`,
+          )
+        }
+      }
+      Object.assign(item, extra)
+    }
+
+    return item as CollectionItemModel & Extra
   }
 
   const list = reatomLinkedList(
     {
       create: createItem,
-      initSnapshot: initItems?.map((init): [init?: Init] => [init]),
+      initSnapshot,
       key: 'id' as const,
     },
     name,
@@ -244,6 +283,13 @@ export const reatomCollection = <
   const item = (id?: string | null): CollectionItemNode<Extra> | null =>
     id ? (itemsMap().get(id) ?? null) : null
 
+  const createGeneratedId = (): string => {
+    let id: string
+    do id = `${name}-${idSeed.set((seed) => seed + 1)}`
+    while (item(id))
+    return id
+  }
+
   const resolve = (
     target?: CollectionItemTarget<Extra>,
   ): CollectionItemNode<Extra> | null => {
@@ -253,16 +299,17 @@ export const reatomCollection = <
   }
 
   const registerItem = action((init?: Init): CollectionItemNode<Extra> => {
-    const registered = item(init?.id)
+    if (init?.id === undefined) {
+      init = { ...init, id: createGeneratedId() } as Init
+    }
+    const registered = item(init.id)
 
     if (!registered) return list.create(init)
 
     registered.registrations.set((count) => count + 1)
 
-    if (init) {
-      if (init.element !== undefined) registered.element.set(init.element)
-      update?.(init, registered)
-    }
+    if (init.element !== undefined) registered.element.set(init.element)
+    update?.(init, registered)
 
     return registered
   }, `${name}.registerItem`)
@@ -288,7 +335,8 @@ export const reatomCollection = <
     (target?: CollectionItemTarget<Extra>): boolean => {
       const node = resolve(target)
       if (!node) return false
-      node.renders.set((count) => (count > 0 ? count - 1 : 0))
+      if (node.renders() === 0) return false
+      node.renders.set((count) => count - 1)
       return unregisterItem(node)
     },
     `${name}.unrenderItem`,

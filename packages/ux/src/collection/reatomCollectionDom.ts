@@ -34,8 +34,18 @@ export const sortBasedOnDomPosition = <T>(
     const elementA = getElement(a)
     const elementB = getElement(b)
     if (elementA === elementB) return 0
-    if (!elementA || !elementB) return 0
-    if (isElementPreceding(elementA, elementB)) {
+    if (!elementA) {
+      if (indexA < indexB) isOrderDifferent = true
+      return 1
+    }
+    if (!elementB) {
+      if (indexA > indexB) isOrderDifferent = true
+      return -1
+    }
+    if (
+      elementB.compareDocumentPosition(elementA) &
+      Node.DOCUMENT_POSITION_PRECEDING
+    ) {
       if (indexA > indexB) isOrderDifferent = true
       return -1
     }
@@ -44,25 +54,6 @@ export const sortBasedOnDomPosition = <T>(
   })
 
   return isOrderDifferent ? pairs.map(([, item]) => item) : items
-}
-
-const isElementPreceding = (a: Element, b: Element) =>
-  Boolean(b.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_PRECEDING)
-
-/**
- * The closest common ancestor of the elements, used as the
- * `IntersectionObserver` root — the Ariakit `getCommonParent` heuristic.
- */
-const getCommonParent = (elements: Array<Element>): Element | undefined => {
-  const last = elements.at(-1)
-  let parent = elements[0]?.parentElement
-
-  while (parent) {
-    if (last && parent.contains(last)) return parent
-    parent = parent.parentElement
-  }
-
-  return elements[0]?.ownerDocument.body
 }
 
 /**
@@ -74,9 +65,8 @@ const getCommonParent = (elements: Array<Element>): Element | undefined => {
  *   is applied to the linked list with `move` calls inside one `batch`, which
  *   keeps item identity — and therefore every per item atom — intact.
  *
- *   Only rendered items participate: items that are registered without an element
- *   cannot be placed by DOM position, so they keep their registration order
- *   after the sorted ones.
+ *   Only rendered items participate. Items without elements cannot be placed by
+ *   DOM position, so they keep their registration order after the sorted ones.
  * @returns Whether the order changed.
  */
 export const applyDomOrder = (collection: AnyCollectionModel): boolean => {
@@ -141,7 +131,13 @@ export const withDomOrder = <T extends AnyCollectionModel>({
 }: DomOrderOptions = {}): Ext<T, T> => {
   return (target) => {
     const sort = action(async () => {
-      await wrap(nextFrame())
+      await wrap(
+        typeof requestAnimationFrame === 'function'
+          ? new Promise<void>((resolve) =>
+              requestAnimationFrame(() => resolve()),
+            )
+          : Promise.resolve(),
+      )
       applyDomOrder(target)
     }, `${target.name}.domOrder.sort`).extend(withAbort())
 
@@ -171,12 +167,18 @@ export const withDomOrder = <T extends AnyCollectionModel>({
 
           // the observer reports the initial state right away, skip it
           let initial = true
+          const last = elements.at(-1)
+          let root = elements[0]?.parentElement
+          while (root && last && !root.contains(last)) {
+            root = root.parentElement
+          }
+
           const observer = new IntersectionObserver(
             wrap(() => {
               if (initial) initial = false
               else scheduleSort()
             }),
-            { root: getCommonParent(elements) },
+            { root: root ?? elements[0]?.ownerDocument.body },
           )
 
           abortVar.subscribe(() => observer.disconnect())
@@ -187,8 +189,3 @@ export const withDomOrder = <T extends AnyCollectionModel>({
     )
   }
 }
-
-const nextFrame = (): Promise<void> =>
-  typeof requestAnimationFrame === 'function'
-    ? new Promise((resolve) => requestAnimationFrame(() => resolve()))
-    : Promise.resolve()
