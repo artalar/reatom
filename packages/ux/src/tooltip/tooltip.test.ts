@@ -138,6 +138,19 @@ test('the registry keeps one active tooltip and closes the previous one', () => 
   expect(first.active()).toBe(false)
 })
 
+test('an initially open tooltip joins the registry and closes on takeover', () => {
+  const registry = reatomTooltipRegistry({ name: 'reg' })
+  const first = atom(true, 'first').extend(withTooltip({ registry }))
+
+  expect(registry()).toBe(first)
+  expect(first.active()).toBe(true)
+
+  const second = reatomTooltip({ open: true, registry, name: 'second' })
+
+  expect(registry()).toBe(second)
+  expect(first()).toBe(false)
+})
+
 test('the registry is read-only: writes go through its actions', () => {
   const registry = reatomTooltipRegistry({ name: 'reg' })
 

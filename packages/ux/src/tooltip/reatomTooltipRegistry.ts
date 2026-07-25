@@ -160,9 +160,6 @@ export const reatomTooltipRegistry = (
   const { name = named('tooltipRegistry') } = options
 
   const entry = atom<TooltipRegistryEntry | null>(null, `${name}.entry`)
-  // A model is a function, so a plain `entry.set(tooltip)` would be read as an
-  // updater. The updater form states the intent instead of fighting it.
-  const latch = (tooltip: TooltipRegistryEntry) => entry.set(() => tooltip)
 
   const release: TooltipRelease = action(
     async (tooltip: TooltipRegistryEntry, timeout: number) => {
@@ -184,7 +181,9 @@ export const reatomTooltipRegistry = (
     // "If the current tooltip is open, we should immediately hide the active
     // one and set the current one as the active tooltip."
     if (active) active.hide()
-    latch(tooltip)
+    // A model is a function, so a plain `entry.set(tooltip)` would be read as an
+    // updater. The updater form states the intent instead of fighting it.
+    entry.set(() => tooltip)
   }, `${name}.activate`)
 
   const clear = action((tooltip: TooltipRegistryEntry) => {

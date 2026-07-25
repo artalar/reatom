@@ -81,6 +81,14 @@ export interface TagKeyboardEvent extends TagTargetedEvent {
   readonly metaKey?: boolean
 }
 
+/** An input event, including native and framework-wrapped IME state. */
+export interface TagInputEvent extends TagTargetedEvent {
+  /** Native DOM events expose the composition state directly. */
+  readonly isComposing?: boolean
+  /** React and similar adapters expose it on the wrapped native event. */
+  readonly nativeEvent?: { readonly isComposing?: boolean }
+}
+
 /** A `paste` event; only its plain text is read. */
 export interface TagClipboardEvent extends TagPropsEvent {
   readonly clipboardData?: { getData: (format: string) => string } | null
@@ -192,7 +200,7 @@ export interface TagInputProps {
    *   would add a tag long after the user typed the delimiter. `onInput` is the
    *   one spelling that binds correctly in both worlds.
    */
-  onInput: (event: TagTargetedEvent) => void
+  onInput: (event: TagInputEvent) => void
   /** Turns pasted text into tags, split by the delimiter. */
   onPaste: (event: TagClipboardEvent) => void
 }
@@ -379,8 +387,6 @@ export interface TagPropsTarget extends TagModel {
 
 const LISTBOX_STYLE: TagListboxStyle = { position: 'fixed' }
 
-const defaultRemoveLabel = (value: string): string => `Remove ${value}`
-
 const REMOVE_HINT = 'Press Delete or Backspace to remove'
 
 /**
@@ -500,7 +506,7 @@ export const tagProps = (
     notify()
   })
 
-  const onInput = wrap((event: TagTargetedEvent) => {
+  const onInput = wrap((event: TagInputEvent) => {
     if (event.defaultPrevented) return
 
     const element = event.currentTarget
@@ -513,6 +519,14 @@ export const tagProps = (
       queueMicrotask(
         wrap(() => setTagInputCaret(element, selectionStart, selectionEnd)),
       )
+    }
+
+    // An IME may emit delimiter characters while the user is still composing.
+    // Keep the controlled value current, but wait for the final input event
+    // before turning any part of it into tags.
+    if (event.isComposing || event.nativeEvent?.isComposing) {
+      notify()
+      return
     }
 
     const intent = mapTagChangeIntent({
@@ -642,7 +656,7 @@ export const tagProps = (
   ): Computed<TagRemoveProps> => {
     const id = tagRemoveElementId(model.tagId(value))
     const {
-      removeLabel = defaultRemoveLabel,
+      removeLabel = (value) => `Remove ${value}`,
       hint = REMOVE_HINT,
       name: recordName = `${name}.props.remove#${value}`,
     } = removeOptions

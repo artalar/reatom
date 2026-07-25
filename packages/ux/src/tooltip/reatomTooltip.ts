@@ -19,6 +19,7 @@ import {
   atom,
   computed,
   named,
+  peek,
   retryComputed,
   withChangeHook,
   withComputed,
@@ -274,6 +275,10 @@ export const withTooltip = (
         scheduleTooltipRelease(registry, self, skipTimeout())
       }),
     )
+    // `withChangeHook` observes transitions, not the initial atom state. Adopt
+    // an already-open atom into the registry now so it still participates in
+    // one-at-a-time ownership.
+    if (peek(target)) registry.activate(self)
 
     return {
       ...hovercard,

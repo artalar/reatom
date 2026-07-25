@@ -429,6 +429,27 @@ test('typing a delimiter turns the text before it into tags', () => {
   expect(tag.values()).toEqual(['react', 'a', 'b'])
 })
 
+test('composition updates the input value without adding an incomplete tag', () => {
+  const tag = reatomTag({ name: 'composition' })
+  const input = typed(element(), 'react,')
+
+  tag.props.input().onInput({
+    ...event(input),
+    nativeEvent: { isComposing: true },
+  })
+
+  expect(tag.value()).toBe('react,')
+  expect(tag.values()).toEqual([])
+
+  tag.props.input().onInput({
+    ...event(input),
+    nativeEvent: { isComposing: false },
+  })
+
+  expect(tag.value()).toBe('')
+  expect(tag.values()).toEqual(['react'])
+})
+
 test('the change behaviors are separately switchable', () => {
   const tag = reatomTag({ setValueOnChange: false, name: 'noStore' })
   tag.props.input().onInput(event(typed(element(), 'react,')))

@@ -96,49 +96,41 @@ export interface TooltipAnchorFocusEvent {
 export const describeTooltipFocusEvent = (
   event: TooltipAnchorFocusEvent,
   type: 'focus' | 'blur',
-): FocusVisibleEvent => ({
-  type,
-  defaultPrevented: event.defaultPrevented,
-  selfTarget: isAnchorTarget(event),
-  focusOutside: type === 'blur' ? isFocusLeavingAnchor(event) : undefined,
-  target: describeFocusTarget(event.target),
-})
+): FocusVisibleEvent => {
+  const target = event.target
+    ? typeof (event.target as Element).getAttribute === 'function'
+      ? describeElement(event.target as Element)
+      : (event.target as ElementDescriptor)
+    : undefined
+  // `undefined` rather than `false` when the event does not say: an event
+  // carrying only a target descriptor describes the focused element, not a
+  // child focus.
+  const selfTarget =
+    event.selfTarget ??
+    (event.target && event.currentTarget
+      ? isSelfTarget(event as EventTargetsLike)
+      : undefined)
 
-/** A live element is described; anything else is already a descriptor. */
-const describeFocusTarget = (
-  target: TooltipAnchorFocusEvent['target'],
-): ElementDescriptor | undefined => {
-  if (!target) return undefined
-  return typeof (target as Element).getAttribute === 'function'
-    ? describeElement(target as Element)
-    : (target as ElementDescriptor)
-}
+  let focusOutside = event.focusOutside
+  if (type === 'blur' && focusOutside === undefined) {
+    const anchor = event.currentTarget as Element | null | undefined
+    // A stand-in handle cannot answer containment, and guessing it would turn a
+    // blur into a non-blur.
+    if (anchor && typeof anchor.contains === 'function') {
+      focusOutside = isFocusEventOutside({
+        currentTarget: anchor,
+        relatedTarget: event.relatedTarget ?? null,
+      })
+    }
+  }
 
-/**
- * `undefined` rather than `false` when the event does not say: an event
- * carrying only a `target` descriptor is a test describing the focused element,
- * not one claiming a child was focused.
- */
-const isAnchorTarget = (
-  event: TooltipAnchorFocusEvent,
-): boolean | undefined => {
-  if (event.selfTarget !== undefined) return event.selfTarget
-  if (!event.target || !event.currentTarget) return undefined
-  return isSelfTarget(event as EventTargetsLike)
-}
-
-const isFocusLeavingAnchor = (
-  event: TooltipAnchorFocusEvent,
-): boolean | undefined => {
-  if (event.focusOutside !== undefined) return event.focusOutside
-  const anchor = event.currentTarget as Element | null | undefined
-  // A stand-in handle cannot answer containment, and guessing it would turn a
-  // blur into a non-blur.
-  if (!anchor || typeof anchor.contains !== 'function') return undefined
-  return isFocusEventOutside({
-    currentTarget: anchor,
-    relatedTarget: event.relatedTarget ?? null,
-  })
+  return {
+    type,
+    defaultPrevented: event.defaultPrevented,
+    selfTarget,
+    focusOutside: type === 'blur' ? focusOutside : undefined,
+    target,
+  }
 }
 
 /** Props to spread on the element the tooltip describes. */
@@ -289,7 +281,11 @@ export const tooltipProps = (
 
           adopt(event.currentTarget)
 
-          if (intent === 'showNow') model.show()
+          // A zero-delay async action remains pending until its promise settles.
+          // Re-entering it in that microtask would abort the first call despite
+          // both transitions being synchronous, so use the same direct path as
+          // a skipped delay.
+          if (intent === 'showNow' || model.showDelay() === 0) model.show()
           else scheduleHovercardDelay(model.showDelayed)
           notify()
         }),
