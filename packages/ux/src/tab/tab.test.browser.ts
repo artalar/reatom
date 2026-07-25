@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, test } from 'vitest'
 import { withCompositeFocus } from '../composite/reatomCompositeDom'
 import type { Tab, TabHost } from './reatomTab'
 import { reatomTab } from './reatomTab'
+import { withTabFocus } from './reatomTabDom'
 
 /**
  * Only the quirks that need a real element live here (`PORTING_PLAN.md` §3,
@@ -196,6 +197,78 @@ test('a disabled tab is skipped by the arrow keys but stays in the tab list', as
   expect(document.activeElement).toBe(tabs[2])
   expect(tab()).toBe('three')
   expect(visible(panels)).toEqual([false, false, true])
+})
+
+// react-components 0.1.2 / ariakit#4213: the tab stop follows the selection on
+// its own, but a tab stop is not focus — without `withTabFocus()` DOM focus
+// stays on a tab that is no longer tabbable, and the next arrow key starts from
+// the wrong tab.
+test('a controlled selection moves DOM focus off the tab that had it', async () => {
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+  tab.composite.extend(withCompositeFocus())
+  const { tabs, panels } = await mount(tab, ['one', 'two', 'three'])
+
+  tabs[0]!.focus()
+  await settle()
+  expect(document.activeElement).toBe(tabs[0])
+
+  // what a route change, a shortcut, or a `setSelectedId` from a parent does
+  tab.set('three')
+  await settle()
+  await settle()
+
+  expect(document.activeElement).toBe(tabs[2])
+  expect(tabIndexes(tabs)).toEqual([-1, -1, 0])
+  expect(visible(panels)).toEqual([false, false, true])
+
+  // and the arrow keys continue from where focus landed
+  await press(tabs[2]!, 'ArrowRight')
+  expect(document.activeElement).toBe(tabs[0])
+  expect(tab()).toBe('one')
+})
+
+// Focus is only ever taken over, never taken away: the three cases Ariakit's own
+// sandbox test pins down (`app/src/sandbox/tab-4213/test-browser.ts`).
+test('a controlled selection keeps focus outside the tab list where it is', async () => {
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+  tab.composite.extend(withCompositeFocus())
+  const { tabs, panels } = await mount(tab, ['one', 'two', 'three'])
+
+  const button = document.createElement('button')
+  button.textContent = 'select the third tab'
+  container.after(button)
+  cleanups.push(() => button.remove())
+  button.addEventListener('click', () => tab.set('three'))
+
+  button.focus()
+  button.click()
+  await settle()
+  await settle()
+
+  // the button keeps focus, and the tab stop still moved
+  expect(document.activeElement).toBe(button)
+  expect(tabIndexes(tabs)).toEqual([-1, -1, 0])
+
+  // a field inside a panel keeps the caret too
+  const field = document.createElement('input')
+  panels[2]!.append(field)
+  field.focus()
+  tab.set('one')
+  await settle()
+  await settle()
+
+  expect(document.activeElement).toBe(field)
+
+  // and a disabled tab never takes focus, even from a tab that has it
+  tab.tabs.item('two')!.disabled.set(true)
+  tabs[0]!.focus()
+  await settle()
+  tab.set('two')
+  await settle()
+  await settle()
+
+  expect(document.activeElement).toBe(tabs[0])
+  expect(tab()).toBe('two')
 })
 
 // Ariakit binds ArrowLeft / ArrowRight / Home / End on the panel of a hosted tab

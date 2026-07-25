@@ -333,6 +333,11 @@ export const isSelectableTab = (
  *   - The mutable `syncActiveId` flag becomes {@link TabUnits.restoreSelectedId},
  *       see its remarks.
  *
+ *   The other half of that `selectedId` listener — moving DOM focus to a tab
+ *   selected from the outside while another tab has focus — reads
+ *   `document.activeElement`, so it is the opt-in `withTabFocus()` of
+ *   `reatomTabDom.ts` instead of part of the model.
+ *
  *   Ariakit additionally _merges_ the tab store with a host composite store so
  *   both share `activeId` (everything else is `omit`ted). Sharing the active
  *   item needs an adopted `activeId` atom in {@link reatomComposite}, which this

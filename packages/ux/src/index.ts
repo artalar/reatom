@@ -677,6 +677,7 @@ export {
   type TabPanelState,
   type TabUnits,
 } from './tab/reatomTab'
+export { getFocusedTab, withTabFocus } from './tab/reatomTabDom'
 export {
   type TagAriaOrientation,
   tagAriaOrientation,

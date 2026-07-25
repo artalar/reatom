@@ -16,6 +16,7 @@ import type {
   TabPanelsModel,
 } from './reatomTab'
 import { isSelectableTab, reatomTab } from './reatomTab'
+import { getFocusedTab, withTabFocus } from './reatomTabDom'
 
 test('the model is the selected-tab atom, with the composite as a sub-model', () => {
   const tab = reatomTab({ name: 'tab' })
@@ -133,11 +134,20 @@ test('prop records are framework neutral objects', () => {
   tab.props.tab(panel)
 })
 
+test('withTabFocus keeps the model type it extends', () => {
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+
+  expectTypeOf(tab()).toEqualTypeOf<string | null | undefined>()
+  expectTypeOf(tab.props.list()).toEqualTypeOf<TabListProps>()
+  expectTypeOf(tab.select('one')).toEqualTypeOf<string | null | undefined>()
+})
+
 test('the pure helpers work on plain data, with no model', () => {
   expectTypeOf(mapTabPanelIntent({ key: 'ArrowRight' })).toEqualTypeOf<
     CompositeNavigationIntent | undefined
   >()
   expectTypeOf(isSelectableTab(null)).toEqualTypeOf<boolean>()
+  expectTypeOf(getFocusedTab([])).toEqualTypeOf<CompositeItemNode | undefined>()
 
   // @ts-expect-error the intent mapper reads a key event
   mapTabPanelIntent('ArrowRight')

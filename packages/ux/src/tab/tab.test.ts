@@ -4,6 +4,7 @@ import { beforeEach, expect, test } from 'vitest'
 import { mapTabPanelIntent, tabProps } from './props'
 import type { Tab, TabPanelInit, TabPanelNode } from './reatomTab'
 import { isSelectableTab, reatomTab } from './reatomTab'
+import { getFocusedTab, withTabFocus } from './reatomTabDom'
 
 beforeEach(() => context.reset())
 
@@ -43,6 +44,37 @@ const connect = (tab: Tab) => {
   return unsubscribe
 }
 
+/**
+ * A fake document whose `activeElement` the test writes: `getFocusedTab` asks
+ * the tabs' own `ownerDocument`, so "a tab has DOM focus" is expressible
+ * without a DOM.
+ */
+const reatomDocument = () => ({ activeElement: null as HTMLElement | null })
+
+/** A fake element that belongs to a {@link reatomDocument}. */
+const elementIn = (document: ReturnType<typeof reatomDocument>) =>
+  ({ ownerDocument: document }) as unknown as HTMLElement
+
+/**
+ * Flushes the notification, the microtask the focus move is deferred by, and
+ * the notification that move itself schedules.
+ */
+const settle = async () => {
+  notify()
+  await null
+  notify()
+  await null
+}
+
+/** Records the ids the model asks the composite to move to. */
+const trackMoves = (tab: Tab) => {
+  const moves: Array<string | null | undefined> = []
+  const track = effect(() => {
+    for (const call of getCalls(tab.composite.move)) moves.push(call.params[0])
+  }, 'moves')
+  return { moves, unsubscribe: track.subscribe(() => {}) }
+}
+
 /** The only two `FocusEvent` fields the composite prop records read. */
 const focusEvent = (target: HTMLElement, currentTarget: HTMLElement) =>
   ({ target, currentTarget }) as unknown as FocusEvent
@@ -73,6 +105,24 @@ test('isSelectableTab refuses nothing, unknown tabs, and disabled ones', () => {
 
   one!.disabled.set(true)
   expect(isSelectableTab(one)).toBe(false)
+})
+
+test('getFocusedTab finds the tab that holds DOM focus, if any', () => {
+  const document = reatomDocument()
+  const tab = reatomTab({ name: 'tab' })
+  const tabs = ['one', 'two'].map((id) =>
+    tab.tabs.renderItem({ id, element: elementIn(document) }),
+  )
+
+  expect(getFocusedTab([])).toBe(undefined)
+  expect(getFocusedTab(tabs)).toBe(undefined)
+
+  document.activeElement = tabs[1]!.element()
+  expect(getFocusedTab(tabs)).toBe(tabs[1])
+
+  // focus inside a panel, or on anything else that is not a tab
+  document.activeElement = elementIn(document)
+  expect(getFocusedTab(tabs)).toBe(undefined)
 })
 
 test('mapTabPanelIntent maps the four keys a panel forwards to the tab list', () => {
@@ -411,6 +461,53 @@ test('restoring the selection does not move the active tab', () => {
   unsubscribe()
 })
 
+// react-components 0.3.1: "Fixed `Tab` not becoming the active item on the first
+// `setSelectedId` call after a `SelectPopover` or `ComboboxPopover` containing
+// the tabs opens or toggles." Ariakit suppresses its `selectedId` → `activeId`
+// listener with a mutable `syncActiveId` flag that the listener itself resets —
+// so a restoration that writes the value already selected never runs the
+// listener, the flag stays down, and the _next_ selection is the one that loses
+// its active tab. Here the restoration writes the active tab back explicitly,
+// so there is no flag to leak between the two writes.
+test('a restore that changes nothing still lets the next selection move the tab stop', () => {
+  const host = reatomHost()
+  const tab = reatomTab({ host, name: 'tab' })
+  renderTabs(tab, 'one', 'two', 'three')
+  const unsubscribe = connect(tab)
+
+  // the user picks a value inside the panel of the tab that is already selected
+  host.selectedValue.set('apple')
+  notify()
+  expect(tab.preservedSelectedId()).toBe('one')
+
+  // and toggles the popup, which restores that same selection
+  host.mounted.set(false)
+  notify()
+  host.mounted.set(true)
+  notify()
+  expect(tab()).toBe('one')
+  expect(tab.composite()).toBe('one')
+
+  // the first selection after the toggle is the one Ariakit used to swallow
+  tab.set('two')
+  expect(tab.composite()).toBe('two')
+
+  // and so is the one after a restore that did change the selection
+  tab.select('three')
+  host.selectedValue.set('banana')
+  notify()
+  host.mounted.set(false)
+  notify()
+  host.mounted.set(true)
+  notify()
+  expect(tab()).toBe('three')
+
+  tab.set('one')
+  expect(tab.composite()).toBe('one')
+
+  unsubscribe()
+})
+
 test('connecting a hosted tab list does not restore anything', () => {
   const host = reatomHost()
   const tab = reatomTab({ selectedId: 'two', host, name: 'tab' })
@@ -442,6 +539,106 @@ test('preserve and restore work without a host, and restore before a preserve re
   expect(tab()).toBe(undefined)
   renderTabs(tab, 'three')
   expect(tab()).toBe('one')
+})
+
+// --- focus on selection -----------------------------------------------------
+
+// react-components 0.1.2: "Fixed `Tab` to move focus to the selected tab after a
+// controlled `selectedId` update while a tab has DOM focus." The tab stop
+// follows the selection on its own, so without this the previously focused tab
+// keeps DOM focus while losing its `tabIndex`.
+test('a controlled selection takes focus over from the tab that has it', async () => {
+  const document = reatomDocument()
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+  const tabs = ['one', 'two', 'three'].map((id) =>
+    tab.tabs.renderItem({ id, element: elementIn(document) }),
+  )
+  const { moves, unsubscribe } = trackMoves(tab)
+  const disconnect = connect(tab)
+
+  // the seeded selection is not a change, and nothing has focus to move anyway
+  expect(tab()).toBe('one')
+  expect(moves).toEqual([])
+
+  document.activeElement = tabs[0]!.element()
+  tab.set('three')
+  await settle()
+
+  expect(moves).toEqual(['three'])
+
+  // a selection the focused tab already holds asks for nothing
+  document.activeElement = tabs[2]!.element()
+  tab.set('three')
+  await settle()
+  expect(moves).toEqual(['three'])
+
+  disconnect()
+  unsubscribe()
+})
+
+test('a selection nobody is standing on leaves focus alone', async () => {
+  const document = reatomDocument()
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+  const tabs = ['one', 'two', 'three'].map((id) =>
+    tab.tabs.renderItem({ id, element: elementIn(document) }),
+  )
+  tabs[2]!.disabled.set(true)
+  const { moves, unsubscribe } = trackMoves(tab)
+  const disconnect = connect(tab)
+
+  // focus is outside the tab list — the button that selected the tab keeps it,
+  // and so does a field inside a tab panel
+  document.activeElement = elementIn(document)
+  tab.set('two')
+  await settle()
+  expect(moves).toEqual([])
+
+  // nothing has focus at all
+  document.activeElement = null
+  tab.set('one')
+  await settle()
+  expect(moves).toEqual([])
+
+  // a disabled tab is selectable from the outside, but never focusable
+  document.activeElement = tabs[0]!.element()
+  tab.set('three')
+  await settle()
+  expect(moves).toEqual([])
+
+  // and neither is a tab that has not rendered, or no tab at all
+  tab.set('four')
+  await settle()
+  tab.set(null)
+  await settle()
+  expect(moves).toEqual([])
+
+  disconnect()
+  unsubscribe()
+})
+
+test('a selection that follows a move does not ask for focus twice', async () => {
+  const document = reatomDocument()
+  const tab = reatomTab({ name: 'tab' }).extend(withTabFocus())
+  const tabs = ['one', 'two', 'three'].map((id) =>
+    tab.tabs.renderItem({ id, element: elementIn(document) }),
+  )
+  const { moves, unsubscribe } = trackMoves(tab)
+  const disconnect = connect(tab)
+  document.activeElement = tabs[0]!.element()
+
+  // an arrow key: the move selects through `selectOnMove`, and the move itself
+  // is what `withCompositeFocus()` already reacts to
+  tab.composite.move(tab.composite.next())
+  await settle()
+  expect(moves).toEqual(['two'])
+
+  // and `select`, which is a selection plus an explicit move
+  tab.select('three')
+  await settle()
+  expect(moves).toEqual(['two', 'three'])
+
+  disconnect()
+  unsubscribe()
 })
 
 // --- prop records -----------------------------------------------------------
