@@ -146,6 +146,9 @@ test('prop records are framework neutral objects', () => {
 
   expectTypeOf(edit.props.item(undo)()).toEqualTypeOf<MenuItemProps>()
   expectTypeOf(edit.props.item(undo)().role).toEqualTypeOf<'menuitem'>()
+  expectTypeOf(edit.props.item(undo)()['aria-disabled']).toEqualTypeOf<
+    true | undefined
+  >()
   expectTypeOf(edit.props.item(undo, { hideOnClick: false })).toExtend<
     Computed<MenuItemProps>
   >()
@@ -154,6 +157,9 @@ test('prop records are framework neutral objects', () => {
     edit.props.itemButton(undo)(),
   ).toEqualTypeOf<MenuItemButtonProps>()
   expectTypeOf(edit.props.itemButton(undo)()['data-active-item']).toEqualTypeOf<
+    true | undefined
+  >()
+  expectTypeOf(edit.props.itemButton(undo)()['aria-disabled']).toEqualTypeOf<
     true | undefined
   >()
 

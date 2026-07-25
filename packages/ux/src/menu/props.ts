@@ -46,7 +46,6 @@ import { hovercardProps } from '../hovercard/props'
 import { scheduleHovercardDelay } from '../hovercard/reatomHovercard'
 import { getPopoverSide } from '../popover/popoverPlacement'
 import type { PopoverContentProps } from '../popover/props'
-import type { MenuItemLinkDescriptor } from './menuIntent'
 import {
   hasExpandedMenuItem,
   isMenuItemNavigating,
@@ -194,7 +193,10 @@ export interface MenuButtonProps {
 export interface MenuItemButtonProps
   extends
     Omit<CompositeItemProps, 'onKeyDown' | 'onFocus' | 'ref'>,
-    MenuButtonProps {}
+    MenuButtonProps {
+  /** Announces that the submenu button cannot be activated. */
+  'aria-disabled': true | undefined
+}
 
 /**
  * Props to spread on the menu element — Ariakit's `MenuList`, the menu without
@@ -262,6 +264,8 @@ export interface MenuPopoverProps
 export interface MenuItemProps extends CompositeItemProps {
   /** The [`menuitem`](https://w3c.github.io/aria/#menuitem) role. */
   role: 'menuitem'
+  /** Announces and enforces that the item cannot be activated. */
+  'aria-disabled': true | undefined
   /**
    * Runs the command: closes the whole menu tree, unless the policy says not
    * to.
@@ -464,34 +468,6 @@ export interface MenuPropRecords extends Omit<
   separator: Computed<MenuSeparatorProps>
 }
 
-/** The element fields the item click policy reads. */
-const describeItemElement = (target: unknown): MenuItemLinkDescriptor => {
-  const element = target as
-    | { tagName?: unknown; type?: unknown }
-    | null
-    | undefined
-  const tagName =
-    typeof element?.tagName === 'string' ? element.tagName.toLowerCase() : ''
-  return {
-    tagName,
-    type: typeof element?.type === 'string' ? element.type : undefined,
-  }
-}
-
-/**
- * Whether the element is a disclosure of something — a submenu button, a dialog
- * trigger — which is what keeps a click on it from closing the tree.
- *
- * Ariakit reads the same attribute off `event.currentTarget`, because a menu
- * item cannot know what a consumer rendered inside it.
- */
-const hasPopupAttribute = (target: unknown): boolean => {
-  const element = target as Element | null | undefined
-  if (typeof element?.getAttribute !== 'function') return false
-  const popup = element.getAttribute('aria-haspopup')
-  return !!popup && popup !== 'false'
-}
-
 /**
  * Builds the reactive prop records of a menu model.
  *
@@ -527,9 +503,10 @@ const hasPopupAttribute = (target: unknown): boolean => {
  *   - `useBooleanEvent`, i.e. every policy prop being either a boolean or a
  *       predicate over the event, becomes a plain optional boolean. A consumer
  *       that needs the predicate reads the event in its own handler.
- *   - The `id` a menu is labelled by is the button's own `id` prop rather than a
- *       DOM read of `disclosureElement.id`, so `aria-labelledby` is right on
- *       the first render instead of after an effect.
+ *   - The `id` a menu is labelled by follows the mounted disclosure element,
+ *       falling back to the button record's own `id` before a ref is attached.
+ *       This keeps a subscribed menu list correct when its submenu button is
+ *       mounted or replaced.
  *
  *   The typeahead comes from the composite: the `list` and `popover` records
  *   carry its `onKeyDownCapture`, which {@link reatomMenu} turns on the way
@@ -687,31 +664,28 @@ export const menuProps = (
     notify()
   })
 
-  /** Ariakit's `showOnHover` callback of `MenuButton`. */
-  const canShowOnHover = (): boolean => {
-    if (showOnHover !== undefined) return showOnHover
-    // The atom is the reactive half, and it is already `true` for a submenu;
-    // the expanded-sibling half needs the DOM, so it is read per event.
-    if (model.showOnHover()) return true
-    return resolveMenuShowOnHover({
-      hasParentMenu,
-      parentIsMenubar,
-      // No exclusion, as in Ariakit: a hover over the button of the menu that
-      // is already open changes nothing anyway.
-      menubarExpanded: hasExpandedMenuItem(menubarElements()),
-    })
-  }
-
   const onButtonMouseMove = wrap((event?: MenuMouseEvent) => {
     // Feed the shared flag from the event itself, so the record works without
     // the document listeners of `withHovercardDom`.
     model.moving.move(event)
 
+    // The atom is the reactive half, and it is already `true` for a submenu;
+    // the expanded-sibling half needs the DOM, so it is read per event.
+    const canShowOnHover =
+      showOnHover ??
+      (model.showOnHover() ||
+        resolveMenuShowOnHover({
+          hasParentMenu,
+          parentIsMenubar,
+          // No exclusion, as in Ariakit: a hover over the button of the menu
+          // that is already open changes nothing anyway.
+          menubarExpanded: hasExpandedMenuItem(menubarElements()),
+        }))
     const intent = mapHovercardShowIntent({
       defaultPrevented: !!event?.defaultPrevented,
       showPending: model.showPending(),
       moving: model.moving(),
-      showOnHover: canShowOnHover(),
+      showOnHover: canShowOnHover,
     })
     if (intent === 'ignore') {
       notify()
@@ -736,7 +710,10 @@ export const menuProps = (
   })
 
   const onButtonMouseLeave = wrap(() => {
-    model.showDelayed.abort('mouseleave')
+    // A zero-delay transition finishes synchronously and is never pending.
+    // Aborting its still-settling async action creates a rejected cancellation
+    // after the show has already completed.
+    if (model.showPending()) model.showDelayed.abort('mouseleave')
     notify()
   })
 
@@ -772,26 +749,19 @@ export const menuProps = (
     const label = model.label()
     const heading = model.headingId()
     if (label != null) return undefined
-    return heading ?? renderedButtonId
+    return heading ?? model.disclosureElement()?.id ?? buttonId
   }
 
-  /**
-   * The id the button record last rendered. A submenu button is a composite
-   * item, so its id belongs to the item rather than to the menu — and the menu
-   * is labelled by whichever button was actually rendered.
-   */
-  let renderedButtonId = buttonId
-
-  const onListKeyDown = wrap((event: MenuKeyboardEvent) => {
+  /** Both halves of a `keydown` on the menu element, in Ariakit's order. */
+  const onMenuKeyDown = wrap((event: MenuKeyboardEvent) => {
     const intent = mapMenuListKeyIntent(event, {
       side: getPopoverSide(model.placement()),
       orientation: composite.orientation(),
       hasParentMenu,
       menubarOrientation: menubar ? menubar.orientation() : undefined,
     })
-    if (!intent) return
 
-    if (intent.type === 'hide') {
+    if (intent?.type === 'hide') {
       // Ariakit stops the propagation as well: the same arrow key would
       // otherwise reach the parent menu and move inside it.
       event.stopPropagation?.()
@@ -800,24 +770,18 @@ export const menuProps = (
       // and leaves the parent open.
       model.hide()
       notify()
-      return
+    } else if (intent?.type === 'menubar' && menubar) {
+      const id = intent.move === 'next' ? menubar.next() : menubar.previous()
+      if (id !== undefined) {
+        event.stopPropagation?.()
+        event.preventDefault?.()
+        // The move focuses the next button, which opens its menu — see
+        // `onButtonFocus`.
+        menubar.move(id)
+        notify()
+      }
     }
 
-    if (!menubar) return
-    const id = intent.move === 'next' ? menubar.next() : menubar.previous()
-    if (id === undefined) return
-
-    event.stopPropagation?.()
-    event.preventDefault?.()
-    // The move focuses the next button, which opens its menu — see
-    // `onButtonFocus`.
-    menubar.move(id)
-    notify()
-  })
-
-  /** Both halves of a `keydown` on the menu element, in Ariakit's order. */
-  const onMenuKeyDown = wrap((event: MenuKeyboardEvent) => {
-    onListKeyDown(event)
     // The composite navigates only what the menu did not consume; its own
     // handler bails on a prevented event.
     compositeBase().onKeyDown(event as unknown as KeyboardEvent)
@@ -857,19 +821,6 @@ export const menuProps = (
 
   // --- the items -------------------------------------------------------------
 
-  /** Whether the pointer left the item for one of its siblings, or for itself. */
-  const leavingForItems = (
-    target: CompositeModel,
-    event?: MenuMouseEvent,
-  ): boolean => {
-    const related = event?.relatedTarget as Node | null | undefined
-    if (!related) return false
-    if (contains(event?.currentTarget as Element | null, related)) return true
-    return target.items
-      .renderedItems()
-      .some((node) => contains(node.element(), related))
-  }
-
   /**
    * The hover half of a menu item, shared by all four item records.
    *
@@ -885,7 +836,7 @@ export const menuProps = (
     onMouseMove: wrap((event?: MenuMouseEvent) => {
       if (event?.defaultPrevented) return
       model.moving.move(event)
-      if (!target || !focusOnHover) return
+      if (!target || item.disabled() || !focusOnHover) return
       if (!model.moving()) return
       // A `move` and not a plain write: focus follows the pointer in a menu,
       // which is also what keeps the arrow keys working afterwards.
@@ -896,9 +847,18 @@ export const menuProps = (
     onMouseLeave: wrap((event?: MenuMouseEvent) => {
       if (event?.defaultPrevented) return
       model.moving.move(event)
-      if (!target || !focusOnHover || !blurOnHoverEnd) return
+      if (!target || item.disabled() || !focusOnHover || !blurOnHoverEnd) return
       if (!model.moving()) return
-      if (leavingForItems(target, event)) return
+      const related = event?.relatedTarget as Node | null | undefined
+      if (
+        related &&
+        (contains(event?.currentTarget as Element | null, related) ||
+          target.items
+            .renderedItems()
+            .some((node) => contains(node.element(), related)))
+      ) {
+        return
+      }
       // Ariakit's `setActiveId(null)` plus `baseElement.focus()`: a move to
       // `null` is both, because the composite element _is_ the active one then.
       target.move(null)
@@ -907,16 +867,32 @@ export const menuProps = (
   })
 
   /** The click half of a menu item: the command, and the tree it closes. */
-  const itemClickHandler = (hideOnClick: boolean) =>
+  const itemClickHandler = (item: CompositeItemNode, hideOnClick: boolean) =>
     wrap((event?: MenuMouseEvent) => {
       if (event?.defaultPrevented) return
+      if (item.disabled()) return
 
-      const element = event?.currentTarget
+      const element = event?.currentTarget as
+        | (Element & { tagName?: unknown; type?: unknown })
+        | null
+        | undefined
+      const popup =
+        typeof element?.getAttribute === 'function'
+          ? element.getAttribute('aria-haspopup')
+          : null
+      const tagName =
+        typeof element?.tagName === 'string'
+          ? element.tagName.toLowerCase()
+          : ''
       const hide = shouldHideMenuOnItemClick({
         hideOnClick,
-        hasPopup: hasPopupAttribute(element),
+        hasPopup: !!popup && popup !== 'false',
         navigating: event
-          ? isMenuItemNavigating(event, describeItemElement(element))
+          ? isMenuItemNavigating(event, {
+              tagName,
+              type:
+                typeof element?.type === 'string' ? element.type : undefined,
+            })
           : false,
       })
       if (hide) model.hideAll()
@@ -939,7 +915,7 @@ export const menuProps = (
       ...compositeOptions,
       name: `${recordName}.composite`,
     })
-    const onClick = itemClickHandler(hideOnClick)
+    const onClick = itemClickHandler(item, hideOnClick)
     const hover = itemHoverHandlers(
       composite,
       item,
@@ -951,6 +927,7 @@ export const menuProps = (
       (): MenuItemProps => ({
         ...base(),
         role: 'menuitem',
+        'aria-disabled': item.disabled() || undefined,
         onClick,
         ...hover,
       }),
@@ -968,10 +945,6 @@ export const menuProps = (
       name: recordName = `${item.name}.props.menuitem`,
       ...compositeOptions
     } = itemOptions
-
-    // The button's id is the item's, so the parent's `aria-activedescendant`
-    // and this menu's `aria-labelledby` point at the same element.
-    renderedButtonId = item.id
 
     const parentItem = parentComposite
       ? compositeItemProps(parentComposite, item, {
@@ -996,17 +969,21 @@ export const menuProps = (
       // The parent navigates first, exactly as Ariakit's stacking order does:
       // an arrow key that walks the parent menu never reaches the button.
       parentItem?.().onKeyDown(event as unknown as KeyboardEvent)
-      onButtonKeyDown(event)
+      if (!item.disabled()) onButtonKeyDown(event)
     })
 
     const onFocus = wrap((event?: MenuFocusEvent) => {
       parentItem?.().onFocus(event as unknown as FocusEvent)
-      onButtonFocus(event)
+      if (!item.disabled()) onButtonFocus(event)
+    })
+
+    const onClick = wrap((event?: MenuMouseEvent) => {
+      if (!item.disabled()) onButtonClick(event)
     })
 
     const onMouseMove = wrap((event?: MenuMouseEvent) => {
       hover.onMouseMove(event)
-      onButtonMouseMove(event)
+      if (!item.disabled()) onButtonMouseMove(event)
     })
 
     const onMouseLeave = wrap((event?: MenuMouseEvent) => {
@@ -1015,13 +992,15 @@ export const menuProps = (
     })
 
     return computed((): MenuItemButtonProps => {
-      const item = parentItem?.()
+      const parentItemProps = parentItem?.()
 
       return {
-        'data-active-item': item?.['data-active-item'],
-        tabIndex: item?.tabIndex,
-        ...buttonProps(renderedButtonId),
+        'data-active-item': parentItemProps?.['data-active-item'],
+        tabIndex: parentItemProps?.tabIndex,
+        ...buttonProps(item.id),
+        'aria-disabled': item.disabled() || undefined,
         ref,
+        onClick,
         onKeyDown,
         onFocus,
         onMouseMove,
@@ -1061,7 +1040,7 @@ export const menuProps = (
       focusOnHover,
       blurOnHoverEnd,
     )
-    const hide = itemClickHandler(hideOnClick)
+    const hide = itemClickHandler(item, hideOnClick)
 
     const checked = (): boolean =>
       radio
@@ -1070,6 +1049,7 @@ export const menuProps = (
 
     const onClick = wrap((event?: MenuMouseEvent) => {
       if (event?.defaultPrevented) return
+      if (item.disabled()) return
 
       // The element reports the state it is _moving to_, which is what the
       // checkbox and radio transitions of `menuValues.ts` take.
@@ -1088,6 +1068,7 @@ export const menuProps = (
         ({
           ...base(),
           role,
+          'aria-disabled': item.disabled() || undefined,
           'aria-checked': checked(),
           name: field,
           value,
@@ -1110,17 +1091,6 @@ export const menuProps = (
     Map<string, Computed<MenuItemCheckboxProps | MenuItemRadioProps>>
   >()
 
-  /** The cache key of a checkbox or radio item: its field and its own value. */
-  const checkedKey = (
-    role: string,
-    itemOptions: MenuItemCheckboxPropsOptions | MenuItemRadioPropsOptions,
-  ): string | null => {
-    const { field, value, ...rest } = itemOptions
-    // A record with its own policy is not cached, like `item`'s.
-    if (Object.keys(rest).length) return null
-    return `${role}\u0000${field}\u0000${String(value)}`
-  }
-
   const cachedCheckedItem = <
     Props extends MenuItemCheckboxProps | MenuItemRadioProps,
   >(
@@ -1128,7 +1098,12 @@ export const menuProps = (
     itemOptions: MenuItemCheckboxPropsOptions | MenuItemRadioPropsOptions,
     role: Props['role'],
   ): Computed<Props> => {
-    const key = checkedKey(role, itemOptions)
+    const { field, value, ...rest } = itemOptions
+    // A record with its own policy is not cached, like `item`'s. JSON preserves
+    // the value type and escapes field contents, unlike a delimited String key.
+    const key = Object.keys(rest).length
+      ? null
+      : JSON.stringify([role, field, value])
     if (key === null) return checkedItemRecord<Props>(item, itemOptions, role)
 
     let records = checkedItems.get(item)

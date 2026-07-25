@@ -918,6 +918,34 @@ test('an item record is a composite item that runs a command', () => {
   expect(edit()).toBe(false)
 })
 
+test('disabled items are announced and cannot activate', () => {
+  const edit = menu({ name: 'edit' })
+  const disabled = edit.composite.items.renderItem({
+    id: 'disabled',
+    disabled: true,
+    element: element('disabled'),
+  })
+  edit.show()
+  edit.composite.set(null)
+
+  const item = edit.props.item(disabled)
+  expect(item()['aria-disabled']).toBe(true)
+  item().onMouseMove({ movementX: 4 })
+  expect(edit.composite()).toBe(null)
+  item().onClick()
+  expect(edit()).toBe(true)
+
+  const checkbox = edit.props.itemCheckbox(disabled, { field: 'disabled' })
+  checkbox().onClick()
+  expect(edit.values()).toEqual({})
+
+  const submenu = menu({ parent: edit, name: 'edit.disabled' })
+  const button = submenu.props.itemButton(disabled)
+  expect(button()['aria-disabled']).toBe(true)
+  button().onClick()
+  expect(submenu()).toBe(false)
+})
+
 test('clicking an item closes the whole tree, unless the policy says not to', () => {
   const file = menu({ name: 'file' })
   const recent = menu({ parent: file, name: 'file.recent' })
@@ -1064,6 +1092,24 @@ test('a radio item holds the single value of its group', () => {
   expect(view()).toBe(false)
 })
 
+test('checked item caches distinguish string and number values', () => {
+  const view = menu({ name: 'view' })
+  const [item] = renderItems(view, 'choice')
+
+  const numberRecord = view.props.itemRadio(item!, {
+    field: 'choice',
+    value: 1,
+  })
+  const stringRecord = view.props.itemRadio(item!, {
+    field: 'choice',
+    value: '1',
+  })
+
+  expect(stringRecord).not.toBe(numberRecord)
+  expect(numberRecord().value).toBe(1)
+  expect(stringRecord().value).toBe('1')
+})
+
 test('a separator is not an item, and points across the menu', () => {
   const edit = menu({ name: 'edit' })
 
@@ -1096,14 +1142,17 @@ test('a submenu button is one element with both sets of handlers', () => {
     'data-active-item': true,
     tabIndex: undefined,
   })
-  // so the submenu is labelled by the button that was actually rendered
-  expect(find.props.list()['aria-labelledby']).toBe('find')
   expect(find.props.itemButton(item!)).toBe(record)
 
   const button = element('find')
+  const unsubscribe = find.props.list.subscribe(() => {})
   record().ref(button)
   expect(item!.element()).toBe(button)
   expect(find.disclosureElement()).toBe(button)
+  // The mounted disclosure drives the label reactively even when the menu list
+  // was already subscribed before its submenu button appeared.
+  expect(find.props.list()['aria-labelledby']).toBe('find')
+  unsubscribe()
 
   // the parent navigates first: an arrow key that walks the parent menu never
   // reaches the button
