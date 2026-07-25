@@ -1,0 +1,525 @@
+/**
+ * Layer 2 for `dialog`: the DOM primitives its behaviors need.
+ *
+ * Every function here is a plain DOM operation that returns a restore callback,
+ * so the Reatom layer only has to decide _when_ to apply it.
+ *
+ * Ported from [Ariakit](https://github.com/ariakit/ariakit) (MIT, ©
+ * 2025–present Ariakit FZ-LLC):
+ * `packages/ariakit-react-components/src/dialog/utils/*` (`orchestrate.ts`,
+ * `walk-tree-outside.ts`, `disable-tree.ts`, `use-prevent-body-scroll.ts`,
+ * `prepend-hidden-dismiss.ts`, `is-backdrop.ts`, `is-focus-trap.ts`,
+ * `supports-inert.ts`).
+ */
+
+import { isFocusable } from '../focusable/focusableDom'
+
+/** Undoes a DOM mutation applied by this module. */
+export type Restore = () => void
+
+const noop: Restore = () => {}
+
+const restorers = new WeakMap<Element, Map<string, Restore>>()
+
+/**
+ * Applies a DOM mutation that can be applied more than once to the same element
+ * and the same property, and still restores to the original value.
+ *
+ * @remarks
+ *   Two open dialogs may both want `inert` on the same background element, and
+ *   they close in an arbitrary order. Ariakit solves it with a per-element,
+ *   per-key stack of restore callbacks: the latest setup wins, and restoring it
+ *   hands the key back to the previous owner instead of resetting to the
+ *   original value (`orchestrate.ts`). This is a direct port.
+ * @param element - The element being mutated.
+ * @param key - What is being mutated, e.g. an attribute or property name.
+ * @param setup - Applies the mutation and returns its restore callback.
+ */
+export const orchestrate = (
+  element: Element,
+  key: string,
+  setup: () => Restore,
+): Restore => {
+  let elementRestorers = restorers.get(element)
+  if (!elementRestorers) restorers.set(element, (elementRestorers = new Map()))
+
+  const previous = elementRestorers.get(key)
+
+  if (!previous) {
+    elementRestorers.set(key, setup())
+    return () => {
+      elementRestorers!.get(key)?.()
+      elementRestorers!.delete(key)
+    }
+  }
+
+  const restore = setup()
+  const next = () => {
+    restore()
+    previous()
+    elementRestorers!.delete(key)
+  }
+  elementRestorers.set(key, next)
+
+  return () => {
+    // A later setup already took over this key; it owns the restore now.
+    if (elementRestorers!.get(key) !== next) return
+    restore()
+    elementRestorers!.set(key, previous)
+  }
+}
+
+/** Sets an attribute and returns a callback restoring the previous value. */
+export const setAttribute = (
+  element: Element,
+  attribute: string,
+  value: string,
+): Restore =>
+  orchestrate(element, attribute, () => {
+    const previous = element.getAttribute(attribute)
+    element.setAttribute(attribute, value)
+    return () => {
+      if (previous == null) element.removeAttribute(attribute)
+      else element.setAttribute(attribute, previous)
+    }
+  })
+
+/** Sets a DOM property and returns a callback restoring the previous value. */
+export const setProperty = <T extends Element, K extends keyof T & string>(
+  element: T,
+  property: K,
+  value: T[K],
+): Restore =>
+  orchestrate(element, property, () => {
+    const exists = property in element
+    const previous = element[property]
+    element[property] = value
+    return () => {
+      if (exists) element[property] = previous
+      else delete element[property]
+    }
+  })
+
+/** Assigns inline styles and returns a callback restoring the previous ones. */
+export const assignStyle = (
+  element: HTMLElement,
+  style: Partial<CSSStyleDeclaration>,
+): Restore =>
+  orchestrate(element, 'style', () => {
+    const previous = element.style.cssText
+    Object.assign(element.style, style)
+    return () => {
+      element.style.cssText = previous
+    }
+  })
+
+/** An element in a lib version that already types the `inert` property. */
+type InertElement = Element & { inert: boolean }
+
+/** `true` when the browser implements the `inert` attribute. */
+export const supportsInert = (): boolean =>
+  typeof HTMLElement !== 'undefined' && 'inert' in HTMLElement.prototype
+
+/** `true` when `element` is `ancestor` or is contained by it. */
+export const contains = (
+  ancestor: Element | null | undefined,
+  element: Node | null | undefined,
+): boolean => !!ancestor && !!element && ancestor.contains(element)
+
+/**
+ * Every tabbable element inside `container`, in DOM order.
+ *
+ * @remarks
+ *   Ariakit keeps a hand-written selector for this (`getAllTabbableIn`). Here the
+ *   already ported `isFocusable` check is reused instead, which costs a walk
+ *   over the subtree — acceptable for a dialog, which is small by construction,
+ *   and it keeps a single definition of "focusable" in the package.
+ */
+export const getTabbableIn = (container: Element): Array<HTMLElement> => {
+  const elements = Array.from(container.querySelectorAll<HTMLElement>('*'))
+  return elements.filter(
+    (element) => isFocusable(element) && element.tabIndex >= 0,
+  )
+}
+
+/**
+ * `true` when the pointer coordinates of `event` fall inside `element`.
+ *
+ * Port of Ariakit's `isMouseEventOnDialog`
+ * (`utils/use-hide-on-interact-outside.ts`): a zero-sized element never counts,
+ * which is how an unmounted or collapsed dialog is skipped.
+ */
+export const isPointerEventInside = (
+  event: Event,
+  element: Element,
+): boolean => {
+  if (!('clientY' in event)) return false
+  const { clientX, clientY } = event as MouseEvent
+  const rect = element.getBoundingClientRect()
+  if (rect.width === 0 || rect.height === 0) return false
+  return (
+    rect.top <= clientY &&
+    clientY <= rect.top + rect.height &&
+    rect.left <= clientX &&
+    clientX <= rect.left + rect.width
+  )
+}
+
+/**
+ * `true` when the element is still part of its document.
+ *
+ * Port of Ariakit's `isInDocument` (`use-hide-on-interact-outside.ts`): an
+ * element unmounted right after it received focus fires its focus event when it
+ * is already detached, and that event must be ignored.
+ */
+export const isInDocument = (element: Element): boolean => {
+  if (element.tagName === 'HTML') return true
+  return contains(element.ownerDocument.body, element)
+}
+
+/**
+ * `true` when the event target belongs to the dialog's disclosure element.
+ *
+ * Port of Ariakit's `isDisclosure` (`use-hide-on-interact-outside.ts`): a
+ * composite disclosure (a combobox, say) keeps DOM focus on itself and points
+ * at the active item with `aria-activedescendant`, so that item counts as part
+ * of the disclosure too.
+ */
+export const isDisclosureTarget = (
+  disclosure: Element | null,
+  target: Element,
+): boolean => {
+  if (!disclosure) return false
+  if (contains(disclosure, target)) return true
+
+  const activeId = target.getAttribute?.('aria-activedescendant')
+  if (!activeId) return false
+
+  const active = disclosure.ownerDocument.getElementById(activeId)
+  return !!active && contains(disclosure, active)
+}
+
+const claimedEscapes = new WeakSet<object>()
+
+/**
+ * Claims an Escape event for one dialog, and reports whether the claim
+ * succeeded.
+ *
+ * @remarks
+ *   Every mounted dialog listens for Escape on the document, and a nested dialog
+ *   is usually rendered inside its parent, so a single key press reaches
+ *   several dialogs. `topmost` alone is not enough to pick one: it is read from
+ *   live atoms, and the innermost dialog closes _synchronously_ inside the
+ *   event, so a handler that runs after it would see itself as topmost and
+ *   close too.
+ *
+ *   Ariakit has the same problem and solves it with a DOM marker that its React
+ *   state update outlives (`dialog.tsx`, `isElementMarked` /
+ *   `mark-tree-outside.ts`). Claiming the event object is the same guarantee
+ *   without a document-wide side effect, and it holds whichever order the
+ *   listeners were attached in: a dialog that is not topmost bails on its own
+ *   and leaves the claim to the one that is.
+ * @param event - The Escape event, or nothing when it is triggered manually.
+ * @returns `true` when the caller may act on the event.
+ */
+export const claimEscape = (event?: object | null): boolean => {
+  if (!event) return true
+  if (claimedEscapes.has(event)) return false
+  claimedEscapes.add(event)
+  return true
+}
+
+/** `true` when the element is a dialog backdrop. Port of Ariakit's `isBackdrop`. */
+export const isBackdrop = (element: Element): boolean =>
+  element.hasAttribute('data-backdrop')
+
+/** `true` when the element is a focus-trap sentinel. */
+export const isFocusTrap = (element: Element): boolean =>
+  element.hasAttribute('data-focus-trap')
+
+const IGNORED_TAGS = ['SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE', 'HEAD']
+
+/**
+ * Walks every element that is outside `elements` but shares an ancestor with
+ * them, from the innermost level up to `<body>`.
+ *
+ * @remarks
+ *   Port of Ariakit's `walkTreeOutside` (`walk-tree-outside.ts`) without the
+ *   document snapshot: for each kept element it visits the siblings of every
+ *   ancestor, skipping branches that contain one of the kept elements. Elements
+ *   whose ancestor is already in the list are not walked twice.
+ * @param elements - The elements that must stay interactive.
+ * @param callback - Called once per element outside them.
+ */
+export const walkTreeOutside = (
+  elements: ReadonlyArray<Element | null>,
+  callback: (element: Element) => void,
+): void => {
+  for (const kept of elements) {
+    if (!kept?.isConnected) continue
+
+    const hasAncestorAlready = elements.some(
+      (candidate) =>
+        candidate && candidate !== kept && candidate.contains(kept),
+    )
+    const body = kept.ownerDocument.body
+    let element: Element = kept
+
+    while (element.parentElement && element !== body) {
+      if (!hasAncestorAlready) {
+        for (const child of element.parentElement.children) {
+          if (IGNORED_TAGS.includes(child.tagName)) continue
+          // A branch containing a kept element must stay reachable.
+          if (elements.some((entry) => entry && child.contains(entry))) continue
+          callback(child)
+        }
+      }
+      element = element.parentElement
+    }
+  }
+}
+
+/**
+ * Makes an element and its subtree non-interactive, and returns the restore.
+ *
+ * @remarks
+ *   `inert` does all of it in one property: no focus, no pointer events, and the
+ *   subtree leaves the accessibility tree. The fallback for browsers without it
+ *   is Ariakit's: hide the subtree from assistive technology and block the
+ *   pointer, then drop every tabbable element out of the tab order
+ *   (`disable-tree.ts`).
+ */
+export const disableTree = (element: Element): Restore => {
+  if (!('style' in element)) return noop
+
+  if (supportsInert()) {
+    return setProperty(element as unknown as InertElement, 'inert', true)
+  }
+
+  const restores = getTabbableIn(element).map((tabbable) =>
+    setAttribute(tabbable, 'tabindex', '-1'),
+  )
+  restores.push(
+    setAttribute(element, 'aria-hidden', 'true'),
+    assignStyle(element as HTMLElement, {
+      pointerEvents: 'none',
+      userSelect: 'none',
+    }),
+  )
+
+  return () => {
+    for (const restore of restores.reverse()) restore()
+  }
+}
+
+/**
+ * Makes everything outside `elements` non-interactive — the actual mechanism
+ * behind a modal dialog.
+ *
+ * @remarks
+ *   Backdrops and focus-trap sentinels are skipped: the backdrop must keep
+ *   receiving the click that dismisses the dialog, and a sentinel must stay
+ *   tabbable so Tab can wrap (`disable-tree.ts`).
+ * @param elements - The dialog element, plus anything that must stay
+ *   interactive: nested dialogs, backdrops, `getPersistentElements` in
+ *   Ariakit's terms.
+ */
+export const disableTreeOutside = (
+  elements: ReadonlyArray<Element | null>,
+): Restore => {
+  const restores: Array<Restore> = []
+
+  walkTreeOutside(elements, (element) => {
+    if (isBackdrop(element)) return
+    if (isFocusTrap(element)) return
+    restores.unshift(disableTree(element))
+  })
+
+  return () => {
+    for (const restore of restores) restore()
+  }
+}
+
+interface ScrollLock {
+  count: number
+  restore: Restore
+}
+
+const scrollLocks = new WeakMap<Document, ScrollLock>()
+
+/**
+ * Prevents the document from scrolling, compensating for the scrollbar width so
+ * the page does not shift.
+ *
+ * @remarks
+ *   Ariakit elects a single "root" dialog through a
+ *   `data-dialog-prevent-body-scroll` attribute on `<body>` and a
+ *   `MutationObserver` that retries when it is released (`use-root-dialog.ts`),
+ *   because a second lock would measure a scrollbar width of `0` and overwrite
+ *   the first one's padding. A reference count expresses the same rule
+ *   directly: only the first lock applies, only the last release restores.
+ *
+ *   RTL documents keep their scrollbar on the left, so the compensation goes to
+ *   the matching side (`getPaddingProperty`).
+ * @param element - Any element in the document to lock, usually the dialog.
+ */
+export const lockBodyScroll = (element: Element): Restore => {
+  const document = element.ownerDocument
+  const lock = scrollLocks.get(document)
+
+  if (lock) {
+    lock.count++
+    return () => {
+      if (--lock.count === 0) {
+        scrollLocks.delete(document)
+        lock.restore()
+      }
+    }
+  }
+
+  const { documentElement, body } = document
+  const view = document.defaultView
+  const scrollbarWidth = view
+    ? view.innerWidth - documentElement.clientWidth
+    : 0
+  const scrollbarX =
+    Math.round(documentElement.getBoundingClientRect().left) +
+    documentElement.scrollLeft
+  const paddingProperty = scrollbarX ? 'paddingLeft' : 'paddingRight'
+
+  const restore = assignStyle(body, {
+    overflow: 'hidden',
+    [paddingProperty]: `${scrollbarWidth}px`,
+  })
+
+  const created: ScrollLock = { count: 1, restore }
+  scrollLocks.set(document, created)
+
+  return () => {
+    if (--created.count === 0) {
+      scrollLocks.delete(document)
+      restore()
+    }
+  }
+}
+
+/** Inline styles that hide an element visually but keep it in the a11y tree. */
+export const VISUALLY_HIDDEN_STYLE = {
+  border: '0px',
+  clip: 'rect(0 0 0 0)',
+  height: '1px',
+  margin: '-1px',
+  overflow: 'hidden',
+  padding: '0px',
+  position: 'absolute',
+  whiteSpace: 'nowrap',
+  width: '1px',
+} as const satisfies Partial<CSSStyleDeclaration>
+
+/**
+ * Prepends a visually hidden dismiss button to a modal dialog.
+ *
+ * @remarks
+ *   Without it a screen-reader user who reaches the end of a modal dialog has no
+ *   way out, because everything outside is inert. Ariakit renders it only when
+ *   the dialog has no `DialogDismiss` of its own
+ *   (`prepend-hidden-dismiss.ts`).
+ * @param container - The dialog element.
+ * @param onClick - Called when the button is activated; wrap it with `wrap`.
+ */
+export const prependHiddenDismiss = (
+  container: HTMLElement,
+  onClick: () => unknown,
+): Restore => {
+  const button = container.ownerDocument.createElement('button')
+  button.type = 'button'
+  button.tabIndex = -1
+  button.textContent = 'Dismiss popup'
+  button.dataset.dialogHiddenDismiss = ''
+  Object.assign(button.style, VISUALLY_HIDDEN_STYLE)
+
+  button.addEventListener('click', onClick)
+  container.prepend(button)
+
+  return () => {
+    button.removeEventListener('click', onClick)
+    button.remove()
+  }
+}
+
+/**
+ * Resolves the element an opening dialog must focus.
+ *
+ * @remarks
+ *   The candidate lookup for `pickDialogInitialFocus`: an explicit
+ *   `initialFocus`, then `[data-autofocus=true]` / `[autofocus]` — Ariakit's
+ *   `Focusable` consumes the native `autoFocus` prop and re-exposes it as the
+ *   data attribute — then the first tabbable element, then the dialog itself,
+ *   which is focusable through its `tabIndex={-1}`.
+ */
+export const resolveInitialFocus = (
+  content: HTMLElement,
+  initialFocus?: HTMLElement | null,
+): HTMLElement => {
+  if (initialFocus && isFocusable(initialFocus)) return initialFocus
+
+  const autoFocus = content.querySelector<HTMLElement>(
+    '[data-autofocus=true],[autofocus]',
+  )
+  if (autoFocus) return autoFocus
+
+  return getTabbableIn(content)[0] ?? content
+}
+
+/**
+ * Resolves the element a closing dialog must restore focus to.
+ *
+ * @remarks
+ *   Two Ariakit redirections, both from `focusOnHide` (`dialog.tsx`):
+ *
+ *   - When the target is an item of a composite widget that manages focus with
+ *       `aria-activedescendant`, focus belongs on the composite element
+ *       instead.
+ *   - When the target is no longer focusable it usually sits inside another popup
+ *       that closed with this dialog, so its own control (`aria-controls`) is
+ *       tried next.
+ */
+export const resolveFinalFocus = (
+  target: HTMLElement | null,
+): HTMLElement | null => {
+  if (!target) return null
+  const document = target.ownerDocument
+
+  if (target.id) {
+    const composite = document.querySelector<HTMLElement>(
+      `[aria-activedescendant="${target.id}"]`,
+    )
+    if (composite) return composite
+  }
+
+  if (!isFocusable(target)) {
+    const parentDialog = target.closest('[data-dialog]')
+    if (parentDialog?.id) {
+      const control = document.querySelector<HTMLElement>(
+        `[aria-controls~="${parentDialog.id}"]`,
+      )
+      if (control) return control
+    }
+  }
+
+  return target
+}
+
+/**
+ * `true` when focus already sits on a focusable element outside the dialog.
+ *
+ * Port of Ariakit's `isAlreadyFocusingAnotherElement` (`dialog.tsx`): the user
+ * clicked or tabbed somewhere else while the dialog was closing, so restoring
+ * focus would steal it back.
+ */
+export const isFocusOutsideDialog = (content: Element | null): boolean => {
+  const active = content?.ownerDocument.activeElement ?? null
+  if (!active) return false
+  if (contains(content, active)) return false
+  return isFocusable(active)
+}
