@@ -84,12 +84,6 @@ const NULL_ITEM: CompositeNavigationItem = { id: null as unknown as string }
 
 const EMPTY_ITEM_ID = '__EMPTY_ITEM__'
 
-const createEmptyItem = (rowId?: string): CompositeNavigationItem => ({
-  id: EMPTY_ITEM_ID,
-  disabled: true,
-  rowId,
-})
-
 /**
  * Finds the first item that is not disabled, optionally ignoring one id.
  *
@@ -250,7 +244,11 @@ export const normalizeRows = <T extends CompositeNavigationItem>(
       normalized[i] =
         previousItem && activeId !== previousItem.id && focusShift
           ? previousItem
-          : (createEmptyItem(previousItem?.rowId) as T)
+          : ({
+              id: EMPTY_ITEM_ID,
+              disabled: true,
+              rowId: previousItem?.rowId,
+            } as T)
     }
 
     return normalized

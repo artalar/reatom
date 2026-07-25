@@ -263,6 +263,23 @@ test('navigate resolves, moves, and reports what it did', () => {
   )
 })
 
+test('navigate does not emit a move when there is nowhere to go', async () => {
+  const composite = reatomComposite({ name: 'navigateNoop' })
+  render(composite, { id: 'a' })
+  const moves: Array<string | null | undefined> = []
+  const stop = effect(() => {
+    for (const call of getCalls(composite.move)) moves.push(call.params[0])
+  }, 'navigateNoop.observer')
+  notify()
+
+  expect(composite.navigate({ move: 'next' })).toBe(undefined)
+  notify()
+  await null
+  expect(moves).toEqual([])
+
+  stop()
+})
+
 // --- roving tabindex --------------------------------------------------------
 
 test('exactly one item is tabbable, with documented fallbacks', () => {

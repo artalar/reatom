@@ -1,6 +1,6 @@
 import type { Computed } from '@reatom/core'
 import { context, notify } from '@reatom/core'
-import { afterEach, beforeEach, expect, test } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import type { Composite } from './reatomComposite'
 import { reatomComposite } from './reatomComposite'
@@ -118,9 +118,11 @@ test('roving tabindex keeps exactly one item in the tab order', async () => {
   expect(tabIndexes(buttons)).toEqual([-1, -1, 0])
 
   // nowhere to go: focus and the tab order stay put
+  const focus = vi.spyOn(buttons[2]!, 'focus')
   await press(buttons[2]!, 'ArrowRight')
   expect(document.activeElement).toBe(buttons[2])
   expect(tabIndexes(buttons)).toEqual([-1, -1, 0])
+  expect(focus).not.toHaveBeenCalled()
 })
 
 // Ariakit: `focusOnMove` in `composite.tsx` reacts to the `moves` counter, not

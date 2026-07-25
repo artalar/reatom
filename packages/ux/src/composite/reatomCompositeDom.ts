@@ -7,7 +7,7 @@
  */
 
 import type { Ext } from '@reatom/core'
-import { effect, getCalls, withConnectHook, wrap } from '@reatom/core'
+import { abortVar, addCallHook, withConnectHook, wrap } from '@reatom/core'
 
 import type { CompositeModel } from './reatomComposite'
 
@@ -32,10 +32,9 @@ export interface CompositeFocusOptions {
  *
  *   Ariakit can not express that distinction in its store, so it keeps a `moves`
  *   counter next to `activeId` and its `Composite` component diffs the counter
- *   inside `useEffect`. Here the `move` action _is_ the event: an `effect`
- *   reads `getCalls(model.move)` and does nothing when the batch contains no
- *   call. The counter is gone, and so is the "moves increments but nothing
- *   moved" state.
+ *   inside `useEffect`. Here the `move` action _is_ the event: a connection-
+ *   scoped call hook reacts to it directly. The counter is gone, and so is the
+ *   "moves increments but nothing moved" state.
  *
  *   With `virtualFocus`, DOM focus stays on the base element and the item is only
  *   marked with `aria-activedescendant`, so a move focuses the base element
@@ -43,9 +42,9 @@ export interface CompositeFocusOptions {
  *   composite element itself is active" means.
  *
  *   The lifetime is the model's: nothing is observed until something subscribes,
- *   and the effect is aborted on disconnect. The focus call itself is deferred
- *   by one microtask, so it lands after the view has applied the props of the
- *   same move — wait for a microtask before asserting on
+ *   and the call hook is removed on disconnect. The focus call itself is
+ *   deferred by one microtask, so it lands after the view has applied the props
+ *   of the same move — wait for a microtask before asserting on
  *   `document.activeElement`.
  * @example
  *   const toolbar = reatomComposite({ name: 'toolbar' }).extend(
@@ -61,16 +60,16 @@ export const withCompositeFocus = <T extends CompositeModel>({
   return (target) =>
     target.extend(
       withConnectHook(() => {
-        effect(() => {
-          // Both reads are unconditional: the calls read is the subscription to
-          // the event, and the element reads keep the effect connected to the
-          // handles it will need.
-          const moves = getCalls(target.move)
+        const signal = abortVar.require().signal
+
+        return addCallHook(target.move, (_payload, [id]) => {
+          // `undefined` is the "nowhere to go" result of a navigation query,
+          // not a focus request.
+          if (id === undefined) return
+
           const activeElement = target.activeItem()?.element() ?? null
           const base = target.baseElement()
           const virtual = target.virtualFocus()
-
-          if (!moves.length) return
 
           const element =
             virtual || target() === null ? base : (activeElement ?? base)
@@ -82,6 +81,8 @@ export const withCompositeFocus = <T extends CompositeModel>({
           // the view applies that prop in this very notification.
           queueMicrotask(
             wrap(() => {
+              if (signal.aborted) return
+
               // `preventScroll` plus an explicit `scrollIntoView` is Ariakit's
               // `focusIntoView`: the browser's own focus scrolling can not be
               // told to keep the item nearest to the viewport edge.
@@ -91,7 +92,7 @@ export const withCompositeFocus = <T extends CompositeModel>({
               }
             }),
           )
-        }, `${target.name}.focusOnMove`)
+        })
       }),
     )
 }

@@ -145,32 +145,6 @@ export interface CompositeTypeaheadEvent extends TypeaheadKeyEvent {
   preventDefault?: () => void
 }
 
-/** Whether the event target is a text field, where the key is text, not a jump. */
-const isTextFieldTarget = (target: unknown): boolean => {
-  const element = target as Element | null | undefined
-  if (!element || typeof element !== 'object') return false
-  return isTextFieldElement(element)
-}
-
-/**
- * Whether the key press happened on the composite element itself or on one of
- * its items — Ariakit's `isSelfTargetOrItem`.
- *
- * Anything else inside the widget (a search input, a nested button) keeps its
- * own keys, and typing there abandons the buffer.
- */
-const isSelfTargetOrItem = (
-  model: CompositeModel,
-  event: CompositeTypeaheadEvent,
-): boolean => {
-  if (isSelfTarget(event as unknown as EventTargetsLike)) return true
-  const target = event.target
-  if (!target) return false
-  return model.items
-    .renderedItems()
-    .some((item) => !item.disabled() && item.element() === target)
-}
-
 /**
  * Runs the typeahead for one key press: the DOM half of Ariakit's
  * `useCompositeTypeahead`.
@@ -202,10 +176,22 @@ export const applyTypeaheadIntent = (
   if (event.defaultPrevented) return undefined
   if (!typeahead.enabled()) return undefined
 
+  const target = event.target
+  const element = target as Element | null | undefined
+  const isTextFieldTarget =
+    !!element && typeof element === 'object' && isTextFieldElement(element)
+  // Ariakit's `isSelfTargetOrItem`: nested fields and controls keep their keys.
+  const isSelfTargetOrItem =
+    isSelfTarget(event as unknown as EventTargetsLike) ||
+    (!!target &&
+      model.items
+        .renderedItems()
+        .some((item) => !item.disabled() && item.element() === target))
+
   if (
-    isTextFieldTarget(event.target) ||
+    isTextFieldTarget ||
     !isTypeaheadKey(event, typeahead()) ||
-    !isSelfTargetOrItem(model, event)
+    !isSelfTargetOrItem
   ) {
     typeahead.clear()
     return undefined

@@ -496,13 +496,6 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
     `${name}.navigationItems`,
   )
 
-  const seedActiveId = (state: string | null | undefined) => {
-    // Read unconditionally: a conditional read would drop the dependency and
-    // the seed would never arrive once an item renders.
-    const first = getFirstEnabledId(navigationItems())
-    return state === undefined ? first : state
-  }
-
   // Ariakit seeds `activeId` from a `setup` + `sync` listener that writes the
   // state back (`composite-store.ts:194-201`). A write-back derivation that must
   // stay writable is exactly `withComputed`.
@@ -510,7 +503,12 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
   // The cast works around `AtomState`, which drops `undefined` from a state
   // union because it infers through the optional `AtomLike.__state` property.
   activeId.extend(
-    withComputed(seedActiveId as (state: string | null) => string | null),
+    withComputed(((state: string | null | undefined) => {
+      // Read unconditionally: a conditional read would drop the dependency and
+      // the seed would never arrive once an item renders.
+      const first = getFirstEnabledId(navigationItems())
+      return state === undefined ? first : state
+    }) as (state: string | null) => string | null),
   )
 
   const activeItem = computed(
@@ -523,27 +521,24 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
     `${name}.activeDescendant`,
   )
 
-  const navigationState = (
-    overrides: CompositeNavigationOverrides = {},
-  ): CompositeNavigationState => ({
-    // Every fallback treats an explicit `undefined` as absent, which is what
-    // Ariakit's destructuring defaults do.
-    items: overrides.items ?? navigationItems(),
-    activeId:
-      overrides.activeId !== undefined ? overrides.activeId : activeId(),
-    focusLoop: overrides.focusLoop ?? focusLoop(),
-    focusWrap: overrides.focusWrap ?? focusWrap(),
-    focusShift: overrides.focusShift ?? focusShift(),
-    includesBaseElement: overrides.includesBaseElement ?? includesBaseElement(),
-    rtl: overrides.rtl ?? rtl(),
-    skip: overrides.skip,
-  })
-
   const nextId = (
     intent: CompositeNavigationIntent,
     overrides: CompositeNavigationOverrides = {},
   ): string | null | undefined => {
-    const state = navigationState(overrides)
+    // Every fallback treats an explicit `undefined` as absent, which is what
+    // Ariakit's destructuring defaults do.
+    const state: CompositeNavigationState = {
+      items: overrides.items ?? navigationItems(),
+      activeId:
+        overrides.activeId !== undefined ? overrides.activeId : activeId(),
+      focusLoop: overrides.focusLoop ?? focusLoop(),
+      focusWrap: overrides.focusWrap ?? focusWrap(),
+      focusShift: overrides.focusShift ?? focusShift(),
+      includesBaseElement:
+        overrides.includesBaseElement ?? includesBaseElement(),
+      rtl: overrides.rtl ?? rtl(),
+      skip: overrides.skip,
+    }
     const list = state.items!
 
     switch (intent.move) {
@@ -574,7 +569,7 @@ export const reatomComposite = (options: CompositeOptions = {}): Composite => {
       overrides?: CompositeNavigationOverrides,
     ): string | null | undefined => {
       const id = nextId(intent, overrides)
-      move(id)
+      if (id !== undefined) move(id)
       return id
     },
     `${name}.navigate`,
