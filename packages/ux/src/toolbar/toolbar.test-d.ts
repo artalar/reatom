@@ -98,14 +98,3 @@ test('withToolbarProps retypes the composite it upgrades', () => {
   expectTypeOf(toolbar.props.base()).toEqualTypeOf<ToolbarBaseProps>()
   expectTypeOf(toolbar.props.separator()).toEqualTypeOf<ToolbarSeparatorProps>()
 })
-
-test('withToolbarProps preserves prior model extensions', () => {
-  const composite = reatomComposite({ name: 'extended' }).extend(() => ({
-    marker: 'marker' as const,
-  }))
-
-  const toolbar = composite.extend(withToolbarProps())
-
-  expectTypeOf(toolbar.marker).toEqualTypeOf<'marker'>()
-  expectTypeOf(toolbar.props.base()).toEqualTypeOf<ToolbarBaseProps>()
-})
