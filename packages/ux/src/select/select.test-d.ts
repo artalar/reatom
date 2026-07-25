@@ -197,6 +197,9 @@ test('prop records are framework neutral objects, keyed by item value', () => {
   expectTypeOf(
     fruit.props.item('Apple')()['aria-selected'],
   ).toEqualTypeOf<boolean>()
+  expectTypeOf(fruit.props.item('Apple')()['aria-disabled']).toEqualTypeOf<
+    true | undefined
+  >()
   expectTypeOf(fruit.props.item('Apple')()['data-autofocus']).toEqualTypeOf<
     true | undefined
   >()
@@ -208,6 +211,9 @@ test('prop records are framework neutral objects, keyed by item value', () => {
   expectTypeOf(fruit.props.item('Apple', { disabled: true })).toExtend<
     Computed<SelectItemProps>
   >()
+  expectTypeOf(fruit.props.item('Apple')().onClick).toBeCallableWith(
+    {} as MouseEvent,
+  )
 
   // @ts-expect-error an item record is addressed by value
   fruit.props.item()

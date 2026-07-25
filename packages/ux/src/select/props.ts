@@ -28,6 +28,7 @@ import { applyTypeaheadIntent } from '../composite/props'
 import { compositeElementId } from '../composite/reatomComposite'
 import { VISUALLY_HIDDEN_STYLE } from '../dialog/dialogDom'
 import { isDisclosureContentHidden } from '../disclosure/props'
+import { isApple } from '../focusable/focusableDom'
 import { isSelfTarget } from '../interactions/element'
 import { queueBeforeEvent } from '../interactions/queueBeforeEvent'
 import type { PopoverBasePlacement } from '../popover/popoverPlacement'
@@ -115,6 +116,9 @@ export interface SelectTargetedEvent extends SelectPropsEvent {
 /** A `click` event, which only needs the element that was clicked. */
 export interface SelectClickEvent extends SelectPropsEvent {
   readonly currentTarget?: unknown
+  readonly altKey?: boolean
+  readonly ctrlKey?: boolean
+  readonly metaKey?: boolean
 }
 
 /** A `keydown` event. */
@@ -278,6 +282,8 @@ export interface SelectItemProps {
   id: string
   /** Follows the popup role — see {@link selectItemRole}. */
   role: SelectItemRole
+  /** Announces and enforces that the item cannot be activated. */
+  'aria-disabled': true | undefined
   /**
    * Whether the item is part of the value. Unlike a combobox item, a select
    * item always announces it: the active item and the selected item are two
@@ -313,7 +319,7 @@ export interface SelectItemProps {
    */
   ref: (element: HTMLElement | null) => void
   /** Picks the item: writes the value and closes the list. */
-  onClick: (event?: SelectPropsEvent) => void
+  onClick: (event?: SelectClickEvent) => void
   /** Navigates the items, for the roving-tabindex mode. */
   onKeyDown: (event: SelectKeyboardEvent) => void
   /** Focusing an item makes it the active one. */
@@ -536,8 +542,7 @@ export interface SelectPropRecords {
   /**
    * Props for the element of one item value. The record is memoized per value,
    * so repeated calls keep the same identity; passing options returns a fresh,
-   * uncached record whose policy is still remembered for the item's other
-   * transitions.
+   * uncached record.
    */
   item: (
     value: string,
@@ -555,12 +560,6 @@ export interface SelectPropRecords {
    * Not props: it is a list to render, not an object to spread.
    */
   nativeOptions: Computed<Array<string>>
-}
-
-/** The resolved per item click policy, once the reactive defaults are read. */
-interface SelectItemPolicy {
-  setValueOnClick: boolean
-  hideOnClick: boolean
 }
 
 /**
@@ -643,20 +642,6 @@ export const selectProps = (
   const itemRole = selectItemRole(popupRole)
   const multiSelectableRole = isSelectMultiSelectableRole(popupRole)
 
-  /** The per value option overrides, so every transition applies one policy. */
-  const itemOptions = new Map<string, SelectItemPropsOptions>()
-
-  const policy = (value: string): SelectItemPolicy => {
-    const { setValueOnClick, hideOnClick } = itemOptions.get(value) ?? {}
-    return {
-      setValueOnClick: setValueOnClick ?? setValueOnClickDefault,
-      // Ariakit: `value != null && !multiSelectable` — picking one of several
-      // values must leave the list open for the next one.
-      hideOnClick:
-        hideOnClick ?? hideOnClickDefault ?? !model.multiSelectable(),
-    }
-  }
-
   /**
    * The label of the widget, which is the `label` record's element and only
    * while it is mounted — Ariakit's `labelElement?.id`.
@@ -685,31 +670,6 @@ export const selectProps = (
     notify()
   })
 
-  /**
-   * Opens the list on `keyup` rather than now.
-   *
-   * @remarks
-   *   Ariakit's comment: "Schedule the show event to run after the key event has
-   *   finished bubbling. This is necessary to avoid the page to scroll when the
-   *   popover is shown." Without a DOM there is nothing to race, so the show is
-   *   immediate — which is what a node test sees.
-   */
-  const showBeforeKeyUp = (target: unknown): void => {
-    const element = target as EventTarget | null
-    if (
-      element &&
-      typeof element.addEventListener === 'function' &&
-      typeof requestAnimationFrame === 'function'
-    ) {
-      queueBeforeEvent(element, 'keyup', () => {
-        popover.show()
-        notify()
-      })
-      return
-    }
-    popover.show()
-  }
-
   const onSelectKeyDown = wrap((event: SelectKeyboardEvent) => {
     if (event.defaultPrevented) return
 
@@ -730,7 +690,22 @@ export const selectProps = (
       // the value follow it. Skipping the move outright is the same end state,
       // and it does not write a value the user never saw.
       composite.move(composite())
-      showBeforeKeyUp(event.currentTarget)
+      // Ariakit schedules the show after the key event has finished bubbling,
+      // so opening the popover cannot make that same key scroll the page.
+      const element = event.currentTarget as EventTarget | null
+      if (
+        element &&
+        typeof element.addEventListener === 'function' &&
+        typeof requestAnimationFrame === 'function'
+      ) {
+        queueBeforeEvent(element, 'keyup', () => {
+          popover.show()
+          notify()
+        })
+      } else {
+        // Without a DOM there is nothing to race, which is what node tests see.
+        popover.show()
+      }
       return notify()
     }
 
@@ -780,37 +755,6 @@ export const selectProps = (
     if (isComposite) composite.baseElement.set(element)
   })
 
-  /**
-   * The navigation half of the list's `onKeyDown`, i.e. Ariakit's
-   * `useComposite`.
-   */
-  const navigateFromList = (event: SelectKeyboardEvent): void => {
-    if (!isComposite) return
-    if (!isSelfTarget(event)) return
-
-    const virtual = composite.virtualFocus()
-    const active = composite.activeItem()
-
-    // With roving tabindex a mounted active item has DOM focus and handles its
-    // own keys, so this is only the "enter the list" path.
-    if (!virtual && active?.element()?.isConnected) return
-
-    const shape = { orientation: composite.orientation() }
-    const intent =
-      virtual && active
-        ? mapNavigationIntent(event, {
-            ...shape,
-            grid: active.rowId() !== undefined,
-          })
-        : mapEntryIntent(event, {
-            ...shape,
-            grid: isCompositeGrid(composite.navigationItems()),
-          })
-    if (!intent) return
-
-    if (composite.navigate(intent) !== undefined) event.preventDefault?.()
-  }
-
   const onListKeyDown = wrap((event: SelectKeyboardEvent) => {
     if (event.defaultPrevented) return
 
@@ -828,7 +772,29 @@ export const selectProps = (
       return notify()
     }
 
-    navigateFromList(event)
+    if (isComposite && isSelfTarget(event)) {
+      const virtual = composite.virtualFocus()
+      const active = composite.activeItem()
+
+      // With roving tabindex a mounted active item has DOM focus and handles its
+      // own keys, so this is only the "enter the list" path.
+      if (virtual || !active?.element()?.isConnected) {
+        const shape = { orientation: composite.orientation() }
+        const intent =
+          virtual && active
+            ? mapNavigationIntent(event, {
+                ...shape,
+                grid: active.rowId() !== undefined,
+              })
+            : mapEntryIntent(event, {
+                ...shape,
+                grid: isCompositeGrid(composite.navigationItems()),
+              })
+        if (intent && composite.navigate(intent) !== undefined) {
+          event.preventDefault?.()
+        }
+      }
+    }
     notify()
   })
 
@@ -883,10 +849,15 @@ export const selectProps = (
       rowId,
       typeaheadText,
       focusOnHover = focusOnHoverDefault,
+      hideOnClick,
+      setValueOnClick,
       // `#value` and not `#id`: the logger reads better with the text the user
       // sees, and it is the collection's own `items#id` convention.
       name: recordName = `${name}.props.item#${value}`,
     } = itemPropsOptions
+
+    const isDisabled = (): boolean =>
+      composite.items.item(id)?.disabled() ?? disabled ?? false
 
     const ref = wrap((element: HTMLElement | null) => {
       if (element) {
@@ -894,16 +865,42 @@ export const selectProps = (
       } else model.unrenderItem(value)
     })
 
-    const onClick = wrap((event?: SelectPropsEvent) => {
-      if (event?.defaultPrevented) return
-      const resolved = policy(value)
-      if (resolved.setValueOnClick) model.select(value)
-      if (resolved.hideOnClick) popover.hide()
+    const activate = (): void => {
+      if (isDisabled()) return
+      if (setValueOnClick ?? setValueOnClickDefault) model.select(value)
+      // Picking one of several values must leave the list open for the next one.
+      if (hideOnClick ?? hideOnClickDefault ?? !model.multiSelectable()) {
+        popover.hide()
+      }
       notify()
+    }
+
+    const onClick = wrap((event?: SelectClickEvent) => {
+      if (event?.defaultPrevented) return
+      const element = event?.currentTarget as {
+        tagName?: unknown
+        type?: unknown
+      } | null
+      const tagName =
+        typeof element?.tagName === 'string'
+          ? element.tagName.toLowerCase()
+          : undefined
+      const navigationTarget =
+        tagName === 'a' ||
+        ((tagName === 'button' || tagName === 'input') &&
+          element?.type === 'submit')
+      if (
+        navigationTarget &&
+        (event?.altKey || (isApple() ? event?.metaKey : event?.ctrlKey))
+      ) {
+        return
+      }
+      activate()
     })
 
     const onFocus = wrap((event: SelectFocusEvent) => {
       if (event.defaultPrevented) return
+      if (isDisabled()) return
       // Items can nest (a tree), and then a child's focus event bubbles through
       // its parent item — which must not steal it.
       if (!isSelfTarget(event)) return
@@ -914,6 +911,34 @@ export const selectProps = (
     const onKeyDown = wrap((event: SelectKeyboardEvent) => {
       if (event.defaultPrevented) return
       if (!isSelfTarget(event)) return
+
+      if (isSelectHideKey(event)) {
+        const element = event.currentTarget as {
+          tagName?: unknown
+          type?: unknown
+        } | null
+        const tagName =
+          typeof element?.tagName === 'string'
+            ? element.tagName.toLowerCase()
+            : undefined
+        const inputType =
+          typeof element?.type === 'string'
+            ? element.type.toLowerCase()
+            : undefined
+        const nativeActivation =
+          tagName === 'button' ||
+          (tagName === 'input' &&
+            (inputType === 'button' ||
+              inputType === 'image' ||
+              inputType === 'reset' ||
+              inputType === 'submit')) ||
+          (tagName === 'a' && event.key === 'Enter')
+        if (nativeActivation) return
+
+        event.preventDefault?.()
+        activate()
+        return
+      }
 
       const node = composite.items.item(id)
       const intent = mapNavigationIntent(event, {
@@ -928,6 +953,7 @@ export const selectProps = (
 
     const onMouseMove = wrap(() => {
       if (!focusOnHover) return
+      if (isDisabled()) return
       // Ariakit's comment: "We have to disable focusOnHover when the popup is
       // closed, otherwise the active item will change to null (the container)
       // when the popup is closed by clicking on an item."
@@ -948,19 +974,23 @@ export const selectProps = (
     return computed((): SelectItemProps => {
       const node = composite.items.item(id)
       const active = composite()
-      const autoFocus = isSelectItemAutoFocus({
-        value: model(),
-        itemValue: value,
-        active: active === id,
-        // A stale or `null` active id addresses no item, and then the selected
-        // item takes focus instead — which is what makes the list open at the
-        // current selection.
-        activeKnown: composite.items.item(active ?? null) !== null,
-      })
+      const itemDisabled = node?.disabled() ?? disabled ?? false
+      const autoFocus =
+        !itemDisabled &&
+        isSelectItemAutoFocus({
+          value: model(),
+          itemValue: value,
+          active: active === id,
+          // A stale or `null` active id addresses no item, and then the selected
+          // item takes focus instead — which is what makes the list open at the
+          // current selection.
+          activeKnown: composite.items.item(active ?? null) !== null,
+        })
 
       return {
         id,
         role: itemRole,
+        'aria-disabled': itemDisabled || undefined,
         'aria-selected': model.isSelected(value),
         'data-active-item': active === id || undefined,
         'data-autofocus': autoFocus || undefined,
@@ -1072,12 +1102,7 @@ export const selectProps = (
     }, `${name}.props.popover`),
 
     item: (value, itemPropsOptions) => {
-      // Remembered even for an uncached record, because the item's other
-      // transitions have to apply the same policy its own click would.
-      if (itemPropsOptions) {
-        itemOptions.set(value, itemPropsOptions)
-        return itemRecord(value, itemPropsOptions)
-      }
+      if (itemPropsOptions) return itemRecord(value, itemPropsOptions)
 
       let record = itemRecords.get(value)
       if (!record) itemRecords.set(value, (record = itemRecord(value)))

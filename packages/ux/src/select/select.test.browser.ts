@@ -352,7 +352,7 @@ test('the roving-tabindex list opens at the selected item and moves real focus',
   // an open list only moves, so the value is still what was picked
   expect(select()).toBe('Orange')
 
-  await userEvent.click(widget.items.get('Pear')!)
+  await userEvent.keyboard('{Enter}')
   await settle()
 
   expect(select()).toBe('Pear')

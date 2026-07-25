@@ -27,9 +27,6 @@ export interface SelectKeyEvent {
   key: string
 }
 
-/** The arrow keys, which are the only keys the select button navigates with. */
-const ARROW_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
-
 /** The widget shape {@link mapSelectMoveIntent} needs. */
 export interface SelectMoveContext {
   /**
@@ -70,7 +67,14 @@ export const mapSelectMoveIntent = (
   event: SelectKeyEvent,
   context: SelectMoveContext = {},
 ): CompositeNavigationIntent | null => {
-  if (!ARROW_KEYS.includes(event.key)) return null
+  if (
+    event.key !== 'ArrowUp' &&
+    event.key !== 'ArrowDown' &&
+    event.key !== 'ArrowLeft' &&
+    event.key !== 'ArrowRight'
+  ) {
+    return null
+  }
   const { orientation = 'vertical', grid = false } = context
   return mapNavigationIntent(event, { orientation, grid })
 }

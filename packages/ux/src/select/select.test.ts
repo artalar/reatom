@@ -207,6 +207,18 @@ test('an item id is allocated from the value and stays stable', () => {
   expect(fruit.item('Apple')?.id).toBe(id)
 })
 
+test('generated item ids do not collide with existing composite items', () => {
+  const fruit = reatomSelect({ name: 'fruit' })
+  fruit.composite.items.registerItem({ id: 'fruit-item-1' })
+
+  expect(fruit.itemId('Apple')).toBe('fruit-item-2')
+  fruit.props.item('Apple')().ref(element())
+
+  expect(fruit.itemValue('fruit-item-1')).toBe(undefined)
+  expect(fruit.itemValue('fruit-item-2')).toBe('Apple')
+  expect(fruit.composite.items.ids()).toEqual(['fruit-item-1', 'fruit-item-2'])
+})
+
 test('itemValues is the registered values, in order and without duplicates', () => {
   const fruit = reatomSelect({ name: 'fruit' })
   mount(fruit, ['Apple', 'Orange', 'Apple'])
@@ -879,6 +891,20 @@ test('clicking an item writes the value and closes the list', () => {
   expect(fruit.popover()).toBe(false)
 })
 
+test('Enter on a custom item writes the value and closes the list', () => {
+  const fruit = reatomSelect({ virtualFocus: false, name: 'fruit' })
+  const { items } = mount(fruit, ['Apple', 'Orange'])
+  fruit.popover.show()
+
+  const target = items.get('Orange')!
+  const press = event(target, { key: 'Enter' })
+  fruit.props.item('Orange')().onKeyDown(press)
+
+  expect(prevented.has(press)).toBe(true)
+  expect(fruit()).toBe('Orange')
+  expect(fruit.popover()).toBe(false)
+})
+
 test('a multi-select keeps its list open for the next pick', () => {
   const fruits = reatomSelect({ value: [], name: 'fruits' })
   mount(fruits, ['Apple', 'Orange'])
@@ -909,6 +935,57 @@ test('the per item click policy overrides the model-wide one', () => {
   fruit.props.item('Apple')().onClick({ defaultPrevented: true })
   expect(fruit()).toBe('Orange')
   expect(fruit.popover()).toBe(true)
+})
+
+test('an unmounted item does not leak its click policy to a later record', () => {
+  const fruit = reatomSelect({ name: 'fruit' })
+  mount(fruit, ['Apple'])
+
+  const overridden = fruit.props.item('Orange', { hideOnClick: false })
+  overridden().ref(element())
+  overridden().ref(null)
+
+  fruit.props.item('Orange')().ref(element())
+  fruit.popover.show()
+  fruit.props.item('Orange')().onClick()
+
+  expect(fruit()).toBe('Orange')
+  expect(fruit.popover()).toBe(false)
+})
+
+test('a modifier-click navigation does not activate a link item', () => {
+  const fruit = reatomSelect({ name: 'fruit' })
+  mount(fruit, ['Apple'])
+  const link = Object.assign(element(), { tagName: 'A' })
+  fruit.props.item('Orange')().ref(link)
+  fruit.popover.show()
+
+  fruit.props
+    .item('Orange')()
+    .onClick(event(link, { ctrlKey: true, altKey: false, metaKey: false }))
+
+  expect(fruit()).toBe('Apple')
+  expect(fruit.popover()).toBe(true)
+})
+
+test('a disabled item cannot be activated or focused', () => {
+  const fruit = reatomSelect({ name: 'fruit' })
+  mount(fruit, ['Apple'])
+  const disabled = fruit.props.item('Orange', { disabled: true })
+  const target = element()
+  disabled().ref(target)
+  fruit.popover.show()
+
+  expect(disabled()['aria-disabled']).toBe(true)
+  expect(disabled().autoFocus).toBe(false)
+
+  disabled().onClick()
+  disabled().onMouseMove()
+  disabled().onFocus(event(target))
+
+  expect(fruit()).toBe('Apple')
+  expect(fruit.popover()).toBe(true)
+  expect(fruit.composite()).toBe(fruit.itemId('Apple'))
 })
 
 test('hovering an item activates it, but only while the list is open', () => {

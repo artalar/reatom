@@ -572,9 +572,14 @@ export function reatomSelect(options: SelectOptions = {}): Select {
     if (id === undefined) {
       // With a combobox the id comes from there, so one element can register as
       // both widgets' item under a single id.
-      id = combobox
-        ? combobox.itemId(itemValueOf)
-        : `${elementId}-item-${++idSeed}`
+      if (combobox) {
+        id = combobox.itemId(itemValueOf)
+      } else {
+        // A consumer can register valueless composite items directly. Probe the
+        // collection so a generated value id never aliases one of those nodes.
+        do id = `${elementId}-item-${++idSeed}`
+        while (composite.items.item(id) || valuesById.has(id))
+      }
       idsByValue.set(itemValueOf, id)
       valuesById.set(id, itemValueOf)
     }
@@ -626,15 +631,6 @@ export function reatomSelect(options: SelectOptions = {}): Select {
     )
   })
 
-  /** The first registered enabled item that has a value, for the seeding. */
-  const firstValue = (): string | undefined => {
-    for (const node of composite.items.array()) {
-      const candidate = itemValue(node.id)
-      if (candidate !== undefined && !node.disabled()) return candidate
-    }
-    return undefined
-  }
-
   // Ariakit seeds the value from a `setup` + `sync` listener that compares the
   // state against its sentinel and writes the state back
   // (`select-store.ts:121-132`). A write-back derivation that must stay writable
@@ -646,7 +642,14 @@ export function reatomSelect(options: SelectOptions = {}): Select {
   // the same workaround `reatomComposite` needs for its `activeId` seed.
   valueState.extend(
     withComputed(((state: SelectValue | undefined) => {
-      const first = firstValue()
+      let first: string | undefined
+      for (const node of composite.items.array()) {
+        const candidate = itemValue(node.id)
+        if (candidate !== undefined && !node.disabled()) {
+          first = candidate
+          break
+        }
+      }
       return state === undefined ? first : state
     }) as (state: SelectValue) => SelectValue),
   )
