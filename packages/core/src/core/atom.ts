@@ -1541,9 +1541,12 @@ export let mock = <Params extends any[], Payload>(
 
     return cb(...params)
   }
-  let cacheMiddlewareIdx = target.__reatom.middlewares.indexOf(cacheMiddleware)
-  if (cacheMiddlewareIdx !== -1) {
-    target.__reatom.middlewares.splice(cacheMiddlewareIdx, 0, mockMiddleware)
+  // For an action wrap only the user computed (like `withActionMiddleware`)
+  // to keep extensions (`withAsync` and so on) processing the mocked payload.
+  let anchor = target.__reatom.reactive ? cacheMiddleware : actionMiddleware
+  let anchorIdx = target.__reatom.middlewares.indexOf(anchor)
+  if (anchorIdx !== -1) {
+    target.__reatom.middlewares.splice(anchorIdx, 0, mockMiddleware)
   } else {
     target.__reatom.middlewares.push(mockMiddleware)
   }
