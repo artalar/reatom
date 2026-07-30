@@ -1331,6 +1331,34 @@ test('model:field binds checkbox checked', () =>
     expect(input.checked).toBe(true)
   }))
 
+test('model:checked synchronizes aria-checked', () =>
+  context.start(async () => {
+    const checked = atom(false, 'checked')
+    const input = instance(
+      HTMLInputElement,
+      <input model:checked={checked} attr:type="checkbox" />,
+    )
+
+    mount(parent(), input)
+    await wrap(sleep())
+
+    expect(input.checked).toBe(false)
+    expect(input.getAttribute('aria-checked')).toBe('false')
+
+    checked.set(true)
+    await wrap(sleep())
+
+    expect(input.checked).toBe(true)
+    expect(input.getAttribute('aria-checked')).toBe('true')
+
+    input.checked = false
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await wrap(sleep())
+
+    expect(checked()).toBe(false)
+    expect(input.getAttribute('aria-checked')).toBe('false')
+  }))
+
 test('model:field inside a function child does not track the field value', () =>
   context.start(async () => {
     const field = reatomField('a', 'wrappedField')
