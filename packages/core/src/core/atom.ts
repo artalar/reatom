@@ -1520,6 +1520,9 @@ export let bind = <Params extends any[], Payload>(
  * custom callback function for the duration of the mock. This is useful for
  * isolating units of code during testing and controlling their behavior.
  *
+ * Only the target's own computation is replaced: extensions (`withAsync` and
+ * so on) keep processing the mocked calls and may transform the `cb` params.
+ *
  * @template Params - The parameter types of the target atom/action
  * @template Payload - The return type of the target atom/action
  * @param target - The atom or action to mock
@@ -1541,14 +1544,16 @@ export let mock = <Params extends any[], Payload>(
 
     return cb(...params)
   }
-  // For an action wrap only the user computed (like `withActionMiddleware`)
-  // to keep extensions (`withAsync` and so on) processing the mocked payload.
-  let anchor = target.__reatom.reactive ? cacheMiddleware : actionMiddleware
-  let anchorIdx = target.__reatom.middlewares.indexOf(anchor)
-  if (anchorIdx !== -1) {
-    target.__reatom.middlewares.splice(anchorIdx, 0, mockMiddleware)
+  // Keep extensions processing the mocked payload: wrap an action's computed,
+  // for an atom stay outside `computedMiddleware` to keep intercepting `.set`.
+  let { middlewares, reactive } = target.__reatom
+  let kernelIdx = middlewares.indexOf(
+    reactive ? computedMiddleware : actionMiddleware,
+  )
+  if (kernelIdx === -1) {
+    middlewares.push(mockMiddleware)
   } else {
-    target.__reatom.middlewares.push(mockMiddleware)
+    middlewares.splice(kernelIdx + (reactive ? 1 : 0), 0, mockMiddleware)
   }
   _recompile(target)
   return () => {
