@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'test'
 
-import { _read, action, atom, computed } from '../core'
+import { _read, action, atom, computed, mock } from '../core'
 import { withCallHook } from '../extensions'
 import { retryComputed, wrap } from '../methods'
 import { noop, sleep, throwAbort } from '../utils'
@@ -85,6 +85,39 @@ test('action error handling', async () => {
     payload: 'Success',
     params: [false],
   })
+})
+
+// https://github.com/reatom/reatom/issues/1291
+test('mocked rejection reaches the caller without an unhandled rejection', async () => {
+  const name = 'mockAsyncReject'
+  const fetchSmth = action(async () => 'real', name).extend(withAsync())
+  const unmock = mock(fetchSmth, () => Promise.reject(new Error('mocked')))
+
+  const rejections: unknown[] = []
+  const listener = (reason: unknown) => rejections.push(reason)
+  process.on('unhandledRejection', listener)
+
+  try {
+    let caught: unknown
+    try {
+      await wrap(fetchSmth())
+    } catch (error) {
+      caught = error
+    }
+    expect((caught as Error).message).toBe('mocked')
+
+    expect(fetchSmth.error()?.message).toBe('mocked')
+    expect(fetchSmth.ready()).toBe(true)
+
+    // let a possible unhandledRejection event fire
+    await new Promise((resolve) => setTimeout(resolve))
+    expect(
+      rejections.filter((reason) => (reason as Error)?.message === 'mocked'),
+    ).toEqual([])
+  } finally {
+    process.off('unhandledRejection', listener)
+    unmock()
+  }
 })
 
 test('abort rejection settles without calling onReject', async () => {
