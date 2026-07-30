@@ -120,6 +120,36 @@ test('mocked rejection reaches the caller without an unhandled rejection', async
   }
 })
 
+// the reactive counterpart of the mocked action case above
+test('mocked computed rejection is processed by withAsync without an unhandled rejection', async () => {
+  const name = 'mockComputedReject'
+  const data = computed(async () => 'real', name).extend(withAsync())
+  const unmock = mock(data, () => Promise.reject(new Error('mocked-reactive')))
+
+  const rejections: unknown[] = []
+  const listener = (reason: unknown) => rejections.push(reason)
+  process.on('unhandledRejection', listener)
+
+  try {
+    // connection triggers the mocked computation, nobody consumes the promise
+    expect(data.ready()).toBe(false)
+
+    // let the rejection processing and the unhandledRejection event pass
+    await wrap(sleep())
+
+    expect(data.error()?.message).toBe('mocked-reactive')
+    expect(data.ready()).toBe(true)
+    expect(
+      rejections.filter(
+        (reason) => (reason as Error)?.message === 'mocked-reactive',
+      ),
+    ).toEqual([])
+  } finally {
+    process.off('unhandledRejection', listener)
+    unmock()
+  }
+})
+
 test('abort rejection settles without calling onReject', async () => {
   const fetch = action(async (shouldAbort: boolean) => {
     await wrap(sleep())

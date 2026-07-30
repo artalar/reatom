@@ -597,3 +597,16 @@ test('mock action returns the mocked payload', () => {
   unmock()
   expect(doSmth(1)).toBe(2)
 })
+
+test('mock atom intercepts set', () => {
+  const name = 'mockAtom'
+  const counter = atom(0, name)
+  const unmock = mock(counter, (value: number) => value + 100)
+
+  counter.set(1)
+  expect(counter()).toBe(101)
+
+  unmock()
+  counter.set(2)
+  expect(counter()).toBe(2)
+})
