@@ -153,6 +153,54 @@ test('fromSnapshot and toSnapshot', () => {
   expect(JSON.parse(persistedValue!).data).toEqual([['c', 3]])
 })
 
+test('localStorage propagates a reset to undefined to another tab', () => {
+  const key = uniqueKey('undefined-reset')
+  const owner = atom<string | undefined>(
+    'initial',
+    'localStorageResetOwnerAtom',
+  ).extend(withLocalStorage(key))
+  const ownerUnsubscribe = owner.subscribe(() => {})
+  notify()
+
+  owner.set('value')
+
+  // Another tab, opened while the value is set: it reads the persisted value.
+  const other = atom<string | undefined>(
+    'initial',
+    'localStorageResetOtherAtom',
+  ).extend(withLocalStorage(key))
+  const otherUnsubscribe = other.subscribe(() => {})
+  notify()
+
+  expect(other()).toBe('value')
+
+  // A regular change reaches the other tab.
+  owner.set('other-value')
+  globalThis.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      newValue: localStorage.getItem(key),
+      storageArea: localStorage,
+    }),
+  )
+
+  expect(other()).toBe('other-value')
+
+  // A reset to undefined should reach it the same way.
+  owner.set(undefined)
+  globalThis.dispatchEvent(
+    new StorageEvent('storage', {
+      key,
+      newValue: localStorage.getItem(key),
+      storageArea: localStorage,
+    }),
+  )
+
+  ownerUnsubscribe()
+  otherUnsubscribe()
+  expect(other()).toBeUndefined()
+})
+
 test('localStorage deletion events invalidate subscribers', () => {
   const key = uniqueKey('clear')
   const storedRecord = createRecord('stored')
