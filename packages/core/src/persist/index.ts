@@ -179,6 +179,10 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
 ): WithPersist<Snapshot, Options> => {
   const storageAtom = atom((): PersistStorage<Snapshot, Options> => {
     let cache: PersistCache = new Map()
+    const handleError = (error: unknown) => {
+      console.warn(`Error in storage ${storage.name}`)
+      console.log(error)
+    }
 
     return {
       name: storage.name,
@@ -199,15 +203,21 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
           let recOrPromise = storage.get({ ...options, cache })
 
           if (recOrPromise instanceof Promise) {
-            return recOrPromise.then(
-              bind((rec) => {
-                let freshRec = rec && rec.to >= Date.now() ? rec : null
-                if (!cache.has(options.key)) {
-                  cache.set(options.key, freshRec)
-                }
-                return freshRec
-              }),
-            )
+            return recOrPromise
+              .then(
+                bind((rec) => {
+                  let freshRec = rec && rec.to >= Date.now() ? rec : null
+                  if (!cache.has(options.key)) {
+                    cache.set(options.key, freshRec)
+                  }
+                  return freshRec
+                }),
+              )
+              .catch((error) => {
+                handleError(error)
+                if (!cache.has(options.key)) cache.set(options.key, null)
+                return null
+              })
           }
 
           let rec = recOrPromise
@@ -218,28 +228,27 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
 
           return rec
         } catch (error) {
-          console.warn(`Error in storage ${storage.name}`)
-          console.log(error)
+          handleError(error)
           return null
         }
       },
       set(options, rec) {
         try {
           cache.set(options.key, rec)
-          return storage.set({ ...options, cache }, rec)
+          const result = storage.set({ ...options, cache }, rec)
+          return result instanceof Promise ? result.catch(handleError) : result
         } catch (error) {
-          console.warn(`Error in storage ${storage.name}`)
-          console.log(error)
+          handleError(error)
           /* ignore */
         }
       },
       clear(options) {
         try {
           cache.delete(options.key)
-          return storage.clear?.({ ...options, cache })
+          const result = storage.clear?.({ ...options, cache })
+          return result instanceof Promise ? result.catch(handleError) : result
         } catch (error) {
-          console.warn(`Error in storage ${storage.name}`)
-          console.log(error)
+          handleError(error)
           /* ignore */
         }
       },
