@@ -1,6 +1,8 @@
+import { unified } from '@astrojs/markdown-remark'
 import starlight from '@astrojs/starlight'
 import { defineConfig } from 'astro/config'
 import rehypeSlug from 'rehype-slug'
+import starlightLinksValidator from 'starlight-links-validator'
 import starlightLlmsTxt from 'starlight-llms-txt'
 
 import { sidebar } from './astro.sidebar'
@@ -16,6 +18,8 @@ const siteDescription =
 export default defineConfig({
   site,
   output: 'static',
+  // Keep HTML-aware whitespace compression after Astro 7's JSX default.
+  compressHTML: true,
   integrations: [
     devServerFileWatcher([
       './config/**', // Custom plugins and integrations
@@ -25,8 +29,12 @@ export default defineConfig({
     starlight({
       sidebar,
       plugins: [
-        // TODO
-        // starlightLinksValidator(),
+        starlightLinksValidator({
+          exclude: [
+            // Custom reference routes are generated outside docsLoader.
+            '/reference/**',
+          ],
+        }),
         starlightLlmsTxt({
           projectName: 'Reatom',
           description:
@@ -86,6 +94,15 @@ Use **Abridged documentation** (\`llms-small.txt\`) when context window is limit
           attrs: { name: 'twitter:image', content: ogImage },
         },
       ],
+      // Prefer title/section hits for API-heavy docs search.
+      pagefind: {
+        ranking: {
+          termSimilarity: 1.5,
+          metaWeights: {
+            title: 8,
+          },
+        },
+      },
       logo: {
         src: './src/assets/logo_light.svg',
       },
@@ -120,6 +137,8 @@ Use **Abridged documentation** (\`llms-small.txt\`) when context window is limit
     },
   },
   markdown: {
-    rehypePlugins: [rehypeSlug],
+    processor: unified({
+      rehypePlugins: [rehypeSlug],
+    }),
   },
 })

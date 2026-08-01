@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 
+import { isUnifiedProcessor, unified } from '@astrojs/markdown-remark'
 import type { AstroIntegration } from 'astro'
 import type { Root as MarkdownAstRoot } from 'mdast'
 import { visit } from 'unist-util-visit'
@@ -9,16 +10,37 @@ export function markdownBaseLinks(): AstroIntegration {
     name: 'markdown-base-links',
     hooks: {
       'astro:config:setup': ({ config, updateConfig }) => {
+        const baseLinksPlugin = [
+          remarkBaseLinks,
+          {
+            base: config.base,
+          },
+        ] as const
+
+        const processor = config.markdown.processor
+        if (isUnifiedProcessor(processor)) {
+          updateConfig({
+            markdown: {
+              processor: unified({
+                remarkPlugins: [
+                  ...(processor.options.remarkPlugins ?? []),
+                  baseLinksPlugin,
+                ],
+                rehypePlugins: processor.options.rehypePlugins,
+                remarkRehype: processor.options.remarkRehype,
+                gfm: processor.options.gfm,
+                smartypants: processor.options.smartypants,
+              }),
+            },
+          })
+          return
+        }
+
         updateConfig({
           markdown: {
-            remarkPlugins: [
-              [
-                remarkBaseLinks,
-                {
-                  base: config.base,
-                },
-              ],
-            ],
+            processor: unified({
+              remarkPlugins: [baseLinksPlugin],
+            }),
           },
         })
       },
