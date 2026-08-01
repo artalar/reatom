@@ -10,6 +10,27 @@ import ReplScript from '../components/ReplScript.astro'
 import Screensaver from '../components/Screensaver.astro'
 
 import { resolveBase } from '../components/landing/resolve-base'
+
+const siteOrigin = Astro.site?.origin ?? 'https://v1001.reatom.dev'
+const pageTitle = 'Reatom — State manager for any kind of app'
+const pageDescription =
+  'Lightest and simplest at start, extremely feature-rich for growth. Modern atomic state management for React, Vue, and more.'
+const canonicalUrl = new URL(Astro.url.pathname, `${siteOrigin}/`).href
+const ogImageUrl = new URL('/assets/logo_text.png', `${siteOrigin}/`).href
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Reatom',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Any',
+  description: pageDescription,
+  url: siteOrigin,
+  offers: {
+    '@type': 'Offer',
+    price: '0',
+    priceCurrency: 'USD',
+  },
+}
 ---
 
 <!doctype html>
@@ -17,12 +38,28 @@ import { resolveBase } from '../components/landing/resolve-base'
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reatom - State Managers for Any Kind of Apps</title>
-    <meta
-      name="description"
-      content="Lightest and simplest at start, extremely feature-rich for growth. Modern state management for React, Vue, and more."
-    />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="sitemap" href="/sitemap-index.xml" />
     <link rel="icon" type="image/svg+xml" href={resolveBase(`/favicon.svg`)} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Reatom" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content="Reatom" />
+    <meta property="og:locale" content="en" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@reatomjs" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={pageDescription} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 
     <!-- Preload fonts for better performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

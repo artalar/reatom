@@ -1,6 +1,6 @@
 ---
 title: 'Reatom full framework documentation summary'
-description: 'A short overview of all Reatom features'
+description: Compact overview of Reatom APIs and patterns — atoms, async, forms, routing, and more
 ---
 
 # Reatom full framework documentation summary
@@ -16,7 +16,7 @@ This documentation for `@reatom/core@1001` package and some ecosystem around it.
 - Composable primitives, minimal API surface, high leverage extensions.
 
 This summary is intentionally **compact**. The full handbook and reference cover deeper API
-details, recipes, and adapters in [site](https://v1001.reatom.dev) `/docs/start/*`, `/docs/handbook/*`, and `/docs/reference/*`.
+details, recipes, and adapters in [site](https://v1001.reatom.dev) `/start/*`, `/handbook/*`, and `/reference/*`.
 
 ## Core primitives and mental model
 
@@ -475,7 +475,7 @@ const result = await wrap(race(a, b))
 - `withAbort('manual')` — no auto-abort; call `action.abort()` yourself (polling, long-running)
 - `withAbort('finally')` — aborts all child operations when the action completes, including fire-and-forget ones
 
-> **Debounce without debounce:** Reatom replaces traditional `debounce(fn, ms)` with a procedural pattern — put `await wrap(sleep(ms))` before the work inside an action with `withAbort()`. Each new call aborts the sleeping previous one, giving the same delay-then-execute behavior but with natural control flow: conditional delays, immediate value extraction, and full debuggability. See the [Sampling handbook](/docs/handbook/sampling) for a side-by-side comparison.
+> **Debounce without debounce:** Reatom replaces traditional `debounce(fn, ms)` with a procedural pattern — put `await wrap(sleep(ms))` before the work inside an action with `withAbort()`. Each new call aborts the sleeping previous one, giving the same delay-then-execute behavior but with natural control flow: conditional delays, immediate value extraction, and full debuggability. See the [Sampling handbook](/handbook/sampling) for a side-by-side comparison.
 
 > **Note:** Abort errors (e.g. from route loaders on navigation away, or `withAbort` when cancelling) may appear as unhandled rejections in the console. This is not a bug in Reatom — it usually means an async/promise somewhere in the chain is not caught. Sometimes these can be safely ignored (e.g. aborted fetches when navigating away).
 

@@ -1,6 +1,6 @@
 ---
 title: Tooling
-description: The list of key tools for Reatom
+description: Logging, Vite HMR, and developer tools for debugging Reatom applications
 ---
 
 ## Logging

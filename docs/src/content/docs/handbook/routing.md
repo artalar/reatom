@@ -1266,7 +1266,7 @@ if (import.meta.hot) {
 
 ## Next Steps
 
-- Learn about [Forms](/handbook/forms) to build complex forms with validation
+- Learn about [Forms](/handbook/forms/introduction) to build complex forms with validation
 - Explore [Async Context](/handbook/async-context) to understand `wrap()` and async effects
 - Check out [Persistence](/handbook/persist) to save route state across sessions
-- Read about [Testing](/handbook/testing) to test your routes in isolation
+- Read about [Tooling](/start/tooling) for logging and debugging your routes

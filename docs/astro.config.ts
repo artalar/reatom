@@ -7,9 +7,14 @@ import { sidebar } from './astro.sidebar'
 import { devServerFileWatcher } from './config/integrations/dev-server-file-watcher'
 import { markdownBaseLinks } from './config/integrations/markdown-links-base'
 
+const site = 'https://v1001.reatom.dev'
+const ogImage = `${site}/assets/logo_text.png`
+const siteDescription =
+  'Atomic reactive state manager for JavaScript — simple to start, powerful for growth. Forms, routing, async, and framework adapters for React, Vue, and more.'
+
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://www.reatom.dev',
+  site,
   output: 'static',
   integrations: [
     devServerFileWatcher([
@@ -66,6 +71,21 @@ Use **Abridged documentation** (\`llms-small.txt\`) when context window is limit
         MarkdownContent: './src/components/MarkdownContent.astro',
       },
       title: 'Reatom',
+      description: siteDescription,
+      head: [
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image', content: ogImage },
+        },
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image:alt', content: 'Reatom' },
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'twitter:image', content: ogImage },
+        },
+      ],
       logo: {
         src: './src/assets/logo_light.svg',
       },

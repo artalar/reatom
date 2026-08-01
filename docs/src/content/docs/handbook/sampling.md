@@ -1,6 +1,6 @@
 ---
 title: Sampling
-description: Documentation on sampling states and events in Reatom
+description: Sample atom states and events to orchestrate reactive flows without race conditions
 ---
 
 This page compares traditional debounce patterns with Reatom's concurrency model, then introduces sampling as a procedural pattern for coordinating events, async flows, and concurrent operations.

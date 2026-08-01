@@ -1,6 +1,6 @@
 ---
 title: Atomization
-description: How to do factories in a correct way with Reatom
+description: Atomize nested state for fine-grained reactivity — factories, deatomize, and linked lists
 ---
 
 You could store your backend data in atoms without any mappings, but it's a good practice to wrap parts of your model in atoms for better control and access to more reactive features.

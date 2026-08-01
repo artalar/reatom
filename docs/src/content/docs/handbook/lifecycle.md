@@ -1,6 +1,6 @@
 ---
 title: Lifecycle
-description: Documentation on the lifecycle of atoms and actions in Reatom
+description: Atom connect and disconnect hooks — lazy init, cleanup, and lifecycle extensions
 ---
 
 ## Lifecycle

@@ -1,6 +1,6 @@
 ---
 title: History
-description: The history of Reatom
+description: How Reatom evolved — from ACID atoms to async context, atomization, and the sync engine
 ---
 
 ## Zen

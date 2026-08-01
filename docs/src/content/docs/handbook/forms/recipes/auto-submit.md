@@ -1,5 +1,6 @@
 ---
 title: Auto submit
+description: Automatically submit a Reatom form when fields change or lose focus
 ---
 
 You can easily implement automatic form submission behavior on various events or state changes using `effect`.

@@ -1,5 +1,6 @@
 ---
 title: Reactive validation
+description: Automatically re-run field validation when tracked dependencies change in Reatom forms
 ---
 
 If you have reliable and flexible reactive primitives, why not use them?

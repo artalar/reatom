@@ -1,6 +1,6 @@
 ---
 title: Async Context
-description: Documentation on async context in Reatom
+description: Async context, wrap(), and automatic cancellation for predictable concurrent code
 ---
 
 This article describes the main killer feature of redux-saga and rxjs and how you can now get it more simply, as well as about upcoming changes in the ECMAScript standard and Reatom.

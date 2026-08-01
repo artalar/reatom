@@ -1,5 +1,6 @@
 ---
 title: Errors UX
+description: Control when and how form validation errors appear for a better user experience
 ---
 
 You may have noticed that when validating a form using validation schemas, as a result of calling validation on one of the fields, all other fields are also validated, since the Standard Schema specification does not allow running validation for individual fields only - the principle here is all or nothing.

@@ -1,6 +1,6 @@
 ---
 title: Suspense
-description: Use suspense for global state initialization with React Suspense integration
+description: Initialize global state with Suspense — withSuspense, preserve mode, and React integration
 ---
 
 The suspense pattern provides a way to handle asynchronous initialization of global state in your application. It integrates seamlessly with React Suspense boundaries, throwing promises during pending states to let Suspense handle loading UI.

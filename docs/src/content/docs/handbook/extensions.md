@@ -1,6 +1,6 @@
 ---
 title: Extensions
-description: Documentation on the extension system in Reatom
+description: Extend atoms and actions with reusable behavior using Reatom's extension system
 ---
 
 ## The Extension System

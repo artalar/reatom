@@ -1,6 +1,6 @@
 ---
 title: Extensions
-description: Reatom extensions system
+description: Add reusable behavior to atoms and actions with Reatom extensions
 ---
 
 Extensions are **powerful add-ons** that enhance your atoms and actions with common functionality. Instead of writing the same patterns over and over, extensions provide ready-made solutions for async operations, persistence, caching, and much more.

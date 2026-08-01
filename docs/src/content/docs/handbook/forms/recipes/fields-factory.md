@@ -1,5 +1,6 @@
 ---
 title: Fields factory
+description: Create reusable field factories with shared defaults, validation, and extensions
 ---
 
 Fields can be very complex and may contain a lot of transformation, filtering, and data validation logic. For convenience when working with such fields, you can use the field factory pattern. A field factory allows you to create fields with predefined logic and validation, which simplifies working with forms and helps avoid code duplication.

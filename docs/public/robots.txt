@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://v1001.reatom.dev/sitemap-index.xml
