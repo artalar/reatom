@@ -21,13 +21,6 @@ import { wrap } from './wrap'
  *   (default: `false`)
  */
 export class ReatomAbortController extends AbortController {
-  /**
-   * Marks an abort as "cancel the in-flight work, keep the call's result": the
-   * frame's state is already a settled, valid value (e.g. `withCache` serving a
-   * cache hit), so delivery-side consumers (`withAbort`) must return it
-   * untouched instead of treating the call as failed. Deferred work still
-   * observes the abort in the frame and cancels.
-   */
   keepState?: boolean
   constructor(
     public name: string,
