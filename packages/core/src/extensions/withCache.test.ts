@@ -580,3 +580,65 @@ test('remount after an SSR-hydrated cache hit must render, not throw the cache A
     }),
   )
 })
+
+test('a hydrated cache hit cancels the speculative body — its scheduled fetch never fires', async () => {
+  // The counterpart boundary to the test above. A cache hit aborts the call's own
+  // controller precisely so the body's deferred work (a `schedule`d fetch, the
+  // idiomatic SSR shape) checks that aborted controller at flush time and skips —
+  // the first hydrated run is a dry dependency-collection pass, zero requests.
+  // Regressed by #1322's `abortVar.set()`: swapping a FRESH controller into the
+  // frame slot hid the abort from the deferred fetch, firing a wasted request on
+  // every hydrated first read.
+  const name = 'withCache.hitCancelsBody'
+  const storage = createMemStorage({ name, subscribe: false })
+  const withSSR = reatomPersist(storage)
+
+  let fetches = 0
+  const make = () => {
+    const cursor = atom<string | null>(null, `${name}.cursor`)
+    const query = computed(async () => {
+      const cur = cursor()
+      return await wrap(
+        schedule(async () => {
+          fetches++
+          await sleep(10)
+          return `page:${cur}`
+        }),
+      )
+    }, `${name}.query`).extend(
+      withAsyncData({ initState: 'INIT' }),
+      withCache({ withPersist: withSSR }),
+    )
+    return { cursor, query }
+  }
+
+  const snapshot = await wrap(
+    context.start(async () => {
+      const { query } = make()
+      await wrap(query())
+      await wrap(sleep(20))
+      return storage.snapshotAtom()
+    }),
+  )
+
+  await wrap(
+    context.start(async () => {
+      const { query } = make()
+      storage.snapshotAtom.set(snapshot)
+      fetches = 0
+
+      // render-style connect — the hydrated hit serves the snapshot…
+      const un = query.data.subscribe(noop)
+      await wrap(sleep(20))
+      expect(query.data()).toBe('page:null')
+      // …and the body's scheduled fetch was cancelled by the hit's abort
+      expect(fetches).toBe(0)
+
+      // the #1322 guarantee still holds: a direct call resolves with the cached value
+      expect(await wrap(query())).toBe('page:null')
+      await wrap(sleep(20))
+      expect(fetches).toBe(0)
+      un()
+    }),
+  )
+})
