@@ -154,6 +154,17 @@ export let withAbort =
 
       if (hasError) throw computationError
 
+      // A `keepState` abort means "cancel the speculative body work, keep the
+      // call's result" (`withCache` serving a cache hit): deferred effects see
+      // the aborted controller in the frame and skip, while the returned state
+      // IS the valid settled result. Deliver it untouched — the abort-tracking
+      // wrap below would reject it with that same abort (poisoning the atom
+      // state / throwing on a direct await — the original #1322 bug) — and
+      // don't register the already-aborted controller as active.
+      if (thisController.signal.aborted && thisController.keepState) {
+        return state
+      }
+
       activeControllers.push(thisController)
 
       if (strategy === 'first-in-win') {

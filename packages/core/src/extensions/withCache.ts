@@ -589,8 +589,12 @@ export let withCache =
               setSWRPending(key, cached, params, payload, controller)
             } else {
               if (isPromise(payload)) payload.catch(noop)
+              // Cancels the speculative `payload` work: the body's deferred effects
+              // (e.g. a `schedule`d fetch) see this aborted controller at flush time
+              // and skip. `keepState` tells the delivery side (`withAbort`) that the
+              // returned cached state is valid — the call itself must not fail.
+              controller.keepState = true
               controller.abort('cache')
-              abortVar.set()
             }
 
             cacheVar.set(
