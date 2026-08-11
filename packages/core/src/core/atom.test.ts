@@ -4,12 +4,14 @@ import { withComputed } from '../extensions'
 import { identity } from '../utils'
 import {
   _read,
+  action,
   type Atom,
   atom,
   computed,
   context,
   createAtom,
   isConnected,
+  mock,
   notify,
   top,
   withMiddleware,
@@ -583,4 +585,28 @@ test('subscribe without errorCb still throws on init', () => {
   }, `${name}.dep`)
 
   expect(() => dep.subscribe(() => {})).toThrow(name)
+})
+
+test('mock action returns the mocked payload', () => {
+  const name = 'mockAction'
+  const doSmth = action((n: number) => n * 2, name)
+  const unmock = mock(doSmth, (n) => n * 10)
+
+  expect(doSmth(1)).toBe(10)
+
+  unmock()
+  expect(doSmth(1)).toBe(2)
+})
+
+test('mock atom intercepts set', () => {
+  const name = 'mockAtom'
+  const counter = atom(0, name)
+  const unmock = mock(counter, (value: number) => value + 100)
+
+  counter.set(1)
+  expect(counter()).toBe(101)
+
+  unmock()
+  counter.set(2)
+  expect(counter()).toBe(2)
 })
