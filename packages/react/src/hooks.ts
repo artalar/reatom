@@ -25,9 +25,7 @@ export const useAtom: {
     options?: { subscribe?: boolean },
   ): [
     AtomState<Target>,
-    Target extends Atom<any, infer Params>
-      ? (...args: Params) => AtomState<Target>
-      : undefined,
+    Target extends Atom<any, any[]> ? Target['set'] : undefined,
     Target,
     Frame,
   ]
