@@ -1520,8 +1520,8 @@ export let bind = <Params extends any[], Payload>(
  * custom callback function for the duration of the mock. This is useful for
  * isolating units of code during testing and controlling their behavior.
  *
- * Only the target's own computation is replaced: extensions (`withAsync` and
- * so on) keep processing the mocked calls and may transform the `cb` params.
+ * Only the target's own computation is replaced: extensions (`withAsync` and so
+ * on) keep processing the mocked calls and may transform the `cb` params.
  *
  * @template Params - The parameter types of the target atom/action
  * @template Payload - The return type of the target atom/action
