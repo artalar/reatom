@@ -1,4 +1,4 @@
-import { describe, expect, subscribe, test, vi } from 'test'
+import { afterEach, describe, expect, subscribe, test, vi } from 'test'
 
 import { wrap } from '..'
 import { action, atom, notify } from '../core'
@@ -19,6 +19,8 @@ const createRecord = <State>(
   version: 0,
   ...overrides,
 })
+
+afterEach(() => vi.restoreAllMocks())
 
 describe('base', () => {
   test('should persist and update state correctly', async () => {
@@ -109,6 +111,37 @@ describe('base', () => {
 })
 
 describe('async', () => {
+  const expectAsyncStorageErrorToBeHandled = async (
+    operation: 'get' | 'set' | 'clear',
+  ) => {
+    const error = new Error(`${operation} failed`)
+    const storage = reatomPersist<string>({
+      name: 'failingAsyncStorage',
+      get: () =>
+        operation === 'get' ? Promise.reject(error) : Promise.resolve(null),
+      set: () =>
+        operation === 'set' ? Promise.reject(error) : Promise.resolve(),
+      clear: () =>
+        operation === 'clear' ? Promise.reject(error) : Promise.resolve(),
+    }).storageAtom()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(noop)
+    const log = vi.spyOn(console, 'log').mockImplementation(noop)
+
+    if (operation === 'get') storage.get({ key: 'test' })
+    if (operation === 'set') storage.set({ key: 'test' }, createRecord('test'))
+    if (operation === 'clear') storage.clear?.({ key: 'test' })
+
+    await wrap(sleep())
+
+    expect(warn).toHaveBeenCalledWith('Error in storage failingAsyncStorage')
+    expect(log).toHaveBeenCalledWith(error)
+  }
+
+  test.each(['get', 'set', 'clear'] as const)(
+    'handles an async storage %s rejection',
+    expectAsyncStorageErrorToBeHandled,
+  )
+
   test('should handle async updates', async () => {
     let trigger = noop
     const number1Atom = atom(0).extend(withSomePersist({ key: 'test' }))
@@ -198,6 +231,39 @@ describe('async', () => {
     unsubscribe()
     expect(target()).toBe('initial')
     expect(getCalls).toBe(1)
+  })
+
+  test('async storage caches rejected reads without revalidation loop', async () => {
+    let getCalls = 0
+    let rejectGet!: (reason?: unknown) => void
+    const error = new Error('get failed')
+    const withAsyncPersist = reatomPersist<string>({
+      name: 'auditAsyncRejectedStorage',
+      get: () => {
+        getCalls++
+        return new Promise<null>((_resolve, reject) => {
+          rejectGet = reject
+        })
+      },
+      set: vi.fn(),
+      subscribe: () => noop,
+    })
+    const target = atom('initial', 'auditAsyncRejectedAtom').extend(
+      withAsyncPersist('rejected-key'),
+    )
+    const warn = vi.spyOn(console, 'warn').mockImplementation(noop)
+    const log = vi.spyOn(console, 'log').mockImplementation(noop)
+    const unsubscribe = target.subscribe(() => {})
+
+    rejectGet(error)
+    await wrap(sleep())
+
+    unsubscribe()
+    expect(getCalls).toBe(1)
+    expect(warn).toHaveBeenCalledWith(
+      'Error in storage auditAsyncRejectedStorage',
+    )
+    expect(log).toHaveBeenCalledWith(error)
   })
 
   test('subscribe false applies async persisted value on init', async () => {
