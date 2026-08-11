@@ -59,18 +59,17 @@ export const reatomRecord = <T extends Rec>(
           // @ts-ignore
           (prev) => {
             if (keys.length === 0) return initState
-            const next = {} as T
+            const next = { ...prev } as T
             let changed = false
-            for (const key in prev) {
-              if (keys.includes(key)) {
-                if (key in initState) {
+            for (const key of keys) {
+              if (key in initState) {
+                if (!(key in prev) || !Object.is(prev[key], initState[key])) {
                   next[key] = initState[key]
-                  changed ||= !Object.is(prev[key], initState[key])
-                } else {
-                  changed ||= key in prev
+                  changed = true
                 }
-              } else {
-                next[key] = prev[key]
+              } else if (key in prev) {
+                delete next[key]
+                changed = true
               }
             }
             return changed ? next : prev
