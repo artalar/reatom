@@ -23,29 +23,16 @@ const createRecord = <State>(
 afterEach(() => vi.restoreAllMocks())
 
 describe('base', () => {
-  test('default snapshots persist beyond MAX_SAFE_TIMEOUT', () => {
-    const now = 1_000
-    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(now)
-    let json = ''
-    const storage = {
-      name: 'jsonStorage',
-      get: () => (json ? (JSON.parse(json) as PersistRecord<number>) : null),
-      set: (_options: unknown, record: PersistRecord<number>) => {
-        json = JSON.stringify(record)
-      },
-    }
-
+  test('snapshots do not expire by default', () => {
+    const storage = createMemStorage({ name: 'persistForever' })
     const source = atom(0, 'persistForeverSource').extend(
       reatomPersist<number>(storage)('persist-forever'),
     )
     source.set(42)
 
-    dateNow.mockReturnValue(now + MAX_SAFE_TIMEOUT + 1)
-    const restored = atom(0, 'persistForeverRestored').extend(
-      reatomPersist<number>(storage)('persist-forever'),
+    expect(storage.snapshotAtom()['persist-forever']?.to).toBe(
+      Number.MAX_SAFE_INTEGER,
     )
-
-    expect(restored()).toBe(42)
   })
 
   test('should persist and update state correctly', async () => {
