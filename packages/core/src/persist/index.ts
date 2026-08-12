@@ -16,7 +16,6 @@ import { memoKey } from '../methods/memo'
 import { peek } from '../methods/peek'
 import {
   type Fn,
-  MAX_SAFE_TIMEOUT,
   noop,
   random,
   type Rec,
@@ -24,13 +23,15 @@ import {
   type Unsubscribe,
 } from '../utils'
 
+export const PERSIST_FOREVER = Number.MAX_SAFE_INTEGER
+
 export interface PersistRecord<Snapshot = unknown> {
   data: Snapshot
   id: number
   // TODO remove?
   timestamp: number
   version: number | string
-  /** Time stamp after which the record is cleared. */
+  /** Expiration timestamp; `PERSIST_FOREVER` means no practical expiration. */
   to: number
 }
 
@@ -125,7 +126,7 @@ export interface WithPersistOptions<State = unknown, Snapshot = unknown> {
    * Number of milliseconds from the snapshot creation time after which it will
    * be deleted.
    *
-   * @defaultValue MAX_SAFE_TIMEOUT
+   * @defaultValue PERSIST_FOREVER
    */
   time?: number
 
@@ -297,7 +298,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
           ) => AtomState<Target>,
           migration,
           subscribe = !!storage.subscribe,
-          time = MAX_SAFE_TIMEOUT,
+          time = PERSIST_FOREVER,
           toSnapshot = () => target.toJSON() as Snapshot,
           version = 0,
           schema,
@@ -352,13 +353,16 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
 
         let toPersistRecord = (
           state: AtomState<Target>,
-        ): PersistRecord<Snapshot> => ({
-          data: toSnapshot(state),
-          id: random(),
-          timestamp: Date.now(),
-          to: Date.now() + time,
-          version,
-        })
+        ): PersistRecord<Snapshot> => {
+          const timestamp = Date.now()
+          return {
+            data: toSnapshot(state),
+            id: random(),
+            timestamp,
+            to: Math.min(timestamp + time, PERSIST_FOREVER),
+            version,
+          }
+        }
 
         if (subscribe) {
           function withProactivePersist(next: Fn, ...params: any[]) {
@@ -463,7 +467,7 @@ export const createMemStorage = ({
   subscribe?: boolean
 }): PersistStorage & { snapshotAtom: Atom<Rec<PersistRecord>> } => {
   let timestamp = Date.now()
-  let to = timestamp + MAX_SAFE_TIMEOUT
+  let to = PERSIST_FOREVER
   let initState = Object.entries(snapshot).reduce(
     (acc, [key, data]) => (
       (acc[key] = {
