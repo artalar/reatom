@@ -1,7 +1,7 @@
 import { expect, test } from 'test'
 
 import { _read, action, atom, notify } from '../core'
-import { withChangeHook } from '../extensions'
+import { withChangeHook, withComputed } from '../extensions'
 import { sleep } from '../utils'
 import { isCausedBy, wrap } from '.'
 import { withRollback, withTransaction } from './transaction'
@@ -290,4 +290,46 @@ test('a repeated rollback() must be a no-op, not an un-rollback', () => {
   // and a repeated rollback() would re-apply the optimistic state.
   increment.rollback()
   expect(counter()).toBe(0)
+})
+
+test('optimistic write to a not-yet-read withComputed atom rolls back', async () => {
+  const seed = atom(['server'], 'seed')
+  const list = atom<string[]>([], 'list').extend(
+    withRollback(),
+    withComputed((prev) => [
+      ...prev,
+      ...seed().filter((item) => !prev.includes(item)),
+    ]),
+  )
+
+  const save = action(async () => {
+    list.set((state) => ['optimistic', ...state])
+    await wrap(sleep())
+    throw new Error('test')
+  }, 'save').extend(withTransaction())
+
+  save()
+  expect(list()).toEqual(['optimistic', 'server'])
+
+  await wrap(sleep(10))
+  expect(list()).toEqual(['server'])
+})
+
+test('optimistic write to a zero-deps withComputed atom rolls back', async () => {
+  const list = atom<string[]>([], 'list').extend(
+    withRollback(),
+    withComputed((prev) => (prev.length ? prev : ['server'])),
+  )
+
+  const save = action(async () => {
+    list.set((state) => ['optimistic', ...state])
+    await wrap(sleep())
+    throw new Error('test')
+  }, 'save').extend(withTransaction())
+
+  save()
+  expect(list()).toEqual(['optimistic', 'server'])
+
+  await wrap(sleep(10))
+  expect(list()).toEqual(['server'])
 })
