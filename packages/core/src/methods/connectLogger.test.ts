@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'test'
 
-import { sleep, wrap } from '..'
+import { peek, sleep, wrap } from '..'
 import { atom, computed, EXTENSIONS, notify, withActions } from '../core'
 import { connectLogger, log } from './connectLogger'
 import { getStackTrace } from './getStackTrace'
@@ -115,6 +115,73 @@ test('connectLogger match', () => {
   expect(logs.some((log) => String(log).includes('blocked'))).toBe(false)
 
   vi.restoreAllMocks()
+})
+
+test('connectLogger logs a computed initialization once on cold reads', () => {
+  const groupSpy = vi
+    .spyOn(console, 'groupCollapsed')
+    .mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
+
+  connectLogger({ match: (name) => name === 'coldRead.doubled' })
+
+  const counter = atom(0, 'coldRead.counter')
+  const doubled = computed(() => counter() * 2, 'coldRead.doubled')
+
+  // remove the logger middleware to not interact with other tests
+  EXTENSIONS.pop()
+
+  try {
+    counter.set(24)
+    expect(peek(doubled)).toBe(48)
+    notify()
+
+    let doubledLogs = (groupSpy.mock.calls as unknown[][]).filter((call) =>
+      String(call[0]).includes('coldRead.doubled'),
+    )
+    expect(doubledLogs).toHaveLength(1)
+
+    expect(peek(doubled)).toBe(48)
+    notify()
+
+    doubledLogs = (groupSpy.mock.calls as unknown[][]).filter((call) =>
+      String(call[0]).includes('coldRead.doubled'),
+    )
+    expect(doubledLogs).toHaveLength(1)
+  } finally {
+    vi.restoreAllMocks()
+  }
+})
+
+test('connectLogger logs a computed initialization during subscription', () => {
+  const groupSpy = vi
+    .spyOn(console, 'groupCollapsed')
+    .mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
+
+  connectLogger({ match: (name) => name === 'subscriptionInit.doubled' })
+
+  const counter = atom(0, 'subscriptionInit.counter')
+  const doubled = computed(() => counter() * 2, 'subscriptionInit.doubled')
+
+  // remove the logger middleware to not interact with other tests
+  EXTENSIONS.pop()
+
+  let unsubscribe: undefined | (() => void)
+  try {
+    unsubscribe = doubled.subscribe(() => {})
+    notify()
+
+    const doubledLogs = (groupSpy.mock.calls as unknown[][]).filter((call) =>
+      String(call[0]).includes('subscriptionInit.doubled'),
+    )
+    expect(doubledLogs).toHaveLength(1)
+  } finally {
+    unsubscribe?.()
+    vi.restoreAllMocks()
+  }
 })
 
 test('log.state logs only when data changes', () => {

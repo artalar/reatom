@@ -273,8 +273,6 @@ export let connectLogger = ({
       }
     }
 
-    let initKey = {}
-
     return target.extend(
       withMiddleware(
         () =>
@@ -294,12 +292,6 @@ export let connectLogger = ({
 
                 if (target.__reatom.reactive) {
                   if (Object.is(prevState, state)) return
-
-                  let inits = frame.root.inits
-                  if (!inits.has(initKey)) {
-                    inits.set(initKey, null)
-                    if (params.length === 0) return
-                  }
 
                   logStack(
                     state,
