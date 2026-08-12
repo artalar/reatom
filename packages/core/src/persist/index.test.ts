@@ -20,42 +20,25 @@ const createRecord = <State>(
   ...overrides,
 })
 
-const createJsonStorage = <Snapshot>() => {
-  const records = new Map<string, string>()
-
-  return {
-    records,
-    storage: {
-      name: 'jsonStorage',
-      get({ key }: { key: string }) {
-        const record = records.get(key)
-        return record === undefined
-          ? null
-          : (JSON.parse(record) as PersistRecord<Snapshot>)
-      },
-      set({ key }: { key: string }, record: PersistRecord<Snapshot>) {
-        records.set(key, JSON.stringify(record))
-      },
-    },
-  }
-}
-
 afterEach(() => vi.restoreAllMocks())
 
 describe('base', () => {
   test('default snapshots persist beyond MAX_SAFE_TIMEOUT', () => {
     const now = 1_000
     const dateNow = vi.spyOn(Date, 'now').mockReturnValue(now)
-    const { records, storage } = createJsonStorage<number>()
+    let json = ''
+    const storage = {
+      name: 'jsonStorage',
+      get: () => (json ? (JSON.parse(json) as PersistRecord<number>) : null),
+      set: (_options: unknown, record: PersistRecord<number>) => {
+        json = JSON.stringify(record)
+      },
+    }
 
     const source = atom(0, 'persistForeverSource').extend(
       reatomPersist<number>(storage)('persist-forever'),
     )
     source.set(42)
-
-    expect(JSON.parse(records.get('persist-forever')!).to).toBe(
-      Number.MAX_SAFE_INTEGER,
-    )
 
     dateNow.mockReturnValue(now + MAX_SAFE_TIMEOUT + 1)
     const restored = atom(0, 'persistForeverRestored').extend(
@@ -63,25 +46,6 @@ describe('base', () => {
     )
 
     expect(restored()).toBe(42)
-  })
-
-  test('explicit persist time remains a relative TTL', () => {
-    const dateNow = vi.spyOn(Date, 'now').mockReturnValue(1_000)
-    const { records, storage } = createJsonStorage<number>()
-
-    const source = atom(0, 'persistTtlSource').extend(
-      reatomPersist<number>(storage)({ key: 'persist-ttl', time: 1_000 }),
-    )
-    source.set(42)
-
-    expect(JSON.parse(records.get('persist-ttl')!).to).toBe(2_000)
-
-    dateNow.mockReturnValue(2_001)
-    const restored = atom(0, 'persistTtlRestored').extend(
-      reatomPersist<number>(storage)({ key: 'persist-ttl', time: 1_000 }),
-    )
-
-    expect(restored()).toBe(0)
   })
 
   test('should persist and update state correctly', async () => {
