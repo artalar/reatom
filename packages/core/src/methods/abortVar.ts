@@ -60,11 +60,19 @@ export class AbortVariable extends Variable<
 
   override find<Result = ReatomAbortController>(
     cb?: (payload: undefined | ReatomAbortController) => undefined | Result,
-    frame?: Frame,
+    frame: Frame = top(),
   ): undefined | Result {
     let result: undefined | Result
 
     super.find((controller) => {
+      if (
+        controller !== frame[this.name] &&
+        controller?.signal.aborted &&
+        controller.keepState
+      ) {
+        return (controller.spawned ? true : undefined) as undefined | Result
+      }
+
       result = cb ? cb(controller) : (controller as undefined | Result)
       return result !== undefined || controller?.spawned ? true : undefined
     }, frame)

@@ -11,6 +11,8 @@ import {
 import { withSearchParams } from '../routing'
 import { type Fn, noop, type Rec, sleep } from '../utils'
 import { urlAtom } from '../web'
+import { onEvent } from '../web/onEvent'
+import { withAbort } from './withAbort'
 import { withCache, type WithCacheOptions } from './withCache'
 
 test('withCache', async () => {
@@ -639,6 +641,74 @@ test('a hydrated cache hit cancels the speculative body — its scheduled fetch 
       await wrap(sleep(20))
       expect(fetches).toBe(0)
       un()
+    }),
+  )
+})
+
+test('a hydrated cache hit must not abort the reader that pulled the cached atom', async () => {
+  const name = 'withCache.hitAbortsReader'
+  const storage = createMemStorage({ name, subscribe: false })
+  const withSSR = reatomPersist(storage)
+  const scrollTarget = new EventTarget()
+
+  const make = () => {
+    const cursor = atom<string | null>(null, `${name}.cursor`)
+    const query = computed(async () => {
+      const cur = cursor()
+      return await wrap(
+        schedule(async () => {
+          await sleep(10)
+          return { ids: [cur ?? 'first'], nextCursor: 'MORE' as string | null }
+        }),
+      )
+    }, `${name}.query`).extend(
+      withAsyncData({
+        initState: { ids: [] as string[], nextCursor: null as string | null },
+      }),
+      withCache({ withPersist: withSSR }),
+    )
+
+    const consumer = computed(() => {
+      if (query.pending() > 0 || query.data().nextCursor === null) return 'idle'
+
+      onEvent(scrollTarget, 'scroll', noop)
+
+      return 'armed'
+    }, `${name}.consumer`).extend(withAbort())
+
+    return { cursor, query, consumer }
+  }
+
+  const snapshot = await wrap(
+    context.start(async () => {
+      const { query } = make()
+      await wrap(query())
+      await wrap(sleep(20))
+      return storage.snapshotAtom()
+    }),
+  )
+
+  await wrap(
+    context.start(async () => {
+      const { query, consumer } = make()
+      storage.snapshotAtom.set(snapshot)
+
+      const view: AbstractRender<Rec, { armed: string; ids: string[] }> =
+        reatomAbstractRender({
+          frame: top().root.frame,
+          render: () => ({ armed: consumer(), ids: query.data().ids }),
+          rerender: () => view.render({}),
+          name: `${name}.view`,
+          abortOnUnmount: false,
+        })
+      view.render({})
+      const unmount = view.mount()
+      await wrap(sleep(30))
+
+      expect(query.data().ids).toEqual(['first'])
+      expect(() => view.render({})).not.toThrow()
+      expect(view.render({}).result.armed).toBe('armed')
+      unmount()
     }),
   )
 })
