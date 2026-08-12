@@ -23,15 +23,13 @@ import {
   type Unsubscribe,
 } from '../utils'
 
-export const PERSIST_FOREVER = Number.MAX_SAFE_INTEGER
-
 export interface PersistRecord<Snapshot = unknown> {
   data: Snapshot
   id: number
   // TODO remove?
   timestamp: number
   version: number | string
-  /** Expiration timestamp; `PERSIST_FOREVER` means no practical expiration. */
+  /** Time stamp after which the record is cleared. */
   to: number
 }
 
@@ -126,7 +124,7 @@ export interface WithPersistOptions<State = unknown, Snapshot = unknown> {
    * Number of milliseconds from the snapshot creation time after which it will
    * be deleted.
    *
-   * @defaultValue PERSIST_FOREVER
+   * @defaultValue Number.MAX_SAFE_INTEGER
    */
   time?: number
 
@@ -298,7 +296,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
           ) => AtomState<Target>,
           migration,
           subscribe = !!storage.subscribe,
-          time = PERSIST_FOREVER,
+          time = Number.MAX_SAFE_INTEGER,
           toSnapshot = () => target.toJSON() as Snapshot,
           version = 0,
           schema,
@@ -359,7 +357,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
             data: toSnapshot(state),
             id: random(),
             timestamp,
-            to: Math.min(timestamp + time, PERSIST_FOREVER),
+            to: Math.min(timestamp + time, Number.MAX_SAFE_INTEGER),
             version,
           }
         }
@@ -467,7 +465,7 @@ export const createMemStorage = ({
   subscribe?: boolean
 }): PersistStorage & { snapshotAtom: Atom<Rec<PersistRecord>> } => {
   let timestamp = Date.now()
-  let to = PERSIST_FOREVER
+  let to = Number.MAX_SAFE_INTEGER
   let initState = Object.entries(snapshot).reduce(
     (acc, [key, data]) => (
       (acc[key] = {

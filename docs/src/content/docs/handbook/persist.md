@@ -428,16 +428,16 @@ const configuredAtom = atom({ name: '', age: 0 }).extend(
 
 ### Configuration Reference
 
-| Option         | Type                         | Default                       | Description                                                            |
-| -------------- | ---------------------------- | ----------------------------- | ---------------------------------------------------------------------- |
-| `key`          | `string`                     | **required**                  | Unique key for storage                                                 |
-| `toSnapshot`   | `(state) => any`             | `() => target.toJSON()`       | Serialize state before saving                                          |
-| `fromSnapshot` | `(snapshot) => state`        | `target.fromJSON` or identity | Deserialize state after loading                                        |
-| `schema`       | `StandardSchemaV1`           | `undefined`                   | Schema to validate and transform data                                  |
-| `version`      | `number \| string`           | `0`                           | Version number for migration                                           |
-| `migration`    | `(record, version) => state` | `undefined`                   | Migrate old data to current version                                    |
-| `time`         | `number`                     | `PERSIST_FOREVER`             | TTL in milliseconds; effectively no Reatom-level expiration by default |
-| `subscribe`    | `boolean`                    | `true`                        | Enable cross-tab synchronization                                       |
+| Option         | Type                         | Default                       | Description                           |
+| -------------- | ---------------------------- | ----------------------------- | ------------------------------------- |
+| `key`          | `string`                     | **required**                  | Unique key for storage                |
+| `toSnapshot`   | `(state) => any`             | `() => target.toJSON()`       | Serialize state before saving         |
+| `fromSnapshot` | `(snapshot) => state`        | `target.fromJSON` or identity | Deserialize state after loading       |
+| `schema`       | `StandardSchemaV1`           | `undefined`                   | Schema to validate and transform data |
+| `version`      | `number \| string`           | `0`                           | Version number for migration          |
+| `migration`    | `(record, version) => state` | `undefined`                   | Migrate old data to current version   |
+| `time`         | `number`                     | `Number.MAX_SAFE_INTEGER`     | TTL in milliseconds                   |
+| `subscribe`    | `boolean`                    | `true`                        | Enable cross-tab synchronization      |
 
 ## Cross-Tab Synchronization
 
