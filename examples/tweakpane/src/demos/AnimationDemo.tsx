@@ -3,20 +3,20 @@ import {
   atom,
   type AtomLike,
   effect,
+  peek,
   rAF,
   reatomBoolean,
   reatomEnum,
   reatomMediaQuery,
   reatomNumber,
   reatomString,
-  withComputed,
   withMiddleware,
   wrap,
 } from '@reatom/core'
 import { reatomFactoryComponent } from '@reatom/react'
 
 import { hotWrap } from '../hotWrap'
-import { reatomPaneTab, withBinding, withButton } from '../tweakpane'
+import { reatomPaneTab, withBinding, withButton, withEffect } from '../tweakpane'
 
 const withFixedValue = <T,>(condition: () => boolean, fixedValue: T) =>
   withMiddleware<AtomLike<T>>(() => {
@@ -51,15 +51,6 @@ export const AnimationDemo = reatomFactoryComponent(() => {
     withFixedValue(prefersReduced, 0.1),
   )
 
-  speed.binding.extend(
-    withComputed((binding) => {
-      const isPaused = paused()
-      binding.disabled = isPaused || prefersReduced()
-      binding.label = isPaused ? 'Speed (paused)' : 'Speed'
-      return binding
-    }),
-  )
-
   const radius = reatomNumber(120, 'motion.radius').extend(
     withBinding(
       { label: 'Orbit Radius', min: 50, max: 200, step: 1 },
@@ -72,6 +63,15 @@ export const AnimationDemo = reatomFactoryComponent(() => {
   )
 
   const paused = reatomBoolean(false, 'motion.paused')
+
+  speed.binding.extend(
+    withEffect((binding) => {
+      const isPaused = paused()
+      const target = peek(binding)
+      target.disabled = isPaused || prefersReduced()
+      target.label = isPaused ? 'Speed (paused)' : 'Speed'
+    }),
+  )
 
   // --- Style parameters ---
   const hue = reatomNumber(200, 'style.hue').extend(
@@ -100,21 +100,19 @@ export const AnimationDemo = reatomFactoryComponent(() => {
     withFixedValue(prefersReduced, 0),
   )
 
-  trail.binding.extend(
-    withComputed((binding) => {
-      binding.disabled = prefersReduced()
-      return binding
-    }),
-  )
-
   const blink = reatomNumber(0, 'style.blink').extend(
     withBinding({ label: 'Blink', min: 0, max: 1, step: 0.01 }, tabs.pages[2]),
   )
 
+  trail.binding.extend(
+    withEffect((binding) => {
+      peek(binding).disabled = prefersReduced()
+    }),
+  )
+
   blink.binding.extend(
-    withComputed((binding) => {
-      binding.disabled = prefersReduced()
-      return binding
+    withEffect((binding) => {
+      peek(binding).disabled = prefersReduced()
     }),
   )
 
@@ -200,9 +198,8 @@ export const AnimationDemo = reatomFactoryComponent(() => {
   )
 
   togglePause.button.extend(
-    withComputed((button) => {
-      button.title = paused() ? 'Resume' : 'Pause'
-      return button
+    withEffect((button) => {
+      peek(button).title = paused() ? 'Resume' : 'Pause'
     }),
   )
 

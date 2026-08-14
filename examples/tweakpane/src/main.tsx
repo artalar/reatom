@@ -11,7 +11,6 @@ import {
   getCalls,
   peek,
   withChangeHook,
-  withComputed,
   withLocalStorage,
 } from '@reatom/core'
 import { reatomContext } from '@reatom/react'
@@ -20,7 +19,12 @@ import { createRoot } from 'react-dom/client'
 
 import { App } from './app'
 import { settableAction } from './settableAction'
-import { reatomPaneFolder, withBinding, withButton } from './tweakpane'
+import {
+  reatomPaneFolder,
+  withBinding,
+  withButton,
+  withEffect,
+} from './tweakpane'
 
 clearStack()
 
@@ -44,10 +48,9 @@ const unmount = settableAction<() => void>({
 }).extend(withButton({ title: 'Unmount App', hidden: true }, appSettings))
 
 unmount.button.extend(
-  withComputed((button) => {
-    button.hidden = !unmount.impl()
-    return button
-  })
+  withEffect((button) => {
+    peek(button).hidden = !unmount.impl()
+  }),
 )
 
 const hideAppSettings = action(() => {
@@ -55,10 +58,9 @@ const hideAppSettings = action(() => {
 }).extend(withButton({ title: 'Hide App Settings', hidden: true }, appSettings))
 
 hideAppSettings.button.extend(
-  withComputed((button) => {
-    button.hidden = !unmount.impl()
-    return button
-  })
+  withEffect((button) => {
+    peek(button).hidden = !unmount.impl()
+  }),
 )
 
 const mount = action(() => {
@@ -79,10 +81,9 @@ const mount = action(() => {
 }, 'renderApp').extend(withButton({ title: 'Mount App' }, appSettings))
 
 mount.button.extend(
-  withComputed((button) => {
-    button.title = unmount.impl() ? 'Remount App' : 'Mount App'
-    return button
-  })
+  withEffect((button) => {
+    peek(button).title = unmount.impl() ? 'Remount App' : 'Mount App'
+  }),
 )
 
 const strictMode = atom(false, 'app.strictMode').extend(
@@ -90,7 +91,7 @@ const strictMode = atom(false, 'app.strictMode').extend(
   withChangeHook(() => {
     if (unmount.impl()) mount()
   }),
-  withBinding({ label: 'Strict Mode', disabled: true }, appSettings),
+  withBinding({ label: 'Strict Mode' }, appSettings),
 )
 
 const mountAtStart = atom(true, 'app.mountAtStart').extend(

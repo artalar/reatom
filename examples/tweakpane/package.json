@@ -9,21 +9,21 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@reatom/core": "1001.*.*",
-    "@reatom/react": "1001.*.*",
+    "@reatom/core": "1001.0.0-rc.1",
+    "@reatom/react": "1001.0.0-rc",
     "@tweakpane/plugin-essentials": "^0.2.1",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "three": "^0.164.0",
     "tweakpane": "^4.0.5"
   },
   "devDependencies": {
     "@tweakpane/core": "^2.0.5",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.0",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
     "@types/three": "^0.182.0",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@vitejs/plugin-react": "^4.7.0",
     "typescript": "^5.9.3",
-    "vite": "^8.0.14"
+    "vite": "^7.3.0"
   }
 }

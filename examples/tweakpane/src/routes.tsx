@@ -47,55 +47,55 @@ export const rootRoute = reatomRoute({
 
 export const animationRoute = rootRoute.reatomRoute({
   path: 'animation',
-  render: () => <AnimationDemo />,
+  render: () => <AnimationDemo key="animation" />,
 })
 
 export const booleanRoute = rootRoute.reatomRoute({
   path: 'boolean',
-  render: () => <BooleanDemo />,
+  render: () => <BooleanDemo key="boolean" />,
 })
 
 export const colorRoute = rootRoute.reatomRoute({
   path: 'color',
-  render: () => <ColorDemo />,
+  render: () => <ColorDemo key="color" />,
 })
 
 export const essentialsRoute = rootRoute.reatomRoute({
   path: 'essentials',
-  render: () => <EssentialsDemo />,
+  render: () => <EssentialsDemo key="essentials" />,
 })
 
 export const mixerRoute = rootRoute.reatomRoute({
   path: 'mixer',
-  render: () => <MixerDemo />,
+  render: () => <MixerDemo key="mixer" />,
 })
 
 export const monitorRoute = rootRoute.reatomRoute({
   path: 'monitor',
-  render: () => <MonitorDemo />,
+  render: () => <MonitorDemo key="monitor" />,
 })
 
 export const numberRoute = rootRoute.reatomRoute({
   path: 'number',
-  render: () => <NumberDemo />,
+  render: () => <NumberDemo key="number" />,
 })
 
 export const pointRoute = rootRoute.reatomRoute({
   path: 'point',
-  render: () => <PointDemo />,
+  render: () => <PointDemo key="point" />,
 })
 
 export const stringRoute = rootRoute.reatomRoute({
   path: 'string',
-  render: () => <StringDemo />,
+  render: () => <StringDemo key="string" />,
 })
 
 export const uiComponentsRoute = rootRoute.reatomRoute({
   path: 'ui-components',
-  render: () => <UIComponentsDemo />,
+  render: () => <UIComponentsDemo key="ui-components" />,
 })
 
 export const threeRoute = rootRoute.reatomRoute({
   path: 'three',
-  render: () => <ThreeDemo />,
+  render: () => <ThreeDemo key="three" />,
 })

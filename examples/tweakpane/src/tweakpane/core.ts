@@ -1,4 +1,12 @@
-import { type AtomLike, named } from '@reatom/core'
+import {
+  type AtomLike,
+  effect,
+  type Ext,
+  named,
+  peek,
+  withChangeHook,
+  withConnectHook,
+} from '@reatom/core'
 import type {
   BaseParams,
   Controller,
@@ -15,6 +23,25 @@ import { reatomInstance } from '../reatomInstance'
 export type BladeRackApi = FolderApi | RackApi | TabPageApi
 
 export type Disposable = { dispose: () => void; controller: Controller }
+
+/**
+ * Attach a lifecycle-bound side effect to an atom-like resource.
+ *
+ * The effect starts with the target connection and is disposed with it. Use
+ * `peek(target)` inside `effectFn` when you need the current imperative
+ * instance without subscribing the effect to the target itself.
+ */
+export const withEffect =
+  <T extends AtomLike>(effectFn: (target: T) => void): Ext<T> =>
+  (target) =>
+    target.extend(
+      withConnectHook(() => {
+        const { unsubscribe } = effect(() => effectFn(target))
+        return unsubscribe
+      }),
+      withChangeHook(() => void peek(() => effectFn(target))),
+    )
+
 /**
  * Create a lazy reactive disposable resource.
  *

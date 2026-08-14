@@ -66,25 +66,38 @@ effect(async () => {
 
 ### 4. Reactive Properties
 
-Native Tweakpane UI properties (`hidden`, `disabled`, `title`, `label`) are driven by derived atoms using the builtin `withComputed` extension:
+Native Tweakpane UI properties (`hidden`, `disabled`, `title`, `label`) belong to imperative Tweakpane resource instances. The integration synchronizes those properties with lifecycle-bound `withEffect` extensions: the sync starts when the resource connects and stops when it disconnects.
+
+A plain `effect` is still useful for component-scoped processes, such as animation loops, polling, or activating a group of resources. `withEffect` runs only while its target resource is connected; it does not connect the target by itself. Use `withEffect` when the side effect specifically configures a connected Tweakpane resource. Use `peek(target)` for the current imperative instance so the effect subscribes only to the Reatom state it reads:
 
 ```ts
-advancedFolder.extend(
-  withComputed((folder) => {
-    folder.hidden = !isAdvanced()
-    return folder
+const advancedFolder = reatomPaneFolder(
+  { title: 'Advanced' },
+  mainFolder,
+).extend(
+  withEffect((folder) => {
+    peek(folder).hidden = !isAdvanced()
   }),
 )
 
 masterVolume.binding.extend(
-  withComputed((binding) => {
+  withEffect((binding) => {
     const isMuted = muted()
-    binding.disabled = isMuted
-    binding.label = isMuted ? 'Volume (muted)' : 'Volume'
-    return binding
+    const target = peek(binding)
+    target.disabled = isMuted
+    target.label = isMuted ? 'Volume (muted)' : 'Volume'
   }),
 )
 ```
+
+For pure value projections, use `computed` instead. The monitor demo keeps object state in one atom and exposes a formatted JSON string as a separate computed binding.
+
+```ts
+const logState = atom({}, 'logState')
+const logText = computed(() => JSON.stringify(logState(), null, 2), 'logText')
+```
+
+`withBinding` intentionally reads its parent resource with `parent()` (not `peek(parent)`) so a child control keeps its folder connected and the whole subtree disposes in order.
 
 ## Running the Example
 
@@ -107,14 +120,14 @@ The integration provides the following primitives:
 - **`reatomPaneTab`** - Creates tabs with reactive pages
 - **`reatomPaneSeparator`** - Adds separators to a parent rack
 - **`reatomDisposable`** - Helper to create lazy disposable reactive resources (manages creation and automatic disposal when unsubscribed)
-- **`withBinding`** - Creates bidirectional bindings between atoms and Tweakpane controls
+- **`withBinding`** - Creates bidirectional bindings between atoms and Tweakpane controls while subscribing to the parent resource lifecycle
 - **`withBlade`** - Generic blade creation for custom views
 - **`withButton`** - Binds actions to Tweakpane buttons
 
 And generic utilities:
 
 - **`reatomInstance`** - Wraps imperative instances with automatic create/dispose lifecycle
-- **`withEffect`** - Generic hook for one-way bindings to imperative properties (used here for Tweakpane UI props like `disabled` or `title`)
+- **`withEffect`** - Generic lifecycle-bound hook for one-way bindings to imperative properties (used here for Tweakpane UI props like `disabled` or `title`)
 
 All primitives support lazy creation and automatic disposal via Reatom's subscription lifecycle.
 

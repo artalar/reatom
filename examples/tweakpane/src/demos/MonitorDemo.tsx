@@ -1,4 +1,4 @@
-import { atom, effect, sleep, withComputed, wrap } from '@reatom/core'
+import { atom, computed, effect, sleep, wrap } from '@reatom/core'
 import { reatomFactoryComponent } from '@reatom/react'
 
 import { reatomPaneFolder, withBinding } from '../tweakpane'
@@ -43,8 +43,11 @@ export const MonitorDemo = reatomFactoryComponent(() => {
   })
 
   // --- Multiline (Logs) ---
-  const logAtom = atom({}, '_logAtom').extend(
-    withComputed((val) => JSON.stringify(val, null, 2)),
+  const logState = atom({}, '_logState')
+  const logAtom = computed(
+    () => JSON.stringify(logState(), null, 2),
+    '_logAtom',
+  ).extend(
     withBinding(
       {
         label: 'Multiline Log',
@@ -61,7 +64,7 @@ export const MonitorDemo = reatomFactoryComponent(() => {
   effect(async () => {
     logAtom()
     await wrap(sleep(500))
-    logAtom.set({
+    logState.set({
       positive: Math.random() > 0.5,
       value: Math.random().toFixed(4),
     })
