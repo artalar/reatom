@@ -1,6 +1,7 @@
 import type { Action, Atom, AtomState, Computed } from '../core'
 import {
   _enqueue,
+  _read,
   action,
   atom,
   computed,
@@ -240,7 +241,7 @@ export function withSearchParams<T = string>(
         let frame = top()
         let prevFrame = _getPrevFrame(frame)
         if (
-          frame === frame.root.store.get(target) &&
+          frame === _read(target) &&
           frame.pubs[1]?.state === prevFrame?.pubs[1]?.state &&
           isSubpath(urlAtom().pathname, path)
         ) {

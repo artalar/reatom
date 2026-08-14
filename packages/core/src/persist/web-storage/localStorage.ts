@@ -75,16 +75,22 @@ export const reatomPersistWebStorage = (
     clear({ key }) {
       storage.removeItem(key)
     },
-    subscribe({ key, cache }, cb) {
+    subscribe({ key }, cb) {
       const handler = (event: StorageEvent) => {
-        if (event.storageArea === storage && event.key === key) {
-          if (event.newValue === null) {
-            cache?.delete(key)
-          } else {
-            const rec = JSON.parse(event.newValue)
-            assertPersistRecord(rec, name)
-            cb(rec)
-          }
+        if (event.key !== key) return
+        // Manually constructed StorageEvents often have storageArea === null.
+        if (event.storageArea != null && event.storageArea !== storage) return
+
+        if (event.newValue === null) {
+          cb(null)
+          return
+        }
+        try {
+          const rec = JSON.parse(event.newValue)
+          assertPersistRecord(rec, name)
+          cb(rec)
+        } catch {
+          // Malformed storage payload - ignore
         }
       }
       globalThis.addEventListener?.('storage', handler, false)

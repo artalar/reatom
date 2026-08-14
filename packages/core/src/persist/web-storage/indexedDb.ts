@@ -202,10 +202,7 @@ export const reatomPersistIndexedDb = (
               }
             })()
           } else if (event.data._type === 'push') {
-            const { rec } = event.data
-            if (rec !== null) {
-              cb(rec)
-            }
+            cb(event.data.rec)
           }
         } catch (error) {
           console.warn('Failed to handle IndexedDB broadcast message:', error)

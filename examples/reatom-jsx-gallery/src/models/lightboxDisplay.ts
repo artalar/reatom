@@ -18,7 +18,7 @@ const SIZED_IMAGE_WINDOW_RADIUS = 2
 
 export const lightboxSizedImageWindow = computed(() => {
   const current = lightboxImage()
-  if (!current || !lightboxOpen()) return new Set<typeof current>()
+  if (!current || !lightboxOpen()) return new Set<NonNullable<typeof current>>()
 
   const images = visibleImages()
   const currentIndex = images.indexOf(current)
@@ -33,13 +33,15 @@ export const lightboxSizedImageWindow = computed(() => {
   return new Set(images.slice(start, end))
 }, 'lightbox.sizedImageWindow')
 
-const syncSizedImageWindowIds = effect(() => {
-  const window = lightboxSizedImageWindow()
-  lightboxSizedImageWindowIds.set(new Set([...window].map((image) => image.id)))
-  setLightboxDisplayPreloadCount(Math.max(0, window.size - 1))
-}, 'lightbox._syncSizedImageWindowIds')
-
 export const bindLightboxSizedImageWindowSync = () => {
+  const syncSizedImageWindowIds = effect(() => {
+    const window = lightboxSizedImageWindow()
+    lightboxSizedImageWindowIds.set(
+      new Set([...window].map((image) => image.id)),
+    )
+    setLightboxDisplayPreloadCount(Math.max(0, window.size - 1))
+  }, 'lightbox._syncSizedImageWindowIds')
+
   return () => syncSizedImageWindowIds.unsubscribe()
 }
 

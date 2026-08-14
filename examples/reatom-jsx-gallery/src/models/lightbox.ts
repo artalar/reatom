@@ -1,4 +1,11 @@
-import { action, computed, withAsync, wrap } from '@reatom/core'
+import {
+  action,
+  computed,
+  isAbort,
+  withAbort,
+  withAsync,
+  wrap,
+} from '@reatom/core'
 
 import { copyImageAsJpegToClipboard } from '../copyImage'
 import { downloadPreparedGalleryImage } from '../download'
@@ -104,6 +111,7 @@ export const closeLightbox = action(() => {
 }, 'closeLightbox')
 
 export const resetLightboxOnFolderChange = action(() => {
+  closeLightbox()
   lightboxImage.set(null)
 }, 'lightbox.resetOnFolderChange')
 
@@ -119,9 +127,10 @@ export const copyLightboxImageAsJpeg = action(async () => {
   try {
     await wrap(copyImageAsJpegToClipboard(image))
   } catch (error: unknown) {
+    if (isAbort(error)) return
     console.error('Failed to copy image as JPEG:', error)
   }
-}, 'lightbox.copyImageAsJpeg').extend(withAsync())
+}, 'lightbox.copyImageAsJpeg').extend(withAsync(), withAbort())
 
 export const toggleLightboxImageFavorite = action(() => {
   lightboxImage()?.favorite.toggle()

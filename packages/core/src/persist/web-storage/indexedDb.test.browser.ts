@@ -190,6 +190,33 @@ test('IndexedDB adapter initialization', async () => {
   channel2.close()
 })
 
+test('IndexedDB propagates clear messages to subscribers', async () => {
+  const key = `indexed-db-clear-${Date.now()}-${Math.random()}`
+  const dbName = `indexed-db-clear-db-${Date.now()}-${Math.random()}`
+  const channelName = `indexed-db-clear-channel-${Date.now()}-${Math.random()}`
+  const channelA = new BroadcastChannel(channelName)
+  const channelB = new BroadcastChannel(channelName)
+  const withTabA = reatomPersistIndexedDb(dbName, channelA)
+  const withTabB = reatomPersistIndexedDb(dbName, channelB)
+  const tabA = atom(0, 'indexedDbClearA').extend(withTabA(key))
+  const tabB = atom(0, 'indexedDbClearB').extend(withTabB(key))
+  const unsubscribeA = tabA.subscribe(() => {})
+  const unsubscribeB = tabB.subscribe(() => {})
+
+  tabA.set(1)
+  await wrap(sleep(100))
+  expect(tabB()).toBe(1)
+
+  withTabA.storageAtom().clear?.({ key })
+  await wrap(sleep(100))
+
+  unsubscribeA()
+  unsubscribeB()
+  channelA.close()
+  channelB.close()
+  expect(tabB()).toBe(0)
+})
+
 describe('cold-start rehydration with multiple atoms', () => {
   const seedRecord = async <T>(key: string, data: T) => {
     const idb = await import('idb-keyval')

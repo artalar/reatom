@@ -233,6 +233,8 @@ async function developInSlot(
   job: DevelopJob,
 ): Promise<RawDevelopResult | null> {
   const { default: LibRaw } = await loadLibRawModule()
+  if (signal.aborted) throw createAbortError()
+
   const instance = new LibRaw()
   slot.instance = instance
 

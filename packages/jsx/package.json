@@ -1,7 +1,7 @@
 {
   "name": "@reatom/jsx",
   "type": "module",
-  "version": "1001.1.0",
+  "version": "1001.3.0",
   "sideEffects": false,
   "description": "Reatom for jsx",
   "exports": {
@@ -31,7 +31,8 @@
     "prepublishOnly": "pnpm run build && pnpm run test",
     "build": "tsdown",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "bench": "vitest bench --run --config=vitest.bench.config.ts"
   },
   "tsdown": {
     "copy": ["src/jsx.d.ts"],
@@ -64,7 +65,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/reatom/reatom.git",
+    "url": "https://github.com/reatom/reatom.git",
     "directory": "packages/jsx"
   },
   "bugs": {

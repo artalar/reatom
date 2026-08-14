@@ -5,6 +5,7 @@ import { createMockDirHandle } from './__fixtures__/fixtureLoader'
 import { createMockImage, mockFolderTree } from './__fixtures__/mockData'
 import { scanDirectoryRecursive } from './filesystem'
 import {
+  bindLightboxSizedImageWindowSync,
   clearSelection,
   closeLightbox,
   currentFolder,
@@ -22,6 +23,7 @@ import {
   navigateLightbox,
   openFolder,
   openLightbox,
+  reatomGalleryImage,
   searchQuery,
   selectAllImages,
   selectedCount,
@@ -32,6 +34,7 @@ import {
   visibleIndexMap,
   wrapFolderNavigation,
 } from './model'
+import { lightboxSizedImageWindowIds } from './models/lightboxState'
 import { loadGalleryState } from './shared/testSetup'
 import type { FolderNode, ImageFile } from './types'
 
@@ -144,6 +147,23 @@ test('imagesList sorts by dimensions', () =>
     const images = currentImages()
     const areas = images.map((i) => i.width() * i.height())
     expect(areas).toEqual([...areas].sort((a, b) => a - b))
+  }))
+
+test('dimension reads do not start full image pipelines', () =>
+  context.start(() => {
+    const image = reatomGalleryImage(
+      createMockImage({ name: 'dimensions.jpg', type: 'image/jpeg' }),
+    )
+    const rawDevelopPending = image.rawDeveloped.pending()
+    const sizedImagePending = image.sizedImage.pending()
+    const fullImagePending = image.fullImage.pending()
+
+    image.width()
+    image.height()
+
+    expect(image.rawDeveloped.pending()).toBe(rawDevelopPending)
+    expect(image.sizedImage.pending()).toBe(sizedImagePending)
+    expect(image.fullImage.pending()).toBe(fullImagePending)
   }))
 
 test('visibleIndexMap filters by type', () =>
@@ -274,6 +294,27 @@ test('openLightbox sets image and opens', () =>
     openLightbox(target)
     expect(lightboxImage()).toBe(target)
   }))
+
+test('sized image window sync restarts after lightbox remount', async () => {
+  await context.start(async () => {
+    loadGalleryState({ tree: mockFolderTree })
+    const visible = [...visibleIndexMap().keys()]
+
+    openLightbox(visible[0]!)
+    const stopFirstSync = bindLightboxSizedImageWindowSync()
+    await wrap(Promise.resolve())
+    expect(lightboxSizedImageWindowIds().has(visible[0]!.id)).toBe(true)
+    stopFirstSync()
+
+    closeLightbox()
+    const lastVisible = visible.at(-1)!
+    openLightbox(lastVisible)
+    const stopSecondSync = bindLightboxSizedImageWindowSync()
+    await wrap(Promise.resolve())
+    expect(lightboxSizedImageWindowIds().has(lastVisible.id)).toBe(true)
+    stopSecondSync()
+  })
+})
 
 test('closeLightbox resets preview state', () =>
   context.start(() => {

@@ -1,5 +1,5 @@
 import type { Action, ActionState, AtomLike, AtomState, Frame } from '../core'
-import { _trackAction, ReatomError, top } from '../core'
+import { _read, _trackAction, ReatomError, top } from '../core'
 import { assert } from '../utils'
 import { _getPrevFrame } from './context'
 import { peek } from './peek'
@@ -10,7 +10,7 @@ export let isChanged = (target: AtomLike): boolean => {
   let prevTargetFrame = prevPubs[frame.pubs.length]
 
   target()
-  let targetFrame = frame.root.store.get(target)!
+  let targetFrame = _read(target)!
 
   return (
     targetFrame.atom !== prevTargetFrame?.atom ||
@@ -55,7 +55,7 @@ export const ifChanged = <T extends AtomLike>(
   let prevTargetFrame = prevPubs[frame.pubs.length]
 
   target()
-  let targetFrame = frame.root.store.get(target)!
+  let targetFrame = _read(target)!
 
   if (targetFrame.atom !== prevTargetFrame?.atom) {
     peek(cb, targetFrame.state, undefined, true)

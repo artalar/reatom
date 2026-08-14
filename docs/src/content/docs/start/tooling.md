@@ -72,6 +72,40 @@ LOG.extend(
 )
 ```
 
+#### `log.label`
+
+Same as `log`, but the first argument is a required label used as the logger title instead of `"LOG"`:
+
+```ts
+LOG.label('fetch payload', response)
+// group title: "fetch payload"
+// console.log: response
+```
+
+#### `log.state`
+
+Logs a value only when it changes for the given name (`Object.is`). Always returns the value, so it can be used inline:
+
+```ts
+const data = LOG.state('user', useSomeData())
+// logs only when `data` changes between calls with the same name
+```
+
+## Vite
+
+[`@reatom/vite`](/reference/vite) injects development HMR cleanup for `reatomRoute` / nested `.reatomRoute()` and for `@reatom/jsx` `mount()`:
+
+```ts title="vite.config.ts"
+import { defineConfig } from 'vite'
+import { reatom } from '@reatom/vite'
+
+export default defineConfig({
+  plugins: [reatom()],
+})
+```
+
+See [routing HMR](/handbook/routing/#hot-module-replacement-vite) and [JSX HMR](/reference/jsx#hot-module-replacement-vite) for the underlying dispose pattern.
+
 ## Eslint
 
 We recommend using ESLint to enforce best practices and coding standards in your Reatom projects. We will publish our own ESLint plugin for name autofix soon, but you can use this plugin right now to automate `action`, `computed`, `effect` naming:

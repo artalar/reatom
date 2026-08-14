@@ -110,7 +110,7 @@ test('connectLogger match', () => {
   blocked.set(1)
   notify()
 
-  const logs = consoleSpy.mock.calls.map((call) => call[0])
+  const logs = (consoleSpy.mock.calls as unknown[][]).map((call) => call[0])
   expect(logs.some((log) => String(log).includes('allowed'))).toBe(true)
   expect(logs.some((log) => String(log).includes('blocked'))).toBe(false)
 
@@ -151,4 +151,73 @@ test('log.state logs only when data changes', () => {
   expect(consoleSpy).toHaveBeenCalledTimes(3)
 
   vi.restoreAllMocks()
+})
+
+test('log.label uses the label as the logger title', () => {
+  const groupSpy = vi
+    .spyOn(console, 'groupCollapsed')
+    .mockImplementation(() => {})
+  vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
+  const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+  connectLogger()
+  // remove the logger middleware to not interact with other tests
+  EXTENSIONS.pop()
+
+  const payload = { ok: true }
+  const result = log.label('fetch payload', payload, 42)
+  notify()
+
+  expect(result).toEqual([payload, 42])
+
+  const titles = (groupSpy.mock.calls as unknown[][]).map((call) => call[0])
+  expect(titles.some((title) => String(title).includes('fetch payload'))).toBe(
+    true,
+  )
+  expect(titles.some((title) => String(title).includes('LOG.label'))).toBe(
+    false,
+  )
+  expect(
+    (consoleSpy.mock.calls as unknown[][]).some((call) => call[0] === payload),
+  ).toBe(true)
+
+  vi.restoreAllMocks()
+})
+
+test('log.label formats the group title in the browser', () => {
+  const globals = globalThis as typeof globalThis & {
+    window?: object
+    document?: object
+  }
+  const hadWindow = 'window' in globals
+  const hadDocument = 'document' in globals
+  const prevWindow = globals.window
+  const prevDocument = globals.document
+  globals.window = prevWindow ?? {}
+  globals.document = prevDocument ?? {}
+
+  const groupSpy = vi
+    .spyOn(console, 'groupCollapsed')
+    .mockImplementation(() => {})
+  vi.spyOn(console, 'groupEnd').mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+
+  connectLogger()
+  EXTENSIONS.pop()
+
+  log.label('fetch payload', 1)
+  notify()
+
+  const labelCall = (groupSpy.mock.calls as unknown[][]).find(
+    (call) => call[0] === '%c%s' && String(call[2]).includes('fetch payload'),
+  )
+  expect(labelCall).toBeTruthy()
+  expect(String(labelCall?.[1]).includes('background:')).toBe(true)
+  expect(String(labelCall?.[2]).includes('LOG.label')).toBe(false)
+
+  vi.restoreAllMocks()
+  if (hadWindow) globals.window = prevWindow
+  else Reflect.deleteProperty(globals, 'window')
+  if (hadDocument) globals.document = prevDocument
+  else Reflect.deleteProperty(globals, 'document')
 })

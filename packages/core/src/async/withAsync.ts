@@ -1,6 +1,7 @@
 import type { Action, Atom, AtomLike, Computed } from '../core'
 import {
   _createGlobal,
+  _read,
   action,
   atom,
   bind,
@@ -250,13 +251,13 @@ export let withAsync: {
         computed(state = 0) {
           if (target.__reatom.reactive) {
             ifChanged(target, () => {
-              const targetFrame = top().root.store.get(target)
+              const targetFrame = _read(target)
               const cacheState = targetFrame && cacheVar.first(targetFrame)
               if (!cacheState) state++
             })
           } else {
             const calls = getCalls(target as Action)
-            const targetFrame = top().root.store.get(target)
+            const targetFrame = _read(target)
             const cacheState = targetFrame && cacheVar.first(targetFrame)
             if (calls.length !== 0 && !cacheState) {
               state += calls.length
@@ -342,6 +343,8 @@ export let withAsync: {
           : promise
       const isPromiseFresh =
         promiseToTrack !== undefined && !touched.has(promiseToTrack)
+
+      if (isCacheHit) touched.add(promise)
 
       if (cacheState?.payload) {
         pending.set((state) => state + 1)

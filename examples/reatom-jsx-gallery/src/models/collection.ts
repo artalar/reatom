@@ -130,6 +130,9 @@ export const resetGallerySession = action(() => {
   shutdownThumbnailQueue()
   shutdownImageDecodeQueue()
   shutdownBitmapDecodeQueue()
+  for (const model of imageModelById.values()) {
+    model.dispose()
+  }
   imageModelById.clear()
   folderModelByPath.clear()
 }, 'collection.resetGallerySession')

@@ -1,14 +1,17 @@
 import {
+  addCallHook,
   atom,
   clearStack,
   computed,
   context,
   type Fn,
   isConnected,
+  log,
   reatomField,
   reatomForm,
   sleep,
   top,
+  withConnectHook,
   withInit,
   wrap,
 } from '@reatom/core'
@@ -102,18 +105,19 @@ test('children updates', () =>
     mount(parent(), element)
     await wrap(sleep())
 
-    expect(element.childNodes.length).toBe(7)
-    expect(element.childNodes[2]?.textContent).toBe('foo')
-    expect(element.childNodes[5]).toBe(a)
+    // Primitive string atom → single Text node (no live-fragment markers)
+    expect(element.childNodes.length).toBe(5)
+    expect(element.childNodes[1]?.textContent).toBe('foo')
+    expect(element.childNodes[3]).toBe(a)
 
     val.set('bar')
     await wrap(sleep())
-    expect(element.childNodes[2]?.textContent).toBe('bar')
+    expect(element.childNodes[1]?.textContent).toBe('bar')
 
-    expect(element.childNodes[5]).toBe(a)
+    expect(element.childNodes[3]).toBe(a)
     route.set('b')
     await wrap(sleep())
-    expect(element.childNodes[5]).toBe(b)
+    expect(element.childNodes[3]).toBe(b)
   }))
 
 test('dynamic children', () =>
@@ -152,26 +156,25 @@ test('dynamic children', () =>
     )
   }))
 
-test('on: handler action name uses function name', () =>
+test('on: handlers run under shared jsxEvent action', () =>
   context.start(async () => {
-    let namedActionName = ''
-    let anonymousActionName = ''
-    let frequentActionName = ''
+    let clickActionName = ''
+    let moveActionName = ''
+    let labels: string[] = []
+    let unsubLabel = addCallHook(log.label, (_payload, params) => {
+      labels.push(String(params[0]))
+    })
 
     function handleClick() {
-      namedActionName = top().atom.name
+      clickActionName = top().atom.name
     }
 
     function handlePanMove() {
-      frequentActionName = top().atom.name
+      moveActionName = top().atom.name
     }
 
     const Button = () => (
-      <button
-        on:click={handleClick}
-        on:dblclick={() => (anonymousActionName = top().atom.name)}
-        on:mousemove={handlePanMove}
-      >
+      <button on:click={handleClick} on:mousemove={handlePanMove}>
         click
       </button>
     )
@@ -182,13 +185,16 @@ test('on: handler action name uses function name', () =>
     await wrap(sleep())
 
     element.click()
-    expect(namedActionName).toBe('Button.button.handleClick')
-
-    element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
-    expect(anonymousActionName).toBe('Button.button.dblclick')
+    expect(clickActionName).toBe('jsx._event')
+    await wrap(sleep())
+    expect(labels).toEqual(['Button.button.handleClick'])
 
     element.dispatchEvent(new MouseEvent('mousemove', { bubbles: true }))
-    expect(frequentActionName).toBe('Button.button._handlePanMove')
+    expect(moveActionName).toBe('jsx._event')
+    await wrap(sleep())
+    expect(labels).toEqual(['Button.button.handleClick'])
+
+    unsubLabel()
   }))
 
 test('function child computed name uses component and element', () =>
@@ -266,14 +272,19 @@ test.skip('spreads difference', () =>
 test('multiple render shared element', () =>
   context.start(async () => {
     const valueAtom = atom('abc', 'value')
-    const element = <p>{valueAtom}</p>
 
-    const Component = () => (
-      <>
-        <div id="1">{element}</div>
-        <div id="2">{element}</div>
-      </>
-    )
+    // Create the element inside the component so each mount gets a fresh
+    // binding. Reusing a node after teardown drops reconnect thunks (leak
+    // prevention) and would leave a stale text node.
+    const Component = () => {
+      const element = <p>{valueAtom}</p>
+      return (
+        <>
+          <div id="1">{element}</div>
+          <div id="2">{element}</div>
+        </>
+      )
+    }
 
     const childAtom = atom<JSX.Element | undefined>(
       <Component></Component>,
@@ -284,13 +295,13 @@ test('multiple render shared element', () =>
     mount(parent(), app)
     await wrap(sleep())
     expect(stripJsxCompilerProps(app.innerHTML)).toBe(
-      '<!--child--><!----><div id="1"></div><div id="2"><p><!--value-->abc<!--value--></p></div><!----><!--child-->',
+      '<!--child--><!----><div id="1"></div><div id="2"><p>abc</p></div><!----><!--child-->',
     )
 
     valueAtom.set('def')
     await wrap(sleep())
     expect(stripJsxCompilerProps(app.innerHTML)).toBe(
-      '<!--child--><!----><div id="1"></div><div id="2"><p><!--value-->def<!--value--></p></div><!----><!--child-->',
+      '<!--child--><!----><div id="1"></div><div id="2"><p>def</p></div><!----><!--child-->',
     )
 
     childAtom.set(undefined)
@@ -303,7 +314,7 @@ test('multiple render shared element', () =>
     valueAtom.set('ghi')
     await wrap(sleep())
     expect(stripJsxCompilerProps(app.innerHTML)).toBe(
-      '<!--child--><!----><div id="1"></div><div id="2"><p><!--value-->ghi<!--value--></p></div><!----><!--child-->',
+      '<!--child--><!----><div id="1"></div><div id="2"><p>ghi</p></div><!----><!--child-->',
     )
   }))
 
@@ -512,6 +523,16 @@ test('ref unmount callback', () =>
     parent().remove()
     await wrap(sleep())
     expect(ref).toBe(null)
+  }))
+
+test('undefined ref does not throw on mount', () =>
+  context.start(async () => {
+    const Component = (props: JSX.HTMLAttributes) => <div {...props} />
+
+    mount(parent(), <Component ref={undefined} />)
+    await wrap(sleep())
+
+    expect(parent().children).toHaveLength(1)
   }))
 
 test('child ref unmount callback', () =>
@@ -748,6 +769,43 @@ test('ref mount and unmount callbacks order', () =>
     expect(order).toStrictEqual([2, 1, 0, 0, 1, 2])
   }))
 
+test('batched removal unsubscribes shared pubs in reverse subscription order', () =>
+  context.start(async () => {
+    const order: string[] = []
+    const shared = atom('shared', 'shared')
+    const track = (name: string) =>
+      computed(() => `${shared()} ${name}`, name).extend(
+        withConnectHook(() => {
+          order.push(`connect ${name}`)
+          return () => order.push(`disconnect ${name}`)
+        }),
+      )
+
+    const a = track('a')
+    const b = track('b')
+    const c = track('c')
+
+    const element = <div />
+    const { unmount } = mount(parent(), element)
+    await wrap(sleep())
+    element.append(<span id={a} />, <span id={b} />, <span id={c} />)
+    await wrap(sleep())
+    expect(order).toStrictEqual(['connect a', 'connect b', 'connect c'])
+
+    element.replaceChildren()
+    await wrap(sleep())
+    expect(order).toStrictEqual([
+      'connect a',
+      'connect b',
+      'connect c',
+      'disconnect c',
+      'disconnect b',
+      'disconnect a',
+    ])
+
+    unmount()
+  }))
+
 test('style object update', () =>
   context.start(async () => {
     const styleTopAtom = atom<JSX.StyleProperties['top']>('0')
@@ -790,6 +848,49 @@ test('style object update', () =>
     await wrap(sleep())
     expect(firstEl.getAttribute('style')).toBe('left: 0px; bottom: 0px;')
     expect(secondEl.getAttribute('style')).toBe('left: 0px; bottom: 0px;')
+  }))
+
+test('style string value', () =>
+  context.start(async () => {
+    const styleAtom = atom<string | null>('background-color: red; top: 0px;')
+
+    const element = <div style={styleAtom}></div>
+
+    mount(parent(), element)
+
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBe(
+      'background-color: red; top: 0px;',
+    )
+
+    styleAtom.set('color: blue;')
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBe('color: blue;')
+
+    styleAtom.set(null)
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBeNull()
+  }))
+
+test('style object reset', () =>
+  context.start(async () => {
+    const styleAtom = atom<JSX.CSSProperties | null>({
+      'background-color': 'red',
+      top: '0px',
+    })
+
+    const element = <div style={styleAtom}></div>
+
+    mount(parent(), element)
+
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBe(
+      'background-color: red; top: 0px;',
+    )
+
+    styleAtom.set(null)
+    await wrap(sleep())
+    expect(element.getAttribute('style')).toBeNull()
   }))
 
 test('render atom fragments', () =>
@@ -932,8 +1033,30 @@ test('dynamic atom fragment', () =>
     child.set(() => atom('child atom', 'test.child'))
     await wrap(sleep())
     expect(stripJsxCompilerProps(container.outerHTML)).toBe(
-      '<div><!--test--><!--test.child-->child atom<!--test.child--><!--test--></div>',
+      '<div><!--test-->child atom<!--test--></div>',
     )
+  }))
+
+test('atom child switching from primitive to element renders the element', () =>
+  context.start(async () => {
+    const child = atom<JSX.ElementChildren>('loading...', 'child')
+    const element = <div>{child}</div>
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('loading...')
+
+    // The primitive Text fast path must upgrade to the live-fragment path
+    // when the atom state stops being a primitive.
+    child.set((<span>done</span>) as unknown as JSX.ElementChildren)
+    await wrap(sleep())
+    expect(element.querySelector('span')?.textContent).toBe('done')
+    expect(element.textContent).toBe('done')
+
+    // And the fragment stays reactive for further updates.
+    child.set('text again')
+    await wrap(sleep())
+    expect(element.textContent).toBe('text again')
   }))
 
 const expectHtmlElementProperty = <
@@ -1208,6 +1331,26 @@ test('model:field binds checkbox checked', () =>
     expect(input.checked).toBe(true)
   }))
 
+test('model:field inside a function child does not track the field value', () =>
+  context.start(async () => {
+    const field = reatomField('a', 'wrappedField')
+
+    const container = (
+      <div>{() => <input model:field={field} attr:type="text" />}</div>
+    )
+    mount(parent(), container)
+    await wrap(sleep())
+    const input = container.querySelector('input')!
+    expect(input.value).toBe('a')
+
+    // A tracked `field.value()` read in bindFieldModel would make the wrapper
+    // computed depend on the value and recreate the input on every change.
+    field.change('b')
+    await wrap(sleep())
+    expect(input.value).toBe('b')
+    expect(container.querySelector('input')).toBe(input)
+  }))
+
 test('model:field composes with ref when ref comes after', () =>
   context.start(async () => {
     const field = reatomField('', 'nameField')
@@ -1238,6 +1381,26 @@ test('model:field composes with ref when ref comes after', () =>
 
     expect(field.elementRef()).toBe(undefined)
     expect(userRef).toBe(null)
+  }))
+
+test('model:field keeps working when undefined ref comes after', () =>
+  context.start(async () => {
+    const field = reatomField('', 'nameField')
+
+    const input = instance(
+      HTMLInputElement,
+      <input model:field={field} ref={undefined} attr:type="text" />,
+    )
+
+    mount(parent(), input)
+    await wrap(sleep())
+
+    expect(field.elementRef()).toBe(input)
+
+    input.remove()
+    await wrap(sleep())
+
+    expect(field.elementRef()).toBe(undefined)
   }))
 
 test('model:field sets number type and uses valueAsNumber', () =>
@@ -1352,13 +1515,25 @@ test('form model sets submit error attrs', () =>
     expect(formElement.classList.contains('has-submit-error')).toBe(true)
   }))
 
-test('preserves atom connection when moved within DOM', () =>
+test('preserves atom and ref lifecycle when moved within DOM', () =>
   context.start(async () => {
     const valueAtom = atom('aaa')
-    const element = <div class={valueAtom}></div>
+    const mountRef = vi.fn()
+    const unmountRef = vi.fn()
+    const element = (
+      <div
+        class={valueAtom}
+        ref={() => {
+          mountRef()
+          return unmountRef
+        }}
+      ></div>
+    )
 
     mount(parent(), element)
     await wrap(sleep())
+    expect(mountRef).toHaveBeenCalledOnce()
+
     parent().parentElement!.append(element)
     await wrap(sleep())
     valueAtom.set('bbb')
@@ -1366,6 +1541,227 @@ test('preserves atom connection when moved within DOM', () =>
 
     expect(isConnected(valueAtom)).toBe(true)
     expect(element.className).toBe('bbb')
+    expect(mountRef).toHaveBeenCalledOnce()
+    expect(unmountRef).not.toHaveBeenCalled()
+
+    element.remove()
+    await wrap(sleep())
+    expect(unmountRef).toHaveBeenCalledOnce()
+  }))
+
+test('mounts once when an element moves before observer delivery', () =>
+  context.start(async () => {
+    const mountRef = vi.fn()
+    const element = <div ref={mountRef} />
+
+    mount(parent(), element)
+    parent().parentElement!.append(element)
+    await wrap(sleep())
+
+    expect(mountRef).toHaveBeenCalledOnce()
+  }))
+
+test('skips lifecycle for a node appended and removed in the same tick', () =>
+  context.start(async () => {
+    const mountRef = vi.fn()
+    const unmountRef = vi.fn()
+    const value = atom('aaa', 'value')
+    const inner = (
+      <span
+        id={value}
+        ref={() => {
+          mountRef()
+          return unmountRef
+        }}
+      />
+    )
+    const element = <div />
+
+    mount(parent(), element)
+    await wrap(sleep())
+
+    element.append(inner)
+    inner.remove()
+    await wrap(sleep())
+
+    // The node never really appeared: no subscription churn, no orphan ref
+    // mount without a matching unmount.
+    expect(mountRef).not.toHaveBeenCalled()
+    expect(unmountRef).not.toHaveBeenCalled()
+    expect(isConnected(value)).toBe(false)
+
+    // The untouched node connects normally on a later append.
+    element.append(inner)
+    await wrap(sleep())
+    expect(mountRef).toHaveBeenCalledOnce()
+    expect(isConnected(value)).toBe(true)
+  }))
+
+test('atom child renders synchronously at build time', () =>
+  context.start(async () => {
+    const val = atom('eager', 'val')
+    const element = <div>{val}</div>
+
+    expect(element.textContent).toBe('eager')
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('eager')
+  }))
+
+test('nested atom children render synchronously at build time', () =>
+  context.start(async () => {
+    const leaf = atom('leaf', 'leaf')
+    const middle = computed(() => <span>middle {leaf}</span>, 'middle')
+    const top = computed(() => <div>top {middle}</div>, 'top')
+    const element = <section>{top}</section>
+
+    expect(element.textContent).toBe('top middle leaf')
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('top middle leaf')
+
+    leaf.set('leaf!')
+    await wrap(sleep())
+    expect(element.textContent).toBe('top middle leaf!')
+  }))
+
+test('eagerly rendered atom child stays reactive after mount', () =>
+  context.start(async () => {
+    const val = atom('a', 'val')
+    const element = <div>{val}</div>
+
+    expect(element.textContent).toBe('a')
+
+    mount(parent(), element)
+    await wrap(sleep())
+
+    val.set('b')
+    await wrap(sleep())
+    expect(element.textContent).toBe('b')
+  }))
+
+test('siblings connect when an earlier atom child changed before mount', () =>
+  context.start(async () => {
+    const first = atom<JSX.ElementChildren>(
+      (<i>a</i>) as unknown as JSX.ElementChildren,
+      'first',
+    )
+    const second = atom('x', 'second')
+    const element = (
+      <div>
+        {first}
+        <span>{second}</span>
+      </div>
+    )
+
+    // Change the fragment state between build and mount: the subscription
+    // connected during the mount walk emits synchronously and rewrites the
+    // fragment content mid-walk. The walk must keep visiting the replacement
+    // content and the following siblings.
+    first.set((<b>b</b>) as unknown as JSX.ElementChildren)
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.querySelector('b')?.textContent).toBe('b')
+    expect(element.querySelector('i')).toBe(null)
+
+    second.set('y')
+    await wrap(sleep())
+    expect(element.textContent).toBe('by')
+  }))
+
+test('siblings connect when a primitive atom child upgraded before mount', () =>
+  context.start(async () => {
+    const first = atom<JSX.ElementChildren>('a', 'first')
+    const second = atom('x', 'second')
+    const element = (
+      <div>
+        {first}
+        <span>{second}</span>
+      </div>
+    )
+
+    // The primitive Text fast path upgrades via `replaceWith` when its state
+    // stops being primitive, removing the very node the mount walk is
+    // visiting. The walk must continue into the replacement fragment and the
+    // following siblings.
+    first.set((<b>b</b>) as unknown as JSX.ElementChildren)
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.querySelector('b')?.textContent).toBe('b')
+
+    second.set('y')
+    await wrap(sleep())
+    expect(element.textContent).toBe('by')
+  }))
+
+test('atom child teardown drops reconnect after remove', () =>
+  context.start(async () => {
+    const val = atom('same', 'val')
+    const element = <div>{val}</div>
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('same')
+
+    element.remove()
+    await wrap(sleep())
+    parent().append(element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('same')
+
+    // Detach clears meta.subscribes so re-appended nodes stay inert —
+    // recreate the element (or keep it inside a live parent) instead.
+    val.set('updated')
+    await wrap(sleep())
+    expect(element.textContent).toBe('same')
+  }))
+
+test('atom child does not rebind after disconnect teardown', () =>
+  context.start(async () => {
+    const val = atom('before', 'val')
+    const element = <div>{val}</div>
+
+    mount(parent(), element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('before')
+
+    element.remove()
+    await wrap(sleep())
+    val.set('after')
+    await wrap(sleep())
+    expect(element.textContent).toBe('before')
+
+    parent().append(element)
+    await wrap(sleep())
+    expect(element.textContent).toBe('before')
+  }))
+
+test('initial atom children cause no live insertions after mount', () =>
+  context.start(async () => {
+    const leaf = atom('leaf', 'leaf')
+    const top = computed(() => <div>top {leaf}</div>, 'top')
+    const element = <section>{top}</section>
+
+    const target = parent()
+    const mutations: MutationRecord[] = []
+    const observer = new MutationObserver((records) =>
+      mutations.push(...records),
+    )
+    observer.observe(target, { childList: true, subtree: true })
+
+    mount(target, element)
+    await wrap(sleep())
+
+    mutations.push(...observer.takeRecords())
+    observer.disconnect()
+
+    const addedNodes = mutations.flatMap((mutation) => [...mutation.addedNodes])
+    expect(addedNodes).toStrictEqual([element])
+    expect(element.textContent).toBe('top leaf')
   }))
 
 /**

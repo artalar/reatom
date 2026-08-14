@@ -122,48 +122,18 @@ export const reatomPersistBroadcastChannel = (
         console.warn('Failed to broadcast clear message:', error)
       }
     },
-    subscribe({ key }, cb) {
+    subscribe({ key, cache }, cb) {
       const handler = (event: MessageEvent<BroadcastMessage>) => {
         if (event.data?.key !== key) return
 
         try {
           if (event.data._type === 'pull') {
-            // Cannot answer pull without access to cache.
-            // Reatom persist wrapper handles cache, but we don't have access to it here.
-            // This means `withBroadcastChannel` might lose ability to answer 'pull' requests from other tabs?
-            // If so, that's a regression.
-            // However, other tabs might have their own cache.
-            // If tab A has data, tab B joins. Tab B sends pull.
-            // Tab A receives pull. Tab A needs to check if it has data for 'key'.
-            // Since we removed memCacheAtom, we don't know if we have data.
-            // BUT! The wrapper in reatomPersist has the cache!
-            // But we can't access it from here.
-            // The only way to fix this is if `subscribe` callback gave us access to current value, OR if we could ask the storage (which is null).
-            // This seems to be a fundamental issue with removing memCacheAtom from here for BroadcastChannel which relies on memory.
-            // Wait, `withBroadcastChannel` is PURELY memory based (synchronized via channel).
-            // If we remove memCacheAtom, where is the data stored?
-            // In `reatomPersist` wrapper's `cache`.
-            // How do we access it to answer 'pull'?
-            // We can't.
-            // So `pull` functionality is broken unless we restore a way to access the data.
-            // UNLESS... we don't implement 'pull' here.
-            // If 'pull' is intended to get data from *other* tabs that might have it.
-            // If we can't answer, then new tabs start empty.
-            // But `withBroadcastChannel` was designed to share state.
-            // Maybe we can use `cb` to get the current value? No, `cb` is for updates.
-            // Maybe `subscribe` options? No.
-            // This implies `withBroadcastChannel` is tricky with this refactor.
-            // However, the user asked to remove `memCacheAtom`.
-            // Maybe `withBroadcastChannel` should just rely on `push`?
-            // If so, late joiners get nothing until next update.
-            // That might be acceptable or unavoidable with this refactor unless `reatomPersist` exposes the cache or state.
-            // I will implement it without answering `pull` for now, as per instructions to remove `memCacheAtom`.
-            // I'll leave the `pull` check but empty or commented.
-          } else if (event.data._type === 'push') {
-            const { rec } = event.data
-            if (rec !== null) {
-              cb(rec)
+            const rec = cache?.get(key)
+            if (rec) {
+              postMessage({ _type: 'push', key, rec })
             }
+          } else if (event.data._type === 'push') {
+            cb(event.data.rec)
           }
         } catch (error) {
           // Message handling error - ignore

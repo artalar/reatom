@@ -41,4 +41,14 @@ describe('reatomRecord', () => {
       senator: false,
     })
   })
+
+  test('should restore an omitted key on reset', () => {
+    const record = reatomRecord({ a: 1, b: 2 })
+
+    record.merge({ b: 3 })
+    record.omit('a')
+    record.reset('a')
+
+    expect(record()).toEqual({ a: 1, b: 3 })
+  })
 })

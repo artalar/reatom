@@ -8,15 +8,6 @@ import {
 } from '../index'
 
 /**
- * Web storage persist interface that extends the base persist functionality
- * with a storage atom for managing the underlying storage mechanism.
- */
-export interface WithPersistCookie extends WithPersist<
-  string,
-  CookieAttributes
-> {}
-
-/**
  * Configuration options for HTTP cookies following standard cookie attributes.
  *
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
@@ -41,6 +32,23 @@ export interface CookieAttributes {
    */
   subscribe?: never
 }
+
+/**
+ * Cookie storage options: cookie attributes plus persist `version` forwarded by
+ * `withPersist` when synthesizing a `PersistRecord` from a plain cookie value.
+ */
+export type CookieStorageOptions = CookieAttributes & {
+  version?: number | string
+}
+
+/**
+ * Web storage persist interface that extends the base persist functionality
+ * with a storage atom for managing the underlying storage mechanism.
+ */
+export interface WithPersistCookie extends WithPersist<
+  string,
+  CookieStorageOptions
+> {}
 
 const stringifyAttrs = (options: CookieAttributes): string => {
   let attrs = ''
@@ -97,9 +105,9 @@ export const reatomPersistCookie = (
   name: string,
   document: Document,
 ): WithPersistCookie => {
-  return reatomPersist<string, CookieAttributes>({
+  return reatomPersist<string, CookieStorageOptions>({
     name,
-    get({ key, ...options }) {
+    get({ key, version = 0, ...options }) {
       const data = parseCookieValue(key, document.cookie)
 
       if (data === null) return null
@@ -110,13 +118,13 @@ export const reatomPersistCookie = (
         data,
         id: 0,
         timestamp: Date.now(),
-        version: 0,
+        version,
         to,
       }
 
       return persistRecord
     },
-    set({ key, ...options }, rec) {
+    set({ key, version: _version, ...options }, rec) {
       const now = Date.now()
 
       if (options.maxAge === undefined && options.expires === undefined) {
@@ -127,8 +135,8 @@ export const reatomPersistCookie = (
       const value = converter.write(rec.data)
       document.cookie = `${key}=${value}${stringifyAttrs(options)}`
     },
-    clear({ key }) {
-      document.cookie = `${key}=; max-age=-1`
+    clear({ key, path, domain }) {
+      document.cookie = `${key}=; max-age=-1${stringifyAttrs({ path, domain })}`
     },
     subscribe() {
       throw new ReatomError(

@@ -146,7 +146,7 @@ Orchestrator may promote/demote based on release goals.
 | `src/testing/admin-navigation.ts` | Shadow-DOM route navigation          |
 | `src/stories/admin-shell/`        | Minimal fixture journeys             |
 | `src/stories/reatom-jsx-xo/`      | Full integration app                 |
-| `.storybook/README.md`            | Actor + locator conventions          |
+| `.storybook/README.md`            | Kahraman actor + locator conventions |
 
 ## CI expectations
 

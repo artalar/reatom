@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "preserve",
+    "jsxImportSource": "@reatom/jsx",
+    "types": ["vite/client"],
+    "noEmit": true,
+    "isolatedModules": true,
+    "strict": true,
+    "strictNullChecks": true
+  }
+}

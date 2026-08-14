@@ -5,11 +5,16 @@ export const maxParallelThumbnails = Math.max(
   (globalThis.navigator?.hardwareConcurrency ?? 4) * 2,
 )
 
+type ThumbnailSlotLease = {
+  start: () => void
+  release: () => void
+}
+
 type ThumbnailQueueEntry = {
   priority: ThumbnailSlotPriority
   cancelled: boolean
   grant: () => void
-  reject: (error: Error) => void
+  cancel: (error: Error) => void
 }
 
 const thumbnailQueue: ThumbnailQueueEntry[] = []
@@ -56,7 +61,7 @@ function runNextThumbnailJob() {
 export function acquireThumbnailSlot(
   signal: AbortSignal,
   priority: ThumbnailSlotPriority = 'high',
-): Promise<() => void> {
+): Promise<ThumbnailSlotLease> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(createThumbnailAbortError(signal))
@@ -64,6 +69,7 @@ export function acquireThumbnailSlot(
     }
 
     let granted = false
+    let started = false
     let released = false
 
     const release = () => {
@@ -73,24 +79,35 @@ export function acquireThumbnailSlot(
       releaseThumbnailSlot()
     }
 
+    const start = () => {
+      if (!granted || released) return
+      started = true
+    }
+
+    const cancel = (error: Error) => {
+      if (granted || entry.cancelled) return
+      entry.cancelled = true
+      signal.removeEventListener('abort', abort)
+      reject(error)
+    }
+
     const entry: ThumbnailQueueEntry = {
       priority,
       cancelled: false,
       grant: () => {
         granted = true
-        resolve(release)
+        resolve({ start, release })
       },
-      reject,
+      cancel,
     }
 
     const abort = () => {
       if (granted) {
-        release()
+        if (!started) release()
         return
       }
 
-      entry.cancelled = true
-      entry.reject(createThumbnailAbortError(signal))
+      entry.cancel(createThumbnailAbortError(signal))
     }
 
     signal.addEventListener('abort', abort, { once: true })
@@ -108,11 +125,8 @@ export function shutdownThumbnailQueue(): void {
   while (thumbnailQueue.length > 0) {
     const entry = thumbnailQueue.shift()
     if (!entry || entry.cancelled) continue
-    entry.cancelled = true
     const error = new Error('Thumbnail queue shut down')
     error.name = 'AbortError'
-    entry.reject(error)
+    entry.cancel(error)
   }
-
-  activeThumbnailJobs = 0
 }

@@ -1,3 +1,54 @@
+## 1001.3.0 (2026-07-21)
+
+[Changes since `v1001.2`](https://github.com/reatom/reatom/compare/1001.2.0...1001.3.0).
+
+### Core
+
+- feat(core): `log.label` for custom logger titles ([4745a6f](https://github.com/reatom/reatom/commit/4745a6f7d5a94508a1b7f26c225c5f1c05e68b9b))
+- feat(core,jsx): atom error subscription ([3c482b1](https://github.com/reatom/reatom/commit/3c482b13b11fe68bc2db775f0d887fce194eb239))
+- fix(core,jsx): jsfb patch + browser vitest keyed-list bench (#1321) ([7cf67f6](https://github.com/reatom/reatom/commit/7cf67f61183f3b8ea04619f212421599c0dc568d))
+
+## 1001.2.0 (2026-07-19)
+
+[Changes since `v1001.1`](https://github.com/reatom/reatom/compare/1001.1.0...1001.2.0).
+
+### Core
+
+- feat(core): `instance` helper ([d6ae696](https://github.com/reatom/reatom/commit/d6ae696ea4f244d158e2653b297e9dff38fc685c))
+- fix(core): subscription context ([046bb389](https://github.com/reatom/reatom/commit/046bb38933ca05b475998dd01d8d32f292633b36))
+- fix(core): `addErrorHook` restore ([10e8025](https://github.com/reatom/reatom/commit/10e8025eeae39e62b417d35df7f654939855f044))
+- fix(core): frame retrieval ([ecba464](https://github.com/reatom/reatom/commit/ecba4645705df1ff31a1d633e5058bab323dc854))
+- fix(core): `toStringKey` and `isDeepEqual` edge cases ([8ce9a55](https://github.com/reatom/reatom/commit/8ce9a556b8ad5d0df50ead39a907e988191d8d17))
+
+### Methods
+
+- fix(methods): `withObservable` subscription binding ([6acb4b0](https://github.com/reatom/reatom/commit/6acb4b0d4bb824d53834b1a3e3db175dc36091d6))
+- fix(methods): `flushRollbacks` ([e08eab8](https://github.com/reatom/reatom/commit/e08eab8924108d6098618d79fa3e2142f6bffd7f))
+- fix(methods): `race` settled abortion ([8290741](https://github.com/reatom/reatom/commit/82907417eabe6bb5c545e3ac190f0ce316dcf52b))
+- fix(methods): `schedule` queue handling ([e762dec](https://github.com/reatom/reatom/commit/e762dec7c3fa2a4d9c95f982ddba3f32e4abcd01))
+- fix(transaction): rollback subscriber frame (#1317) ([79f7eb8](https://github.com/reatom/reatom/commit/79f7eb855678183cf38664ff054940ffbf7ea52b))
+- fix(transaction): nested transaction rollback ([af2f81f](https://github.com/reatom/reatom/commit/af2f81f41da1e7f3cd815538d39c92cf4085a586))
+
+### Primitives
+
+- feat(extensions,primitives): `withFromJson` ([078d836](https://github.com/reatom/reatom/commit/078d83629be334afd93dd5c13974923739d5e124))
+- fix(primitives): linked-list persist ([cc2697b](https://github.com/reatom/reatom/commit/cc2697b7c11d54419c980b07fcd5858aad1f797b))
+
+### Extensions, async, persist, web, form
+
+- feat(web): optional `name` and `query` on `reatomMediaQuery` (#1292) ([98f5a99](https://github.com/reatom/reatom/commit/98f5a997c7db552baa06cfa52c8e05dc1a1526c2))
+- fix(web): URL hash handling ([23440f6](https://github.com/reatom/reatom/commit/23440f6727401bcfb97aaa30fb34ccdd339ac6a9))
+- fix(persist): async persist ([f85d98c](https://github.com/reatom/reatom/commit/f85d98c22b55932a7fb491aa91825072b7ac612c))
+- fix(persist): persist bugs ([e1f1b8a](https://github.com/reatom/reatom/commit/e1f1b8a821a3e6b1c72c88c755e240c4e9640e29))
+- fix(persist): types ([8bcd036](https://github.com/reatom/reatom/commit/8bcd03661557c2df0fd829bcbe3cacd70c3fb763))
+- fix(withCache): pending hydrated cache hit (#1316) ([3d6c542](https://github.com/reatom/reatom/commit/3d6c5421b0f01992fcff12b5bd59d2c8986a0e4e))
+- fix(core,extensions): suspense reactive restoration ([11911b5](https://github.com/reatom/reatom/commit/11911b5429e28c6a3501d12c173847cbf93b425b))
+- fix(extensions): `withSuspenseInit` params handling ([da32c08](https://github.com/reatom/reatom/commit/da32c0857478e95967803009f303f1053ed5672b))
+- fix(extensions): `addChangeHook` unsubscribe ([ed0157e](https://github.com/reatom/reatom/commit/ed0157e6950fb96547bae346a435164214a994c9))
+- fix(async): do not call `onReject` for abort rejections (#1294) ([4e2d941](https://github.com/reatom/reatom/commit/4e2d94195277918032e0a5dcfa4a7ce0a65f0b8b))
+- fix(async,routing): `status.data` ([348d3b7](https://github.com/reatom/reatom/commit/348d3b7897cda34296110771c08df22befd2bdbe))
+- fix(form): typo ([9b3d43b](https://github.com/reatom/reatom/commit/9b3d43bec2d984f3ddf6ec24eb190d8a53dc9693))
+
 ## 1001.1.0 (2026-06-03)
 
 [Changes since `v1001`](https://github.com/reatom/reatom/compare/v1001...v1001.1).

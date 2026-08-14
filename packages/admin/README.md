@@ -161,11 +161,14 @@ cards.
 
 ## Built-in test strategy
 
-The package is designed to be tested with realistic user scenarios:
+The package is designed to be tested with realistic user scenarios. Storybook
+interactions use [Kahraman](https://github.com/apphane-dev/kahraman) through the
+project adapter in [`.storybook/helpers`](.storybook/helpers), with conventions
+documented in [`.storybook/README.md`](.storybook/README.md).
 
 - unit tests for the reporter, store, filters, timeline, and graph
-- Storybook interaction stories that simulate real debugging journeys with real
-  example applications
+- Kahraman-driven Storybook interaction stories that simulate real debugging
+  journeys with real example applications
 - high-level Storybook investigations that validate:
   - admin-first instrumentation setup
   - captured action and atom activity

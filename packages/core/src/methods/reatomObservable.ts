@@ -85,9 +85,11 @@ export const withObservable =
         'read',
       ),
       withConnectHook(() =>
-        producerAtom().subscribe?.((value) => {
-          target.set(value)
-        }),
+        producerAtom().subscribe?.(
+          bind((value) => {
+            target.set(value)
+          }, context()),
+        ),
       ),
     )
   }

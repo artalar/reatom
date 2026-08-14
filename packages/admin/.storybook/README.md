@@ -1,514 +1,305 @@
-# E2E Testing Patterns: Actor + FluentLocator
+# Storybook interaction testing with Kahraman
 
-A portable guide to the **codecept-style actor** and **fluent locator DSL** used for Storybook integration tests. Designed for AI agents writing tests in other projects.
+`@reatom/admin` follows
+[Kahraman's recommended Storybook testing style](https://github.com/apphane-dev/kahraman):
+stories are executable user journeys, accessible actor/locator assertions are
+the default, and asynchronous tests stabilize on observable UI lifecycle
+signals.
 
-## Core Philosophy
+This document is the complete project-local guide for writing and reviewing
+Admin stories. It inlines the relevant Kahraman style and adds the conventions
+specific to this repository.
 
-- Tests read like **user scenarios**, not DOM queries.
-- The `I` object (the _actor_) is the only entry point for all interactions.
-- Locators are **composable functions** with a fluent API for wait/maybe/all/within modifiers.
-- No standalone `*.test.ts` files; all tests live inside Storybook stories.
-- **Application-specific logic stays in the story file.** The story should spell out
-  which buttons are pressed, which requests fail, and which logs are expected.
-- Shared `testing.ts` helpers are for **system specifics only**:
-  - shadow-root selectors
-  - low-level DOM extraction
-  - timer stabilization
-  - browser and screenshot quirks
-  - generic admin-shell controls like searching logs or clicking toolbar buttons
-- Do **not** hide domain workflows in shared helpers. Avoid methods like:
-  - `playWinningGame()`
-  - `assertCheckoutRollbackFlow()`
-  - `assertArticleLoaderFailureLogs()`
+## Core approach
 
-Instead, keep those steps inline in the story so future readers can understand
-the application behavior without opening helper files.
+A story supplies a reproducible application state. Its test documents what a
+user can perceive and do in that state.
 
-## Architecture Overview
+- Before editing, read a nearby story plus its `boot.tsx` and `testing.ts`;
+  preserve that story family's CSF shape and fixture lifecycle.
+- Put browser interaction journeys in stories and keep pure model behavior in
+  unit tests.
+- Prefer a small number of clear scenarios over one test that branches through
+  unrelated states.
+- Name tests after user-visible outcomes, not implementation details.
+- Keep steps in causal order: act, wait for the visible transition, then assert
+  the result.
+- Prefer programmatic assertions. A screenshot freezes an already-verified
+  state; it does not replace behavior checks.
+- Tag PR-gating journeys with `@smoke` and intentional screenshot contracts with
+  `@visual`.
+- Keep application workflows inline in the story so a reader can understand the
+  scenario without opening helper files.
 
-```mermaid
-graph TD
-  A["Story file<br/>(*.stories.tsx)"] -->|imports| B["Page actor<br/>(pages/*/testing.ts)"]
-  B -->|extends| C["Base actor<br/>(shared/test/actor.ts)"]
-  C -->|uses| D["FluentLocator DSL<br/>(shared/test/loc.ts)"]
-  A -->|configures| E["MSW handlers<br/>(entities/*/mocks/handlers.ts)"]
-  A -->|uses| F["Storybook preview<br/>(.storybook/preview.tsx)"]
+## Project actor contract
+
+Import the actor and locators from the project adapter:
+
+```ts
+import {
+  button,
+  createActor,
+  heading,
+  link,
+  role,
+  text,
+} from '../../../.storybook/helpers'
 ```
 
----
+Create one actor per story module, or reuse the actor exported by that story
+family's shared journey module:
 
-## 1. The Actor Pattern (`I.*`)
-
-The actor is a codecept.js-inspired singleton that wraps all user interactions. Every test method is called through `I`, making tests declarative and self-documenting.
-
-### Creating the base actor
-
-```typescript
-import { createActor } from 'shared/test'
-
+```ts
 const I = createActor()
 ```
 
-### Initializing in a story
+Initialize it from Storybook's `beforeEach` context:
 
-The actor **must** be initialized with the Storybook context via a `loaders` callback:
-
-```typescript
-const meta = preview.meta({
-  title: 'Integration/Articles',
-  component: App,
-  parameters: { layout: 'fullscreen', initialPath: 'articles' },
-  loaders: [(ctx) => void I.init(ctx)],
-})
-```
-
-### Base actor methods
-
-| Method             | Signature                              | Purpose                                                                |
-| ------------------ | -------------------------------------- | ---------------------------------------------------------------------- |
-| `I.see`            | `(locator) => Promise<HTMLElement>`    | Assert element is in the document                                      |
-| `I.dontSee`        | `(fluentLocator) => Promise<void>`     | Assert element is **not** in the document (uses `.maybe()` internally) |
-| `I.waitExit`       | `(fluentLocator) => Promise<void>`     | Poll until element disappears (uses `.maybe()` + `waitFor`)            |
-| `I.click`          | `(locator) => Promise<void>`           | Click an element                                                       |
-| `I.fill`           | `(locator, value) => Promise<void>`    | Clear + type into an input, then tab out                               |
-| `I.clear`          | `(locator) => Promise<void>`           | Clear an input                                                         |
-| `I.selectOption`   | `(locator, value) => Promise<void>`    | Click a select trigger, then click the matching option                 |
-| `I.seeInField`     | `(locator, value) => Promise<void>`    | Assert an input has a specific value                                   |
-| `I.scope`          | `(locator, callback) => Promise<void>` | Narrow all queries inside `callback` to a subtree                      |
-| `I.resolveLocator` | `(locator) => Promise<HTMLElement>`    | Low-level: resolve a locator to a DOM element                          |
-
-### Extending the actor with low-level helpers
-
-Shared helpers may extend the actor, but only with low-level or cross-cutting
-behavior. Keep business expectations out of them.
-
-```typescript
-import { createActor } from 'shared/test'
-
-export const I = createActor().extend((actor) => ({
-  clickAdminButton: async (name: string | RegExp) => {
-    const target = Array.from(document.querySelectorAll('button')).find(
-      (button) =>
-        button instanceof HTMLButtonElement &&
-        (typeof name === 'string'
-          ? button.textContent?.includes(name)
-          : name.test(button.textContent ?? '')),
-    )
-    if (!(target instanceof HTMLButtonElement)) {
-      throw new Error(`Missing button ${String(name)}`)
-    }
-    await actor.click(() => target)
-  },
-}))
-```
-
-Then keep the application flow in the story itself:
-
-```typescript
-Default.test('plays the winning tic-tac-toe flow', async () => {
-  await I.click(button('Top left cell'))
-  await I.click(button('Middle left cell'))
-  await I.click(button('Top center cell'))
-  await I.click(button('Center cell'))
-  await I.click(button('Top right cell'))
-
-  await waitFor(() => {
-    const logs = getVisibleLogs()
-    expect(logs.map((log) => log.name)).toContain('winner')
-    expect(logs.map((log) => log.content)).toContain('X')
-  })
-})
-```
-
----
-
-## 2. FluentLocator DSL
-
-Locators are **callable objects** (functions with chainable methods). They are the only way to address elements.
-
-### Factory functions
-
-| Factory                 | Shorthand for               | Example                     |
-| ----------------------- | --------------------------- | --------------------------- |
-| `role(ariaRole, name?)` | `getByRole(role, { name })` | `role('button', 'Submit')`  |
-| `text(value)`           | `getByText(value)`          | `text('Loading...')`        |
-| `heading(name?)`        | `role('heading', name)`     | `heading('Dashboard')`      |
-| `button(name?)`         | `role('button', name)`      | `button('Try again')`       |
-| `link(name?)`           | `role('link', name)`        | `link(/Quarterly report/i)` |
-
-All name arguments accept `string | RegExp`.
-
-### Fluent modifiers
-
-Each modifier returns a **new locator** (immutable chain):
-
-| Modifier         | Effect                               | Underlying query prefix          |
-| ---------------- | ------------------------------------ | -------------------------------- |
-| _(none)_         | Synchronous, throws if missing       | `getBy*`                         |
-| `.wait()`        | Retries until found (async)          | `findBy*`                        |
-| `.maybe()`       | Returns `null` if missing (no throw) | `queryBy*`                       |
-| `.all()`         | Returns `HTMLElement[]`              | `*AllBy*`                        |
-| `.within(scope)` | Resolves inside a specific subtree   | scoped canvas                    |
-| `.options(opts)` | Merge additional query options       | passed to underlying `*By*` call |
-
-#### Modifier combinations
-
-```typescript
-role('listitem').all() // getAllByRole('listitem')
-role('status', 'Loading ...').wait() // findByRole('status', { name: 'Loading ...' })
-heading('Title').maybe() // queryByRole('heading', { name: 'Title' })
-role('listitem').all().wait() // findAllByRole('listitem')
-text('Done').all() // getAllByText('Done')
-```
-
-`.maybe()` + `.wait()` is **forbidden** (throws at build time).
-
-### `.within()` scoping
-
-Locators can be scoped to a DOM subtree via `.within()`. The scope argument can be:
-
-- **A locator** (resolved first, then used as container):
-  ```typescript
-  text('No article selected').within(role('main'))
-  ```
-- **An HTMLElement** (captured from `I.see`):
-  ```typescript
-  const detail = await I.see(role('main'))
-  await I.see(role('status', 'Loading article detail').within(detail))
-  await I.dontSee(heading('Quarterly report').within(detail))
-  ```
-- **`'global'`** (escapes `I.scope` and searches from `document.body`):
-  ```typescript
-  role('option', value).within('global')
-  ```
-
----
-
-## 3. Stabilization Strategy
-
-Async pages need stabilization before assertions. The primary mechanism is `I.waitExit`.
-
-### Rule: wait for loading status to disappear
-
-For any story that renders loaded content, add a `play` function:
-
-```typescript
-export const Default = meta.story({
-  name: 'Default',
-  play: () => I.waitExit(role('status')),
-})
-```
-
-This waits until all `role="status"` elements (typically loading spinners) leave the DOM.
-
-### When NOT to use `waitExit`
-
-- **Loading-state stories** intentionally keep the spinner visible. Do **not** add `play: () => I.waitExit(...)` to them.
-- **Detail requests triggered by user action**: click first, then `waitExit`, then assert:
-  ```typescript
-  await I.click(link(/Quarterly report/i))
-  await I.waitExit(role('status'))
-  await I.see(heading('Quarterly report'))
-  ```
-
-### When to use `.wait()`
-
-Only for edge cases where `I.waitExit(role('status'))` does not apply:
-
-```typescript
-await I.see(role('status', 'Loading ...').wait())
-```
-
----
-
-## 4. Story Organization
-
-### Naming conventions
-
-| Variant              | Story name                                 | Test name prefix |
-| -------------------- | ------------------------------------------ | ---------------- |
-| Happy path (desktop) | `Default`                                  | _(none)_         |
-| Happy path (mobile)  | `Default (Mobile)`                         | `[mobile]`       |
-| Error state          | `<Feature> Load Server Error`              | _(none)_         |
-| Error (mobile)       | `<Feature> Load Server Error (Mobile)`     | `[mobile]`       |
-| Loading state        | `<Feature> Request Loading State`          | _(none)_         |
-| Loading (mobile)     | `<Feature> Request Loading State (Mobile)` | `[mobile]`       |
-
-### Story structure template
-
-```typescript
-import preview from '.storybook/preview'
-import { App } from 'app/App'
-import { featureList } from 'entities/feature/mocks/handlers'
-import { featureActor as I } from 'pages/feature/testing'
-import { button, heading, link, role, text } from 'shared/test'
-
+```ts
 const meta = preview.meta({
   title: 'Integration/Feature',
   component: App,
-  parameters: { layout: 'fullscreen', initialPath: 'feature' },
-  loaders: [(ctx) => void I.init(ctx)],
+  beforeEach: (context) => void I.init(context),
 })
+```
 
-export default meta
+Every actor call must happen after `I.init(context)`. Initialization binds the
+story canvas and `userEvent` and resets Kahraman's step trace.
 
-// --- Happy path ---
-export const Default = meta.story({
-  name: 'Default',
-  play: () => I.waitExit(role('status')),
-})
+The adapter applies a 500 ms click delay during manual Storybook playback and no
+delay under WebDriver. Stories should not add their own interaction sleeps.
 
-Default.test('renders feature content', async () => {
-  await I.see(heading('Feature heading'))
-  await I.click(link(/Quarterly report/i))
+## Address the UI as a user would
+
+Prefer roles, accessible names, and visible text:
+
+```ts
+await I.see(heading('Counter demo').wait())
+await I.click(button('Increment'))
+await I.see(text('Count: 1'))
+```
+
+Use:
+
+- `heading(name)` for headings;
+- `button(name)` and `link(name)` for controls and navigation;
+- `role(role, name?)` for other semantic elements;
+- `text(value)` for genuinely non-semantic visible content.
+
+Do not use CSS selectors, test IDs, DOM traversal, or raw text-content matching
+when a role and accessible name express the intent. Low-level DOM access is
+reserved for boundaries the actor cannot address, such as the Admin shadow root,
+geometry, browser history, screenshot hosts, and external panels.
+
+### Locator modifiers
+
+Modifiers return a new locator:
+
+```ts
+heading('Activity').wait() // wait for entry
+button('Delete').maybe() // optional nullable lookup
+role('row').all() // collection
+text('Details').within(role('main')) // one scoped query
+role('heading').options({ level: 2 }) // Testing Library options
+```
+
+Use them deliberately:
+
+- `.wait()` waits for an element that will appear.
+- `.maybe()` is for truly optional UI that may need an action, such as a
+  one-time overlay. Do not use it to hide a missing required element.
+- `.all()` resolves a collection.
+- `.within(container)` limits one query to a locator, captured `HTMLElement`, or
+  `'global'`.
+- `.options(...)` supplies Testing Library query options.
+
+### Scoping
+
+Scope assertions to the feature region so global Admin chrome, fixture UI, and
+toasts cannot produce false matches:
+
+```ts
+await I.within(role('main'), async () => {
+  await I.click(link('Timeline'))
   await I.waitExit(role('status'))
-  await I.see(text('Quarterly report'))
+  await I.see(heading('Timeline'))
 })
-
-// --- Mobile variant (reuse desktop params where possible) ---
-export const DefaultMobile = meta.story({
-  name: 'Default (Mobile)',
-  globals: { viewport: { value: 'sm', isRotated: false } },
-  play: () => I.waitExit(role('status')),
-})
-
-DefaultMobile.test('[mobile] renders feature content', async () => {
-  await I.seeFeatureContent()
-})
-
-// --- Error variant ---
-export const HandlesFeatureLoadServerError = meta.story({
-  name: 'Feature Load Server Error',
-  parameters: { msw: { handlers: { featureList: featureList.error } } },
-  play: () => I.waitExit(role('status')),
-})
-
-HandlesFeatureLoadServerError.test('shows error state', async () => {
-  await I.see(heading('Could not load feature'))
-  await I.see(role('alert'))
-  await I.click(button('Try again'))
-})
-
-// --- Error mobile (reuse error parameters) ---
-export const HandlesFeatureLoadServerErrorMobile = meta.story({
-  name: 'Feature Load Server Error (Mobile)',
-  globals: { viewport: { value: 'sm', isRotated: false } },
-  parameters: HandlesFeatureLoadServerError.input.parameters,
-  play: () => I.waitExit(role('status')),
-})
-
-// --- Loading variant (no play/waitExit!) ---
-export const KeepsLoadingWhenFeatureRequestNeverResolves = meta.story({
-  name: 'Feature Request Loading State',
-  parameters: { msw: { handlers: { featureList: featureList.loading } } },
-})
-
-KeepsLoadingWhenFeatureRequestNeverResolves.test(
-  'keeps loading state for pending request',
-  async () => {
-    await I.seeLoading()
-  },
-)
 ```
 
----
+`I.scope` is an alias of `I.within`. Use locator `.within(...)` when only one
+query needs the scope. Use `'global'` for portal-rendered content attached to
+`document.body`.
 
-## 5. MSW Mock Structure
+When a stable panel swaps between states, capture it once and assert both sides
+of the transition:
 
-Each entity exposes three handler variants:
+```ts
+const panel = await I.see(role('main'))
+await I.see(text('Select a frame').within(panel))
+await I.dontSee(heading('Frame details').within(panel))
 
-```typescript
-export const featureList = {
-  default: http.get(url, async () => {
-    await delay()
-    return HttpResponse.json(mockData)
-  }),
-  error: http.get(url, () => to500()),
-  loading: http.get(url, neverResolve),
+await I.click(button('Inspect frame'))
+await I.dontSee(text('Select a frame').within(panel))
+await I.see(heading('Frame details').within(panel))
+```
+
+## Actor methods used in stories
+
+Common assertions and interactions:
+
+```ts
+await I.see(locator)
+await I.dontSee(locator)
+await I.waitExit(locator)
+await I.seeInField(locator, value)
+await I.seeChecked(locator)
+await I.seeDisabled(locator)
+await I.seeAttribute(locator, 'aria-current', 'page')
+await I.seeNumberOfElements(locator.all(), 3)
+
+await I.click(locator)
+await I.fill(locator, 'value')
+await I.clear(locator)
+await I.selectOption(locator, 'Option')
+await I.press('{Enter}')
+```
+
+Extraction methods include `grabTextFrom`, `grabTextFromAll`, and
+`grabValueFrom`. `tryTo` is for optional actions, `retryTo` for documented
+eventual transitions with no better lifecycle signal, and `hopeThat` for soft
+assertions that are concluded with `I.hopeThat.noErrors()`.
+
+When an actor call fails, Kahraman reports the actor step trace and points the
+stack at the story or helper call site. Set `VITE_TEST_STEPS=true` when live step
+logging helps diagnose a journey.
+
+## Stabilize on observable lifecycle signals
+
+Do not add arbitrary sleeps. Wait for visible state transitions:
+
+```ts
+await I.click(button('Load details'))
+await I.waitExit(role('status', 'Loading details'))
+await I.see(heading('Details'))
+```
+
+Use `.wait()` when waiting for a specific element to enter is the clearest
+signal:
+
+```ts
+await I.see(role('alert', 'Connection lost').wait())
+```
+
+Use `I.retryTo` only when the UI has a documented eventual transition with no
+better observable lifecycle signal. Add a comment explaining why retrying is
+necessary; retries must not conceal broken synchronization.
+
+A persistent-loading story intentionally keeps its request pending. Assert the
+named loading UI and do not call a broad `waitExit(role('status'))`. If another
+parent guard also loads, wait only for that named parent status.
+
+## Model meaningful states with stories
+
+Use separate stories for meaningful reproducible states instead of branching
+inside one test. Existing MSW handlers provide deterministic success, error, and
+persistent-loading behavior. Override only the handler relevant to the story:
+
+```ts
+export const GithubStarsFetchFailure: Story = {
+  loaders: [mswLoader],
+  parameters: {
+    msw: { handlers: { githubStars: githubStars.error } },
+  },
+  play: async () => {
+    await waitForXoHarnessReady()
+    await refreshGithubStarsRequest().catch(() => undefined)
+    await waitFor(() => expect(getAdminText()).toContain('1 error'))
+  },
 }
 ```
 
-| Variant    | Behavior                                                 |
-| ---------- | -------------------------------------------------------- |
-| `.default` | Successful response with realistic delay                 |
-| `.error`   | Immediate 500 response                                   |
-| `.loading` | Promise that never resolves (simulates infinite loading) |
+Do not create a mandatory success/error/loading/mobile matrix. Add a state or
+viewport variant only when it proves distinct behavior worth preserving.
 
-Shared utilities in `shared/mocks/utils.ts`:
+For responsive stories, use the viewport names and global shape already defined
+in `.storybook/viewports.ts`. The preview applies the selected viewport to the
+real browser test page. Reuse related story parameters so request and fixture
+configuration cannot drift.
 
-| Helper           | Description             |
-| ---------------- | ----------------------- |
-| `to400(msg?)`    | Throw HTTP 400          |
-| `to404(msg?)`    | Throw HTTP 404          |
-| `to500(msg?)`    | Throw HTTP 500          |
-| `neverResolve()` | `new Promise(() => {})` |
+## Keep journeys readable
 
-Default handlers are aggregated centrally and loaded by Storybook preview. Stories override only specific handler keys via `parameters.msw.handlers`.
+Write the user-visible workflow directly:
 
----
+```ts
+play: async () => {
+  await waitForAdminHarnessReady()
+  await I.see(heading('Counter demo').wait())
+  await startFreshAdminSession()
 
-## 6. Scoping with `I.scope()`
+  await I.click(button('Increment'))
+  await I.click(button('Increment'))
 
-`I.scope` narrows all locator resolution inside its callback to a specific DOM subtree:
-
-```typescript
-await I.scope(role('main'), async () => {
-  await I.see(heading('Article Heading'))
-  await I.see(text('Article content'))
-})
-```
-
-Scopes can be nested (inner scope resolves relative to outer scope):
-
-```typescript
-await I.scope(role('main'), async () => {
-  await I.scope(role('article'), async () => {
-    await I.see(heading('Article Heading'))
-    await I.dontSee(text('Section content'))
+  await waitFor(() => {
+    expect(getVisibleLogs().some((item) => item.name === 'count')).toBe(true)
   })
-  await I.see(text('Section content'))
-})
-```
 
-Scope is **always restored** after the callback, even if it throws.
-
----
-
-## 7. Conditional Logic
-
-When one region shows **one of several states** (placeholder vs detail, empty vs list), assert mutual exclusion with `I.see` / `I.dontSee` — not long `if/else` chains. Capture the container once, then reuse `.within(panel)` so toggling content stays scoped.
-
-Use `I.resolveLocator(...maybe())` only when you must **act** on optional UI (cookie banner, one-time modal). Major variants (error, loading, empty list) belong in **separate stories** with MSW overrides, not in one branching test.
-
-```typescript
-Default.test(
-  'detail panel switches between empty and loaded states',
-  async () => {
-    const panel = await I.see(role('main'))
-
-    await I.see(text('No article selected').within(panel))
-    await I.dontSee(heading(/Quarterly report/i).within(panel))
-
-    await I.click(link(/Quarterly report/i))
-    await I.waitExit(role('status', 'Loading article detail').within(panel))
-
-    await I.dontSee(text('No article selected').within(panel))
-    await I.see(heading('Quarterly report').within(panel))
-  },
-)
-
-Default.test('dismisses optional banner before main flow', async () => {
-  if (await I.resolveLocator(button('Accept cookies').maybe())) {
-    await I.click(button('Accept cookies'))
-  }
-
-  await I.see(heading('Articles'))
-})
-```
-
-| Pattern                         | Use when                                                |
-| ------------------------------- | ------------------------------------------------------- |
-| `I.see` + `I.dontSee`           | Mutually exclusive visible states in the same region    |
-| `loc.within(capturedPanel)`     | Container swaps content; avoid repeating `role('main')` |
-| `I.resolveLocator(loc.maybe())` | Optional overlay you may need to click once             |
-| Separate stories + MSW          | Error, loading, persistent empty — not `if` in one test |
-
----
-
-## 8. Responsive / Mobile Testing
-
-Mobile stories set viewport globals and typically share parameters with their desktop counterpart:
-
-```typescript
-export const DefaultMobile = meta.story({
-  name: 'Default (Mobile)',
-  globals: { viewport: { value: 'sm', isRotated: false } },
-  play: () => I.waitExit(role('status')),
-})
-```
-
-To reuse desktop configuration:
-
-```typescript
-export const ErrorMobile = meta.story({
-  name: 'Feature Load Server Error (Mobile)',
-  globals: { viewport: { value: 'sm', isRotated: false } },
-  parameters: ErrorDesktop.input.parameters,
-  play: () => I.waitExit(role('status')),
-})
-```
-
----
-
-## 9. Shared Locator Objects
-
-For reusable locators, define a `loc` object alongside the actor:
-
-```typescript
-export const dashboardLoc = {
-  heading: heading('Dashboard'),
-  detailLoading: role('status', 'Loading connection detail'),
+  await searchAdminLogs('count')
 }
 ```
 
-Import and use in tests:
+Direct `storybook/test` assertions and browser APIs are appropriate for behavior
+outside the actor's semantic DOM scope: Admin shadow-root content, browser
+history, geometry, keyboard focus, and screenshots. Keep that code local and
+use `waitFor` around its observable condition.
 
-```typescript
-import {
-  dashboardActor as I,
-  dashboardLoc as loc,
-} from 'pages/dashboard/testing'
+Shared helpers are limited to system mechanics:
 
-await I.see(loc.heading)
+- `src/testing/admin-navigation.ts` — Admin shadow-DOM navigation;
+- `src/testing/admin-log-dom.ts` — log extraction and parsing;
+- `src/testing/visual.ts` — screenshot assertions;
+- story-family `testing.ts` files — fixture lifecycle and low-level controls.
+
+Do not hide domain workflows in helpers such as `playWinningGame()`,
+`assertGalleryCuration()`, or `reproduceRollbackFlow()`. Start a fresh Admin
+session when a journey must prove capture from zero rather than inheriting
+activity from story boot.
+
+## Visual assertions
+
+Reach and verify the intended state programmatically before taking a screenshot.
+Use the existing screenshot helper and naming convention. Do not accept newly
+generated platform baselines without reviewing them.
+
+Treat a missing local platform baseline separately from an interaction failure:
+a journey that reaches its screenshot assertion has validated a different layer
+than a journey that fails during actor steps.
+
+## Review checklist
+
+- The actor is initialized in `beforeEach` and follows the nearby story-family
+  structure.
+- The test name describes a user-visible outcome.
+- Steps appear in causal order and domain behavior remains visible in the story.
+- Locators use roles and accessible names; scopes prevent accidental global
+  matches.
+- Async assertions wait on visible lifecycle state rather than timeouts.
+- Optional UI uses `.maybe()` intentionally; required UI fails loudly.
+- MSW overrides are narrow and distinct stories represent meaningful states.
+- Responsive and visual variants exist because they protect useful behavior,
+  not to fill a matrix.
+- Raw DOM/browser code is limited to boundaries outside the actor's scope.
+- Programmatic assertions establish state before screenshot assertions.
+- Test-generated screenshots and unrelated editor files are absent from the
+  final diff.
+
+## Commands
+
+```sh
+pnpm --filter @reatom/admin test:unit
+pnpm --filter @reatom/admin test:stories
+pnpm --filter @reatom/admin test:stories:watch
+pnpm --filter @reatom/admin storybook
 ```
 
----
-
-## 10. Checklist: Adding a New Page Test
-
-1. Create typed mock data in `entities/<entity>/mocks/data.ts`.
-2. Add `default` / `error` / `loading` handlers in `entities/<entity>/mocks/handlers.ts`.
-3. Register defaults in `app/mocks/handlers.ts`.
-4. Create `pages/<page>/testing.ts` with page actor (`.extend(...)`) and optional `loc` object.
-5. Create `app/integration/<Page>.stories.tsx` with **Default**, **Default (Mobile)**, **error**, and **loading** variants.
-6. Add `play: () => I.waitExit(role('status'))` to all loaded-state and async error stories; omit it from persistent-loading stories.
-
----
-
-## 11. Quick Reference Card
-
-```typescript
-// Locators
-role('button', 'Submit') // by ARIA role + accessible name
-text('Hello world') // by text content
-heading('Dashboard') // shorthand for role('heading', ...)
-button('Save') // shorthand for role('button', ...)
-link(/Report/i) // shorthand for role('link', ...) with regex
-
-// Modifiers
-locator.wait() // async retry (findBy)
-locator.maybe() // nullable (queryBy)
-locator.all() // array (getAllBy / findAllBy)
-locator.within(scopeOrElement) // restrict to subtree
-locator.options({ level: 2 }) // extra query options
-
-// Actor basics
-await I.see(locator) // assert visible
-await I.dontSee(locator) // assert absent
-await I.waitExit(locator) // poll until gone
-await I.click(locator) // user click
-await I.fill(locator, 'text') // clear + type + tab
-await I.scope(locator, fn) // narrow queries
-
-// Stabilization
-play: () => I.waitExit(role('status')) // story-level wait
-await I.click(link(/Item/i)) // trigger navigation
-await I.waitExit(role('status')) // wait for load
-await I.see(heading('Item')) // assert result
-
-// Conditional logic
-const panel = await I.see(role('main')) // capture container once
-await I.dontSee(text('Empty').within(panel)) // mutual exclusion
-if (await I.resolveLocator(button('Dismiss').maybe()))
-  await I.click(button('Dismiss')) // optional act
-```
+Use Vitest's `-t` option for a local test-name filter. `--grep` is not supported
+by the current Vitest CLI.

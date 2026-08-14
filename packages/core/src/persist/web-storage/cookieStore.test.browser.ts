@@ -1,9 +1,32 @@
 import { afterEach, expect, test } from 'test'
 
-import { atom } from '../../core'
+import { atom, notify } from '../../core'
 import { wrap } from '../../methods'
-import { sleep } from '../../utils'
+import { MAX_SAFE_TIMEOUT, sleep } from '../../utils'
+import type { PersistRecord } from '../index'
 import { parsePersistRecordCookieStore, withCookieStore } from './cookieStore'
+
+const uniqueKey = (label: string) =>
+  `cookie-store-${label}-${Date.now()}-${Math.random()}`
+
+class TestCookieChangeEvent extends Event {
+  readonly changed: CookieListItem[]
+  readonly deleted: CookieListItem[]
+
+  constructor(changed: CookieListItem[]) {
+    super('change')
+    this.changed = changed
+    this.deleted = []
+  }
+}
+
+const createRecord = <State>(data: State): PersistRecord<State> => ({
+  data,
+  id: 0,
+  timestamp: Date.now(),
+  to: Date.now() + MAX_SAFE_TIMEOUT,
+  version: 0,
+})
 
 afterEach(async () => {
   const cookies = await cookieStore.getAll()
@@ -224,4 +247,29 @@ test('cookieStore with multiple attributes', async () => {
 
   testAtom.set('updated-multi-attrs-value')
   expect(testAtom()).toBe('updated-multi-attrs-value')
+})
+
+test('CookieStore ignores same-document write echoes', async () => {
+  const key = uniqueKey('echo')
+  const initialDate = new Date(0)
+  const writtenDate = new Date('2026-01-01T00:00:00.000Z')
+  const target = atom<Date | string>(initialDate, 'cookieStoreEchoAtom').extend(
+    withCookieStore(key),
+  )
+  const unsubscribe = target.subscribe(() => {})
+  notify()
+
+  target.set(writtenDate)
+  cookieStore.dispatchEvent(
+    new TestCookieChangeEvent([
+      {
+        name: key,
+        value: encodeURIComponent(JSON.stringify(createRecord(writtenDate))),
+      },
+    ]),
+  )
+  notify()
+
+  unsubscribe()
+  expect(target()).toBe(writtenDate)
 })

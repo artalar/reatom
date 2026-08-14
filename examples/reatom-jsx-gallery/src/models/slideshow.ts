@@ -45,7 +45,9 @@ export const bindSlideshowAutoAdvance = () => {
         )
       }
 
-      navigateLightbox(1)
+      if (!navigateLightbox(1)) {
+        slideshowPlaying.setFalse()
+      }
     }
 
     slideshowProgressPercent.set(0)

@@ -100,6 +100,51 @@ describe('useAtom', () => {
       )
     }))
 
+  test('creates local atom from primitive with a deps array', () =>
+    context.start(async () => {
+      const keyAtom = atom('a', 'key')
+
+      const Counter = () => {
+        const [key] = useAtom(keyAtom)
+        // primitive initial value + non-empty deps array (overload 3) must
+        // not throw on first render
+        const [count, setCount] = useAtom(10, [key])
+        return (
+          <div>
+            <div data-testid="count">{count}</div>
+            <button
+              data-testid="increment"
+              onClick={() => setCount((c) => c + 1)}
+            >
+              Increment
+            </button>
+          </div>
+        )
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root')!)
+      root.render(
+        <reatomContext.Provider value={top()}>
+          <Counter />
+        </reatomContext.Provider>,
+      )
+
+      await wrap(tick())
+      expect(document.querySelector('[data-testid="count"]')?.textContent).toBe(
+        '10',
+      )
+
+      const button = document.querySelector(
+        '[data-testid="increment"]',
+      ) as HTMLButtonElement
+      button.click()
+      await wrap(tick())
+
+      expect(document.querySelector('[data-testid="count"]')?.textContent).toBe(
+        '11',
+      )
+    }))
+
   test('creates local computed atom', () =>
     context.start(async () => {
       const baseAtom = atom(5, 'base')

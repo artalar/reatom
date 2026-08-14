@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, viTest } from 'test'
+import { describe, expect, test, vi } from 'test'
 import { z } from 'zod'
 
 import {
@@ -296,7 +296,7 @@ test(`validation concurrency`, async () => {
 })
 
 // FIXME see #1235
-viTest.skip(`validation concurrency with conditional debounce`, async () => {
+test.skip(`validation concurrency with conditional debounce`, async () => {
   const TAKEN_NAME = 'taken_name'
 
   const nameField = reatomField('', {
@@ -643,7 +643,7 @@ describe(`reactivity of validate function`, () => {
     expect(confirmField.validation.errors()).toHaveLength(0)
   })
 
-  viTest.skip('concurrency', async () => {
+  test.skip('concurrency', async () => {
     const burgerField = reatomField('Hamburger', 'burgerField')
 
     const fetchBurgerCookingTime = async (burger: string) => {

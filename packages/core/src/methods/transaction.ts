@@ -1,9 +1,9 @@
 import type { AsyncExt } from '../async'
 import type { Action, Atom, AtomState, Ext, Frame } from '../core'
 import {
+  _read,
   action,
   bind,
-  context,
   isAction,
   top,
   withActionMiddleware,
@@ -12,7 +12,6 @@ import {
 import { withCallHook } from '../extensions'
 import type { Fn } from '../utils'
 import { isAbort } from '../utils'
-import { isCausedBy } from './isCausedBy'
 import type { Variable } from './variable'
 import { variable } from './variable'
 
@@ -363,6 +362,34 @@ export let reatomTransaction = ({
     return undefined
   }
 
+  /**
+   * Queues currently being drained by a rollback flush.
+   *
+   * A write performed by the flush itself must not register an "undo of the
+   * undo" into the queue it is draining — otherwise a repeated `rollback()`
+   * would re-apply the rolled-back state instead of being a no-op. Marking the
+   * queue (instead of inspecting the write's cause chain) keeps unrelated
+   * scopes intact by construction: a fresh transaction owns a fresh queue, so
+   * its writes always register no matter what ancestry the caller carries —
+   * subscriber callbacks run in the atom's live frame, so a handler created
+   * inside one (what UI bindings do on every render) may well have a past
+   * rollback in its chain (see the "subscriber-created wrap" test).
+   */
+  let flushing = new WeakSet<Rollbacks>()
+
+  let flushRollbacks = (rollbacks: undefined | Rollbacks) => {
+    if (!rollbacks) return
+    flushing.add(rollbacks)
+    try {
+      rollbacks
+        .splice(0)
+        .reverse()
+        .forEach((rollback) => rollback())
+    } finally {
+      flushing.delete(rollbacks)
+    }
+  }
+
   let transactionVar = Object.assign(
     variable((rollbacks: Array<Fn> = []) => rollbacks, `transaction#${name}`),
     {
@@ -385,19 +412,19 @@ export let reatomTransaction = ({
                 let prevState = top().state
                 let nextState = next(...params)
 
-                if (
-                  !Object.is(prevState, nextState) &&
-                  !isCausedBy(transactionVar.rollback)
-                ) {
-                  findRollbacks()?.push(() =>
-                    target.set((state) =>
-                      onRollback({
-                        beforeState: prevState,
-                        currentState: state,
-                        transactionState: nextState,
-                      }),
-                    ),
-                  )
+                if (!Object.is(prevState, nextState)) {
+                  let rollbacks = findRollbacks()
+                  if (rollbacks && !flushing.has(rollbacks)) {
+                    rollbacks.push(() =>
+                      target.set((state) =>
+                        onRollback({
+                          beforeState: prevState,
+                          currentState: state,
+                          transactionState: nextState,
+                        }),
+                      ),
+                    )
+                  }
                 }
                 return nextState
               },
@@ -436,12 +463,7 @@ export let reatomTransaction = ({
                 let parentRollbacks = findRollbacks(top().pubs[0])
                 let selfRollbacks = transactionVar.set()
 
-                parentRollbacks?.push(() =>
-                  selfRollbacks
-                    .splice(0)
-                    .reverse()
-                    .forEach((rollback) => rollback()),
-                )
+                parentRollbacks?.push(() => flushRollbacks(selfRollbacks))
 
                 try {
                   let result = next(...params)
@@ -458,17 +480,13 @@ export let reatomTransaction = ({
 
           let actionRollback = action<[error?: any], void>(
             (/* just for debug: */ error) => {
-              context()
-                .root.store.get(target)
-                ?.run(transactionVar.rollback, error)
+              _read(target)?.run(transactionVar.rollback, error)
             },
             `${target.name}.rollback`,
           )
 
           let actionStop = action<[], void>(() => {
-            context()
-              .root.store.get(target)
-              ?.run(() => findRollbacks()?.splice(0))
+            _read(target)?.run(() => findRollbacks()?.splice(0))
           }, `${target.name}.stop`)
 
           return { rollback: actionRollback, stop: actionStop }
@@ -476,10 +494,7 @@ export let reatomTransaction = ({
       },
 
       rollback: action<[error?: any], void>(() => {
-        findRollbacks()
-          ?.splice(0)
-          .reverse()
-          .forEach((rollback) => rollback())
+        flushRollbacks(findRollbacks())
       }, 'transactionVar.rollback'),
     },
   )

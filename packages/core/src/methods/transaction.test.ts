@@ -237,3 +237,57 @@ test('stop clears rollback list without executing', () => {
   increment.rollback()
   expect(counter()).toBe(1)
 })
+
+test('rollback survives an action invoked through a subscriber-created wrap', async () => {
+  const like = atom(true, 'like').extend(withRollback())
+  const toggle = action(async () => {
+    like.set((state) => !state)
+    await wrap(sleep())
+    throw new Error('test')
+  }, 'like.toggle').extend(withTransaction())
+
+  // ≈ UI bindings (reatom-react): every state change re-renders, and the render re-creates
+  // the click handler via `wrap` INSIDE the subscription callback. Since subscribers run in
+  // the atom's live frame, the handler binds to it — so once a rollback becomes the atom's
+  // last writer, the next call's writes all satisfy `isCausedBy(transactionVar.rollback)`
+  // and withRollback silently skips registering their undos: the queue stays empty and the
+  // transaction has nothing to roll back. (The state the click left behind then makes the
+  // NEXT call clean again — in the UI this reads as rollback working every other click.)
+  let handler!: () => Promise<void>
+  const unsubscribe = like.subscribe(() => {
+    handler = async () => {
+      try {
+        await wrap(toggle())
+      } catch {
+        // the rollback is expected to have restored the state
+      }
+    }
+  })
+
+  await wrap(handler()) // 1st failing toggle → optimistic flip is rolled back
+  expect(like()).toBe(true)
+
+  await wrap(handler()) // 2nd failing toggle — must roll back the same way
+  expect(like()).toBe(true)
+
+  unsubscribe()
+})
+
+test('a repeated rollback() must be a no-op, not an un-rollback', () => {
+  const counter = atom(0, 'counter').extend(withRollback())
+  const increment = action(() => {
+    counter.set((n) => n + 1)
+  }, 'increment').extend(withTransaction())
+
+  increment()
+  expect(counter()).toBe(1)
+
+  increment.rollback()
+  expect(counter()).toBe(0)
+
+  // Without the flush guard in withRollback, the rollback's own write would
+  // re-register an "undo of the undo" into the same (already drained) queue —
+  // and a repeated rollback() would re-apply the optimistic state.
+  increment.rollback()
+  expect(counter()).toBe(0)
+})

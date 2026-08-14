@@ -975,3 +975,27 @@ test('nested route schema preserves parent params after validation', async () =>
   expect(integrationsDetailsRoute()).toBe(null)
   expect(integrationsDetailsTypeRoute()).toBe(null)
 })
+
+test('loader should not cached without params', async () => {
+  const rootRoute = reatomRoute({ layout: true })
+
+  const childRouteLoader = vi.fn(async () => {})
+  const childRoute = rootRoute.reatomRoute({
+    path: 'child',
+    loader: childRouteLoader,
+  })
+
+  childRoute.loader.subscribe()
+  expect(childRouteLoader).not.toHaveBeenCalled()
+
+  childRoute.go()
+  await wrap(Promise.resolve())
+  expect(childRouteLoader).toHaveBeenCalled()
+  expect(childRouteLoader).toHaveBeenCalledTimes(1)
+
+  urlAtom.go('/some')
+  await wrap(Promise.resolve())
+  childRoute.go()
+  await wrap(Promise.resolve())
+  expect(childRouteLoader).toHaveBeenCalledTimes(2)
+})

@@ -9,13 +9,18 @@
 type DecodeQueueEntry = {
   cancelled: boolean
   grant: () => void
-  reject: (error: Error) => void
+  cancel: (error: Error) => void
 }
 
 const decodeQueue: DecodeQueueEntry[] = []
 let activeDecodeJobs = 0
 
 const maxParallelImageDecodes = 1
+
+type DecodeSlotLease = {
+  start: () => void
+  release: () => void
+}
 
 function createDecodeAbortError(signal: AbortSignal): Error {
   if (signal.reason instanceof Error) return signal.reason
@@ -38,7 +43,7 @@ function runNextDecodeJob() {
 
 export function acquireImageDecodeSlot(
   signal: AbortSignal,
-): Promise<() => void> {
+): Promise<DecodeSlotLease> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) {
       reject(createDecodeAbortError(signal))
@@ -46,6 +51,7 @@ export function acquireImageDecodeSlot(
     }
 
     let granted = false
+    let started = false
     let released = false
 
     const release = () => {
@@ -55,23 +61,34 @@ export function acquireImageDecodeSlot(
       releaseImageDecodeSlot()
     }
 
+    const start = () => {
+      if (!granted || released) return
+      started = true
+    }
+
+    const cancel = (error: Error) => {
+      if (granted || entry.cancelled) return
+      entry.cancelled = true
+      signal.removeEventListener('abort', abort)
+      reject(error)
+    }
+
     const entry: DecodeQueueEntry = {
       cancelled: false,
       grant: () => {
         granted = true
-        resolve(release)
+        resolve({ start, release })
       },
-      reject,
+      cancel,
     }
 
     const abort = () => {
       if (granted) {
-        release()
+        if (!started) release()
         return
       }
 
-      entry.cancelled = true
-      entry.reject(createDecodeAbortError(signal))
+      entry.cancel(createDecodeAbortError(signal))
     }
 
     signal.addEventListener('abort', abort, { once: true })
@@ -89,11 +106,8 @@ export function shutdownImageDecodeQueue(): void {
   while (decodeQueue.length > 0) {
     const entry = decodeQueue.shift()
     if (!entry || entry.cancelled) continue
-    entry.cancelled = true
     const error = new Error('Image decode queue shut down')
     error.name = 'AbortError'
-    entry.reject(error)
+    entry.cancel(error)
   }
-
-  activeDecodeJobs = 0
 }

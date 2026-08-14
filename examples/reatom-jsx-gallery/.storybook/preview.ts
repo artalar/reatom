@@ -1,5 +1,3 @@
-import '../src/setup'
-
 import { clearStack, context } from '@reatom/core'
 import { mount } from '@reatom/jsx'
 import type { Preview } from '@storybook/html'

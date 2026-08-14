@@ -8,6 +8,7 @@ import {
   isAction,
   isAtom,
   isConnected,
+  ReatomError,
   top,
   withMiddleware,
 } from '../core'
@@ -79,6 +80,10 @@ let maybeAtomLog = (thing: any) =>
  *   const data = LOG.state('data', useSomeData())
  *
  * @example
+ *   // Custom label in the logger title (instead of "LOG")
+ *   LOG.label('fetch payload', payload)
+ *
+ * @example
  *   // Extend LOG with custom behavior using withCallHook
  *   import { withCallHook } from '@reatom/core'
  *
@@ -92,7 +97,15 @@ let maybeAtomLog = (thing: any) =>
  * @see {@link connectLogger} - Must be called to enable logging output
  */
 const initLog = () =>
-  action<any[]>((...args) => args, 'LOG').extend((target) => ({
+  action(<T extends any[]>(...args: T): T => args, 'LOG').extend((target) => ({
+    /**
+     * Logs `data` only when it changes for the given `name` (by `Object.is`).
+     * Always returns `data`, so it can be used inline.
+     *
+     * @example
+     *   const data = LOG.state('user', useSomeData())
+     *   // logs only when `data` changes between calls with the same name
+     */
     state<T>(name: string, data: T): T {
       if (!stateLogMap.has(name) || !Object.is(stateLogMap.get(name), data)) {
         stateLogMap.set(name, data)
@@ -100,6 +113,22 @@ const initLog = () =>
       }
       return data
     },
+    /**
+     * Same as {@link log}, but the first argument is a required label used as
+     * the logger title instead of `"LOG"`.
+     *
+     * @example
+     *   LOG.label('user response', response)
+     *   // console group title: "user response"
+     *   // console.log: response
+     */
+    label: action(<T extends any[]>(_label: string, ...args: T): T => {
+      if (typeof _label !== 'string') {
+        console.log(new ReatomError('LOG label must be a string'))
+        return args
+      }
+      return args
+    }, 'LOG.label'),
   }))
 
 export let log = /* @__PURE__ */ initLog()
@@ -154,20 +183,18 @@ export let connectLogger = ({
   let logExt = <T extends AtomLike>(target: T): T => {
     if (isSkip(target)) return target
 
-    // @ts-ignore
-    let isLogMethod = target === log
-    let title = `%c ${target.name}`
+    let isLogLabel = target.name === log.label.name
+    let isLogMethod = target.name === log.name || isLogLabel
     let isOnReject = target.name.endsWith('.onReject')
     let isOnFulfill = target.name.endsWith('.onFulfill')
     let style = ''
     let abortStyle =
       'font-size: 10px; font-weight: 400; background: #F0F0F020; color: #F0F0F070'
     let errorStyle = 'background: tomato;'
+    let nodeReactiveStyle = '\x1b[44m\x1b[37m' // blue background, white text
+    let nodeActionStyle = '\x1b[43m\x1b[30m' // yellow background, black text
+    let nodeResetStyle = '\x1b[0m'
     if (isNodeEnv) {
-      let nodeReactiveStyle = '\x1b[44m\x1b[37m' // blue background, white text
-      let nodeActionStyle = '\x1b[43m\x1b[30m' // yellow background, black text
-      let nodeResetStyle = '\x1b[0m'
-      title = `${target.__reatom.reactive ? nodeReactiveStyle : nodeActionStyle} ${target.name} ${nodeResetStyle}`
       abortStyle = '\x1b[103m\x1b[90m' // light yellow background, gray text
       errorStyle = '\x1b[101m\x1b[30m' // bright red (tomato-like) background, black text
     } else {
@@ -177,7 +204,13 @@ export let connectLogger = ({
       style = `${color}font-size: 12px; font-weight: 600; padding: 0.15em;  padding-right: 1ch;`
     }
 
-    let logStack = (payload: any, error: any, cb: Fn, filterColor?: string) => {
+    let logStack = (
+      payload: any,
+      error: any,
+      cb: Fn,
+      filterColor?: string,
+      name = target.name,
+    ) => {
       try {
         const isAborted = isAbort(error)
         if (connectLoggerScratch.isNewLogStack) {
@@ -187,7 +220,6 @@ export let connectLogger = ({
           })
           console.log('--- ' + new Date().toISOString() + ' ----')
         }
-        let _title = title
         let _style = style
         if (!isNodeEnv && filterColor) {
           _style = _style.replace(
@@ -195,14 +227,25 @@ export let connectLogger = ({
             `background: ${filterColor};`,
           )
         }
+        let label = name
         if (isAborted) {
-          _title = `AbortError: ${error.message} ${title}`
-          if (!isNodeEnv) _title = `%c ${_title.replace('%c ', '')}`
+          label = `AbortError: ${error.message} ${name}`
           _style += abortStyle
         } else if (error) {
           _style += errorStyle
         }
-        console.groupCollapsed(`${_title}${getSerial()}`, _style)
+        let serial = getSerial()
+        if (isNodeEnv) {
+          let nodeStyle = target.__reatom.reactive
+            ? nodeReactiveStyle
+            : nodeActionStyle
+          console.groupCollapsed(
+            `${nodeStyle} ${label} ${nodeResetStyle}${serial}`,
+          )
+        } else {
+          // `%c` + separate style arg — required for browser group title styling
+          console.groupCollapsed('%c%s', _style, ` ${label}${serial}`)
+        }
         if (isNodeEnv) {
           if (isLogMethod && !error) {
             console.log(...payload)
@@ -240,7 +283,11 @@ export let connectLogger = ({
             _enqueue(
               bind(() => {
                 let frame = top()
-                let matchResult = match?.(target.name, frame) ?? true
+                let displayName =
+                  isLogLabel && typeof params[0] === 'string'
+                    ? params[0]
+                    : target.name
+                let matchResult = match?.(displayName, frame) ?? true
                 if (!matchResult) return
                 let filterColor =
                   typeof matchResult === 'string' ? matchResult : undefined
@@ -263,6 +310,7 @@ export let connectLogger = ({
                       console.log('connected:', isConnected(target))
                     },
                     filterColor,
+                    displayName,
                   )
                 } else {
                   let call = (state as ActionState)[state.length - 1]
@@ -280,6 +328,7 @@ export let connectLogger = ({
                           console.log(`param ${i + 1}:`, maybeAtomLog(param)),
                         ),
                       filterColor,
+                      displayName,
                     )
                   } else if (call) {
                     let { payload } = call
@@ -297,6 +346,7 @@ export let connectLogger = ({
                         }
                       },
                       filterColor,
+                      displayName,
                     )
                   }
                 }
@@ -325,4 +375,5 @@ export let connectLogger = ({
   EXTENSIONS.push(logExt)
 
   log.extend(logExt)
+  log.label.extend(logExt)
 }

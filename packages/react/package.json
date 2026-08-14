@@ -1,7 +1,7 @@
 {
   "name": "@reatom/react",
   "type": "module",
-  "version": "1001.0.0",
+  "version": "1001.0.1",
   "private": false,
   "description": "Reatom adapter for React",
   "exports": {
@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/reatom/reatom.git"
+    "url": "https://github.com/reatom/reatom.git"
   },
   "bugs": {
     "url": "https://github.com/reatom/reatom/issues"

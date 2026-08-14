@@ -25,9 +25,7 @@ export const useAtom: {
     options?: { subscribe?: boolean },
   ): [
     AtomState<Target>,
-    Target extends Atom<any, infer Params>
-      ? (...args: Params) => AtomState<Target>
-      : undefined,
+    Target extends Atom<any, any[]> ? Target['set'] : undefined,
     Target,
     Frame,
   ]
@@ -94,17 +92,13 @@ export const useAtom: {
   ref.anAtom = anAtom
   const { theAtom, depsAtom, update, sub, get } = ref
 
-  if (!isAtom(anAtom)) {
+  if (typeof anAtom === 'function' && !isAtom(anAtom)) {
     const prevDeps = frame.run(depsAtom)
     if (
       userDeps.length !== prevDeps.length ||
       userDeps.some((dep, i) => !Object.is(dep, prevDeps[i]))
     ) {
-      if (theAtom.set) {
-        update?.(theAtom)
-      } else {
-        frame.run(depsAtom.set, userDeps)
-      }
+      frame.run(depsAtom.set, userDeps)
     }
   }
 

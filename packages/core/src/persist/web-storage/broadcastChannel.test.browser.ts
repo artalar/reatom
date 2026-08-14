@@ -1,10 +1,15 @@
 import { expect, test, vi } from 'test'
 
 import { atom } from '../../core'
+import { wrap } from '../../methods'
+import { sleep } from '../../utils'
 import {
   reatomPersistBroadcastChannel,
   withBroadcastChannel,
 } from './broadcastChannel'
+
+const uniqueKey = (label: string) =>
+  `broadcast-${label}-${Date.now()}-${Math.random()}`
 
 test('custom BroadcastChannel adapter', () => {
   const customChannel = new BroadcastChannel('test-custom-channel')
@@ -130,4 +135,54 @@ test('BroadcastChannel fallback when unavailable', () => {
 
   testAtom.set('fallback-value')
   expect(testAtom()).toBe('fallback-value')
+})
+
+test('BroadcastChannel late joiners receive existing state via pull', async () => {
+  const key = uniqueKey('pull')
+  const channelName = uniqueKey('channel')
+  const channelA = new BroadcastChannel(channelName)
+  const withTabA = reatomPersistBroadcastChannel(channelA)
+  const tabA = atom(0, 'broadcastPullA').extend(withTabA(key))
+  const unsubscribeA = tabA.subscribe(() => {})
+
+  tabA.set(42)
+  await wrap(sleep(50))
+
+  const channelB = new BroadcastChannel(channelName)
+  const withTabB = reatomPersistBroadcastChannel(channelB)
+  const tabB = atom(0, 'broadcastPullB').extend(withTabB(key))
+  const unsubscribeB = tabB.subscribe(() => {})
+  await wrap(sleep(50))
+
+  unsubscribeA()
+  unsubscribeB()
+  channelA.close()
+  channelB.close()
+  expect(tabB()).toBe(42)
+})
+
+test('BroadcastChannel propagates clear messages to subscribers', async () => {
+  const key = uniqueKey('clear')
+  const channelName = uniqueKey('clear-channel')
+  const channelA = new BroadcastChannel(channelName)
+  const channelB = new BroadcastChannel(channelName)
+  const withTabA = reatomPersistBroadcastChannel(channelA)
+  const withTabB = reatomPersistBroadcastChannel(channelB)
+  const tabA = atom(0, 'broadcastClearA').extend(withTabA(key))
+  const tabB = atom(0, 'broadcastClearB').extend(withTabB(key))
+  const unsubscribeA = tabA.subscribe(() => {})
+  const unsubscribeB = tabB.subscribe(() => {})
+
+  tabA.set(1)
+  await wrap(sleep(50))
+  expect(tabB()).toBe(1)
+
+  withTabA.storageAtom().clear?.({ key })
+  await wrap(sleep(50))
+
+  unsubscribeA()
+  unsubscribeB()
+  channelA.close()
+  channelB.close()
+  expect(tabB()).toBe(0)
 })

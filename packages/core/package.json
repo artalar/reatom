@@ -1,7 +1,7 @@
 {
   "name": "@reatom/core",
   "type": "module",
-  "version": "1001.1.0",
+  "version": "1001.3.0",
   "description": "The ultimate state manager",
   "exports": {
     "types": "./dist/index.d.ts",
@@ -24,9 +24,10 @@
     "test:watch": "vitest",
     "size": "size-limit --config .size-limit.json",
     "deopt": "dexnode deopt.js",
-    "bench_dynamic": "tsx bench_dynamic.ts",
-    "bench_computed": "tsx bench_computed.ts",
-    "bench_computed:mem": "node --expose-gc --import=tsx bench_computed.ts"
+    "bench_dynamic": "tsx bench/bench_dynamic.ts",
+    "bench_computed": "tsx bench/bench_computed.ts",
+    "bench_computed:mem": "node --expose-gc --import=tsx bench/bench_computed.ts",
+    "bench_profile": "tsx bench/bench_profile.ts"
   },
   "tsdown": {
     "format": {
@@ -59,7 +60,7 @@
   "readme": "README.md",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/reatom/reatom.git"
+    "url": "https://github.com/reatom/reatom.git"
   },
   "bugs": {
     "url": "https://github.com/reatom/reatom/issues"

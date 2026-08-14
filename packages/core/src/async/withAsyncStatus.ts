@@ -1,5 +1,6 @@
 import {
   _enqueue,
+  _read,
   type Action,
   action,
   atom,
@@ -225,7 +226,7 @@ export const withAsyncStatus =
             : [(target as Computed)()]
         ).filter((promise) => promise instanceof Promise)
 
-        const targetFrame = top().root.store.get(target)
+        const targetFrame = _read(target)
         const cacheState = targetFrame && cacheVar.first(targetFrame)
         const isSWR = !!cacheState?.isSWR
         const promisesToTrack =

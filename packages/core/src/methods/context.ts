@@ -1,5 +1,5 @@
 import type { AtomLike, Frame } from '../core'
-import { top } from '../core'
+import { _read, top } from '../core'
 
 export let _getPrevFrame = (frame = top()): null | Frame => {
   let rec = frame.root.frames.get(frame.atom)
@@ -23,7 +23,7 @@ export let _getPrevFrame = (frame = top()): null | Frame => {
 }
 
 export let _getPrevAtomFrame = (target: AtomLike): null | Frame => {
-  let frame = top().root.store.get(target)
+  let frame = _read(target)
   return frame ? _getPrevFrame(frame) : null
 }
 

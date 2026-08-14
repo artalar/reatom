@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'test'
+import { afterEach, expect, test, vi } from 'test'
 
 // import { cdp } from '@vitest/'
 import { wrap } from '../..'
@@ -6,7 +6,11 @@ import { atom } from '../../core'
 import { sleep } from '../../utils'
 import { parseCookieValue, withCookie } from './cookie'
 
+const uniqueKey = (label: string) =>
+  `cookie-${label}-${Date.now()}-${Math.random()}`
+
 afterEach(() => {
+  vi.restoreAllMocks()
   document.cookie = ''
 })
 
@@ -224,3 +228,39 @@ test('cookies with special characters in values do not affect other cookies', ()
 //     'document.cookie has no ability to subscribe to changes. Use withCookieStore instead',
 //   )
 // })
+
+test('withCookie respects requested persist version on restore', () => {
+  const key = uniqueKey('version')
+  document.cookie = `${key}=${encodeURIComponent('stored')}; path=/`
+
+  const target = atom('initial', 'cookieVersionAtom').extend(
+    withCookie({
+      key,
+      version: 1,
+    }),
+  )
+
+  expect(target()).toBe('stored')
+})
+
+test('withCookie clear preserves path and domain attributes', () => {
+  const key = uniqueKey('clear')
+  const cookieSetter = vi.spyOn(Document.prototype, 'cookie', 'set')
+  const cookieStorage: {
+    clear?(options: {
+      key: string
+      path?: string
+      domain?: string
+    }): void | Promise<void>
+  } = withCookie.storageAtom()
+
+  cookieStorage.clear?.({
+    key,
+    path: '/',
+    domain: window.location.hostname,
+  })
+
+  expect(cookieSetter).toHaveBeenCalledWith(
+    `${key}=; max-age=-1; path=/; domain=${window.location.hostname}`,
+  )
+})

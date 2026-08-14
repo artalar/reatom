@@ -1,5 +1,14 @@
 import type { Action, Atom, Computed } from '../core'
-import { action, atom, computed, isAtom, named, ReatomError } from '../core'
+import {
+  _enqueue,
+  action,
+  atom,
+  computed,
+  isAtom,
+  named,
+  ReatomError,
+} from '../core'
+import { withChangeHook } from '../extensions/withChangeHook'
 import { withFromJson } from '../extensions/withFromJson'
 import { withToJson } from '../extensions/withToJson'
 import { peek } from '../methods'
@@ -259,7 +268,18 @@ const moveLL = <Node extends LLNode>(
 }
 
 const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
-  while (state.tail) removeLL(state, state.tail)
+  const LL_PREV: LL_PREV = state.LL_PREV as any
+  const LL_NEXT: LL_NEXT = state.LL_NEXT as any
+  let node: null | LLNode = state.head
+  state.head = null
+  state.tail = null
+  state.size = 0
+  while (node) {
+    const next = node[LL_NEXT]
+    node[LL_PREV] = null
+    node[LL_NEXT] = null
+    node = next
+  }
 }
 
 export const toArray = <T extends Rec>(
@@ -737,7 +757,7 @@ export function reatomLinkedList<
         }
 
         for (let head = ll.head; head; head = head[LL_NEXT]) {
-          const node = peek(() => cb(head)) as LLNode<T>
+          const node = peek(cb, head) as LLNode<T>
           addLL(mapList, node, mapList.tail)
           mapList.map.set(head, node)
           hooks.onCreate?.(node)
@@ -759,7 +779,7 @@ export function reatomLinkedList<
         for (const change of ll.changes) {
           switch (change.kind) {
             case 'create': {
-              const node = cb(change.node) as LLNode<T>
+              const node = peek(cb, change.node) as LLNode<T>
               addLL(mapList, node, mapList.tail)
               mapList.map.set(change.node, node)
               mapList.changes.push({ kind: 'create', node })
@@ -769,7 +789,7 @@ export function reatomLinkedList<
             case 'createMany': {
               const nodes: Array<LLNode<T>> = []
               for (const originNode of change.nodes) {
-                const node = cb(originNode) as LLNode<T>
+                const node = peek(cb, originNode) as LLNode<T>
                 addLL(mapList, node, mapList.tail)
                 mapList.map.set(originNode, node)
                 nodes.push(node)
@@ -817,6 +837,7 @@ export function reatomLinkedList<
             case 'clear': {
               hooks.onClear?.(mapList)
               clearLL(mapList)
+              mapList.map = new WeakMap()
               mapList.changes.push({ kind: 'clear' })
               break
             }
@@ -938,6 +959,13 @@ export function reatomLinkedList<
       // reatomReduce,
 
       __reatomLinkedList: true as const,
+    }),
+    withChangeHook((_, prev) => {
+      if (prev) {
+        _enqueue(() => {
+          prev.changes = []
+        }, 'cleanup')
+      }
     }),
     withFromJson((snapshot) => {
       if (!Array.isArray(snapshot)) {

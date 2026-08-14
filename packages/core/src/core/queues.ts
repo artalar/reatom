@@ -1,6 +1,5 @@
 import type { Fn } from '../utils'
-import type { Queue } from './'
-import { bind, context } from './'
+import { context } from './'
 import { _createGlobal } from './globalStore'
 
 export type QueueKind = 'hook' | 'compute' | 'cleanup' | 'effect'
@@ -19,31 +18,15 @@ export type QueueKind = 'hook' | 'compute' | 'cleanup' | 'effect'
  *   'cleanup', or 'effect')
  */
 export let _enqueue = (fn: Fn, queue: QueueKind): void => {
-  let contextFrame = context()
+  let { state } = context()
 
-  if (
-    contextFrame.state.hook.length === 0 &&
-    contextFrame.state.compute.length === 0 &&
-    contextFrame.state.cleanup.length === 0 &&
-    contextFrame.state.effect.length === 0
-  ) {
-    Promise.resolve().then(bind(notify, contextFrame))
-    //.catch(noop) // TODO ?
+  state.pushQueue(fn, queue)
+
+  if (!state.scheduled) {
+    state.scheduled = true
+    queueMicrotask(state.notify)
   }
-
-  contextFrame.state.pushQueue(fn, queue)
 }
-
-/**
- * Creates an iterator function for a queue that returns items sequentially.
- *
- * @param queue - The queue to iterate over
- * @param i - The starting index
- * @returns A function that returns the next item in the queue or undefined when
- *   empty
- */
-let QueueIterator = (queue: Queue, i: number) => () =>
-  i < queue.length ? queue[i++] : undefined
 
 let batchNest = _createGlobal('batchNest', () => ({ depth: 0 }))
 
@@ -99,25 +82,26 @@ export let batch = <T>(cb: () => T, shouldNotify: boolean = false): T => {
 export let notify = () => {
   let { state } = context()
 
-  let queues = [
-    QueueIterator(state.hook, 0),
-    QueueIterator(state.compute, 0),
-    QueueIterator(state.cleanup, 0),
-    QueueIterator(state.effect, 0),
-  ]
+  let iHook = 0
+  let iCompute = 0
+  let iCleanup = 0
+  let iEffect = 0
 
-  let priority = 0
-  while (priority < queues.length) {
-    let next = queues[priority++]!()
-    if (next !== undefined) {
-      priority = 0 // need to recheck queues after user code
+  // Drain queues in priority order, rechecking higher priority queues after
+  // each task as user code may enqueue new tasks.
+  while (true) {
+    let next: undefined | Fn
+    if (iHook < state.hook.length) next = state.hook[iHook++]
+    else if (iCompute < state.compute.length) next = state.compute[iCompute++]
+    else if (iCleanup < state.cleanup.length) next = state.cleanup[iCleanup++]
+    else if (iEffect < state.effect.length) next = state.effect[iEffect++]
+    else break
 
-      try {
-        next()
-      } catch (error) {
-        console.error('Unhandled error in Reatom queue!')
-        console.log(error)
-      }
+    try {
+      next!()
+    } catch (error) {
+      console.error('Unhandled error in Reatom queue!')
+      console.log(error)
     }
   }
 
@@ -125,4 +109,6 @@ export let notify = () => {
   state.compute = []
   state.cleanup = []
   state.effect = []
+
+  state.scheduled = false
 }
