@@ -13,7 +13,6 @@ import {
   action,
   atom,
   computed,
-  createAtom,
   named,
   ReatomError,
   withComputed,
@@ -29,6 +28,7 @@ import {
   compositeElementId,
   reatomComposite,
 } from '../composite/reatomComposite'
+import { adoptAtom } from '../interactions/adoptAtom'
 import type { RadioPropRecords, RadioPropsOptions } from './props'
 import { withRadioProps } from './props'
 
@@ -397,38 +397,6 @@ export interface Radio<
   /** Reactive prop records for the group element and its radios. */
   props: RadioPropRecords
 }
-
-/**
- * Wraps a caller-owned atom in a model-owned pass-through atom.
- *
- * @remarks
- *   The model can not `extend` the adopted atom directly: `extend` mutates its
- *   target in place and throws on already existing keys, so adopting a
- *   `reatomForm` field would both pollute the field and collide on its
- *   `disabled` member. Reading and writing through a proxy keeps the adopted
- *   atom the single source of truth — no mirroring, no second state that can
- *   diverge, and the same atom can back several models.
- *
- *   Deliberately duplicated from `checkbox/reatomCheckbox.ts` instead of being
- *   imported: hoisting it into `interactions/` touches the checkbox port, which
- *   is a separate change. Both copies should move there together.
- */
-const adoptAtom = <T>(source: Atom<T>, name: string): Atom<T> =>
-  // `createAtom` instead of `computed` to keep the `.set` method, like
-  // `reatomLens` does.
-  createAtom<T>({ computed: () => source() }, name).extend(
-    withMiddleware(() => (next, ...params: [] | [T | ((state: T) => T)]): T => {
-      if (params.length !== 0) {
-        const update = params[0]
-        source.set(
-          typeof update === 'function'
-            ? (update as (state: T) => T)(source())
-            : update,
-        )
-      }
-      return next()
-    }),
-  )
 
 /**
  * Creates a headless radio group model: an ordered, navigable group of radios

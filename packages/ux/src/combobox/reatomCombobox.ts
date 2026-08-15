@@ -14,7 +14,6 @@ import {
   action,
   atom,
   computed,
-  createAtom,
   ifChanged,
   isCausedBy,
   named,
@@ -34,6 +33,7 @@ import {
   compositeElementId,
   reatomComposite,
 } from '../composite/reatomComposite'
+import { adoptAtom } from '../interactions/adoptAtom'
 import type { Popover, PopoverOptions } from '../popover/reatomPopover'
 import { reatomPopover } from '../popover/reatomPopover'
 import type { TagModel } from '../tag/reatomTag'
@@ -440,38 +440,6 @@ export interface Combobox<
   /** Reactive prop records for the input, the list, and the items. */
   props: ComboboxPropRecords
 }
-
-/**
- * Wraps a caller-owned atom in a model-owned pass-through atom.
- *
- * @remarks
- *   The model can not `extend` the adopted atom directly: `extend` mutates its
- *   target in place and throws on already existing keys, so adopting a
- *   `reatomField` would both pollute the field and risk colliding with its
- *   members. Reading and writing through a proxy keeps the adopted atom the
- *   single source of truth — no mirroring, no second state that can diverge.
- *
- *   Deliberately duplicated from `checkbox/reatomCheckbox.ts` and
- *   `radio/reatomRadio.ts` instead of being imported: hoisting it into
- *   `interactions/` touches both of those ports, which is a separate change.
- *   All three copies should move there together.
- */
-const adoptAtom = <T>(source: Atom<T>, name: string): Atom<T> =>
-  // `createAtom` instead of `computed` to keep the `.set` method, like
-  // `reatomLens` does.
-  createAtom<T>({ computed: () => source() }, name).extend(
-    withMiddleware(() => (next, ...params: [] | [T | ((state: T) => T)]): T => {
-      if (params.length !== 0) {
-        const update = params[0]
-        source.set(
-          typeof update === 'function'
-            ? (update as (state: T) => T)(source())
-            : update,
-        )
-      }
-      return next()
-    }),
-  )
 
 /**
  * Creates a combobox model: a text input that filters a list of items, plus the

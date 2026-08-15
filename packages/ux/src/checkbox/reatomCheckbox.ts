@@ -1,13 +1,7 @@
 import type { Action, Atom, Computed } from '@reatom/core'
-import {
-  action,
-  atom,
-  computed,
-  createAtom,
-  named,
-  ReatomError,
-  withMiddleware,
-} from '@reatom/core'
+import { action, atom, computed, named, ReatomError } from '@reatom/core'
+
+import { adoptAtom } from '../interactions/adoptAtom'
 
 /**
  * The value of a single checkbox inside a group — the `value` attribute of the
@@ -130,37 +124,6 @@ export const toAriaChecked = (
  */
 export const toNativeChecked = (checked: CheckboxChecked): boolean =>
   checked === 'mixed' ? false : checked
-
-/**
- * Wraps a caller-owned atom in a model-owned pass-through atom.
- *
- * @remarks
- *   The model can not `extend` the adopted atom directly: `extend` mutates its
- *   target in place and throws on already existing keys, so adopting a
- *   `reatomForm` field would both pollute the field and collide on its
- *   `disabled` / `change` members. Reading and writing through a proxy keeps
- *   the adopted atom the single source of truth — no mirroring, no second state
- *   that can diverge, and the same atom can back several models.
- *
- *   Wave 2 should hoist this into a shared `interactions/` helper once a second
- *   widget adopts state.
- */
-const adoptAtom = <T>(source: Atom<T>, name: string): Atom<T> =>
-  // `createAtom` instead of `computed` to keep the `.set` method, like
-  // `reatomLens` does.
-  createAtom<T>({ computed: () => source() }, name).extend(
-    withMiddleware(() => (next, ...params: [] | [T | ((state: T) => T)]): T => {
-      if (params.length !== 0) {
-        const update = params[0]
-        source.set(
-          typeof update === 'function'
-            ? (update as (state: T) => T)(source())
-            : update,
-        )
-      }
-      return next()
-    }),
-  )
 
 /**
  * One checkbox: either a standalone checkbox, or one item of a group sharing a
