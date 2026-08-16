@@ -154,6 +154,10 @@ export let withAbort =
 
       if (hasError) throw computationError
 
+      if (thisController.signal.aborted && thisController.keepState) {
+        return state
+      }
+
       activeControllers.push(thisController)
 
       if (strategy === 'first-in-win') {

@@ -589,8 +589,8 @@ export let withCache =
               setSWRPending(key, cached, params, payload, controller)
             } else {
               if (isPromise(payload)) payload.catch(noop)
+              controller.keepState = true
               controller.abort('cache')
-              abortVar.set()
             }
 
             cacheVar.set(

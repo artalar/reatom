@@ -11,6 +11,8 @@ import {
 import { withSearchParams } from '../routing'
 import { type Fn, noop, type Rec, sleep } from '../utils'
 import { urlAtom } from '../web'
+import { onEvent } from '../web/onEvent'
+import { withAbort } from './withAbort'
 import { withCache, type WithCacheOptions } from './withCache'
 
 test('withCache', async () => {
@@ -577,6 +579,136 @@ test('remount after an SSR-hydrated cache hit must render, not throw the cache A
       expect(view2.render().data).toBe('null:7')
       expect(view2.render().pending).toBe(0)
       view2.unmount()
+    }),
+  )
+})
+
+test('a hydrated cache hit cancels the speculative body — its scheduled fetch never fires', async () => {
+  // The counterpart boundary to the test above. A cache hit aborts the call's own
+  // controller precisely so the body's deferred work (a `schedule`d fetch, the
+  // idiomatic SSR shape) checks that aborted controller at flush time and skips —
+  // the first hydrated run is a dry dependency-collection pass, zero requests.
+  // Regressed by #1322's `abortVar.set()`: swapping a FRESH controller into the
+  // frame slot hid the abort from the deferred fetch, firing a wasted request on
+  // every hydrated first read.
+  const name = 'withCache.hitCancelsBody'
+  const storage = createMemStorage({ name, subscribe: false })
+  const withSSR = reatomPersist(storage)
+
+  let fetches = 0
+  const make = () => {
+    const cursor = atom<string | null>(null, `${name}.cursor`)
+    const query = computed(async () => {
+      const cur = cursor()
+      return await wrap(
+        schedule(async () => {
+          fetches++
+          await sleep(10)
+          return `page:${cur}`
+        }),
+      )
+    }, `${name}.query`).extend(
+      withAsyncData({ initState: 'INIT' }),
+      withCache({ withPersist: withSSR }),
+    )
+    return { cursor, query }
+  }
+
+  const snapshot = await wrap(
+    context.start(async () => {
+      const { query } = make()
+      await wrap(query())
+      await wrap(sleep(20))
+      return storage.snapshotAtom()
+    }),
+  )
+
+  await wrap(
+    context.start(async () => {
+      const { query } = make()
+      storage.snapshotAtom.set(snapshot)
+      fetches = 0
+
+      // render-style connect — the hydrated hit serves the snapshot…
+      const un = query.data.subscribe(noop)
+      await wrap(sleep(20))
+      expect(query.data()).toBe('page:null')
+      // …and the body's scheduled fetch was cancelled by the hit's abort
+      expect(fetches).toBe(0)
+
+      // the #1322 guarantee still holds: a direct call resolves with the cached value
+      expect(await wrap(query())).toBe('page:null')
+      await wrap(sleep(20))
+      expect(fetches).toBe(0)
+      un()
+    }),
+  )
+})
+
+test('a hydrated cache hit must not abort the reader that pulled the cached atom', async () => {
+  const name = 'withCache.hitAbortsReader'
+  const storage = createMemStorage({ name, subscribe: false })
+  const withSSR = reatomPersist(storage)
+  const scrollTarget = new EventTarget()
+
+  const make = () => {
+    const cursor = atom<string | null>(null, `${name}.cursor`)
+    const query = computed(async () => {
+      const cur = cursor()
+      return await wrap(
+        schedule(async () => {
+          await sleep(10)
+          return { ids: [cur ?? 'first'], nextCursor: 'MORE' as string | null }
+        }),
+      )
+    }, `${name}.query`).extend(
+      withAsyncData({
+        initState: { ids: [] as string[], nextCursor: null as string | null },
+      }),
+      withCache({ withPersist: withSSR }),
+    )
+
+    const consumer = computed(() => {
+      if (query.pending() > 0 || query.data().nextCursor === null) return 'idle'
+
+      onEvent(scrollTarget, 'scroll', noop)
+
+      return 'armed'
+    }, `${name}.consumer`).extend(withAbort())
+
+    return { cursor, query, consumer }
+  }
+
+  const snapshot = await wrap(
+    context.start(async () => {
+      const { query } = make()
+      await wrap(query())
+      await wrap(sleep(20))
+      return storage.snapshotAtom()
+    }),
+  )
+
+  await wrap(
+    context.start(async () => {
+      const { query, consumer } = make()
+      storage.snapshotAtom.set(snapshot)
+
+      const view: AbstractRender<Rec, { armed: string; ids: string[] }> =
+        reatomAbstractRender({
+          frame: top().root.frame,
+          render: () => ({ armed: consumer(), ids: query.data().ids }),
+          rerender: () => view.render({}),
+          name: `${name}.view`,
+          abortOnUnmount: false,
+        })
+      view.render({})
+      const unmount = view.mount()
+      await wrap(sleep(30))
+
+      expect(query.data().ids).toEqual(['first'])
+      expect(() => view.render({})).not.toThrow()
+      expect(view.render({}).result.armed).toBe('armed')
+      unmount()
     }),
   )
 })
