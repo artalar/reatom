@@ -801,6 +801,19 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
 
   if (key.startsWith('model:')) {
     key = key.slice(6)
+    if (key === 'checked') {
+      if (
+        element instanceof dom.HTMLInputElement &&
+        !element.hasAttribute('type')
+      ) {
+        set(dom, element, 'attr:type', 'checkbox')
+      }
+      let setChecked = setter
+      setter = (val) => {
+        setChecked(val)
+        set(dom, element, 'aria-checked', val)
+      }
+    }
     setProp(dom, element, 'on:input', (event: any) => {
       if (!event.target.validity.badInput) {
         let val = event.target[key]

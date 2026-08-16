@@ -1331,6 +1331,52 @@ test('model:field binds checkbox checked', () =>
     expect(input.checked).toBe(true)
   }))
 
+test('model:checked synchronizes aria-checked', () =>
+  context.start(async () => {
+    const checked = atom(false, 'checked')
+    const input = instance(HTMLInputElement, <input model:checked={checked} />)
+
+    mount(parent(), input)
+    await wrap(sleep())
+
+    expect(input.type).toBe('checkbox')
+    expect(input.checked).toBe(false)
+    expect(input.getAttribute('aria-checked')).toBe('false')
+
+    checked.set(true)
+    await wrap(sleep())
+
+    expect(input.checked).toBe(true)
+    expect(input.getAttribute('aria-checked')).toBe('true')
+
+    input.checked = false
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    await wrap(sleep())
+
+    expect(checked()).toBe(false)
+    expect(input.getAttribute('aria-checked')).toBe('false')
+  }))
+
+test('model:checked preserves an explicit input type', () =>
+  context.start(async () => {
+    const checked = atom(false, 'checked')
+    const typeBefore = instance(
+      HTMLInputElement,
+      <input attr:type="radio" model:checked={checked} />,
+    )
+    const typeAfter = instance(
+      HTMLInputElement,
+      <input model:checked={checked} attr:type="radio" />,
+    )
+
+    mount(parent(), typeBefore)
+    mount(parent(), typeAfter)
+    await wrap(sleep())
+
+    expect(typeBefore.type).toBe('radio')
+    expect(typeAfter.type).toBe('radio')
+  }))
+
 test('model:field inside a function child does not track the field value', () =>
   context.start(async () => {
     const field = reatomField('a', 'wrappedField')
