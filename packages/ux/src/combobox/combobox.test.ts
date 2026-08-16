@@ -634,6 +634,29 @@ test('withComboboxAutoSelect waits for the popover to be placed', () => {
   un()
 })
 
+test('withComboboxAutoSelect stops reacting once the model disconnects', () => {
+  const fruit = reatomCombobox({ autoSelect: true, name: 'fruit' }).extend(
+    withComboboxAutoSelect(),
+  )
+  fruit.props.item('Apple')().ref(element())
+
+  // connect, settle an open and placed popover, then disconnect the model
+  const un = fruit.subscribe(() => {})
+  fruit.popover.show()
+  fruit.popover.positioned.set(true)
+  notify()
+  un()
+  notify()
+
+  // Arming the auto-select after the model disconnected must move nothing: the
+  // observer effect is torn down with the connection, not leaked past it. Before
+  // the fix the effect read the value atom that owned its own connect hook, so
+  // the model never disconnected and this still moved to the first item.
+  fruit.canAutoSelect.set(true)
+  notify()
+  expect(fruit.composite()).toBe(null)
+})
+
 // --- the Safari-touch virtualFocus override ----------------------------------
 
 test('touchSafari forces virtual focus off, and keeps forcing it', () => {
