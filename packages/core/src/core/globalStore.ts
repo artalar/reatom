@@ -5,32 +5,60 @@ export type ReatomGlobal = {
   extensions: unknown[]
 } & Record<string, unknown>
 
-declare global {
-  var __REATOM: ReatomGlobal | undefined
+let runtimeKey: symbol | undefined
+let currentRuntime: ReatomGlobal | undefined
+
+let createRuntime = (key?: symbol): ReatomGlobal => {
+  let runtime: ReatomGlobal = { version: VERSION, extensions: [] }
+  if (key) Object.defineProperty(runtime, key, { value: runtime })
+  return runtime
 }
 
 /* @__NO_SIDE_EFFECTS__ */
 export function ensureReatomGlobal(): ReatomGlobal {
-  let rt = globalThis.__REATOM as undefined | unknown[] | ReatomGlobal
+  if (currentRuntime) return currentRuntime
 
-  if (rt === undefined) {
-    rt = { version: VERSION, extensions: [] }
-    globalThis.__REATOM = rt
-    return rt
+  try {
+    let key = (runtimeKey ??= Symbol.for(`@reatom/${VERSION}`))
+    let carrier = Object.getOwnPropertyDescriptor(globalThis, key)
+    currentRuntime = carrier?.value
+    if (
+      !currentRuntime ||
+      carrier?.configurable ||
+      carrier.writable ||
+      Object.getOwnPropertyDescriptor(currentRuntime, key)?.value !==
+        currentRuntime ||
+      currentRuntime.version !== VERSION ||
+      !Array.isArray(currentRuntime.extensions) ||
+      !Object.isExtensible(currentRuntime) ||
+      !Object.isExtensible(currentRuntime.extensions)
+    ) {
+      currentRuntime = createRuntime(key)
+      Object.defineProperty(globalThis, key, {
+        configurable: false,
+        enumerable: false,
+        value: currentRuntime,
+        writable: false,
+      })
+    }
+  } catch {
+    currentRuntime = createRuntime()
   }
 
-  if (Array.isArray(rt)) {
-    let extensions = rt
-    rt = { version: VERSION, extensions }
-    globalThis.__REATOM = rt
-    return rt
-  }
-
-  return rt as ReatomGlobal
+  return currentRuntime
 }
 
 /* @__NO_SIDE_EFFECTS__ */
 export function _createGlobal<T>(name: string, init: () => T): T {
   let g = ensureReatomGlobal()
-  return (g[name] ??= init()) as T
+  if (Object.hasOwn(g, name)) return (g[name] ??= init()) as T
+
+  let value = init()
+  Object.defineProperty(g, name, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  })
+  return value
 }
