@@ -1,0 +1,19 @@
+{
+  "name": "reatom",
+  "owner": {
+    "name": "Reatom",
+    "url": "https://github.com/artalar/reatom"
+  },
+  "description": "Agent skills for Reatom v1001",
+  "plugins": [
+    {
+      "name": "reatom",
+      "source": "./plugin",
+      "description": "Reatom v1001 skills: API reference, async flows, @reatom/jsx, and review checklist",
+      "homepage": "https://v1001.reatom.dev",
+      "repository": "https://github.com/artalar/reatom",
+      "license": "MIT",
+      "keywords": ["reatom", "state-management", "jsx", "async"]
+    }
+  ]
+}
