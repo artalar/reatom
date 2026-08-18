@@ -34,19 +34,31 @@ agree.toggle() // flip it through the model's action
 agree.checked() // true — the tri-state flag, derived
 ```
 
-A model never touches the DOM. To render one, build a **prop record** — a
-`computed` of a plain props object — and spread it onto an element. `@reatom/jsx`
-does this with `$spread`, React with a plain spread, Vue with `v-bind`.
+A model never touches the DOM. To render one, take its **prop record** — a
+`computed` of a plain props object exposed as `model.props` — and spread it onto
+an element. `@reatom/jsx` does this with `$spread`, React with a plain spread,
+Vue with `v-bind`.
 
 ```tsx
-import { checkboxProps, reatomCheckbox } from '@reatom/ux'
+import { reatomCheckbox } from '@reatom/ux'
 
 const agree = reatomCheckbox({ name: 'agree' })
-const props = checkboxProps(agree)
 
 // @reatom/jsx
-;<input $spread={props.control} />
+;<input $spread={agree.props.control} />
 ```
+
+Group items carry their own record too, at `item(value).props`.
+
+```tsx
+const fruits = reatomCheckbox<Array<string>>({ value: [], name: 'fruits' })
+;<input $spread={fruits.item('apple').props.control} />
+```
+
+The `native` model option decides whether the record targets a native
+`<input type="checkbox">` (the default) or a custom element with `role` and
+keyboard handling. When one model needs both bindings at once, build an extra
+record with the standalone `checkboxProps(model, options)`.
 
 The record carries `checked`, `disabled`, the `aria-*` attributes, a `ref`, and
 the event handlers, all kept in sync with the model.

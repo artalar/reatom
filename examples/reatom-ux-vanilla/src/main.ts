@@ -1,14 +1,14 @@
 import type { Computed } from '@reatom/core'
-import { checkboxProps, reatomCheckbox } from '@reatom/ux'
+import { reatomCheckbox } from '@reatom/ux'
 
 /**
  * The whole point of `@reatom/ux`: the models carry no view dependency, so a
  * plain-DOM app binds them with a few lines and no framework.
  *
  * A ux model exposes reactive **prop records** — `computed` values of plain
- * objects with `checked`, `aria-*`, `ref`, and the event handlers.
- * `@reatom/jsx` spreads them with `$spread`, React with a plain spread; here
- * `spread` does the same by hand.
+ * objects with `checked`, `aria-*`, `ref`, and the event handlers, taken from
+ * `model.props`. `@reatom/jsx` spreads them with `$spread`, React with a plain
+ * spread; here `spread` does the same by hand.
  */
 const spread = (
   element: HTMLElement,
@@ -50,7 +50,7 @@ app.append(el('h1', '@reatom/ux — no framework'))
 for (const value of options) {
   const input = document.createElement('input')
   input.type = 'checkbox'
-  spread(input, checkboxProps(fruits.item(value)).control)
+  spread(input, fruits.item(value).props.control)
 
   const label = el('label', ` ${value}`)
   label.style.display = 'block'

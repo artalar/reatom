@@ -434,6 +434,48 @@ test('native checkbox props carry the native attributes, not the role', () => {
   expect(typeof control().ref).toBe('function')
 })
 
+test('the model exposes its own prop record, honoring the native option', () => {
+  const terms = reatomCheckbox({ name: 'terms' })
+  // the root model carries a record built from its own options
+  expect(typeof terms.props.control).toBe('function')
+  expect(terms.props.control()).toMatchObject({
+    role: undefined,
+    type: 'checkbox',
+    checked: false,
+  })
+
+  terms.toggle()
+  expect(terms.props.control().checked).toBe(true)
+
+  // `native: false` on the model drops the native attributes for the role
+  const custom = reatomCheckbox({ name: 'custom', native: false })
+  expect(custom.props.control()).toMatchObject({
+    role: 'checkbox',
+    type: undefined,
+    tabIndex: 0,
+  })
+  expect(typeof custom.props.control().onKeyDown).toBe('function')
+})
+
+test('group items expose their own prop record', () => {
+  const fruits = reatomCheckbox<Array<string>>({
+    value: [],
+    name: 'fruits',
+    nativeName: 'fruits',
+  })
+  const apple = fruits.item('apple')
+
+  expect(apple.props.control()).toMatchObject({
+    name: 'fruits',
+    value: 'apple',
+    checked: false,
+  })
+
+  apple.toggle()
+  expect(apple.props.control().checked).toBe(true)
+  expect(fruits()).toEqual(['apple'])
+})
+
 test('aria-checked follows the tri-state flag', () => {
   const terms = reatomCheckbox({ name: 'terms' })
   const { control } = checkboxProps(terms)
