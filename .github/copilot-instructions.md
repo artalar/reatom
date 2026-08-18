@@ -6,12 +6,12 @@ This repo already ships rich agent knowledge. Prefer reading it over guessing:
 
 - [`AGENTS.md`](../AGENTS.md) — skills, symlink layout, and what not to touch.
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) — full contributor guide.
-- [`skills/`](../skills/) — canonical Reatom v1001 knowledge. VS Code does not
-  auto-load these, so open the relevant `SKILL.md` / `REFERENCE.md` yourself:
-  - `skills/reatom` — core API, models, actions, forms, routing, persistence.
-  - `skills/reatom-async` — `wrap`, `withAsync`/`withAsyncData`, abort, sampling, Suspense.
-  - `skills/reatom-jsx` — `@reatom/jsx` native DOM JSX.
-  - `skills/reatom-review` — v1001 review checklist; load it before reviewing changes.
+- [`plugin/skills/`](../plugin/skills/) — canonical Reatom v1001 knowledge. VS Code
+  does not auto-load these, so open the relevant `SKILL.md` / `REFERENCE.md` yourself:
+  - `plugin/skills/reatom` — core API, models, actions, forms, routing, persistence.
+  - `plugin/skills/reatom-async` — `wrap`, `withAsync`/`withAsyncData`, abort, sampling, Suspense.
+  - `plugin/skills/reatom-jsx` — `@reatom/jsx` native DOM JSX.
+  - `plugin/skills/reatom-review` — v1001 review checklist; load it before reviewing changes.
 
 ## Hard rules
 
@@ -27,8 +27,9 @@ This repo already ships rich agent knowledge. Prefer reading it over guessing:
 
 ## Skills and symlinks
 
-Edit agent skills only in [`skills/`](../skills/). `.cursor/skills/` and
-`.agents/skills/` are directory symlinks to it. Several readmes are file
+Edit agent skills only in [`plugin/skills/`](../plugin/skills/). The root
+`skills/`, `.cursor/skills/`, `.agents/skills/`, and `.claude/skills/` are
+directory symlinks to it. Several readmes are file
 symlinks to skill references (`summary.md`, `docs/src/content/docs/summary.md`,
 `packages/core/README.md`, `packages/jsx/README.md`). **Do not diff, merge, or
 sync symlink targets** — identical content at these paths is expected.
