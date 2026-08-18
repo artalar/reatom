@@ -93,18 +93,18 @@ npx skills add reatom/reatom --skill reatom-review
 Claude Code, from the plugin marketplace hosted in this repository:
 
 ```bash
-/plugin marketplace add artalar/reatom
+/plugin marketplace add reatom/reatom
 /plugin install reatom@reatom
 ```
 
 Codex, from the same repository:
 
 ```bash
-codex plugin marketplace add artalar/reatom
+codex plugin marketplace add reatom/reatom
 codex plugin add reatom@reatom
 ```
 
-Cursor reads `.cursor-plugin/marketplace.json`: add `artalar/reatom` under Dashboard → Plugins → Add Marketplace → Import from Repo, then install the `reatom` plugin it lists.
+Cursor reads `.cursor-plugin/marketplace.json`: add `reatom/reatom` under Dashboard → Plugins → Add Marketplace → Import from Repo, then install the `reatom` plugin it lists.
 
 The plugin ships all four skills at once and follows the `v1001` branch: it has no pinned `version`, so an update picks up the latest commit.
 
