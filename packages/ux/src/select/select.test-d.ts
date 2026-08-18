@@ -192,11 +192,11 @@ test('prop records are framework neutral objects, keyed by item value', () => {
   expectTypeOf(fruit.props.item('Apple')().role).toEqualTypeOf<SelectItemRole>()
   expectTypeOf(selectItemRole('menu')).toEqualTypeOf<SelectItemRole>()
 
-  // unlike a combobox item, a select item always announces its selection: the
-  // active item and the selected item are two different things here
-  expectTypeOf(
-    fruit.props.item('Apple')()['aria-selected'],
-  ).toEqualTypeOf<boolean>()
+  // a `listbox`/`tree` select item announces its selection; a `menu`/`grid`/
+  // `dialog` item omits `aria-selected`, so the type admits `undefined`
+  expectTypeOf(fruit.props.item('Apple')()['aria-selected']).toEqualTypeOf<
+    boolean | undefined
+  >()
   expectTypeOf(fruit.props.item('Apple')()['aria-disabled']).toEqualTypeOf<
     true | undefined
   >()

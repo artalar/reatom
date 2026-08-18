@@ -955,6 +955,16 @@ test('aria-selected is only announced on a multi-selectable combobox', () => {
   fruits.select('Apple')
   expect(fruits.props.item('Apple')()['aria-selected']).toBe(true)
   expect(fruits.props.item('Orange')()['aria-selected']).toBe(false)
+
+  // a multi-selectable `grid` still omits it — `aria-selected` is invalid there
+  const grid = reatomCombobox({
+    selectedValue: [],
+    popupRole: 'grid',
+    name: 'grid',
+  })
+  mount(grid, ['Apple'])
+  grid.select('Apple')
+  expect(grid.props.item('Apple')()['aria-selected']).toBe(undefined)
 })
 
 test('no item is tabbable with virtual focus, and one is without it', () => {

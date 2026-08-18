@@ -964,7 +964,12 @@ export const comboboxProps = (
       return {
         id,
         role: itemRole,
-        'aria-selected': multi ? model.isSelected(value) : undefined,
+        // Only `listbox`/`tree` items carry `aria-selected`; a multi-selectable
+        // `grid` announces selection differently, so it stays `undefined`.
+        'aria-selected':
+          multi && (popupRole === 'listbox' || popupRole === 'tree')
+            ? model.isSelected(value)
+            : undefined,
         'data-active-item': composite() === id || undefined,
         // An unregistered item keeps its natural tab stop, which is the
         // composite's own fallback for an item it does not know yet.

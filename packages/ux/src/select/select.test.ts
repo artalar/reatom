@@ -854,6 +854,23 @@ test('an item announces what it is and whether it is selected', () => {
   })
 })
 
+test('only listbox and tree items announce aria-selected', () => {
+  // a `menu` uses `aria-checked`; a `grid`/`dialog` item has no selected state
+  for (const popupRole of ['menu', 'grid', 'dialog'] as const) {
+    const fruit = reatomSelect({ popupRole, name: popupRole })
+    mount(fruit, ['Apple'])
+    expect(fruit.props.item('Apple')()['aria-selected']).toBe(undefined)
+  }
+
+  const listbox = reatomSelect({ name: 'listbox' })
+  mount(listbox, ['Apple'])
+  expect(listbox.props.item('Apple')()['aria-selected']).toBe(true)
+
+  const tree = reatomSelect({ popupRole: 'tree', name: 'tree' })
+  mount(tree, ['Apple'])
+  expect(tree.props.item('Apple')()['aria-selected']).toBe(true)
+})
+
 test('the item record is memoized per value', () => {
   const fruit = reatomSelect({ name: 'fruit' })
 
