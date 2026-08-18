@@ -699,20 +699,36 @@ test('touchSafari also disables the auto-select, as Ariakit derives it', () => {
 
 // --- the item registry -------------------------------------------------------
 
-test('item ids are allocated from the values and stay stable', () => {
+test('item ids are derived from the values and stay stable', () => {
   const fruit = reatomCombobox({ name: 'fruit' })
 
-  const apple = fruit.itemId('Apple')
-  expect(apple).toBe('fruit-item-1')
-  expect(fruit.itemId('Orange')).toBe('fruit-item-2')
-  expect(fruit.itemId('Apple')).toBe(apple)
+  // a pure function of the value: the same value is the same id, with no counter
+  expect(fruit.itemId('Apple')).toBe('fruit-item-Apple')
+  expect(fruit.itemId('Orange')).toBe('fruit-item-Orange')
+  expect(fruit.itemId('Apple')).toBe('fruit-item-Apple')
 
-  expect(fruit.itemValue(apple)).toBe('Apple')
+  // an arbitrary value would be an invalid `id`, so an unsafe one is encoded
+  expect(fruit.itemId('a b, c')).toBe('fruit-item-s-61-20-62-2c-20-63')
+
+  // the value is read back from the rendered item, where `renderItem` stored it
+  mount(fruit, ['Apple'])
+  expect(fruit.itemValue(fruit.itemId('Apple'))).toBe('Apple')
   expect(fruit.itemValue(null)).toBe(undefined)
   expect(fruit.itemValue('unknown')).toBe(undefined)
+})
 
-  // an arbitrary value would be an invalid `id`, which is why they are generated
-  expect(fruit.itemId('a b, c')).toBe('fruit-item-3')
+test('item ids are the same across contexts, whatever the allocation order', () => {
+  // Two models allocate the same value in a different order. A counter would tie
+  // the id to that order — and so to request history under SSR — while a
+  // value-derived id stays identical, which is what keeps hydration stable.
+  const a = reatomCombobox({ name: 'x' })
+  a.itemId('Orange')
+  const appleInA = a.itemId('Apple')
+
+  const b = reatomCombobox({ name: 'x' })
+  const appleInB = b.itemId('Apple')
+
+  expect(appleInA).toBe(appleInB)
 })
 
 test('an item survives an unmount and remount with the same id', () => {
@@ -809,7 +825,7 @@ test('the input record is the whole combobox contract', () => {
   fruit.composite.navigate({ move: 'first' })
   expect(fruit.props.input()).toMatchObject({
     'aria-expanded': true,
-    'aria-activedescendant': 'fruit-item-1',
+    'aria-activedescendant': 'fruit-item-Apple',
     'data-active-item': undefined,
   })
 

@@ -5,7 +5,7 @@ Scope: `packages/ux/src/select/**` (10 files).
 ## Counts
 
 - Findings: 9 total — 0 critical, 4 high, 3 medium, 2 low.
-- Resolution: 6 fixed, 3 open.
+- Resolution: 8 fixed, 1 open.
 - Bundle-size checks: 3 single-use private helpers inlined; 1 single-use
   policy helper and its stale map removed; 1 one-use key array removed.
 - Code changed: yes.
@@ -41,17 +41,20 @@ Scope: `packages/ux/src/select/**` (10 files).
   button/input/link activation to the browser. The node regression failed
   before the fix, and the Chromium roving-focus flow now exercises `Enter`.
 
-- [High][Open] `reatomSelect.itemId`: `idsByValue`, `valuesById`, and `idSeed`
-  are closure state shared by every Reatom context.
-  Why it matters: a module-level model reused across SSR requests can allocate
+- [High][Fixed] `reatomSelect.itemId`: `idsByValue`, `valuesById`, and `idSeed`
+  were closure state shared by every Reatom context.
+  Why it matters: a module-level model reused across SSR requests could allocate
   IDs in request history order, while a fresh client allocates from one; the
-  resulting server and hydration IDs can differ. `context.reset()` cannot clear
-  these plain maps.
-  Fix: make the registry context-owned without writing atoms during a view
-  render, or move deterministic value-ID ownership into the collection. The
-  combobox has the same registry and a searchable select delegates IDs to it,
-  so a select-only rewrite would leave the public model internally
-  inconsistent.
+  resulting server and hydration IDs could differ. `context.reset()` cannot
+  clear plain maps.
+  Fix: derive the id from the value with `encodeValueKey`
+  (`interactions/valueKey.ts`, mirroring `radioItemId`), and read the value back
+  from the item's `text`. The counter and both maps are gone, so the id is a
+  pure function of the value — identical across contexts, with no atom written
+  during render. The combobox owns the shared registry and a searchable select
+  delegates to it, resolving ids against the shared composite. A regression pins
+  that two models allocating in a different order produce the same id. This
+  reserves the value-id namespace (no probe), like `radio`.
 
 - [Medium][Fixed] `selectProps.itemOptions`: merely asking for an item record
   stored its click policy forever, even after that record unmounted.
@@ -90,13 +93,12 @@ Scope: `packages/ux/src/select/**` (10 files).
   Fix: inline the three flows, remove the stale policy map/helper entirely, and
   compare the four arrow keys directly.
 
-- [Low][Open] `adoptAtom`: the pass-through `createAtom`/`withMiddleware`
-  implementation is duplicated in checkbox, radio, combobox, and select.
-  Why it matters: all four copies ship in the package entry and can drift in
-  update semantics and documentation.
-  Fix: move it to a shared internal interactions module in a package-wide
-  change. Inlining this nontrivial helper would preserve the duplicated bytes;
-  editing the shared modules is outside this review's scope.
+- [Low][Fixed] `adoptAtom`: the pass-through `createAtom`/`withMiddleware`
+  implementation was duplicated in checkbox, radio, combobox, and select.
+  Why it matters: all four copies shipped in the package entry and could drift
+  in update semantics and documentation.
+  Fix: moved to `interactions/adoptAtom.ts`; the four models now import the one
+  helper.
 
 ## Async/context audit
 
@@ -119,7 +121,5 @@ is synchronous ownership, not an async-frame loss.
 
 ## Residual risks
 
-- SSR/hydration identity remains dependent on closure-owned allocation until
-  select and combobox adopt one context-safe registry design.
 - Alternate popup roles remain an expert-only escape hatch without a complete
   role-specific item prop contract or accessibility-tree browser coverage.

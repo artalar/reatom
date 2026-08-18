@@ -34,6 +34,7 @@ import {
   reatomComposite,
 } from '../composite/reatomComposite'
 import { adoptAtom } from '../interactions/adoptAtom'
+import { encodeValueKey } from '../interactions/valueKey'
 import type { Popover, PopoverOptions } from '../popover/reatomPopover'
 import { reatomPopover } from '../popover/reatomPopover'
 import type { TagModel } from '../tag/reatomTag'
@@ -349,15 +350,15 @@ export interface ComboboxUnits<
   /** The tag model this combobox shares its values with, or `null`. */
   tag: TagModel | null
   /**
-   * The composite item id of a value, allocated on first use and stable for the
-   * lifetime of the model, so an item that unmounts and mounts again keeps its
-   * id.
+   * The composite item id of a value — a pure function of the value, so it is
+   * stable for the lifetime of the model and identical between the server and
+   * the client regardless of render order.
    *
    * @remarks
-   *   An item value is arbitrary text and would be an invalid `id`, so the ids
-   *   are generated rather than derived — the same trade-off `reatomTag`
-   *   documents. The allocation order is the render order, which keeps
-   *   hydration stable.
+   *   An item value is arbitrary text and would be an invalid `id`, so an unsafe
+   *   value is encoded (see `encodeValueKey`) rather than allocated from a
+   *   counter — which is what removed the SSR/hydration drift a shared counter
+   *   had. The value-id namespace is reserved for these ids.
    *
    *   This replaces the `value` field Ariakit adds to its composite items
    *   (`ComboboxStoreItem`), which a model outside `reatomComposite` cannot
@@ -365,9 +366,10 @@ export interface ComboboxUnits<
    */
   itemId: (value: string) => string
   /**
-   * The value an item id stands for; `undefined` for the input, an unknown id,
-   * or a nullish one. Never throws: unknown ids are normal during mount and
-   * unmount races.
+   * The value an item id stands for, read from the rendered item's `text`;
+   * `undefined` for the input, a nullish id, or an id whose item is not
+   * registered. Never throws: unknown ids are normal during mount and unmount
+   * races.
    */
   itemValue: (id?: string | null) => string | undefined
   /** The composite item of a value, `null` while it is not registered. */
@@ -710,30 +712,22 @@ export function reatomCombobox(options: ComboboxOptions = {}): Combobox {
     ),
   )
 
-  // The value <-> item id registry. Plain maps, not atoms: an id never changes
-  // once allocated, and the reactive part — which of those items is registered
-  // and rendered — belongs to the composite collection.
-  const idsByValue = new Map<string, string>()
-  const valuesById = new Map<string, string>()
-  let idSeed = 0
+  // The value -> item id direction is a pure function of the value, so the
+  // markup stays stable between the server and the client with no counter or
+  // map that could drift across contexts. The reverse reads the composite item,
+  // where `renderItem` stores the value as `text`.
+  const itemIdPrefix = `${elementId}-item-`
 
-  const itemId = (itemValueOf: string): string => {
-    let id = idsByValue.get(itemValueOf)
-    if (id === undefined) {
-      id = `${elementId}-item-${++idSeed}`
-      idsByValue.set(itemValueOf, id)
-      valuesById.set(id, itemValueOf)
-    }
-    return id
-  }
+  const itemId = (itemValueOf: string): string =>
+    `${itemIdPrefix}${encodeValueKey(itemValueOf)}`
 
   const itemValue = (id?: string | null): string | undefined =>
-    id == null ? undefined : valuesById.get(id)
+    id == null || !id.startsWith(itemIdPrefix)
+      ? undefined
+      : composite.items.item(id)?.text()
 
-  const item = (itemValueOf: string): CompositeItemNode | null => {
-    const id = idsByValue.get(itemValueOf)
-    return id === undefined ? null : composite.items.item(id)
-  }
+  const item = (itemValueOf: string): CompositeItemNode | null =>
+    composite.items.item(itemId(itemValueOf))
 
   const isSelected = (itemValueOf: string): boolean =>
     isComboboxItemSelected(selectedValue(), itemValueOf) ?? false
@@ -750,10 +744,11 @@ export function reatomCombobox(options: ComboboxOptions = {}): Combobox {
     `${name}.renderItem`,
   )
 
-  const unrenderItem = action((itemValueOf: string): boolean => {
-    const id = idsByValue.get(itemValueOf)
-    return id === undefined ? false : composite.items.unrenderItem(id)
-  }, `${name}.unrenderItem`)
+  const unrenderItem = action(
+    (itemValueOf: string): boolean =>
+      composite.items.unrenderItem(itemId(itemValueOf)),
+    `${name}.unrenderItem`,
+  )
 
   const resetValue = action(
     (): string => value.set(initialValue),
@@ -779,8 +774,10 @@ export function reatomCombobox(options: ComboboxOptions = {}): Combobox {
   const firstValueItemId = (): string | undefined =>
     composite
       .navigationItems()
-      .find((navigable) => !navigable.disabled && valuesById.has(navigable.id))
-      ?.id
+      .find(
+        (navigable) =>
+          !navigable.disabled && navigable.id.startsWith(itemIdPrefix),
+      )?.id
 
   const autoSelectFirst = action((): string | null => {
     const id = firstValueItemId() ?? composite.first() ?? null

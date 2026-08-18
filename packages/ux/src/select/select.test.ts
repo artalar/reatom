@@ -188,35 +188,39 @@ test('either value or valueAtom', () => {
 
 // --- the item registry -------------------------------------------------------
 
-test('an item id is allocated from the value and stays stable', () => {
+test('an item id is derived from the value and stays stable', () => {
   const fruit = reatomSelect({ name: 'fruit' })
   const id = fruit.itemId('Apple')
 
-  expect(id).toBe('fruit-item-1')
+  expect(id).toBe('fruit-item-Apple')
   expect(fruit.itemId('Apple')).toBe(id)
-  expect(fruit.itemValue(id)).toBe('Apple')
   expect(fruit.itemValue('nope')).toBe(undefined)
   expect(fruit.itemValue(null)).toBe(undefined)
 
-  // …across an unmount and a remount, so the item keeps its identity
+  // the value is read back from the rendered item, and the id survives an
+  // unmount and a remount, so the item keeps its identity
   const el = element()
   fruit.props.item('Apple')().ref(el)
+  expect(fruit.itemValue(id)).toBe('Apple')
   expect(fruit.item('Apple')?.id).toBe(id)
   fruit.props.item('Apple')().ref(null)
   fruit.props.item('Apple')().ref(element())
   expect(fruit.item('Apple')?.id).toBe(id)
 })
 
-test('generated item ids do not collide with existing composite items', () => {
+test('a value id is derived from the value, apart from a raw composite item', () => {
   const fruit = reatomSelect({ name: 'fruit' })
-  fruit.composite.items.registerItem({ id: 'fruit-item-1' })
+  // a consumer's own valueless item, registered directly
+  fruit.composite.items.registerItem({ id: 'fruit-item-raw' })
 
-  expect(fruit.itemId('Apple')).toBe('fruit-item-2')
+  const apple = fruit.itemId('Apple')
+  expect(apple).toBe('fruit-item-Apple')
   fruit.props.item('Apple')().ref(element())
 
-  expect(fruit.itemValue('fruit-item-1')).toBe(undefined)
-  expect(fruit.itemValue('fruit-item-2')).toBe('Apple')
-  expect(fruit.composite.items.ids()).toEqual(['fruit-item-1', 'fruit-item-2'])
+  // the raw item carries no value; the derived one reads its value back
+  expect(fruit.itemValue('fruit-item-raw')).toBe(undefined)
+  expect(fruit.itemValue(apple)).toBe('Apple')
+  expect(fruit.composite.items.ids()).toEqual(['fruit-item-raw', apple])
 })
 
 test('itemValues is the registered values, in order and without duplicates', () => {
@@ -467,8 +471,9 @@ test('an item that never mounted is still addressable and selectable', () => {
   expect(fruit.isSelected('Orange')).toBe(true)
   expect(fruit.selectedId).toBeDefined()
 
-  // an item added after the model was created resolves the same way
-  fruit.composite.items.registerItem({ id: fruit.itemId('Pear') })
+  // an item added after the model was created, with its value as `text`,
+  // resolves the same way
+  fruit.composite.items.registerItem({ id: fruit.itemId('Pear'), text: 'Pear' })
   expect(fruit.item('Pear')?.rendered()).toBe(false)
   expect(fruit.select('Pear')).toBe('Pear')
   expect(fruit.itemValues()).toContain('Pear')
@@ -539,10 +544,11 @@ test('a combobox shares its composite and popover with the select', () => {
   // one item collection, and one id per value
   const id = fruit.itemId('Apple')
   expect(id).toBe(search.itemId('Apple'))
+
+  // the shared, rendered item resolves the value from either side
+  fruit.props.item('Apple')().ref(element())
   expect(search.itemValue(id)).toBe('Apple')
   expect(fruit.itemValue(id)).toBe('Apple')
-
-  fruit.props.item('Apple')().ref(element())
   expect(search.composite.items.ids()).toEqual([id])
 })
 
