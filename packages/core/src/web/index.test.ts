@@ -42,3 +42,28 @@ test('onEvent abort following', async () => {
   controller.abort()
   expect(cb).toBeCalledTimes(0)
 })
+
+test('onEvent removes listeners from structural event dispatchers', () => {
+  const cb = vi.fn()
+  let listener: ((event: Event) => unknown) | undefined
+
+  const target = {
+    addEventListener: (
+      _type: string,
+      nextListener: (event: Event) => unknown,
+    ) => {
+      listener = nextListener
+    },
+    removeEventListener: (
+      _type: string,
+      nextListener: (event: Event) => unknown,
+    ) => {
+      if (listener === nextListener) listener = undefined
+    },
+  }
+
+  const un = onEvent(target, 'change', cb)
+  un()
+
+  expect(listener).toBeUndefined()
+})
