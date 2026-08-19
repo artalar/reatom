@@ -6,7 +6,7 @@
 - High: 1
 - Medium: 2
 - Low: 3
-- Total: 6 (4 fixed, 2 open)
+- Total: 6 (5 fixed, 1 open)
 
 ## Findings
 
@@ -26,9 +26,9 @@
   Why it matters: the extra function and symbol add indirection and bytes without reuse or a separate semantic boundary.
   Fix: inline the narrowing in `onChange`.
 
-- [Low] `adoptAtom`: The same pass-through `createAtom`/`withMiddleware` helper is duplicated in checkbox, radio, combobox, and select; the checkbox comment still describes sharing it as future work even though the second adopter already exists.
-  Why it matters: every copy contributes implementation and documentation bytes to the single `@reatom/ux` bundle and can drift independently.
-  Fix: move the helper to a shared internal interactions module in a package-wide change; this review cannot do so without editing outside `packages/ux/src/checkbox/**`.
+- [Low][Fixed] `adoptAtom`: The same pass-through `createAtom`/`withMiddleware` helper was duplicated in checkbox, radio, combobox, and select.
+  Why it matters: every copy contributed implementation and documentation bytes to the single `@reatom/ux` bundle and could drift independently.
+  Fix: moved to `interactions/adoptAtom.ts`; the four models now import the one shared helper.
 
 - [Low] `checkbox.test.ts` adopted-atom reactivity test: Review-time issue (fixed): the test called `.subscribe()` on an `effect`, although effects self-subscribe at creation, then disconnected only the redundant subscription.
   Why it matters: it models effect ownership incorrectly and leaves the actual effect connected until the next `context.reset()`.
