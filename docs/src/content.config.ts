@@ -22,6 +22,7 @@ export const collections = {
         { path: 'packages/lit/src', mode: 'readme' },
         { path: 'packages/preact/src', mode: 'readme' },
         { path: 'packages/react/src', mode: 'readme' },
+        { path: 'packages/ux/src', mode: 'readme' },
         { path: 'packages/vite/src', mode: 'readme' },
         { path: 'packages/vue/src', mode: 'readme' },
         { path: 'packages/zod/src', mode: 'readme' },

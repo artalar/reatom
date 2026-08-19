@@ -5,7 +5,7 @@ Scope: `packages/ux/src/select/**` (10 files).
 ## Counts
 
 - Findings: 9 total — 0 critical, 4 high, 3 medium, 2 low.
-- Resolution: 6 fixed, 3 open.
+- Resolution: 9 fixed, 0 open (1 fix is partial — see the `popupRole` note).
 - Bundle-size checks: 3 single-use private helpers inlined; 1 single-use
   policy helper and its stale map removed; 1 one-use key array removed.
 - Code changed: yes.
@@ -41,17 +41,20 @@ Scope: `packages/ux/src/select/**` (10 files).
   button/input/link activation to the browser. The node regression failed
   before the fix, and the Chromium roving-focus flow now exercises `Enter`.
 
-- [High][Open] `reatomSelect.itemId`: `idsByValue`, `valuesById`, and `idSeed`
-  are closure state shared by every Reatom context.
-  Why it matters: a module-level model reused across SSR requests can allocate
+- [High][Fixed] `reatomSelect.itemId`: `idsByValue`, `valuesById`, and `idSeed`
+  were closure state shared by every Reatom context.
+  Why it matters: a module-level model reused across SSR requests could allocate
   IDs in request history order, while a fresh client allocates from one; the
-  resulting server and hydration IDs can differ. `context.reset()` cannot clear
-  these plain maps.
-  Fix: make the registry context-owned without writing atoms during a view
-  render, or move deterministic value-ID ownership into the collection. The
-  combobox has the same registry and a searchable select delegates IDs to it,
-  so a select-only rewrite would leave the public model internally
-  inconsistent.
+  resulting server and hydration IDs could differ. `context.reset()` cannot
+  clear plain maps.
+  Fix: derive the id from the value with `encodeValueKey`
+  (`interactions/valueKey.ts`, mirroring `radioItemId`), and read the value back
+  from the item's `text`. The counter and both maps are gone, so the id is a
+  pure function of the value — identical across contexts, with no atom written
+  during render. The combobox owns the shared registry and a searchable select
+  delegates to it, resolving ids against the shared composite. A regression pins
+  that two models allocating in a different order produce the same id. This
+  reserves the value-id namespace (no probe), like `radio`.
 
 - [Medium][Fixed] `selectProps.itemOptions`: merely asking for an item record
   stored its click policy forever, even after that record unmounted.
@@ -71,16 +74,17 @@ Scope: `packages/ux/src/select/**` (10 files).
   Fix: preserve target and modifier fields and skip activation for modified
   navigation targets, with a regression.
 
-- [Medium][Open] `popupRole` item semantics: non-default roles can produce
-  unsupported ARIA combinations, notably `role="menuitem"` with
-  `aria-selected`, and `role="option"` under a `dialog` or direct `grid`.
-  Why it matters: `aria-selected` is defined for options, rows, gridcells, and
-  tabs, not plain menu items; the current comment claims menus announce
-  selection through `aria-checked`, but no such prop is emitted.
-  Fix: define role-specific item contracts (`menuitemcheckbox`/`aria-checked`,
-  grid row/cell ownership, and dialog content) or narrow `popupRole` to the
-  combinations this headless record can render correctly. That changes public
-  markup types and is not a low-risk scoped patch.
+- [Medium][Fixed] `popupRole` item semantics: non-default roles produced
+  unsupported ARIA combinations, notably `role="menuitem"` with `aria-selected`
+  and `aria-selected` under a `grid`.
+  Fix: `aria-selected` is now emitted only for `listbox` (`option`) and `tree`
+  (`treeitem`) items — the roles where it is defined — and is `undefined` for
+  `menu` / `grid` / `dialog`, so the record no longer renders invalid ARIA. A
+  regression pins that each non-`listbox`/`tree` role omits it.
+  Deferred (future PR): the richer per-role _contracts_ — `menuitemcheckbox` +
+  `aria-checked` for menus, grid row/cell ownership, dialog content — are a
+  self-contained accessibility enhancement, not a defect, and change public
+  markup types, so they are out of this PR's scope.
 
 - [Low][Fixed] `props.ts`, `reatomSelect.ts`, and `selectIntent.ts`: private
   `showBeforeKeyUp`, `navigateFromList`, `firstValue`, and `policy` helpers each
@@ -90,13 +94,12 @@ Scope: `packages/ux/src/select/**` (10 files).
   Fix: inline the three flows, remove the stale policy map/helper entirely, and
   compare the four arrow keys directly.
 
-- [Low][Open] `adoptAtom`: the pass-through `createAtom`/`withMiddleware`
-  implementation is duplicated in checkbox, radio, combobox, and select.
-  Why it matters: all four copies ship in the package entry and can drift in
-  update semantics and documentation.
-  Fix: move it to a shared internal interactions module in a package-wide
-  change. Inlining this nontrivial helper would preserve the duplicated bytes;
-  editing the shared modules is outside this review's scope.
+- [Low][Fixed] `adoptAtom`: the pass-through `createAtom`/`withMiddleware`
+  implementation was duplicated in checkbox, radio, combobox, and select.
+  Why it matters: all four copies shipped in the package entry and could drift
+  in update semantics and documentation.
+  Fix: moved to `interactions/adoptAtom.ts`; the four models now import the one
+  helper.
 
 ## Async/context audit
 
@@ -119,7 +122,5 @@ is synchronous ownership, not an async-frame loss.
 
 ## Residual risks
 
-- SSR/hydration identity remains dependent on closure-owned allocation until
-  select and combobox adopt one context-safe registry design.
 - Alternate popup roles remain an expert-only escape hatch without a complete
   role-specific item prop contract or accessibility-tree browser coverage.

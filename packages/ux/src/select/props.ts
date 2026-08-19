@@ -285,11 +285,12 @@ export interface SelectItemProps {
   /** Announces and enforces that the item cannot be activated. */
   'aria-disabled': true | undefined
   /**
-   * Whether the item is part of the value. Unlike a combobox item, a select
-   * item always announces it: the active item and the selected item are two
-   * different things here, and `aria-selected` is about the latter.
+   * Whether the item is part of the value. Only a `listbox` (`option`) or a
+   * `tree` (`treeitem`) item announces it; a `menu` uses `aria-checked`, and a
+   * `grid` / `dialog` item has no selected state, so `aria-selected` there
+   * would be invalid ARIA and stays `undefined`.
    */
-  'aria-selected': boolean
+  'aria-selected': boolean | undefined
   'data-active-item': true | undefined
   /**
    * Whether the item is the one the list should open at — the value picked
@@ -991,7 +992,12 @@ export const selectProps = (
         id,
         role: itemRole,
         'aria-disabled': itemDisabled || undefined,
-        'aria-selected': model.isSelected(value),
+        // Only `listbox`/`tree` items carry `aria-selected`; `menu` announces
+        // selection through `aria-checked`, `grid`/`dialog` have no such state.
+        'aria-selected':
+          popupRole === 'listbox' || popupRole === 'tree'
+            ? model.isSelected(value)
+            : undefined,
         'data-active-item': active === id || undefined,
         'data-autofocus': autoFocus || undefined,
         autoFocus:

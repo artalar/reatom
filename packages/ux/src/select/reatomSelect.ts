@@ -14,7 +14,6 @@ import {
   action,
   atom,
   computed,
-  createAtom,
   ifChanged,
   named,
   peek,
@@ -37,6 +36,8 @@ import {
   compositeElementId,
   reatomComposite,
 } from '../composite/reatomComposite'
+import { adoptAtom } from '../interactions/adoptAtom'
+import { encodeValueKey } from '../interactions/valueKey'
 import type { Popover, PopoverOptions } from '../popover/reatomPopover'
 import { reatomPopover } from '../popover/reatomPopover'
 import type { SelectPropRecords, SelectPropsOptions } from './props'
@@ -258,21 +259,23 @@ export interface SelectUnits<T extends SelectValue = SelectValue> {
    */
   valueItems: Computed<Array<CompositeNavigationItem>>
   /**
-   * The composite item id of a value, allocated on first use and stable for the
-   * lifetime of the model, so an item that unmounts and mounts again keeps its
-   * id.
+   * The composite item id of a value — a pure function of the value, so it is
+   * stable for the lifetime of the model and identical between the server and
+   * the client regardless of render order.
    *
    * @remarks
-   *   An item value is arbitrary text and would be an invalid `id`, so the ids
-   *   are generated rather than derived — the same trade-off `reatomCombobox`
-   *   documents. With a {@link SelectExtOptions.combobox} they are the
-   *   combobox's ids, which is what makes one element both widgets' item.
+   *   An item value is arbitrary text and would be an invalid `id`, so an unsafe
+   *   value is encoded (see `encodeValueKey`) rather than allocated from a
+   *   counter — which is what removed the SSR/hydration drift a shared counter
+   *   had. With a {@link SelectExtOptions.combobox} they are the combobox's ids,
+   *   which is what makes one element both widgets' item.
    */
   itemId: (value: string) => string
   /**
-   * The value an item id stands for; `undefined` for an unknown id, a nullish
-   * one, or an item that has no value. Never throws: unknown ids are normal
-   * during mount and unmount races.
+   * The value an item id stands for, read from the rendered item's `text`;
+   * `undefined` for a nullish id, an id whose item is not registered, or one
+   * with no value. Never throws: unknown ids are normal during mount and
+   * unmount races.
    */
   itemValue: (id?: string | null) => string | undefined
   /** The composite item of a value, `null` while it is not registered. */
@@ -347,38 +350,6 @@ export interface Select<
   /** Reactive prop records for the button, the label, the list, and the items. */
   props: SelectPropRecords
 }
-
-/**
- * Wraps a caller-owned atom in a model-owned pass-through atom.
- *
- * @remarks
- *   The model can not `extend` the adopted atom directly: `extend` mutates its
- *   target in place and throws on already existing keys, so adopting a
- *   `reatomField` would both pollute the field and risk colliding with its
- *   members. Reading and writing through a proxy keeps the adopted atom the
- *   single source of truth — no mirroring, no second state that can diverge.
- *
- *   Deliberately duplicated from `checkbox/reatomCheckbox.ts`,
- *   `radio/reatomRadio.ts`, and `combobox/reatomCombobox.ts` instead of being
- *   imported: hoisting it into `interactions/` touches all of those ports,
- *   which is a separate change. All four copies should move there together.
- */
-const adoptAtom = <T>(source: Atom<T>, name: string): Atom<T> =>
-  // `createAtom` instead of `computed` to keep the `.set` method, like
-  // `reatomLens` does.
-  createAtom<T>({ computed: () => source() }, name).extend(
-    withMiddleware(() => (next, ...params: [] | [T | ((state: T) => T)]): T => {
-      if (params.length !== 0) {
-        const update = params[0]
-        source.set(
-          typeof update === 'function'
-            ? (update as (state: T) => T)(source())
-            : update,
-        )
-      }
-      return next()
-    }),
-  )
 
 /**
  * Creates a select model: a button that opens a list of items, plus the one
@@ -560,43 +531,29 @@ export function reatomSelect(options: SelectOptions = {}): Select {
   const selectElement = atom<HTMLElement | null>(null, `${name}.selectElement`)
   const listElement = atom<HTMLElement | null>(null, `${name}.listElement`)
 
-  // The value <-> item id registry. Plain maps, not atoms: an id never changes
-  // once allocated, and the reactive part — which of those items is registered
-  // and rendered — belongs to the composite collection.
-  const idsByValue = new Map<string, string>()
-  const valuesById = new Map<string, string>()
-  let idSeed = 0
+  // The value -> item id direction is a pure function of the value, so the
+  // markup stays stable between the server and the client with no counter or
+  // map that could drift across contexts. A searchable select shares the
+  // combobox's ids and its composite; the reverse reads the item's `text`.
+  const itemIdPrefix = `${elementId}-item-`
 
-  const itemId = (itemValueOf: string): string => {
-    let id = idsByValue.get(itemValueOf)
-    if (id === undefined) {
-      // With a combobox the id comes from there, so one element can register as
-      // both widgets' item under a single id.
-      if (combobox) {
-        id = combobox.itemId(itemValueOf)
-      } else {
-        // A consumer can register valueless composite items directly. Probe the
-        // collection so a generated value id never aliases one of those nodes.
-        do id = `${elementId}-item-${++idSeed}`
-        while (composite.items.item(id) || valuesById.has(id))
-      }
-      idsByValue.set(itemValueOf, id)
-      valuesById.set(id, itemValueOf)
-    }
-    return id
-  }
+  const itemId = (itemValueOf: string): string =>
+    // With a combobox the id comes from there, so one element registers as both
+    // widgets' item under a single id.
+    combobox
+      ? combobox.itemId(itemValueOf)
+      : `${itemIdPrefix}${encodeValueKey(itemValueOf)}`
 
   const itemValue = (id?: string | null): string | undefined => {
     if (id == null) return undefined
-    // An item registered through the combobox alone is unknown here, and the
-    // combobox knows it — the ids are the same ones.
-    return valuesById.get(id) ?? combobox?.itemValue(id)
+    // An id outside this model's own namespace belongs to the shared combobox,
+    // which resolves it against the same composite.
+    if (!id.startsWith(itemIdPrefix)) return combobox?.itemValue(id)
+    return composite.items.item(id)?.text()
   }
 
-  const item = (itemValueOf: string): CompositeItemNode | null => {
-    const id = idsByValue.get(itemValueOf)
-    return id === undefined ? null : composite.items.item(id)
-  }
+  const item = (itemValueOf: string): CompositeItemNode | null =>
+    composite.items.item(itemId(itemValueOf))
 
   const isSelected = (itemValueOf: string): boolean =>
     isSelectItemSelected(value(), itemValueOf) ?? false
@@ -613,10 +570,11 @@ export function reatomSelect(options: SelectOptions = {}): Select {
     `${name}.renderItem`,
   )
 
-  const unrenderItem = action((itemValueOf: string): boolean => {
-    const id = idsByValue.get(itemValueOf)
-    return id === undefined ? false : composite.items.unrenderItem(id)
-  }, `${name}.unrenderItem`)
+  const unrenderItem = action(
+    (itemValueOf: string): boolean =>
+      composite.items.unrenderItem(itemId(itemValueOf)),
+    `${name}.unrenderItem`,
+  )
 
   initItems?.forEach(({ value: itemValueOf, ...init }) => {
     composite.items.registerItem(

@@ -5,7 +5,7 @@ Scope: `packages/ux/src/combobox/**` (9 files).
 ## Counts
 
 - Findings: 6 total — 0 critical, 3 high, 2 medium, 1 low.
-- Resolution: 4 fixed, 2 open.
+- Resolution: 5 fixed, 1 open.
 - Bundle-size checks: 2 single-use private helpers inlined; 1 dead module
   export removed.
 - Code changed: yes.
@@ -22,18 +22,19 @@ Scope: `packages/ux/src/combobox/**` (9 files).
   id is unchanged. A regression test observes one move across two keystrokes;
   it failed with two calls before the fix.
 
-- [High][Open] `withComboboxAutoSelect`: the connect hook is attached to the
-  combobox atom while its nested effect reads that same atom.
+- [High][Fixed] `withComboboxAutoSelect`: the connect hook is attached to the
+  combobox atom while its nested effect read that same atom.
   Why it matters: an effect created by `withConnectHook(target)` must not depend
   on `target`, directly or indirectly. This creates a connect/subscription
   feedback edge and makes disconnect behavior depend on core connection
   ordering; the same pattern has produced recursive reconnects and leaked
   effects in other UX models.
-  Fix: use a dedicated connection-owned effect extension, or anchor the hook to
-  a model-lifetime atom that the effect does not read. None of the current
-  combobox children is both an honest lifetime anchor and independent of the
-  effect, so changing it locally would be an architectural rather than low-risk
-  patch.
+  Fix: drop the `target()` read from the effect. The auto-select reacts to
+  `autoSelecting` (armed on type) and the item list, plus the popover / focus
+  guards — none of which derive from the value atom — so the effect no longer
+  depends on its own hook target, and the connect hook now returns a cleanup
+  that unsubscribes the effect on disconnect. The timing is unchanged (the
+  effect still runs in the notify-flush phase), so no test changed.
 
 - [High][Open] `props.input.onCompositionEnd`: composition end arms auto-select
   synchronously, and the input contract has no `onCompositionStart` handler to

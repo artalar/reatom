@@ -117,15 +117,17 @@ export const withComboboxAutoSelect = <T extends ComboboxModel<any>>(): Ext<
   return (target) =>
     target.extend(
       withConnectHook(() => {
-        effect(() => {
-          // Every read is unconditional, so no dependency can be dropped: the
-          // value and the item list are what the auto-select reacts to, and the
-          // rest are its guards.
+        // No `target()` read: the auto-select reacts to `autoSelecting` (armed
+        // on type) and the item list, never to the value atom that owns this
+        // connect hook. Reading only those non-value units keeps the effect
+        // independent of its own hook target, so there is no connect/subscribe
+        // feedback and the hook can disconnect — unsubscribing the effect is
+        // that cleanup.
+        const observer = effect(() => {
           const open = target.popover()
           const placing = target.popover.placing()
           const selecting = target.autoSelecting()
           const base = target.composite.baseElement()
-          target()
           target.composite.navigationItems()
 
           if (!open || placing || !selecting) return
@@ -133,6 +135,8 @@ export const withComboboxAutoSelect = <T extends ComboboxModel<any>>(): Ext<
 
           target.autoSelectFirst()
         }, `${target.name}.autoSelectOnType`)
+
+        return () => observer.unsubscribe()
       }),
     )
 }
