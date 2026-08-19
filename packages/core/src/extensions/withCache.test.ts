@@ -580,3 +580,42 @@ test('remount after an SSR-hydrated cache hit must render, not throw the cache A
     }),
   )
 })
+
+test('pending recovers when a returning reader is answered by the cache', async () => {
+  const name = 'withCache.returnHitPending'
+  const sort = atom<'new' | 'popular'>('new', `${name}.sort`)
+  const shown = atom(true, `${name}.shown`)
+
+  const query = computed(async () => {
+    const srt = sort()
+    await wrap(sleep(25))
+    return srt
+  }, `${name}.query`).extend(withAsyncData({ initState: '' }), withCache())
+
+  const comp = computed(
+    () => (shown() ? query.pending() > 0 : false),
+    `${name}.reloading`,
+  )
+
+  subscribe(comp)
+
+  // 'new' goes unread mid-flight and settles into the cache
+  await wrap(sleep(8))
+  shown.set(false)
+  await wrap(sleep(30))
+
+  // 'popular' the same
+  sort.set('popular')
+  shown.set(true)
+  await wrap(sleep(8))
+  shown.set(false)
+  await wrap(sleep(30))
+
+  // back to 'new', answered by the cache
+  sort.set('new')
+  shown.set(true)
+  await wrap(sleep(60))
+
+  expect(query.pending()).toBe(0)
+  expect(query.ready()).toBe(true)
+})

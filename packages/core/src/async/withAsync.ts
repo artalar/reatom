@@ -244,6 +244,8 @@ export let withAsync: {
       return call
     }, `${target.name}._onSettle`)
 
+    let delivered = new WeakSet<Promise<any>>()
+
     let pending = createAtom(
       {
         // computed needed to ensure that `pending` (and `ready`) connection will connect the target
@@ -253,7 +255,7 @@ export let withAsync: {
             ifChanged(target, () => {
               const targetFrame = _read(target)
               const cacheState = targetFrame && cacheVar.first(targetFrame)
-              if (!cacheState) state++
+              if (!cacheState && !delivered.has(targetFrame?.state)) state++
             })
           } else {
             const calls = getCalls(target as Action)
@@ -344,7 +346,10 @@ export let withAsync: {
       const isPromiseFresh =
         promiseToTrack !== undefined && !touched.has(promiseToTrack)
 
-      if (isCacheHit) touched.add(promise)
+      if (isCacheHit) {
+        touched.add(promise)
+        delivered.add(promise)
+      }
 
       if (cacheState?.payload) {
         pending.set((state) => state + 1)
