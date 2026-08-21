@@ -29,6 +29,7 @@ export const sidebar = [
       'handbook/computed-factory',
       'handbook/persist',
       'handbook/sampling',
+      'handbook/ux',
       {
         label: 'Forms',
         items: [
