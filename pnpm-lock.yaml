@@ -525,6 +525,40 @@ importers:
         specifier: ^8.0.14
         version: 8.0.14(@types/node@25.5.0)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0)
 
+  examples/reatom-ux-react:
+    dependencies:
+      '@reatom/core':
+        specifier: 1001.*.*
+        version: link:../../packages/core
+      '@reatom/react':
+        specifier: 1001.*.*
+        version: link:../../packages/react
+      '@reatom/ux':
+        specifier: 1001.*.*
+        version: link:../../packages/ux
+      react:
+        specifier: ^19.2.6
+        version: 19.2.6
+      react-dom:
+        specifier: ^19.2.6
+        version: 19.2.6(react@19.2.6)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.15
+        version: 19.2.15
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.3(@types/react@19.2.15)
+      '@vitejs/plugin-react':
+        specifier: ^6.0.2
+        version: 6.0.2(vite@8.0.14(@types/node@25.5.0)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0))
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^8.0.14
+        version: 8.0.14(@types/node@25.5.0)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.44.1)(tsx@4.22.3)(yaml@2.9.0)
+
   examples/reatom-ux-vanilla:
     dependencies:
       '@reatom/core':
