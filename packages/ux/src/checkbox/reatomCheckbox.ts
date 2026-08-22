@@ -2,6 +2,7 @@ import type { Action, Atom, Computed } from '@reatom/core'
 import { action, atom, computed, named, ReatomError } from '@reatom/core'
 
 import { adoptAtom } from '../interactions/adoptAtom'
+import { encodeTypedValueKey } from '../interactions/valueKey'
 import { checkboxProps, type CheckboxPropsRecords } from './props'
 
 /**
@@ -359,7 +360,10 @@ export function reatomCheckbox<T extends CheckboxValue = CheckboxChecked>(
     if (!model) {
       items.set(
         itemValue,
-        (model = createItem(itemValue, `${name}#${itemValue}`)),
+        (model = createItem(
+          itemValue,
+          `${name}#${encodeTypedValueKey(itemValue)}`,
+        )),
       )
     }
     return model

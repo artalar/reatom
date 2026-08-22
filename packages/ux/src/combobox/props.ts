@@ -199,12 +199,22 @@ export interface ComboboxInputProps {
    */
   onInput: (event: ComboboxInputEvent) => void
   /**
+   * Cancels a pending post-composition auto-select arm, so a multi-step IME
+   * that starts the next composition in an adjacent frame does not move focus
+   * between two syllables.
+   */
+  onCompositionStart: (event?: ComboboxPropsEvent) => void
+  /**
    * Re-enables the auto-select once an IME composition ends.
    *
    * @remarks
    *   Ariakit's comment: "the native input event that's passed to the change
    *   event above will not produce a consistent inputType value across
    *   browsers, so we can't rely on that there."
+   *
+   *   The arm is deferred to the next animation frame (and cancelled by
+   *   {@link ComboboxInputProps.onCompositionStart}), matching Ariakit, so a
+   *   composition that is immediately followed by another never arms.
    */
   onCompositionEnd: (event?: ComboboxPropsEvent) => void
   /** Opens the list, blurs the active item, and commits an inlined value. */
@@ -711,10 +721,41 @@ export const comboboxProps = (
     notify()
   })
 
-  const onCompositionEnd = wrap((event?: ComboboxPropsEvent) => {
+  // The auto-select is armed one frame after a composition ends, and cancelled
+  // if the next composition starts first, so a multi-step IME (Korean, etc.)
+  // can not move focus between two syllables. `requestAnimationFrame` is absent
+  // under Node, where the arm is immediate — there is no frame to race there. A
+  // frame that outlives the model only sets an atom; the auto-select effect it
+  // would feed is `withComboboxAutoSelect`, which unsubscribes on disconnect.
+  let armFrame: ReturnType<typeof requestAnimationFrame> | undefined
+
+  const armAutoSelect = wrap(() => {
+    armFrame = undefined
     model.canAutoSelect.set(true)
-    if (event?.defaultPrevented) return
     notify()
+  })
+
+  const cancelArm = (): void => {
+    if (armFrame !== undefined && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(armFrame)
+    }
+    armFrame = undefined
+  }
+
+  const onCompositionStart = wrap((event?: ComboboxPropsEvent) => {
+    if (event?.defaultPrevented) return
+    cancelArm()
+  })
+
+  const onCompositionEnd = wrap((event?: ComboboxPropsEvent) => {
+    if (event?.defaultPrevented) return
+    if (typeof requestAnimationFrame === 'function') {
+      cancelArm()
+      armFrame = requestAnimationFrame(armAutoSelect)
+    } else {
+      model.canAutoSelect.set(true)
+      notify()
+    }
   })
 
   const onMouseDown = wrap((event: ComboboxMouseEvent) => {
@@ -1004,6 +1045,7 @@ export const comboboxProps = (
         tabIndex: virtual || composite() === null ? 0 : undefined,
         ref: inputRef,
         onInput,
+        onCompositionStart,
         onCompositionEnd,
         onMouseDown,
         onKeyDown,

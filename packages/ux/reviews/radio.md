@@ -5,9 +5,9 @@ Scope: `packages/ux/src/radio/**` (6 files).
 ## Counts
 
 - Findings: 7 total — 0 critical, 2 high, 2 medium, 3 low.
-- Resolution: 5 fixed, 2 open.
+- Resolution: 6 fixed, 1 open.
 - Bundle-size checks: 1 single-use private helper inlined; 1 duplicated
-  package-level helper remains open.
+  package-level helper (`adoptAtom`) moved to a shared module.
 - Code changed: yes.
 
 ## Findings
@@ -66,13 +66,13 @@ Scope: `packages/ux/src/radio/**` (6 files).
   define it as `state !== null` and document the intentional divergence from
   Ariakit. Port fidelity versus local semantics needs an API decision.
 
-- [Low][Open] `adoptAtom`: the same pass-through
-  `createAtom`/`withMiddleware` implementation is duplicated in radio,
+- [Low][Fixed] `adoptAtom`: the same pass-through
+  `createAtom`/`withMiddleware` implementation was duplicated in radio,
   checkbox, combobox, and select.
   Why it matters: `@reatom/ux` emits one entry bundle, so each copy adds bytes
   and can drift independently.
-  Fix: move it to a shared internal interactions module in a package-wide
-  change. That would edit outside this review's radio-only scope.
+  Fix: moved to `interactions/adoptAtom.ts`; the four models now import the one
+  shared helper.
 
 ## Bundle and Reatom audit
 

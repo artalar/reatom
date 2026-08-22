@@ -6,7 +6,7 @@
 - High: 1
 - Medium: 2
 - Low: 3
-- Total: 6 (4 fixed, 2 open)
+- Total: 6 (6 fixed, 0 open)
 
 ## Findings
 
@@ -18,17 +18,17 @@
   Why it matters: `aria-disabled` does not disable DOM behavior, so the click could still activate an enclosing link, form behavior, or delegated application handler despite the control claiming to be disabled.
   Fix: cancel and stop disabled custom clicks before returning, with a regression test.
 
-- [Medium] `reatomCheckbox().item`: Numeric and string values with the same rendering receive identical trace names; `item(1)` and `item('1')` are distinct cached models but both are named `${name}#1`.
-  Why it matters: Reatom logging and attribution cannot distinguish the two supported values in a mixed `Array<string | number>` group.
-  Fix: encode the value type in a collision-free item-name segment while preserving the `#${id}` nesting convention.
+- [Medium] `reatomCheckbox().item`: Review-time issue (fixed): numeric and string values with the same rendering received identical trace names; `item(1)` and `item('1')` are distinct cached models but were both named `${name}#1`.
+  Why it matters: Reatom logging and attribution could not distinguish the two supported values in a mixed `Array<string | number>` group.
+  Fix: the item name now encodes the value type through the shared `encodeTypedValueKey` (`interactions/valueKey.ts`, the same scheme `radioItemId` uses), so `item(1)` is `${name}#n-31` while `item('1')` stays `${name}#1`; covered by a regression.
 
 - [Low] `reportedChecked`: Review-time issue (fixed): this private helper had one call site and only performed a small property type guard.
   Why it matters: the extra function and symbol add indirection and bytes without reuse or a separate semantic boundary.
   Fix: inline the narrowing in `onChange`.
 
-- [Low] `adoptAtom`: The same pass-through `createAtom`/`withMiddleware` helper is duplicated in checkbox, radio, combobox, and select; the checkbox comment still describes sharing it as future work even though the second adopter already exists.
-  Why it matters: every copy contributes implementation and documentation bytes to the single `@reatom/ux` bundle and can drift independently.
-  Fix: move the helper to a shared internal interactions module in a package-wide change; this review cannot do so without editing outside `packages/ux/src/checkbox/**`.
+- [Low][Fixed] `adoptAtom`: The same pass-through `createAtom`/`withMiddleware` helper was duplicated in checkbox, radio, combobox, and select.
+  Why it matters: every copy contributed implementation and documentation bytes to the single `@reatom/ux` bundle and could drift independently.
+  Fix: moved to `interactions/adoptAtom.ts`; the four models now import the one shared helper.
 
 - [Low] `checkbox.test.ts` adopted-atom reactivity test: Review-time issue (fixed): the test called `.subscribe()` on an `effect`, although effects self-subscribe at creation, then disconnected only the redundant subscription.
   Why it matters: it models effect ownership incorrectly and leaves the actual effect connected until the next `context.reset()`.

@@ -29,6 +29,7 @@ import {
   reatomComposite,
 } from '../composite/reatomComposite'
 import { adoptAtom } from '../interactions/adoptAtom'
+import { encodeTypedValueKey } from '../interactions/valueKey'
 import type { RadioPropRecords, RadioPropsOptions } from './props'
 import { withRadioProps } from './props'
 
@@ -113,20 +114,8 @@ export const isRadioItemChecked = (
  *   radioItemId('plan', 2) // 'plan-n-32' — numbers keep their type
  *   radioItemId('plan', 'a b') // 'plan-s-61-20-62' — unsafe values are encoded
  */
-export const radioItemId = (groupId: string, value: RadioItemValue): string => {
-  const stringValue = String(value)
-  const safeString =
-    typeof value === 'string' &&
-    /^[\w-]+$/.test(value) &&
-    !/^[ns]-(?:[0-9a-f]+(?:-[0-9a-f]+)*)?$/.test(value)
-  const valueId = safeString
-    ? value
-    : `${typeof value === 'number' ? 'n' : 's'}-${Array.from(
-        stringValue,
-        (character) => character.codePointAt(0)!.toString(16),
-      ).join('-')}`
-  return `${compositeElementId(groupId)}-${valueId}`
-}
+export const radioItemId = (groupId: string, value: RadioItemValue): string =>
+  `${compositeElementId(groupId)}-${encodeTypedValueKey(value)}`
 
 /**
  * Registration payload of one radio — plain data, never atoms.

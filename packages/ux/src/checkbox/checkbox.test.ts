@@ -139,6 +139,18 @@ test('name nesting follows the model structure', () => {
   expect(fruits.item('apple').change.name).toBe('fruits#apple.change')
 })
 
+test('numeric and string item values get distinct names', () => {
+  const box = reatomCheckbox<Array<number | string>>({
+    value: [],
+    name: 'box',
+  })
+
+  // `1` and `'1'` are distinct cached models, so their names must differ too
+  expect(box.item(1).name).toBe('box#n-31')
+  expect(box.item('1').name).toBe('box#1')
+  expect(box.item(1).name).not.toBe(box.item('1').name)
+})
+
 // --- group ------------------------------------------------------------------
 
 test('group items share one value atom', () => {

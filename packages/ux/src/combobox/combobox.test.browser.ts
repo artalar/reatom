@@ -369,6 +369,42 @@ test('the auto-select only fires while the input holds DOM focus', async () => {
   )
 })
 
+// react-components 0.3.2, browser half: "Fixed `Combobox` with `autoSelect`
+// moving focus between Korean IME composition steps." The post-composition arm
+// is a real animation frame here (Node has none), so a composition that is
+// followed by another before that frame cancels the arm — focus never moves
+// between two syllables.
+test('the post-composition auto-select arm is deferred and cancellable', async () => {
+  const widget = await mount({ autoSelect: true })
+  const { combobox } = widget
+
+  widget.input.focus()
+  combobox.popover.show()
+  combobox.popover.positioned.set(true)
+  // mid-composition the input handler has cleared the flag
+  combobox.canAutoSelect.set(false)
+  await settle()
+  expect(combobox.composite()).toBe(null)
+
+  // one composition ends and the next begins before the frame runs
+  combobox.props.input().onCompositionEnd()
+  combobox.props.input().onCompositionStart()
+  await nextFrame()
+  await settle()
+  // the arm was cancelled, so focus stayed on the input
+  expect(combobox.canAutoSelect()).toBe(false)
+  expect(combobox.composite()).toBe(null)
+
+  // the last composition ends with nothing after it: the arm is deferred to the
+  // frame (not synchronous), then it fires and moves to the first item
+  combobox.props.input().onCompositionEnd()
+  expect(combobox.canAutoSelect()).toBe(false)
+  await nextFrame()
+  await settle()
+  expect(combobox.canAutoSelect()).toBe(true)
+  expect(combobox.composite()).toBe(combobox.itemId('Apple'))
+})
+
 // Ariakit `combobox-item.tsx`: "pressing printable keys will not fill the text
 // field [when the item has DOM focus], so we need to programmatically focus on
 // the text field" — deliberately without preventing the default, so the browser
