@@ -5,7 +5,7 @@ Scope: `packages/ux/src/combobox/**` (9 files).
 ## Counts
 
 - Findings: 6 total — 0 critical, 3 high, 2 medium, 1 low.
-- Resolution: 5 fixed, 1 open.
+- Resolution: 6 fixed, 0 open.
 - Bundle-size checks: 2 single-use private helpers inlined; 1 dead module
   export removed.
 - Code changed: yes.
@@ -36,18 +36,20 @@ Scope: `packages/ux/src/combobox/**` (9 files).
   that unsubscribes the effect on disconnect. The timing is unchanged (the
   effect still runs in the notify-flush phase), so no test changed.
 
-- [High][Open] `props.input.onCompositionEnd`: composition end arms auto-select
-  synchronously, and the input contract has no `onCompositionStart` handler to
-  cancel a pending arm.
+- [High][Fixed] `props.input.onCompositionEnd`: composition end armed
+  auto-select synchronously, and the input contract had no `onCompositionStart`
+  handler to cancel a pending arm.
   Why it matters: Korean and other multi-step IMEs can end one composition and
-  start the next in adjacent frames. The effect can move focus between those
-  events. The existing test sends several `isComposing` input events followed
-  by only one final composition end, so it does not exercise this browser
-  sequence. Current Ariakit defers the arm to `requestAnimationFrame` and
-  cancels it from `compositionstart`.
-  Fix: add a composition-start handler and a connection-owned, cancellable
-  frame before arming auto-select; cover repeated start/end steps in the
-  Chromium suite.
+  start the next in adjacent frames, and the effect could move focus between
+  those events.
+  Fix: `onCompositionEnd` now defers the arm to `requestAnimationFrame` (with a
+  synchronous fallback under Node, which has no frame to race), and a new
+  `onCompositionStart` cancels a pending arm — matching Ariakit. A stray frame
+  that outlives the model only sets an atom, since the auto-select effect it
+  feeds (`withComboboxAutoSelect`) unsubscribes on disconnect. A Chromium
+  regression drives a two-composition sequence: it asserts the arm is deferred
+  (not synchronous), cancelled when the next composition starts, and fired when
+  the last one ends.
 
 - [Medium][Fixed] `comboboxProps.itemOptions`: merely creating an item record
   stored its click policy forever. Unmounting it and later rendering the same
@@ -88,18 +90,17 @@ The combobox has no awaited query or mutation flow. DOM callbacks and
 microtasks correctly enter Reatom through `wrap`; `queueBeforeEvent` wraps both
 its animation-frame/timer callback and event listener. There is no raw
 `sleep`, missing `withAbort`, async status misuse, or abort-as-business-error
-path in scope. The open connect-hook finding is the lifecycle exception.
+path in scope. The connect-hook finding is fixed; its lifecycle nuance is noted
+under residual risks.
 
 ## Verification
 
-- `pnpm -F @reatom/ux exec vitest run src/combobox`: 4 files passed, 117 tests
+- `pnpm -F @reatom/ux exec vitest run src/combobox`: 4 files passed, 119 tests
   passed, no type errors.
 - `pnpm -F @reatom/ux exec vitest run --config=vitest.browser.config.ts src/combobox`:
-  1 file passed, 9 Chromium tests passed.
+  1 file passed, 10 Chromium tests passed.
 
 ## Residual risks
 
-- Real multi-step IME composition remains uncovered and open as described
-  above.
 - The self-dependent connect effect remains sensitive to core lifecycle
   behavior until a safe connection anchor or extension is available.
