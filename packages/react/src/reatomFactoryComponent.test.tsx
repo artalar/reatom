@@ -360,4 +360,78 @@ describe('reatomFactoryComponent', () => {
         document.querySelector('[data-testid="output"]')?.textContent,
       ).toBe('state-for-item-2')
     }))
+
+  test('deps change aborts the previous init phase', () =>
+    context.start(async () => {
+      const controllers = new Map<string, ReatomAbortController>()
+      const abortedLoops: Array<string> = []
+      const loopTicks: Record<string, number> = {}
+
+      const abortedBeforeInit: Record<string, boolean> = {}
+
+      const ItemComponent = reatomFactoryComponent(
+        (props: { itemId: string }) => {
+          abortedBeforeInit[props.itemId] =
+            controllers.get('item-1')?.signal.aborted ?? false
+          controllers.set(props.itemId, abortVar.get()!)
+
+          const { itemId } = props
+          loopTicks[itemId] = 0
+
+          effect(async () => {
+            try {
+              while (true) {
+                await wrap(sleep())
+                loopTicks[itemId]!++
+              }
+            } catch (error) {
+              if (isAbort(error)) abortedLoops.push(itemId)
+            }
+          })
+
+          return () => <div data-testid="output">{props.itemId}</div>
+        },
+        { deps: ['itemId'], name: 'ItemComponent' },
+      )
+
+      const currentItemId = atom('item-1', 'currentItemId')
+
+      const App = reatomComponent(
+        () => <ItemComponent itemId={currentItemId()} />,
+        'App',
+      )
+
+      const root = ReactDOM.createRoot(document.getElementById('root')!)
+      root.render(
+        <reatomContext.Provider value={top()}>
+          <App />
+        </reatomContext.Provider>,
+      )
+
+      await wrap(tick())
+      await wrap(sleep())
+      expect(controllers.get('item-1')!.signal.aborted).toBe(false)
+      expect(loopTicks['item-1']!).toBeGreaterThan(0)
+
+      currentItemId.set('item-2')
+      await wrap(tick())
+      await wrap(sleep())
+
+      expect(controllers.get('item-1')!.signal.aborted).toBe(true)
+      expect(abortedBeforeInit['item-2']).toBe(true)
+      expect(abortedLoops).toEqual(['item-1'])
+      expect(controllers.get('item-2')!.signal.aborted).toBe(false)
+
+      const item1Ticks = loopTicks['item-1']!
+      await wrap(sleep())
+      await wrap(sleep())
+      expect(loopTicks['item-1']).toBe(item1Ticks)
+      expect(loopTicks['item-2']!).toBeGreaterThan(0)
+
+      root.unmount()
+      await wrap(tick())
+      await wrap(sleep())
+      expect(controllers.get('item-2')!.signal.aborted).toBe(true)
+      expect(abortedLoops).toEqual(['item-1', 'item-2'])
+    }))
 })

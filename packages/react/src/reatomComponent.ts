@@ -3,7 +3,6 @@ import {
   abortVar,
   action,
   assert,
-  bind,
   type Fn,
   type Frame,
   named,
@@ -168,35 +167,36 @@ export let reatomFactoryComponent = <Props extends Rec = {}>(
     initProps: Props,
     options: { name: string },
   ) => (props: Props) => React.ReactNode,
-  options?: string | { deps?: Array<string>; name?: string },
+  options?: string | { deps?: Array<keyof Props>; name?: string },
 ): ((props: Props) => React.ReactNode) => {
-  const deps = typeof options === 'object' ? (options.deps ?? []) : []
+  const deps = (
+    typeof options === 'object' ? (options.deps ?? []) : []
+  ) as Array<string>
   const name = typeof options === 'object' ? options.name : options
 
   type Instance = {
     controller: ReatomAbortController
-    abort: Fn
     render: (props: Props) => React.ReactNode
   }
 
   const Component: Fn = reatomComponent(
     (props: Props) => {
       const [, recreate] = React.useState(0)
+
+      const initAction = React.useMemo(
+        () => action(init, `${Component.name}._init`).extend(withAbort()),
+        [],
+      )
+
       const box = React.useMemo(
         () => ({ instance: null as null | Instance }),
         deps.map((dep) => props[dep]),
       )
 
       if (!box.instance || box.instance.controller.signal.aborted) {
-        const initAction = action(init, `${Component.name}._init`).extend(
-          withAbort(),
-        )
-        const render = initAction(props, { name: Component.name })
-
         box.instance = {
-          render,
+          render: initAction(props, { name: Component.name }),
           controller: abortVar.require(_read(initAction)!),
-          abort: bind(initAction.abort),
         }
       }
 
@@ -207,7 +207,7 @@ export let reatomFactoryComponent = <Props extends Rec = {}>(
           recreate((s) => s + 1)
           return
         }
-        return () => instance.abort()
+        return () => instance.controller.abort('unmount')
       }, [instance])
 
       return instance.render(props)
