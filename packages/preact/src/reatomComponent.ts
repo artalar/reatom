@@ -1,10 +1,12 @@
 import {
+  _read,
+  abortVar,
   action,
   assert,
-  bind,
   type Frame,
   named,
   notify,
+  type ReatomAbortController,
   reatomAbstractRender,
   ReatomError,
   type Rec,
@@ -30,10 +32,10 @@ type ReatomComponentOptions =
       abortOnUnmount?: boolean
     }
 
-type ReatomFactoryComponentOptions =
+type ReatomFactoryComponentOptions<Props> =
   | string
   | {
-      deps?: Array<string>
+      deps?: Array<keyof Props>
       name?: string
     }
 
@@ -157,33 +159,50 @@ export let reatomFactoryComponent = <Props extends Rec = {}>(
     initProps: Props,
     options: { name: string },
   ) => (props: Props) => ComponentChildren,
-  options?: ReatomFactoryComponentOptions,
+  options?: ReatomFactoryComponentOptions<Props>,
 ): PreactRender<Props> => {
-  const deps = typeof options === 'object' ? (options.deps ?? []) : []
+  const deps = (
+    typeof options === 'object' ? (options.deps ?? []) : []
+  ) as Array<string>
   const name = typeof options === 'object' ? options.name : options
+
+  type Instance = {
+    controller: ReatomAbortController
+    render: (props: Props) => ComponentChildren
+  }
 
   const Component: PreactRender<Props> = reatomComponent(
     (props: Props): ComponentChildren => {
-      const { abort, render } = useMemo(
-        (): {
-          abort: () => void
-          render: (props: Props) => ComponentChildren
-        } => {
-          const initAction = action(init, `${Component.name}._init`).extend(
-            withAbort(),
-          )
+      const [, recreate] = useState(0)
 
-          return {
-            abort: bind(initAction.abort),
-            render: initAction(props, { name: Component.name }),
-          }
-        },
+      const initAction = useMemo(
+        () => action(init, `${Component.name}._init`).extend(withAbort()),
+        [],
+      )
+
+      const box = useMemo(
+        () => ({ instance: null as null | Instance }),
         deps.map((dep) => props[dep]),
       )
 
-      useEffect(() => abort, [])
+      if (!box.instance || box.instance.controller.signal.aborted) {
+        box.instance = {
+          render: initAction(props, { name: Component.name }),
+          controller: abortVar.require(_read(initAction)!),
+        }
+      }
 
-      return render(props)
+      const { instance } = box
+
+      useEffect(() => {
+        if (instance.controller.signal.aborted) {
+          recreate((s) => s + 1)
+          return
+        }
+        return () => instance.controller.abort('unmount')
+      }, [instance])
+
+      return instance.render(props)
     },
     { deps, name, abortOnUnmount: false },
   )
