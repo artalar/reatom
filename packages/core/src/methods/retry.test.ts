@@ -1,7 +1,9 @@
 import { expect, test } from 'test'
 
 import { withAsync } from '../async'
-import { action, computed } from '../core'
+import { _read, action, atom, computed, isConnected } from '../core'
+import { withConnectHook } from '../extensions'
+import { sleep } from '../utils'
 import { retryComputed } from './retry'
 import { wrap } from './wrap'
 
@@ -48,4 +50,50 @@ test('retryComputed should recalculate dependent computeds', async () => {
   expect(valuesB.length).toBe(2) // This is the bug - computedB is not notified
   expect(newA).not.toBe(initialA) // Should be a new random value
   expect(newB).toBe(newA * 10) // computedB should have recalculated
+})
+
+test('retryComputed does not duplicate the target in its dependency subs', () => {
+  const source = atom(0, 'leak.source')
+  const derived = computed(() => source(), 'leak.derived')
+
+  const unsubscribe = derived.subscribe(() => {})
+
+  expect(_read(source)!.subs.length).toBe(1)
+
+  retryComputed(derived)
+  retryComputed(derived)
+  retryComputed(derived)
+
+  expect(_read(source)!.subs.length).toBe(1)
+
+  unsubscribe()
+})
+
+test('a retried computed still disconnects its dependencies when unsubscribed', async () => {
+  let connected = 0
+  let disconnected = 0
+
+  const source = atom(0, 'leak2.source').extend(
+    withConnectHook(() => {
+      connected++
+      return () => {
+        disconnected++
+      }
+    }),
+  )
+  const derived = computed(() => source(), 'leak2.derived')
+
+  const unsubscribe = derived.subscribe(() => {})
+  await wrap(sleep())
+  expect(connected).toBe(1)
+
+  retryComputed(derived)
+  retryComputed(derived)
+  await wrap(sleep())
+
+  unsubscribe()
+  await wrap(sleep())
+
+  expect(isConnected(source)).toBe(false)
+  expect(disconnected).toBe(connected)
 })

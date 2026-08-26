@@ -1,5 +1,5 @@
 import type { Action, AtomLike } from '../core'
-import { _mark, _read, ReatomError } from '../core'
+import { _mark, _read, _unlink, ReatomError } from '../core'
 import { _copy } from '../core'
 
 /**
@@ -19,8 +19,10 @@ export const reset = <T extends AtomLike>(target: T) => {
 
   let targetFrame = _read(target)
   if (targetFrame) {
-    // FIXME: `splice` only new frame, do not brake immutability!
-    _copy(targetFrame).pubs.splice(1)
+    let frame = _copy(targetFrame)
+    _unlink(target, frame.pubs)
+    frame.pubs.length = 1
+
     if (targetFrame.subs.length > 0) {
       _mark(targetFrame)
     }
