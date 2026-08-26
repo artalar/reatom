@@ -611,7 +611,7 @@ function link(frame: Frame) {
 // but in the real data, it is in the best case quite often (pub.subs.pop()).
 // For example, as we run `link` before `unlink` during deps invalidation,
 // for deps duplication we want to find just added dep.
-function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
+export function _unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
   // Start from the end to try to revet the link sequence with just "pop" complexity.
   // Do not unlink the zero pub, as it is just an actualization flag.
   for (let i = oldPubs.length - 1; i > 0; i--) {
@@ -628,7 +628,7 @@ function unlink(sub: AtomLike, oldPubs: Frame['pubs']) {
         if (pub.atom.__reatom.onConnect !== undefined) {
           _enqueue(pub.atom.__reatom.onConnect.abort, 'effect')
         }
-        unlink(pub.atom, pub.pubs)
+        _unlink(pub.atom, pub.pubs)
       }
     } else {
       // Search the suitable element (not effect) from the end to reduce the shift (`splice`) complexity.
@@ -650,7 +650,7 @@ function relink(frame: Frame, oldPubs: Frame['pubs']) {
   }
   if (changed) {
     link(frame)
-    unlink(frame.atom, oldPubs)
+    _unlink(frame.atom, oldPubs)
   }
 }
 
@@ -783,7 +783,7 @@ function subscribe(this: AtomLike, userCb?: Fn, errorCb?: Fn) {
       if (frame.atom.__reatom.onConnect !== undefined) {
         _enqueue(frame.atom.__reatom.onConnect.abort, 'effect')
       }
-      unlink(this, _getFrame(this, parentFrame.root)!.pubs)
+      _unlink(this, _getFrame(this, parentFrame.root)!.pubs)
     }
   }, parentFrame.root.frame)
 }
