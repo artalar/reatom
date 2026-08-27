@@ -1,6 +1,6 @@
 import { expect, test } from 'test'
 
-import { action } from '../core'
+import { action, mock } from '../core'
 import { wrap } from '../methods'
 import { noop, sleep } from '../utils'
 import { withAsync } from './withAsync'
@@ -316,4 +316,23 @@ test('restore isFulfilled after abort', async () => {
     data: undefined as never,
     error: undefined,
   } satisfies AsyncStatusAbortedFulfill)
+})
+
+test('rejection with a nullish reason stays consistent between error() and status().error', async () => {
+  const fetchData = action(
+    async () => 'real',
+    'phantomAbortErrorStatus',
+  ).extend(withAsync({ status: true }))
+  const unmock = mock(fetchData, () => Promise.reject(undefined))
+
+  try {
+    try {
+      await wrap(fetchData())
+    } catch {}
+
+    expect(fetchData.error()).toBeUndefined()
+    expect(fetchData.status().error).toBeUndefined()
+  } finally {
+    unmock()
+  }
 })

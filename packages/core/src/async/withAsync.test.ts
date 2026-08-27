@@ -176,6 +176,23 @@ test('abort rejection settles without calling onReject', async () => {
   expect(onSettle).toHaveBeenCalledTimes(2)
 })
 
+test('rejection with a nullish reason does not produce a phantom Error("undefined")', async () => {
+  const fetchSmth = action(async () => 'real', 'phantomAbortError').extend(
+    withAsync(),
+  )
+  const unmock = mock(fetchSmth, () => Promise.reject(undefined))
+
+  try {
+    try {
+      await wrap(fetchSmth())
+    } catch {}
+
+    expect(fetchSmth.error()).toBeUndefined()
+  } finally {
+    unmock()
+  }
+})
+
 test('computed retry', async () => {
   const name = 'computedRetry'
   let shouldFail = true

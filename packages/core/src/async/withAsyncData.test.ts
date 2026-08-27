@@ -1,7 +1,7 @@
 import { expect, expectTypeOf, subscribe, test, vi } from 'test'
 
 import type { Atom } from '../core'
-import { action, atom, computed, context } from '../core'
+import { action, atom, computed, context, mock } from '../core'
 import { isInit, withCallHook, withConnectHook } from '../extensions'
 import { abortVar, effect, retryComputed, wrap } from '../methods'
 import { createMemStorage, reatomPersist } from '../persist'
@@ -429,6 +429,26 @@ test('status includes data property with initState', async () => {
   const statusFulfilled = fetch.status()
   expect(statusFulfilled.data).toBe(11)
   expect(statusFulfilled.isFulfilled).toBe(true)
+})
+
+test('rejection with a nullish reason stays consistent between error() and status().error', async () => {
+  const name = 'phantomAbortErrorData'
+  const fetchSmth = action(async () => 'real', `${name}.fetch`).extend(
+    withAsyncData({ status: true }),
+  )
+  const unmock = mock(fetchSmth, () => Promise.reject(undefined))
+
+  try {
+    try {
+      await wrap(fetchSmth())
+    } catch {}
+
+    expect(fetchSmth.error()).toBeUndefined()
+    expect(fetchSmth.status().error).toBeUndefined()
+    expect(fetchSmth.data()).toBeUndefined()
+  } finally {
+    unmock()
+  }
 })
 
 test('reset action resets dependencies and data', async () => {
