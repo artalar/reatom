@@ -23,6 +23,18 @@ const createRecord = <State>(
 afterEach(() => vi.restoreAllMocks())
 
 describe('base', () => {
+  test('snapshots do not expire by default', () => {
+    const storage = createMemStorage({ name: 'persistForever' })
+    const source = atom(0, 'persistForeverSource').extend(
+      reatomPersist<number>(storage)('persist-forever'),
+    )
+    source.set(42)
+
+    expect(storage.snapshotAtom()['persist-forever']?.to).toBe(
+      Number.MAX_SAFE_INTEGER,
+    )
+  })
+
   test('should persist and update state correctly', async () => {
     withSomePersist.storageAtom.set(
       createMemStorage({

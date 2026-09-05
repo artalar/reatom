@@ -16,7 +16,6 @@ import { memoKey } from '../methods/memo'
 import { peek } from '../methods/peek'
 import {
   type Fn,
-  MAX_SAFE_TIMEOUT,
   noop,
   random,
   type Rec,
@@ -125,7 +124,7 @@ export interface WithPersistOptions<State = unknown, Snapshot = unknown> {
    * Number of milliseconds from the snapshot creation time after which it will
    * be deleted.
    *
-   * @defaultValue MAX_SAFE_TIMEOUT
+   * @defaultValue Number.MAX_SAFE_INTEGER
    */
   time?: number
 
@@ -297,7 +296,7 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
           ) => AtomState<Target>,
           migration,
           subscribe = !!storage.subscribe,
-          time = MAX_SAFE_TIMEOUT,
+          time = Number.MAX_SAFE_INTEGER,
           toSnapshot = () => target.toJSON() as Snapshot,
           version = 0,
           schema,
@@ -352,13 +351,16 @@ export const reatomPersist = <Snapshot = unknown, Options extends Rec = {}>(
 
         let toPersistRecord = (
           state: AtomState<Target>,
-        ): PersistRecord<Snapshot> => ({
-          data: toSnapshot(state),
-          id: random(),
-          timestamp: Date.now(),
-          to: Date.now() + time,
-          version,
-        })
+        ): PersistRecord<Snapshot> => {
+          const timestamp = Date.now()
+          return {
+            data: toSnapshot(state),
+            id: random(),
+            timestamp,
+            to: Math.min(timestamp + time, Number.MAX_SAFE_INTEGER),
+            version,
+          }
+        }
 
         if (subscribe) {
           function withProactivePersist(next: Fn, ...params: any[]) {
@@ -463,7 +465,7 @@ export const createMemStorage = ({
   subscribe?: boolean
 }): PersistStorage & { snapshotAtom: Atom<Rec<PersistRecord>> } => {
   let timestamp = Date.now()
-  let to = timestamp + MAX_SAFE_TIMEOUT
+  let to = Number.MAX_SAFE_INTEGER
   let initState = Object.entries(snapshot).reduce(
     (acc, [key, data]) => (
       (acc[key] = {

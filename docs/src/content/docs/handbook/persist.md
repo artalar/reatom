@@ -436,7 +436,7 @@ const configuredAtom = atom({ name: '', age: 0 }).extend(
 | `schema`       | `StandardSchemaV1`           | `undefined`                   | Schema to validate and transform data |
 | `version`      | `number \| string`           | `0`                           | Version number for migration          |
 | `migration`    | `(record, version) => state` | `undefined`                   | Migrate old data to current version   |
-| `time`         | `number`                     | `MAX_SAFE_TIMEOUT`            | TTL in milliseconds                   |
+| `time`         | `number`                     | `Number.MAX_SAFE_INTEGER`     | TTL in milliseconds                   |
 | `subscribe`    | `boolean`                    | `true`                        | Enable cross-tab synchronization      |
 
 ## Cross-Tab Synchronization

@@ -1,5 +1,4 @@
 import { ReatomError } from '../../core'
-import { MAX_SAFE_TIMEOUT } from '../../utils'
 import {
   createMemStorage,
   type PersistRecord,
@@ -98,7 +97,7 @@ const calculateExpiration = (options: CookieAttributes): number => {
   if (options.expires !== undefined) {
     return options.expires.getTime()
   }
-  return now + MAX_SAFE_TIMEOUT
+  return Number.MAX_SAFE_INTEGER
 }
 
 export const reatomPersistCookie = (
