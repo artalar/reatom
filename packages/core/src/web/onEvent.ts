@@ -2,6 +2,26 @@ import { action, context, top } from '../core'
 import { abortVar, wrap } from '../methods'
 import type { Fn, Unsubscribe } from '../utils'
 
+/**
+ * Minimal event dispatcher contract used by {@link onEvent}.
+ *
+ * This is structural so non-DOM dispatchers, such as Three.js
+ * `EventDispatcher`, are supported. Listeners must be removable because
+ * `onEvent` cleanup does not depend on AbortSignal support.
+ */
+export interface EventTargetLike {
+  addEventListener(
+    type: string,
+    callback: Fn,
+    options?: AddEventListenerOptions | boolean,
+  ): void
+  removeEventListener(
+    type: string,
+    callback: Fn,
+    options?: EventListenerOptions | boolean,
+  ): void
+}
+
 type EventOfCallback<Callback> =
   NonNullable<Callback> extends (
     this: unknown,
@@ -12,7 +32,7 @@ type EventOfCallback<Callback> =
       ? Params[0]
       : never
 
-export type EventOfTarget<Target extends EventTarget, Type extends string> =
+export type EventOfTarget<Target extends EventTargetLike, Type extends string> =
   Target extends Record<`on${Type}`, infer Callback>
     ? EventOfCallback<Callback>
     : Target extends Record<
@@ -20,7 +40,15 @@ export type EventOfTarget<Target extends EventTarget, Type extends string> =
           (type: Type, cb: infer Callback) => unknown
         >
       ? EventOfCallback<Callback>
-      : never
+      : Target extends {
+            addEventListener(
+              type: Type,
+              cb: infer Callback,
+              ...params: any[]
+            ): unknown
+          }
+        ? EventOfCallback<Callback>
+        : never
 
 /**
  * Integrates external event sources (DOM elements, WebSockets, etc.) with
@@ -87,15 +115,15 @@ export type EventOfTarget<Target extends EventTarget, Type extends string> =
 // @ts-ignore
 export const onEvent: {
   <
-    Target extends EventTarget,
+    Target extends EventTargetLike,
     Type extends Target extends Record<`on${infer Type}`, Fn> ? Type : string,
   >(
     target: Target,
     type: Type,
   ): Promise<EventOfTarget<Target, Type>>
-  <Event>(target: EventTarget, type: string): Promise<Event>
+  <Event>(target: EventTargetLike, type: string): Promise<Event>
   <
-    Target extends EventTarget,
+    Target extends EventTargetLike,
     Type extends Target extends Record<`on${infer Type}`, Fn> ? Type : string,
   >(
     target: Target,
@@ -104,13 +132,13 @@ export const onEvent: {
     options?: AddEventListenerOptions,
   ): Unsubscribe
   <Event>(
-    target: EventTarget,
+    target: EventTargetLike,
     type: string,
     cb: (value: Event) => any,
     options?: AddEventListenerOptions,
   ): Unsubscribe
 } = (
-  target: EventTarget,
+  target: EventTargetLike,
   type: string,
   cb?: Fn,
   options?: AddEventListenerOptions,
@@ -149,6 +177,10 @@ export const onEvent: {
   target.addEventListener(type, listener, {
     ...options,
     signal: abortSubscription.controller.signal,
+  })
+
+  abortSubscription.listenerController.signal.addEventListener('abort', () => {
+    target.removeEventListener(type, listener, options)
   })
 
   return abortSubscription.unsubscribe
