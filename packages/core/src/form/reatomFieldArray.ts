@@ -4,13 +4,16 @@ import {
   type AtomState,
   isAtom,
   named,
+  withActionMiddleware,
   withParams,
 } from '../core'
 import { withCallHook } from '../extensions'
 import {
   type LinkedList,
-  type LinkedListAtom,
+  type LinkedListLikeAtom,
+  type LinkedListMethods,
   type LLNode,
+  linkedListToArray,
   reatomLinkedList,
 } from '../primitives'
 import { isShallowEqual } from '../utils'
@@ -127,7 +130,12 @@ type FieldArrayInitState<T> = {
 export type FieldArrayAtom<
   Param = any,
   Node extends FieldsAtomizeInitState = FieldsAtomizeInitState,
-> = LinkedListAtom<[FieldArrayInitState<Param>], FieldsAtomize<Node>> &
+> = LinkedListLikeAtom<FieldArrayState<Node>> &
+  // the field `reset` from `BaseFieldExt` shadows the linked list one
+  Omit<
+    LinkedListMethods<[FieldArrayInitState<Param>], FieldsAtomize<Node>>,
+    'reset'
+  > &
   BaseFieldExt<
     FieldArrayState<Node>,
     [initState: FieldArrayInitState<Param>[]]
@@ -352,7 +360,7 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
     }),
   )
 
-  const fieldArrayAtom = reatomLinkedList(
+  const linkedListAtom = reatomLinkedList(
     {
       create: (param) => {
         const factoryName = `${name}.item`
@@ -369,24 +377,32 @@ export function reatomFieldArray<Param, Node extends FieldsAtomizeInitState>(
       ),
     },
     name,
-  ).extend(
+  )
+
+  const llReset = linkedListAtom.reset
+
+  const fieldArrayAtom = linkedListAtom.extend(
     withBaseField({
       initStateAtom,
-      getNormalizedState: (state) => {
-        // TODO decouple into a function (including a reatomForm one)
-        const elements = []
-        let head = state.head
-        while (head) {
-          elements.push(head)
-          head = head[state.LL_NEXT]
-        }
-        // TODO: reatomLinkedLost does not support the same elements in two or more difference linked lists so we need to limit size of the array there
-        return elements.slice(0, state.size)
-      },
+      getNormalizedState: (state) =>
+        // an `initState` snapshot shares its nodes with the live list and its
+        // chain rots on the in-place mutations, so represent it with the
+        // immutable `initNodes` and walk the chain only for the live state
+        state === linkedListAtom() ? linkedListToArray(state) : state.initNodes,
       getValue: (): FieldArrayLLNode<Node>[] => fieldArrayAtom.array(),
       isDirty,
       ...restOptions,
     }),
+  )
+
+  fieldArrayAtom.reset.extend(
+    withActionMiddleware(
+      () =>
+        function fieldArrayReset(next, ...params) {
+          if (!params.length) llReset()
+          return next(...params)
+        },
+    ),
   )
 
   return Object.assign(fieldArrayAtom, {

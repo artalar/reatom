@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'test'
 import { z } from 'zod'
 
-import { addCallHook, atom, notify, sleep, wrap } from '../'
+import { addCallHook, atom, context, notify, sleep, wrap } from '../'
 import { reatomFieldArray } from '.'
 
 test(`validateOnChange`, async () => {
@@ -357,5 +357,211 @@ describe(`reactivity of validate function`, () => {
     fieldArray.create('c')
     notify()
     expect(fieldArray.validation.errors()).toHaveLength(0)
+  })
+})
+
+describe(`reset after element removal (#1309)`, () => {
+  const setup = (name: string) => {
+    const fieldArray = reatomFieldArray(['first', 'second', 'third'], { name })
+    const values = () => fieldArray.array().map((element) => element())
+    return { fieldArray, values }
+  }
+
+  const cases = [
+    { position: 'head', index: 0, afterRemove: ['second', 'third'] },
+    { position: 'middle', index: 1, afterRemove: ['first', 'third'] },
+    { position: 'tail', index: 2, afterRemove: ['first', 'second'] },
+  ]
+
+  for (const { position, index, afterRemove } of cases) {
+    test(`restores ${position} element`, () => {
+      const { fieldArray, values } = setup(`resetAfterRemoval.${position}`)
+
+      fieldArray.remove(fieldArray.array()[index]!)
+      notify()
+      expect(fieldArray().size).toBe(2)
+      expect(values()).toEqual(afterRemove)
+
+      fieldArray.reset()
+      notify()
+      expect(fieldArray().size).toBe(3)
+      expect(values()).toEqual(['first', 'second', 'third'])
+    })
+  }
+
+  test(`restores all elements after multiple removals`, () => {
+    const { fieldArray, values } = setup('resetAfterRemoval.multiple')
+
+    fieldArray.remove(fieldArray.array()[2]!)
+    fieldArray.remove(fieldArray.array()[0]!)
+    notify()
+    expect(fieldArray().size).toBe(1)
+    expect(values()).toEqual(['second'])
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray().size).toBe(3)
+    expect(values()).toEqual(['first', 'second', 'third'])
+  })
+})
+
+describe(`reset consistency (#1309)`, () => {
+  test(`keeps dirty relevant after removal and bare reset`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'resetDirty.fieldArray',
+    })
+    expect(fieldArray.focus().dirty).toBe(false)
+
+    fieldArray.remove(fieldArray.array()[1]!)
+    notify()
+    expect(fieldArray.focus().dirty).toBe(true)
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().dirty).toBe(false)
+  })
+
+  test(`keeps dirty relevant after an element replacement`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'replaceDirty.fieldArray',
+    })
+    expect(fieldArray.focus().dirty).toBe(false)
+
+    // `remove` + `create` compensate the chain length of the stale snapshot
+    fieldArray.remove(fieldArray.array()[1]!)
+    fieldArray.create('d')
+    notify()
+    expect(fieldArray.focus().dirty).toBe(true)
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().dirty).toBe(false)
+    expect(fieldArray.array().map((element) => element())).toEqual([
+      'a',
+      'b',
+      'c',
+    ])
+  })
+
+  test(`keeps dirty relevant after move`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'resetMoveDirty.fieldArray',
+    })
+    expect(fieldArray.focus().dirty).toBe(false)
+
+    fieldArray.move(fieldArray.array()[0]!, fieldArray.array()[2]!)
+    notify()
+    expect(fieldArray.focus().dirty).toBe(true)
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().dirty).toBe(false)
+  })
+
+  test(`keeps dirty relevant after swap`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'resetSwapDirty.fieldArray',
+    })
+    expect(fieldArray.focus().dirty).toBe(false)
+
+    fieldArray.swap(fieldArray.array()[0]!, fieldArray.array()[2]!)
+    notify()
+    expect(fieldArray.focus().dirty).toBe(true)
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().dirty).toBe(false)
+  })
+
+  test(`preserves element identity on bare reset`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b'], {
+      name: 'resetIdentity.fieldArray',
+    })
+    const elements = fieldArray.array()
+    notify()
+
+    fieldArray.remove(fieldArray.array()[0]!)
+    notify()
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.array().every((node, i) => node === elements[i])).toBe(
+      true,
+    )
+  })
+
+  test(`does not touch the focus state on bare reset`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b'], {
+      name: 'resetTouched.fieldArray',
+    })
+
+    fieldArray.remove(fieldArray.array()[0]!)
+    notify()
+
+    fieldArray.reset()
+    notify()
+    expect(fieldArray.focus().touched).toBe(false)
+  })
+
+  test(`bare reset restores the state applied via reset with values`, () => {
+    const fieldArray = reatomFieldArray(['a'], {
+      name: 'resetValues.fieldArray',
+    })
+    const values = () => fieldArray.array().map((element) => element())
+
+    fieldArray.create('b')
+    notify()
+
+    fieldArray.reset(['x', 'y'])
+    notify()
+    expect(values()).toEqual(['x', 'y'])
+
+    fieldArray.remove(fieldArray.array()[0]!)
+    notify()
+
+    fieldArray.reset()
+    notify()
+    expect(values()).toEqual(['x', 'y'])
+  })
+
+  test(`bare reset restores the state applied via initState setter`, () => {
+    const fieldArray = reatomFieldArray(['a'], {
+      name: 'resetInitState.fieldArray',
+    })
+    const values = () => fieldArray.array().map((element) => element())
+    notify()
+
+    fieldArray.initState.set(['x', 'y'])
+    fieldArray.create('b')
+    notify()
+
+    fieldArray.reset()
+    notify()
+    expect(values()).toEqual(['x', 'y'])
+  })
+
+  test(`keeps the state isolated between contexts`, () => {
+    const fieldArray = reatomFieldArray(['a', 'b', 'c'], {
+      name: 'resetContexts.fieldArray',
+    })
+    const values = () => fieldArray.array().map((element) => element())
+
+    const rootA = context.start()
+    const rootB = context.start()
+
+    rootA.run(() => {
+      fieldArray.reset(['x', 'y'])
+      notify()
+      expect(values()).toEqual(['x', 'y'])
+    })
+
+    rootB.run(() => {
+      fieldArray.remove(fieldArray.array()[1]!)
+      notify()
+
+      fieldArray.reset()
+      notify()
+      expect(values()).toEqual(['a', 'b', 'c'])
+    })
   })
 })

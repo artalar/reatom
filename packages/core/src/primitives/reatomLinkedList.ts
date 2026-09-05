@@ -47,8 +47,20 @@ export interface LinkedList<
   head: null | Node
   tail: null | Node
   size: number
+  /**
+   * Monotonic transaction counter driving the `changes` replay protocol: a
+   * consumer holding the previous version applies `changes`, a bigger gap means
+   * missed updates and requires a full rebuild. Never rewinds.
+   */
   version: number
   changes: Array<LLChanges<Node>>
+  /**
+   * The nodes of the initial state in their initial order. Unlike the node
+   * chain, this plain array is immune to the in-place pointer mutations
+   * performed by list operations, so it stays pristine across the atom lifetime
+   * and is used by `reset`. Empty for derived lists (`reatomMap`).
+   */
+  initNodes: Array<Node>
 }
 
 export interface LinkedListLikeAtom<T extends LinkedList = LinkedList>
@@ -58,11 +70,16 @@ export interface LinkedListLikeAtom<T extends LinkedList = LinkedList>
   __reatomLinkedList: true
 }
 
-export interface LinkedListAtom<
+/**
+ * The own methods of a linked list atom, decoupled from the base atom shape, so
+ * derived abstractions (like `reatomFieldArray`) can compose them with a
+ * different base keeping every member declared in a single place.
+ */
+export interface LinkedListMethods<
   Params extends any[] = any[],
   Node extends Rec = Rec,
   Key extends keyof Node = never,
-> extends LinkedListLikeAtom<LinkedList<LLNode<Node>>> {
+> {
   batch: Action<[cb: Fn]>
 
   create: Action<Params, LLNode<Node>>
@@ -72,6 +89,14 @@ export interface LinkedListAtom<
   swap: Action<[a: LLNode<Node>, b: LLNode<Node>], void>
   move: Action<[node: LLNode<Node>, after: null | LLNode<Node>], void>
   clear: Action<[], void>
+
+  /**
+   * Restores the list to its initial nodes in their initial order — the state
+   * captured at creation or at the last `initiateFromState` /
+   * `initiateFromSnapshot` application. Node identity is preserved: the
+   * original node objects are relinked, not recreated.
+   */
+  reset: Action<[], void>
 
   find: (cb: (node: LLNode<Node>) => boolean) => null | LLNode<Node>
 
@@ -116,6 +141,15 @@ export interface LinkedListAtom<
   //   name?: string,
   // ) => Atom<T>
 }
+
+export interface LinkedListAtom<
+  Params extends any[] = any[],
+  Node extends Rec = Rec,
+  Key extends keyof Node = never,
+>
+  extends
+    LinkedListLikeAtom<LinkedList<LLNode<Node>>>,
+    LinkedListMethods<Params, Node, Key> {}
 
 // TODO rename to `DerivedLinkedList`
 export interface LinkedListDerivedState<
@@ -282,7 +316,28 @@ const clearLL = <Node extends LLNode>(state: LinkedList<Node>) => {
   }
 }
 
-export const toArray = <T extends Rec>(
+const isPristineLL = <Node extends LLNode>(
+  state: LinkedList<Node>,
+): boolean => {
+  const LL_NEXT: LL_NEXT = state.LL_NEXT as any
+  let head: null | LLNode = state.head
+  for (const node of state.initNodes) {
+    if (head !== node) return false
+    head = head[LL_NEXT]
+  }
+  return head === null
+}
+
+/**
+ * Collects the nodes of a linked list state into a plain array in the chain
+ * order. Useful when you deal with a raw {@link LinkedList} state — in
+ * extensions and hooks; for an atom prefer the memoized `array()` accessor.
+ *
+ * Pass the previously returned array as the second argument to preserve the
+ * reference when the chain has not changed, keeping downstream memoization
+ * intact.
+ */
+export const linkedListToArray = <T extends Rec>(
   { head, LL_NEXT }: LinkedList<LLNode<T>>,
   prev?: Array<LLNode<T>>,
 ): Array<LLNode<T>> => {
@@ -505,12 +560,15 @@ export function reatomLinkedList<
       changes: [],
       head: null,
       tail: null,
+      initNodes: [],
     } as LinkedList<LLNode<Node>>
 
     for (const node of initState) {
       throwModel(node)
       addLL(state, node, state.tail)
     }
+
+    state.initNodes = linkedListToArray(state)
 
     return state
   }
@@ -527,12 +585,15 @@ export function reatomLinkedList<
       changes: [],
       head: null,
       tail: null,
+      initNodes: [],
     } as LinkedList<LLNode<Node>>
 
     for (const node of initState) {
       throwModel(node)
       addLL(state, node, state.tail)
     }
+
+    state.initNodes = linkedListToArray(state)
 
     return state
   }
@@ -542,25 +603,28 @@ export function reatomLinkedList<
 
     let result: T
 
-    linkedList.set(({ head, tail, size, version, LL_PREV, LL_NEXT }) => {
-      STATE = {
-        LL_PREV,
-        LL_NEXT,
-        size,
-        version: version + 1,
-        changes: [],
-        head,
-        tail,
-      }
+    linkedList.set(
+      ({ head, tail, size, version, LL_PREV, LL_NEXT, initNodes }) => {
+        STATE = {
+          LL_PREV,
+          LL_NEXT,
+          size,
+          version: version + 1,
+          changes: [],
+          head,
+          tail,
+          initNodes,
+        }
 
-      try {
-        result = cb()
+        try {
+          result = cb()
 
-        return STATE
-      } finally {
-        STATE = null
-      }
-    })
+          return STATE
+        } finally {
+          STATE = null
+        }
+      },
+    )
 
     return result!
   }
@@ -682,6 +746,17 @@ export function reatomLinkedList<
     })
   }, `${name}.clear`)
 
+  const reset = action((): void => {
+    if (isPristineLL(STATE ?? linkedList())) return
+
+    return batchFn(() => {
+      const state = STATE!
+      clearLL(state)
+      for (const node of state.initNodes) addLL(state, node, state.tail)
+      state.version++
+    })
+  }, `${name}.reset`)
+
   const find = (cb: (node: LLNode<Node>) => boolean): null | LLNode<Node> => {
     for (let { head } = linkedList(); head; head = head[LL_NEXT]) {
       if (cb(head)) return head
@@ -690,7 +765,7 @@ export function reatomLinkedList<
   }
 
   const array: LinkedListAtom<Params, Node, Key>['array'] = computed(
-    (state: Array<LLNode<Node>> = []) => toArray(linkedList(), state),
+    (state: Array<LLNode<Node>> = []) => linkedListToArray(linkedList(), state),
     `${name}.array`,
   )
 
@@ -753,6 +828,7 @@ export function reatomLinkedList<
           changes: [],
           head: null,
           tail: null,
+          initNodes: [],
           map: new WeakMap(),
         }
 
@@ -773,6 +849,7 @@ export function reatomLinkedList<
           size: mapList.size,
           version: ll.version,
           changes: [],
+          initNodes: [],
           map: mapList.map,
         }
 
@@ -861,7 +938,7 @@ export function reatomLinkedList<
     // @ts-ignore
     const array: LinkedListDerivedAtom<LLNode<Node>, LLNode<T>>['array'] =
       computed(
-        (state: Array<LLNode<T>> = []) => toArray(mapList(), state),
+        (state: Array<LLNode<T>> = []) => linkedListToArray(mapList(), state),
         `${name}.array`,
       )
 
@@ -946,6 +1023,7 @@ export function reatomLinkedList<
       swap,
       move,
       clear,
+      reset,
 
       find,
 
@@ -976,7 +1054,7 @@ export function reatomLinkedList<
         snapshot.map((value) => [value] as Params),
       )
     }),
-    withToJson((state) => toArray(state)),
+    withToJson((state) => linkedListToArray(state)),
   ) as LinkedListAtom<Params, Node, Key>
 }
 
