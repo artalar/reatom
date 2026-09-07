@@ -1,4 +1,5 @@
-import { keyboardActivate } from '../a11y'
+import { commandProps, reatomCommand } from '@reatom/ux'
+
 import {
   currentFolder,
   folderTree,
@@ -62,6 +63,9 @@ const FolderTreeNode = ({
 }) => {
   const { expanded, isSelected } = reatomFolderTreeNodeUi(node.path, depth < 2)
   const hasChildren = node.children.length > 0
+  const selectCommandProps = commandProps(
+    reatomCommand({ name: `gallery.folder#${node.path}.select` }),
+  )
 
   return (
     <div
@@ -70,12 +74,12 @@ const FolderTreeNode = ({
       `}
     >
       <div
+        $spread={selectCommandProps.element}
         role="treeitem"
         aria-selected={isSelected}
         aria-expanded={hasChildren ? expanded : undefined}
         tabindex={0}
         on:click={() => currentFolder.set(node)}
-        {...keyboardActivate(() => currentFolder.set(node))}
         data-selected={isSelected}
         css={`
           ${treeNodeCss}
@@ -145,6 +149,10 @@ const FolderTreeNode = ({
   )
 }
 
+const selectAllCommandProps = commandProps(
+  reatomCommand({ name: 'gallery.folder.all.select' }),
+)
+
 export const FolderTree = () => (
   <div css="display: flex; height: 100%; position: relative;">
     <div
@@ -175,11 +183,11 @@ export const FolderTree = () => (
     >
       <div role="tree" aria-label="Folders">
         <div
+          $spread={selectAllCommandProps.element}
           role="treeitem"
           aria-selected={folderTreeIsAllSelected}
           tabindex={0}
           on:click={() => currentFolder.set(null)}
-          {...keyboardActivate(() => currentFolder.set(null))}
           data-selected={folderTreeIsAllSelected}
           css={`
             ${treeNodeCss}

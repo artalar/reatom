@@ -19,9 +19,9 @@ import { imageInfoPanelOpen } from './panelState'
 
 const loc = {
   panelAppears: (canvas: Canvas) =>
-    canvas.findByRole('dialog', { name: 'Image details' }),
+    canvas.findByRole('complementary', { name: 'Image details' }),
   panelDoesNotAppear: (canvas: Canvas) =>
-    canvas.queryByRole('dialog', { name: 'Image details' }),
+    canvas.queryByRole('complementary', { name: 'Image details' }),
   imageNameAppears:
     (name: string): Locator =>
     async (canvas) => {
@@ -80,11 +80,13 @@ export const NoImageSelected: Story = {
 export const WithLightboxImage: Story = {
   render: () => {
     loadGalleryStateWithImageModels({ tree: mockFolderTree })
-    const model = currentImages().find((node) => node.source.name === 'photo1.jpg')
+    const model = currentImages().find(
+      (node) => node.source.name === 'photo1.jpg',
+    )
     if (model) {
       lightboxImage.set(() => model)
-      lightboxOpen.setTrue()
-      imageInfoPanelOpen.setTrue()
+      lightboxOpen.show()
+      imageInfoPanelOpen.show()
     }
     return (
       <StoryWrapper>

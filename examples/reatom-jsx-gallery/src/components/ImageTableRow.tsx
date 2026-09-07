@@ -1,4 +1,5 @@
-import { focusableRowAttrs } from '../a11y'
+import { commandProps, reatomCommand } from '@reatom/ux'
+
 import { formatExifDisplayValue } from '../image-engine/exifDisplay'
 import { resolveImageOrientationStyle } from '../image-engine/orientation'
 import type { ImageModel } from '../model'
@@ -34,6 +35,9 @@ export const ImageTableRow = ({
 }) => {
   const isSelected = () => image.selected()
   const isFavorite = () => image.favorite()
+  const openCommandProps = commandProps(
+    reatomCommand({ name: `gallery.image#${image.id}.tableOpen` }),
+  )
   const displayThumbnail = () => {
     if (image.previewLoadPriority() === 'off') return null
 
@@ -59,7 +63,9 @@ export const ImageTableRow = ({
 
   return (
     <tr
-      {...focusableRowAttrs(openLabel, () => openLightbox(image))}
+      $spread={openCommandProps.element}
+      tabindex={0}
+      aria-label={openLabel}
       ref={() => bindGalleryImagePreviewWhen(image, visible)}
       attr:data-selected={isSelected}
       style:display={() => (visible() ? 'table-row' : 'none')}

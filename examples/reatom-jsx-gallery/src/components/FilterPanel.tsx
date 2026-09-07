@@ -1,56 +1,58 @@
+import { checkboxProps } from '@reatom/ux'
+
 import {
   clearFilters,
   filterSizeMaxKb,
   filterSizeMinKb,
-  filterTypes,
+  filterTypeCheckboxes,
   IMAGE_TYPE_OPTIONS,
-  includeSubfolders,
+  includeSubfoldersCheckbox,
   searchQuery,
   setFilterSizeMaxKb,
   setFilterSizeMinKb,
-  toggleFilterType,
 } from '../model'
 import { CloseIcon } from './Icons'
 import { filterPanelOpen } from './panelState'
 
-const TypeCheckbox = ({ ext, label }: { ext: string; label: string }) => (
-  <label
-    css={`
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 4px 0;
-      cursor: pointer;
-      font-size: 13px;
-      color: var(--text-primary);
+const includeSubfoldersProps = checkboxProps(includeSubfoldersCheckbox)
 
-      &:hover {
-        color: var(--accent);
-      }
-    `}
-  >
-    <input
-      type="checkbox"
-      checked={() => filterTypes().has(ext)}
-      on:change={() => toggleFilterType(ext)}
+const TypeCheckbox = ({ ext, label }: { ext: string; label: string }) => {
+  const props = checkboxProps(filterTypeCheckboxes.item(ext))
+
+  return (
+    <label
       css={`
-        accent-color: var(--accent);
-        width: 16px;
-        height: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 0;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--text-primary);
+
+        &:hover {
+          color: var(--accent);
+        }
       `}
-    />
-    <span>{label}</span>
-  </label>
-)
+    >
+      <input
+        $spread={props.control}
+        css={`
+          accent-color: var(--accent);
+          width: 16px;
+          height: 16px;
+        `}
+      />
+      <span>{label}</span>
+    </label>
+  )
+}
 
 export const FilterPanel = () => (
   <aside
-    role="dialog"
-    aria-modal="true"
-    aria-label="Filters"
+    $spread={filterPanelOpen.props.content}
     aria-hidden={() => !filterPanelOpen()}
     prop:inert={() => !filterPanelOpen()}
-    attr:data-open={filterPanelOpen}
     css={`
       position: fixed;
       top: 0;
@@ -85,6 +87,7 @@ export const FilterPanel = () => (
       `}
     >
       <h2
+        $spread={filterPanelOpen.props.heading}
         css={`
           font-size: 16px;
           font-weight: 600;
@@ -94,8 +97,7 @@ export const FilterPanel = () => (
         Filters
       </h2>
       <button
-        type="button"
-        on:click={() => filterPanelOpen.set(false)}
+        $spread={filterPanelOpen.props.dismiss}
         aria-label="Close filters"
         css={`
           width: 28px;
@@ -254,10 +256,11 @@ export const FilterPanel = () => (
       `}
     >
       <span>Include Subfolders</span>
-      <div
-        on:click={includeSubfolders.toggle}
-        attr:data-on={includeSubfolders}
+      <input
+        $spread={includeSubfoldersProps.control}
+        data-glass-toggle="true"
         css={`
+          appearance: none;
           width: 40px;
           height: 22px;
           border-radius: var(--radius-round);
@@ -280,11 +283,11 @@ export const FilterPanel = () => (
             transition: transform 0.2s;
           }
 
-          &[data-on='true'] {
+          &:checked {
             background: var(--accent);
           }
 
-          &[data-on='true']::after {
+          &:checked::after {
             transform: translateX(18px);
           }
         `}

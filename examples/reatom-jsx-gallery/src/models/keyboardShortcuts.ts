@@ -32,11 +32,11 @@ export const handleKeyboardShortcut = action((event: KeyboardEvent) => {
       return
     }
     if (filterPanelOpen()) {
-      filterPanelOpen.set(false)
+      filterPanelOpen.dismiss('escape')
       return
     }
     if (settingsPanelOpen()) {
-      settingsPanelOpen.set(false)
+      settingsPanelOpen.dismiss('escape')
       return
     }
     return

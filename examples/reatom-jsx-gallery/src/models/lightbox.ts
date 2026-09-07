@@ -4,6 +4,7 @@ import {
   isAbort,
   withAbort,
   withAsync,
+  withMiddleware,
   wrap,
 } from '@reatom/core'
 
@@ -98,16 +99,28 @@ export const openLightbox = action((model: GalleryImageModel) => {
   lightboxNavigationDirection.set(1)
   lightboxZoom.set(1)
   resetLightboxPan()
-  lightboxOpen.setTrue()
+  lightboxOpen.label.set(`Image preview: ${model.source.name}`)
+  lightboxOpen.show()
   primeLightboxPreload()
 }, 'openLightbox')
 
-export const closeLightbox = action(() => {
-  lightboxOpen.setFalse()
+const resetLightboxAfterClose = action(() => {
   lightboxZoom.set(1)
   resetLightboxPan()
   slideshowPlaying.setFalse()
-  imageInfoPanelOpen.setFalse()
+  imageInfoPanelOpen.hide()
+}, 'lightbox.resetAfterClose')
+
+lightboxOpen.dismiss.extend(
+  withMiddleware(() => (next, ...params) => {
+    const result = next(...params)
+    resetLightboxAfterClose()
+    return result
+  }),
+)
+
+export const closeLightbox = action(() => {
+  lightboxOpen.dismiss('programmatic')
 }, 'closeLightbox')
 
 export const resetLightboxOnFolderChange = action(() => {
@@ -138,10 +151,6 @@ export const toggleLightboxImageFavorite = action(() => {
 
 export const handleLightboxKeyDown = action((event: KeyboardEvent) => {
   switch (event.key) {
-    case 'Escape':
-      event.stopPropagation()
-      closeLightbox()
-      break
     case 'ArrowLeft':
     case 'ArrowUp':
       event.preventDefault()

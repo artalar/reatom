@@ -73,3 +73,7 @@ autodocs/
 packages/**/package-lock.json
 packages/**/yarn.lock
 examples/**/pnpm-lock.yaml
+
+# Scratch space for reference clones, e.g. the Ariakit checkout that
+# packages/ux/PORTING_PLAN.md ports from.
+tmp/

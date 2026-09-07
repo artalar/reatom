@@ -740,8 +740,20 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
   }
 
   /** @todo Show warning if isAtom(value) && !isAction(value). */
+  let eventKey: string | undefined
+  let capture = false
   if (key.startsWith('on:')) {
-    key = key.slice(3)
+    eventKey = key.slice(3)
+  } else if (/^on[A-Z]/.test(key)) {
+    eventKey = key.slice(2)
+    if (eventKey.endsWith('Capture')) {
+      capture = true
+      eventKey = eventKey.slice(0, -'Capture'.length)
+    }
+    eventKey = eventKey.toLowerCase()
+  }
+  if (eventKey !== undefined) {
+    key = eventKey
     let name = eventActionName(element, key, value)
     // Bind to the root frame — not `top()`. Row render often runs inside
     // `reatomMap`'s computed; capturing that frame would pin its pre-`_copy`
@@ -757,10 +769,10 @@ let setProp = (dom: DomApis, element: JSX.Element, key: string, value: any) => {
      * DOM spec, so `unlink` here matters only for the removal side — it lets
      * `$spread` re-application and unmount dispose stale handlers.
      */
-    element.addEventListener(key, listener)
+    element.addEventListener(key, listener, capture)
     unlink(element, () => {
-      element.addEventListener(key, listener)
-      return () => element.removeEventListener(key, listener)
+      element.addEventListener(key, listener, capture)
+      return () => element.removeEventListener(key, listener, capture)
     })
     return
   }

@@ -1,0 +1,79 @@
+{
+  "name": "@reatom/ux",
+  "type": "module",
+  "version": "1001.0.0",
+  "private": true,
+  "description": "Headless UI behavior models for Reatom — view-library-agnostic state and action factories",
+  "sideEffects": false,
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "require": "./dist/index.cjs",
+    "default": "./dist/index.js"
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "browserslist": [
+    "last 1 year"
+  ],
+  "scripts": {
+    "prepublishOnly": "pnpm run build && pnpm run test",
+    "build": "tsdown",
+    "test": "pnpm run test:unit && pnpm run test:browser",
+    "test:unit": "vitest run",
+    "test:browser": "vitest run --config=vitest.browser.config.ts",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "port-status": "tsx ./tools/port-status.ts"
+  },
+  "tsdown": {
+    "entry": ["src/index.ts"],
+    "format": ["esm", "cjs"],
+    "fixedExtension": false
+  },
+  "peerDependencies": {
+    "@reatom/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@reatom/core": "workspace:^",
+    "@types/node": "catalog:",
+    "@vitest/browser": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "tsdown": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "author": "artalar",
+  "maintainers": [
+    {
+      "name": "artalar",
+      "url": "https://github.com/artalar"
+    }
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/reatom/reatom.git",
+    "directory": "packages/ux"
+  },
+  "bugs": {
+    "url": "https://github.com/reatom/reatom/issues"
+  },
+  "homepage": "https://www.reatom.dev/package/ux",
+  "keywords": [
+    "reatom",
+    "headless",
+    "a11y",
+    "accessibility",
+    "ui",
+    "aria",
+    "reactive",
+    "reactivity",
+    "state-manager"
+  ],
+  "files": [
+    "/dist"
+  ]
+}

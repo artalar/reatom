@@ -1,4 +1,8 @@
-import { filterPanelOpen, settingsPanelOpen } from '../components/panelState'
+import {
+  filterPanelOpen,
+  imageInfoPanelOpen,
+  settingsPanelOpen,
+} from '../components/panelState'
 import {
   clearSelection,
   currentFolder,
@@ -61,7 +65,7 @@ export function loadGalleryState(options: LoadGalleryStateOptions): void {
   })
   currentImages()
   clearSelection()
-  lightboxOpen.setFalse()
+  lightboxOpen.hide()
   lightboxImage.set(null)
   lightboxZoom.set(1)
   lightboxPanX.set(0)
@@ -71,8 +75,9 @@ export function loadGalleryState(options: LoadGalleryStateOptions): void {
   keepLightboxView.setFalse()
   showLightboxScrubber.setTrue()
   viewMode.setGrid()
-  filterPanelOpen.set(false)
-  settingsPanelOpen.set(false)
+  filterPanelOpen.hide()
+  settingsPanelOpen.hide()
+  imageInfoPanelOpen.hide()
 }
 
 export function loadGalleryStateWithImageModels(
@@ -91,7 +96,7 @@ export function loadEmptyState(): void {
   })
   currentImages()
   clearSelection()
-  lightboxOpen.setFalse()
+  lightboxOpen.hide()
   lightboxImage.set(null)
   lightboxZoom.set(1)
   lightboxPanX.set(0)
@@ -101,8 +106,9 @@ export function loadEmptyState(): void {
   keepLightboxView.setFalse()
   showLightboxScrubber.setTrue()
   viewMode.setGrid()
-  filterPanelOpen.set(false)
-  settingsPanelOpen.set(false)
+  filterPanelOpen.hide()
+  settingsPanelOpen.hide()
+  imageInfoPanelOpen.hide()
 }
 
 export type ParsingProgress = {

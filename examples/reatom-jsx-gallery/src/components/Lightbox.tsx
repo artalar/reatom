@@ -261,11 +261,10 @@ const LightboxContent = () => {
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
+      $spread={lightboxOpen.props.content}
       aria-label={lightboxDialogLabel}
-      tabindex={-1}
       ref={(el) => {
+        lightboxOpen.props.content().ref(el)
         lightboxElement = el
         const stopHideControls = bindLightboxHideControlsAfterInactivity()
         const stopSessionReset = bindLightboxResetSessionOnClose()
@@ -298,6 +297,7 @@ const LightboxContent = () => {
           if (focusFrame !== null) cancelAnimationFrame(focusFrame)
           resetLightboxSession()
           lightboxIsFullscreen.set(false)
+          lightboxOpen.props.content().ref(null)
           lightboxElement = null
           lightboxImageElement = null
         }
@@ -448,7 +448,11 @@ const LightboxContent = () => {
             <PlusIcon />
           </button>
           <button
-            {...pressLightboxControl(imageInfoPanelOpen.toggle)}
+            $spread={imageInfoPanelOpen.props.button}
+            on:mousedown={(event: MouseEvent) => {
+              event.stopPropagation()
+              lightboxShowControlsFromPointer()
+            }}
             type="button"
             css={controlBtnCss}
             title={lightboxDetailsButtonLabel}

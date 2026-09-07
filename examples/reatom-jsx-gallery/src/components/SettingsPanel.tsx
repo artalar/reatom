@@ -1,23 +1,30 @@
+import type { Computed } from '@reatom/core'
 import {
-  developRawFullSize,
+  type CheckboxControlProps,
+  type RadioItemProps,
+  checkboxProps,
+} from '@reatom/ux'
+
+import {
+  developRawFullSizeCheckbox,
   gridColumns,
   gridColumnsLabel,
-  gridGap,
-  ignoreExifOrientation,
-  imageFit,
-  keepLightboxView,
-  setGridGap,
-  showFileSizes,
-  showImageNames,
-  showLightboxScrubber,
-  themeMode,
-  themePack,
-  wrapFolderNavigation,
+  gridGapRadio,
+  ignoreExifOrientationCheckbox,
+  imageFitRadio,
+  keepLightboxViewCheckbox,
+  showFileSizesCheckbox,
+  showImageNamesCheckbox,
+  showLightboxScrubberCheckbox,
+  themeModeRadio,
+  themePackRadio,
+  wrapFolderNavigationCheckbox,
 } from '../model'
 import { THEME_PACKS } from '../theme'
-import type { GridGap, ImageFit, ThemeMode, ThemePack } from '../types'
+import type { GridGap, ImageFit } from '../types'
 import { CloseIcon } from './Icons'
 import { settingsPanelOpen } from './panelState'
+import { radioButtonProps } from './uxProps'
 
 const GAP_OPTIONS: GridGap[] = ['none', 'small', 'medium', 'large', 'xl']
 const FIT_OPTIONS: ImageFit[] = ['contain', 'cover', 'fill', 'none']
@@ -40,19 +47,18 @@ const SectionTitle = ({ text }: { text: string }) => (
 
 const OptionButton = ({
   label,
+  props,
   isActive,
-  onClick,
 }: {
   label: string
+  props: Computed<RadioItemProps>
   isActive: () => boolean
-  onClick: () => void
 }) => (
   <button
+    $spread={radioButtonProps(props)}
     type="button"
     class="glass-lens"
-    on:click={onClick}
     attr:data-active={isActive}
-    aria-pressed={isActive}
     data-terminal-bracket="true"
     css={`
       padding: 6px 12px;
@@ -85,12 +91,10 @@ const OptionButton = ({
 
 const ToggleSwitch = ({
   label,
-  checked,
-  onToggle,
+  control,
 }: {
   label: string
-  checked: () => boolean
-  onToggle: () => void
+  control: Computed<CheckboxControlProps>
 }) => (
   <label
     css={`
@@ -104,11 +108,11 @@ const ToggleSwitch = ({
     `}
   >
     <span>{label}</span>
-    <div
+    <input
+      $spread={control}
       data-glass-toggle="true"
-      on:click={onToggle}
-      attr:data-on={checked}
       css={`
+        appearance: none;
         --toggle-width: 40px;
         --toggle-height: 22px;
         --toggle-knob-size: 18px;
@@ -142,11 +146,11 @@ const ToggleSwitch = ({
           transition: transform 0.2s;
         }
 
-        &[data-on='true'] {
+        &:checked {
           background: var(--accent);
         }
 
-        &[data-on='true']::after {
+        &:checked::after {
           transform: translate(
             calc(
               var(--toggle-width) - var(--toggle-knob-size) - var(
@@ -164,22 +168,23 @@ const ToggleSwitch = ({
 )
 
 const ThemePackButton = ({
-  value,
+  props,
+  isActive,
   label,
   description,
   swatches,
 }: {
-  value: ThemePack
+  props: Computed<RadioItemProps>
+  isActive: () => boolean
   label: string
   description: string
   swatches: readonly [string, string, string]
 }) => (
   <button
+    $spread={radioButtonProps(props)}
     type="button"
     class="glass-lens"
-    on:click={() => themePack.set(value)}
-    attr:data-active={() => themePack() === value}
-    aria-pressed={() => themePack() === value}
+    attr:data-active={isActive}
     css={`
       width: 100%;
       display: grid;
@@ -233,17 +238,19 @@ const ThemePackButton = ({
 )
 
 const ThemeModeButton = ({
-  mode,
+  props,
+  isActive,
   label,
 }: {
-  mode: ThemeMode
+  props: Computed<RadioItemProps>
+  isActive: () => boolean
   label: string
 }) => (
   <button
+    $spread={radioButtonProps(props)}
     type="button"
     class="glass-lens"
-    on:click={() => themeMode.set(mode)}
-    attr:aria-pressed={() => themeMode() === mode}
+    attr:data-active={isActive}
     css={`
       flex: 1;
       display: flex;
@@ -265,7 +272,7 @@ const ThemeModeButton = ({
         background: var(--hover-bg);
       }
 
-      &[aria-pressed='true'] {
+      &[data-active='true'] {
         border-color: var(--accent);
         background: var(--accent);
         color: var(--accent-contrast);
@@ -274,7 +281,7 @@ const ThemeModeButton = ({
           0 8px 20px var(--shadow);
       }
 
-      &[aria-pressed='true'] .theme-mode-dot {
+      &[data-active='true'] .theme-mode-dot {
         background: currentColor;
       }
     `}
@@ -293,14 +300,19 @@ const ThemeModeButton = ({
   </button>
 )
 
+const showImageNamesProps = checkboxProps(showImageNamesCheckbox)
+const showFileSizesProps = checkboxProps(showFileSizesCheckbox)
+const ignoreExifOrientationProps = checkboxProps(ignoreExifOrientationCheckbox)
+const developRawFullSizeProps = checkboxProps(developRawFullSizeCheckbox)
+const wrapFolderNavigationProps = checkboxProps(wrapFolderNavigationCheckbox)
+const keepLightboxViewProps = checkboxProps(keepLightboxViewCheckbox)
+const showLightboxScrubberProps = checkboxProps(showLightboxScrubberCheckbox)
+
 export const SettingsPanel = () => (
   <aside
-    role="dialog"
-    aria-modal="true"
-    aria-label="Settings"
+    $spread={settingsPanelOpen.props.content}
     aria-hidden={() => !settingsPanelOpen()}
     prop:inert={() => !settingsPanelOpen()}
-    attr:data-open={settingsPanelOpen}
     css={`
       position: fixed;
       top: 0;
@@ -336,6 +348,7 @@ export const SettingsPanel = () => (
       `}
     >
       <h2
+        $spread={settingsPanelOpen.props.heading}
         css={`
           font-size: 16px;
           font-weight: 600;
@@ -345,8 +358,7 @@ export const SettingsPanel = () => (
         Settings
       </h2>
       <button
-        type="button"
-        on:click={() => settingsPanelOpen.set(false)}
+        $spread={settingsPanelOpen.props.dismiss}
         aria-label="Close settings"
         css={`
           width: 28px;
@@ -405,99 +417,119 @@ export const SettingsPanel = () => (
 
     <SectionTitle text="Grid Gap" />
     <div
+      $spread={gridGapRadio.props.group}
+      aria-label="Grid gap"
       css={`
         display: flex;
         flex-wrap: wrap;
         gap: calc(6px + var(--shadow-clearance, 0px));
       `}
     >
-      {GAP_OPTIONS.map((gap) => (
-        <OptionButton
-          label={gap}
-          isActive={() => gridGap() === gap}
-          onClick={() => setGridGap(gap)}
-        />
-      ))}
+      {GAP_OPTIONS.map((gap) => {
+        const item = gridGapRadio.item(gap)
+        return (
+          <OptionButton
+            label={gap}
+            props={gridGapRadio.props.item(item)}
+            isActive={item.checked}
+          />
+        )
+      })}
     </div>
 
     <SectionTitle text="Image Fit" />
     <div
+      $spread={imageFitRadio.props.group}
+      aria-label="Image fit"
       css={`
         display: flex;
         flex-wrap: wrap;
         gap: calc(6px + var(--shadow-clearance, 0px));
       `}
     >
-      {FIT_OPTIONS.map((fit) => (
-        <OptionButton
-          label={fit}
-          isActive={() => imageFit() === fit}
-          onClick={() => imageFit.set(fit)}
-        />
-      ))}
+      {FIT_OPTIONS.map((fit) => {
+        const item = imageFitRadio.item(fit)
+        return (
+          <OptionButton
+            label={fit}
+            props={imageFitRadio.props.item(item)}
+            isActive={item.checked}
+          />
+        )
+      })}
     </div>
 
     <SectionTitle text="UI Options" />
     <ToggleSwitch
       label="Show Image Names"
-      checked={() => showImageNames()}
-      onToggle={showImageNames.toggle}
+      control={showImageNamesProps.control}
     />
     <ToggleSwitch
       label="Show File Sizes"
-      checked={() => showFileSizes()}
-      onToggle={showFileSizes.toggle}
+      control={showFileSizesProps.control}
     />
     <ToggleSwitch
       label="Ignore EXIF Orientation"
-      checked={() => ignoreExifOrientation()}
-      onToggle={ignoreExifOrientation.toggle}
+      control={ignoreExifOrientationProps.control}
     />
     <ToggleSwitch
       label="Develop RAW at Full Size"
-      checked={() => developRawFullSize()}
-      onToggle={developRawFullSize.toggle}
+      control={developRawFullSizeProps.control}
     />
 
     <SectionTitle text="Lightbox Navigation" />
     <ToggleSwitch
       label="Wrap at Folder Ends"
-      checked={() => wrapFolderNavigation()}
-      onToggle={wrapFolderNavigation.toggle}
+      control={wrapFolderNavigationProps.control}
     />
     <ToggleSwitch
       label="Keep Zoom While Navigating"
-      checked={() => keepLightboxView()}
-      onToggle={keepLightboxView.toggle}
+      control={keepLightboxViewProps.control}
     />
     <ToggleSwitch
       label="Show Folder Scrubber"
-      checked={() => showLightboxScrubber()}
-      onToggle={showLightboxScrubber.toggle}
+      control={showLightboxScrubberProps.control}
     />
 
     <SectionTitle text="Theme" />
-    <div css="display: grid; gap: calc(8px + var(--shadow-clearance, 0px));">
-      {THEME_PACKS.map((pack) => (
-        <ThemePackButton
-          value={pack.value}
-          label={pack.label}
-          description={pack.description}
-          swatches={pack.swatches}
-        />
-      ))}
+    <div
+      $spread={themePackRadio.props.group}
+      aria-label="Theme pack"
+      css="display: grid; gap: calc(8px + var(--shadow-clearance, 0px));"
+    >
+      {THEME_PACKS.map((pack) => {
+        const item = themePackRadio.item(pack.value)
+        return (
+          <ThemePackButton
+            props={themePackRadio.props.item(item)}
+            isActive={item.checked}
+            label={pack.label}
+            description={pack.description}
+            swatches={pack.swatches}
+          />
+        )
+      })}
     </div>
 
     <div
+      $spread={themeModeRadio.props.group}
+      aria-label="Theme mode"
       css={`
         display: flex;
         gap: calc(6px + var(--shadow-clearance, 0px));
         margin-top: calc(10px + var(--shadow-clearance, 0px));
       `}
     >
-      <ThemeModeButton mode="light" label="Light" />
-      <ThemeModeButton mode="dark" label="Dark" />
-      <ThemeModeButton mode="system" label="System" />
+      {(['light', 'dark', 'system'] as const).map((mode) => {
+        const item = themeModeRadio.item(mode)
+        return (
+          <ThemeModeButton
+            props={themeModeRadio.props.item(item)}
+            isActive={item.checked}
+            label={mode[0]!.toUpperCase() + mode.slice(1)}
+          />
+        )
+      })}
     </div>
   </aside>
 )

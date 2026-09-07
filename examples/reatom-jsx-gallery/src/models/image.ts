@@ -37,12 +37,12 @@ function matchesVisibleFilters(
   const sizeMin = filterSizeMin()
   const sizeMax = filterSizeMax()
 
-  if (activeFilterTypes.size > 0) {
+  if (activeFilterTypes.length > 0) {
     const dotIndex = imageSource.name.lastIndexOf('.')
     const imageExt =
       dotIndex >= 0 ? imageSource.name.slice(dotIndex + 1).toLowerCase() : ''
     const normalizedExt = imageExt === 'jpeg' ? 'jpg' : imageExt
-    if (!activeFilterTypes.has(normalizedExt)) return false
+    if (!activeFilterTypes.includes(normalizedExt)) return false
   }
 
   if (query && !imageSource.name.toLowerCase().includes(query)) return false

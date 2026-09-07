@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "types": ["vite/client"],
+    "noEmit": true,
+    "isolatedModules": true,
+    "strict": true,
+    "strictNullChecks": true
+  },
+  "include": ["src"]
+}

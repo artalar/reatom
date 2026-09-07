@@ -37,6 +37,7 @@
   "dependencies": {
     "@reatom/core": "1001.*.*",
     "@reatom/jsx": "1001.*.*",
+    "@reatom/ux": "workspace:*",
     "libraw-wasm": "^1.1.2"
   }
 }

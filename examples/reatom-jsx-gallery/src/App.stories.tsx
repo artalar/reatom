@@ -40,6 +40,15 @@ const I = createMyself((I) => ({
     await waitForUpdate()
     await I.see(loc.lightboxCounterAppears)
   },
+  openLightboxFromFirstImageWithKeyboard: async () => {
+    const firstImage = await I.see(loc.firstImageButtonAppears)
+    firstImage.focus()
+    firstImage.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }),
+    )
+    await waitForUpdate()
+    await I.see(loc.lightboxCounterAppears)
+  },
 }))
 
 const meta: Meta = {
@@ -89,5 +98,15 @@ export const LightboxFlow: Story = {
   },
   play: async () => {
     await I.openLightboxByClickingFirstImage()
+  },
+}
+
+export const LightboxKeyboardFlow: Story = {
+  render: () => {
+    loadGalleryState({ tree: mockFolderTree })
+    return <App />
+  },
+  play: async () => {
+    await I.openLightboxFromFirstImageWithKeyboard()
   },
 }

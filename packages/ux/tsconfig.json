@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declarationMap": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "types": ["vitest", "node"]
+  },
+  "include": ["src", "tools"],
+  "exclude": ["build", "dist"]
+}

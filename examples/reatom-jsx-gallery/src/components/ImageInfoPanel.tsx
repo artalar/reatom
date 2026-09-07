@@ -64,8 +64,8 @@ const panelCloseButtonCss = `
 export const ImageInfoPanel = () => (
   <div css="position: fixed; right: 0; top: 0; bottom: 0; z-index: 1050; pointer-events: none;">
     <aside
-      role="dialog"
-      aria-modal="true"
+      $spread={imageInfoPanelOpen.props.content}
+      role="complementary"
       aria-label="Image details"
       data-open={imageInfoPanelExpanded}
       aria-hidden={() => !imageInfoPanelExpanded()}
@@ -100,7 +100,7 @@ export const ImageInfoPanel = () => (
     >
       <button
         type="button"
-        on:click={() => imageInfoPanelOpen.set(false)}
+        on:click={imageInfoPanelOpen.hide}
         css={panelCloseButtonCss}
         title="Close details"
         aria-label="Close details"

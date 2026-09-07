@@ -251,6 +251,38 @@ test('spreads', () =>
     expect(clickTrack.mock.calls.length).toBe(1)
   }))
 
+test('spread binds camel-case DOM handlers and capture suffixes', () =>
+  context.start(async () => {
+    const clickTrack = vi.fn()
+    const nextClickTrack = vi.fn()
+    const captureTrack = vi.fn()
+    const props = atom({
+      onClick: clickTrack,
+      onKeyDownCapture: captureTrack,
+    })
+    const child = <span />
+    const element = instance(HTMLDivElement, <div $spread={props}>{child}</div>)
+
+    mount(parent(), element)
+    await wrap(sleep())
+
+    element.click()
+    child.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true }))
+
+    expect(clickTrack).toHaveBeenCalledOnce()
+    expect(captureTrack).toHaveBeenCalledOnce()
+
+    props.set({
+      onClick: nextClickTrack,
+      onKeyDownCapture: captureTrack,
+    })
+    await wrap(sleep())
+    element.click()
+
+    expect(clickTrack).toHaveBeenCalledOnce()
+    expect(nextClickTrack).toHaveBeenCalledOnce()
+  }))
+
 test.skip('spreads difference', () =>
   context.start(async () => {
     const props = atom<Partial<Record<'class' | 'id', string>>>({

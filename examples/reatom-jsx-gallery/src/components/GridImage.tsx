@@ -1,4 +1,5 @@
-import { focusableCardAttrs } from '../a11y'
+import { commandProps, reatomCommand } from '@reatom/ux'
+
 import { resolveImageOrientationStyle } from '../image-engine/orientation'
 import type { ImageModel } from '../model'
 import {
@@ -12,14 +13,13 @@ import {
 } from '../model'
 import { CheckIcon, HeartIcon } from './Icons'
 
-export const GridImage = ({
-  image,
-}: {
-  image: ImageModel
-}) => {
+export const GridImage = ({ image }: { image: ImageModel }) => {
   const isSelected = () => image.selected()
   const isFavorite = () => image.favorite()
   const imageName = () => image.source.name
+  const openCommandProps = commandProps(
+    reatomCommand({ name: `gallery.image#${image.id}.open` }),
+  )
 
   const displayImage = () => {
     if (image.previewLoadPriority() === 'off') return null
@@ -47,8 +47,11 @@ export const GridImage = ({
 
   return (
     <div
+      $spread={openCommandProps.element}
       class="glass-card"
-      {...focusableCardAttrs(openLabel(), () => openLightbox(image))}
+      role="button"
+      tabindex={0}
+      aria-label={openLabel}
       attr:data-selected={isSelected}
       attr:data-gap={gridGap}
       css={`
