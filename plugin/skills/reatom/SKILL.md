@@ -1,6 +1,6 @@
 ---
 name: reatom
-description: Implements and documents Reatom v1001 (@reatom/core) using project conventions. Use when writing or modifying Reatom models, actions, async flows, routing, forms, persistence, framework adapters, examples, or docs — or when answering Reatom API questions.
+description: Implements and documents Reatom v1001 (@reatom/core) using project conventions. Use when a touched file imports `@reatom/*`, when the code declares Reatom atoms, computeds, actions, or effects (with or without a type argument), calls `wrap`, or chains `.extend`, when it defines or edits `reatom*` factories and the models built on them, and when writing or changing Reatom async flows, routing, forms, persistence, framework adapters, examples, or docs — or when answering a Reatom API question. Load it the moment such code is in scope, even if the user never says "Reatom" and only says "fix this store", "add a field to the model", or "why does this not update".
 ---
 
 # Reatom

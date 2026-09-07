@@ -1,1 +1,1 @@
-../../skills/reatom-jsx/REFERENCE.md
+../../plugin/skills/reatom-jsx/REFERENCE.md

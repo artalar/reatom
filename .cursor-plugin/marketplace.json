@@ -1,0 +1,16 @@
+{
+  "name": "reatom",
+  "owner": {
+    "name": "Reatom"
+  },
+  "metadata": {
+    "description": "Agent skills for Reatom v1001"
+  },
+  "plugins": [
+    {
+      "name": "reatom",
+      "source": "plugin",
+      "description": "Reatom v1001 skills: API reference, async flows, @reatom/jsx, and review checklist"
+    }
+  ]
+}

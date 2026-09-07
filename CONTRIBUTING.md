@@ -47,30 +47,43 @@ Add needed dependencies by running `pnpm install` in the repository root. To add
 
 ## Agent skills
 
-Agent skills for AI coding assistants live in [`skills/`](skills/). This is the only directory you should edit.
+Agent skills for AI coding assistants live in [`plugin/skills/`](plugin/skills/). This is the only directory you should edit; the root `skills/` symlink opens the same files.
 
-| Path              | Role                                   |
-| ----------------- | -------------------------------------- |
-| `skills/`         | Canonical skill files (edit here)      |
-| `.cursor/skills/` | Symlink → `skills/` (Cursor discovery) |
-| `.agents/skills/` | Symlink → `skills/` (Codex discovery)  |
+| Path                               | Role                                                    |
+| ---------------------------------- | ------------------------------------------------------- |
+| `plugin/skills/`                   | Canonical skill files (edit here)                       |
+| `skills/`                          | Symlink → `plugin/skills/` (historical path)            |
+| `.cursor/skills/`                  | Symlink → `plugin/skills/` (Cursor discovery)           |
+| `.agents/skills/`                  | Symlink → `plugin/skills/` (Codex discovery)            |
+| `.claude/skills/`                  | Symlink → `plugin/skills/` (Claude Code project skills) |
+| `.claude-plugin/marketplace.json`  | Claude Code marketplace catalog                         |
+| `.agents/plugins/marketplace.json` | Codex marketplace catalog                               |
+| `.cursor-plugin/marketplace.json`  | Cursor marketplace catalog                              |
+| `plugin/.claude-plugin/`           | Claude Code plugin manifest                             |
+| `plugin/.codex-plugin/`            | Codex plugin manifest                                   |
+| `plugin/.cursor-plugin/`           | Cursor plugin manifest                                  |
+| `CLAUDE.md`                        | Symlink → `AGENTS.md` (Claude Code instructions)        |
+
+A new skill directory under `plugin/skills/` is published everywhere at once — none of the manifests list skills by name.
+
+Skills live under `plugin/` rather than at the repository root because every client copies the whole plugin directory into its cache on install: `plugin/` is ~170 KB, the repository is ~250 MB.
 
 Each skill has a `SKILL.md` entrypoint. Bundled reference docs use `REFERENCE.md` (not `README.md` or `summary.md`).
 
 External files symlink to skill references — edit the skill file, not the symlink target:
 
-| Symlink                            | Canonical source                 |
-| ---------------------------------- | -------------------------------- |
-| `summary.md`                       | `skills/reatom/REFERENCE.md`     |
-| `docs/src/content/docs/summary.md` | `skills/reatom/REFERENCE.md`     |
-| `packages/core/README.md`          | `skills/reatom/REFERENCE.md`     |
-| `packages/jsx/README.md`           | `skills/reatom-jsx/REFERENCE.md` |
+| Symlink                            | Canonical source                        |
+| ---------------------------------- | --------------------------------------- |
+| `summary.md`                       | `plugin/skills/reatom/REFERENCE.md`     |
+| `docs/src/content/docs/summary.md` | `plugin/skills/reatom/REFERENCE.md`     |
+| `packages/core/README.md`          | `plugin/skills/reatom/REFERENCE.md`     |
+| `packages/jsx/README.md`           | `plugin/skills/reatom-jsx/REFERENCE.md` |
 
-**Do not diff, merge, or sync symlink targets.** If you see the same content at `summary.md`, `packages/core/README.md`, and `skills/reatom/REFERENCE.md`, that is expected — they are one file. Comparing or copying between them wastes review time and agent tokens.
+**Do not diff, merge, or sync symlink targets.** If you see the same content at `summary.md`, `packages/core/README.md`, and `plugin/skills/reatom/REFERENCE.md`, that is expected — they are one file. Comparing or copying between them wastes review time and agent tokens.
 
 The `reatom-review` skill has no bundled reference — it instructs the agent to also load the `reatom` skill.
 
-See also [`AGENTS.md`](AGENTS.md) and [`skills/README.md`](skills/README.md) for the layout diagram.
+See also [`AGENTS.md`](AGENTS.md) and [`plugin/skills/README.md`](plugin/skills/README.md) for the layout diagram.
 
 ## Coding guide
 

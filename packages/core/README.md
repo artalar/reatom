@@ -1,1 +1,1 @@
-../../skills/reatom/REFERENCE.md
+../../plugin/skills/reatom/REFERENCE.md

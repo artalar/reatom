@@ -1,0 +1,16 @@
+{
+  "name": "reatom",
+  "interface": {
+    "displayName": "Reatom"
+  },
+  "plugins": [
+    {
+      "name": "reatom",
+      "source": {
+        "source": "local",
+        "path": "./plugin"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

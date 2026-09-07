@@ -1,0 +1,14 @@
+{
+  "name": "reatom",
+  "displayName": "Reatom",
+  "description": "Reatom v1001 skills: API reference, async flows, @reatom/jsx, and review checklist",
+  "author": {
+    "name": "Reatom"
+  },
+  "homepage": "https://v1001.reatom.dev",
+  "repository": "https://github.com/reatom/reatom",
+  "license": "MIT",
+  "keywords": ["reatom", "state-management", "jsx", "async"],
+  "category": "developer-tools",
+  "skills": "./skills/"
+}
