@@ -1,5 +1,6 @@
 ---
 title: Form
+description: Build type-safe forms with reatomForm — fieldsets, schema validation, and concurrent submit
 ---
 
 :::tip[Are you ready for forms?]

@@ -1,6 +1,6 @@
 ---
 title: Sampling
-description: Documentation on sampling states and events in Reatom
+description: Sample atom states and events to orchestrate reactive flows without race conditions
 ---
 
 This page compares traditional debounce patterns with Reatom's concurrency model, then introduces sampling as a procedural pattern for coordinating events, async flows, and concurrent operations.
@@ -161,7 +161,7 @@ And even more! Chains of decorators is hard to inspect in the debugger: stack tr
 
 ## How It Works Under the Hood
 
-Reatom's approach is built on the concept of [asynchronous context](./async-context.md) which allows data to flow through async operations without explicitly passing it through every function call.
+Reatom's approach is built on the concept of [asynchronous context](/handbook/async-context) which allows data to flow through async operations without explicitly passing it through every function call.
 
 The `action` creates a special function that establishes an async context frame. The `wrap` function preserves this context across async boundaries. The `withAbort` extension automatically manages AbortController instances for you, cancelling previous executions when a new one starts.
 

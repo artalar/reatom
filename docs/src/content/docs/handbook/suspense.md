@@ -1,13 +1,13 @@
 ---
 title: Suspense
-description: Use suspense for global state initialization with React Suspense integration
+description: Initialize global state with Suspense — withSuspense, preserve mode, and React integration
 ---
 
 The suspense pattern provides a way to handle asynchronous initialization of global state in your application. It integrates seamlessly with React Suspense boundaries, throwing promises during pending states to let Suspense handle loading UI.
 
 The key advantage of suspense is that it removes "async coloring" from your code — you don't need to handle `Promise` types throughout your codebase. This eliminates data interface leaking and keeps derived computations simple. Your code focuses on the happy path of data usage without constantly checking for loading or error states. However, this simplicity comes with a trade-off: when you need fine-grained control over loading states, error handling, or request cancellation, the suspense pattern becomes much more complex to work with.
 
-**⚠️ Important**: Suspense is recommended **only for global states** like user data or other settings that loads once when the app starts. For dynamic data fetching and page-specific content, use the more flexible [`withAsync` and `withAsyncData`](./async) patterns instead.
+**⚠️ Important**: Suspense is recommended **only for global states** like user data or other settings that loads once when the app starts. For dynamic data fetching and page-specific content, use the more flexible [`withAsync` and `withAsyncData`](/handbook/async) patterns instead.
 
 ### ✅ Good Use Cases
 

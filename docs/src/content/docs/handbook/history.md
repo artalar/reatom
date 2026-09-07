@@ -1,6 +1,6 @@
 ---
 title: History
-description: The history of Reatom
+description: How Reatom evolved — from ACID atoms to async context, atomization, and the sync engine
 ---
 
 ## Zen
@@ -21,7 +21,7 @@ The main goal of Reatom is to be the best universal state manager for any kind o
 Reatom is built for the long haul.
 We dropped our first Long Term Support (LTS) version (v1) in [December 2019](https://github.com/reatom/reatom/releases/tag/v1.0). And it was supported for a half of decade. We are always open to is sues and PRs for older versions, if it will help you!
 
-We have [a lot of contributors](https://github.com/reatom/reatom/graphs/contributors) working on different packages. We are trying to build a super stable and predictable ecosystem. To achieve this, we welcome you to put your package into our monorepo and check the [contribution](/contributing) guidelines.
+We have [a lot of contributors](https://github.com/reatom/reatom/graphs/contributors) working on different packages. We are trying to build a super stable and predictable ecosystem. To achieve this, we welcome you to put your package into our monorepo and check the [contribution](https://github.com/reatom/reatom/blob/v1001/CONTRIBUTING.md) guidelines.
 
 ### Versioning
 
@@ -35,7 +35,7 @@ Check out this [benchmark](https://github.com/artalar/reactive-computed-bench) f
 Note that Reatom uses immutable data structures and operates in a separate async context, which bring a lot of features, which will take too many overhead with other set of tools. That means the Reatom test covers more features than other state manager tests
 Still, Reatom performs faster than MobX for mid-range numbers, which is pretty impressive.
 
-Also, remember to check out our [atomization guide](/recipes/atomization).
+Also, remember to check out our [atomization guide](/handbook/atomization).
 
 ### Why not Proxy?
 

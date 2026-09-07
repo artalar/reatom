@@ -39,7 +39,7 @@ Use this map to open only the relevant parts of [REFERENCE.md](REFERENCE.md):
 | Tests and SSR                           | SSR and testing                           |
 | Upgrades from older Reatom              | v3 migration highlights                   |
 
-Deeper recipes and adapter docs live on [v1001.reatom.dev](https://v1001.reatom.dev) under `/docs/handbook/*` and `/docs/reference/*`.
+Deeper recipes and adapter docs live on [v1001.reatom.dev](https://v1001.reatom.dev) under `/handbook/*` and `/reference/*`.
 
 ## Implementation defaults
 

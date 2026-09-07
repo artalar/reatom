@@ -24,14 +24,14 @@
   "devDependencies": {
     "@storybook/addon-a11y": "^10.2.0",
     "@storybook/addon-vitest": "^10.2.0",
-    "@storybook/html-vite": "^10.2.0",
     "@storybook/html": "^10.2.0",
+    "@storybook/html-vite": "^10.2.0",
     "@testing-library/dom": "^10.4.0",
     "@vitest/browser-playwright": "^4.1.7",
     "playwright": "^1.60.0",
     "storybook": "^10.2.0",
     "typescript": "^5.9.3",
-    "vite": "^8.0.14",
+    "vite": "catalog:",
     "vitest": "^4.1.7"
   },
   "dependencies": {

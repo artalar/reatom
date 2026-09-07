@@ -1,6 +1,6 @@
 ---
 title: Comparison
-description: Comparison with other form libraries
+description: How Reatom forms compare to React Hook Form, Formik, and other form libraries
 ---
 
 Legend:

@@ -1,6 +1,6 @@
 ---
 title: Routing
-description: Dead simple and powerful Reatom router for your application state.
+description: Type-safe routing with loaders, params, and nested routes in Reatom
 ---
 
 Reatom provides a powerful yet simple way to manage your application's routes and the state associated with them. This guide will introduce you to the basics, focusing on how routing can help manage data lifecycles, such as for forms.

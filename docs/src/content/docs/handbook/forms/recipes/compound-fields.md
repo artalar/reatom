@@ -1,5 +1,6 @@
 ---
 title: Compound fields
+description: Model nested or multi-input fields with fieldsets that behave like a single field
 ---
 
 Using [fieldsets](/handbook/forms/concepts/fieldset/), we can create independent groups of fields, allowing us to interact with this group of fields almost like a form, or it can be perceived as lenses.

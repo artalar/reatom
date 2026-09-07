@@ -1,6 +1,6 @@
 ---
 title: Tooling
-description: The list of key tools for Reatom
+description: Logging, Vite HMR, and developer tools for debugging Reatom applications
 ---
 
 ## Logging
@@ -171,4 +171,4 @@ addGlobalExtension((target) => {
 
 Call `addGlobalExtension` early in your application initialization before creating any atoms or actions, as in `connectLogger` example,. Extensions are applied only to entities created after registration.
 
-You can learn more about extensions development in the [Extensions](../handbook/extensions.md) chapter.
+You can learn more about extensions development in the [Extensions](/handbook/extensions) chapter.

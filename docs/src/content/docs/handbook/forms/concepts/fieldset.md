@@ -1,5 +1,6 @@
 ---
 title: Fieldset
+description: Group related fields with reatomFieldSet — shared validation, focus, and aggregate state
 ---
 
 Field sets allow you to group related fields together and manage them as a single unit. This is an 80% of `reatomForm` functionality since `reatomForm` is fully based on top of `reatomFieldSet`. This is also useful for organizing complex forms into logical sections such as [wizard (multi-step) forms](/handbook/forms/recipes/wizard-forms), [compound fields](/handbook/forms/recipes/compound-fields), or for tracking the combined state of multiple fields without creating a full form.

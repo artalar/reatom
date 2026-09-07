@@ -46,5 +46,10 @@
     "url": "https://github.com/reatom/reatom/issues"
   },
   "homepage": "https://www.reatom.dev",
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "overrides": {
+      "vite": "^8.2.0"
+    }
+  }
 }

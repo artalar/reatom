@@ -1,16 +1,25 @@
+import { unified } from '@astrojs/markdown-remark'
 import starlight from '@astrojs/starlight'
 import { defineConfig } from 'astro/config'
 import rehypeSlug from 'rehype-slug'
+import starlightLinksValidator from 'starlight-links-validator'
 import starlightLlmsTxt from 'starlight-llms-txt'
 
 import { sidebar } from './astro.sidebar'
 import { devServerFileWatcher } from './config/integrations/dev-server-file-watcher'
 import { markdownBaseLinks } from './config/integrations/markdown-links-base'
 
+const site = 'https://v1001.reatom.dev'
+const ogImage = `${site}/assets/logo_text.png`
+const siteDescription =
+  'Atomic reactive state manager for JavaScript — simple to start, powerful for growth. Forms, routing, async, and framework adapters for React, Vue, and more.'
+
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://www.reatom.dev',
+  site,
   output: 'static',
+  // Keep HTML-aware whitespace compression after Astro 7's JSX default.
+  compressHTML: true,
   integrations: [
     devServerFileWatcher([
       './config/**', // Custom plugins and integrations
@@ -20,8 +29,12 @@ export default defineConfig({
     starlight({
       sidebar,
       plugins: [
-        // TODO
-        // starlightLinksValidator(),
+        starlightLinksValidator({
+          exclude: [
+            // Custom reference routes are generated outside docsLoader.
+            '/reference/**',
+          ],
+        }),
         starlightLlmsTxt({
           projectName: 'Reatom',
           description:
@@ -66,6 +79,30 @@ Use **Abridged documentation** (\`llms-small.txt\`) when context window is limit
         MarkdownContent: './src/components/MarkdownContent.astro',
       },
       title: 'Reatom',
+      description: siteDescription,
+      head: [
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image', content: ogImage },
+        },
+        {
+          tag: 'meta',
+          attrs: { property: 'og:image:alt', content: 'Reatom' },
+        },
+        {
+          tag: 'meta',
+          attrs: { name: 'twitter:image', content: ogImage },
+        },
+      ],
+      // Prefer title/section hits for API-heavy docs search.
+      pagefind: {
+        ranking: {
+          termSimilarity: 1.5,
+          metaWeights: {
+            title: 8,
+          },
+        },
+      },
       logo: {
         src: './src/assets/logo_light.svg',
       },
@@ -100,6 +137,8 @@ Use **Abridged documentation** (\`llms-small.txt\`) when context window is limit
     },
   },
   markdown: {
-    rehypePlugins: [rehypeSlug],
+    processor: unified({
+      rehypePlugins: [rehypeSlug],
+    }),
   },
 })

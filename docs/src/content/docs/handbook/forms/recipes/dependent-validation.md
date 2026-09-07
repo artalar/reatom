@@ -1,5 +1,6 @@
 ---
 title: Dependent validation
+description: Validate one field against another with reactive validate callbacks in Reatom forms
 ---
 
 There are two approaches to implement validation that depends on other fields.

@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: All about Reatom forms
+description: Reatom forms overview — type-safe fields, fieldsets, validation, and submission
 ---
 
 This is a general form library with a simple focus and validation management.

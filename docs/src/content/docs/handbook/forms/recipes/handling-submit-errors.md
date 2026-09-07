@@ -1,5 +1,6 @@
 ---
 title: Handling submission errors
+description: Surface form submit failures, map API errors to fields, and keep UX predictable
 ---
 
 We export the `resolveFieldByPath` utility from `@reatom/core`, which is used internally in the forms core to determine which field an error belongs to when thrown during standard schema validation.

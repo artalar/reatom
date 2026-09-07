@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Learn the base Reatom primitives
+description: Learn Reatom atoms, computed values, and effects — the core primitives to get started
 ---
 
 ## Installation

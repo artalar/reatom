@@ -1,5 +1,6 @@
 ---
 title: Focus management
+description: Autofocus invalid fields and manage focus state across Reatom forms and fieldsets
 ---
 
 ### Auto focus on error

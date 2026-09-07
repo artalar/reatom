@@ -1,5 +1,6 @@
 ---
 title: Abstract field components
+description: Build reusable UI field components that bind to any compatible Reatom field model
 ---
 
 It's not uncommon in applications to have a separate layer of UI components on top of existing UI input controls that support validation forms. However, in many other form libraries, fields are very tightly coupled to forms, and whenever an independent field is needed, the form interface inevitably seeps into it: abstractions leak. It's impossible to achieve truly independent field components when the fields themselves are tightly coupled to the form.

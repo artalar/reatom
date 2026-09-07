@@ -1,6 +1,6 @@
 ---
 title: State Persistence
-description: Persist atom state across browser sessions with flexible storage backends
+description: Persist atom state across sessions with withPersist and flexible storage backends
 ---
 
 State persistence allows your application to maintain state across browser sessions, page refreshes, and different tabs. Reatom's persist system provides a flexible and powerful way to save and restore atom state using various storage backends with automatic fallbacks and cross-tab synchronization.

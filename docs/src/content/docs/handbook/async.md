@@ -1,6 +1,6 @@
 ---
 title: Async Operations
-description: Handle async operations with predictable state management
+description: Handle async queries and mutations with withAsync, withAsyncData, abort, and retry
 ---
 
 Async operations are everywhere in modern applications - API calls, file uploads, data processing, and more. Reatom provides powerful extensions to handle async operations with automatic state tracking, error handling, and concurrency management.

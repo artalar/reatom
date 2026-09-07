@@ -1,5 +1,6 @@
 ---
 title: Field atom
+description: Independent form fields with validation, focus, change, and reset — reatomField as a composable field model
 ---
 
 In many form validation libraries, fields exist only within forms and their lifecycle is tied to the form's lifecycle, while access to fields is typically done through string dot notation, and field configuration has no single source of truth and can be spread across the entire application.

@@ -1,5 +1,6 @@
 ---
 title: Field array
+description: Dynamic field lists with reatomFieldArray — add, remove, reorder, and validate array fields
 ---
 
 In Reatom, a dynamic field list shares most traits with `reatomField` and is based on the `reatomLinkedList` primitive, which provides extremely high rendering performance and editing operations for dynamic field lists.

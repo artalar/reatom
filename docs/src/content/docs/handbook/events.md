@@ -1,6 +1,6 @@
 ---
 title: Events
-description: Documentation on events in Reatom
+description: Model events as temporal state — onEvent, filtering, and declarative event flows
 ---
 
 **Sampling states and events with atoms and actions: The reactive event pattern that will change how you think about data flow!**
