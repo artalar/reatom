@@ -16,6 +16,7 @@ import {
   withActions,
   wrap,
 } from '@reatom/core'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -308,6 +309,79 @@ describe('reatomFactoryComponent', () => {
         '2',
       )
     }))
+
+  describe('forward ref', () => {
+    test('forwards ref when init returns a render function', () =>
+      context.start(async () => {
+        const Input = reatomFactoryComponent<
+          { placeholder: string },
+          HTMLInputElement
+        >(
+          () => (props, ref) => (
+            <input
+              ref={ref}
+              data-testid="input"
+              placeholder={props.placeholder}
+            />
+          ),
+          'Input',
+        )
+
+        const inputRef = React.createRef<HTMLInputElement>()
+
+        const root = ReactDOM.createRoot(document.getElementById('root')!)
+        root.render(
+          <reatomContext.Provider value={top()}>
+            <Input ref={inputRef} placeholder="type here" />
+          </reatomContext.Provider>,
+        )
+
+        await wrap(tick())
+
+        expect(inputRef.current).toBeInstanceOf(HTMLInputElement)
+        expect(inputRef.current).toBe(
+          document.querySelector('[data-testid="input"]'),
+        )
+        expect(inputRef.current?.placeholder).toBe('type here')
+      }))
+
+    test('forwards ref when init returns forwardRef(...)', () =>
+      context.start(async () => {
+        const Input = reatomFactoryComponent<
+          { placeholder: string },
+          HTMLInputElement
+        >(
+          () =>
+            React.forwardRef<HTMLInputElement, { placeholder: string }>(
+              (props, ref) => (
+                <input
+                  ref={ref}
+                  data-testid="input"
+                  placeholder={props.placeholder}
+                />
+              ),
+            ),
+          'Input',
+        )
+
+        const inputRef = React.createRef<HTMLInputElement>()
+
+        const root = ReactDOM.createRoot(document.getElementById('root')!)
+        root.render(
+          <reatomContext.Provider value={top()}>
+            <Input ref={inputRef} placeholder="type here" />
+          </reatomContext.Provider>,
+        )
+
+        await wrap(tick())
+
+        expect(inputRef.current).toBeInstanceOf(HTMLInputElement)
+        expect(inputRef.current).toBe(
+          document.querySelector('[data-testid="input"]'),
+        )
+        expect(inputRef.current?.placeholder).toBe('type here')
+      }))
+  })
 
   test('init callback reruns when deps props change', () =>
     context.start(async () => {

@@ -17,7 +17,7 @@
     "noEmit": true,
     "noEmitOnError": true,
     "useDefineForClassFields": true,
-    "preserveSymlinks": true,
+    "preserveSymlinks": false,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "rewriteRelativeImportExtensions": true,

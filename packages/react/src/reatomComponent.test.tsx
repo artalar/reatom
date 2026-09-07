@@ -347,17 +347,20 @@ describe('reatomComponent', () => {
       expect(cleanupRunCount).toBe(2)
     }))
 
-  class ErrorBoundary extends React.Component {
-    constructor(props) {
+  class ErrorBoundary extends React.Component<
+    React.PropsWithChildren,
+    { hasError: boolean; error: Error | null }
+  > {
+    constructor(props: React.PropsWithChildren) {
       super(props)
       this.state = { hasError: false, error: null }
     }
 
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError(error: Error | null) {
       return { hasError: true, error }
     }
 
-    render() {
+    override render() {
       if (this.state.hasError) {
         return <p data-testid="error">Error</p>
       }
@@ -371,7 +374,9 @@ describe('reatomComponent', () => {
       const rerender = atom(0)
       const suspenseAtom = atom(async () => {
         await wrap(tick())
-        throw new Error()
+        // The IDE removes the `return 0` line, so suspenseAtom.set(123) results in an error.
+        // eslint-disable-next-line no-constant-condition
+        if (1 === 1) throw new Error()
         return 0
       }).extend(withSuspenseInit())
 
@@ -508,4 +513,47 @@ describe('reatomComponent', () => {
         'data: ok',
       )
     }))
+
+  // The same scenarios for React 18 live in `reatomComponent.react18.test.tsx`
+  // and run through the `react18` vitest project against a single React 18 copy.
+  describe('forward ref', () => {
+    test('forwards ref via reatomComponent(forwardRef(...))', () =>
+      context.start(async () => {
+        const Input = reatomComponent(
+          React.forwardRef<HTMLInputElement, { placeholder: string }>(
+            (props, ref) => (
+              <input
+                ref={ref}
+                data-testid="input"
+                placeholder={props.placeholder}
+              />
+            ),
+          ),
+          'Input',
+        )
+
+        const inputRef = React.createRef<HTMLInputElement>()
+
+        const root = ReactDOM.createRoot(document.getElementById('root')!)
+        root.render(
+          <reatomContext.Provider value={top()}>
+            <Input ref={inputRef} placeholder="type here" />
+          </reatomContext.Provider>,
+        )
+
+        await wrap(tick())
+
+        expect(inputRef.current).toBeInstanceOf(HTMLInputElement)
+        expect(inputRef.current).toBe(
+          document.querySelector('[data-testid="input"]'),
+        )
+        expect(inputRef.current?.placeholder).toBe('type here')
+      }))
+  })
+
+  test('throws a clear error for a React.memo(...) input', () => {
+    expect(() => reatomComponent(React.memo(() => <div />))).toThrow(
+      /React\.memo/,
+    )
+  })
 })

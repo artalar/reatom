@@ -8,7 +8,6 @@ import {
   top,
   wrap,
 } from '@reatom/core'
-import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 
