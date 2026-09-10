@@ -937,6 +937,8 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
     (dirty || (dependent && !subscribed)) &&
     (!dependent || ((frame.pubs = [null]), _isPubsChanged(frame, pubs, 1)))
 
+  let writeCause: undefined | Frame
+
   // the second loop may come from push to emptyComputed
   while (push || invalid) {
     if (invalid) {
@@ -949,7 +951,7 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
         frame.error = null
       } finally {
         frame.atom.__reatom.linking = false
-        frame.pubs[0] ??= frame.root.frame
+        frame.pubs[0] ??= writeCause ?? frame.root.frame
         // TODO
         // Object.freeze(frame.pubs)
 
@@ -968,7 +970,7 @@ export function computedMiddleware(next: Fn, ...args: any[]) {
       newState = frame.state =
         typeof update === 'function' ? update(newState) : update
       frame.error = null
-      frame.pubs[0] = STACK[STACK.length - 2]!
+      frame.pubs[0] = writeCause = STACK[STACK.length - 2]!
 
       invalid = emptyComputed && !Object.is(state, frame.state)
     }

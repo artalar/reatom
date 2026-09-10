@@ -409,7 +409,7 @@ export let reatomTransaction = ({
           withMiddleware(
             () =>
               function withRollback(next: Fn, ...params: any[]) {
-                let prevState = top().state
+                let prevState = params.length === 0 ? top().state : next()
                 let nextState = next(...params)
 
                 if (!Object.is(prevState, nextState)) {
